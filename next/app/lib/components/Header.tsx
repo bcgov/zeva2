@@ -9,8 +9,8 @@ export const Header: React.FC = () => {
         src="/bcgov_white_text.png"
         alt="BC GOV logo"
       />
-      <span className="text-xl">Zero-Emission Vehicles Reporting System</span>
-      <span className="ml-auto">Government of British Columbia</span>
+      <span className="text-xl text-white">Zero-Emission Vehicles Reporting System</span>
+      <span className="ml-auto text-white">Government of British Columbia</span>
     </div>
   );
 };

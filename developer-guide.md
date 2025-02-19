@@ -52,6 +52,8 @@ Please note:
 
 We're using Tailwind CSS.
 
+You can find the custom colours defined in tailwind.config.ts.
+
 Docs: https://tailwindcss.com/docs/styling-with-utility-classes
 
 ## Formatting
