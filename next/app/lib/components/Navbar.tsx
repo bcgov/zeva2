@@ -66,7 +66,7 @@ export const Navbar: React.FC<INavbarProps> = ({ user }) => {
   ];
 
   return (
-    <div className="flex flex-row w-full bg-defaultBackgroundBlue border-t-2 border-primaryYellow mr-[16rem] px-1 mb-1">
+    <div className="flex flex-row w-full bg-defaultBackgroundBlue border-t-2 border-primaryYellow mr-[16rem] px-1 mb-3 text-white">
       {navItems.map((item) => {
         if (
           item.roles.some((role) => user.roles?.includes(role)) ||
