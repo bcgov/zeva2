@@ -1,0 +1,396 @@
+import {
+  VehicleClass,
+  TransactionType,
+  ZevClass,
+  ModelYear,
+  ZevUnitEndingBalance,
+  ZevUnitTransaction,
+} from "@/prisma/generated/client";
+import { Decimal } from "@/prisma/generated/client/runtime/library";
+import {
+  vehicleClasses,
+  zevClasses,
+  modelYears,
+  specialZevClasses,
+  otherZevClasses,
+} from "@/constants/zevUnit";
+import { ZevUnitRecord, ZevUnitRecordsObj } from "@/types/zevUnit";
+
+// to be used when generating a MYR/Supplementary/Assessment/Reassessment;
+// inputed zevUnitRecords should consist of ending balances + transactions + (obligation reductions)/adjustments,
+// all of which are associated with a specific compliance year,
+// and zevClassesOrdered should be a total ordering of zevClasses derived from relevant legislation/regulations
+// and a supplier's recorded preference
+export const calculateBalance = (
+  zevUnitRecords: ZevUnitRecord[],
+  zevClassesOrdered: ZevClass[],
+) => {
+  let refinedRecords = applyTransfersAway(zevUnitRecords);
+  const balanceBeforeOffsets = getSummedZevUnitRecordsObj(refinedRecords);
+  refinedRecords = offsetSpecialDebits(refinedRecords);
+  refinedRecords = offsetUnspecifiedDebits(refinedRecords, zevClassesOrdered);
+  refinedRecords = offsetOtherDebitsWithUnspecifiedCredits(refinedRecords);
+  refinedRecords = offsetOtherDebitsWithMatchingCredits(refinedRecords);
+  return {
+    balanceBeforeOffsets: balanceBeforeOffsets,
+    finalBalance: getSummedZevUnitRecordsObj(refinedRecords),
+  };
+};
+
+// for use when not generating a MYR/Supplementary/Assessment/Reassessment
+// if there exists a debit amongst transactions, this is an error (it implies we got the wrong balance)
+// else if there exists debit amongst endingBalances, return "deficit"
+// else, collect ending balances and transactions into a list of ZevUnitRecords, and apply transfers away
+export const getBalance = (
+  endingBalances: ZevUnitEndingBalance[],
+  transactions: ZevUnitTransaction[],
+) => {
+  for (const transaction of transactions) {
+    if (transaction.type === TransactionType.DEBIT) {
+      throw new Error("debit amongst transactions");
+    }
+  }
+  for (const balance of endingBalances) {
+    if (balance.type === TransactionType.DEBIT) {
+      return "deficit";
+    }
+  }
+  const zevUnitRecords = getZevUnitRecords(endingBalances).concat(transactions);
+  return getSummedZevUnitRecordsObj(applyTransfersAway(zevUnitRecords));
+};
+
+export const getZevUnitRecords = (
+  endingBalances: ZevUnitEndingBalance[],
+): ZevUnitRecord[] => {
+  const result = [];
+  for (const balance of endingBalances) {
+    const record = { ...balance, numberOfUnits: balance.finalNumberOfUnits };
+    result.push(record);
+  }
+  return result;
+};
+
+// this function must not mutate the inputed zevUnitRecords
+export const getSummedZevUnitRecordsObj = (
+  zevUnitRecords: ZevUnitRecord[],
+): ZevUnitRecordsObj => {
+  const result: ZevUnitRecordsObj = {};
+  for (const record of zevUnitRecords) {
+    const recordType = record.type;
+    const vehicleClass = record.vehicleClass;
+    const zevClass = record.zevClass;
+    const modelYear = record.modelYear;
+    const numberOfUnits = record.numberOfUnits;
+    if (!result[recordType]) {
+      result[recordType] = {};
+    }
+    if (!result[recordType][vehicleClass]) {
+      result[recordType][vehicleClass] = {};
+    }
+    if (!result[recordType][vehicleClass][zevClass]) {
+      result[recordType][vehicleClass][zevClass] = {};
+    }
+    const currentNumberOfUnits =
+      result[recordType][vehicleClass][zevClass][modelYear];
+    if (!currentNumberOfUnits) {
+      result[recordType][vehicleClass][zevClass][modelYear] = numberOfUnits;
+    } else {
+      result[recordType][vehicleClass][zevClass][modelYear] =
+        currentNumberOfUnits.plus(numberOfUnits);
+    }
+  }
+  return result;
+};
+
+export const applyTransfersAway = (zevUnitRecords: ZevUnitRecord[]) => {
+  const result = [];
+  type ZevUnitsMap = Partial<
+    Record<
+      VehicleClass,
+      Partial<Record<ZevClass, Partial<Record<ModelYear, ZevUnitRecord[]>>>>
+    >
+  >;
+  const creditsMap: ZevUnitsMap = {};
+  const transfersAwayMap: ZevUnitsMap = {};
+
+  for (const record of zevUnitRecords) {
+    let map = null;
+    const recordType = record.type;
+    const vehicleClass = record.vehicleClass;
+    const zevClass = record.zevClass;
+    const modelYear = record.modelYear;
+    if (recordType === TransactionType.CREDIT) {
+      map = creditsMap;
+    } else if (recordType === TransactionType.TRANSFER_AWAY) {
+      map = transfersAwayMap;
+    }
+    if (map) {
+      if (!map[vehicleClass]) {
+        map[vehicleClass] = {};
+      }
+      if (!map[vehicleClass][zevClass]) {
+        map[vehicleClass][zevClass] = {};
+      }
+      if (!map[vehicleClass][zevClass][modelYear]) {
+        map[vehicleClass][zevClass][modelYear] = [];
+      }
+      map[vehicleClass][zevClass][modelYear].push(record);
+    } else {
+      result.push(record);
+    }
+  }
+
+  for (const vehicleClass of vehicleClasses) {
+    for (const zevClass of zevClasses) {
+      for (const modelYear of modelYears) {
+        const credits = creditsMap[vehicleClass]?.[zevClass]?.[modelYear] ?? [];
+        const transfersAway =
+          transfersAwayMap[vehicleClass]?.[zevClass]?.[modelYear] ?? [];
+        const offsettedRecords = offset(credits, transfersAway);
+        result.push(...offsettedRecords);
+      }
+    }
+  }
+  return result;
+};
+
+export const offsetSpecialDebits = (zevUnitRecords: ZevUnitRecord[]) => {
+  return offsetCertainDebitsBySameZevClass(zevUnitRecords, specialZevClasses);
+};
+
+export const offsetUnspecifiedDebits = (
+  zevUnitRecords: ZevUnitRecord[],
+  zevClassesOrdered: ZevClass[],
+) => {
+  const zevClassesSet = new Set(zevClassesOrdered);
+  const isTotallyOrdered = zevClasses.every((zevClass) =>
+    zevClassesSet.has(zevClass),
+  );
+  if (!isTotallyOrdered) {
+    throw new Error(
+      "zevClassesOrdered must be a totally ordered list of zevClasses!",
+    );
+  }
+  const result = [];
+  type ZevUnitsMap = Partial<
+    Record<VehicleClass, Partial<Record<ZevClass, ZevUnitRecord[]>>>
+  >;
+  type UnspecifiedDebitsMap = Partial<Record<VehicleClass, ZevUnitRecord[]>>;
+  const creditsMap: ZevUnitsMap = {};
+  const debitsMap: UnspecifiedDebitsMap = {};
+
+  for (const record of zevUnitRecords) {
+    const recordType = record.type;
+    const vehicleClass = record.vehicleClass;
+    const zevClass = record.zevClass;
+    if (recordType === TransactionType.CREDIT) {
+      if (!creditsMap[vehicleClass]) {
+        creditsMap[vehicleClass] = {};
+      }
+      if (!creditsMap[vehicleClass][zevClass]) {
+        creditsMap[vehicleClass][zevClass] = [];
+      }
+      creditsMap[vehicleClass][zevClass].push(record);
+    } else if (
+      recordType === TransactionType.DEBIT &&
+      zevClass === ZevClass.UNSPECIFIED
+    ) {
+      if (!debitsMap[vehicleClass]) {
+        debitsMap[vehicleClass] = [];
+      }
+      debitsMap[vehicleClass].push(record);
+    } else {
+      result.push(record);
+    }
+  }
+
+  for (const subMap of Object.values(creditsMap)) {
+    for (const credits of Object.values(subMap)) {
+      sortByModelYear(credits);
+    }
+  }
+  for (const debits of Object.values(debitsMap)) {
+    sortByModelYear(debits);
+  }
+  for (const vehicleClass of vehicleClasses) {
+    const creditsByVehicleClass = [];
+    const debits = debitsMap[vehicleClass] ?? [];
+    for (const zevClass of zevClassesOrdered) {
+      const credits = creditsMap[vehicleClass]?.[zevClass] ?? [];
+      creditsByVehicleClass.push(...credits);
+    }
+    const offsettedRecords = offset(creditsByVehicleClass, debits);
+    result.push(...offsettedRecords);
+  }
+  return result;
+};
+
+export const offsetOtherDebitsWithUnspecifiedCredits = (
+  zevUnitRecords: ZevUnitRecord[],
+) => {
+  const result = [];
+  type ZevUnitsMap = Partial<Record<VehicleClass, ZevUnitRecord[]>>;
+  const creditsMap: ZevUnitsMap = {};
+  const debitsMap: ZevUnitsMap = {};
+
+  for (const record of zevUnitRecords) {
+    let map = null;
+    const recordType = record.type;
+    const vehicleClass = record.vehicleClass;
+    const zevClass = record.zevClass;
+    if (
+      recordType === TransactionType.CREDIT &&
+      zevClass === ZevClass.UNSPECIFIED
+    ) {
+      map = creditsMap;
+    } else if (
+      recordType === TransactionType.DEBIT &&
+      otherZevClasses.some((otherClass) => zevClass === otherClass)
+    ) {
+      map = debitsMap;
+    }
+    if (map) {
+      if (!map[vehicleClass]) {
+        map[vehicleClass] = [];
+      }
+      map[vehicleClass].push(record);
+    } else {
+      result.push(record);
+    }
+  }
+
+  for (const map of [creditsMap, debitsMap]) {
+    for (const records of Object.values(map)) {
+      sortByModelYear(records);
+    }
+  }
+  for (const vehicleClass of vehicleClasses) {
+    const credits = creditsMap[vehicleClass] ?? [];
+    const debits = debitsMap[vehicleClass] ?? [];
+    const offsettedRecords = offset(credits, debits);
+    result.push(...offsettedRecords);
+  }
+  return result;
+};
+
+export const offsetOtherDebitsWithMatchingCredits = (
+  zevUnitRecords: ZevUnitRecord[],
+) => {
+  return offsetCertainDebitsBySameZevClass(zevUnitRecords, otherZevClasses);
+};
+
+const offsetCertainDebitsBySameZevClass = (
+  zevUnitRecords: ZevUnitRecord[],
+  debitZevClasses: ZevClass[],
+) => {
+  const result = [];
+  type ZevUnitsMap = Partial<
+    Record<VehicleClass, Partial<Record<ZevClass, ZevUnitRecord[]>>>
+  >;
+  const creditsMap: ZevUnitsMap = {};
+  const debitsMap: ZevUnitsMap = {};
+
+  for (const record of zevUnitRecords) {
+    let map = null;
+    const recordType = record.type;
+    const vehicleClass = record.vehicleClass;
+    const zevClass = record.zevClass;
+    if (recordType === TransactionType.CREDIT) {
+      map = creditsMap;
+    } else if (recordType === TransactionType.DEBIT) {
+      map = debitsMap;
+    }
+    if (map && debitZevClasses.some((zevClass) => zevClass === zevClass)) {
+      if (!map[vehicleClass]) {
+        map[vehicleClass] = {};
+      }
+      if (!map[vehicleClass][zevClass]) {
+        map[vehicleClass][zevClass] = [];
+      }
+      map[vehicleClass][zevClass].push(record);
+    } else {
+      result.push(record);
+    }
+  }
+
+  for (const map of [creditsMap, debitsMap]) {
+    for (const subMap of Object.values(map)) {
+      for (const zevUnitRecords of Object.values(subMap)) {
+        sortByModelYear(zevUnitRecords);
+      }
+    }
+  }
+  for (const vehicleClass of vehicleClasses) {
+    for (const zevClass of debitZevClasses) {
+      const credits = creditsMap[vehicleClass]?.[zevClass] ?? [];
+      const debits = debitsMap[vehicleClass]?.[zevClass] ?? [];
+      const offsettedRecords = offset(credits, debits);
+      result.push(...offsettedRecords);
+    }
+  }
+  return result;
+};
+
+const offset = (
+  credits: ZevUnitRecord[],
+  debits: ZevUnitRecord[],
+): ZevUnitRecord[] => {
+  const creditSeries = getSeries(credits);
+  const debitSeries = getSeries(debits);
+  const creditSeriesLength = creditSeries.length;
+  const debitSeriesLength = debitSeries.length;
+  if (creditSeriesLength === 0) {
+    return debits;
+  }
+  if (debitSeriesLength === 0) {
+    return credits;
+  }
+  const creditSeriesLastElement = creditSeries[creditSeriesLength - 1];
+  const debitSeriesLastElement = debitSeries[debitSeriesLength - 1];
+  let lesserElement = null;
+  let greaterSeqAndSeries: [ZevUnitRecord[], Decimal[]] | null = null;
+  if (creditSeriesLastElement.lessThan(debitSeriesLastElement)) {
+    lesserElement = creditSeriesLastElement;
+    greaterSeqAndSeries = [debits, debitSeries];
+  } else if (debitSeriesLastElement.lessThan(creditSeriesLastElement)) {
+    lesserElement = debitSeriesLastElement;
+    greaterSeqAndSeries = [credits, creditSeries];
+  }
+  if (lesserElement && greaterSeqAndSeries) {
+    const sequence = greaterSeqAndSeries[0];
+    const series = greaterSeqAndSeries[1];
+    for (const [index, term] of series.entries()) {
+      if (lesserElement.lessThan(term)) {
+        const diff = term.minus(lesserElement);
+        const remainsOfRecord = { ...sequence[index], numberOfUnits: diff };
+        return [remainsOfRecord].concat(sequence.slice(index + 1));
+      }
+    }
+  }
+  return [];
+};
+
+const getSeries = (records: ZevUnitRecord[]): Decimal[] => {
+  const result: Decimal[] = [];
+  for (const [index, record] of records.entries()) {
+    const numberOfUnits = record.numberOfUnits;
+    if (index === 0) {
+      result.push(numberOfUnits);
+    } else {
+      result.push(result[index - 1].add(numberOfUnits));
+    }
+  }
+  return result;
+};
+
+const sortByModelYear = (zevUnitRecords: ZevUnitRecord[]) => {
+  zevUnitRecords.sort((a, b) => {
+    if (a.modelYear < b.modelYear) {
+      return -1;
+    }
+    if (a.modelYear > b.modelYear) {
+      return 1;
+    }
+    return 0;
+  });
+};

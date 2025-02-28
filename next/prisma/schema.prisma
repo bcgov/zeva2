@@ -31,11 +31,13 @@ enum ModelYear {
 }
 
 model Organization {
-  id             Int       @id @default(autoincrement())
-  name           String
-  isGovernment   Boolean   @default(false) @map("is_government")
-  firstModelYear ModelYear @map("first_model_year")
-  users          User[]
+  id                    Int                    @id @default(autoincrement())
+  name                  String
+  isGovernment          Boolean                @default(false) @map("is_government")
+  firstModelYear        ModelYear              @map("first_model_year")
+  users                 User[]
+  zevUnitTransactions   ZevUnitTransaction[]
+  zevUnitEndingBalances ZevUnitEndingBalance[]
 
   @@map("organization")
 }
@@ -68,4 +70,67 @@ model User {
 
   @@unique([idp, idpUsername, idpEmail])
   @@map("user")
+}
+
+enum TransactionType {
+  CREDIT
+  DEBIT
+  TRANSFER_AWAY
+}
+
+enum ReferenceType {
+  TRANSFER
+  PENALTY_CREDITS
+  OBLIGATION_REDUCTION
+  ASSESSMENT_ADJUSTMENT
+  SUPPLY_CREDITS
+  AGREEMENT_CREDITS
+}
+
+enum ZevClass {
+  A
+  B
+  C
+  UNSPECIFIED
+}
+
+enum VehicleClass {
+  REPORTABLE
+}
+
+model ZevUnitTransaction {
+  id             Int             @id @default(autoincrement())
+  organization   Organization    @relation(fields: [organizationId], references: [id])
+  organizationId Int             @map("organization_id")
+  type           TransactionType
+  referenceType  ReferenceType   @map("reference_type")
+  referenceId    Int             @map("reference_id")
+  numberOfUnits  Decimal         @map("number_of_units") @db.Decimal(65, 2)
+  zevClass       ZevClass        @map("zev_class")
+  vehicleClass   VehicleClass    @map("vehicle_class")
+  modelYear      ModelYear       @map("model_year")
+  timestamp      DateTime        @db.Timestamptz(3)
+
+  @@map("zev_unit_transaction")
+}
+
+enum BalanceType {
+  CREDIT
+  DEBIT
+}
+
+model ZevUnitEndingBalance {
+  id                   Int          @id @default(autoincrement())
+  organization         Organization @relation(fields: [organizationId], references: [id])
+  organizationId       Int          @map("organization_id")
+  complianceYear       ModelYear    @map("compliance_year")
+  type                 BalanceType
+  initialNumberOfUnits Decimal      @map("initial_number_of_units") @db.Decimal(65, 2)
+  finalNumberOfUnits   Decimal      @map("final_number_of_units") @db.Decimal(65, 2)
+  zevClass             ZevClass     @map("zev_class")
+  vehicleClass         VehicleClass @map("vehicle_class")
+  modelYear            ModelYear    @map("model_year")
+
+  @@unique([organizationId, complianceYear, zevClass, vehicleClass, modelYear])
+  @@map("zev_unit_ending_balance")
 }

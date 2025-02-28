@@ -1,7 +1,9 @@
+import { Role } from "@/prisma/generated/client";
+
 declare module "@auth/core/types" {
   interface User {
     idToken?: string;
-    roles?: $Enums.Role[];
+    roles?: Role[];
     isGovernment?: Boolean;
     organizationId?: number;
   }
@@ -18,11 +20,8 @@ declare module "@auth/core/types" {
 declare module "@auth/core/jwt" {
   interface JWT {
     idToken?: string;
-    roles?: $Enums.Role[];
+    roles?: Role[];
     isGovernment?: Boolean;
     organizationId?: number;
   }
 }
-
-//need an export statement so that typescript recognizes this file as a module
-export {};
