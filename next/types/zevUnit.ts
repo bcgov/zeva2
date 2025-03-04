@@ -31,6 +31,7 @@ export interface ZevUnitRecord
     ZevUnitEndingBalanceSparse,
     ZevUnitRecordBase {}
 
+// a structure of ZevUnitRecords that may prove useful for rendering purposes
 export type ZevUnitRecordsObj = Partial<
   Record<
     TransactionType,
