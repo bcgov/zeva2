@@ -1,0 +1,5 @@
+workflow: GitFlow/v1
+# next-version: 1.0.0
+branches:
+  develop:
+    regex: ^fake-dev$
