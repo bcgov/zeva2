@@ -3,3 +3,5 @@ workflow: GitFlow/v1
 branches:
   develop:
     regex: ^fake-dev$
+  release:
+    regex: ^fake-releases?[/-](?<BranchName>.+)
