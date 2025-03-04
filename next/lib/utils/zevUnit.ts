@@ -17,8 +17,8 @@ import {
 import { ZevUnitRecord, ZevUnitRecordsObj } from "@/types/zevUnit";
 
 // to be used when generating a MYR/Supplementary/Assessment/Reassessment;
-// inputed zevUnitRecords should consist of ending balances + transactions + (obligation reductions)/adjustments,
-// all of which are associated with a specific compliance year,
+// inputed zevUnitRecords should consist of the most recent ending balance records + transactions + (obligation reductions)/adjustments,
+// of which the latter two are associated with a specific compliance year,
 // and zevClassesOrdered should be a total ordering of zevClasses derived from relevant legislation/regulations
 // and a supplier's recorded preference
 export const calculateBalance = (
@@ -102,6 +102,10 @@ export const getSummedZevUnitRecordsObj = (
   return result;
 };
 
+// a transfer away is not a debit subject to section 12 offsetting rules;
+// e.g. if a supplier has 1 (REPORTABLE, A, 2020) credit and 1 (REPORTABLE, A, 2021) credit,
+// and they transfer away the latter, their final balance is 1 (REPORTABLE, A, 2020) credit,
+// not 1 (REPORTABLE, A, 2021) credit as it would be had we applied section 12(3)
 export const applyTransfersAway = (zevUnitRecords: ZevUnitRecord[]) => {
   const result = [];
   type ZevUnitsMap = Partial<
@@ -154,10 +158,12 @@ export const applyTransfersAway = (zevUnitRecords: ZevUnitRecord[]) => {
   return result;
 };
 
+// section 12(2)(a)
 export const offsetSpecialDebits = (zevUnitRecords: ZevUnitRecord[]) => {
   return offsetCertainDebitsBySameZevClass(zevUnitRecords, specialZevClasses);
 };
 
+// section 12(2)(b)
 export const offsetUnspecifiedDebits = (
   zevUnitRecords: ZevUnitRecord[],
   zevClassesOrdered: ZevClass[],
@@ -225,6 +231,7 @@ export const offsetUnspecifiedDebits = (
   return result;
 };
 
+// section 12(2)(c)(i)
 export const offsetOtherDebitsWithUnspecifiedCredits = (
   zevUnitRecords: ZevUnitRecord[],
 ) => {
@@ -273,6 +280,7 @@ export const offsetOtherDebitsWithUnspecifiedCredits = (
   return result;
 };
 
+// section 12(2)(c)(ii)
 export const offsetOtherDebitsWithMatchingCredits = (
   zevUnitRecords: ZevUnitRecord[],
 ) => {

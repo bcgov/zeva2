@@ -23,6 +23,9 @@ type ZevUnitEndingBalanceSparse = Partial<
   Omit<ZevUnitEndingBalance, keyof ZevUnitRecordBase>
 >;
 
+// both ZevUnitTransactions and ZevUnitEndingBalances can be of type ZevUnitRecord;
+// a ZevUnitEndingBalance will need to be modified slightly
+// (its finalNumberOfUnits value will need to be copied over to a numberOfUnits field)
 export interface ZevUnitRecord
   extends ZevUnitTransactionSparse,
     ZevUnitEndingBalanceSparse,
