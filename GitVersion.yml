@@ -5,3 +5,5 @@ branches:
     regex: ^fake-dev$
   release:
     regex: ^fake-releases?[/-](?<BranchName>.+)
+  main:
+    regex: ^fake-main$

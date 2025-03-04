@@ -5,6 +5,7 @@ on:
     branches:
       - fake-dev
       - fake-release/*
+      - fake-main
   workflow_dispatch:
 
 jobs:
