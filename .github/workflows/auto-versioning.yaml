@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - fake-dev
+      - fake-releases/*
   workflow_dispatch:
 
 jobs:
