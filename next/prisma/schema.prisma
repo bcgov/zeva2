@@ -103,13 +103,15 @@ model ZevUnitTransaction {
   organization   Organization    @relation(fields: [organizationId], references: [id])
   organizationId Int             @map("organization_id")
   type           TransactionType
-  referenceType  ReferenceType   @map("reference_type")
-  referenceId    Int             @map("reference_id")
+  // referenceType and referenceId nullable for now; make non-nullable later when
+  // associated models (e.g. agreements, transfers, etc.) created
+  referenceType  ReferenceType?  @map("reference_type")
+  referenceId    Int?            @map("reference_id")
   numberOfUnits  Decimal         @map("number_of_units") @db.Decimal(65, 2)
   zevClass       ZevClass        @map("zev_class")
   vehicleClass   VehicleClass    @map("vehicle_class")
   modelYear      ModelYear       @map("model_year")
-  timestamp      DateTime        @db.Timestamptz(3)
+  timestamp      DateTime        @db.Timestamptz(6)
 
   @@map("zev_unit_transaction")
 }
