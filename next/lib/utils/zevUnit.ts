@@ -16,11 +16,17 @@ import {
 } from "@/constants/zevUnit";
 import { ZevUnitRecord, ZevUnitRecordsObj } from "@/types/zevUnit";
 
-// to be used when generating a MYR/Supplementary/Assessment/Reassessment;
-// inputed zevUnitRecords should consist of the most recent ending balance records + transactions + (obligation reductions)/adjustments,
-// of which the latter two are associated with a specific compliance year,
-// and zevClassesOrdered should be a total ordering of zevClasses derived from relevant legislation/regulations
-// and a supplier's recorded preference
+// custom errors:
+export class UnexpectedDebit extends Error {}
+export class UncoveredTransfer extends Error {}
+export class IncompleteOrdering extends Error {}
+
+// to be used when generating a supplier's MYR/Supplementary/Assessment/Reassessment;
+// inputed zevUnitRecords should consist of:
+// (1) the supplier's ending balance records with compliance year N (if any exist), and
+// (2) the supplier's transactions with a timestamp associated with year N+1, and
+// (3) the supplier's obligation reductions/adjustments associated with year N+1;
+// also, zevClassesOrdered should be a total ordering of zevClasses derived from the supplier's recorded preference
 export const calculateBalance = (
   zevUnitRecords: ZevUnitRecord[],
   zevClassesOrdered: ZevClass[],
@@ -40,14 +46,14 @@ export const calculateBalance = (
 // for use when not generating a MYR/Supplementary/Assessment/Reassessment
 // if there exists a debit amongst transactions, this is an error (it implies we got the wrong balance)
 // else if there exists debit amongst endingBalances, return "deficit"
-// else, collect ending balances and transactions into a list of ZevUnitRecords, and apply transfers away
+// else, collect ending balances and transactions into a list of ZevUnitRecords, apply transfers away, and return the result
 export const getBalance = (
   endingBalances: ZevUnitEndingBalance[],
   transactions: ZevUnitTransaction[],
 ) => {
   for (const transaction of transactions) {
     if (transaction.type === TransactionType.DEBIT) {
-      throw new Error("debit amongst transactions");
+      throw new UnexpectedDebit();
     }
   }
   for (const balance of endingBalances) {
@@ -56,7 +62,8 @@ export const getBalance = (
     }
   }
   const zevUnitRecords = getZevUnitRecords(endingBalances).concat(transactions);
-  return getSummedZevUnitRecordsObj(applyTransfersAway(zevUnitRecords));
+  const recordsAfterTransfersAway = applyTransfersAway(zevUnitRecords);
+  return getSummedZevUnitRecordsObj(recordsAfterTransfersAway);
 };
 
 export const getZevUnitRecords = (
@@ -106,6 +113,8 @@ export const getSummedZevUnitRecordsObj = (
 // e.g. if a supplier has 1 (REPORTABLE, A, 2020) credit and 1 (REPORTABLE, A, 2021) credit,
 // and they transfer away the latter, their final balance is 1 (REPORTABLE, A, 2020) credit,
 // not 1 (REPORTABLE, A, 2021) credit as it would be had we applied section 12(3)
+// throws an UncoveredTransfer error if there exists a transfer away in zevUnitRecords not
+// coverable by credits in zevUnitRecords
 export const applyTransfersAway = (zevUnitRecords: ZevUnitRecord[]) => {
   const result = [];
   type ZevUnitsMap = Partial<
@@ -155,6 +164,12 @@ export const applyTransfersAway = (zevUnitRecords: ZevUnitRecord[]) => {
       }
     }
   }
+
+  for (const record of result) {
+    if (record.type === TransactionType.TRANSFER_AWAY) {
+      throw new UncoveredTransfer();
+    }
+  }
   return result;
 };
 
@@ -173,9 +188,7 @@ export const offsetUnspecifiedDebits = (
     zevClassesSet.has(zevClass),
   );
   if (!isTotallyOrdered) {
-    throw new Error(
-      "zevClassesOrdered must be a totally ordered list of zevClasses!",
-    );
+    throw new IncompleteOrdering();
   }
   const result = [];
   type ZevUnitsMap = Partial<
