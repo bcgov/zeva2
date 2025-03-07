@@ -1,5 +1,5 @@
 import { keycloakSignIn } from "@/app/lib/actions/keycloak";
-import { Button } from "@/app/lib/components/Button";
+import { Button } from "@/app/lib/components/inputs";
 
 export default function Home() {
   const bceidSignin = keycloakSignIn.bind(null, "bceidbusiness");
