@@ -22,6 +22,8 @@ const main = () => {
     const mapOfRoleIdsToRoleEnum: { [id: number]: Role | undefined } = {};
     const mapOfOldOrgIdsToNewOrgIds: { [id: number]: number } = {};
     const mapOfOldUserIdsToNewUserIds: { [id: number]: number } = {};
+    const mapOfOldUsernamesToNewUserIds: { [username: string]: number } = {};
+    const mapOfOldCreditTransferIdsToNewZevUnitTransferIds: { [id: number]: number } = {};
 
     const modelYearsOld = await prismaOld.model_year.findMany();
     for (const modelYearOld of modelYearsOld) {
@@ -73,6 +75,7 @@ const main = () => {
         },
       });
       mapOfOldUserIdsToNewUserIds[userOld.id] = userNew.id;
+      mapOfOldUsernamesToNewUserIds[userOld.username] = userNew.id;
     }
 
     // update each user with their roles:
@@ -230,6 +233,79 @@ const main = () => {
         }
       }
     }
+
+    // add ZEV Unit Transfer (formerly Credit Transfer in old DB) records
+    const creditTransfersOld = await prismaOld.credit_transfer.findMany();
+    for (const creditTransferOld of creditTransfersOld) {
+      const zevUnitTransfer = await tx.zevUnitTransfer.create({
+        data: {
+          transferToId: creditTransferOld.credit_to_id,
+          transferFromId: creditTransferOld.debit_from_id,
+          status: creditTransferOld.status as any,
+        },
+      });
+      mapOfOldCreditTransferIdsToNewZevUnitTransferIds[creditTransferOld.id] = zevUnitTransfer.id;
+    }
+
+    // add ZEV Unit Transfer Content (formerly Credit Transfer Content in old DB) records
+    const creditTransferContentsOld = await prismaOld.credit_transfer_content.findMany();
+    for (const creditTransferContentOld of creditTransferContentsOld) {
+      const zevClass = mapOfOldCreditClassIdsToZevClasses[creditTransferContentOld.credit_class_id];
+      if (!zevClass) {
+        throw new Error("Unknown credit class in credit_transfer_content. Old record id: " + creditTransferContentOld.id);
+      }
+      const modelYear = mapOfModelYearIdsToModelYearEnum[creditTransferContentOld.model_year_id];
+      if (!modelYear) {
+        throw new Error("Unknown model year in credit_transfer_content. Old record id: " + creditTransferContentOld.id);
+      }
+
+      await tx.zevUnitTransferContent.create({
+        data: {
+          zevUnitTransferId: mapOfOldCreditTransferIdsToNewZevUnitTransferIds[creditTransferContentOld.credit_transfer_id],
+          zevUnitValue: creditTransferContentOld.credit_value,
+          dollarValue: creditTransferContentOld.dollar_value,
+          zevClass,
+          modelYear,
+          vehicleClass: VehicleClass.REPORTABLE,
+        },
+      });
+    }
+
+    // add ZEV Unit Transfer History (formerly Credit Transfer History in old DB) records
+    // Credit Transfer Comments are merged into ZEV Unit Transfer History.
+    // The old DB structure allows multiple comments per credit transfer history record,
+    // but the workflow and UI only allows one comment per credit transfer history record.
+    // Therefore, the new DB combines the comment table and the history table together and allows
+    // only one comment per history record.
+    // If multiple comments are attached to one credit transfer history record in the old DB,
+    // multiple history records will be created in the new DB.
+    const creditTransferHistoriesOld = await prismaOld.credit_transfer_history.findMany({
+      include: {
+        credit_transfer_comment: true,
+      },
+    });
+    for (const creditTransferHistoryOld of creditTransferHistoriesOld) {
+      const updateUsername = creditTransferHistoryOld.update_user;
+      const updateUserId = updateUsername === null ? undefined : mapOfOldUsernamesToNewUserIds[updateUsername];
+
+      const commentCount = creditTransferHistoryOld.credit_transfer_comment.length;
+      const withComment = commentCount > 0;
+
+      for (let commentIndex = withComment ? 0 : -1; commentIndex < commentCount; commentIndex++) {
+        await tx.zevUnitTransferHistory.create({
+          data: {
+            zevUnitTransferId: mapOfOldCreditTransferIdsToNewZevUnitTransferIds[creditTransferHistoryOld.transfer_id],
+            status: creditTransferHistoryOld.status as any,
+            comment: withComment ?
+              creditTransferHistoryOld.credit_transfer_comment[commentIndex].credit_transfer_comment :
+              undefined,
+            updateUserId,
+            updateTimestamp: creditTransferHistoryOld.update_timestamp,
+          },
+        });
+      }
+    }
+
   });
 };
 

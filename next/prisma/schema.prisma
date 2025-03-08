@@ -38,6 +38,8 @@ model Organization {
   users                 User[]
   zevUnitTransactions   ZevUnitTransaction[]
   zevUnitEndingBalances ZevUnitEndingBalance[]
+  zevUnitTransferTo     ZevUnitTransfer[]      @relation("zevUnitTransferTo")
+  zevUnitTransferFrom   ZevUnitTransfer[]      @relation("zevUnitTransferFrom")
 
   @@map("organization")
 }
@@ -57,16 +59,17 @@ enum Idp {
 }
 
 model User {
-  id             Int          @id @default(autoincrement())
-  contactEmail   String?      @map("contact_email")
-  idpEmail       String       @map("idp_email")
-  idpSub         String?      @map("idp_sub")
-  idp            Idp          @map("idp")
-  idpUsername    String       @map("idp_username")
-  isActive       Boolean      @default(true) @map("is_active")
-  organization   Organization @relation(fields: [organizationId], references: [id])
-  organizationId Int          @map("organization_id")
-  roles          Role[]
+  id                     Int                      @id @default(autoincrement())
+  contactEmail           String?                  @map("contact_email")
+  idpEmail               String                   @map("idp_email")
+  idpSub                 String?                  @map("idp_sub")
+  idp                    Idp                      @map("idp")
+  idpUsername            String                   @map("idp_username")
+  isActive               Boolean                  @default(true) @map("is_active")
+  organization           Organization             @relation(fields: [organizationId], references: [id])
+  organizationId         Int                      @map("organization_id")
+  roles                  Role[]
+  zevUnitTransferHistory ZevUnitTransferHistory[]
 
   @@unique([idp, idpUsername, idpEmail])
   @@map("user")
@@ -135,4 +138,57 @@ model ZevUnitEndingBalance {
 
   @@unique([organizationId, complianceYear, zevClass, vehicleClass, modelYear])
   @@map("zev_unit_ending_balance")
+}
+
+enum ZevUnitTransferStatuses {
+  DRAFT
+  SUBMITTED
+  APPROVED
+  DISAPPROVED
+  RECOMMEND_APPROVAL
+  RECOMMEND_REJECTION
+  VALIDATED
+  RESCIND_PRE_APPROVAL
+  RESCINDED
+  REJECTED
+  DELETED
+}
+
+model ZevUnitTransfer {
+  id                     Int                      @id @default(autoincrement())
+  transferToId           Int                      @map("transfer_to_id")
+  transferTo             Organization             @relation("zevUnitTransferTo", fields: [transferToId], references: [id])
+  transferFromId         Int                      @map("transfer_from_id")
+  transferFrom           Organization             @relation("zevUnitTransferFrom", fields: [transferFromId], references: [id])
+  status                 ZevUnitTransferStatuses
+  zevUnitTransferContent ZevUnitTransferContent[]
+  ZevUnitTransferHistory ZevUnitTransferHistory[]
+
+  @@map("zev_unit_transfer")
+}
+
+model ZevUnitTransferContent {
+  id                Int             @id @default(autoincrement())
+  zevUnitTransferId Int             @map("zev_unit_transfer_id")
+  zevUnitTransfer   ZevUnitTransfer @relation(fields: [zevUnitTransferId], references: [id])
+  zevUnitValue      Decimal         @map("zev_unit_value") @db.Decimal(65, 2)
+  dollarValue       Decimal         @map("dollar_value") @db.Decimal(20, 2)
+  zevClass          ZevClass        @map("zev_class")
+  vehicleClass      VehicleClass    @map("vehicle_class")
+  modelYear         ModelYear       @map("model_year")
+
+  @@map("zev_unit_transfer_content")
+}
+
+model ZevUnitTransferHistory {
+  id                Int                     @id @default(autoincrement())
+  zevUnitTransferId Int                     @map("zev_unit_transfer_id")
+  zevUnitTransfer   ZevUnitTransfer         @relation(fields: [zevUnitTransferId], references: [id])
+  updateUserId      Int?                    @map("update_user_id")
+  updateUser        User?                   @relation(fields: [updateUserId], references: [id])
+  updateTimestamp   DateTime?               @map("update_timestamp") @db.Timestamptz(6)
+  status            ZevUnitTransferStatuses
+  comment           String?
+
+  @@map("zev_unit_transfer_history")
 }
