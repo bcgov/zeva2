@@ -15,7 +15,6 @@ if (bullmqConfig.startWorkers) {
         worker.on("completed", completedHandler);
       }
       // can also listen to "progress" and "failed" events
-      console.log("worker " + i + " for queue '" + queueName + "' started!");
     }
   }
 }

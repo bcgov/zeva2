@@ -38,6 +38,9 @@ Please note:
 
 (5) During development, database queries are logged; please keep an eye on them as you develop to ensure your code is not generating an excessive number of queries, or returning data you don't need.
 
+(6) In production, there may be multiple instances of the `next` service and the `bullmq` service; if that's the case, we will have to manually
+set the Prisma connection pool size (probably using an environment variable; also, please see: https://www.prisma.io/docs/orm/prisma-client/setup-and-configuration/databases-connections#recommended-connection-pool-size)
+
 ## TypeScript
 
 We're using TypeScript!
@@ -64,15 +67,22 @@ Docs: https://prettier.io/docs/
 
 ## Queue System
 
-Coming soon - perhaps BullMQ? (https://docs.bullmq.io/)
+We're using BullMQ; this requires using Redis as a message broker.
+
+Docs: https://docs.bullmq.io/ and https://redis.io/docs/latest/
+
+You can use a Redis GUI such as Redis Insight (https://redis.io/insight/) to inspect the messages BullMQ generates.
+
+Within our project, the `next` service acts as a producer of jobs, and the `bullmq` service
+acts as the consumer that works on the jobs.
 
 ## DevOps
 
-Suggested Dockerfile build steps, which assumes a base node image; in development, we're currently using node 22.13.1:
+Suggested Dockerfile build steps for the `next` service, which assumes a base node image; in development, we're currently using node 22.13.1
 
 (1) Copy over the contents of zeva2/next
 
-(2) Install dependencies (`npm install`); should only need non-dev dependencies.
+(2) Install all dependencies (`npm install`); will need dev dependencies as well.
 
 (3) Execute `npm run generatePrismaSchema`.
 
@@ -82,6 +92,16 @@ Suggested Dockerfile build steps, which assumes a base node image; in developmen
 
 (6) Set `npm run start` as the startup command (using, for example, CMD).
 
+Suggested Dockerfile build steps for the `bullmq` service, which assumes a base node image; in development, we're currently using node 22.13.1:
+
+(1) Copy over the contents of zeva2/next
+
+(2) Install all dependencies (`npm install`); will need dev dependencies as well.
+
+(3) Execute `npm run generatePrismaSchema`.
+
+(4) Set `npm run bullmq` as the startup command (using, for example, CMD).
+
 Deployment notes:
 
 (1) Once the database container is running, we will need to execute, in an equivalent environment
@@ -89,7 +109,7 @@ outlined in the build steps above (one with the dependencies installed): `npm ru
 This command creates/updates database tables; this command will be replaced with a command
 that applies database migrations once the schema is more fully built out.
 
-(2) Environment variables: please see the `environment` section under the `next` service of the
+(2) Environment variables: please see the `environment` section under the `next` and `bullmq` services of the
 `docker-compose` file. Please note that the `DATABASE_URL` and `DATABASE_URL_OLD` connection strings
 have the format: `postgresql://{db_username}:{db_password}@{db_hostname_or_ip_address}:{db_port}/{db_name}?schema={db_schema_name}`
 In order for the `next` app to connect to the old zeva database, a network policy will probably have to be created;

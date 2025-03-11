@@ -8,6 +8,7 @@
     "pushSchemaToDB": "prisma format && prisma db push --schema prisma/schema.prisma --accept-data-loss",
     "seedFromOldDB": "prisma db push --schema prisma/schema.prisma --force-reset && prisma db pull --schema prisma/schemaOld.prisma && prisma generate --schema prisma/schemaOld.prisma && prisma db seed",
     "bullmqDev": "prisma generate && tsx watch bullmq/index.ts",
+    "bullmq": "prisma generate && tsx bullmq/index.ts",
     "build": "next build",
     "start": "next start",
     "lint": "next lint"
