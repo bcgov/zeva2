@@ -16,7 +16,7 @@ export interface INavbarOption {
 }
 
 export interface INavbarProps {
-  user: User | "";
+  user: User;
 }
 
 /** Client Component used for navigation */

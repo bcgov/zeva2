@@ -7,6 +7,7 @@
     "generatePrismaSchema": "prisma generate",
     "pushSchemaToDB": "prisma format && prisma db push --schema prisma/schema.prisma --accept-data-loss",
     "seedFromOldDB": "prisma db push --schema prisma/schema.prisma --force-reset && prisma db pull --schema prisma/schemaOld.prisma && prisma generate --schema prisma/schemaOld.prisma && prisma db seed",
+    "bullmqDev": "prisma generate && tsx watch bullmq/index.ts",
     "build": "next build",
     "start": "next start",
     "lint": "next lint"
@@ -16,6 +17,7 @@
   },
   "dependencies": {
     "@prisma/client": "6.3.0",
+    "bullmq": "5.41.8",
     "next": "15.1.7",
     "next-auth": "^5.0.0-beta.25",
     "prisma": "6.3.0",

@@ -14,6 +14,18 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
+  redis:
+    image: redis:7.4-bookworm
+    command: redis-server /usr/local/etc/redis/redis.conf
+    ports:
+      - 6379:6379
+    volumes:
+      - ./next/redis/conf:/usr/local/etc/redis
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
   next:
     build: ./next
     command: npm run dev
@@ -29,6 +41,24 @@ services:
       - DATABASE_URL=postgresql://postgres:postgres@db:5432/zeva?schema=public
       - DATABASE_URL_OLD=postgresql://postgres:postgres@host.docker.internal:5432/zeva?schema=public
       - CHECKPOINT_DISABLE=1
+      - START_WORKERS=false
     depends_on:
       db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+  bullmq:
+    build: ./next
+    command: npm run bullmqDev
+    volumes:
+      - ./next:/next
+      - /next/node_modules
+    environment:
+      - DATABASE_URL=postgresql://postgres:postgres@db:5432/zeva?schema=public
+      - CHECKPOINT_DISABLE=1
+      - START_WORKERS=true
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
         condition: service_healthy
