@@ -4,7 +4,7 @@ import { emailQueueName } from "@/constants/queue";
 import { BaseJobOptions } from "bullmq";
 
 // re-use queues, and therefore connections; otherwise, there may be too many connections to redis...
-const queues: {[key: string]: Queue} = {}
+const queues: { [key: string]: Queue } = {};
 
 const getEmailQueue = () => {
   if (!queues[emailQueueName]) {
@@ -13,7 +13,7 @@ const getEmailQueue = () => {
       defaultJobOptions: bullmqConfig.queueDefaultJobOptions,
     });
   }
-  return queues[emailQueueName]
+  return queues[emailQueueName];
 };
 
 export const addJobToEmailQueue = async (
