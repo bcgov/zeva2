@@ -1,0 +1,25 @@
+1. Ask platform team to create the namespaces on Openshift
+https://registry.developer.gov.bc.ca
+
+2. Grant access to developers for all Openshift namespaces
+create rolebindings for all developers as edit
+create rolebinding for devops specialist
+
+3. create github-cicd service account in tools namespace
+
+4. create ArgoCD access
+https://developer.gov.bc.ca/docs/default/component/platform-developer-docs/docs/automation-and-resiliency/argo-cd-usage/
+generate gitopsteam.yaml file
+oc -n plate-tools apply -f ./gitopsteam.yaml
+
+5. verify the argocd access
+https://argocd-shared.apps.silver.devops.gov.bc.ca/
+
+6. verify the CD repo created
+https://github.com/bcgov-c/tenant-gitops-<licenseplate>
+
+7. create code repo secretes
+MANIFEST_REPO_DEPLOY_KEY
+OPENSHIFT_NAMESPACE_PLATE
+OPENSHIFT_SERVER
+OPENSHIFT_TOKEN
