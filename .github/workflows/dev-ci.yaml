@@ -5,7 +5,8 @@ on:
     branches:
       - develop
       - feature/pipeline-setup
-
+  workflow_dispatch:
+    
 env:
   TOOLS_NAMESPACE: ${{ secrets.OPENSHIFT_NAMESPACE_PLATE }}-tools
   DEV_NAMESPACE: ${{ secrets.OPENSHIFT_NAMESPACE_PLATE }}-dev
