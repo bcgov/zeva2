@@ -1,12 +1,15 @@
 import { emailQueueName } from "@/constants/queue";
 import { handleEmailJob, handleEmailJobCompleted } from "./handlers";
 
+const connection = {
+  host: process.env.REDIS_HOST ?? "redis",
+  port: parseInt(process.env.REDIS_PORT ?? "6379"),
+};
+
 export const bullmqConfig = {
   startWorkers: process.env.START_WORKERS === "true",
-  connection: {
-    host: process.env.REDIS_HOST ?? "redis",
-    port: parseInt(process.env.REDIS_PORT ?? "6379"),
-  },
+  connection: connection,
+  queueConnection: { ...connection, enableOfflineQueue: false },
   workerSpecs: [
     {
       queueName: emailQueueName,

@@ -9,7 +9,7 @@ const queues: { [key: string]: Queue } = {};
 const getEmailQueue = () => {
   if (!queues[emailQueueName]) {
     queues[emailQueueName] = new Queue(emailQueueName, {
-      connection: bullmqConfig.connection,
+      connection: bullmqConfig.queueConnection,
       defaultJobOptions: bullmqConfig.queueDefaultJobOptions,
     });
   }
