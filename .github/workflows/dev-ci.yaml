@@ -4,7 +4,7 @@ on:
   push:
     branches:
       - develop
-      - pipeline-setup
+      - feature/pipeline-setup
 
 env:
   TOOLS_NAMESPACE: ${{ secrets.OPENSHIFT_NAMESPACE_PLATE }}-tools
