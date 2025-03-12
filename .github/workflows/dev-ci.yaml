@@ -3,7 +3,8 @@ name: Zeva2 Dev CI
 on:
   push:
     branches:
-      - develop 
+      - develop
+      - pipeline-setup
 
 env:
   TOOLS_NAMESPACE: ${{ secrets.OPENSHIFT_NAMESPACE_PLATE }}-tools
