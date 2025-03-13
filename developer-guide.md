@@ -84,7 +84,7 @@ Suggested Dockerfile build steps for the `next` service, which assumes a base no
 
 (2) Install all dependencies (`npm install`); will need dev dependencies as well.
 
-(3) Execute `npm run generatePrismaSchema`.
+(3) Execute `npx prisma generate`.
 
 (4) Execute `npm run build`.
 
@@ -98,7 +98,7 @@ Suggested Dockerfile build steps for the `bullmq` service, which assumes a base 
 
 (2) Install all dependencies (`npm install`); will need dev dependencies as well.
 
-(3) Execute `npm run generatePrismaSchema`.
+(3) Execute `npx prisma generate`.
 
 (4) Set `npm run bullmq` as the startup command (using, for example, CMD).
 

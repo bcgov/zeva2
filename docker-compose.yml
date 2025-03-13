@@ -47,6 +47,12 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+    healthcheck:
+      test: "curl --fail --max-time 5 http://localhost:3000/api/health"
+      start_period: 15s
+      interval: 15s
+      timeout: 10s
+      retries: 3
   bullmq:
     build: ./next
     command: npm run bullmqDev
@@ -58,7 +64,5 @@ services:
       - CHECKPOINT_DISABLE=1
       - START_WORKERS=true
     depends_on:
-      db:
-        condition: service_healthy
-      redis:
+      next:
         condition: service_healthy
