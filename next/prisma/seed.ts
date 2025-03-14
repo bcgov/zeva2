@@ -36,14 +36,14 @@ const main = () => {
       [key: string]: ZevUnitTransferStatuses | undefined;
     } = {
       DRAFT: ZevUnitTransferStatuses.DRAFT,
-      SUBMITTED: ZevUnitTransferStatuses.SUBMITTED_TO_SUPPLIER,
-      APPROVED: ZevUnitTransferStatuses.APPROVED_BY_SUPPLIER,
-      DISAPPROVED: ZevUnitTransferStatuses.REJECTED_BY_SUPPLIER,
-      RECOMMEND_APPROVAL: ZevUnitTransferStatuses.RECOMMEND_APPROVAL,
-      RECOMMEND_REJECTION: ZevUnitTransferStatuses.RECOMMEND_REJECTION,
+      SUBMITTED: ZevUnitTransferStatuses.SUBMITTED_TO_TRANSFER_TO,
+      APPROVED: ZevUnitTransferStatuses.APPROVED_BY_TRANSFER_TO,
+      DISAPPROVED: ZevUnitTransferStatuses.REJECTED_BY_TRANSFER_TO,
+      RECOMMEND_APPROVAL: ZevUnitTransferStatuses.RECOMMEND_APPROVAL_GOV,
+      RECOMMEND_REJECTION: ZevUnitTransferStatuses.RECOMMEND_REJECTION_GOV,
       VALIDATED: ZevUnitTransferStatuses.APPROVED_BY_GOV,
-      RESCIND_PRE_APPROVAL: ZevUnitTransferStatuses.RESCINDED,
-      RESCINDED: ZevUnitTransferStatuses.RESCINDED,
+      RESCIND_PRE_APPROVAL: ZevUnitTransferStatuses.RESCINDED_BY_TRANSFER_FROM,
+      RESCINDED: ZevUnitTransferStatuses.RESCINDED_BY_TRANSFER_FROM,
       REJECTED: ZevUnitTransferStatuses.REJECTED_BY_GOV,
       DELETED: ZevUnitTransferStatuses.DELETED,
     };
@@ -377,7 +377,7 @@ const main = () => {
         data: {
           zevUnitTransferId: newCreditTransferId,
           numberOfUnits: creditTransferContentOld.credit_value,
-          dollarValue: creditTransferContentOld.dollar_value,
+          dollarValuePerUnit: creditTransferContentOld.dollar_value,
           zevClass,
           modelYear,
           vehicleClass: VehicleClass.REPORTABLE,
@@ -546,10 +546,10 @@ const main = () => {
           createTimestamp: createTimestamp,
           updateTimestamp: updateTimestamp,
           comment: comment,
-          // make all zeva1 credit transfer comments internal for now; confirm later what the desired behaviour is
+          // looks like all supplier comments are to counterparty upon rescind, and all government comments are internal
           commentType: newCreateUser.organization.isGovernment
             ? ZevUnitTransferCommentType.INTERNAL_GOV
-            : ZevUnitTransferCommentType.INTERNAL_SUPPLIER,
+            : ZevUnitTransferCommentType.TO_COUNTERPARTY,
         },
       });
     }

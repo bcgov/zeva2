@@ -143,12 +143,12 @@ model ZevUnitEndingBalance {
 
 enum ZevUnitTransferStatuses {
   DRAFT
-  SUBMITTED_TO_SUPPLIER
-  RESCINDED
-  APPROVED_BY_SUPPLIER
-  REJECTED_BY_SUPPLIER
-  RECOMMEND_APPROVAL
-  RECOMMEND_REJECTION
+  SUBMITTED_TO_TRANSFER_TO
+  RESCINDED_BY_TRANSFER_FROM
+  APPROVED_BY_TRANSFER_TO
+  REJECTED_BY_TRANSFER_TO
+  RECOMMEND_APPROVAL_GOV
+  RECOMMEND_REJECTION_GOV
   APPROVED_BY_GOV
   REJECTED_BY_GOV
   DELETED
@@ -171,14 +171,14 @@ model ZevUnitTransfer {
 }
 
 model ZevUnitTransferContent {
-  id                Int             @id @default(autoincrement())
-  zevUnitTransferId Int             @map("zev_unit_transfer_id")
-  zevUnitTransfer   ZevUnitTransfer @relation(fields: [zevUnitTransferId], references: [id])
-  numberOfUnits     Decimal         @map("number_of_units") @db.Decimal(65, 2)
-  zevClass          ZevClass        @map("zev_class")
-  vehicleClass      VehicleClass    @map("vehicle_class")
-  modelYear         ModelYear       @map("model_year")
-  dollarValue       Decimal         @map("dollar_value") @db.Decimal(65, 2)
+  id                 Int             @id @default(autoincrement())
+  zevUnitTransferId  Int             @map("zev_unit_transfer_id")
+  zevUnitTransfer    ZevUnitTransfer @relation(fields: [zevUnitTransferId], references: [id])
+  numberOfUnits      Decimal         @map("number_of_units") @db.Decimal(65, 2)
+  zevClass           ZevClass        @map("zev_class")
+  vehicleClass       VehicleClass    @map("vehicle_class")
+  modelYear          ModelYear       @map("model_year")
+  dollarValuePerUnit Decimal         @map("dollar_value_per_unit") @db.Decimal(65, 2)
 
   @@map("zev_unit_transfer_content")
 }
