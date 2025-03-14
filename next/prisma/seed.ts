@@ -9,6 +9,8 @@ import {
   VehicleClass,
   BalanceType,
   ZevUnitTransferStatuses,
+  ZevUnitTransferCommentType,
+  ZevUnitTransferHistory,
 } from "./generated/client";
 import { getModelYearEnum, getRoleEnum } from "@/lib/utils/getEnums";
 import { Decimal } from "./generated/client/runtime/library";
@@ -383,12 +385,12 @@ const main = () => {
       });
     }
 
+    // add ZevUnitTransferHistories (previously called credit transfer histories)
+    const mapOfTransferIdsToHistories: {
+      [id: number]: Omit<ZevUnitTransferHistory, "id">[];
+    } = {};
     const creditTransferHistoriesOld =
-      await prismaOld.credit_transfer_history.findMany({
-        orderBy: {
-          create_timestamp: "desc",
-        },
-      });
+      await prismaOld.credit_transfer_history.findMany();
     for (const creditTransferHistoryOld of creditTransferHistoriesOld) {
       const newTransferId =
         mapOfOldCreditTransferIdsToNewZevUnitTransferIds[
@@ -429,34 +431,45 @@ const main = () => {
             " with no create_timestamp!",
         );
       }
-      const newTransferHistory = await tx.zevUnitTransferHistory.findFirst({
-        where: {
-          afterUserActionStatus: newStatus,
-          zevUnitTransferId: newTransferId,
-        },
-      });
-      if (!newTransferHistory) {
-        await tx.zevUnitTransferHistory.create({
-          data: {
-            zevUnitTransferId: newTransferId,
-            afterUserActionStatus: newStatus,
-            userId: newCreateUserId,
-            timestamp: timestamp,
-          },
-        });
-      } else {
-        await tx.zevUnitTransferHistory.update({
-          where: {
-            id: newTransferHistory.id,
-          },
-          data: {
-            userId: newCreateUserId,
-            timestamp: timestamp,
-          },
-        });
+      const newTransferHistoryData = {
+        zevUnitTransferId: newTransferId,
+        afterUserActionStatus: newStatus,
+        userId: newCreateUserId,
+        timestamp: timestamp,
+      };
+      if (!mapOfTransferIdsToHistories[newTransferId]) {
+        mapOfTransferIdsToHistories[newTransferId] = [];
       }
+      mapOfTransferIdsToHistories[newTransferId].push(newTransferHistoryData);
+    }
+    for (const histories of Object.values(mapOfTransferIdsToHistories)) {
+      histories.sort((a, b) => {
+        if (a.timestamp < b.timestamp) {
+          return -1;
+        } else if (a.timestamp > b.timestamp) {
+          return 1;
+        }
+        return 0;
+      });
+      const result: Omit<ZevUnitTransferHistory, "id">[] = [];
+      let previousStatus: ZevUnitTransferStatuses | null = null;
+      for (const history of histories) {
+        const status = history.afterUserActionStatus;
+        if (
+          status === ZevUnitTransferStatuses.DRAFT ||
+          status === previousStatus
+        ) {
+          continue;
+        }
+        result.push(history);
+        previousStatus = status;
+      }
+      await tx.zevUnitTransferHistory.createMany({
+        data: result,
+      });
     }
 
+    // add ZevUnitTransferComments (previously called credit transfer comments)
     const creditTransferCommentsOld =
       await prismaOld.credit_transfer_comment.findMany({
         include: {
@@ -474,6 +487,14 @@ const main = () => {
         ];
       const newCreateUserId =
         mapOfOldUsernamesToNewUserIds[transferCommentOld.create_user];
+      const newCreateUser = await tx.user.findUnique({
+        where: {
+          id: newCreateUserId,
+        },
+        include: {
+          organization: true,
+        },
+      });
       const comment = transferCommentOld.credit_transfer_comment;
       const createTimestamp = transferCommentOld.create_timestamp;
       const updateTimestamp = transferCommentOld.update_timestamp;
@@ -489,6 +510,13 @@ const main = () => {
           "transfer comment " +
             transferCommentOld.id +
             " with unknown create user id!",
+        );
+      }
+      if (!newCreateUser) {
+        throw new Error(
+          "transfer comment " +
+            transferCommentOld.id +
+            " with create user id not associated with a user!",
         );
       }
       if (!comment) {
@@ -518,6 +546,10 @@ const main = () => {
           createTimestamp: createTimestamp,
           updateTimestamp: updateTimestamp,
           comment: comment,
+          // make all zeva1 credit transfer comments internal for now; confirm later what the desired behaviour is
+          commentType: newCreateUser.organization.isGovernment
+            ? ZevUnitTransferCommentType.INTERNAL_GOV
+            : ZevUnitTransferCommentType.INTERNAL_SUPPLIER,
         },
       });
     }

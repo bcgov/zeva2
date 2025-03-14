@@ -192,19 +192,28 @@ model ZevUnitTransferHistory {
   timestamp             DateTime                @db.Timestamptz(6)
   afterUserActionStatus ZevUnitTransferStatuses @map("after_user_action_status")
 
-  @@unique([afterUserActionStatus, zevUnitTransferId])
   @@map("zev_unit_transfer_history")
 }
 
+enum ZevUnitTransferCommentType {
+  INTERNAL_SUPPLIER
+  TO_COUNTERPARTY
+  TO_GOV
+  INTERNAL_GOV
+  TO_TRANSFER_FROM_SUPPLIER
+  TO_TRANSFER_TO_SUPPLIER
+}
+
 model ZevUnitTransferComment {
-  id                Int             @id @default(autoincrement())
-  zevUnitTransferId Int             @map("zev_unit_transfer_id")
-  zevUnitTransfer   ZevUnitTransfer @relation(fields: [zevUnitTransferId], references: [id])
-  userId            Int             @map("user_id")
-  user              User            @relation(fields: [userId], references: [id])
-  createTimestamp   DateTime        @default(now()) @map("create_timestamp") @db.Timestamptz(6)
-  updateTimestamp   DateTime        @updatedAt @map("update_timestamp") @db.Timestamptz(6)
+  id                Int                        @id @default(autoincrement())
+  zevUnitTransferId Int                        @map("zev_unit_transfer_id")
+  zevUnitTransfer   ZevUnitTransfer            @relation(fields: [zevUnitTransferId], references: [id])
+  userId            Int                        @map("user_id")
+  user              User                       @relation(fields: [userId], references: [id])
+  createTimestamp   DateTime                   @default(now()) @map("create_timestamp") @db.Timestamptz(6)
+  updateTimestamp   DateTime                   @updatedAt @map("update_timestamp") @db.Timestamptz(6)
   comment           String
+  commentType       ZevUnitTransferCommentType @map("comment_type")
 
   @@map("zev_unit_transfer_comment")
 }
