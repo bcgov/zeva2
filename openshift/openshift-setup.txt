@@ -23,3 +23,31 @@ MANIFEST_REPO_DEPLOY_KEY
 OPENSHIFT_NAMESPACE_PLATE
 OPENSHIFT_SERVER
 OPENSHIFT_TOKEN
+
+7.1 create github-cicd service account in tools project
+
+7.2 create the token secret bounded with the service account
+
+file: cicd-token.yaml
+
+apiVersion: v1
+kind: Secret
+metadata:
+  name: github-cicd-token
+  namespace: licenseplate-tools
+  annotations:
+    kubernetes.io/service-account.name: github-cicd
+type: kubernetes.io/service-account-token
+
+command:
+
+oc -n licenseplate-tools apply -f ./cicd-token.yaml
+
+8. create rolebinding to bind the github-cicd service account in tools to edit cluster role in tools, dev,test and prod namspaces.
+
+9. Creat allow-all-internal network policy on dev
+
+10. Deploy Redis by using helm
+
+11. Deploy Crunchy by using ArgoCD
+
