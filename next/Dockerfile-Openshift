@@ -1,5 +1,7 @@
 FROM artifacts.developer.gov.bc.ca/docker-remote/node:22.13.1
 
+WORKDIR /next
+
 COPY . .
 
 RUN pwd \
