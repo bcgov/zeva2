@@ -68,7 +68,7 @@ jobs:
         id: export-version
         run: |
           echo "VERSION=${{ steps.version-step.outputs.SemVer }}"
-          echo "VERSION=${{ steps.version-step.outputs.SemVer }}" >> $GITHUB_ENV
+          echo "VERSION=${{ steps.version-step.outputs.SemVer }}" >> $GITHUB_OUTPUT
 
   build-next:
     name: Build Zeva Next
