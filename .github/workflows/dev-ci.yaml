@@ -44,6 +44,9 @@ jobs:
   versioning:
     runs-on: ubuntu-latest
 
+    outputs:
+      VERSION: ${{ steps.export-version.outputs.VERSION }}
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -56,14 +59,14 @@ jobs:
           versionSpec: "6.0.x"
 
       - name: Determine Version
-        id: version_step # step id used as reference for output values
+        id: version-step # step id used as reference for output values
         uses: gittools/actions/gitversion/execute@v3.1.11
         with:
           useConfigFile: true
 
       - name: Export Version
-        id: export_version
-        run: echo "VERSION=${{ steps.version_step.outputs.SemVer }}" >> $GITHUB_ENV
+        id: export-version
+        run: echo "VERSION=${{ steps.version-step.outputs.SemVer }}" >> $GITHUB_ENV
 
   build-next:
     name: Build Zeva Next
