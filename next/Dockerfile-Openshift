@@ -4,12 +4,9 @@ WORKDIR /next
 
 COPY . .
 
-RUN pwd \
-    && ls -l 
-    # \
-    # && npm install \
-    # && npx prisma generate \
-    # && npm run build
+RUN npm install \
+    && npx prisma generate \
+    && npm run build
 
 EXPOSE 3000
 
