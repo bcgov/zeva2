@@ -103,5 +103,5 @@ jobs:
           oc projects
           cd openshift/templates
           oc process -f ./next-bc.yaml VERSION=${{ env.VERSION }} GIT_REF=feature/pipeline | oc apply --wait=true -f - -n ${{ env.TOOLS_NAMESPACE }}
-          oc -n ${{ env.TOOLS_NAMESPACE }} start-build next-${{ env.VERSION }} --wait=true
-          # oc tag ${{ env.TOOLS_NAMESPACE }}/zeva-next:${{ env.VERSION }} ${{ env.DEV_NAMESPACE }}/zeva-next:${{ env.VERSION }}
+          oc -n ${{ env.TOOLS_NAMESPACE }} start-build zeva2-next-${{ env.VERSION }} --wait=true
+          # oc tag ${{ env.TOOLS_NAMESPACE }}/zeva2-next:${{ env.VERSION }} ${{ env.DEV_NAMESPACE }}/zeva2-next:${{ env.VERSION }}
