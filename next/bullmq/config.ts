@@ -1,4 +1,4 @@
-import { emailQueueName } from "@/constants/queue";
+import { emailQueueName } from "@/lib/constants/queue";
 import { handleEmailJob, handleEmailJobCompleted } from "./handlers";
 
 const connection = {

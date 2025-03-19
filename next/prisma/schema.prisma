@@ -183,25 +183,33 @@ model ZevUnitTransferContent {
   @@map("zev_unit_transfer_content")
 }
 
-model ZevUnitTransferHistory {
-  id                    Int                     @id @default(autoincrement())
-  zevUnitTransferId     Int                     @map("zev_unit_transfer_id")
-  zevUnitTransfer       ZevUnitTransfer         @relation(fields: [zevUnitTransferId], references: [id])
-  userId                Int                     @map("user_id")
-  user                  User                    @relation(fields: [userId], references: [id])
-  timestamp             DateTime                @db.Timestamptz(6)
-  afterUserActionStatus ZevUnitTransferStatuses @map("after_user_action_status")
+enum ZevUnitTransferHistoryStatuses {
+  SUBMITTED_TO_TRANSFER_TO
+  RESCINDED_BY_TRANSFER_FROM
+  APPROVED_BY_TRANSFER_TO
+  REJECTED_BY_TRANSFER_TO
+  RECOMMEND_APPROVAL_GOV
+  RECOMMEND_REJECTION_GOV
+  APPROVED_BY_GOV
+  REJECTED_BY_GOV
+}
 
+model ZevUnitTransferHistory {
+  id                    Int                            @id @default(autoincrement())
+  zevUnitTransferId     Int                            @map("zev_unit_transfer_id")
+  zevUnitTransfer       ZevUnitTransfer                @relation(fields: [zevUnitTransferId], references: [id])
+  userId                Int                            @map("user_id")
+  user                  User                           @relation(fields: [userId], references: [id])
+  timestamp             DateTime                       @db.Timestamptz(6)
+  afterUserActionStatus ZevUnitTransferHistoryStatuses @map("after_user_action_status")
+
+  @@unique([zevUnitTransferId, afterUserActionStatus])
   @@map("zev_unit_transfer_history")
 }
 
 enum ZevUnitTransferCommentType {
-  INTERNAL_SUPPLIER
-  TO_COUNTERPARTY
-  TO_GOV
+  TO_COUNTERPARTY_UPON_RESCIND
   INTERNAL_GOV
-  TO_TRANSFER_FROM_SUPPLIER
-  TO_TRANSFER_TO_SUPPLIER
 }
 
 model ZevUnitTransferComment {

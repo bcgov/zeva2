@@ -227,67 +227,171 @@ const main = () => {
       }
     }
 
-    // add ending balances;
-    // for now, just look at model_year_report_compliance_obligation and get records that belong to
-    // the ProvisionalBalanceAfterCreditReduction category and is fromGov;
-    // there are cases where this will be the wrong ending balance because we also need to take
-    // into account records that belong in the CreditDeficit category,
-    // and also at records in the supplemental_report_credit_activity table
+    // add ending balances
+    type OldBalance = {
+      idOld: number;
+      orgIdOld: number;
+      balanceType: BalanceType;
+      complianceYearIdOld: number;
+      creditAValue: Decimal | null;
+      creditBValue: Decimal | null;
+      modelYearIdOld: number;
+      fromReassessment: boolean;
+    };
+    const creditCategory = "ProvisionalBalanceAfterCreditReduction";
+    const debitCategory = "CreditDeficit";
     const endingBalancesOld =
       await prismaOld.model_year_report_compliance_obligation.findMany({
         include: {
           model_year_report: true,
         },
       });
+    const reassessmentEndingBalancesOld =
+      await prismaOld.supplemental_report_credit_activity.findMany({
+        include: {
+          supplemental_report: {
+            include: {
+              model_year_report: true,
+            },
+          },
+        },
+      });
+    const balancesOld: OldBalance[] = [];
     for (const balance of endingBalancesOld) {
-      const modelYear = mapOfModelYearIdsToModelYearEnum[balance.model_year_id];
+      const category = balance.category;
+      if (
+        (category === creditCategory || category === debitCategory) &&
+        balance.from_gov
+      ) {
+        balancesOld.push({
+          idOld: balance.id,
+          orgIdOld: balance.model_year_report.organization_id,
+          balanceType:
+            category === creditCategory
+              ? BalanceType.CREDIT
+              : BalanceType.DEBIT,
+          complianceYearIdOld: balance.model_year_report.model_year_id,
+          modelYearIdOld: balance.model_year_id,
+          creditAValue: balance.credit_a_value,
+          creditBValue: balance.credit_b_value,
+          fromReassessment: false,
+        });
+      }
+    }
+    for (const balance of reassessmentEndingBalancesOld) {
+      const status = balance.supplemental_report.status;
+      const category = balance.category;
+      if (
+        balance.model_year_id &&
+        (category === creditCategory || category === debitCategory) &&
+        status === "ASSESSED"
+      ) {
+        balancesOld.push({
+          idOld: balance.id,
+          orgIdOld:
+            balance.supplemental_report.model_year_report.organization_id,
+          balanceType:
+            category === creditCategory
+              ? BalanceType.CREDIT
+              : BalanceType.DEBIT,
+          complianceYearIdOld:
+            balance.supplemental_report.model_year_report.model_year_id,
+          modelYearIdOld: balance.model_year_id,
+          creditAValue: balance.credit_a_value,
+          creditBValue: balance.credit_b_value,
+          fromReassessment: true,
+        });
+      }
+    }
+    for (const balance of balancesOld) {
+      const fromReassessment = balance.fromReassessment;
+      const errorMessagePrefix = `${fromReassessment ? "SRCA " : "MYRCO "} ${balance.idOld} with unknown `;
+      const modelYear =
+        mapOfModelYearIdsToModelYearEnum[balance.modelYearIdOld];
       if (!modelYear) {
-        throw new Error("MYRCO " + balance.id + " with unknown model year!");
+        throw new Error(errorMessagePrefix + "model year!");
       }
       const complianceYear =
-        mapOfModelYearIdsToModelYearEnum[
-          balance.model_year_report.model_year_id
-        ];
+        mapOfModelYearIdsToModelYearEnum[balance.complianceYearIdOld];
       if (!complianceYear) {
-        throw new Error(
-          "MYRCO " + balance.id + " with unknown compliance year!",
-        );
+        throw new Error(errorMessagePrefix + "compliance year!");
       }
-      const category = balance.category;
-      const fromGov = balance.from_gov;
-      if (category === "ProvisionalBalanceAfterCreditReduction" && fromGov) {
-        const orgId =
-          mapOfOldOrgIdsToNewOrgIds[balance.model_year_report.organization_id];
-        if (!orgId) {
-          throw new Error("MYRCO " + balance.id + " with unknown org id!");
-        }
-        const creditAValue = balance.credit_a_value;
-        const creditBValue = balance.credit_b_value;
-        if (!creditAValue.equals(decimalZero)) {
-          await tx.zevUnitEndingBalance.create({
-            data: {
-              organizationId: orgId,
-              complianceYear: complianceYear,
-              type: BalanceType.CREDIT,
+      const orgId = mapOfOldOrgIdsToNewOrgIds[balance.orgIdOld];
+      if (!orgId) {
+        throw new Error(errorMessagePrefix + "org id!");
+      }
+
+      const creditAValue = balance.creditAValue;
+      const creditBValue = balance.creditBValue;
+      const uniqueDataBase = {
+        organizationId: orgId,
+        complianceYear: complianceYear,
+        vehicleClass: VehicleClass.REPORTABLE,
+        modelYear: modelYear,
+      };
+      const data = {
+        ...uniqueDataBase,
+        type: balance.balanceType,
+      };
+      if (fromReassessment) {
+        if (creditAValue && !creditAValue.equals(decimalZero)) {
+          await tx.zevUnitEndingBalance.upsert({
+            where: {
+              organizationId_complianceYear_zevClass_vehicleClass_modelYear: {
+                ...uniqueDataBase,
+                zevClass: ZevClass.A,
+              },
+            },
+            create: {
+              ...data,
+              zevClass: ZevClass.A,
               initialNumberOfUnits: creditAValue,
               finalNumberOfUnits: creditAValue,
-              zevClass: ZevClass.A,
-              vehicleClass: VehicleClass.REPORTABLE,
-              modelYear: modelYear,
+            },
+            update: {
+              initialNumberOfUnits: creditAValue,
+              finalNumberOfUnits: creditAValue,
             },
           });
         }
-        if (!creditBValue.equals(decimalZero)) {
+        if (creditBValue && !creditBValue.equals(decimalZero)) {
+          await tx.zevUnitEndingBalance.upsert({
+            where: {
+              organizationId_complianceYear_zevClass_vehicleClass_modelYear: {
+                ...uniqueDataBase,
+                zevClass: ZevClass.B,
+              },
+            },
+            create: {
+              ...data,
+              zevClass: ZevClass.B,
+              initialNumberOfUnits: creditBValue,
+              finalNumberOfUnits: creditBValue,
+            },
+            update: {
+              initialNumberOfUnits: creditBValue,
+              finalNumberOfUnits: creditBValue,
+            },
+          });
+        }
+      } else {
+        if (creditAValue && !creditAValue.equals(decimalZero)) {
           await tx.zevUnitEndingBalance.create({
             data: {
-              organizationId: orgId,
-              complianceYear: complianceYear,
-              type: BalanceType.CREDIT,
+              ...data,
+              initialNumberOfUnits: creditAValue,
+              finalNumberOfUnits: creditAValue,
+              zevClass: ZevClass.A,
+            },
+          });
+        }
+        if (creditBValue && !creditBValue.equals(decimalZero)) {
+          await tx.zevUnitEndingBalance.create({
+            data: {
+              ...data,
               initialNumberOfUnits: creditBValue,
               finalNumberOfUnits: creditBValue,
               zevClass: ZevClass.B,
-              vehicleClass: VehicleClass.REPORTABLE,
-              modelYear: modelYear,
             },
           });
         }
@@ -403,6 +507,12 @@ const main = () => {
           creditTransferHistoryOld.status
         ];
       const timestamp = creditTransferHistoryOld.create_timestamp;
+      if (
+        newStatus === ZevUnitTransferStatuses.DRAFT ||
+        newStatus === ZevUnitTransferStatuses.DELETED
+      ) {
+        continue;
+      }
       if (!newTransferId) {
         throw new Error(
           "transfer history " +
@@ -451,14 +561,39 @@ const main = () => {
         }
         return 0;
       });
+      // remove "submitted-rescinded pairs" where "rescinded" is not the status of the final history record
+      let counter = null;
+      let leftIndex = Number.POSITIVE_INFINITY;
+      let rightIndex = Number.NEGATIVE_INFINITY;
+      const indicesToRemove = new Set();
+      for (const [index, history] of histories.entries()) {
+        const status = history.afterUserActionStatus;
+        if (status === ZevUnitTransferStatuses.SUBMITTED_TO_TRANSFER_TO) {
+          leftIndex = index;
+          counter = counter === null ? -1 : counter - 1;
+        } else if (
+          status === ZevUnitTransferStatuses.RESCINDED_BY_TRANSFER_FROM
+        ) {
+          rightIndex = index;
+          counter = counter === null ? 1 : counter + 1;
+        }
+        if (counter === 0 && rightIndex !== histories.length - 1) {
+          for (let i = leftIndex; i <= rightIndex; i++) {
+            indicesToRemove.add(i);
+          }
+        }
+      }
+      const filteredHistories = histories.filter((_, index) => {
+        if (indicesToRemove.has(index)) {
+          return false;
+        }
+        return true;
+      });
       const result: Omit<ZevUnitTransferHistory, "id">[] = [];
       let previousStatus: ZevUnitTransferStatuses | null = null;
-      for (const history of histories) {
+      for (const history of filteredHistories) {
         const status = history.afterUserActionStatus;
-        if (
-          status === ZevUnitTransferStatuses.DRAFT ||
-          status === previousStatus
-        ) {
+        if (status === previousStatus) {
           continue;
         }
         result.push(history);
@@ -549,7 +684,7 @@ const main = () => {
           // looks like all supplier comments are to counterparty upon rescind, and all government comments are internal
           commentType: newCreateUser.organization.isGovernment
             ? ZevUnitTransferCommentType.INTERNAL_GOV
-            : ZevUnitTransferCommentType.TO_COUNTERPARTY,
+            : ZevUnitTransferCommentType.TO_COUNTERPARTY_UPON_RESCIND,
         },
       });
     }

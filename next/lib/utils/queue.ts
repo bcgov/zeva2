@@ -1,6 +1,6 @@
 import { Queue } from "bullmq";
 import { bullmqConfig } from "@/bullmq/config";
-import { emailQueueName } from "@/constants/queue";
+import { emailQueueName } from "@/lib/constants/queue";
 import { BaseJobOptions } from "bullmq";
 
 // re-use queues, and therefore connections; otherwise, there may be too many connections to redis...

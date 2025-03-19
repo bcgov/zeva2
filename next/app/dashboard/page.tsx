@@ -1,6 +1,6 @@
 import { ContentCard } from "../lib/components";
 import { Suspense } from "react";
-import { LatestActivitySkeleton } from "./components/skeletons";
+import { LoadingSkeleton } from "../lib/components/skeletons";
 import { LatestActivity } from "./components/latestActivity";
 
 export default function Dashboard() {
@@ -15,7 +15,7 @@ export default function Dashboard() {
         </ContentCard>
       </div>
       <ContentCard title="Latest activity" className="w-2/3 ml-2">
-        <Suspense fallback={<LatestActivitySkeleton />}>
+        <Suspense fallback={<LoadingSkeleton />}>
           <LatestActivity />
         </Suspense>
       </ContentCard>
