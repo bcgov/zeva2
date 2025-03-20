@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from 'react';
@@ -6,8 +7,10 @@ import {
   flexRender,
   getCoreRowModel,
   getPaginationRowModel,
+  getSortedRowModel,
   useReactTable,
 } from '@tanstack/react-table';
+import { FaDownLong, FaUpLong } from 'react-icons/fa6';
 
 export interface ITableProps<T extends object = {}> {
   columns: ColumnDef<T, any>[];
@@ -19,12 +22,17 @@ export const Table = <T extends object>({ columns, data, pageSize }: ITableProps
   const table = useReactTable({
     data,
     columns,
-    initialState: pageSize ? { pagination: { pageSize } } : {},
+    initialState: pageSize
+      ? { pagination: { pageSize }, sorting: [] }
+      : { sorting: [] },
     getCoreRowModel: getCoreRowModel(),
+    getSortedRowModel: getSortedRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
   });
 
-  const rows = pageSize ? table.getPaginationRowModel().rows : table.getRowModel().rows;
+  const rows = pageSize
+    ? table.getPaginationRowModel().rows
+    : table.getRowModel().rows;
 
   return (
     <div className="p-2">
@@ -35,11 +43,21 @@ export const Table = <T extends object>({ columns, data, pageSize }: ITableProps
               {headerGroup.headers.map(header => (
                 <th
                   key={header.id}
-                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                  onClick={header.column.getToggleSortingHandler()}
+                  className="cursor-pointer px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
                 >
-                  {header.isPlaceholder
-                    ? null
-                    : flexRender(header.column.columnDef.header, header.getContext())}
+                  {header.isPlaceholder ? null : (
+                    <>
+                      {flexRender(header.column.columnDef.header, header.getContext())}
+                      <span>
+                        {header.column.getIsSorted() === 'asc'
+                          ? <FaUpLong />
+                          : header.column.getIsSorted() === 'desc'
+                            ? <FaDownLong />
+                            : ''}
+                      </span>
+                    </>
+                  )}
                 </th>
               ))}
             </tr>

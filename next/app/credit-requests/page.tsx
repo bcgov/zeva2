@@ -41,5 +41,5 @@ export default function CreditTransfer() {
     fetchData();
   }, []);
 
-  return <Table data={testData} columns={columns} pageSize={1} />;
+  return <Table data={testData} columns={columns} pageSize={10} />;
 }
