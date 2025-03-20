@@ -1,14 +1,14 @@
-name: Zeva2 Dev CI
+name: Zeva2 Test CI
 
 on:
   push:
     branches:
-      - feature/pipeline
+      - release/*
   workflow_dispatch:
 
 env:
   TOOLS_NAMESPACE: ${{ secrets.OPENSHIFT_NAMESPACE_PLATE }}-tools
-  DEV_NAMESPACE: ${{ secrets.OPENSHIFT_NAMESPACE_PLATE }}-dev
+  TEST_NAMESPACE: ${{ secrets.OPENSHIFT_NAMESPACE_PLATE }}-test
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -67,7 +67,6 @@ jobs:
       - name: Export Version
         id: export-version
         run: |
-          echo ${{ github.ref_name }}
           echo "VERSION=${{ steps.version-step.outputs.SemVer }}"
           echo "VERSION=${{ steps.version-step.outputs.SemVer }}" >> $GITHUB_OUTPUT
 
@@ -105,8 +104,8 @@ jobs:
           cd openshift/templates
           oc process -f ./next-bc.yaml VERSION=${{ env.VERSION }} GIT_REF=${{ github.ref_name }} | oc apply --wait=true -f - -n ${{ env.TOOLS_NAMESPACE }}
           oc -n ${{ env.TOOLS_NAMESPACE }} start-build zeva2-next-${{ env.VERSION }} --wait=true
-          oc -n ${{ env.DEV_NAMESPACE }} get imagestream zeva2-next || oc -n ${{ env.DEV_NAMESPACE }} create imagestream zeva2-next 
-          oc tag ${{ env.TOOLS_NAMESPACE }}/zeva2-next:${{ env.VERSION }} ${{ env.DEV_NAMESPACE }}/zeva2-next:${{ env.VERSION }}
+          oc -n ${{ env.TEST_NAMESPACE }} get imagestream zeva2-next || oc -n ${{ env.TEST_NAMESPACE }} create imagestream zeva2-next 
+          oc tag ${{ env.TOOLS_NAMESPACE }}/zeva2-next:${{ env.VERSION }} ${{ env.TEST_NAMESPACE }}/zeva2-next:${{ env.VERSION }}
 
       - name: Build Bullmq
         run: |
@@ -115,40 +114,40 @@ jobs:
           cd openshift/templates
           oc process -f ./bullmq-bc.yaml VERSION=${{ env.VERSION }} GIT_REF=${{ github.ref_name }} | oc apply --wait=true -f - -n ${{ env.TOOLS_NAMESPACE }}
           oc -n ${{ env.TOOLS_NAMESPACE }} start-build zeva2-bullmq-${{ env.VERSION }} --wait=true
-          oc -n ${{ env.DEV_NAMESPACE }} get imagestream zeva2-bullmq || oc -n ${{ env.DEV_NAMESPACE }} create imagestream zeva2-bullmq 
-          oc tag ${{ env.TOOLS_NAMESPACE }}/zeva2-bullmq:${{ env.VERSION }} ${{ env.DEV_NAMESPACE }}/zeva2-bullmq:${{ env.VERSION }}
+          oc -n ${{ env.TEST_NAMESPACE }} get imagestream zeva2-bullmq || oc -n ${{ env.TEST_NAMESPACE }} create imagestream zeva2-bullmq 
+          oc tag ${{ env.TOOLS_NAMESPACE }}/zeva2-bullmq:${{ env.VERSION }} ${{ env.TEST_NAMESPACE }}/zeva2-bullmq:${{ env.VERSION }}
 
 
-  deploy:
-    name: Deploy Zeva2 Next
-    runs-on: ubuntu-latest
-    needs: [versioning, build]
-    timeout-minutes: 60
+  # deploy:
+  #   name: Deploy Zeva2 Next
+  #   runs-on: ubuntu-latest
+  #   needs: [versioning, build]
+  #   timeout-minutes: 60
 
-    env:
-      VERSION: ${{ needs.versioning.outputs.VERSION }}
+  #   env:
+  #     VERSION: ${{ needs.versioning.outputs.VERSION }}
 
-    steps:
-      - name: Checkout Manifest repository
-        uses: actions/checkout@v4.1.1
-        with:
-          repository: bcgov-c/tenant-gitops-ea8eab
-          ref: main
-          ssh-key: ${{ secrets.MANIFEST_REPO_DEPLOY_KEY }}
+  #   steps:
+  #     - name: Checkout Manifest repository
+  #       uses: actions/checkout@v4.1.1
+  #       with:
+  #         repository: bcgov-c/tenant-gitops-ea8eab
+  #         ref: main
+  #         ssh-key: ${{ secrets.MANIFEST_REPO_DEPLOY_KEY }}
 
-      - name: Update tags
-        uses: mikefarah/yq@v4.40.5
-        with:
-          cmd: |
-            yq -i '.image.tag = "${{ env.VERSION }}"' zeva2/zeva2-next/values-dev.yaml
-            yq -i '.image.tag = "${{ env.VERSION }}"' zeva2/zeva2-bullmq/values-dev.yaml
+  #     - name: Update tags
+  #       uses: mikefarah/yq@v4.40.5
+  #       with:
+  #         cmd: |
+  #           yq -i '.image.tag = "${{ env.VERSION }}"' zeva2/zeva2-next/values-dev.yaml
+  #           yq -i '.image.tag = "${{ env.VERSION }}"' zeva2/zeva2-bullmq/values-dev.yaml
 
-      - name: GitHub Commit & Push
-        shell: bash {0}
-        run: |
-          git config --global user.email "actions@github.com"
-          git config --global user.name "GitHub Actions"
-          git add zeva2/zeva2-next/values-dev.yaml
-          git commit -m "Update the zeva2-next image tag to ${{ env.VERSION }} on Dev"
-          git push
+  #     - name: GitHub Commit & Push
+  #       shell: bash {0}
+  #       run: |
+  #         git config --global user.email "actions@github.com"
+  #         git config --global user.name "GitHub Actions"
+  #         git add zeva2/zeva2-next/values-dev.yaml
+  #         git commit -m "Update the zeva2-next image tag to ${{ env.VERSION }} on Dev"
+  #         git push
 
