@@ -1,4 +1,6 @@
 workflow: GitFlow/v1
 branches:
+  feature:
+    mode: ManualDeployment
   release:
     mode: ContinuousDelivery
