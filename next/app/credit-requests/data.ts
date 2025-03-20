@@ -1,6 +1,5 @@
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
-import { Role } from "@/prisma/generated/client";
 
 export async function fetchUnitTransactions() {
   let result;
