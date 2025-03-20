@@ -19,7 +19,7 @@ export const Header: React.FC<IHeaderProps> = ({ session }) => {
         <span className="text-xl">Zero-Emission Vehicles Reporting System</span>
         <span className="ml-auto">Government of British Columbia</span>
       </Row>
-      <Navbar user={session.user ?? ""} />
+      {session.user && <Navbar user={session.user} />}
     </div>
   );
 };
