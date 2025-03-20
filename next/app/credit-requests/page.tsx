@@ -4,17 +4,11 @@
 import React from 'react';
 import { Table } from '../lib/components';
 import { createColumnHelper } from '@tanstack/react-table';
-import { ZevUnitTransfer, ZevUnitTransferStatuses } from '@/prisma/generated/client';
+import { ZevUnitTransfer } from '@/prisma/generated/client';
 
 export default function CreditTransfer() {
   const [data, setData] = React.useState<ZevUnitTransfer[]>([]);
   const columnHelper = createColumnHelper<ZevUnitTransfer>();
-
-  const testData: ZevUnitTransfer[] = [
-    { id: 0, transferToId: 1, transferFromId: 2, status: ZevUnitTransferStatuses.DRAFT },
-    { id: 1, transferToId: 3, transferFromId: 4, status: ZevUnitTransferStatuses.APPROVED },
-  ];
-
 
   const columns = React.useMemo(() => [
     columnHelper.accessor('transferToId', {
@@ -41,5 +35,5 @@ export default function CreditTransfer() {
     fetchData();
   }, []);
 
-  return <Table data={testData} columns={columns} pageSize={10} />;
+  return <Table data={data} columns={columns} pageSize={10} />;
 }
