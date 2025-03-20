@@ -47,6 +47,11 @@ oc -n licenseplate-tools apply -f ./cicd-token.yaml
 
 9. Creat allow-all-internal network policy on dev
 
+10. create secret 
+zeva2-database
+zeva2-keycloak
+zeva2-redis-dev-connection
+
 10. Deploy Redis by using helm
 
 11. Deploy Crunchy by using ArgoCD
