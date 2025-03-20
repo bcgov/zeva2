@@ -4,10 +4,11 @@ import React from "react";
 import { Routes } from "../constants";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { User } from "@auth/core/types";
 import { FaAngleDown, FaAngleUp } from "react-icons/fa";
 import { keycloakSignOut } from "../actions/keycloak";
 import { Role } from "@/prisma/generated/client";
+import { User } from "../types";
+import { Row } from "./layout";
 
 export interface INavbarOption {
   label: string;
@@ -66,7 +67,7 @@ export const Navbar: React.FC<INavbarProps> = ({ user }) => {
   ];
 
   return (
-    <div className="flex flex-row w-full bg-defaultBackgroundBlue border-t-2 border-primaryYellow mr-[16rem] px-1 mb-3 text-white">
+    <Row className="w-full bg-defaultBackgroundBlue border-t-2 border-primaryYellow mr-[16rem] px-1 mb-3 text-white">
       {navItems.map((item) => {
         if (
           item.roles.some((role) => user.roles?.includes(role)) ||
@@ -107,6 +108,6 @@ export const Navbar: React.FC<INavbarProps> = ({ user }) => {
           </div>
         )}
       </div>
-    </div>
+    </Row>
   );
 };
