@@ -67,6 +67,7 @@ jobs:
       - name: Export Version
         id: export-version
         run: |
+          echo ${{ github.ref_name }}
           echo "VERSION=${{ steps.version-step.outputs.SemVer }}"
           echo "VERSION=${{ steps.version-step.outputs.SemVer }}" >> $GITHUB_OUTPUT
 
