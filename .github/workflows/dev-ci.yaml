@@ -67,12 +67,11 @@ jobs:
       - name: Export Version
         id: export-version
         run: |
-          echo ${{ github.ref_name }}
           echo "VERSION=${{ steps.version-step.outputs.SemVer }}"
           echo "VERSION=${{ steps.version-step.outputs.SemVer }}" >> $GITHUB_OUTPUT
 
   build:
-    name: Build Zeva2 Next
+    name: Build Zeva2
     runs-on: ubuntu-latest
     needs: [install-oc, versioning]
     timeout-minutes: 60
@@ -120,7 +119,7 @@ jobs:
 
 
   deploy:
-    name: Deploy Zeva2 Next
+    name: Deploy Zeva2
     runs-on: ubuntu-latest
     needs: [versioning, build]
     timeout-minutes: 60

@@ -71,7 +71,7 @@ jobs:
           echo "VERSION=${{ steps.version-step.outputs.SemVer }}" >> $GITHUB_OUTPUT
 
   build:
-    name: Build Zeva2 Next
+    name: Build Zeva2
     runs-on: ubuntu-latest
     needs: [install-oc, versioning]
     timeout-minutes: 60
