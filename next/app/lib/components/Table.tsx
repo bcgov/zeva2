@@ -10,7 +10,7 @@ import {
   getSortedRowModel,
   useReactTable,
 } from '@tanstack/react-table';
-import { FaDownLong, FaUpLong } from 'react-icons/fa6';
+import { FaArrowLeft, FaArrowRight, FaDownLong, FaUpLong } from 'react-icons/fa6';
 
 export interface ITableProps<T extends object = {}> {
   columns: ColumnDef<T, any>[];
@@ -92,26 +92,21 @@ export const Table = <T extends object>({ columns, data, pageSize }: ITableProps
         </tfoot>
       </table>
       {pageSize && (
-        <div className="flex items-center justify-between mt-2">
-          <button
-            onClick={() => table.previousPage()}
-            disabled={!table.getCanPreviousPage()}
-            className="px-3 py-1 bg-gray-200 rounded disabled:opacity-50"
-          >
-            Previous
-          </button>
+        <div className="flex items-center mt-2 justify-self-center">
+          <FaArrowLeft
+            onClick={() => table.getCanPreviousPage() && table.previousPage()}
+            className='mr-2'
+          />
           <span className="text-sm text-gray-700">
             Page {table.getState().pagination.pageIndex + 1} of {table.getPageCount()}
           </span>
-          <button
-            onClick={() => table.nextPage()}
-            disabled={!table.getCanNextPage()}
-            className="px-3 py-1 bg-gray-200 rounded disabled:opacity-50"
-          >
-            Next
-          </button>
+          <FaArrowRight
+            onClick={() => table.getCanNextPage() && table.nextPage()}
+            className='ml-2'
+          />
         </div>
-      )}
-    </div>
+      )
+      }
+    </div >
   );
 };
