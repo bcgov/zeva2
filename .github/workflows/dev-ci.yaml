@@ -71,7 +71,7 @@ jobs:
           echo "VERSION=${{ steps.version-step.outputs.SemVer }}" >> $GITHUB_OUTPUT
 
   build:
-    name: Build Zeva Next
+    name: Build Zeva2 Next
     runs-on: ubuntu-latest
     needs: [install-oc, versioning]
     timeout-minutes: 60
@@ -107,8 +107,19 @@ jobs:
           oc -n ${{ env.DEV_NAMESPACE }} get imagestream zeva2-next || oc -n ${{ env.DEV_NAMESPACE }} create imagestream zeva2-next 
           oc tag ${{ env.TOOLS_NAMESPACE }}/zeva2-next:${{ env.VERSION }} ${{ env.DEV_NAMESPACE }}/zeva2-next:${{ env.VERSION }}
 
+      - name: Build Bullmq
+        run: |
+          echo "VERSION=${{ env.VERSION }}"
+          oc projects
+          cd openshift/templates
+          oc process -f ./bullmq-bc.yaml VERSION=${{ env.VERSION }} GIT_REF=feature/pipeline | oc apply --wait=true -f - -n ${{ env.TOOLS_NAMESPACE }}
+          oc -n ${{ env.TOOLS_NAMESPACE }} start-build zeva2-bullmq-${{ env.VERSION }} --wait=true
+          oc -n ${{ env.DEV_NAMESPACE }} get imagestream zeva2-bullmq || oc -n ${{ env.DEV_NAMESPACE }} create imagestream zeva2-bullmq 
+          oc tag ${{ env.TOOLS_NAMESPACE }}/zeva2-bullmq:${{ env.VERSION }} ${{ env.DEV_NAMESPACE }}/zeva2-bullmq:${{ env.VERSION }}
+
+
   deploy:
-    name: Deploy Zeva Next
+    name: Deploy Zeva2 Next
     runs-on: ubuntu-latest
     needs: [versioning, build]
     timeout-minutes: 60
@@ -129,6 +140,7 @@ jobs:
         with:
           cmd: |
             yq -i '.image.tag = "${{ env.VERSION }}"' zeva2/zeva2-next/values-dev.yaml
+            yq -i '.image.tag = "${{ env.VERSION }}"' zeva2/zeva2-bullmq/values-dev.yaml
 
       - name: GitHub Commit & Push
         shell: bash {0}
