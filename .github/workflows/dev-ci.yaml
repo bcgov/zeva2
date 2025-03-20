@@ -3,7 +3,7 @@ name: Zeva2 Dev CI
 on:
   push:
     branches:
-      - feature/pipeline
+      - develop
   workflow_dispatch:
 
 env:
@@ -148,5 +148,5 @@ jobs:
           git config --global user.name "GitHub Actions"
           git add zeva2/zeva2-next/values-dev.yaml
           git add zeva2/zeva2-bullmq/values-dev.yaml
-          git commit -m "Update the zeva2-next image tag to ${{ env.VERSION }} on Dev"
+          git commit -m "Update the zeva2-next image tags to ${{ env.VERSION }} on Dev"
           git push
