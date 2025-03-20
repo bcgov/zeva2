@@ -55,7 +55,7 @@ objects:
         type: Git
       strategy:
         dockerStrategy:
-          dockerfilePath: ./Dockerfile-bullmq-Openshift
+          dockerfilePath: ./Dockerfile-Bullmq-Openshift
           pullSecret:
             name: artifacts-pull-zeva2-artifactory-service-account-zbazfi
         type: Docker
