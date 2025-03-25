@@ -5,10 +5,11 @@ import React from 'react';
 import { createColumnHelper } from '@tanstack/react-table';
 import { ZevUnitTransfer } from '@/prisma/generated/client';
 import { Table } from '@/app/lib/components';
+import { ZevUnitTransferWithContentAndOrgs } from '../data';
 
 export default function ZevUnitTransferList() {
-  const [data, setData] = React.useState<ZevUnitTransfer[]>([]);
-  const columnHelper = createColumnHelper<ZevUnitTransfer>();
+  const [data, setData] = React.useState<ZevUnitTransferWithContentAndOrgs[]>([]);
+  const columnHelper = createColumnHelper<ZevUnitTransferWithContentAndOrgs>();
 
   const columns = React.useMemo(() => [
     columnHelper.accessor('id', {
