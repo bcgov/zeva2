@@ -11,6 +11,11 @@ export default function CreditTransfer() {
   const columnHelper = createColumnHelper<ZevUnitTransfer>();
 
   const columns = React.useMemo(() => [
+    columnHelper.accessor('id', {
+      id: 'id',
+      cell: info => <i>{info.getValue()}</i>,
+      header: () => <span>ID</span>,
+    }),
     columnHelper.accessor('transferToId', {
       id: 'lastName',
       cell: info => <i>{info.getValue()}</i>,
