@@ -1,6 +1,6 @@
 "use client";
 import React from "react";
-import { Button } from "@/app/lib/components/Button";
+import { Button } from "@/app/lib/components";
 
 export const EmailInput = ({
   initialEmail,

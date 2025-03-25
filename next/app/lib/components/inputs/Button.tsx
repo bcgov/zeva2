@@ -13,4 +13,3 @@ export const Button: FC<IButtonProps> = ({ children, onClick, ...rest }) => {
     </button>
   );
 };
-

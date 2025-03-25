@@ -665,7 +665,7 @@ model model_year_report_address {
   other                String?           @db.VarChar(100)
   address_type_id      Int
   model_year_report_id Int
-  address_type         address_type      @relation(fields: [address_type_id], references: [id], onDelete: NoAction, map: "model_year_report_ad_address_type_id_b8e9034c_fk_address_t")
+  address_type         address_type      @relation(fields: [address_type_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "model_year_report_ad_address_type_id_b8e9034c_fk_address_t")
   model_year_report    model_year_report @relation(fields: [model_year_report_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "model_year_report_ad_model_year_report_id_22bb07b9_fk_model_yea")
 
   @@index([address_type_id], map: "model_year_report_address_address_type_id_b8e9034c")
@@ -904,16 +904,17 @@ model model_year_report_vehicle {
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
 /// This model has constraints using non-default deferring rules and requires additional setup for migrations. Visit https://pris.ly/d/constraint-deferring for more info.
 model notification {
-  id                Int        @id @default(autoincrement())
-  create_timestamp  DateTime?  @db.Timestamptz(6)
-  create_user       String     @db.VarChar(130)
-  update_timestamp  DateTime?  @db.Timestamptz(6)
-  update_user       String?    @db.VarChar(130)
-  notification_code String     @unique @db.VarChar(100)
-  name              String     @db.VarChar(100)
-  description       String     @db.VarChar(1000)
-  permission_id     Int
-  permission        permission @relation(fields: [permission_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "notification_permission_id_382f009d_fk_permission_id")
+  id                        Int                         @id @default(autoincrement())
+  create_timestamp          DateTime?                   @db.Timestamptz(6)
+  create_user               String                      @db.VarChar(130)
+  update_timestamp          DateTime?                   @db.Timestamptz(6)
+  update_user               String?                     @db.VarChar(130)
+  notification_code         String                      @unique @db.VarChar(100)
+  name                      String                      @db.VarChar(100)
+  description               String                      @db.VarChar(1000)
+  permission_id             Int
+  permission                permission                  @relation(fields: [permission_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "notification_permission_id_382f009d_fk_permission_id")
+  notification_subscription notification_subscription[]
 
   @@index([notification_code], map: "notification_notification_code_7554f7b7_like")
   @@index([permission_id], map: "notification_permission_id_382f009d")
@@ -929,6 +930,7 @@ model notification_subscription {
   update_user      String?      @db.VarChar(130)
   notification_id  Int
   user_profile_id  Int
+  notification     notification @relation(fields: [notification_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "notification_subscri_notification_id_99cf7e2d_fk_notificat")
   user_profile     user_profile @relation(fields: [user_profile_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "notification_subscri_user_profile_id_9e991605_fk_user_prof")
 
   @@index([notification_id], map: "notification_subscription_notification_id_99cf7e2d")

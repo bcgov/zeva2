@@ -1,0 +1,152 @@
+name: Zeva2 Dev CI
+
+on:
+  push:
+    branches:
+      - develop
+  workflow_dispatch:
+
+env:
+  TOOLS_NAMESPACE: ${{ secrets.OPENSHIFT_NAMESPACE_PLATE }}-tools
+  DEV_NAMESPACE: ${{ secrets.OPENSHIFT_NAMESPACE_PLATE }}-dev
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  install-oc:
+    runs-on: ubuntu-latest
+    outputs:
+      cache-hit: ${{ steps.cache.outputs.cache-hit }}
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4.1.1
+
+      - name: Set up cache for OpenShift CLI
+        id: cache
+        uses: actions/cache@v4.2.0
+        with:
+          path: /usr/local/bin/oc # Path where the `oc` binary will be installed
+          key: oc-cli-${{ runner.os }}
+
+      - name: Install OpenShift CLI (if not cached)
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: |
+          curl -LO https://mirror.openshift.com/pub/openshift-v4/clients/ocp/stable/openshift-client-linux.tar.gz
+          tar -xvf openshift-client-linux.tar.gz
+          sudo mv oc /usr/local/bin/
+          oc version --client
+
+      - name: Confirm OpenShift CLI is Available
+        run: oc version --client
+
+  versioning:
+    runs-on: ubuntu-latest
+
+    outputs:
+      VERSION: ${{ steps.export-version.outputs.VERSION }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install GitVersion
+        uses: gittools/actions/gitversion/setup@v3.1.11
+        with:
+          versionSpec: "6.0.x"
+
+      - name: Determine Version
+        id: version-step # step id used as reference for output values
+        uses: gittools/actions/gitversion/execute@v3.1.11
+        with:
+          useConfigFile: true
+
+      - name: Export Version
+        id: export-version
+        run: |
+          echo "VERSION=${{ steps.version-step.outputs.SemVer }}"
+          echo "VERSION=${{ steps.version-step.outputs.SemVer }}" >> $GITHUB_OUTPUT
+
+  build:
+    name: Build Zeva2
+    runs-on: ubuntu-latest
+    needs: [install-oc, versioning]
+    timeout-minutes: 60
+
+    env:
+      VERSION: ${{ needs.versioning.outputs.VERSION }}
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4.1.1
+
+      - name: Restore oc command from Cache
+        uses: actions/cache@v4.2.0
+        with:
+          path: /usr/local/bin/oc
+          key: oc-cli-${{ runner.os }}
+
+      - name: Log in to Openshift
+        uses: redhat-actions/oc-login@v1.3
+        with:
+          openshift_server_url: ${{ secrets.OPENSHIFT_SERVER }}
+          openshift_token: ${{ secrets.OPENSHIFT_TOKEN }}
+          insecure_skip_tls_verify: true
+          namespace: ${{ env.TOOLS_NAMESPACE }}
+
+      - name: Build Next
+        run: |
+          echo "VERSION=${{ env.VERSION }}"
+          oc projects
+          cd openshift/templates
+          oc process -f ./next-bc.yaml VERSION=${{ env.VERSION }} GIT_REF=${{ github.ref_name }} | oc apply --wait=true -f - -n ${{ env.TOOLS_NAMESPACE }}
+          oc -n ${{ env.TOOLS_NAMESPACE }} start-build zeva2-next-${{ env.VERSION }} --wait=true
+          oc -n ${{ env.DEV_NAMESPACE }} get imagestream zeva2-next || oc -n ${{ env.DEV_NAMESPACE }} create imagestream zeva2-next
+          oc tag ${{ env.TOOLS_NAMESPACE }}/zeva2-next:${{ env.VERSION }} ${{ env.DEV_NAMESPACE }}/zeva2-next:${{ env.VERSION }}
+
+      - name: Build Bullmq
+        run: |
+          echo "VERSION=${{ env.VERSION }}"
+          oc projects
+          cd openshift/templates
+          oc process -f ./bullmq-bc.yaml VERSION=${{ env.VERSION }} GIT_REF=${{ github.ref_name }} | oc apply --wait=true -f - -n ${{ env.TOOLS_NAMESPACE }}
+          oc -n ${{ env.TOOLS_NAMESPACE }} start-build zeva2-bullmq-${{ env.VERSION }} --wait=true
+          oc -n ${{ env.DEV_NAMESPACE }} get imagestream zeva2-bullmq || oc -n ${{ env.DEV_NAMESPACE }} create imagestream zeva2-bullmq
+          oc tag ${{ env.TOOLS_NAMESPACE }}/zeva2-bullmq:${{ env.VERSION }} ${{ env.DEV_NAMESPACE }}/zeva2-bullmq:${{ env.VERSION }}
+
+  deploy:
+    name: Deploy Zeva2
+    runs-on: ubuntu-latest
+    needs: [versioning, build]
+    timeout-minutes: 60
+
+    env:
+      VERSION: ${{ needs.versioning.outputs.VERSION }}
+
+    steps:
+      - name: Checkout Manifest repository
+        uses: actions/checkout@v4.1.1
+        with:
+          repository: bcgov-c/tenant-gitops-ea8eab
+          ref: main
+          ssh-key: ${{ secrets.MANIFEST_REPO_DEPLOY_KEY }}
+
+      - name: Update tags
+        uses: mikefarah/yq@v4.40.5
+        with:
+          cmd: |
+            yq -i '.image.tag = "${{ env.VERSION }}"' zeva2/zeva2-next/values-dev.yaml
+            yq -i '.image.tag = "${{ env.VERSION }}"' zeva2/zeva2-bullmq/values-dev.yaml
+
+      - name: GitHub Commit & Push
+        shell: bash {0}
+        run: |
+          git config --global user.email "actions@github.com"
+          git config --global user.name "GitHub Actions"
+          git add zeva2/zeva2-next/values-dev.yaml
+          git add zeva2/zeva2-bullmq/values-dev.yaml
+          git commit -m "Update the zeva2 image tags to ${{ env.VERSION }} on Dev"
+          git push

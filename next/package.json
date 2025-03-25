@@ -4,9 +4,10 @@
   "private": true,
   "scripts": {
     "dev": "npm run pushSchemaToDB && next dev --turbopack",
-    "generatePrismaSchema": "prisma generate",
     "pushSchemaToDB": "prisma format && prisma db push --schema prisma/schema.prisma --accept-data-loss",
     "seedFromOldDB": "prisma db push --schema prisma/schema.prisma --force-reset && prisma db pull --schema prisma/schemaOld.prisma && prisma generate --schema prisma/schemaOld.prisma && prisma db seed",
+    "bullmqDev": "tsx watch bullmq/index.ts",
+    "bullmq": "tsx bullmq/index.ts",
     "build": "next build",
     "start": "next start",
     "lint": "next lint"
@@ -16,7 +17,8 @@
   },
   "dependencies": {
     "@prisma/client": "6.3.0",
-    "next": "15.1.7",
+    "bullmq": "5.41.8",
+    "next": "15.2.2",
     "next-auth": "^5.0.0-beta.25",
     "prisma": "6.3.0",
     "react": "^19.0.0",
