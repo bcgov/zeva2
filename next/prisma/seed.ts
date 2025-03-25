@@ -133,6 +133,42 @@ const main = () => {
         ZevClass[creditClass.credit_class as keyof typeof ZevClass];
     }
 
+     // add notifications from old subscription table
+     const notificationsOld = await prismaOld.notification.findMany({
+      select: { id: true, notification_code: true },
+    });
+    
+    const notifCodeById = notificationsOld.reduce<Record<number, string>>((acc, n) => {
+      acc[n.id] = n.notification_code;
+      return acc;
+    }, {});
+    
+    const subsOld = await prismaOld.notification_subscription.findMany({
+      select: { user_profile_id: true, notification_id: true },
+    });
+    
+    const grouped = subsOld.reduce<Record<number, string[]>>((acc, sub) => {
+      const code = notifCodeById[sub.notification_id];
+      if (!code) return acc;
+      acc[sub.user_profile_id] ??= [];
+      acc[sub.user_profile_id].push(code);
+      return acc;
+    }, {});
+    
+    for (const [oldUserId, codes] of Object.entries(grouped)) {
+      const newUserId = mapOfOldUserIdsToNewUserIds[Number(oldUserId)];
+      if (!newUserId) continue;
+    
+      const validNotifications = codes
+        .map(code => code as Notification)
+        .filter((n): n is Notification => !!n);
+    
+      await tx.user.update({
+        where: { id: newUserId },
+        data: { notifications: { set: validNotifications } },
+      });
+    }
+
     // add ZevUnitTransactions (in old db, these are called credit transactions)
     const creditTransactionsOld = await prismaOld.credit_transaction.findMany();
     for (const transaction of creditTransactionsOld) {
@@ -605,42 +641,6 @@ const main = () => {
         data: result,
       });
     }
-
-        // add notifications from old subscription table
-        const notificationsOld = await prismaOld.notification.findMany({
-          select: { id: true, notification_code: true },
-        });
-        
-        const notifCodeById = notificationsOld.reduce<Record<number, string>>((acc, n) => {
-          acc[n.id] = n.notification_code;
-          return acc;
-        }, {});
-        
-        const subsOld = await prismaOld.notification_subscription.findMany({
-          select: { user_profile_id: true, notification_id: true },
-        });
-        
-        const grouped = subsOld.reduce<Record<number, string[]>>((acc, sub) => {
-          const code = notifCodeById[sub.notification_id];
-          if (!code) return acc;
-          acc[sub.user_profile_id] ??= [];
-          acc[sub.user_profile_id].push(code);
-          return acc;
-        }, {});
-        
-        for (const [oldUserId, codes] of Object.entries(grouped)) {
-          const newUserId = mapOfOldUserIdsToNewUserIds[Number(oldUserId)];
-          if (!newUserId) continue;
-        
-          const validNotifications = codes
-            .map(code => code as Notification)
-            .filter((n): n is Notification => !!n);
-        
-          await tx.user.update({
-            where: { id: newUserId },
-            data: { notifications: { set: validNotifications } },
-          });
-        }
     
         // add ZevUnitTransferComments (previously called credit transfer comments)
         const creditTransferCommentsOld = await prismaOld.credit_transfer_comment.findMany({
