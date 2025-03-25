@@ -58,6 +58,32 @@ enum Idp {
   IDIR           @map("idir")
 }
 
+enum Notification {
+  MODEL_YEAR_REPORT_RETURNED_TO_SUPPLIER
+  ZEV_MODEL_SUBMITTED
+  ZEV_MODEL_RANGE_REPORT_SUBMITTED
+  CREDIT_TRANSFER_APPROVED
+  CREDIT_APPLICATION_SUBMITTED
+  CREDIT_APPLICATION_CHECKED
+  CREDIT_APPLICATION_ISSUED_GOVT
+  CREDIT_TRANSFER_RECORDED_GOVT
+  CREDIT_TRANSFER_REJECTED_GOVT
+  CREDIT_TRANSFER_RECOMMEND_APPROVAL
+  CREDIT_TRANSFER_RECOMMEND_REJECT
+  CREDIT_APPLICATION_RECOMMEND_APPROVAL
+  CREDIT_TRANSFER_APPROVED_PARTNER
+  ZEV_MODEL_VALIDATED
+  ZEV_MODEL_REJECTED
+  CREDIT_TRANSFER_RECORDED
+  CREDIT_TRANSFER_REJECTED
+  CREDIT_APPLICATION_ISSUED
+  CREDIT_TRANSFER_SUBMITTED
+  CREDIT_TRANSFER_RESCINDED_PARTNER
+  CREDIT_TRANSFER_REJECTED_PARTNER
+  ZEV_MODEL_RANGE_REPORT_TEST_RESULT_REQUESTED
+  CREDIT_TRANSFER_RESCINDED
+}
+
 model User {
   id                     Int                      @id @default(autoincrement())
   contactEmail           String?                  @map("contact_email")
@@ -70,6 +96,7 @@ model User {
   organizationId         Int                      @map("organization_id")
   roles                  Role[]
   zevUnitTransferHistory ZevUnitTransferHistory[]
+  notifications          Notification[]
 
   @@unique([idp, idpUsername, idpEmail])
   @@map("user")

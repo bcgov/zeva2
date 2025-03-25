@@ -11,6 +11,7 @@ import {
 } from "./generated/client";
 import { getModelYearEnum, getRoleEnum } from "@/lib/utils/getEnums";
 import { Decimal } from "./generated/client/runtime/library";
+import { Notification } from "./generated/client";
 
 // prismaOld to interact with old zeva db; prisma to interact with new zeva db
 const main = () => {
@@ -237,15 +238,24 @@ const main = () => {
     // add ZEV Unit Transfer (formerly Credit Transfer in old DB) records
     const creditTransfersOld = await prismaOld.credit_transfer.findMany();
     for (const creditTransferOld of creditTransfersOld) {
+      const toId = mapOfOldOrgIdsToNewOrgIds[creditTransferOld.credit_to_id];
+      const fromId = mapOfOldOrgIdsToNewOrgIds[creditTransferOld.debit_from_id];
+    
+      if (!toId || !fromId) {
+        throw new Error(`Missing mapped org for transfer ${creditTransferOld.id}`);
+      }
+    
       const zevUnitTransfer = await tx.zevUnitTransfer.create({
         data: {
-          transferToId: creditTransferOld.credit_to_id,
-          transferFromId: creditTransferOld.debit_from_id,
+          transferTo: { connect: { id: toId } },
+          transferFrom: { connect: { id: fromId } },
           status: creditTransferOld.status as any,
         },
       });
+    
       mapOfOldCreditTransferIdsToNewZevUnitTransferIds[creditTransferOld.id] = zevUnitTransfer.id;
     }
+    
 
     // add ZEV Unit Transfer Content (formerly Credit Transfer Content in old DB) records
     const creditTransferContentsOld = await prismaOld.credit_transfer_content.findMany();
@@ -306,8 +316,43 @@ const main = () => {
       }
     }
 
+    const notificationsOld = await prismaOld.notification.findMany({
+      select: { id: true, notification_code: true },
+    });
+    
+    const notifCodeById = notificationsOld.reduce<Record<number,string>>((acc, n) => {
+      acc[n.id] = n.notification_code;
+      return acc;
+    }, {});
+    
+
+    const subsOld = await prismaOld.notification_subscription.findMany({
+      select: { user_profile_id: true, notification_id: true },
+    });
+    
+    const grouped = subsOld.reduce<Record<number,string[]>>((acc, sub) => {
+      const code = notifCodeById[sub.notification_id];
+      if (!code) return acc;
+      acc[sub.user_profile_id] ??= [];
+      acc[sub.user_profile_id].push(code);
+      return acc;
+    }, {});
+    
+    for (const [oldUserId, codes] of Object.entries(grouped)) {
+      const newUserId = mapOfOldUserIdsToNewUserIds[Number(oldUserId)];
+      if (!newUserId) continue;
+    
+      const validNotifications = codes
+        .map(code => code as Notification)
+        .filter((n): n is Notification => !!n);
+    
+      await tx.user.update({
+        where: { id: newUserId },
+        data: { notifications: { set: validNotifications } },
+      });
+    }
   });
-};
+}; 
 
 main()
   .then(async () => {
