@@ -726,8 +726,8 @@ const main = () => {
             },
           });
         }
-      }); // end prisma.$transaction
-    }; // end main()
+      });
+    };
     
     main()
       .then(async () => {
