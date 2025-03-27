@@ -18,18 +18,14 @@ export type ZevUnitTransferWithContentAndOrgs = {
 } & ZevUnitTransfer;
 
 export async function getZevUnitTransfers() {
-  let result;
-  const session = await auth();
-  const isGov = session?.user?.isGovernment;
-  const organizationId = session?.user?.organizationId;
-  result = await prisma.zevUnitTransfer.findMany({
-    orderBy: [
-      {
-        id: "asc",
-      },
-    ],
+  return await prisma.zevUnitTransfer.findMany({
+    orderBy: [{ id: "asc" }],
+    include: {
+      zevUnitTransferContent: true,
+      transferFrom: true,
+      transferTo: true,
+    },
   });
-  return result;
 }
 
 export const getZevUnitTransfer = async (

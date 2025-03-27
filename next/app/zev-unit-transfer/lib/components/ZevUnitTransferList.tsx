@@ -1,15 +1,13 @@
 
-"use client";
-
 import React from 'react';
 import { createColumnHelper } from '@tanstack/react-table';
-import { ZevUnitTransfer } from '@/prisma/generated/client';
 import { Table } from '@/app/lib/components';
-import { ZevUnitTransferWithContentAndOrgs } from '../data';
+import { getZevUnitTransfers, ZevUnitTransferWithContentAndOrgs } from '../data';
 
-export default function ZevUnitTransferList() {
+export default async function ZevUnitTransferList() {
   const [data, setData] = React.useState<ZevUnitTransferWithContentAndOrgs[]>([]);
   const columnHelper = createColumnHelper<ZevUnitTransferWithContentAndOrgs>();
+  const transfers = await getZevUnitTransfers();
 
   const columns = React.useMemo(() => [
     columnHelper.accessor('id', {
@@ -17,29 +15,20 @@ export default function ZevUnitTransferList() {
       cell: info => <i>{info.getValue()}</i>,
       header: () => <span>ID</span>,
     }),
-    columnHelper.accessor('transferToId', {
-      id: 'lastName',
+    columnHelper.accessor('transferFrom.name', {
+      id: 'From',
       cell: info => <i>{info.getValue()}</i>,
       header: () => <span>To</span>,
     }),
-    columnHelper.accessor('transferFromId', {
-      header: () => 'From',
+    columnHelper.accessor('transferTo.name', {
+      header: () => 'To',
       cell: info => info.renderValue(),
     }),
-    columnHelper.accessor('status', {
+    columnHelper.accessor('zevUnitTransferContent.numberOfUnits.e', {
       header: () => <span>Status</span>,
       cell: info => info.renderValue(),
     }),
   ], [columnHelper]);
-
-  React.useEffect(() => {
-    async function fetchData() {
-      const res = await fetch('/api/unit-transactions');
-      const json = await res.json();
-      setData(json);
-    }
-    fetchData();
-  }, []);
 
   return <Table data={data} columns={columns} pageSize={10} />;
 }
