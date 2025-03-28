@@ -11,14 +11,18 @@ import {
   useReactTable,
 } from '@tanstack/react-table';
 import { FaArrowLeft, FaArrowRight, FaDownLong, FaUpLong } from 'react-icons/fa6';
+import { Show } from './layout';
+import { usePathname, useRouter } from 'next/navigation';
 
 export interface ITableProps<T extends object = {}> {
   columns: ColumnDef<T, any>[];
   data: T[];
   pageSize?: number;
+  footer?: boolean;
 }
 
-export const Table = <T extends object>({ columns, data, pageSize }: ITableProps<T>) => {
+export const Table = <T extends object>({ columns, data, pageSize, footer }: ITableProps<T>) => {
+  const router = useRouter();
   const table = useReactTable({
     data,
     columns,
@@ -33,6 +37,13 @@ export const Table = <T extends object>({ columns, data, pageSize }: ITableProps
   const rows = pageSize
     ? table.getPaginationRowModel().rows
     : table.getRowModel().rows;
+
+  const pathname = usePathname();
+
+  const handleNavigation = (id: string) => {
+    const newPath = `${pathname}/${id}`;
+    router.push(newPath);
+  };
 
   return (
     <div className="p-2">
@@ -65,7 +76,7 @@ export const Table = <T extends object>({ columns, data, pageSize }: ITableProps
         </thead>
         <tbody className="bg-white divide-y divide-gray-200">
           {rows.map(row => (
-            <tr key={row.id}>
+            <tr key={row.id} className='hover:bg-gray-200 transition-colors cursor-pointer' onClick={() => handleNavigation(row.id)}>
               {row.getVisibleCells().map(cell => (
                 <td key={cell.id} className="px-6 py-4 whitespace-nowrap">
                   {flexRender(cell.column.columnDef.cell, cell.getContext())}
@@ -74,35 +85,37 @@ export const Table = <T extends object>({ columns, data, pageSize }: ITableProps
             </tr>
           ))}
         </tbody>
-        <tfoot className="bg-gray-50">
-          {table.getFooterGroups().map(footerGroup => (
-            <tr key={footerGroup.id}>
-              {footerGroup.headers.map(header => (
-                <th
-                  key={header.id}
-                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                >
-                  {header.isPlaceholder
-                    ? null
-                    : flexRender(header.column.columnDef.footer, header.getContext())}
-                </th>
-              ))}
-            </tr>
-          ))}
-        </tfoot>
+        <Show when={!!footer}>
+          <tfoot className="bg-gray-50">
+            {table.getFooterGroups().map(footerGroup => (
+              <tr key={footerGroup.id}>
+                {footerGroup.headers.map(header => (
+                  <th
+                    key={header.id}
+                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                  >
+                    {header.isPlaceholder
+                      ? null
+                      : flexRender(header.column.columnDef.footer, header.getContext())}
+                  </th>
+                ))}
+              </tr>
+            ))}
+          </tfoot>
+        </Show>
       </table>
       {pageSize && (
         <div className="flex items-center justify-center bg-navBorder w-full rounded p-2">
           <FaArrowLeft
             onClick={() => table.getCanPreviousPage() && table.previousPage()}
-            className='mr-2 text-defaultTextBlack'
+            className='mr-2 text-defaultTextBlack cursor-pointer'
           />
           <span className="text-sm text-gray-700">
             Page {table.getState().pagination.pageIndex + 1} of {table.getPageCount()}
           </span>
           <FaArrowRight
             onClick={() => table.getCanNextPage() && table.nextPage()}
-            className='ml-2 text-defaultTextBlack'
+            className='ml-2 text-defaultTextBlack cursor-pointer'
           />
         </div>
       )
