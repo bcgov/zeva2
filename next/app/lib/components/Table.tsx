@@ -36,7 +36,7 @@ export const Table = <T extends object>({ columns, data, pageSize }: ITableProps
 
   return (
     <div className="p-2">
-      <table className="min-w-full divide-y divide-gray-200">
+      <table className="min-w-full divide-y divide-gray-200 rounded border-t border-l border-r border-navBorder">
         <thead className="bg-gray-50">
           {table.getHeaderGroups().map(headerGroup => (
             <tr key={headerGroup.id}>
@@ -46,18 +46,18 @@ export const Table = <T extends object>({ columns, data, pageSize }: ITableProps
                   onClick={header.column.getToggleSortingHandler()}
                   className="cursor-pointer px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
                 >
-                  {header.isPlaceholder ? null : (
-                    <>
-                      {flexRender(header.column.columnDef.header, header.getContext())}
-                      <span>
+                  <span className='inline-flex items-center gap-1'>
+                    {header.isPlaceholder ? null : (
+                      <>
+                        {flexRender(header.column.columnDef.header, header.getContext())}
                         {header.column.getIsSorted() === 'asc'
-                          ? <FaUpLong />
+                          ? <FaUpLong size={10} className='mb-1' />
                           : header.column.getIsSorted() === 'desc'
-                            ? <FaDownLong />
+                            ? <FaDownLong size={10} className='mb-1' />
                             : ''}
-                      </span>
-                    </>
-                  )}
+                      </>
+                    )}
+                  </span>
                 </th>
               ))}
             </tr>
@@ -92,17 +92,17 @@ export const Table = <T extends object>({ columns, data, pageSize }: ITableProps
         </tfoot>
       </table>
       {pageSize && (
-        <div className="flex items-center mt-2 justify-self-center">
+        <div className="flex items-center justify-center bg-navBorder w-full rounded p-2">
           <FaArrowLeft
             onClick={() => table.getCanPreviousPage() && table.previousPage()}
-            className='mr-2'
+            className='mr-2 text-defaultTextBlack'
           />
           <span className="text-sm text-gray-700">
             Page {table.getState().pagination.pageIndex + 1} of {table.getPageCount()}
           </span>
           <FaArrowRight
             onClick={() => table.getCanNextPage() && table.nextPage()}
-            className='ml-2'
+            className='ml-2 text-defaultTextBlack'
           />
         </div>
       )

@@ -1,6 +1,4 @@
 
-"use client";
-
 import React from 'react';
 import ZevUnitTransferList from './lib/components/ZevUnitTransferList';
 
