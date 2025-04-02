@@ -20,10 +20,7 @@ export type ZevUnitTransferWithContentAndOrgs = {
 export const getZevUnitTransfers = async (): Promise<
   ZevUnitTransferWithContentAndOrgs[]
 > => {
-  const session = await auth();
-  const userIsGov = session?.user?.isGovernment;
-  const userOrgId = session?.user?.organizationId;
-
+  const { userIsGov, userOrgId } = await getUserInfo();
   if (userIsGov) {
     return await prisma.zevUnitTransfer.findMany({
       where: {

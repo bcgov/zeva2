@@ -98,6 +98,7 @@ model User {
   zevUnitTransferHistory ZevUnitTransferHistory[]
   notifications          Notification[]
   ZevUnitTransferComment ZevUnitTransferComment[]
+
   @@unique([idp, idpUsername, idpEmail])
   @@map("user")
 }
