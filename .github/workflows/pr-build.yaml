@@ -21,8 +21,8 @@ concurrency:
 jobs:
   versioning:
     if: >
-      (github.event.action == 'labeled' && github.event.label.name == 'build' && (github.event.pull_request.base.ref == 'develop' || github.event.pull_request.base.ref == release/*) ) ||
-      (github.event.action == 'synchronize' && contains(github.event.pull_request.labels.*.name, 'build') && ( github.event.pull_request.base.ref == 'develop' || github.event.pull_request.base.ref == release/*) ) )
+      (github.event.action == 'labeled' && github.event.label.name == 'build' && (github.event.pull_request.base.ref == 'develop' || github.event.pull_request.base.ref == 'release') ) ||
+      (github.event.action == 'synchronize' && contains(github.event.pull_request.labels.*.name, 'build') && ( github.event.pull_request.base.ref == 'develop' || github.event.pull_request.base.ref == 'release') ) )
 
     runs-on: ubuntu-latest
 
