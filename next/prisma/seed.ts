@@ -15,6 +15,7 @@ import {
 import { getModelYearEnum, getRoleEnum } from "@/lib/utils/getEnums";
 import { Decimal } from "./generated/client/runtime/library";
 import { Notification } from "./generated/client";
+import { isNotification } from "@/app/lib/utils/typeGuards";
 
 // prismaOld to interact with old zeva db; prisma to interact with new zeva db
 const main = () => {
@@ -161,7 +162,7 @@ const main = () => {
     
       const validNotifications = codes
         .map(code => code as Notification)
-        .filter((n): n is Notification => !!n);
+        .filter((n) => isNotification(n));
     
       await tx.user.update({
         where: { id: newUserId },
