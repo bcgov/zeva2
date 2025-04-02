@@ -25,6 +25,7 @@ const Page = async (props: { params: Promise<{ id: string }> }) => {
           <ZevUnitTransfer id={id} />
         </Suspense>
       </ContentCard>
+      <ContentCard title="Actions">Todo</ContentCard>
     </div>
   );
 };

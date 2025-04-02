@@ -7,7 +7,7 @@ import { usePathname } from "next/navigation";
 import { FaAngleDown, FaAngleUp } from "react-icons/fa";
 import { keycloakSignOut } from "../actions/keycloak";
 import { Role } from "@/prisma/generated/client";
-import { User } from "../types";
+import { User } from "@auth/core/types";
 import { Row } from "./layout";
 
 export interface INavbarOption {

@@ -7,6 +7,7 @@ import {
 } from "./lib/data/user";
 import { Idp } from "./prisma/generated/client";
 import { getIdpEnum } from "./lib/utils/getEnums";
+import { Role } from "@/prisma/generated/client";
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
   providers: [Keycloak],
@@ -39,6 +40,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           }
         }
         if (user && user.isActive) {
+          token.internalId = user.id;
           token.roles = user.roles;
           token.isGovernment = user.organization.isGovernment;
           token.organizationId = user.organizationId;
@@ -52,6 +54,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       return token;
     },
     session({ session, token }) {
+      session.user.internalId = token.internalId;
       session.user.idToken = token.idToken;
       session.user.roles = token.roles;
       session.user.isGovernment = token.isGovernment;
@@ -74,3 +77,21 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     },
   },
 });
+
+export interface UserInfo {
+  userId: number;
+  userIsGov: boolean;
+  userOrgId: number;
+  userRoles: Role[];
+}
+
+export const getUserInfo = async (): Promise<UserInfo> => {
+  const session = await auth();
+  const user = session?.user;
+  return {
+    userId: user?.internalId ?? -1,
+    userIsGov: user?.isGovernment ?? false,
+    userOrgId: user?.organizationId ?? -1,
+    userRoles: user?.roles ?? [],
+  };
+};

@@ -141,7 +141,7 @@ model ZevUnitTransaction {
   zevClass       ZevClass        @map("zev_class")
   vehicleClass   VehicleClass    @map("vehicle_class")
   modelYear      ModelYear       @map("model_year")
-  timestamp      DateTime        @db.Timestamptz(6)
+  timestamp      DateTime        @default(now()) @db.Timestamptz(6)
 
   @@map("zev_unit_transaction")
 }
@@ -226,7 +226,7 @@ model ZevUnitTransferHistory {
   zevUnitTransfer       ZevUnitTransfer                @relation(fields: [zevUnitTransferId], references: [id])
   userId                Int                            @map("user_id")
   user                  User                           @relation(fields: [userId], references: [id])
-  timestamp             DateTime                       @db.Timestamptz(6)
+  timestamp             DateTime                       @default(now()) @db.Timestamptz(6)
   afterUserActionStatus ZevUnitTransferHistoryStatuses @map("after_user_action_status")
 
   @@unique([zevUnitTransferId, afterUserActionStatus])

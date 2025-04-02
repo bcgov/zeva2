@@ -1,4 +1,4 @@
-import { auth } from "@/auth";
+import { getUserInfo } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import {
   Organization,
@@ -20,9 +20,7 @@ export type ZevUnitTransferWithContentAndOrgs = {
 export const getZevUnitTransfer = async (
   id: number,
 ): Promise<ZevUnitTransferWithContentAndOrgs | null> => {
-  const session = await auth();
-  const userIsGov = session?.user?.isGovernment;
-  const userOrgId = session?.user?.organizationId;
+  const { userIsGov, userOrgId } = await getUserInfo();
   if (userIsGov) {
     return await prisma.zevUnitTransfer.findUnique({
       where: {
@@ -66,14 +64,14 @@ export const getZevUnitTransfer = async (
   return null;
 };
 
-export type ZevUnitTransferHistoryWithUser = ZevUnitTransferHistory & { user: User };
+export type ZevUnitTransferHistoryWithUser = ZevUnitTransferHistory & {
+  user: User;
+};
 
 export const getZevUnitTransferHistories = async (
   transferId: number,
 ): Promise<ZevUnitTransferHistoryWithUser[]> => {
-  const session = await auth();
-  const userIsGov = session?.user?.isGovernment;
-  const userOrgId = session?.user?.organizationId;
+  const { userIsGov, userOrgId } = await getUserInfo();
   if (userIsGov) {
     const transfer = await prisma.zevUnitTransfer.findUnique({
       where: {
@@ -128,9 +126,7 @@ export const getZevUnitTransferHistories = async (
 };
 
 export const getZevUnitTransferComments = async (transferId: number) => {
-  const session = await auth();
-  const userIsGov = session?.user?.isGovernment;
-  const userOrgId = session?.user?.organizationId;
+  const { userIsGov, userOrgId } = await getUserInfo();
   if (userIsGov) {
     return await prisma.zevUnitTransferComment.findMany({
       where: {
@@ -151,5 +147,23 @@ export const getZevUnitTransferComments = async (transferId: number) => {
       },
     },
     include: { user: true },
+  });
+};
+
+export type orgIdAndName = {
+  id: number;
+  name: string;
+};
+
+export const getOrgIdsAndNames = async (): Promise<orgIdAndName[]> => {
+  // no need for auth checks additional to what's in middleware
+  return await prisma.organization.findMany({
+    where: {
+      isGovernment: false,
+    },
+    select: {
+      id: true,
+      name: true,
+    },
   });
 };
