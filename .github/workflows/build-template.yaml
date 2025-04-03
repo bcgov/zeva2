@@ -53,7 +53,7 @@ jobs:
           oc process -f ./next-bc.yaml VERSION=${{ inputs.version }} GIT_REF=${{ inputs.git_ref }} | oc apply --wait=true -f - -n ${{ secrets.namespace-plate }}-tools
           oc -n ${{ secrets.nampespace-plate }} start-build zeva2-next-${{ inputs.version }} --wait=true
           oc -n ${{ secrets.namespace-plate }}-dev get imagestream zeva2-next || oc -n ${{ secrets.namespace-plate }}-dev create imagestream zeva2-next
-          oc tag ${{ env.TOOLS_NAMESPACE }}/zeva2-next:${{ env.VERSION }} ${{ env.DEV_NAMESPACE }}/zeva2-next:${{ env.VERSION }}
+          oc tag ${{ secrets.namespace-plate }}-tools/zeva2-next:${{ inputs.version }} ${{ secrets.namespace-plate }}-dev/zeva2-next:${{ inputs.version }}
 
       # - name: Build Bullmq
       #   run: |
