@@ -87,31 +87,15 @@ jobs:
     needs: [install-oc, versioning]
     runs-on: ubuntu-latest
     steps:
-      - name: Check if PR author is a collaborator
-        id: check_collab
+      - name: Verify PR author
         uses: actions/github-script@v6
         with:
           script: |
+            const allowedAuthors = ['kuanfandevops', 'emi-hi', 'JulianForeman', 'rogerlcleung', 'tim738745'];
             const prAuthor = context.payload.pull_request.user.login;
-            try {
-              const { status } = await github.repos.checkCollaborator({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                username: prAuthor
-              });
-              core.info(`${prAuthor} is a collaborator.`);
-              return status === 204 ? "trusted" : "untrusted";
-            } catch (error) {
-              core.info(`${prAuthor} is not a collaborator.`);
-              return "untrusted";
+            if (!allowedAuthors.includes(prAuthor)) {
+              throw new Error(`PR author ${prAuthor} is not allowed.`);
             }
-          result-encoding: string
-
-      - name: Fail if author is untrusted
-        if: steps.check_collab.outputs.result != 'trusted'
-        run: |
-          echo "The PR author is not a trusted collaborator."
-          exit 1
           
   build:
     name: Build Zeva2 Pull Request
