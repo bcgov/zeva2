@@ -1,0 +1,73 @@
+name: Deploy Template
+
+on:
+  workflow_call:
+    inputs:
+      git_ref:
+        required: true
+        type: string
+      version:
+        required: true
+        type: string
+      values_file:
+        required: true
+        type: string
+    secrets:
+      tools-namespace:
+        required: true
+      target-namespace:
+        required: true
+      openshift-server:
+        required: true
+      openshift-token:
+        required: true
+      manifest-repo-deploy-key:
+        required: true
+
+jobs:
+
+  deploy:
+    name: Deploy Zeva2
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+
+    steps:
+      - name: Log in to Openshift
+        uses: redhat-actions/oc-login@v1.3
+        with:
+          openshift_server_url: ${{ secrets.openshift-server }}
+          openshift_token: ${{ secrets.openshift-token }}
+          insecure_skip_tls_verify: true
+          namespace: ${{ secrets.tools-namespace }}
+
+      - name: Tag images to target namespace
+        run: |
+          echo "VERSION=${{inputs.version }}"
+          oc -n ${{ secrets.target-namespace }} get imagestream zeva2-next || oc -n ${{ secrets.target-namespace }} create imagestream zeva2-next
+          oc -n ${{ secrets.target-namespace }} get imagestream zeva2-bullmq || oc -n ${{ secrets.target-namespace }} create imagestream zeva2-bullmq
+          oc tag ${{ secrets.tools-namespace }}/zeva2-next:${{ inputs.version}} ${{ secrets.target-namespace }}/zeva2-next:${{ inputs.version}}
+          oc tag ${{ secrets.tools-namespace }}/zeva2-bullmq:${{ inputs.version}} ${{ secrets.target-namespace }}/zeva2-bullmq:${{ inputs.version}}
+
+      - name: Checkout Manifest repository
+        uses: actions/checkout@v4.1.1
+        with:
+          repository: bcgov-c/tenant-gitops-ea8eab
+          ref: main
+          ssh-key: ${{ secrets.manifest-repo-deploy-key }}
+
+      - name: Update tags
+        uses: mikefarah/yq@v4.40.5
+        with:
+          cmd: |
+            yq -i '.image.tag = "${{ inputs.version}}"' zeva2/zeva2-next/${{ inputs.values_file }}
+            yq -i '.image.tag = "$${{ inputs.version}}"' zeva2/zeva2-bullmq/${{ inputs.values_file }}
+
+      - name: GitHub Commit & Push
+        shell: bash {0}
+        run: |
+          git config --global user.email "actions@github.com"
+          git config --global user.name "GitHub Actions"
+          git add zeva2/zeva2-next/values-dev.yaml
+          git add zeva2/zeva2-bullmq/values-dev.yaml
+          git commit -m "Update the zeva2 image tags to ${{ inputs.version}} on ${{ secrets.target-namespace }}"
+          git push

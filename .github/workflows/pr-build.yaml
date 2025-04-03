@@ -108,3 +108,18 @@ jobs:
       tools-namespace: ${{ secrets.OPENSHIFT_NAMESPACE_PLATE }}-tools
       openshift-server: ${{ secrets.OPENSHIFT_SERVER }}
       openshift-token: ${{ secrets.OPENSHIFT_TOKEN }}
+
+  deploy:
+    name: Deploy Zeva2 Pull Request
+    needs: [install-oc, versioning]
+    uses: ./.github/workflows/deploy-template.yaml
+    with:
+      git_ref: ${{ github.ref_name }}
+      version: ${{ needs.versioning.outputs.VERSION }}
+      values_file: values-pr.yaml
+    secrets:
+      tools-namespace: ${{ secrets.OPENSHIFT_NAMESPACE_PLATE }}-tools
+      target-namespace: ${{ secrets.OPENSHIFT_NAMESPACE_PLATE }}-dev
+      openshift-server: ${{ secrets.OPENSHIFT_SERVER }}
+      openshift-token: ${{ secrets.OPENSHIFT_TOKEN }}
+      manifest-repo-deploy-key: ${{ secrets.MANIFEST_REPO_DEPLOY_KEY }}
