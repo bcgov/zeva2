@@ -82,17 +82,34 @@ jobs:
       openshift-server: ${{ secrets.OPENSHIFT_SERVER }}
       openshift-token: ${{ secrets.OPENSHIFT_TOKEN }}
 
+  tag-images:
+    name: Tag Zeva2 images to Test
+    needs: [versioning, build]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Log in to Openshift
+        uses: redhat-actions/oc-login@v1.3
+        with:
+          openshift_server_url: ${{ secrets.OPENSHIFT_SERVER }}
+          openshift_token: ${{ secrets.OPENSHIFT_TOKEN }}
+          insecure_skip_tls_verify: true
+          namespace: ${{ env.TOOLS_NAMESPACE }}
+
+      - name: Tag images to target namespace
+        run: |
+          echo "VERSION=${{ needs.versioning.outputs.VERSION }}"
+          oc -n ${{ env.TEST_NAMESPACE }} get imagestream zeva2-next || oc -n ${{ env.TEST_NAMESPACE }} create imagestream zeva2-next
+          oc -n ${{ env.TEST_NAMESPACE}} get imagestream zeva2-bullmq || oc -n ${{ env.TEST_NAMESPACE }} create imagestream zeva2-bullmq
+          oc tag ${{ env.TOOLS_NAMESPACE }}/zeva2-next:${{ needs.versioning.outputs.VERSION}} ${{ env.TEST_NAMESPACE}}/zeva2-next:${{ needs.versioning.outputs.VERSION}}
+          oc tag ${{  env.TOOLS_NAMESPACE }}/zeva2-bullmq:${{ needs.versioning.outputs.VERSION}} ${{ env.TEST_NAMESPACE }}/zeva2-bullmq:${{ needs.versioning.outputs.VERSION}}
+
   deploy:
     name: Build Zeva2 from release branch
-    needs: [install-oc, versioning]
+    needs: [install-oc, versioning, tag-images]
     uses: ./.github/workflows/deploy-template.yaml
     with:
       git_ref: ${{ github.ref_name }}
       version: ${{ needs.versioning.outputs.VERSION }}
       values_file: values-test.yaml
     secrets:
-      tools-namespace: ${{ secrets.OPENSHIFT_NAMESPACE_PLATE }}-tools
-      target-namespace: ${{ secrets.OPENSHIFT_NAMESPACE_PLATE }}-test
-      openshift-server: ${{ secrets.OPENSHIFT_SERVER }}
-      openshift-token: ${{ secrets.OPENSHIFT_TOKEN }}
       manifest-repo-deploy-key: ${{ secrets.MANIFEST_REPO_DEPLOY_KEY }}

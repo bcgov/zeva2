@@ -13,14 +13,6 @@ on:
         required: true
         type: string
     secrets:
-      tools-namespace:
-        required: true
-      target-namespace:
-        required: true
-      openshift-server:
-        required: true
-      openshift-token:
-        required: true
       manifest-repo-deploy-key:
         required: true
 
@@ -32,21 +24,6 @@ jobs:
     timeout-minutes: 60
 
     steps:
-      - name: Log in to Openshift
-        uses: redhat-actions/oc-login@v1.3
-        with:
-          openshift_server_url: ${{ secrets.openshift-server }}
-          openshift_token: ${{ secrets.openshift-token }}
-          insecure_skip_tls_verify: true
-          namespace: ${{ secrets.tools-namespace }}
-
-      - name: Tag images to target namespace
-        run: |
-          echo "VERSION=${{inputs.version }}"
-          oc -n ${{ secrets.target-namespace }} get imagestream zeva2-next || oc -n ${{ secrets.target-namespace }} create imagestream zeva2-next
-          oc -n ${{ secrets.target-namespace }} get imagestream zeva2-bullmq || oc -n ${{ secrets.target-namespace }} create imagestream zeva2-bullmq
-          oc tag ${{ secrets.tools-namespace }}/zeva2-next:${{ inputs.version}} ${{ secrets.target-namespace }}/zeva2-next:${{ inputs.version}}
-          oc tag ${{ secrets.tools-namespace }}/zeva2-bullmq:${{ inputs.version}} ${{ secrets.target-namespace }}/zeva2-bullmq:${{ inputs.version}}
 
       - name: Checkout Manifest repository
         uses: actions/checkout@v4.1.1
