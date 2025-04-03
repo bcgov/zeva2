@@ -51,6 +51,11 @@ jobs:
           oc projects
           cd openshift/templates
           oc process -f ./next-bc.yaml VERSION=${{ inputs.version }} GIT_REF=${{ inputs.git_ref }} | oc apply --wait=true -f - -n ${{ secrets.tools-namespace }}
+          # cancel existing builds if there are any
+          for build in $(oc -n ${{ secrets.tools-namespace }} get builds -l buildconfig=zeva2-next-${{ inputs.version }} -o jsonpath='{.items[?(@.status.phase=="Running")].metadata.name}'); do
+            echo "canceling $build"
+            oc -n ${{ secrets.tools-namespace }} cancel-build $build
+          done          
           oc -n ${{ secrets.tools-namespace }} start-build zeva2-next-${{ inputs.version }} --wait=true
 
       - name: Build Bullmq
@@ -59,5 +64,10 @@ jobs:
           oc projects
           cd openshift/templates
           oc process -f ./bullmq-bc.yaml VERSION=${{ inputs.version }} GIT_REF=${{ inputs.git_ref }} | oc apply --wait=true -f - -n ${{ secrets.tools-namespace }}
+          # cancel existing builds if there are any
+          for build in $(oc -n ${{ secrets.tools-namespace }} get builds -l buildconfig=zeva2-bullmq-${{ inputs.version }} -o jsonpath='{.items[?(@.status.phase=="Running")].metadata.name}'); do
+            echo "canceling $build"
+            oc -n ${{ secrets.tools-namespace }} cancel-build $build
+          done               
           oc -n ${{ secrets.tools-namespace }} start-build zeva2-bullmq-${{ inputs.version }} --wait=true
 
