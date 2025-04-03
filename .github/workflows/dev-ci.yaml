@@ -88,9 +88,6 @@ jobs:
     needs: [versioning, build]
     timeout-minutes: 60
 
-    env:
-      VERSION: ${{ needs.versioning.outputs.VERSION }}
-
     steps:
       - name: Log in to Openshift
         uses: redhat-actions/oc-login@v1.3
