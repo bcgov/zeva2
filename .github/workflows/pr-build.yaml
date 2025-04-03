@@ -82,9 +82,40 @@ jobs:
           echo "VERSION=${{ steps.version-step.outputs.SemVer }}"
           echo "VERSION=${{ steps.version-step.outputs.SemVer }}" >> $GITHUB_OUTPUT
 
+  verify-pr-author:
+    name: Verify PR Author
+    needs: [install-oc, versioning]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check if PR author is a collaborator
+        id: check_collab
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const prAuthor = context.payload.pull_request.user.login;
+            try {
+              const { status } = await github.repos.checkCollaborator({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                username: prAuthor
+              });
+              core.info(`${prAuthor} is a collaborator.`);
+              return status === 204 ? "trusted" : "untrusted";
+            } catch (error) {
+              core.info(`${prAuthor} is not a collaborator.`);
+              return "untrusted";
+            }
+          result-encoding: string
+
+      - name: Fail if author is untrusted
+        if: steps.check_collab.outputs.result != 'trusted'
+        run: |
+          echo "The PR author is not a trusted collaborator."
+          exit 1
+          
   build:
     name: Build Zeva2 Pull Request
-    needs: [install-oc, versioning]
+    needs: [install-oc, versioning, verify-pr-author]
     uses: ./.github/workflows/build-template.yaml
     with:
       git_ref: refs/pull/${{ github.event.pull_request.number }}/head
