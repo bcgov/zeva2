@@ -58,6 +58,6 @@ jobs:
           echo "VERSION=${{ inputs.version }}"
           oc projects
           cd openshift/templates
-          oc process -f ./bullmq-bc.yaml VERSION=${{ inputs.version }} GIT_REF=${{ github.ref_name }} | oc apply --wait=true -f - -n ${{ secrets.tools-namespace }}
+          oc process -f ./bullmq-bc.yaml VERSION=${{ inputs.version }} GIT_REF=${{ inputs.git_ref }} | oc apply --wait=true -f - -n ${{ secrets.tools-namespace }}
           oc -n ${{ secrets.tools-namespace }} start-build zeva2-bullmq-${{ inputs.version }} --wait=true
 
