@@ -24,16 +24,6 @@ jobs:
     timeout-minutes: 60
 
     steps:
-      - name: Check out repository
-        uses: actions/checkout@v4.1.1
-        with:
-          ref: ${{ inputs.git_ref }}
-
-      - name: Restore oc command from Cache
-        uses: actions/cache@v4.2.0
-        with:
-          path: /usr/local/bin/oc
-          key: oc-cli-${{ runner.os }}
 
       - name: Log in to Openshift
         uses: redhat-actions/oc-login@v1.3
@@ -42,6 +32,17 @@ jobs:
           openshift_token: ${{ secrets.openshift-token }}
           insecure_skip_tls_verify: true
           namespace: ${{ secrets.tools-namespace }}
+
+      - name: Check out repository
+        uses: actions/checkout@v4.1.1
+        with:
+          ref: ${{ inputs.git_ref }}
+  
+      - name: Restore oc command from Cache
+        uses: actions/cache@v4.2.0
+        with:
+          path: /usr/local/bin/oc
+          key: oc-cli-${{ runner.os }}
 
       - name: Build Next
         run: |
