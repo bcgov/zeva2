@@ -90,6 +90,6 @@ jobs:
       git_ref: ${{ github.event.pull_request.head.ref }}
       version: ${{ needs.versioning.outputs.VERSION }}
     secrets:
-      namespace-plate: ${{ secrets.OPENSHIFT_NAMESPACE_PLATE }}
+      tools-namespace: ${{ secrets.OPENSHIFT_NAMESPACE_PLATE }}-tools
       openshift-server: ${{ secrets.OPENSHIFT_SERVER }}
       openshift-token: ${{ secrets.OPENSHIFT_TOKEN }}
