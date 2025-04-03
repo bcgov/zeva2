@@ -1,0 +1,73 @@
+name: Build Template
+
+on:
+  workflow_call:
+    inputs:
+      git_ref:
+        required: true
+        type: string
+      version:
+        required: true
+        type: string
+    secrets:
+      namespace-plate:
+        required: true
+      openshift-server:
+        required: true
+      openshift-token:
+        required: true
+env:
+  GIT_URL: https://github.com/bcgov/itvr.git
+
+jobs:
+  build:
+    name: Build Zeva2
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4.1.1
+        with:
+          ref: ${{ inputs.git_ref }}
+
+      - name: Restore oc command from Cache
+        uses: actions/cache@v4.2.0
+        with:
+          path: /usr/local/bin/oc
+          key: oc-cli-${{ runner.os }}
+
+      - name: Log in to Openshift
+        uses: redhat-actions/oc-login@v1.3
+        with:
+          openshift_server_url: ${{ secrets.openshift-server }}
+          openshift_token: ${{ secrets.openshift-token }}
+          insecure_skip_tls_verify: true
+          namespace: ${{ secrets.namespace-plate }}-tools
+
+      - name: Build Next
+        run: |
+          echo "VERSION=${{ inputs.version }}"
+          oc projects
+          cd openshift/templates
+          oc process -f ./next-bc.yaml VERSION=${{ inputs.version }} GIT_REF=${{ inputs.git_ref }} | oc apply --wait=true -f - -n ${{ secrets.namespace-plate }}-tools
+          oc -n ${{ secrets.nampespace-plate }} start-build zeva2-next-${{ inputs.version }} --wait=true
+          oc -n ${{ secrets.namespace-plate }}-dev get imagestream zeva2-next || oc -n ${{ secrets.namespace-plate }}-dev create imagestream zeva2-next
+          oc tag ${{ env.TOOLS_NAMESPACE }}/zeva2-next:${{ env.VERSION }} ${{ env.DEV_NAMESPACE }}/zeva2-next:${{ env.VERSION }}
+
+      # - name: Build Bullmq
+      #   run: |
+      #     echo "VERSION=${{ env.VERSION }}"
+      #     oc projects
+      #     cd openshift/templates
+      #     oc process -f ./bullmq-bc.yaml VERSION=${{ env.VERSION }} GIT_REF=${{ github.ref_name }} | oc apply --wait=true -f - -n ${{ env.TOOLS_NAMESPACE }}
+      #     oc -n ${{ env.TOOLS_NAMESPACE }} start-build zeva2-bullmq-${{ env.VERSION }} --wait=true
+      #     oc -n ${{ env.DEV_NAMESPACE }} get imagestream zeva2-bullmq || oc -n ${{ env.DEV_NAMESPACE }} create imagestream zeva2-bullmq
+      #     oc tag ${{ env.TOOLS_NAMESPACE }}/zeva2-bullmq:${{ env.VERSION }} ${{ env.DEV_NAMESPACE }}/zeva2-bullmq:${{ env.VERSION }}
+
+      # - name: Build itvr Backend
+      #   run: |
+      #     cd openshift/templates/backend
+      #     oc process -f ./backend-bc.yaml NAME=itvr SUFFIX=${{ inputs.build-suffix }} VERSION=${{ inputs.build-image-tag-name }} GIT_URL=${{ env.GIT_URL }} GIT_REF=refs/pull/${{ inputs.pr-number }}/head | oc apply --wait=true -f - -n ${{ secrets.tools-namespace }}
+      #     oc cancel-build bc/itvr-backend${{ inputs.build-suffix }}
+      #     oc start-build --wait=true itvr-backend${{ inputs.build-suffix }}
