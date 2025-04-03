@@ -87,7 +87,7 @@ jobs:
     needs: [install-oc, versioning]
     uses: ./.github/workflows/build-template.yaml
     with:
-      git_ref: ${{ github.event.pull_request.head.ref }}
+      git_ref: refs/pull/${{ github.event.pull_request.number }}/head
       version: ${{ needs.versioning.outputs.VERSION }}
     secrets:
       tools-namespace: ${{ secrets.OPENSHIFT_NAMESPACE_PLATE }}-tools
