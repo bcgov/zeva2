@@ -123,7 +123,7 @@ jobs:
           issue-title: "ZEVA2 ${{ needs.versioning.outputs.VERSION  }} Prod Deployment"
 
   deploy:
-    name: Build Zeva2 from release branch
+    name: Deploy Zeva2 from hotfix branch to Prod
     needs: [versioning, approve-prod-deployment]
     uses: ./.github/workflows/deploy-template.yaml
     with:

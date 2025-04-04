@@ -109,7 +109,7 @@ jobs:
 
 
   deploy:
-    name: Build Zeva2 from develop branch
+    name: Deploy Zeva2 develop branch TO Dev
     needs: [install-oc, versioning,tag-images]
     uses: ./.github/workflows/deploy-template.yaml
     with:
