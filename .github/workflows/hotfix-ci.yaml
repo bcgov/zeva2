@@ -1,4 +1,4 @@
-name: Zeva2 Prod CI
+name: Zeva2 Hotfix CI
 
 on:
   push:
