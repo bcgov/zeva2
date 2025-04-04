@@ -41,6 +41,12 @@ services:
       - DATABASE_URL=postgresql://postgres:postgres@db:5432/zeva?schema=public
       - DATABASE_URL_OLD=postgresql://postgres:postgres@host.docker.internal:5432/zeva?schema=public
       - CHECKPOINT_DISABLE=1
+      - CHES_AUTH_URL=https://dev.loginproxy.gov.bc.ca/auth/realms/comsvcauth/protocol/openid-connect/token
+      - CHES_EMAIL_URL=https://ches-dev.api.gov.bc.ca/api/v1/email
+      - EMAIL_SERVICE_CLIENT_ID=CDACC9DF-981917809E3
+      - EMAIL_SERVICE_CLIENT_SECRET=94ef983b-22cb-4583-9f51-1dc6cc56747a
+      - SENDER_EMAIL=ZEVRegulationDoNotReply@gov.bc.ca
+      - SENDER_NAME=Zero-Emission Vehicles Reporting System
       - START_WORKERS=false
     depends_on:
       db:
