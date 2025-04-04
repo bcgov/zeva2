@@ -109,17 +109,81 @@ jobs:
       openshift-server: ${{ secrets.OPENSHIFT_SERVER }}
       openshift-token: ${{ secrets.OPENSHIFT_TOKEN }}
 
+  tag-images:
+    name: Tag Zeva2 images to Test
+    needs: [versioning, build]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Log in to Openshift
+        uses: redhat-actions/oc-login@v1.3
+        with:
+          openshift_server_url: ${{ secrets.OPENSHIFT_SERVER }}
+          openshift_token: ${{ secrets.OPENSHIFT_TOKEN }}
+          insecure_skip_tls_verify: true
+          namespace: ${{ env.TOOLS_NAMESPACE }}
+
+      - name: Tag images to target namespace
+        run: |
+          echo "VERSION=${{ needs.versioning.outputs.VERSION }}"
+          oc tag ${{ env.TOOLS_NAMESPACE }}/zeva2-next:${{ needs.versioning.outputs.VERSION}} ${{ env.DEV_NAMESPACE}}/zeva2-next:${{ needs.versioning.outputs.VERSION}}
+          oc tag ${{  env.TOOLS_NAMESPACE }}/zeva2-bullmq:${{ needs.versioning.outputs.VERSION}} ${{ env.DEV_NAMESPACE }}/zeva2-bullmq:${{ needs.versioning.outputs.VERSION}}
+    
+  # add starting postgresql instance for pr 
+
+  create-postgresql-redis:
+    name: Create PostgreSQL Instance
+    needs: [tag-images]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Manifest repository
+        uses: actions/checkout@v4.1.1
+        with:
+          repository: bcgov-c/tenant-gitops-ea8eab
+          ref: main
+          ssh-key: ${{ secrets.MANIFEST_REPO_DEPLOY_KEY }}
+
+      - name: Log in to Openshift
+        uses: redhat-actions/oc-login@v1.3
+        with:
+          openshift_server_url: ${{ secrets.OPENSHIFT_SERVER }}
+          openshift_token: ${{ secrets.OPENSHIFT_TOKEN }}
+          insecure_skip_tls_verify: true
+          namespace: ${{ env.DEV_NAMESPACE }}
+
+      - name: Create PostgreSQL and Redis instance
+        run: |
+          cd services/postgresql-pr
+          helm -n ${{ env.DEV_NAMESPACE }} -f ./values-dev-pr.yaml upgrade --install zeva2-postgresql-dev-${{ env.PR_NUMBER }} oci://registry-1.docker.io/bitnamicharts/postgresql --version 15.5.17
+          cd ../redis-pr
+          helm -n ${{ env.DEV_NAMESPACE }} -f ./values-dev-pr.yaml upgrade --install zeva2-redis-dev-${{ env.PR_NUMBER }} oci://registry-1.docker.io/bitnamicharts/redis --version 19.6.1
+
+  replace-values:
+    name: Replace values in values-dev-pr.yaml
+    needs: [create-postgresql-redis]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Manifest repository
+        uses: actions/checkout@v4.1.1
+        with:
+          repository: bcgov-c/tenant-gitops-ea8eab
+          ref: main
+          ssh-key: ${{ secrets.MANIFEST_REPO_DEPLOY_KEY }}
+
+      - name: Replace values in values-dev-pr.yaml
+        uses: mikefarah/yq@v4.40.5
+        with:
+          cmd: |
+            yq -i '.route.host = "zeva2-dev-${{ env.PR_NUMBER}}.apps.silver.devops.gov.bc.ca"' zeva2/zeva2-next/values-dev-pr.yaml
+            yq -i '.env[] | select(.name=="DATABASE_URL") | .value = "postgresql://test:test@zeva2-postgresql-dev-${{ env.PR_NUMBER}}.${{ env.DEV_NAMESPACE }}.svc.cluster.local:5432/zeva?schema=public"' zeva2/zeva2-next/values-dev-pr.yaml
+            cat zeva2/zeva2-next/values-dev-pr.yaml
+
   deploy:
     name: Deploy Zeva2 Pull Request
-    needs: [install-oc, versioning]
+    needs: [versioning, replace-values]
     uses: ./.github/workflows/deploy-template.yaml
     with:
       git_ref: ${{ github.ref_name }}
       version: ${{ needs.versioning.outputs.VERSION }}
-      values_file: values-pr.yaml
+      values_file: values-dev-pr.yaml
     secrets:
-      tools-namespace: ${{ secrets.OPENSHIFT_NAMESPACE_PLATE }}-tools
-      target-namespace: ${{ secrets.OPENSHIFT_NAMESPACE_PLATE }}-dev
-      openshift-server: ${{ secrets.OPENSHIFT_SERVER }}
-      openshift-token: ${{ secrets.OPENSHIFT_TOKEN }}
       manifest-repo-deploy-key: ${{ secrets.MANIFEST_REPO_DEPLOY_KEY }}

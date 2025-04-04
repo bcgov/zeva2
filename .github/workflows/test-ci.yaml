@@ -97,15 +97,28 @@ jobs:
 
       - name: Tag images to target namespace
         run: |
-          echo "VERSION=${{ needs.versioning.outputs.VERSION }}"
-          oc -n ${{ env.TEST_NAMESPACE }} get imagestream zeva2-next || oc -n ${{ env.TEST_NAMESPACE }} create imagestream zeva2-next
-          oc -n ${{ env.TEST_NAMESPACE}} get imagestream zeva2-bullmq || oc -n ${{ env.TEST_NAMESPACE }} create imagestream zeva2-bullmq
           oc tag ${{ env.TOOLS_NAMESPACE }}/zeva2-next:${{ needs.versioning.outputs.VERSION}} ${{ env.TEST_NAMESPACE}}/zeva2-next:${{ needs.versioning.outputs.VERSION}}
-          oc tag ${{  env.TOOLS_NAMESPACE }}/zeva2-bullmq:${{ needs.versioning.outputs.VERSION}} ${{ env.TEST_NAMESPACE }}/zeva2-bullmq:${{ needs.versioning.outputs.VERSION}}
+          oc tag ${{ env.TOOLS_NAMESPACE }}/zeva2-bullmq:${{ needs.versioning.outputs.VERSION}} ${{ env.TEST_NAMESPACE }}/zeva2-bullmq:${{ needs.versioning.outputs.VERSION}}
+
+
+  approve-test-deployment:
+    name: Approve Test Deployment
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    needs: [versioning, tag-images]
+
+    steps:
+      - name: Ask for approval for ZEVA2 ${{ needs.versioning.outputs.VERSION  }} Test deployment
+        uses: trstringer/manual-approval@v1.6.0
+        with:
+          secret: ${{ github.TOKEN }}
+          approvers: emi-hi,tim738745,kuanfandevops,JulianForeman,rogerlcleung
+          minimum-approvals: 1
+          issue-title: "ZEVA2 ${{ needs.versioning.outputs.VERSION  }} Test Deployment"
 
   deploy:
     name: Build Zeva2 from release branch
-    needs: [install-oc, versioning, tag-images]
+    needs: [versioning, approve-test-deployment]
     uses: ./.github/workflows/deploy-template.yaml
     with:
       git_ref: ${{ github.ref_name }}
