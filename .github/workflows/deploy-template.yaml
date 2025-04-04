@@ -24,6 +24,11 @@ jobs:
     timeout-minutes: 60
 
     steps:
+      - name: Restore oc command from Cache
+        uses: actions/cache@v4.2.0
+        with:
+          path: /usr/local/bin/oc
+          key: oc-cli-${{ runner.os }}
 
       - name: Checkout Manifest repository
         uses: actions/checkout@v4.1.1
