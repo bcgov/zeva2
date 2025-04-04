@@ -1,14 +1,14 @@
-name: Zeva2 Dev CI
+name: Zeva2 Prod CI
 
 on:
   push:
     branches:
-      - develop
+      - main
   workflow_dispatch:
 
 env:
   TOOLS_NAMESPACE: ${{ secrets.OPENSHIFT_NAMESPACE_PLATE }}-tools
-  DEV_NAMESPACE: ${{ secrets.OPENSHIFT_NAMESPACE_PLATE }}-dev
+  PROD_NAMESPACE: ${{ secrets.OPENSHIFT_NAMESPACE_PLATE }}-prod
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -71,7 +71,7 @@ jobs:
           echo "VERSION=${{ steps.version-step.outputs.SemVer }}" >> $GITHUB_OUTPUT
 
   build:
-    name: Build Zeva2 from develop
+    name: Build Zeva2 from release branch
     needs: [install-oc, versioning]
     uses: ./.github/workflows/build-template.yaml
     with:
@@ -83,7 +83,7 @@ jobs:
       openshift-token: ${{ secrets.OPENSHIFT_TOKEN }}
 
   tag-images:
-    name: Tag Zeva2 images to Test
+    name: Tag Zeva2 images to Prod
     needs: [versioning, build]
     runs-on: ubuntu-latest
     steps:
@@ -97,18 +97,32 @@ jobs:
 
       - name: Tag images to target namespace
         run: |
-          echo "VERSION=${{ needs.versioning.outputs.VERSION }}"
-          oc tag ${{ env.TOOLS_NAMESPACE }}/zeva2-next:${{ needs.versioning.outputs.VERSION}} ${{ env.DEV_NAMESPACE}}/zeva2-next:${{ needs.versioning.outputs.VERSION}}
-          oc tag ${{ env.TOOLS_NAMESPACE }}/zeva2-bullmq:${{ needs.versioning.outputs.VERSION}} ${{ env.DEV_NAMESPACE }}/zeva2-bullmq:${{ needs.versioning.outputs.VERSION}}
+          oc tag ${{ env.TOOLS_NAMESPACE }}/zeva2-next:${{ needs.versioning.outputs.VERSION}} ${{ env.PROD_NAMESPACE}}/zeva2-next:${{ needs.versioning.outputs.VERSION}}
+          oc tag ${{ env.TOOLS_NAMESPACE }}/zeva2-bullmq:${{ needs.versioning.outputs.VERSION}} ${{ env.PROD_NAMESPACE }}/zeva2-bullmq:${{ needs.versioning.outputs.VERSION}}
 
+
+  approve-prod-deployment:
+    name: Approve Prod Deployment
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    needs: [versioning, tag-images]
+
+    steps:
+      - name: Ask for approval for ZEVA2 ${{ needs.versioning.outputs.VERSION  }} Prod deployment
+        uses: trstringer/manual-approval@v1.6.0
+        with:
+          secret: ${{ github.TOKEN }}
+          approvers: emi-hi,tim738745,kuanfandevops,JulianForeman,rogerlcleung
+          minimum-approvals: 2
+          issue-title: "ZEVA2 ${{ needs.versioning.outputs.VERSION  }} Prod Deployment"
 
   deploy:
-    name: Build Zeva2 from develop branch
-    needs: [install-oc, versioning,tag-images]
+    name: Build Zeva2 from release branch
+    needs: [versioning, approve-prod-deployment]
     uses: ./.github/workflows/deploy-template.yaml
     with:
       git_ref: ${{ github.ref_name }}
       version: ${{ needs.versioning.outputs.VERSION }}
-      values_file: values-dev.yaml
+      values_file: values-prod.yaml
     secrets:
       manifest-repo-deploy-key: ${{ secrets.MANIFEST_REPO_DEPLOY_KEY }}
