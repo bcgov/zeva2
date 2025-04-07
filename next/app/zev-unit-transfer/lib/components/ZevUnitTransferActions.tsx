@@ -3,6 +3,7 @@ import {
   govIssueTransfer,
   govRecommendTransfer,
   govRejectTransfer,
+  govReturnTransfer,
   rescindTransfer,
   transferToSupplierActionTransfer,
 } from "../actions";
@@ -35,7 +36,8 @@ const ZevUnitTransferActions = async (props: { id: number }) => {
       userRoles.some((role) => {
         return role === Role.ENGINEER_ANALYST;
       }) &&
-      status === ZevUnitTransferStatuses.APPROVED_BY_TRANSFER_TO
+      (status === ZevUnitTransferStatuses.APPROVED_BY_TRANSFER_TO ||
+        status === ZevUnitTransferStatuses.RETURNED_TO_ANALYST)
     ) {
       commentActionsMap["Recommend Approval"] = async (comment: string) => {
         "use server";
@@ -63,6 +65,11 @@ const ZevUnitTransferActions = async (props: { id: number }) => {
       (status === ZevUnitTransferStatuses.RECOMMEND_APPROVAL_GOV ||
         status === ZevUnitTransferStatuses.RECOMMEND_REJECTION_GOV)
     ) {
+      commentActionsMap["Return To Analyst"] = async (comment: string) => {
+        "use server";
+        await govReturnTransfer(transferId, comment);
+        revalidateAndRedirect(path, RedirectType.replace);
+      };
       noCommentActionsMap["Approve"] = async () => {
         "use server";
         await govIssueTransfer(transferId);

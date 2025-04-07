@@ -17,6 +17,7 @@ export const transferFromSupplierRescindableStatuses: readonly ZevUnitTransferSt
   [
     ZevUnitTransferHistoryStatuses.SUBMITTED_TO_TRANSFER_TO,
     ZevUnitTransferStatuses.APPROVED_BY_TRANSFER_TO,
+    ZevUnitTransferStatuses.RETURNED_TO_ANALYST,
     ZevUnitTransferStatuses.RECOMMEND_APPROVAL_GOV,
     ZevUnitTransferStatuses.RECOMMEND_REJECTION_GOV,
   ];

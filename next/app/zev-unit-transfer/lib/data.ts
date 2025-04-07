@@ -128,10 +128,12 @@ export const getZevUnitTransferHistories = async (
         },
       },
       include: {
-        zevUnitTransferContent: true,
         ZevUnitTransferHistory: {
           include: {
             user: true,
+          },
+          orderBy: {
+            timestamp: "asc",
           },
         },
       },

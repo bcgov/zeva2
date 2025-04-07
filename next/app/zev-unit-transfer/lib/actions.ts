@@ -185,7 +185,8 @@ export const govRecommendTransfer = async (
     userRoles.some((role) => {
       return role === Role.ENGINEER_ANALYST;
     }) &&
-    status === ZevUnitTransferStatuses.APPROVED_BY_TRANSFER_TO &&
+    (status === ZevUnitTransferStatuses.APPROVED_BY_TRANSFER_TO ||
+      status === ZevUnitTransferStatuses.RETURNED_TO_ANALYST) &&
     (recommendation === ZevUnitTransferStatuses.RECOMMEND_APPROVAL_GOV ||
       recommendation === ZevUnitTransferStatuses.RECOMMEND_REJECTION_GOV)
   ) {
@@ -194,6 +195,30 @@ export const govRecommendTransfer = async (
         transferId,
         userId,
         recommendation,
+        comment,
+        tx,
+      );
+    });
+  }
+};
+
+export const govReturnTransfer = async (
+  transferId: number,
+  comment: string,
+) => {
+  const { userId, userIsGov, userRoles } = await getUserInfo();
+  const { status } = (await getTransfer(transferId)) ?? {};
+  if (
+    userIsGov &&
+    userRoles.some((role) => role === Role.DIRECTOR) &&
+    (status === ZevUnitTransferStatuses.RECOMMEND_APPROVAL_GOV ||
+      status === ZevUnitTransferStatuses.RECOMMEND_REJECTION_GOV)
+  ) {
+    await prisma.$transaction(async (tx) => {
+      await updateTransferStatusAndCreateHistory(
+        transferId,
+        userId,
+        ZevUnitTransferStatuses.RETURNED_TO_ANALYST,
         comment,
         tx,
       );
@@ -233,7 +258,7 @@ export const govIssueTransfer = async (transferId: number) => {
           data: {
             ...data,
             organizationId: transfer.transferFromId,
-            type: TransactionType.DEBIT,
+            type: TransactionType.TRANSFER_AWAY,
           },
         });
         await tx.zevUnitTransaction.create({
