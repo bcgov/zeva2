@@ -4,7 +4,6 @@ import {
   Organization,
   User,
   ZevUnitTransfer,
-  ZevUnitTransferCommentType,
   ZevUnitTransferContent,
   ZevUnitTransferHistory,
   ZevUnitTransferStatuses,
@@ -170,45 +169,35 @@ export const getZevUnitTransferHistories = async (
   return [];
 };
 
-export const getZevUnitTransferComments = async (transferId: number) => {
-  const { userIsGov, userOrgId } = await getUserInfo();
-  if (userIsGov) {
-    return await prisma.zevUnitTransferComment.findMany({
-      where: {
-        zevUnitTransferId: transferId,
-        commentType: ZevUnitTransferCommentType.INTERNAL_GOV,
-      },
-      include: {
-        user: true,
-      },
-    });
-  }
-  return await prisma.zevUnitTransferComment.findMany({
-    where: {
-      zevUnitTransferId: transferId,
-      commentType: ZevUnitTransferCommentType.TO_COUNTERPARTY_UPON_RESCIND,
-      zevUnitTransfer: {
-        OR: [{ transferFromId: userOrgId }, { transferToId: userOrgId }],
-      },
-    },
-    include: { user: true },
-  });
-};
-
 export type orgIdAndName = {
   id: number;
   name: string;
 };
 
-export const getOrgIdsAndNames = async (): Promise<orgIdAndName[]> => {
-  // no need for auth checks additional to what's in middleware
-  return await prisma.organization.findMany({
-    where: {
-      isGovernment: false,
-    },
+export const getOrgsMap = async (
+  orgIdToExclude: number | null,
+  excludeGovOrg: boolean,
+) => {
+  const result: { [key: number]: string } = {};
+  const where: { isGovernment?: false; id?: { not: number } } = {};
+  if (excludeGovOrg) {
+    where.isGovernment = false;
+  }
+  if (orgIdToExclude !== null) {
+    where.id = { not: orgIdToExclude };
+  }
+  const orgs = await prisma.organization.findMany({
+    where: where,
     select: {
       id: true,
       name: true,
     },
+    orderBy: {
+      name: "asc",
+    },
   });
+  for (const org of orgs) {
+    result[org.id] = org.name;
+  }
+  return result;
 };

@@ -15,16 +15,21 @@ import {
 } from "../actions";
 import { LoadingSkeleton } from "@/app/lib/components/skeletons";
 
-const ZevUnitTransferCreate = (props: {
+const ZevUnitTransferCreateOrSave = (props: {
+  type: "create" | "save";
   transferCandidatesMap: { [key: number]: string };
-  onSubmit: (data: ZevUnitTransferPayload) => Promise<void>;
+  initialTransferTo: number;
+  initialContent: ZevUnitTransferContentPayload[];
+  onCreateOrSave: (data: ZevUnitTransferPayload) => Promise<void>;
+  onDelete?: () => Promise<void>;
+  onSubmit?: () => Promise<void>;
 }) => {
-  const [transferTo, setTransferTo] = useState<number>(
-    parseInt(Object.keys(props.transferCandidatesMap)[0]),
+  const [transferTo, setTransferTo] = useState<number>(props.initialTransferTo);
+  const [content, setContent] = useState<ZevUnitTransferContentPayload[]>(
+    props.initialContent,
   );
-  const [content, setContent] = useState<ZevUnitTransferContentPayload[]>([]);
-  //todo: investigate if <Suspense> will work with server actions; if so, there's no need for this createPending state
-  const [createPending, setCreatePending] = useState<boolean>(false);
+  //todo: investigate if <Suspense> will work with server actions; if so, there's no need for this actionPending state
+  const [actionPending, setActionPending] = useState<boolean>(false);
 
   const handleSelectPartner = useCallback((orgId: number) => {
     setTransferTo(orgId);
@@ -73,21 +78,40 @@ const ZevUnitTransferCreate = (props: {
     [],
   );
 
-  const handleSubmit = useCallback(async () => {
+  const handleCreateOrSave = useCallback(async () => {
     // todo: maybe some client-side validation here?
-    setCreatePending(true);
+    setActionPending(true);
     try {
-      // if the submit is successful, will redirect user to created transfer
-      await props.onSubmit({
+      // if the create/save is successful, will redirect user to created/saved transfer
+      await props.onCreateOrSave({
         transferToId: transferTo,
         zevUnitTransferContent: content,
       });
     } catch (e) {
       // todo: show some sort of error message
-      setCreatePending(false);
+      setActionPending(false);
       console.log("zev unit transfer validation error!");
     }
-  }, [props.onSubmit, transferTo, content]);
+  }, [props.onCreateOrSave, transferTo, content]);
+
+  const handleDelete = useCallback(async () => {
+    if (props.onDelete) {
+      await props.onDelete();
+    }
+  }, [props.onDelete]);
+
+  const handleSubmit = useCallback(async () => {
+    if (props.onSubmit) {
+      setActionPending(true);
+      try {
+        await props.onSubmit();
+      } catch (e) {
+        // todo: show some sort of error message
+        setActionPending(false);
+        console.log("zev unit transfer submission to partner error!");
+      }
+    }
+  }, [props.onSubmit]);
 
   const transferOptions = useMemo(() => {
     const result = [];
@@ -171,6 +195,7 @@ const ZevUnitTransferCreate = (props: {
               className="border-2 border-solid"
               placeholder={placeholder}
               key={key}
+              value={value}
               onChange={(event) => {
                 handleContentChange(index, key, event.target.value);
               }}
@@ -209,12 +234,18 @@ const ZevUnitTransferCreate = (props: {
       </ContentCard>
       <ContentCard title="Transfer Contents">{contentJSX}</ContentCard>
       <ContentCard title="Actions">
-        {createPending ? (
+        {actionPending ? (
           <LoadingSkeleton />
         ) : (
           <>
-            <Button onClick={handleContentAdd}>Add line item</Button>
-            <Button onClick={handleSubmit}>Submit</Button>
+            <Button onClick={handleContentAdd}>Add content item</Button>
+            <Button onClick={handleCreateOrSave}>Save</Button>
+            {props.type === "save" && props.onSubmit && props.onDelete && (
+              <>
+                <Button onClick={handleDelete}>Delete</Button>
+                <Button onClick={handleSubmit}>Submit To Partner</Button>
+              </>
+            )}
           </>
         )}
       </ContentCard>
@@ -222,4 +253,4 @@ const ZevUnitTransferCreate = (props: {
   );
 };
 
-export default ZevUnitTransferCreate;
+export default ZevUnitTransferCreateOrSave;

@@ -40,3 +40,9 @@ body {
   background: var(--background);
   font-family: BCSans, Helvetica, sans-serif;
 }
+
+button {
+  @apply m-1;
+  @apply bg-primaryBlue;
+  @apply text-white;
+}

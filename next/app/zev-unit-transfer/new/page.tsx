@@ -1,32 +1,30 @@
-import { getOrgIdsAndNames } from "../lib/data";
-import ZevUnitTransferCreate from "../lib/components/ZevUnitTransferCreate";
+import { getOrgsMap } from "../lib/data";
+import ZevUnitTransferCreateOrSave from "../lib/components/ZevUnitTransferCreateOrSave";
 import { getUserInfo } from "@/auth";
 import { createTransfer, ZevUnitTransferPayload } from "../lib/actions";
 import { redirect } from "next/navigation";
+import { Routes } from "@/app/lib/constants";
 
 const Page = async () => {
   const { userOrgId } = await getUserInfo();
-  const transferCandidates = await getOrgIdsAndNames();
-  const transferCandidatesMap: { [key: number]: string } = {};
-  for (const candidate of transferCandidates) {
-    const candidateId = candidate.id;
-    if (userOrgId !== candidateId)
-      transferCandidatesMap[candidateId] = candidate.name;
-  }
+  const transferCandidatesMap = await getOrgsMap(userOrgId, true);
 
-  const onSubmit = async (data: ZevUnitTransferPayload) => {
+  const onCreate = async (data: ZevUnitTransferPayload) => {
     "use server";
     const createdTransfer = await createTransfer(data);
     if (createdTransfer) {
       const createdTransferId = createdTransfer.id;
-      redirect(`/zev-unit-transfer/${createdTransferId}`);
+      redirect(`${Routes.CreditTransactions}/${createdTransferId}`);
     }
   };
 
   return (
-    <ZevUnitTransferCreate
+    <ZevUnitTransferCreateOrSave
+      type="create"
       transferCandidatesMap={transferCandidatesMap}
-      onSubmit={onSubmit}
+      initialTransferTo={parseInt(Object.keys(transferCandidatesMap)[0])}
+      initialContent={[]}
+      onCreateOrSave={onCreate}
     />
   );
 };

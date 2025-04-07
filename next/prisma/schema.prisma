@@ -97,7 +97,6 @@ model User {
   roles                  Role[]
   zevUnitTransferHistory ZevUnitTransferHistory[]
   notifications          Notification[]
-  ZevUnitTransferComment ZevUnitTransferComment[]
 
   @@unique([idp, idpUsername, idpEmail])
   @@map("user")
@@ -176,6 +175,7 @@ enum ZevUnitTransferStatuses {
   REJECTED_BY_TRANSFER_TO
   RECOMMEND_APPROVAL_GOV
   RECOMMEND_REJECTION_GOV
+  RETURNED_TO_ANALYST
   APPROVED_BY_GOV
   REJECTED_BY_GOV
   DELETED
@@ -192,7 +192,6 @@ model ZevUnitTransfer {
   status                 ZevUnitTransferStatuses
   zevUnitTransferContent ZevUnitTransferContent[]
   ZevUnitTransferHistory ZevUnitTransferHistory[]
-  ZevUnitTransferComment ZevUnitTransferComment[]
 
   @@map("zev_unit_transfer")
 }
@@ -217,6 +216,7 @@ enum ZevUnitTransferHistoryStatuses {
   REJECTED_BY_TRANSFER_TO
   RECOMMEND_APPROVAL_GOV
   RECOMMEND_REJECTION_GOV
+  RETURNED_TO_ANALYST
   APPROVED_BY_GOV
   REJECTED_BY_GOV
 }
@@ -229,26 +229,7 @@ model ZevUnitTransferHistory {
   user                  User                           @relation(fields: [userId], references: [id])
   timestamp             DateTime                       @default(now()) @db.Timestamptz(6)
   afterUserActionStatus ZevUnitTransferHistoryStatuses @map("after_user_action_status")
+  comment               String?
 
-  @@unique([zevUnitTransferId, afterUserActionStatus])
   @@map("zev_unit_transfer_history")
-}
-
-enum ZevUnitTransferCommentType {
-  TO_COUNTERPARTY_UPON_RESCIND
-  INTERNAL_GOV
-}
-
-model ZevUnitTransferComment {
-  id                Int                        @id @default(autoincrement())
-  zevUnitTransferId Int                        @map("zev_unit_transfer_id")
-  zevUnitTransfer   ZevUnitTransfer            @relation(fields: [zevUnitTransferId], references: [id])
-  userId            Int                        @map("user_id")
-  user              User                       @relation(fields: [userId], references: [id])
-  createTimestamp   DateTime                   @default(now()) @map("create_timestamp") @db.Timestamptz(6)
-  updateTimestamp   DateTime                   @updatedAt @map("update_timestamp") @db.Timestamptz(6)
-  comment           String
-  commentType       ZevUnitTransferCommentType @map("comment_type")
-
-  @@map("zev_unit_transfer_comment")
 }

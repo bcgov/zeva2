@@ -1,4 +1,4 @@
-import React from 'react';
+import React from "react";
 
 export interface IRowProps extends React.HTMLAttributes<HTMLDivElement> {
   className?: string;
@@ -6,8 +6,13 @@ export interface IRowProps extends React.HTMLAttributes<HTMLDivElement> {
 }
 
 /**
-* Simple component that renders a flex-row div, useful for creating grid items when paired with <Col>
-*/
+ * Simple component that renders a flex-row div, useful for creating grid items when paired with <Col>
+ */
 export const Row: React.FC<IRowProps> = ({ children, className, ...rest }) => {
-  return <div className={`flex flex-row ${className}`} {...rest}> {children}</div >;
-}
+  return (
+    <div className={`flex flex-row ${className}`} {...rest}>
+      {" "}
+      {children}
+    </div>
+  );
+};
