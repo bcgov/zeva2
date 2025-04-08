@@ -16,15 +16,13 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          # ref: refs/pull/${{ github.event.pull_request.number }}/head
+          ref: refs/pull/${{ github.event.pull_request.number }}/head
 
       - name: Verify files changed
         run: |
           pwd
           ls -l
-          cd zeva2
-          pwd
-          ls -l
+          git status
 
       - name: Install GitVersion
         uses: gittools/actions/gitversion/setup@v3.1.11
