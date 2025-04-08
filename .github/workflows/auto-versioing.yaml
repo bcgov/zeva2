@@ -27,7 +27,7 @@ jobs:
           git status
 
       - name: Set local branch to PR branch
-        run: git checkout -B pullrequest${{ github.event.pull_request.number }} ${{ github.event.pull_request.head.sha }}
+        run: git checkout -B pr/${{ github.event.pull_request.number }} ${{ github.event.pull_request.head.sha }}
         
       - name: Verify files changed 2
         run: |
