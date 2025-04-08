@@ -16,7 +16,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          ref: ${{ github.event.pull_request.head.ref }}
+          ref: refs/pull/${{ github.event.pull_request.number }}/head
 
       - name: Install GitVersion
         uses: gittools/actions/gitversion/setup@v3.1.11
@@ -29,6 +29,6 @@ jobs:
         with:
           useConfigFile: true
 
-      - name: Show ref
-        run: |
-          echo ${{ github.event.pull_request.head.ref }}
+      # - name: Show ref
+      #   run: |
+      #     echo ${{ github.event.pull_request.head.ref }}
