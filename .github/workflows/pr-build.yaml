@@ -110,7 +110,7 @@ jobs:
       openshift-token: ${{ secrets.OPENSHIFT_TOKEN }}
 
   tag-images:
-    name: Tag Zeva2 images to Test
+    name: Tag Zeva2 images to Dev
     needs: [versioning, build]
     runs-on: ubuntu-latest
     steps:
