@@ -26,6 +26,15 @@ jobs:
           ls -l
           git status
 
+      - name: Set local branch to PR branch
+        run: git checkout -B pullrequest${{ github.event.pull_request.number }} ${{ github.event.pull_request.head.sha }}
+        
+      - name: Verify files changed 2
+        run: |
+          pwd
+          ls -l
+          git status
+
       - name: Install GitVersion
         uses: gittools/actions/gitversion/setup@v3.1.11
         with:
