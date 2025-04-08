@@ -25,6 +25,8 @@ jobs:
           pwd
           ls -l
           git status
+          echo ${{ github.event.pull_request.head.repo.full_name }}
+          echo ${{ github.event.pull_request.head.ref }}
 
       - name: Set local branch to PR branch
         run: git checkout -B pr/${{ github.event.pull_request.number }} ${{ github.event.pull_request.head.sha }}
