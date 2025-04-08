@@ -16,6 +16,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          ref: ${{ github.event.pull_request.head.ref }}
 
       - name: Install GitVersion
         uses: gittools/actions/gitversion/setup@v3.1.11
@@ -28,21 +29,6 @@ jobs:
         with:
           useConfigFile: true
 
-      - name: Show GitVersion Config
+      - name: Show ref
         run: |
-          pwd
-          ls -l /opt/hostedtoolcache/GitVersion.Tool
-          /opt/hostedtoolcache/GitVersion.Tool/6.0.5/dotnet-gitversion /showconfig
-
-      # - name: Update package.json Version
-      #   run: |
-      #     # Extract fullSemVer from GitVersion JSON output
-      #     VERSION=$(echo "${{ steps.version_step.outputs.SemVer }}")
-      #     echo "Updating package.json version to: $VERSION"
-      #     # Update package.json using jq
-      #     cd frontend
-      #     jq --arg ver "$VERSION" '.version = $ver' package.json > package.tmp.json && mv package.tmp.json package.json
-
-      # - name: Show updated package.json
-      #   run: |
-      #     head -n 30 frontend/package.json
+          echo ${{ github.event.pull_request.head.ref }}
