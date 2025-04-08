@@ -30,6 +30,8 @@ jobs:
     steps:
       - name: Check out repository
         uses: actions/checkout@v4.1.1
+        with:
+          ref: refs/pull/${{ github.event.pull_request.number }}/head
 
       - name: Set up cache for OpenShift CLI
         id: cache
@@ -69,7 +71,7 @@ jobs:
           pwd
           ls -l
           git status
-          
+
       - name: Install GitVersion
         uses: gittools/actions/gitversion/setup@v3.1.11
         with:
