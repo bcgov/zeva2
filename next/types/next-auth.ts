@@ -7,6 +7,7 @@ declare module "@auth/core/types" {
     roles?: Role[];
     isGovernment?: boolean;
     organizationId?: number;
+    organizationName?: string;
   }
 }
 
@@ -25,5 +26,6 @@ declare module "@auth/core/jwt" {
     roles?: Role[];
     isGovernment?: boolean;
     organizationId?: number;
+    organizationName?: string;
   }
 }

@@ -19,6 +19,7 @@ import {
   getCurrentComplianceYear,
 } from "@/app/lib/utils/complianceYear";
 import { getModelYearEnum } from "@/lib/utils/getEnums";
+import { ZevUnitTransferContentPayload } from "./actions";
 
 export const getTransfer = async (transferId: number) => {
   return await prisma.zevUnitTransfer.findUnique({
@@ -80,6 +81,7 @@ export const updateTransferStatusAndCreateHistory = async (
   transferId: number,
   userId: number,
   status: ZevUnitTransferHistoryStatuses,
+  comment: string | null,
   transactionClient?: PrismaClient,
 ) => {
   const prismaClient = transactionClient ?? prisma;
@@ -89,6 +91,7 @@ export const updateTransferStatusAndCreateHistory = async (
       zevUnitTransferId: transferId,
       userId: userId,
       afterUserActionStatus: status,
+      comment: comment,
     },
     prismaClient,
   );
@@ -103,7 +106,7 @@ export const transferIsCovered = async (
   const endingBalances = await prisma.zevUnitEndingBalance.findMany({
     where: {
       organizationId: transfer.transferFromId,
-      complianceYear: getModelYearEnum(complianceYear),
+      complianceYear: getModelYearEnum(complianceYear - 1),
     },
   });
   const transactions = await prisma.zevUnitTransaction.findMany({
@@ -131,6 +134,25 @@ export const transferIsCovered = async (
     } else {
       throw e;
     }
+  }
+  return result;
+};
+
+export const getSerializableTransferContent = async (transferId: number) => {
+  const result: ZevUnitTransferContentPayload[] = [];
+  const content = await prisma.zevUnitTransferContent.findMany({
+    where: {
+      zevUnitTransferId: transferId,
+    },
+  });
+  for (const item of content) {
+    result.push({
+      vehicleClass: item.vehicleClass,
+      zevClass: item.zevClass,
+      modelYear: item.modelYear,
+      numberOfUnits: item.numberOfUnits.toString(),
+      dollarValuePerUnit: item.dollarValuePerUnit.toString(),
+    });
   }
   return result;
 };

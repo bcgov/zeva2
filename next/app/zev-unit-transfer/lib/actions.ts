@@ -1,5 +1,3 @@
-"use server";
-
 import { getUserInfo } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import {
@@ -7,7 +5,6 @@ import {
   Role,
   TransactionType,
   ZevUnitTransfer,
-  ZevUnitTransferCommentType,
   ZevUnitTransferContent,
   ZevUnitTransferStatuses,
 } from "@/prisma/generated/client";
@@ -17,7 +14,7 @@ import {
   transferIsCovered,
   updateTransferStatusAndCreateHistory,
 } from "./services";
-import { govCommentableStatuses } from "./constants";
+import { transferFromSupplierRescindableStatuses } from "./constants";
 import { getValidatedTransferContent } from "./utils";
 
 export type ZevUnitTransferContentPayload = Record<
@@ -74,6 +71,7 @@ export const saveTransfer = async (
   } = (await getTransferWithContent(transferId)) ?? {};
   if (
     userOrgId === transferFromId &&
+    transfer.transferToId !== userOrgId &&
     status === ZevUnitTransferStatuses.DRAFT
   ) {
     await prisma.$transaction(async (tx) => {
@@ -109,72 +107,119 @@ export const saveTransfer = async (
   }
 };
 
-export const rescindTransfer = async (transferId: number, comment?: string) => {
+export const submitTransferToPartner = async (transferId: number) => {
   const { userId, userOrgId } = await getUserInfo();
   const { status, transferFromId } = (await getTransfer(transferId)) ?? {};
   if (
-    status &&
-    status !== ZevUnitTransferStatuses.APPROVED_BY_GOV &&
-    status !== ZevUnitTransferStatuses.REJECTED_BY_GOV &&
+    status === ZevUnitTransferStatuses.DRAFT &&
     transferFromId === userOrgId
   ) {
     await prisma.$transaction(async (tx) => {
-      updateTransferStatusAndCreateHistory(
+      await updateTransferStatusAndCreateHistory(
+        transferId,
+        userId,
+        ZevUnitTransferStatuses.SUBMITTED_TO_TRANSFER_TO,
+        null,
+        tx,
+      );
+    });
+  }
+};
+
+export const rescindTransfer = async (transferId: number, comment: string) => {
+  const { userId, userOrgId } = await getUserInfo();
+  const { status, transferFromId } = (await getTransfer(transferId)) ?? {};
+  if (
+    transferFromSupplierRescindableStatuses.some((x) => {
+      return x === status;
+    }) &&
+    transferFromId === userOrgId
+  ) {
+    await prisma.$transaction(async (tx) => {
+      await updateTransferStatusAndCreateHistory(
         transferId,
         userId,
         ZevUnitTransferStatuses.RESCINDED_BY_TRANSFER_FROM,
+        comment,
         tx,
       );
       if (comment) {
-        tx.zevUnitTransferComment.create({
-          data: {
-            zevUnitTransferId: transferId,
-            userId: userId,
-            comment: comment,
-            commentType:
-              ZevUnitTransferCommentType.TO_COUNTERPARTY_UPON_RESCIND,
-          },
-        });
       }
     });
   }
 };
 
-export const supplierApproveTransfer = async (transferId: number) => {
+export const transferToSupplierActionTransfer = async (
+  transferId: number,
+  newStatus: ZevUnitTransferStatuses,
+  comment?: string,
+) => {
   const { userId, userOrgId } = await getUserInfo();
   const { status, transferToId } = (await getTransfer(transferId)) ?? {};
   if (
     status === ZevUnitTransferStatuses.SUBMITTED_TO_TRANSFER_TO &&
-    transferToId === userOrgId
-  ) {
+    transferToId === userOrgId &&
+    (newStatus === ZevUnitTransferStatuses.APPROVED_BY_TRANSFER_TO ||
+      newStatus === ZevUnitTransferStatuses.REJECTED_BY_TRANSFER_TO)
+  )
     await prisma.$transaction(async (tx) => {
-      updateTransferStatusAndCreateHistory(
+      await updateTransferStatusAndCreateHistory(
         transferId,
         userId,
-        ZevUnitTransferStatuses.APPROVED_BY_TRANSFER_TO,
+        newStatus,
+        comment ?? null,
+        tx,
+      );
+    });
+};
+
+export const govRecommendTransfer = async (
+  transferId: number,
+  recommendation: ZevUnitTransferStatuses,
+  comment: string,
+) => {
+  const { userId, userIsGov, userRoles } = await getUserInfo();
+  const { status } = (await getTransfer(transferId)) ?? {};
+  if (
+    userIsGov &&
+    userRoles.some((role) => {
+      return role === Role.ENGINEER_ANALYST;
+    }) &&
+    (status === ZevUnitTransferStatuses.APPROVED_BY_TRANSFER_TO ||
+      status === ZevUnitTransferStatuses.RETURNED_TO_ANALYST) &&
+    (recommendation === ZevUnitTransferStatuses.RECOMMEND_APPROVAL_GOV ||
+      recommendation === ZevUnitTransferStatuses.RECOMMEND_REJECTION_GOV)
+  ) {
+    await prisma.$transaction(async (tx) => {
+      await updateTransferStatusAndCreateHistory(
+        transferId,
+        userId,
+        recommendation,
+        comment,
         tx,
       );
     });
   }
 };
 
-export const govRecommendTransfer = async (
+export const govReturnTransfer = async (
   transferId: number,
-  recommendation: ZevUnitTransferStatuses,
+  comment: string,
 ) => {
-  const { userId, userIsGov } = await getUserInfo();
+  const { userId, userIsGov, userRoles } = await getUserInfo();
   const { status } = (await getTransfer(transferId)) ?? {};
   if (
     userIsGov &&
-    status === ZevUnitTransferStatuses.APPROVED_BY_TRANSFER_TO &&
-    (recommendation === ZevUnitTransferStatuses.RECOMMEND_APPROVAL_GOV ||
-      recommendation === ZevUnitTransferStatuses.RECOMMEND_REJECTION_GOV)
+    userRoles.some((role) => role === Role.DIRECTOR) &&
+    (status === ZevUnitTransferStatuses.RECOMMEND_APPROVAL_GOV ||
+      status === ZevUnitTransferStatuses.RECOMMEND_REJECTION_GOV)
   ) {
     await prisma.$transaction(async (tx) => {
-      updateTransferStatusAndCreateHistory(
+      await updateTransferStatusAndCreateHistory(
         transferId,
         userId,
-        recommendation,
+        ZevUnitTransferStatuses.RETURNED_TO_ANALYST,
+        comment,
         tx,
       );
     });
@@ -188,14 +233,16 @@ export const govIssueTransfer = async (transferId: number) => {
     transfer &&
     userIsGov &&
     userRoles.some((role) => role === Role.DIRECTOR) &&
-    transfer.status === ZevUnitTransferStatuses.RECOMMEND_APPROVAL_GOV &&
+    (transfer.status === ZevUnitTransferStatuses.RECOMMEND_APPROVAL_GOV ||
+      transfer.status === ZevUnitTransferStatuses.RECOMMEND_REJECTION_GOV) &&
     (await transferIsCovered(transfer))
   ) {
     await prisma.$transaction(async (tx) => {
-      updateTransferStatusAndCreateHistory(
+      await updateTransferStatusAndCreateHistory(
         transferId,
         userId,
         ZevUnitTransferStatuses.APPROVED_BY_GOV,
+        null,
         tx,
       );
       for (const item of transfer.zevUnitTransferContent) {
@@ -211,7 +258,7 @@ export const govIssueTransfer = async (transferId: number) => {
           data: {
             ...data,
             organizationId: transfer.transferFromId,
-            type: TransactionType.DEBIT,
+            type: TransactionType.TRANSFER_AWAY,
           },
         });
         await tx.zevUnitTransaction.create({
@@ -226,19 +273,24 @@ export const govIssueTransfer = async (transferId: number) => {
   }
 };
 
-export const govRejectTransfer = async (transferId: number) => {
+export const govRejectTransfer = async (
+  transferId: number,
+  comment: string,
+) => {
   const { userId, userIsGov, userRoles } = await getUserInfo();
   const { status } = (await getTransfer(transferId)) ?? {};
   if (
     userIsGov &&
-    status === ZevUnitTransferStatuses.RECOMMEND_REJECTION_GOV &&
+    (status === ZevUnitTransferStatuses.RECOMMEND_REJECTION_GOV ||
+      status === ZevUnitTransferStatuses.RECOMMEND_APPROVAL_GOV) &&
     userRoles.some((role) => role === Role.DIRECTOR)
   ) {
     await prisma.$transaction(async (tx) => {
-      updateTransferStatusAndCreateHistory(
+      await updateTransferStatusAndCreateHistory(
         transferId,
         userId,
         ZevUnitTransferStatuses.REJECTED_BY_GOV,
+        comment,
         tx,
       );
     });
@@ -258,56 +310,6 @@ export const deleteTransfer = async (transferId: number) => {
       },
       data: {
         status: ZevUnitTransferStatuses.DELETED,
-      },
-    });
-  }
-};
-
-export const govCreateComment = async (transferId: number, comment: string) => {
-  const { userIsGov, userId } = await getUserInfo();
-  const { status: transferStatus } = (await getTransfer(transferId)) ?? {};
-  if (
-    userIsGov &&
-    govCommentableStatuses.some((status) => status === transferStatus)
-  ) {
-    await prisma.zevUnitTransferComment.create({
-      data: {
-        zevUnitTransferId: transferId,
-        userId: userId,
-        comment: comment,
-        commentType: ZevUnitTransferCommentType.INTERNAL_GOV,
-      },
-    });
-  }
-};
-
-export const govEditComment = async (commentId: number, comment: string) => {
-  const { userIsGov, userId } = await getUserInfo();
-  const existingComment = await prisma.zevUnitTransferComment.findUnique({
-    where: { id: commentId },
-    select: {
-      id: true,
-      userId: true,
-      zevUnitTransfer: {
-        select: {
-          status: true,
-        },
-      },
-    },
-  });
-  if (
-    userIsGov &&
-    existingComment?.userId === userId &&
-    govCommentableStatuses.some(
-      (status) => status === existingComment.zevUnitTransfer.status,
-    )
-  ) {
-    await prisma.zevUnitTransferComment.update({
-      where: {
-        id: commentId,
-      },
-      data: {
-        comment: comment,
       },
     });
   }

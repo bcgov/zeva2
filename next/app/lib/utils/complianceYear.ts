@@ -11,7 +11,7 @@ export const getCurrentComplianceYear = () => {
 
 export const getCompliancePeriod = (complianceYear: number) => {
   const upperBoundYear = complianceYear + 1;
-  const isoStringSuffix = "-10-01T7:00:00.000Z";
+  const isoStringSuffix = "-10-01T07:00:00.000Z";
   return {
     closedLowerBound: new Date(complianceYear + isoStringSuffix),
     openUpperBound: new Date(upperBoundYear + isoStringSuffix),
