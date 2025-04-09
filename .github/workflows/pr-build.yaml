@@ -172,7 +172,7 @@ jobs:
 
       - name: Create PostgreSQL and Redis instance
         run: |
-          cd services/postgresql-pr
+          cd services/postgres-pr
           helm -n ${{ env.DEV_NAMESPACE }} -f ./values-dev-pr.yaml upgrade --install zeva2-postgresql-dev-${{ env.PR_NUMBER }} oci://registry-1.docker.io/bitnamicharts/postgresql --version 15.5.17
           cd ../redis-pr
           helm -n ${{ env.DEV_NAMESPACE }} -f ./values-dev-pr.yaml upgrade --install zeva2-redis-dev-${{ env.PR_NUMBER }} oci://registry-1.docker.io/bitnamicharts/redis --version 19.6.1
