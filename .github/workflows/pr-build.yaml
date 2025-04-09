@@ -83,6 +83,12 @@ jobs:
         with:
           useConfigFile: true
 
+      - name: Show GitVersion Config
+        run: |
+          pwd
+          ls -l /opt/hostedtoolcache/GitVersion.Tool
+          /opt/hostedtoolcache/GitVersion.Tool/6.0.5/dotnet-gitversion /showconfig
+
       - name: Export Version
         id: export-version
         run: |
@@ -195,7 +201,8 @@ jobs:
           cmd: |
             yq -i '.route.host = "zeva2-dev-${{ env.PR_NUMBER}}.apps.silver.devops.gov.bc.ca"' zeva2/zeva2-next/values-dev-pr.yaml
             yq -i '.env[] | select(.name=="DATABASE_URL") | .value = "postgresql://test:test@zeva2-postgresql-dev-${{ env.PR_NUMBER}}.${{ env.DEV_NAMESPACE }}.svc.cluster.local:5432/zeva?schema=public"' zeva2/zeva2-next/values-dev-pr.yaml
-            cat zeva2/zeva2-next/values-dev-pr.yaml
+            yq -i '.env[] | select(.name=="DATABASE_URL") | .value = "postgresql://test:test@zeva2-postgresql-dev-${{ env.PR_NUMBER}}.${{ env.DEV_NAMESPACE }}.svc.cluster.local:5432/zeva?schema=public"' zeva2/zeva2-bullmq/values-dev-pr.yaml
+            
 
   deploy:
     name: Deploy Zeva2 Pull Request

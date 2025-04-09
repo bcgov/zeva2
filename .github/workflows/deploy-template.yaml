@@ -42,7 +42,7 @@ jobs:
         with:
           cmd: |
             yq -i '.image.tag = "${{ inputs.version}}"' zeva2/zeva2-next/${{ inputs.values_file }}
-            yq -i '.image.tag = "$${{ inputs.version}}"' zeva2/zeva2-bullmq/${{ inputs.values_file }}
+            yq -i '.image.tag = "${{ inputs.version}}"' zeva2/zeva2-bullmq/${{ inputs.values_file }}
 
       - name: GitHub Commit & Push
         shell: bash {0}
