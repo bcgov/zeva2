@@ -195,7 +195,7 @@ jobs:
           cd ../redis-pr
           helm -n ${{ env.DEV_NAMESPACE }} -f ./values-dev-pr.yaml upgrade --install zeva2-redis-dev-${{ env.PR_NUMBER }} oci://registry-1.docker.io/bitnamicharts/redis --version 19.6.1
           cd ../../zeva2/zeva2-next
-          helm template -f ./values-dev-pr.yaml zeva2-next-dev-${{ env.PR_NUMBER }} . --set podAnnotations.rolloutTriggered="A$(date +%s)E" 
+          helm template -f ./values-dev-pr.yaml zeva2-next-dev-${{ env.PR_NUMBER }} . --set podAnnotations.rolloutTriggered="A$(date +%s)E" --debug
           helm -n ${{ env.DEV_NAMESPACE }} -f ./values-dev-pr.yaml upgrade --install zeva2-next-dev-${{ env.PR_NUMBER }} . --set podAnnotations.rolloutTriggered="A$(date +%s)E"
           cd ../zeva2-bullmq
           helm -n ${{ env.DEV_NAMESPACE }} -f ./values-dev-pr.yaml upgrade --install zeva2-bullmq-dev-${{ env.PR_NUMBER }} . --set podAnnotations.rolloutTriggered="A$(date +%s)E"
