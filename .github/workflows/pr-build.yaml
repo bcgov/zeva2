@@ -148,6 +148,7 @@ jobs:
     needs: [tag-images]
     runs-on: ubuntu-latest
     steps:
+
       - name: Checkout Manifest repository
         uses: actions/checkout@v4.1.1
         with:
@@ -155,6 +156,12 @@ jobs:
           ref: main
           ssh-key: ${{ secrets.MANIFEST_REPO_DEPLOY_KEY }}
 
+      - name: Restore oc command from Cache
+        uses: actions/cache@v4.2.0
+        with:
+          path: /usr/local/bin/oc
+          key: oc-cli-${{ runner.os }}
+          
       - name: Log in to Openshift
         uses: redhat-actions/oc-login@v1.3
         with:
