@@ -6,7 +6,6 @@ on:
     branches:
       - develop
       - release/*
-      - pipeline3
 
 env:
   GIT_URL: https://github.com/bcgov/zeva2.git
