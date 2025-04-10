@@ -35,7 +35,6 @@ const ZevUnitTransfer = async (props: { id: number }) => {
             Transfer From: {transfer.transferFrom.name}
           </li>
           <li key="transferTo">Transfer To: {transfer.transferTo.name}</li>
-          <li key="status">Current Status: {transfer.status}</li>
         </ul>
         <br />
         {transferContent}

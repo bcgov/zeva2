@@ -9,7 +9,6 @@ import {
   VehicleClass,
   BalanceType,
   ZevUnitTransferStatuses,
-  ZevUnitTransferCommentType,
   ZevUnitTransferHistory,
 } from "./generated/client";
 import { getModelYearEnum, getRoleEnum } from "@/lib/utils/getEnums";
@@ -134,20 +133,23 @@ const main = () => {
         ZevClass[creditClass.credit_class as keyof typeof ZevClass];
     }
 
-     // add notifications from old subscription table
-     const notificationsOld = await prismaOld.notification.findMany({
+    // add notifications from old subscription table
+    const notificationsOld = await prismaOld.notification.findMany({
       select: { id: true, notification_code: true },
     });
-    
-    const notifCodeById = notificationsOld.reduce<Record<number, string>>((acc, n) => {
-      acc[n.id] = n.notification_code;
-      return acc;
-    }, {});
-    
+
+    const notifCodeById = notificationsOld.reduce<Record<number, string>>(
+      (acc, n) => {
+        acc[n.id] = n.notification_code;
+        return acc;
+      },
+      {},
+    );
+
     const subsOld = await prismaOld.notification_subscription.findMany({
       select: { user_profile_id: true, notification_id: true },
     });
-    
+
     const grouped = subsOld.reduce<Record<number, string[]>>((acc, sub) => {
       const code = notifCodeById[sub.notification_id];
       if (!code) return acc;
@@ -155,15 +157,15 @@ const main = () => {
       acc[sub.user_profile_id].push(code);
       return acc;
     }, {});
-    
+
     for (const [oldUserId, codes] of Object.entries(grouped)) {
       const newUserId = mapOfOldUserIdsToNewUserIds[Number(oldUserId)];
       if (!newUserId) continue;
-    
+
       const validNotifications = codes
-        .map(code => code as Notification)
+        .map((code) => code as Notification)
         .filter((n) => isNotification(n));
-    
+
       await tx.user.update({
         where: { id: newUserId },
         data: { notifications: { set: validNotifications } },
@@ -478,7 +480,6 @@ const main = () => {
       mapOfOldCreditTransferIdsToNewZevUnitTransferIds[creditTransferOld.id] =
         zevUnitTransfer.id;
     }
-    
 
     // add ZEV Unit Transfer Content (formerly Credit Transfer Content in old DB) records
     const creditTransferContentsOld =
@@ -533,7 +534,11 @@ const main = () => {
       [id: number]: Omit<ZevUnitTransferHistory, "id">[];
     } = {};
     const creditTransferHistoriesOld =
-      await prismaOld.credit_transfer_history.findMany();
+      await prismaOld.credit_transfer_history.findMany({
+        include: {
+          credit_transfer_comment: true,
+        },
+      });
     for (const creditTransferHistoryOld of creditTransferHistoriesOld) {
       const newTransferId =
         mapOfOldCreditTransferIdsToNewZevUnitTransferIds[
@@ -580,11 +585,20 @@ const main = () => {
             " with no create_timestamp!",
         );
       }
+      const commentArray = [];
+      for (const oldComment of creditTransferHistoryOld.credit_transfer_comment) {
+        const text =
+          oldComment.create_user + ": " + oldComment.credit_transfer_comment;
+        if (text) {
+          commentArray.push(text);
+        }
+      }
       const newTransferHistoryData = {
         zevUnitTransferId: newTransferId,
         afterUserActionStatus: newStatus,
         userId: newCreateUserId,
         timestamp: timestamp,
+        comment: commentArray.length > 0 ? commentArray.join(" | ") : null,
       };
       if (!mapOfTransferIdsToHistories[newTransferId]) {
         mapOfTransferIdsToHistories[newTransferId] = [];
@@ -633,113 +647,62 @@ const main = () => {
       for (const history of filteredHistories) {
         const status = history.afterUserActionStatus;
         if (status === previousStatus) {
+          // move comments
+          const comment = history.comment;
+          if (comment) {
+            const previousHistory = result[result.length - 1];
+            let existingComment = previousHistory.comment;
+            if (existingComment) {
+              previousHistory.comment = existingComment + " | " + comment;
+            } else {
+              previousHistory.comment = comment;
+            }
+          }
           continue;
+        }
+        if (
+          status === ZevUnitTransferStatuses.APPROVED_BY_TRANSFER_TO &&
+          (previousStatus === ZevUnitTransferStatuses.RECOMMEND_APPROVAL_GOV ||
+            previousStatus === ZevUnitTransferStatuses.RECOMMEND_REJECTION_GOV)
+        ) {
+          history.afterUserActionStatus =
+            ZevUnitTransferStatuses.RETURNED_TO_ANALYST;
         }
         result.push(history);
         previousStatus = status;
+      }
+      for (const [index, history] of result.entries()) {
+        const comment = history.comment;
+        if (
+          history.afterUserActionStatus ===
+            ZevUnitTransferStatuses.APPROVED_BY_TRANSFER_TO &&
+          comment &&
+          (result[index + 1]?.afterUserActionStatus ===
+            ZevUnitTransferStatuses.RECOMMEND_APPROVAL_GOV ||
+            result[index + 1]?.afterUserActionStatus ===
+              ZevUnitTransferStatuses.RECOMMEND_REJECTION_GOV)
+        ) {
+          history.comment = null;
+          result[index + 1].comment =
+            comment + (result[index + 1].comment ?? "");
+        }
       }
       await tx.zevUnitTransferHistory.createMany({
         data: result,
       });
     }
-    
-        // add ZevUnitTransferComments (previously called credit transfer comments)
-        const creditTransferCommentsOld = await prismaOld.credit_transfer_comment.findMany({
-          include: {
-            credit_transfer_history: {
-              include: {
-                credit_transfer: true,
-              },
-            },
-          },
-        });
-        for (const transferCommentOld of creditTransferCommentsOld) {
-          const newTransferId =
-            mapOfOldCreditTransferIdsToNewZevUnitTransferIds[
-              transferCommentOld.credit_transfer_history.credit_transfer.id
-            ];
-          const newCreateUserId =
-            mapOfOldUsernamesToNewUserIds[transferCommentOld.create_user];
-          const newCreateUser = await tx.user.findUnique({
-            where: {
-              id: newCreateUserId,
-            },
-            include: {
-              organization: true,
-            },
-          });
-          const comment = transferCommentOld.credit_transfer_comment;
-          const createTimestamp = transferCommentOld.create_timestamp;
-          const updateTimestamp = transferCommentOld.update_timestamp;
-          if (!newTransferId) {
-            throw new Error(
-              "transfer comment " +
-                transferCommentOld.id +
-                " with unknown transfer id!",
-            );
-          }
-          if (!newCreateUserId) {
-            throw new Error(
-              "transfer comment " +
-                transferCommentOld.id +
-                " with unknown create user id!",
-            );
-          }
-          if (!newCreateUser) {
-            throw new Error(
-              "transfer comment " +
-                transferCommentOld.id +
-                " with create user id not associated with a user!",
-            );
-          }
-          if (!comment) {
-            throw new Error(
-              "transfer comment " + transferCommentOld.id + " with no comment!",
-            );
-          }
-          if (!createTimestamp) {
-            throw new Error(
-              "transfer comment " +
-                transferCommentOld.id +
-                " with no create timestamp!",
-            );
-          }
-          if (!updateTimestamp) {
-            throw new Error(
-              "transfer comment " +
-                transferCommentOld.id +
-                " with no update timestamp!",
-            );
-          }
-        
-          await tx.zevUnitTransferComment.create({
-            data: {
-              zevUnitTransferId: newTransferId,
-              userId: newCreateUserId,
-              createTimestamp: createTimestamp,
-              updateTimestamp: updateTimestamp,
-              comment: comment,
-              // all supplier comments are to counterparty upon rescind,
-              // and all government comments are internal
-              commentType: newCreateUser.organization.isGovernment
-                ? ZevUnitTransferCommentType.INTERNAL_GOV
-                : ZevUnitTransferCommentType.TO_COUNTERPARTY_UPON_RESCIND,
-            },
-          });
-        }
-      });
-    };
-    
-    main()
-      .then(async () => {
-        console.log("seed successful");
-        await prisma.$disconnect();
-        await prismaOld.$disconnect();
-      })
-      .catch(async (e) => {
-        console.log(e);
-        await prisma.$disconnect();
-        await prismaOld.$disconnect();
-        process.exit(1);
-      });
-    
+  });
+};
+
+main()
+  .then(async () => {
+    console.log("seed successful");
+    await prisma.$disconnect();
+    await prismaOld.$disconnect();
+  })
+  .catch(async (e) => {
+    console.log(e);
+    await prisma.$disconnect();
+    await prismaOld.$disconnect();
+    process.exit(1);
+  });

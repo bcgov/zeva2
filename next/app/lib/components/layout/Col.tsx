@@ -1,4 +1,4 @@
-import React from 'react';
+import React from "react";
 
 export interface IColProps extends React.HTMLAttributes<HTMLDivElement> {
   className?: string;
@@ -6,8 +6,13 @@ export interface IColProps extends React.HTMLAttributes<HTMLDivElement> {
 }
 
 /**
-* Simple component that renders a flex-col div, useful for creating grid items when paired with <Row>
-*/
+ * Simple component that renders a flex-col div, useful for creating grid items when paired with <Row>
+ */
 export const Col: React.FC<IColProps> = ({ children, className, ...rest }) => {
-  return <div className={`flex flex-col ${className}`} {...rest}> {children}</div >;
-}
+  return (
+    <div className={`flex flex-col ${className}`} {...rest}>
+      {" "}
+      {children}
+    </div>
+  );
+};

@@ -16,6 +16,11 @@ const ZevUnitTransferHistories = async (props: { id: number }) => {
             {history.user.idpUsername} made the transfer{" "}
             {history.afterUserActionStatus} on {history.timestamp.toString()}
           </div>
+          {history.comment && (
+            <div>
+              Comment associated with this history entry: {history.comment}
+            </div>
+          )}
           <br />
         </div>,
       );

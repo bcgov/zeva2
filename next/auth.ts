@@ -44,6 +44,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           token.roles = user.roles;
           token.isGovernment = user.organization.isGovernment;
           token.organizationId = user.organizationId;
+          token.organizationName = user.organization.name;
           return token;
         }
         if (!user) {
@@ -59,6 +60,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       session.user.roles = token.roles;
       session.user.isGovernment = token.isGovernment;
       session.user.organizationId = token.organizationId;
+      session.user.organizationName = token.organizationName;
       return session;
     },
     authorized({ auth, request: { nextUrl } }) {
@@ -83,6 +85,7 @@ export interface UserInfo {
   userIsGov: boolean;
   userOrgId: number;
   userRoles: Role[];
+  userOrgName: string;
 }
 
 export const getUserInfo = async (): Promise<UserInfo> => {
@@ -93,5 +96,6 @@ export const getUserInfo = async (): Promise<UserInfo> => {
     userIsGov: user?.isGovernment ?? false,
     userOrgId: user?.organizationId ?? -1,
     userRoles: user?.roles ?? [],
+    userOrgName: user?.organizationName ?? "",
   };
 };

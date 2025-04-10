@@ -1,4 +1,9 @@
-import { ModelYear, Notification, VehicleClass, ZevClass } from "@/prisma/generated/client";
+import {
+  ModelYear,
+  Notification,
+  VehicleClass,
+  ZevClass,
+} from "@/prisma/generated/client";
 
 export const isVehicleClass = (s: string): s is VehicleClass => {
   return Object.keys(VehicleClass).some((vehicleClass) => {
@@ -22,4 +27,4 @@ export const isNotification = (s: string): s is Notification => {
   return Object.keys(Notification).some((notification) => {
     return notification === s;
   });
-}
+};
