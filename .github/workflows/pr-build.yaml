@@ -172,7 +172,7 @@ jobs:
             yq -i '.route.host = "zeva2-dev-${{ env.PR_NUMBER}}.apps.silver.devops.gov.bc.ca"' zeva2/zeva2-next/values-dev-pr.yaml
             yq -i '(.env[] | select(.name=="DATABASE_URL").value) = "postgresql://test:test@zeva2-postgresql-dev-${{ env.PR_NUMBER}}.${{ env.DEV_NAMESPACE }}.svc.cluster.local:5432/zeva?schema=public"' zeva2/zeva2-next/values-dev-pr.yaml
             yq -i '.image.tag = "${{ needs.versioning.outputs.VERSION }}"' zeva2/zeva2-bullmq/values-dev-pr.yaml
-            yq -i '(.env[] | select(.name=="DATABASE_URL").value) = "postgresql://test:test@zeva2-postgresql-dev-${{ env.PR_NUMBER}}.${{ env.DEV_NAMESPACE }}.svc.cluster.local:5432/zeva?schema=public"' zeva2/zeva2-nullmq/values-dev-pr.yaml
+            yq -i '(.env[] | select(.name=="DATABASE_URL").value) = "postgresql://test:test@zeva2-postgresql-dev-${{ env.PR_NUMBER}}.${{ env.DEV_NAMESPACE }}.svc.cluster.local:5432/zeva?schema=public"' zeva2/zeva2-bullmq/values-dev-pr.yaml
             
       - name: Restore oc command from Cache
         uses: actions/cache@v4.2.0
