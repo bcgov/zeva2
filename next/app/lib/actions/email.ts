@@ -60,31 +60,31 @@ export const sendEmail = async (
 ) => {
     const url = process.env.CHES_EMAIL_URL;
     if (!url) {
-        console.log("CHES email url not configured.");
+        console.error("CHES email url not configured.");
         return false;
     }
 
     const senderEmail = process.env.SENDER_EMAIL;
     if (!senderEmail) {
-        console.log("Sender email not configured.");
+        console.error("Sender email not configured.");
         return false;
     }
 
     const senderName = process.env.SENDER_NAME;
     if (!senderName) {
-        console.log("Sender name not configured.");
+        console.error("Sender name not configured.");
         return false;
     }
 
     const emailServiceToken = await getEmailServiceToken();
     if (!emailServiceToken.isOk) {
-        console.log("Error in getting email service token:", emailServiceToken.message);
+        console.error("Error in getting email service token:", emailServiceToken.message);
         return false;
     }
 
     const accessToken = emailServiceToken.accessToken;
     if (!accessToken) {
-        console.log("Email service token is missing.");
+        console.error("Email service token is missing.");
         return false;
     }
 
@@ -107,7 +107,7 @@ export const sendEmail = async (
 
     if (!response.ok) {
         const responseBody = await response.json();
-        console.log("Error in sending email:", JSON.stringify(responseBody));
+        console.error("Error in sending email:", JSON.stringify(responseBody));
         return false;
     }
 
