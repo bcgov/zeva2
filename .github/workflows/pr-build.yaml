@@ -169,15 +169,11 @@ jobs:
         with:
           cmd: |
             yq -i '.image.tag = "${{ needs.versioning.outputs.VERSION }}"' zeva2/zeva2-next/values-dev-pr.yaml
-            cat zeva2/zeva2-next/values-dev-pr.yaml
             yq -i '.route.host = "zeva2-dev-${{ env.PR_NUMBER}}.apps.silver.devops.gov.bc.ca"' zeva2/zeva2-next/values-dev-pr.yaml
-            cat zeva2/zeva2-next/values-dev-pr.yaml
             yq -i '(.env[] | select(.name=="DATABASE_URL").value) = "postgresql://test:test@zeva2-postgresql-dev-${{ env.PR_NUMBER}}.${{ env.DEV_NAMESPACE }}.svc.cluster.local:5432/zeva?schema=public"' zeva2/zeva2-next/values-dev-pr.yaml
-            cat zeva2/zeva2-next/values-dev-pr.yaml
-            # yq -i '.image.tag = "${{ needs.versioning.outputs.VERSION }}"' zeva2/zeva2-bullmq/values-dev-pr.yaml
-            # yq -i '.env[] | select(.name=="DATABASE_URL") | .value = "postgresql://test:test@zeva2-postgresql-dev-${{ env.PR_NUMBER}}.${{ env.DEV_NAMESPACE }}.svc.cluster.local:5432/zeva?schema=public"' zeva2/zeva2-bullmq/values-dev-pr.yaml   
-            # cat zeva2/zeva2-bullmq/values-dev-pr.yaml
-
+            yq -i '.image.tag = "${{ needs.versioning.outputs.VERSION }}"' zeva2/zeva2-bullmq/values-dev-pr.yaml
+            yq -i '(.env[] | select(.name=="DATABASE_URL").value) = "postgresql://test:test@zeva2-postgresql-dev-${{ env.PR_NUMBER}}.${{ env.DEV_NAMESPACE }}.svc.cluster.local:5432/zeva?schema=public"' zeva2/zeva2-nullmq/values-dev-pr.yaml
+            
       - name: Restore oc command from Cache
         uses: actions/cache@v4.2.0
         with:
@@ -199,9 +195,6 @@ jobs:
           cd ../redis-pr
           helm -n ${{ env.DEV_NAMESPACE }} -f ./values-dev-pr.yaml upgrade --install zeva2-redis-dev-${{ env.PR_NUMBER }} oci://registry-1.docker.io/bitnamicharts/redis --version 19.6.1
           cd ../../zeva2/zeva2-next
-          pwd
-          cat ./values-dev-pr.yaml
-          helm template -f ./values-dev-pr.yaml zeva2-next-dev-${{ env.PR_NUMBER }} . --set podAnnotations.rolloutTriggered="A$(date +%s)E" --debug
           helm -n ${{ env.DEV_NAMESPACE }} -f ./values-dev-pr.yaml upgrade --install zeva2-next-dev-${{ env.PR_NUMBER }} . --set podAnnotations.rolloutTriggered="A$(date +%s)E"
           cd ../zeva2-bullmq
           helm -n ${{ env.DEV_NAMESPACE }} -f ./values-dev-pr.yaml upgrade --install zeva2-bullmq-dev-${{ env.PR_NUMBER }} . --set podAnnotations.rolloutTriggered="A$(date +%s)E"
