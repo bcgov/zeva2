@@ -12,7 +12,7 @@ env:
   TOOLS_NAMESPACE: ${{ secrets.OPENSHIFT_NAMESPACE_PLATE }}-tools
   DEV_NAMESPACE: ${{ secrets.OPENSHIFT_NAMESPACE_PLATE }}-dev
   PR_NUMBER: ${{ github.event.pull_request.number }}
-  GIT_REF: ${{ github.event.pull_request.head.ref }}
+
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -21,8 +21,8 @@ concurrency:
 jobs:
   install-oc:
     if: >
-      (github.event.action == 'labeled' && github.event.label.name == 'build' && ( github.event.pull_request.base.ref == 'develop' || startsWith( github.event.pull_request.base.ref, 'release' ) ) ) ||
-      (github.event.action == 'synchronize' && contains(github.event.pull_request.labels.*.name, 'build') && ( github.event.pull_request.base.ref == 'develop' || startsWith( github.event.pull_request.base.ref, 'release' ) ) )
+      (github.event.action == 'labeled' && github.event.label.name == 'build' && ( github.event.pull_request.base.ref == 'develop' || startsWith( github.event.pull_request.base.ref, 'release' ) || startsWith( github.event.pull_request.base.ref, 'pipeline3' ) ) ) ||
+      (github.event.action == 'synchronize' && contains(github.event.pull_request.labels.*.name, 'build') && ( github.event.pull_request.base.ref == 'develop' || startsWith( github.event.pull_request.base.ref, 'release' ) || startsWith( github.event.pull_request.base.ref, 'pipeline3' ) ) )
 
     runs-on: ubuntu-latest
     outputs:
@@ -51,8 +51,8 @@ jobs:
 
   versioning:
     if: >
-      (github.event.action == 'labeled' && github.event.label.name == 'build' && ( github.event.pull_request.base.ref == 'develop' || startsWith( github.event.pull_request.base.ref, 'release' ) ) ) ||
-      (github.event.action == 'synchronize' && contains(github.event.pull_request.labels.*.name, 'build') && ( github.event.pull_request.base.ref == 'develop' || startsWith( github.event.pull_request.base.ref, 'release' ) ) )
+      (github.event.action == 'labeled' && github.event.label.name == 'build' && ( github.event.pull_request.base.ref == 'develop' || startsWith( github.event.pull_request.base.ref, 'release' ) || startsWith( github.event.pull_request.base.ref, 'pipeline3' ) ) ) ||
+      (github.event.action == 'synchronize' && contains(github.event.pull_request.labels.*.name, 'build') && ( github.event.pull_request.base.ref == 'develop' || startsWith( github.event.pull_request.base.ref, 'release' ) || startsWith( github.event.pull_request.base.ref, 'pipeline3' ) ) )
 
     runs-on: ubuntu-latest
 
@@ -148,11 +148,12 @@ jobs:
           oc tag ${{  env.TOOLS_NAMESPACE }}/zeva2-bullmq:${{ needs.versioning.outputs.VERSION}} ${{ env.DEV_NAMESPACE }}/zeva2-bullmq:${{ needs.versioning.outputs.VERSION}}
     
   # add starting postgresql instance for pr 
-
-  create-postgresql-redis:
-    name: Create PostgreSQL Instance
-    needs: [tag-images]
+  deploy:
+    name: Deploy pull request
+    needs: [versioning, tag-images]
     runs-on: ubuntu-latest
+    timeout-minutes: 60
+
     steps:
 
       - name: Checkout Manifest repository
@@ -162,12 +163,23 @@ jobs:
           ref: main
           ssh-key: ${{ secrets.MANIFEST_REPO_DEPLOY_KEY }}
 
+      - name: Update values in values-dev-pr.yaml
+        uses: mikefarah/yq@v4.40.5
+        with:
+          cmd: |
+            yq -i '.image.tag = "${{ needs.versioning.outputs.VERSION }}"' zeva2/zeva2-next/values-dev-pr.yaml
+            yq -i '.route.host = "zeva2-dev-${{ env.PR_NUMBER}}.apps.silver.devops.gov.bc.ca"' zeva2/zeva2-next/values-dev-pr.yaml
+            yq -i '(.env[] | select(.name=="DATABASE_URL").value) = "postgresql://test:test@zeva2-postgresql-dev-${{ env.PR_NUMBER}}.${{ env.DEV_NAMESPACE }}.svc.cluster.local:5432/zeva?schema=public"' zeva2/zeva2-next/values-dev-pr.yaml
+            yq -i '(.env[] | select(.name=="DATABASE_URL_OLD").value) = "postgresql://test:test@zeva2-postgresql-dev-${{ env.PR_NUMBER}}.${{ env.DEV_NAMESPACE }}.svc.cluster.local:5432/zeva?schema=public"' zeva2/zeva2-next/values-dev-pr.yaml
+            yq -i '.image.tag = "${{ needs.versioning.outputs.VERSION }}"' zeva2/zeva2-bullmq/values-dev-pr.yaml
+            yq -i '(.env[] | select(.name=="DATABASE_URL").value) = "postgresql://test:test@zeva2-postgresql-dev-${{ env.PR_NUMBER}}.${{ env.DEV_NAMESPACE }}.svc.cluster.local:5432/zeva?schema=public"' zeva2/zeva2-bullmq/values-dev-pr.yaml
+            
       - name: Restore oc command from Cache
         uses: actions/cache@v4.2.0
         with:
           path: /usr/local/bin/oc
           key: oc-cli-${{ runner.os }}
-          
+
       - name: Log in to Openshift
         uses: redhat-actions/oc-login@v1.3
         with:
@@ -176,41 +188,13 @@ jobs:
           insecure_skip_tls_verify: true
           namespace: ${{ env.DEV_NAMESPACE }}
 
-      - name: Create PostgreSQL and Redis instance
+      - name: deploy
         run: |
           cd services/postgres-pr
           helm -n ${{ env.DEV_NAMESPACE }} -f ./values-dev-pr.yaml upgrade --install zeva2-postgresql-dev-${{ env.PR_NUMBER }} oci://registry-1.docker.io/bitnamicharts/postgresql --version 15.5.17
           cd ../redis-pr
           helm -n ${{ env.DEV_NAMESPACE }} -f ./values-dev-pr.yaml upgrade --install zeva2-redis-dev-${{ env.PR_NUMBER }} oci://registry-1.docker.io/bitnamicharts/redis --version 19.6.1
-
-  replace-values:
-    name: Replace values in values-dev-pr.yaml
-    needs: [create-postgresql-redis]
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout Manifest repository
-        uses: actions/checkout@v4.1.1
-        with:
-          repository: bcgov-c/tenant-gitops-ea8eab
-          ref: main
-          ssh-key: ${{ secrets.MANIFEST_REPO_DEPLOY_KEY }}
-
-      - name: Replace values in values-dev-pr.yaml
-        uses: mikefarah/yq@v4.40.5
-        with:
-          cmd: |
-            yq -i '.route.host = "zeva2-dev-${{ env.PR_NUMBER}}.apps.silver.devops.gov.bc.ca"' zeva2/zeva2-next/values-dev-pr.yaml
-            yq -i '.env[] | select(.name=="DATABASE_URL") | .value = "postgresql://test:test@zeva2-postgresql-dev-${{ env.PR_NUMBER}}.${{ env.DEV_NAMESPACE }}.svc.cluster.local:5432/zeva?schema=public"' zeva2/zeva2-next/values-dev-pr.yaml
-            yq -i '.env[] | select(.name=="DATABASE_URL") | .value = "postgresql://test:test@zeva2-postgresql-dev-${{ env.PR_NUMBER}}.${{ env.DEV_NAMESPACE }}.svc.cluster.local:5432/zeva?schema=public"' zeva2/zeva2-bullmq/values-dev-pr.yaml
-            
-
-  deploy:
-    name: Deploy Zeva2 Pull Request
-    needs: [versioning, replace-values]
-    uses: ./.github/workflows/deploy-template.yaml
-    with:
-      git_ref: ${{ github.ref_name }}
-      version: ${{ needs.versioning.outputs.VERSION }}
-      values_file: values-dev-pr.yaml
-    secrets:
-      manifest-repo-deploy-key: ${{ secrets.MANIFEST_REPO_DEPLOY_KEY }}
+          cd ../../zeva2/zeva2-next
+          helm -n ${{ env.DEV_NAMESPACE }} -f ./values-dev-pr.yaml upgrade --install zeva2-next-dev-${{ env.PR_NUMBER }} . --set podAnnotations.rolloutTriggered="A$(date +%s)E"
+          cd ../zeva2-bullmq
+          helm -n ${{ env.DEV_NAMESPACE }} -f ./values-dev-pr.yaml upgrade --install zeva2-bullmq-dev-${{ env.PR_NUMBER }} . --set podAnnotations.rolloutTriggered="A$(date +%s)E"
