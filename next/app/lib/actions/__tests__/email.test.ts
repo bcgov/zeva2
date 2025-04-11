@@ -143,7 +143,7 @@ describe("email", () => {
     it("should fail to send email if access token is missing", async () => {
         mockedFetchRequests[CHES_AUTH_URL] = () => ({
             ...responseOk,
-            json: () => Promise.resolve({}),
+            json: () => Promise.resolve(),
         }) as Response;
         const result = await sendEmail(testReceipientEmails, testSubject, testBodyType, testBody);
         expect(result).toBe(false);
