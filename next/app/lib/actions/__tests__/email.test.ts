@@ -84,6 +84,7 @@ describe("email", () => {
         const result = await sendEmail(baseReceipientEmails, "Test Subject", "html", "<p>Test Email Body</p>");
         expect(result).toBe(false);
         expect(global.fetch).not.toHaveBeenCalled();
+        expect(console.error).toHaveBeenCalled();
     });
 
     it("should fail to send email if sender email is not set", async () => {
@@ -91,6 +92,7 @@ describe("email", () => {
         const result = await sendEmail(baseReceipientEmails, "Test Subject", "html", "<p>Test Email Body</p>");
         expect(result).toBe(false);
         expect(global.fetch).not.toHaveBeenCalled();
+        expect(console.error).toHaveBeenCalled();
     });
 
     it("should fail to send email if sender name is not set", async () => {
@@ -98,6 +100,7 @@ describe("email", () => {
         const result = await sendEmail(baseReceipientEmails, "Test Subject", "html", "<p>Test Email Body</p>");
         expect(result).toBe(false);
         expect(global.fetch).not.toHaveBeenCalled();
+        expect(console.error).toHaveBeenCalled();
     });
 
     it("should fail to send email if client_id is not set", async () => {
@@ -105,6 +108,7 @@ describe("email", () => {
         const result = await sendEmail(baseReceipientEmails, "Test Subject", "html", "<p>Test Email Body</p>");
         expect(result).toBe(false);
         expect(global.fetch).not.toHaveBeenCalled();
+        expect(console.error).toHaveBeenCalled();
     });
 
     it("should fail to send email if client_secret is not set", async () => {
@@ -112,6 +116,7 @@ describe("email", () => {
         const result = await sendEmail(baseReceipientEmails, "Test Subject", "html", "<p>Test Email Body</p>");
         expect(result).toBe(false);
         expect(global.fetch).not.toHaveBeenCalled();
+        expect(console.error).toHaveBeenCalled();
     });
 
     it("should fail to send email if url is not set", async () => {
@@ -119,6 +124,7 @@ describe("email", () => {
         const result = await sendEmail(baseReceipientEmails, "Test Subject", "html", "<p>Test Email Body</p>");
         expect(result).toBe(false);
         expect(global.fetch).not.toHaveBeenCalled();
+        expect(console.error).toHaveBeenCalled();
     });
 
     it("should fail to send email if server error in getting access token", async () => {
@@ -129,6 +135,7 @@ describe("email", () => {
         const result = await sendEmail(baseReceipientEmails, "Test Subject", "html", "<p>Test Email Body</p>");
         expect(result).toBe(false);
         expect(global.fetch).toHaveBeenCalledTimes(1);
+        expect(console.error).toHaveBeenCalled();
     });
 
     it("should fail to send email if server error in sending email", async () => {
@@ -140,5 +147,6 @@ describe("email", () => {
         const result = await sendEmail(baseReceipientEmails, "Test Subject", "html", "<p>Test Email Body</p>");
         expect(result).toBe(false);
         expect(global.fetch).toHaveBeenCalledTimes(2);
+        expect(console.error).toHaveBeenCalled();
     });
 });
