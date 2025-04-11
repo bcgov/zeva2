@@ -1,6 +1,5 @@
-import { describe, it, expect, beforeEach, afterEach } from "@jest/globals";
+import { jest, describe, it, expect, beforeEach, afterEach } from "@jest/globals";
 import { sendEmail } from "../email";
-import { jest } from "@jest/globals";
 
 describe("email", () => {
     const originalEnv = process.env;
@@ -18,7 +17,10 @@ describe("email", () => {
         status: 500,
     }
 
-    const baseReceipientEmails = ["test1@email.com", "test2@email.com"];
+    const testReceipientEmails = ["test1@email.com", "test2@email.com"];
+    const testSubject = "Test Subject";
+    const testBodyType = "html";
+    const testBody = "<p>Test Email Body</p>";
 
     let mockedFetchRequests: Record<string, (data: any) => Response> = {};
 
@@ -54,34 +56,34 @@ describe("email", () => {
     });
 
     afterEach(() => {
-        process.env = originalEnv; // Restore original environment variables
+        process.env = { ...originalEnv }; // Restore original environment variables
         jest.restoreAllMocks(); // Restore original implementations of mocked functions
     });
 
-    it("should send email", async () => {
+    it("should send email successfully", async () => {
         mockedFetchRequests[CHES_EMAIL_URL] = (data) => {
             expect(data.method).toBe("POST");
             expect(data.headers["Authorization"]).toBe(`Bearer ${chesAccessToken}`);
             const body = JSON.parse(data.body as string);
             expect(body.from).toBe("mocked-sender-name <mocked-sender-email>");
-            expect(body.bcc).toEqual(baseReceipientEmails);
-            expect(body.subject).toBe("Test Subject");
-            expect(body.bodyType).toBe("html");
-            expect(body.body).toBe("<p>Test Email Body</p>");
+            expect(body.bcc).toEqual(testReceipientEmails);
+            expect(body.subject).toBe(testSubject);
+            expect(body.bodyType).toBe(testBodyType);
+            expect(body.body).toBe(testBody);
             return {
                 ...responseOk,
                 json: () => Promise.resolve({ message: "Email sent successfully" }),
             } as Response;
         };
 
-        const result = await sendEmail(baseReceipientEmails, "Test Subject", "html", "<p>Test Email Body</p>");
+        const result = await sendEmail(testReceipientEmails, testSubject, testBodyType, testBody);
         expect(result).toBe(true);
         expect(global.fetch).toHaveBeenCalledTimes(2);
     });
 
-    it("should fail to send email if url is not set", async () => {
+    it("should fail to send email if email url is not set", async () => {
         delete process.env.CHES_EMAIL_URL;
-        const result = await sendEmail(baseReceipientEmails, "Test Subject", "html", "<p>Test Email Body</p>");
+        const result = await sendEmail(testReceipientEmails, testSubject, testBodyType, testBody);
         expect(result).toBe(false);
         expect(global.fetch).not.toHaveBeenCalled();
         expect(console.error).toHaveBeenCalled();
@@ -89,7 +91,7 @@ describe("email", () => {
 
     it("should fail to send email if sender email is not set", async () => {
         delete process.env.SENDER_EMAIL;
-        const result = await sendEmail(baseReceipientEmails, "Test Subject", "html", "<p>Test Email Body</p>");
+        const result = await sendEmail(testReceipientEmails, testSubject, testBodyType, testBody);
         expect(result).toBe(false);
         expect(global.fetch).not.toHaveBeenCalled();
         expect(console.error).toHaveBeenCalled();
@@ -97,7 +99,7 @@ describe("email", () => {
 
     it("should fail to send email if sender name is not set", async () => {
         delete process.env.SENDER_NAME;
-        const result = await sendEmail(baseReceipientEmails, "Test Subject", "html", "<p>Test Email Body</p>");
+        const result = await sendEmail(testReceipientEmails, testSubject, testBodyType, testBody);
         expect(result).toBe(false);
         expect(global.fetch).not.toHaveBeenCalled();
         expect(console.error).toHaveBeenCalled();
@@ -105,7 +107,7 @@ describe("email", () => {
 
     it("should fail to send email if client_id is not set", async () => {
         delete process.env.EMAIL_SERVICE_CLIENT_ID;
-        const result = await sendEmail(baseReceipientEmails, "Test Subject", "html", "<p>Test Email Body</p>");
+        const result = await sendEmail(testReceipientEmails, testSubject, testBodyType, testBody);
         expect(result).toBe(false);
         expect(global.fetch).not.toHaveBeenCalled();
         expect(console.error).toHaveBeenCalled();
@@ -113,15 +115,15 @@ describe("email", () => {
 
     it("should fail to send email if client_secret is not set", async () => {
         delete process.env.EMAIL_SERVICE_CLIENT_SECRET;
-        const result = await sendEmail(baseReceipientEmails, "Test Subject", "html", "<p>Test Email Body</p>");
+        const result = await sendEmail(testReceipientEmails, testSubject, testBodyType, testBody);
         expect(result).toBe(false);
         expect(global.fetch).not.toHaveBeenCalled();
         expect(console.error).toHaveBeenCalled();
     });
 
-    it("should fail to send email if url is not set", async () => {
+    it("should fail to send email if auth url is not set", async () => {
         delete process.env.CHES_AUTH_URL;
-        const result = await sendEmail(baseReceipientEmails, "Test Subject", "html", "<p>Test Email Body</p>");
+        const result = await sendEmail(testReceipientEmails, testSubject, testBodyType, testBody);
         expect(result).toBe(false);
         expect(global.fetch).not.toHaveBeenCalled();
         expect(console.error).toHaveBeenCalled();
@@ -132,19 +134,30 @@ describe("email", () => {
             ...responseServerErr,
             json: () => Promise.resolve({ message: "Unable to get access token" }),
         }) as Response;
-        const result = await sendEmail(baseReceipientEmails, "Test Subject", "html", "<p>Test Email Body</p>");
+        const result = await sendEmail(testReceipientEmails, testSubject, testBodyType, testBody);
         expect(result).toBe(false);
         expect(global.fetch).toHaveBeenCalledTimes(1);
         expect(console.error).toHaveBeenCalled();
     });
 
-    it("should fail to send email if server error in sending email", async () => {
+    it("should fail to send email if access token is missing", async () => {
+        mockedFetchRequests[CHES_AUTH_URL] = () => ({
+            ...responseOk,
+            json: () => Promise.resolve({}),
+        }) as Response;
+        const result = await sendEmail(testReceipientEmails, testSubject, testBodyType, testBody);
+        expect(result).toBe(false);
+        expect(global.fetch).toHaveBeenCalledTimes(1);
+        expect(console.error).toHaveBeenCalled();
+    });
+
+    it("should handle server error during email sending", async () => {
         mockedFetchRequests[CHES_EMAIL_URL] = () => ({
             ...responseServerErr,
             json: () => Promise.resolve({ message: "Unable to send email" }),
         }) as Response;
 
-        const result = await sendEmail(baseReceipientEmails, "Test Subject", "html", "<p>Test Email Body</p>");
+        const result = await sendEmail(testReceipientEmails, testSubject, testBodyType, testBody);
         expect(result).toBe(false);
         expect(global.fetch).toHaveBeenCalledTimes(2);
         expect(console.error).toHaveBeenCalled();
