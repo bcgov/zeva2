@@ -1,5 +1,7 @@
 FROM artifacts.developer.gov.bc.ca/docker-remote/node:22.13.1
 
+RUN apt-get update && apt-get install -y bash
+
 WORKDIR /next
 
 COPY . .
@@ -12,4 +14,6 @@ RUN npm run build
 
 EXPOSE 3000
 
-CMD [ "npm" , "run" , "start" ]
+# CMD [ "npm" , "run" , "start" ]
+CMD ["/bin/sh", "-c", ". /vault/secrets/config && npm run start"]
+
