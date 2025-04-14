@@ -10,7 +10,7 @@ const ZevUnitTransferList = async (props: {
   filters: { [key: string]: string };
   sorts: { [key: string]: string };
 }) => {
-  const navigationAction = async (id: string) => {
+  const navigationAction = async (id: number) => {
     "use server";
     redirect(`${Routes.CreditTransactions}/${id}`);
   };

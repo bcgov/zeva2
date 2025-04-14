@@ -8,7 +8,7 @@ import { ZevUnitTransferSparse } from "../data";
 interface Props {
   transfers: ZevUnitTransferSparse[];
   totalNumbeOfTransfers: number;
-  navigationAction: (id: string) => Promise<void>;
+  navigationAction: (id: number) => Promise<void>;
 }
 
 /**

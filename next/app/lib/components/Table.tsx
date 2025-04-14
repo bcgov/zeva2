@@ -26,7 +26,7 @@ interface ITableProps<T> {
   columns: ColumnDef<T, any>[];
   data: T[];
   totalNumberOfRecords: number;
-  navigationAction: (id: string) => Promise<void>;
+  navigationAction: (id: number) => Promise<void>;
   footer?: boolean;
 }
 
@@ -68,8 +68,7 @@ export const Table = <T extends ZevaObject>({
   }, [replaceUrl]);
 
   const currentPage = React.useMemo(() => {
-    const params = new URLSearchParams(searchParams);
-    const page = params.get("page");
+    const page = searchParams.get("page");
     return page ?? 1;
   }, [searchParams]);
 
@@ -83,8 +82,7 @@ export const Table = <T extends ZevaObject>({
   );
 
   const currentPageSize = React.useMemo(() => {
-    const params = new URLSearchParams(searchParams);
-    const pageSize = params.get("pageSize");
+    const pageSize = searchParams.get("pageSize");
     return parseInt(pageSize ?? "") || 10;
   }, [searchParams]);
 
@@ -126,8 +124,7 @@ export const Table = <T extends ZevaObject>({
   }, [searchParams, filters, replaceUrl]);
 
   const sortsMap = React.useMemo(() => {
-    const params = new URLSearchParams(searchParams);
-    const sorts = params.get("sorts");
+    const sorts = searchParams.get("sorts");
     return getObject(sorts);
   }, [searchParams]);
 
@@ -160,7 +157,7 @@ export const Table = <T extends ZevaObject>({
     [searchParams, replaceUrl],
   );
 
-  const handleNavigation = async (id: string) => {
+  const handleNavigation = async (id: number) => {
     setNavigationPending(true);
     await navigationAction(id);
   };
@@ -260,7 +257,7 @@ export const Table = <T extends ZevaObject>({
             <tr
               key={row.id}
               className="hover:bg-gray-200 transition-colors cursor-pointer"
-              onClick={() => handleNavigation(row.original.id.toString())}
+              onClick={() => handleNavigation(row.original.id)}
             >
               {row.getVisibleCells().map((cell) => (
                 <td key={cell.id} className="px-6 py-4 whitespace-nowrap">
