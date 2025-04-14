@@ -226,7 +226,7 @@ const ZevUnitTransferCreateOrSave = (props: {
         <select
           value={transferTo}
           onChange={(event) => {
-            handleSelectPartner(parseInt(event.target.value));
+            handleSelectPartner(parseInt(event.target.value, 10));
           }}
         >
           {transferOptions}

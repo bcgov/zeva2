@@ -3,41 +3,51 @@
 import React, { useMemo } from "react";
 import { createColumnHelper } from "@tanstack/react-table";
 import { Table } from "@/app/lib/components";
-import { ZevUnitTransferWithContentAndOrgs } from "../data";
+import { ZevUnitTransferSparse } from "../data";
 
 interface Props {
-  transfers: ZevUnitTransferWithContentAndOrgs[];
+  transfers: ZevUnitTransferSparse[];
+  totalNumbeOfTransfers: number;
+  navigationAction: (id: string) => Promise<void>;
 }
 
 /**
  * Component that defines the columns / structure of ZevUnitTransferTable
  **/
-export default function ZevUnitTransferTable({ transfers }: Props) {
-  const columnHelper = createColumnHelper<ZevUnitTransferWithContentAndOrgs>();
+export default function ZevUnitTransferTable({
+  transfers,
+  totalNumbeOfTransfers,
+  navigationAction,
+}: Props) {
+  const columnHelper = createColumnHelper<ZevUnitTransferSparse>();
 
   const columns = useMemo(
     () => [
       columnHelper.accessor((row) => row.id, {
         id: "id",
         enableSorting: true,
+        enableColumnFilter: true,
         cell: (info) => <i>{info.getValue()}</i>,
         header: () => <span>ID</span>,
       }),
       columnHelper.accessor((row) => row.transferFrom.name, {
         id: "transferFrom",
         enableSorting: true,
+        enableColumnFilter: true,
         cell: (info) => <i>{info.getValue()}</i>,
         header: () => <span>From</span>,
       }),
       columnHelper.accessor((row) => row.transferTo.name, {
         id: "transferTo",
-        cell: (info) => info.renderValue(),
         enableSorting: true,
+        enableColumnFilter: true,
+        cell: (info) => info.renderValue(),
         header: () => <span>To</span>,
       }),
       columnHelper.accessor((row) => row.status, {
         id: "status",
         enableSorting: true,
+        enableColumnFilter: true,
         cell: (info) => info.renderValue(),
         header: () => <span>Status</span>,
       }),
@@ -45,5 +55,12 @@ export default function ZevUnitTransferTable({ transfers }: Props) {
     [columnHelper],
   );
 
-  return <Table data={transfers} columns={columns} pageSize={10} />;
+  return (
+    <Table
+      columns={columns}
+      data={transfers}
+      totalNumberOfRecords={totalNumbeOfTransfers}
+      navigationAction={navigationAction}
+    />
+  );
 }

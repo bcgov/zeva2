@@ -7,7 +7,7 @@ export default async function Page({
 }: {
   params: Promise<{ id: string }>;
 }) {
-  const id = parseInt((await params).id);
+  const id = parseInt((await params).id, 10);
   const user = await getUser(id);
   if (user) {
     const onSubmit = updateEmail.bind(

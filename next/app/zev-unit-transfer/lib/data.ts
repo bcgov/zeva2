@@ -9,36 +9,61 @@ import {
   ZevUnitTransferStatuses,
 } from "@/prisma/generated/client";
 import { visibleToSupplierHistoryStatuses } from "./constants";
+import {
+  FilterableFields,
+  getOrderByClause,
+  getWhereClause,
+  SortableFields,
+} from "./utils";
 
-export type ZevUnitTransferWithContentAndOrgs = {
-  zevUnitTransferContent: ZevUnitTransferContent[];
-  transferFrom: Organization;
-  transferTo: Organization;
-} & ZevUnitTransfer;
+export type ZevUnitTransferSparse = {
+  id: number;
+  status: string;
+  transferFrom: {
+    name: string;
+  };
+  transferTo: {
+    name: string;
+  };
+};
 
-export const getZevUnitTransfers = async (): Promise<
-  ZevUnitTransferWithContentAndOrgs[]
-> => {
+// page is 1-based
+// currently, this function is not used with SSR, so it is important to select only the data you need!
+export const getZevUnitTransfers = async (
+  page: number,
+  pageSize: number,
+  filters: FilterableFields,
+  sorts: SortableFields,
+): Promise<[ZevUnitTransferSparse[], number]> => {
   const { userIsGov, userOrgId } = await getUserInfo();
+  const skip = (page - 1) * pageSize;
+  const take = pageSize;
+  const select = {
+    id: true,
+    status: true,
+    transferFrom: {
+      select: {
+        name: true,
+      },
+    },
+    transferTo: {
+      select: {
+        name: true,
+      },
+    },
+  };
+  const where = getWhereClause(filters);
+  const orderBy = getOrderByClause(sorts, true);
   if (userIsGov) {
-    return await prisma.zevUnitTransfer.findMany({
-      where: {
-        ZevUnitTransferHistory: {
-          some: {
-            afterUserActionStatus:
-              ZevUnitTransferStatuses.APPROVED_BY_TRANSFER_TO,
-          },
-        },
+    where.ZevUnitTransferHistory = {
+      some: {
+        afterUserActionStatus: ZevUnitTransferStatuses.APPROVED_BY_TRANSFER_TO,
       },
-      include: {
-        zevUnitTransferContent: true,
-        transferFrom: true,
-        transferTo: true,
-      },
-    });
+    };
   } else {
-    return await prisma.zevUnitTransfer.findMany({
-      where: {
+    where.AND = [
+      { OR: where.OR ?? [] },
+      {
         OR: [
           { transferFromId: userOrgId },
           {
@@ -52,14 +77,27 @@ export const getZevUnitTransfers = async (): Promise<
           },
         ],
       },
-      include: {
-        zevUnitTransferContent: true,
-        transferFrom: true,
-        transferTo: true,
-      },
-    });
+    ];
   }
+  return await prisma.$transaction([
+    prisma.zevUnitTransfer.findMany({
+      skip,
+      take,
+      select,
+      where,
+      orderBy,
+    }),
+    prisma.zevUnitTransfer.count({
+      where,
+    }),
+  ]);
 };
+
+export type ZevUnitTransferWithContentAndOrgs = {
+  zevUnitTransferContent: ZevUnitTransferContent[];
+  transferFrom: Organization;
+  transferTo: Organization;
+} & ZevUnitTransfer;
 
 export const getZevUnitTransfer = async (
   id: number,
@@ -82,30 +120,29 @@ export const getZevUnitTransfer = async (
         transferTo: true,
       },
     });
-  } else {
-    const transfer = await prisma.zevUnitTransfer.findUnique({
-      where: {
-        id: id,
-      },
-      include: {
-        zevUnitTransferContent: true,
-        transferFrom: true,
-        transferTo: true,
-      },
-    });
-    if (transfer) {
-      if (transfer.transferFromId === userOrgId) {
-        return transfer;
-      } else if (
-        transfer.transferToId === userOrgId &&
-        transfer.status !== ZevUnitTransferStatuses.DRAFT &&
-        transfer.status !== ZevUnitTransferStatuses.DELETED
-      ) {
-        return transfer;
-      }
-    }
   }
-  return null;
+  return await prisma.zevUnitTransfer.findUnique({
+    where: {
+      id: id,
+      OR: [
+        { transferFromId: userOrgId },
+        {
+          transferToId: userOrgId,
+          status: {
+            notIn: [
+              ZevUnitTransferStatuses.DRAFT,
+              ZevUnitTransferStatuses.DELETED,
+            ],
+          },
+        },
+      ],
+    },
+    include: {
+      zevUnitTransferContent: true,
+      transferFrom: true,
+      transferTo: true,
+    },
+  });
 };
 
 export type ZevUnitTransferHistoryWithUser = ZevUnitTransferHistory & {
