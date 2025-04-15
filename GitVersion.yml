@@ -4,3 +4,5 @@ branches:
     mode: ContinuousDelivery
   release:
     mode: ContinuousDelivery
+  pull-request:
+    label: pr

@@ -93,6 +93,7 @@ jobs:
         id: export-version
         run: |
           VERSION="${{ steps.version-step.outputs.SemVer }}"
+          echo "ORIGINAL_VERSION=${VERSION}"
           PR_NUMBER="${{ env.PR_NUMBER }}"
           UPDATED_VERSION="${VERSION/alpha/pr${PR_NUMBER}}"
           echo "VERSION=${UPDATED_VERSION}"
