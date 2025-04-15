@@ -92,8 +92,11 @@ jobs:
       - name: Export Version
         id: export-version
         run: |
-          echo "VERSION=${{ steps.version-step.outputs.SemVer }}"
-          echo "VERSION=${{ steps.version-step.outputs.SemVer }}" >> $GITHUB_OUTPUT
+          VERSION="${{ steps.version-step.outputs.SemVer }}"
+          PR_NUMBER="${{ env.PR_NUMBER }}"
+          UPDATED_VERSION="${VERSION/alpha/pr${PR_NUMBER}}"
+          echo "VERSION=${UPDATED_VERSION}"
+          echo "VERSION=${UPDATED_VERSION}" >> $GITHUB_OUTPUT
 
   verify-pr-author:
     name: Verify PR Author
