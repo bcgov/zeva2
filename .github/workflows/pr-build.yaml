@@ -21,8 +21,8 @@ concurrency:
 jobs:
   install-oc:
     if: >
-      (github.event.action == 'labeled' && github.event.label.name == 'build' && ( github.event.pull_request.base.ref == 'develop' || startsWith( github.event.pull_request.base.ref, 'release' ) || startsWith( github.event.pull_request.base.ref, 'pipeline3' ) ) ) ||
-      (github.event.action == 'synchronize' && contains(github.event.pull_request.labels.*.name, 'build') && ( github.event.pull_request.base.ref == 'develop' || startsWith( github.event.pull_request.base.ref, 'release' ) || startsWith( github.event.pull_request.base.ref, 'pipeline3' ) ) )
+      (github.event.action == 'labeled' && github.event.label.name == 'build' && ( github.event.pull_request.base.ref == 'develop' || startsWith( github.event.pull_request.base.ref, 'release' ) ) ) ||
+      (github.event.action == 'synchronize' && contains(github.event.pull_request.labels.*.name, 'build') && ( github.event.pull_request.base.ref == 'develop' || startsWith( github.event.pull_request.base.ref, 'release' ) ) )
 
     runs-on: ubuntu-latest
     outputs:
@@ -51,8 +51,8 @@ jobs:
 
   versioning:
     if: >
-      (github.event.action == 'labeled' && github.event.label.name == 'build' && ( github.event.pull_request.base.ref == 'develop' || startsWith( github.event.pull_request.base.ref, 'release' ) || startsWith( github.event.pull_request.base.ref, 'pipeline3' ) ) ) ||
-      (github.event.action == 'synchronize' && contains(github.event.pull_request.labels.*.name, 'build') && ( github.event.pull_request.base.ref == 'develop' || startsWith( github.event.pull_request.base.ref, 'release' ) || startsWith( github.event.pull_request.base.ref, 'pipeline3' ) ) )
+      (github.event.action == 'labeled' && github.event.label.name == 'build' && ( github.event.pull_request.base.ref == 'develop' || startsWith( github.event.pull_request.base.ref, 'release' ) ) ) ||
+      (github.event.action == 'synchronize' && contains(github.event.pull_request.labels.*.name, 'build') && ( github.event.pull_request.base.ref == 'develop' || startsWith( github.event.pull_request.base.ref, 'release' ) ) )
 
     runs-on: ubuntu-latest
 
