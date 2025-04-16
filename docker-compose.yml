@@ -41,6 +41,12 @@ services:
       - DATABASE_URL=postgresql://postgres:postgres@db:5432/zeva?schema=public
       - DATABASE_URL_OLD=postgresql://postgres:postgres@host.docker.internal:5432/zeva?schema=public
       - CHECKPOINT_DISABLE=1
+      - CHES_AUTH_URL
+      - CHES_EMAIL_URL
+      - EMAIL_SERVICE_CLIENT_ID
+      - EMAIL_SERVICE_CLIENT_SECRET
+      - SENDER_EMAIL
+      - SENDER_NAME
       - START_WORKERS=false
     depends_on:
       db:
