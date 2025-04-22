@@ -3,7 +3,7 @@ import { handleEmailJob, handleEmailJobCompleted } from "./handlers";
 
 const connection = {
   host: process.env.REDIS_HOST ?? "redis",
-  port: parseInt(process.env.REDIS_PORT ?? "6379"),
+  port: parseInt(process.env.REDIS_PORT ?? "6379", 10),
 };
 
 export const bullmqConfig = {

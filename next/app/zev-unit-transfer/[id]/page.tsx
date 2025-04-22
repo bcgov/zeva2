@@ -21,7 +21,7 @@ import ZevUnitTransferActions from "../lib/components/ZevUnitTransferActions";
 
 const Page = async (props: { params: Promise<{ id: string }> }) => {
   const args = await props.params;
-  const id = parseInt(args.id);
+  const id = parseInt(args.id, 10);
   const { userOrgId } = await getUserInfo();
   const transfer = await getTransfer(id);
   if (transfer) {

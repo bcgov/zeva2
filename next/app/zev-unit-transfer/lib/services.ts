@@ -20,6 +20,7 @@ import {
 } from "@/app/lib/utils/complianceYear";
 import { getModelYearEnum } from "@/lib/utils/getEnums";
 import { ZevUnitTransferContentPayload } from "./actions";
+import { getModelYearEnumMap } from "@/app/lib/utils/enumMaps";
 
 export const getTransfer = async (transferId: number) => {
   return await prisma.zevUnitTransfer.findUnique({
@@ -101,25 +102,49 @@ export const transferIsCovered = async (
   transfer: ZevUnitTransferWithContent,
 ) => {
   let result = true;
-  const complianceYear = getCurrentComplianceYear();
-  const compliancePeriod = getCompliancePeriod(complianceYear);
-  const endingBalances = await prisma.zevUnitEndingBalance.findMany({
+  const mostRecentComplianceYearWithEndingBalances = await prisma.zevUnitEndingBalance.findFirst({
     where: {
       organizationId: transfer.transferFromId,
-      complianceYear: getModelYearEnum(complianceYear - 1),
     },
-  });
-  const transactions = await prisma.zevUnitTransaction.findMany({
-    where: {
-      organizationId: transfer.transferFromId,
-      timestamp: {
-        gte: compliancePeriod.closedLowerBound,
-        lt: compliancePeriod.openUpperBound,
-      },
+    select: {
+      complianceYear: true
     },
-  });
+    orderBy: {
+      complianceYear: "desc"
+    }
+  })
   const zevUnitRecords: ZevUnitRecord[] = [];
-  zevUnitRecords.push(...getZevUnitRecords(endingBalances), ...transactions);
+  if (mostRecentComplianceYearWithEndingBalances) {
+    const complianceYear = mostRecentComplianceYearWithEndingBalances.complianceYear
+    const modelYearsMap = getModelYearEnumMap()
+    const complianceYearNumber = parseInt(modelYearsMap[complianceYear] ?? "")
+    if (Number.isNaN(complianceYearNumber)) {
+      throw new Error("unknown model year!")
+    }
+    const compliancePeriod = getCompliancePeriod(complianceYearNumber);
+    const endingBalances = await prisma.zevUnitEndingBalance.findMany({
+      where: {
+        organizationId: transfer.transferFromId,
+        complianceYear: complianceYear,
+      },
+    });
+    const transactions = await prisma.zevUnitTransaction.findMany({
+      where: {
+        organizationId: transfer.transferFromId,
+        timestamp: {
+          gte: compliancePeriod.closedLowerBound,
+        },
+      },
+    });
+    zevUnitRecords.push(...getZevUnitRecords(endingBalances), ...transactions);
+  } else {
+    const transactions = await prisma.zevUnitTransaction.findMany({
+      where: {
+        organizationId: transfer.transferFromId,
+      },
+    });
+    zevUnitRecords.push(...transactions);
+  }
   for (const item of transfer.zevUnitTransferContent) {
     zevUnitRecords.push({
       ...item,

@@ -22,7 +22,7 @@ const Page = async () => {
     <ZevUnitTransferCreateOrSave
       type="create"
       transferCandidatesMap={transferCandidatesMap}
-      initialTransferTo={parseInt(Object.keys(transferCandidatesMap)[0])}
+      initialTransferTo={parseInt(Object.keys(transferCandidatesMap)[0], 10)}
       initialContent={[]}
       onCreateOrSave={onCreate}
     />
