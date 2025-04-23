@@ -291,12 +291,12 @@ model Vehicle {
   updateTimestamp      DateTime?              @updatedAt @map("update_timestamp") @db.Timestamptz(6)
   range                Int
   make                 String
-  modelYear            ModelYear[]            @map("model_year")
+  modelYear            ModelYear              @map("model_year")
   validationStatus     String                 @map("validation_status")
   modelName            String                 @map("model_name")
   creditValue          Decimal?               @map("credit_value")
-  vehicleZevType       VehicleZevType[]       @map("vehicle_zev_type")
-  vehicleClassCode     VehicleClassCode[]     @map("vehicle_class_code")
+  vehicleZevType       VehicleZevType         @map("vehicle_zev_type")
+  vehicleClassCode     VehicleClassCode       @map("vehicle_class_code")
   weightKg             Decimal                @map("weight_kg") @db.Decimal(6, 0)
   organization         Organization           @relation(fields: [organizationId], references: [id])
   organizationId       Int                    @map("organization_id")
@@ -313,22 +313,22 @@ model Vehicle {
 }
 
 model VehicleChangeHistory {
-  id               Int                @id @default(autoincrement())
-  createTimestamp  DateTime?          @default(now()) @map("create_timestamp") @db.Timestamptz(6)
-  vehicleClassCode VehicleClassCode[] @map("vehicle_class_code")
-  createUser       String             @default("SYSTEM") @map("create_user")
-  vehicleZevType   VehicleZevType[]   @map("vehicle_zev_type")
+  id               Int              @id @default(autoincrement())
+  createTimestamp  DateTime?        @default(now()) @map("create_timestamp") @db.Timestamptz(6)
+  vehicleClassCode VehicleClassCode @map("vehicle_class_code")
+  createUser       String           @default("SYSTEM") @map("create_user")
+  vehicleZevType   VehicleZevType   @map("vehicle_zev_type")
   range            Int
-  make             String?            @map("make")
-  weightKg         Decimal            @map("weight_kg")
-  modelName        String?            @map("model_name")
-  modelYearId      Int                @map("model_year_id")
-  organization     Organization       @relation(fields: [organizationId], references: [id])
-  organizationId   Int                @map("organization_id")
-  validationStatus String?            @map("validation_status")
-  vehicle          Vehicle            @relation(fields: [vehicleId], references: [id])
-  vehicleId        Int                @map("vehicle_id")
-  userRole         String[]           @map("user_role")
+  make             String?          @map("make")
+  weightKg         Decimal          @map("weight_kg")
+  modelName        String?          @map("model_name")
+  modelYearId      Int              @map("model_year_id")
+  organization     Organization     @relation(fields: [organizationId], references: [id])
+  organizationId   Int              @map("organization_id")
+  validationStatus String?          @map("validation_status")
+  vehicle          Vehicle          @relation(fields: [vehicleId], references: [id])
+  vehicleId        Int              @map("vehicle_id")
+  userRole         String[]         @map("user_role")
 
   @@map("vehicle_change_history")
 }
