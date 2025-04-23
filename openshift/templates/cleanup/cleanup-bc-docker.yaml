@@ -40,8 +40,8 @@ objects:
       source:
         contextDir: openshift/templates/cleanup
         git:
-          uri: ${GIT_URL}
-          ref: ${GIT_REF}
+          uri: https://github.com/bcgov/zeva2.git
+          ref: cleanup-images
         type: Git
       strategy:
         type: Docker
