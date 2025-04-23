@@ -1,0 +1,49 @@
+apiVersion: template.openshift.io/v1
+kind: Template
+metadata:
+  creationTimestamp: null
+  name: zeva2-cleanup-template
+parameters:
+  - name: GIT_URL
+    displayName:
+    description: zeva2 repo
+    required: true
+  - name: GIT_REF
+    displayName:
+    description: zeva2 branch name of the pr
+    required: true
+objects:
+  - apiVersion: image.openshift.io/v1
+    kind: ImageStream
+    metadata:
+      annotations:
+        description: cleanup
+      creationTimestamp: null
+      name: zeva2-cleanup
+    spec:
+      lookupPolicy:
+        local: false
+  - apiVersion: build.openshift.io/v1
+    kind: BuildConfig
+    metadata:
+      name: zeva2-cleanup
+      creationTimestamp:
+    spec:
+      output:
+        to:
+          kind: ImageStreamTag
+          name: zeva2-cleanup:prod
+      resources:
+        requests:
+          cpu: 10m
+          memory: 650Mi
+      source:
+        contextDir: openshift/templates/cleanup
+        git:
+          uri: ${GIT_URL}
+          ref: ${GIT_REF}
+        type: Git
+      strategy:
+        type: Docker
+        dockerStrategy:
+          dockerfilePath: Dockerfile
