@@ -1,3 +1,5 @@
+# This workflow builds and deploys the Zeva2 application to the production environment in OpenShift.
+
 name: Zeva2 Prod CI
 
 on:
@@ -15,6 +17,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  # install oc command line tool
   install-oc:
     runs-on: ubuntu-latest
     outputs:
@@ -41,6 +44,8 @@ jobs:
       - name: Confirm OpenShift CLI is Available
         run: oc version --client
 
+  # determine the version of the application
+  # A sample version 0.1.0
   versioning:
     runs-on: ubuntu-latest
 
@@ -69,7 +74,8 @@ jobs:
         run: |
           echo "VERSION=${{ steps.version-step.outputs.SemVer }}"
           echo "VERSION=${{ steps.version-step.outputs.SemVer }}" >> $GITHUB_OUTPUT
-
+  
+  # Build the application
   build:
     name: Build Zeva2 from release branch
     needs: [install-oc, versioning]
@@ -82,6 +88,7 @@ jobs:
       openshift-server: ${{ secrets.OPENSHIFT_SERVER }}
       openshift-token: ${{ secrets.OPENSHIFT_TOKEN }}
 
+  # Tag the images to the production namespace
   tag-images:
     name: Tag Zeva2 images to Prod
     needs: [versioning, build]
@@ -107,6 +114,8 @@ jobs:
           oc tag ${{ env.TOOLS_NAMESPACE }}/zeva2-bullmq:${{ needs.versioning.outputs.VERSION}} ${{ env.PROD_NAMESPACE }}/zeva2-bullmq:${{ needs.versioning.outputs.VERSION}}
 
 
+  # Approve the deployment to production
+  # This step requires manual approval from the specified approvers
   approve-prod-deployment:
     name: Approve Prod Deployment
     runs-on: ubuntu-latest
@@ -122,6 +131,7 @@ jobs:
           minimum-approvals: 2
           issue-title: "ZEVA2 ${{ needs.versioning.outputs.VERSION  }} Prod Deployment"
 
+  # Deploy the application to production
   deploy:
     name: Deploy Zeva2 main branch to Prod
     needs: [versioning, approve-prod-deployment]

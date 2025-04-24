@@ -1,3 +1,4 @@
+# This workflow builds and deploys the Zeva2 application to the production environment in OpenShift.
 name: Zeva2 Test CI
 
 on:
@@ -15,6 +16,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  # install oc command line tool
   install-oc:
     runs-on: ubuntu-latest
     outputs:
@@ -41,6 +43,8 @@ jobs:
       - name: Confirm OpenShift CLI is Available
         run: oc version --client
 
+  # determine the version of the application
+  # A sample version 0.1.0-beta.91
   versioning:
     runs-on: ubuntu-latest
 
@@ -70,6 +74,7 @@ jobs:
           echo "VERSION=${{ steps.version-step.outputs.SemVer }}"
           echo "VERSION=${{ steps.version-step.outputs.SemVer }}" >> $GITHUB_OUTPUT
 
+  # build zeva2 application
   build:
     name: Build Zeva2 from release branch
     needs: [install-oc, versioning]
@@ -82,6 +87,7 @@ jobs:
       openshift-server: ${{ secrets.OPENSHIFT_SERVER }}
       openshift-token: ${{ secrets.OPENSHIFT_TOKEN }}
 
+  # tag zeva2 images to test namespace
   tag-images:
     name: Tag Zeva2 images to Test
     needs: [versioning, build]
@@ -106,7 +112,8 @@ jobs:
           oc tag ${{ env.TOOLS_NAMESPACE }}/zeva2-next:${{ needs.versioning.outputs.VERSION}} ${{ env.TEST_NAMESPACE}}/zeva2-next:${{ needs.versioning.outputs.VERSION}}
           oc tag ${{ env.TOOLS_NAMESPACE }}/zeva2-bullmq:${{ needs.versioning.outputs.VERSION}} ${{ env.TEST_NAMESPACE }}/zeva2-bullmq:${{ needs.versioning.outputs.VERSION}}
 
-
+  # Approve test deployment
+  # This step is to approve the deployment to test environment
   approve-test-deployment:
     name: Approve Test Deployment
     runs-on: ubuntu-latest
@@ -122,6 +129,7 @@ jobs:
           minimum-approvals: 1
           issue-title: "ZEVA2 ${{ needs.versioning.outputs.VERSION  }} Test Deployment"
 
+  # deploy zeva2 to test environment
   deploy:
     name: Deploy Zeva2 release branch to Test
     needs: [versioning, approve-test-deployment]
