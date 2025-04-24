@@ -1,6 +1,9 @@
+# this workflow builds and deploys pull requests to the development environment in OpenShift.
+
 name: PR Build on Dev
 
 on:
+  # have to use pull_request_target otherwise the workflow will not have access to the secrets
   pull_request_target:
     types: [labeled, synchronize]
     branches:
@@ -19,6 +22,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  # install oc command line tool
   install-oc:
     if: >
       (github.event.action == 'labeled' && github.event.label.name == 'build' && ( github.event.pull_request.base.ref == 'develop' || startsWith( github.event.pull_request.base.ref, 'release' ) ) ) ||
@@ -49,6 +53,8 @@ jobs:
       - name: Confirm OpenShift CLI is Available
         run: oc version --client
 
+  # determine the version of the application
+  # A sample version 0.1.0-pr66.91
   versioning:
     if: >
       (github.event.action == 'labeled' && github.event.label.name == 'build' && ( github.event.pull_request.base.ref == 'develop' || startsWith( github.event.pull_request.base.ref, 'release' ) ) ) ||
@@ -89,6 +95,10 @@ jobs:
           ls -l /opt/hostedtoolcache/GitVersion.Tool
           /opt/hostedtoolcache/GitVersion.Tool/6.0.5/dotnet-gitversion /showconfig
 
+      # The original version fron gitversion is in the format 0.1.0-alpha.91
+      # We need to change the alpha to pr<pr_number> so that we can deploy to dev
+      # The version will be in the format 0.1.0-pr<pr_number>.91
+      # The reason gitversion used the lable alpha is we use the pull_request_target event
       - name: Export Version
         id: export-version
         run: |
@@ -99,6 +109,9 @@ jobs:
           echo "VERSION=${UPDATED_VERSION}"
           echo "VERSION=${UPDATED_VERSION}" >> $GITHUB_OUTPUT
 
+  # verify PR author
+  # only allow certain users to trigger the build
+  # this is to prevent malicious users from triggering builds
   verify-pr-author:
     name: Verify PR Author
     needs: [install-oc, versioning]
@@ -113,7 +126,8 @@ jobs:
             if (!allowedAuthors.includes(prAuthor)) {
               throw new Error(`PR author ${prAuthor} is not allowed.`);
             }
-          
+      
+  # build zeva2 from pull request
   build:
     name: Build Zeva2 Pull Request
     needs: [install-oc, versioning, verify-pr-author]
@@ -126,6 +140,7 @@ jobs:
       openshift-server: ${{ secrets.OPENSHIFT_SERVER }}
       openshift-token: ${{ secrets.OPENSHIFT_TOKEN }}
 
+  # tag the built images to dev
   tag-images:
     name: Tag Zeva2 images to Dev
     needs: [versioning, build]
@@ -151,7 +166,8 @@ jobs:
           oc tag ${{ env.TOOLS_NAMESPACE }}/zeva2-next:${{ needs.versioning.outputs.VERSION}} ${{ env.DEV_NAMESPACE}}/zeva2-next:${{ needs.versioning.outputs.VERSION}}
           oc tag ${{  env.TOOLS_NAMESPACE }}/zeva2-bullmq:${{ needs.versioning.outputs.VERSION}} ${{ env.DEV_NAMESPACE }}/zeva2-bullmq:${{ needs.versioning.outputs.VERSION}}
     
-  # add starting postgresql instance for pr 
+  # Kick off the redis and postgresql for the pull request
+  # Deploys the pull request to development environment
   deploy:
     name: Deploy pull request
     needs: [versioning, tag-images]

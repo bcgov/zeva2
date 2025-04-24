@@ -1,18 +1,26 @@
+
+# This workflow is a template for deploying the Zeva2 application in OpenShift.
+
 name: Deploy Template
 
 on:
   workflow_call:
     inputs:
+      # The git reference to check out the repository
       git_ref:
         required: true
         type: string
+      # The version of the application to build
+      # This is typically set by the GitVersion action in the calling workflow
       version:
         required: true
         type: string
+      # The name of the values file to use for the deployment
       values_file:
         required: true
         type: string
     secrets:
+      # the key used to checkout CD repository
       manifest-repo-deploy-key:
         required: true
 
@@ -30,7 +38,7 @@ jobs:
           path: /usr/local/bin/oc
           key: oc-cli-${{ runner.os }}
 
-      - name: Checkout Manifest repository
+      - name: Checkout CD repository
         uses: actions/checkout@v4.1.1
         with:
           repository: bcgov-c/tenant-gitops-ea8eab
@@ -44,6 +52,7 @@ jobs:
             yq -i '.image.tag = "${{ inputs.version}}"' zeva2/zeva2-next/${{ inputs.values_file }}
             yq -i '.image.tag = "${{ inputs.version}}"' zeva2/zeva2-bullmq/${{ inputs.values_file }}
 
+      # push the changes to the CD repo
       - name: GitHub Commit & Push
         shell: bash {0}
         run: |

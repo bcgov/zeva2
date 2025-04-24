@@ -1,11 +1,18 @@
+
+# This workfile is a template for building the Zeva2 application in OpenShift.
+# It uses the OpenShift CLI (oc) to process and apply build configurations for the Next.js and BullMQ components of the application.
+# The workflow is triggered by a call from another workflow and requires certain inputs and secrets to be provided.
 name: Build Template
 
 on:
   workflow_call:
     inputs:
+      # The git reference to check out the repository
       git_ref:
         required: true
         type: string
+      # The version of the application to build
+      # This is typically set by the GitVersion action in the calling workflow
       version:
         required: true
         type: string
