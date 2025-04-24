@@ -181,9 +181,6 @@ enum ZevUnitTransferStatuses {
   APPROVED_BY_GOV
   REJECTED_BY_GOV
   DELETED
-  VALIDATED
-  RESCINDED
-  REJECTED
 }
 
 model ZevUnitTransfer {
@@ -205,11 +202,11 @@ model ZevUnitTransferContent {
   id                 Int             @id @default(autoincrement())
   zevUnitTransferId  Int             @map("zev_unit_transfer_id")
   zevUnitTransfer    ZevUnitTransfer @relation(fields: [zevUnitTransferId], references: [id])
-  numberOfUnits      Decimal?        @map("number_of_units") @db.Decimal(65, 2)
+  numberOfUnits      Decimal         @map("number_of_units") @db.Decimal(65, 2)
   zevClass           ZevClass        @map("zev_class")
   vehicleClass       VehicleClass    @map("vehicle_class")
   modelYear          ModelYear       @map("model_year")
-  dollarValuePerUnit Decimal?        @map("dollar_value_per_unit") @db.Decimal(65, 2)
+  dollarValuePerUnit Decimal         @map("dollar_value_per_unit") @db.Decimal(65, 2)
 
   @@map("zev_unit_transfer_content")
 }
@@ -224,7 +221,6 @@ enum ZevUnitTransferHistoryStatuses {
   RETURNED_TO_ANALYST
   APPROVED_BY_GOV
   REJECTED_BY_GOV
-  VALIDATED
 }
 
 model ZevUnitTransferHistory {
@@ -238,25 +234,6 @@ model ZevUnitTransferHistory {
   comment               String?
 
   @@map("zev_unit_transfer_history")
-}
-
-enum ZevUnitTransferCommentType {
-  TO_COUNTERPARTY_UPON_RESCIND
-  INTERNAL_GOV
-}
-
-model ZevUnitTransferComment {
-  id                Int                        @id @default(autoincrement())
-  zevUnitTransferId Int                        @map("zev_unit_transfer_id")
-  zevUnitTransfer   ZevUnitTransfer            @relation(fields: [zevUnitTransferId], references: [id])
-  userId            Int                        @map("user_id")
-  user              User                       @relation(fields: [userId], references: [id])
-  createTimestamp   DateTime                   @default(now()) @map("create_timestamp") @db.Timestamptz(6)
-  updateTimestamp   DateTime                   @updatedAt @map("update_timestamp") @db.Timestamptz(6)
-  comment           String
-  commentType       ZevUnitTransferCommentType @map("comment_type")
-
-  @@map("zev_unit_transfer_comment")
 }
 
 enum VehicleZevType {

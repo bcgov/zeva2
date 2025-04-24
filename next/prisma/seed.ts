@@ -10,6 +10,8 @@ import {
   BalanceType,
   ZevUnitTransferStatuses,
   ZevUnitTransferHistory,
+  VehicleClassCode,
+  VehicleZevType,
 } from "./generated/client";
 import { getModelYearEnum, getRoleEnum } from "@/lib/utils/getEnums";
 import { Decimal } from "./generated/client/runtime/library";
@@ -691,212 +693,144 @@ const main = () => {
         data: result,
       });
     }
-    
-        // add ZevUnitTransferComments (previously called credit transfer comments)
-        const creditTransferCommentsOld = await prismaOld.credit_transfer_comment.findMany({
-          include: {
-            credit_transfer_history: {
-              include: {
-                credit_transfer: true,
-              },
-            },
+
+    const vClassIdToEnum: Record<number, VehicleClassCode> = {};
+    for (const r of await prismaOld.vehicle_class_code.findMany()) {
+      vClassIdToEnum[r.id] = r.vehicle_class_code as VehicleClassCode;
+    }
+
+    const vZevIdToEnum: Record<number, VehicleZevType> = {};
+    for (const r of await prismaOld.vehicle_zev_type.findMany()) {
+      vZevIdToEnum[r.id] = r.vehicle_zev_code as VehicleZevType;
+    }
+
+    const oldVehIdToNew: Record<number, number> = {};
+
+    const vehiclesOld = await prismaOld.vehicle.findMany();
+
+    for (const vehicleOld of vehiclesOld) {
+      const modelYearEnum =
+        mapOfModelYearIdsToModelYearEnum[vehicleOld.model_year_id];
+      const orgNewId = mapOfOldOrgIdsToNewOrgIds[vehicleOld.organization_id];
+      if (!modelYearEnum) {
+        throw new Error(
+          "vehicle with id " + vehicleOld.id + " has unknown model year!",
+        );
+      }
+      if (orgNewId === undefined) {
+        throw new Error(
+          "vehicle with id " + vehicleOld.id + " has unknown orgId",
+        );
+      }
+      const zevEnum = vZevIdToEnum[vehicleOld.vehicle_zev_type_id];
+      const classEnum = vClassIdToEnum[vehicleOld.vehicle_class_code_id];
+      const creditEnum = vehicleOld.credit_class_id
+        ? mapOfOldCreditClassIdsToZevClasses[vehicleOld.credit_class_id]
+        : undefined;
+
+      const created = await tx.vehicle.create({
+        select: { id: true },
+        data: {
+          range: vehicleOld.range,
+          make: vehicleOld.make,
+          createTimestamp: vehicleOld.create_timestamp,
+          updateTimestamp: vehicleOld.update_timestamp,
+          modelYear: { set: [modelYearEnum] },
+          validationStatus: vehicleOld.validation_status,
+          modelName: vehicleOld.model_name,
+          creditValue: vehicleOld.credit_value,
+          vehicleZevType: { set: [zevEnum] },
+          vehicleClassCode: { set: [classEnum] },
+          weightKg: Number(vehicleOld.weight_kg),
+          organizationId: orgNewId,
+          createUser: vehicleOld.create_user,
+          updateUser: vehicleOld.update_user,
+          creditClass: creditEnum,
+          hasPassedUs06Test: vehicleOld.has_passed_us_06_test,
+          isActive: vehicleOld.is_active,
+        },
+      });
+
+      oldVehIdToNew[vehicleOld.id] = created.id;
+    }
+
+    for (const historyOld of await prismaOld.vehicle_change_history.findMany()) {
+      const vehIdNew = oldVehIdToNew[historyOld.vehicle_id];
+
+      await tx.vehicleChangeHistory.create({
+        data: {
+          createTimestamp: historyOld.create_timestamp,
+          vehicleClassCode: {
+            set: [vClassIdToEnum[historyOld.vehicle_class_code_id]],
+          },
+          createUser: historyOld.create_user,
+          vehicleZevType: {
+            set: [vZevIdToEnum[historyOld.vehicle_zev_type_id]],
+          },
+          range: historyOld.range,
+          make: historyOld.make,
+          weightKg: historyOld.weight_kg,
+          modelName: historyOld.model_name,
+          modelYearId: historyOld.model_year_id,
+          organizationId:
+            mapOfOldOrgIdsToNewOrgIds[historyOld.organization_id]!,
+          validationStatus: historyOld.validation_status,
+          vehicleId: vehIdNew,
+          userRole: historyOld.user_role,
+        },
+      });
+    }
+
+    const commentsOld = await prismaOld.vehicle_comment.findMany();
+
+    for (const commentOld of commentsOld) {
+      const vehIdNew = oldVehIdToNew[commentOld.vehicle_id];
+      if (commentOld.vehicle_comment) {
+        await tx.vehicleComment.create({
+          data: {
+            vehicleId: vehIdNew,
+            createTimestamp: commentOld.create_timestamp,
+            updateTimestamp: commentOld.update_timestamp,
+            comment: commentOld.vehicle_comment,
+            createUser: commentOld.create_user,
+            updateUser: commentOld.update_user,
           },
         });
-        for (const transferCommentOld of creditTransferCommentsOld) {
-          const newTransferId =
-            mapOfOldCreditTransferIdsToNewZevUnitTransferIds[
-              transferCommentOld.credit_transfer_history.credit_transfer.id
-            ];
-          const newCreateUserId =
-            mapOfOldUsernamesToNewUserIds[transferCommentOld.create_user];
-          const newCreateUser = await tx.user.findUnique({
-            where: {
-              id: newCreateUserId,
-            },
-            include: {
-              organization: true,
-            },
-          });
-          const comment = transferCommentOld.credit_transfer_comment;
-          const createTimestamp = transferCommentOld.create_timestamp;
-          const updateTimestamp = transferCommentOld.update_timestamp;
-          if (!newTransferId) {
-            throw new Error(
-              "transfer comment " +
-                transferCommentOld.id +
-                " with unknown transfer id!",
-            );
-          }
-          if (!newCreateUserId) {
-            throw new Error(
-              "transfer comment " +
-                transferCommentOld.id +
-                " with unknown create user id!",
-            );
-          }
-          if (!newCreateUser) {
-            throw new Error(
-              "transfer comment " +
-                transferCommentOld.id +
-                " with create user id not associated with a user!",
-            );
-          }
-          if (!comment) {
-            throw new Error(
-              "transfer comment " + transferCommentOld.id + " with no comment!",
-            );
-          }
-          if (!createTimestamp) {
-            throw new Error(
-              "transfer comment " +
-                transferCommentOld.id +
-                " with no create timestamp!",
-            );
-          }
-          if (!updateTimestamp) {
-            throw new Error(
-              "transfer comment " +
-                transferCommentOld.id +
-                " with no update timestamp!",
-            );
-          }
-        
-          await tx.zevUnitTransferComment.create({
-            data: {
-              zevUnitTransferId: newTransferId,
-              userId: newCreateUserId,
-              createTimestamp: createTimestamp,
-              updateTimestamp: updateTimestamp,
-              comment: comment,
-              // all supplier comments are to counterparty upon rescind,
-              // and all government comments are internal
-              commentType: newCreateUser.organization.isGovernment
-                ? ZevUnitTransferCommentType.INTERNAL_GOV
-                : ZevUnitTransferCommentType.TO_COUNTERPARTY_UPON_RESCIND,
-            },
-          });
-        }
-        const vClassIdToEnum: Record<number, VehicleClassCode> = {};
-        for (const r of await prismaOld.vehicle_class_code.findMany()) {
-          vClassIdToEnum[r.id] = r.vehicle_class_code as VehicleClassCode;
-        }
-        
-        const vZevIdToEnum: Record<number, VehicleZevType> = {};
-        for (const r of await prismaOld.vehicle_zev_type.findMany()) {
-          vZevIdToEnum[r.id] = r.vehicle_zev_code as VehicleZevType;
-        }
-        
-        const oldVehIdToNew: Record<number, number> = {};
-        
-        const vehiclesOld = await prismaOld.vehicle.findMany();
-        
-        for (const vehicleOld of vehiclesOld) {
-          const modelYearEnum  = mapOfModelYearIdsToModelYearEnum[vehicleOld.model_year_id];
-          const orgNewId = mapOfOldOrgIdsToNewOrgIds[vehicleOld.organization_id];
-          const zevEnum = vZevIdToEnum[vehicleOld.vehicle_zev_type_id];
-          const classEnum = vClassIdToEnum[vehicleOld.vehicle_class_code_id];
-          const creditEnum = mapOfOldCreditClassIdsToZevClasses[vehicleOld.credit_class_id];
-        
-          const created = await tx.vehicle.create({
-            select: { id: true },
-            data: {
-              range: vehicleOld.range,
-              make: vehicleOld.make,
-              createTimestamp: vehicleOld.create_timestamp,
-              updateTimestamp: vehicleOld.update_timestamp, 
-              modelYear: { set: [modelYearEnum] },
-              validationStatus: vehicleOld.validation_status,
-              modelName: vehicleOld.model_name,
-              creditValue: vehicleOld.credit_value,
-              vehicleZevType: { set: [zevEnum] },
-              vehicleClassCode: { set: [classEnum] },
-              weightKg: Number(vehicleOld.weight_kg),
-              organizationId: orgNewId,
-              createUser: vehicleOld.create_user,
-              updateUser: vehicleOld.update_user,
-              creditClass: creditEnum,
-              hasPassedUs06Test: vehicleOld.has_passed_us_06_test,
-              isActive: vehicleOld.is_active,
-            },
-          });
-        
-          oldVehIdToNew[vehicleOld.id] = created.id;
-        }
+      }
+    }
 
-        for (const historyOld of await prismaOld.vehicle_change_history.findMany()) {
-          const vehIdNew = oldVehIdToNew[historyOld.vehicle_id];
-        
-          await tx.vehicleChangeHistory.create({
-            data: {
-              createTimestamp: historyOld.create_timestamp,
-              vehicleClassCode: { set: [ vClassIdToEnum[historyOld.vehicle_class_code_id] ] },
-              createUser: historyOld.create_user,
-              vehicleZevType: { set: [ vZevIdToEnum[historyOld.vehicle_zev_type_id] ] },
-              range: historyOld.range,
-              make: historyOld.make,
-              weightKg: historyOld.weight_kg,
-              modelName: historyOld.model_name,
-              modelYearId: historyOld.model_year_id,
-              organizationId: mapOfOldOrgIdsToNewOrgIds[historyOld.organization_id]!,
-              validationStatus: historyOld.validation_status,
-              vehicleId: vehIdNew,
-              userRole: historyOld.user_role,
-            },
-          });
-        }
+    const attachmentsOld = await prismaOld.vehicle_file_attachment.findMany();
 
-        const commentsOld = await prismaOld.vehicle_comment.findMany();
+    for (const attachemntOld of attachmentsOld) {
+      const vehIdNew = oldVehIdToNew[attachemntOld.vehicle_id];
 
-        for (const commentOld of commentsOld) {
-          const vehIdNew = oldVehIdToNew[commentOld.vehicle_id];
-
-          await tx.vehicleComment.create({
-            data: {
-              vehicleId: vehIdNew,
-              createTimestamp: commentOld.create_timestamp,
-              updateTimestamp: commentOld.update_timestamp,
-              comment: commentOld.vehicle_comment,
-              createUser: commentOld.create_user,
-              updateUser: commentOld.update_user
-            },
-          });
-        }
-
-        const attachmentsOld = await prismaOld.vehicle_file_attachment.findMany();
-
-        for (const attachemntOld of attachmentsOld) {
-          const vehIdNew = oldVehIdToNew[attachemntOld.vehicle_id];
-
-          await tx.vehicleAttachment.create({
-            data: {
-              vehicleId: vehIdNew,
-              createTimestamp: attachemntOld.create_timestamp,
-              updateTimestamp: attachemntOld.update_timestamp,
-              createUser: attachemntOld.create_user,
-              updateUser: attachemntOld.update_user,
-              filename: attachemntOld.filename,
-              minioObjectName: attachemntOld.minio_object_name,
-              size: attachemntOld.size,
-              mimeType: attachemntOld.mime_type,
-              isRemoved: attachemntOld.is_removed,
-            },
-          });
-        }
-
-
+      await tx.vehicleAttachment.create({
+        data: {
+          vehicleId: vehIdNew,
+          createTimestamp: attachemntOld.create_timestamp,
+          updateTimestamp: attachemntOld.update_timestamp,
+          createUser: attachemntOld.create_user,
+          updateUser: attachemntOld.update_user,
+          filename: attachemntOld.filename,
+          minioObjectName: attachemntOld.minio_object_name,
+          size: attachemntOld.size,
+          mimeType: attachemntOld.mime_type,
+          isRemoved: attachemntOld.is_removed,
+        },
       });
-    };
-    
-    main()
-      .then(async () => {
-        console.log("seed successful");
-        await prisma.$disconnect();
-        await prismaOld.$disconnect();
-      })
-      .catch(async (e) => {
-        console.log(e);
-        await prisma.$disconnect();
-        await prismaOld.$disconnect();
-        process.exit(1);
-      });
-    
+    }
+  });
+};
+
+main()
+  .then(async () => {
+    console.log("seed successful");
+    await prisma.$disconnect();
+    await prismaOld.$disconnect();
+  })
+  .catch(async (e) => {
+    console.log(e);
+    await prisma.$disconnect();
+    await prismaOld.$disconnect();
+    process.exit(1);
+  });
