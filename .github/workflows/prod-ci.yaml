@@ -88,10 +88,27 @@ jobs:
       openshift-server: ${{ secrets.OPENSHIFT_SERVER }}
       openshift-token: ${{ secrets.OPENSHIFT_TOKEN }}
 
+  # Approve the deployment to production
+  # This step requires manual approval from the specified approvers
+  approve-prod-deployment:
+    name: Approve Prod Deployment
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    needs: [versioning, build]
+
+    steps:
+      - name: Ask for approval for ZEVA2 ${{ needs.versioning.outputs.VERSION  }} Prod deployment
+        uses: trstringer/manual-approval@v1.6.0
+        with:
+          secret: ${{ github.TOKEN }}
+          approvers: emi-hi,tim738745,kuanfandevops,JulianForeman,rogerlcleung
+          minimum-approvals: 2
+          issue-title: "ZEVA2 ${{ needs.versioning.outputs.VERSION  }} Prod Deployment"
+
   # Tag the images to the production namespace
   tag-images:
     name: Tag Zeva2 images to Prod
-    needs: [versioning, build]
+    needs: [versioning, approve-prod-deployment]
     runs-on: ubuntu-latest
     steps:
       - name: Restore oc command from Cache
@@ -113,28 +130,10 @@ jobs:
           oc tag ${{ env.TOOLS_NAMESPACE }}/zeva2-next:${{ needs.versioning.outputs.VERSION}} ${{ env.PROD_NAMESPACE}}/zeva2-next:${{ needs.versioning.outputs.VERSION}}
           oc tag ${{ env.TOOLS_NAMESPACE }}/zeva2-bullmq:${{ needs.versioning.outputs.VERSION}} ${{ env.PROD_NAMESPACE }}/zeva2-bullmq:${{ needs.versioning.outputs.VERSION}}
 
-
-  # Approve the deployment to production
-  # This step requires manual approval from the specified approvers
-  approve-prod-deployment:
-    name: Approve Prod Deployment
-    runs-on: ubuntu-latest
-    timeout-minutes: 60
-    needs: [versioning, tag-images]
-
-    steps:
-      - name: Ask for approval for ZEVA2 ${{ needs.versioning.outputs.VERSION  }} Prod deployment
-        uses: trstringer/manual-approval@v1.6.0
-        with:
-          secret: ${{ github.TOKEN }}
-          approvers: emi-hi,tim738745,kuanfandevops,JulianForeman,rogerlcleung
-          minimum-approvals: 2
-          issue-title: "ZEVA2 ${{ needs.versioning.outputs.VERSION  }} Prod Deployment"
-
   # Deploy the application to production
   deploy:
     name: Deploy Zeva2 main branch to Prod
-    needs: [versioning, approve-prod-deployment]
+    needs: [versioning, tag-images]
     uses: ./.github/workflows/deploy-template.yaml
     with:
       git_ref: ${{ github.ref_name }}

@@ -87,10 +87,25 @@ jobs:
       openshift-server: ${{ secrets.OPENSHIFT_SERVER }}
       openshift-token: ${{ secrets.OPENSHIFT_TOKEN }}
 
-  # tag zeva2 images to test namespace
+  # Approve test deployment
+  # This step is to approve the deployment to test environment
+  approve-test-deployment:
+    name: Approve Test Deployment
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    needs: [versioning, build]
+    steps:
+      - name: Ask for approval for ZEVA2 ${{ needs.versioning.outputs.VERSION  }} Test deployment
+        uses: trstringer/manual-approval@v1.6.0
+        with:
+          secret: ${{ github.TOKEN }}
+          approvers: emi-hi,tim738745,kuanfandevops,JulianForeman,rogerlcleung
+          minimum-approvals: 1
+          issue-title: "ZEVA2 ${{ needs.versioning.outputs.VERSION  }} Test Deployment"
+
   tag-images:
     name: Tag Zeva2 images to Test
-    needs: [versioning, build]
+    needs: [versioning, approve-test-deployment]
     runs-on: ubuntu-latest
     steps:
       - name: Restore oc command from Cache
@@ -112,27 +127,10 @@ jobs:
           oc tag ${{ env.TOOLS_NAMESPACE }}/zeva2-next:${{ needs.versioning.outputs.VERSION}} ${{ env.TEST_NAMESPACE}}/zeva2-next:${{ needs.versioning.outputs.VERSION}}
           oc tag ${{ env.TOOLS_NAMESPACE }}/zeva2-bullmq:${{ needs.versioning.outputs.VERSION}} ${{ env.TEST_NAMESPACE }}/zeva2-bullmq:${{ needs.versioning.outputs.VERSION}}
 
-  # Approve test deployment
-  # This step is to approve the deployment to test environment
-  approve-test-deployment:
-    name: Approve Test Deployment
-    runs-on: ubuntu-latest
-    timeout-minutes: 60
-    needs: [versioning, tag-images]
-
-    steps:
-      - name: Ask for approval for ZEVA2 ${{ needs.versioning.outputs.VERSION  }} Test deployment
-        uses: trstringer/manual-approval@v1.6.0
-        with:
-          secret: ${{ github.TOKEN }}
-          approvers: emi-hi,tim738745,kuanfandevops,JulianForeman,rogerlcleung
-          minimum-approvals: 1
-          issue-title: "ZEVA2 ${{ needs.versioning.outputs.VERSION  }} Test Deployment"
-
   # deploy zeva2 to test environment
   deploy:
     name: Deploy Zeva2 release branch to Test
-    needs: [versioning, approve-test-deployment]
+    needs: [versioning, tag-images]
     uses: ./.github/workflows/deploy-template.yaml
     with:
       git_ref: ${{ github.ref_name }}
