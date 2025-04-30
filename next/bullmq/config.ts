@@ -1,5 +1,11 @@
-import { emailQueueName } from "@/lib/constants/queue";
-import { handleEmailJob, handleEmailJobCompleted } from "./handlers";
+import { emailQueueName, icbcQueueName } from "@/lib/constants/queue";
+import { handleEmailJob, handleEmailJobCompleted } from "./handlers/email";
+import {
+  handleConsumeIcbcFileJob,
+  handleConsumeIcbcFileJobCompleted,
+  handleConsumeIcbcFileJobFailed,
+} from "./handlers/icbc";
+import { handleCreateDefaultBucket } from "./handlers/runOnce";
 
 const connection = {
   host: process.env.REDIS_HOST ?? "redis",
@@ -17,6 +23,13 @@ export const bullmqConfig = {
       handler: handleEmailJob,
       completedHandler: handleEmailJobCompleted,
     },
+    {
+      queueName: icbcQueueName,
+      numberOfWorkers: 1, // do not change this
+      handler: handleConsumeIcbcFileJob,
+      completedHandler: handleConsumeIcbcFileJobCompleted,
+      failedHandler: handleConsumeIcbcFileJobFailed,
+    },
   ],
   queueDefaultJobOptions: {
     attempts: 10,
@@ -24,9 +37,13 @@ export const bullmqConfig = {
       type: "exponential",
       delay: 1000,
     },
-  },
-  addJobDefaultOptions: {
     removeOnComplete: 100,
     removeOnFail: 5000,
   },
+  runOnceJobDefns: [
+    {
+      name: "create-minio-bucket",
+      handler: handleCreateDefaultBucket,
+    },
+  ],
 };

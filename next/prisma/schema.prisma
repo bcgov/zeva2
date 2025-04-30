@@ -339,3 +339,31 @@ model VehicleAttachment {
 
   @@map("vehicle_file_attachment")
 }
+
+enum IcbcFileStatus {
+  FAILURE
+  PROCESSING
+  SUCCESS
+}
+
+model IcbcFile {
+  id          Int            @id @default(autoincrement())
+  name        String         @unique
+  status      IcbcFileStatus
+  timestamp   DateTime       @db.Timestamptz(6)
+  icbcRecords IcbcRecord[]
+
+  @@map("icbc_file")
+}
+
+model IcbcRecord {
+  id         Int      @id @default(autoincrement())
+  icbcFileId Int      @map("icbc_file_id")
+  icbcFile   IcbcFile @relation(fields: [icbcFileId], references: [id])
+  vin        String   @unique @db.VarChar(20)
+  make       String
+  model      String
+  year       String
+
+  @@map("icbc_record")
+}

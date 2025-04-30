@@ -9,12 +9,7 @@ import {
   ZevUnitTransferStatuses,
 } from "@/prisma/generated/client";
 import { visibleToSupplierHistoryStatuses } from "./constants";
-import {
-  FilterableFields,
-  getOrderByClause,
-  getWhereClause,
-  SortableFields,
-} from "./utils";
+import { getOrderByClause, getWhereClause } from "./utils";
 
 export type ZevUnitTransferSparse = {
   id: number;
@@ -32,8 +27,8 @@ export type ZevUnitTransferSparse = {
 export const getZevUnitTransfers = async (
   page: number,
   pageSize: number,
-  filters: FilterableFields,
-  sorts: SortableFields,
+  filters: { [key: string]: string },
+  sorts: { [key: string]: string },
 ): Promise<[ZevUnitTransferSparse[], number]> => {
   const { userIsGov, userOrgId } = await getUserInfo();
   const skip = (page - 1) * pageSize;

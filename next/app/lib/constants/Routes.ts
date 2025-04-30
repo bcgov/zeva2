@@ -5,4 +5,5 @@ export enum Routes {
   ZEVModels = "/vehicles",
   VehicleSuppliers = "/organizations",
   Administration = "/organizations/mine",
+  Icbc = "/icbc",
 }

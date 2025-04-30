@@ -14,11 +14,7 @@ import {
   UncoveredTransfer,
   ZevUnitRecord,
 } from "@/lib/utils/zevUnit";
-import {
-  getCompliancePeriod,
-  getCurrentComplianceYear,
-} from "@/app/lib/utils/complianceYear";
-import { getModelYearEnum } from "@/lib/utils/getEnums";
+import { getCompliancePeriod } from "@/app/lib/utils/complianceYear";
 import { ZevUnitTransferContentPayload } from "./actions";
 import { getModelYearEnumMap } from "@/app/lib/utils/enumMaps";
 
@@ -102,24 +98,26 @@ export const transferIsCovered = async (
   transfer: ZevUnitTransferWithContent,
 ) => {
   let result = true;
-  const mostRecentComplianceYearWithEndingBalances = await prisma.zevUnitEndingBalance.findFirst({
-    where: {
-      organizationId: transfer.transferFromId,
-    },
-    select: {
-      complianceYear: true
-    },
-    orderBy: {
-      complianceYear: "desc"
-    }
-  })
+  const mostRecentComplianceYearWithEndingBalances =
+    await prisma.zevUnitEndingBalance.findFirst({
+      where: {
+        organizationId: transfer.transferFromId,
+      },
+      select: {
+        complianceYear: true,
+      },
+      orderBy: {
+        complianceYear: "desc",
+      },
+    });
   const zevUnitRecords: ZevUnitRecord[] = [];
   if (mostRecentComplianceYearWithEndingBalances) {
-    const complianceYear = mostRecentComplianceYearWithEndingBalances.complianceYear
-    const modelYearsMap = getModelYearEnumMap()
-    const complianceYearNumber = parseInt(modelYearsMap[complianceYear] ?? "")
+    const complianceYear =
+      mostRecentComplianceYearWithEndingBalances.complianceYear;
+    const modelYearsMap = getModelYearEnumMap();
+    const complianceYearNumber = parseInt(modelYearsMap[complianceYear] ?? "");
     if (Number.isNaN(complianceYearNumber)) {
-      throw new Error("unknown model year!")
+      throw new Error("unknown model year!");
     }
     const compliancePeriod = getCompliancePeriod(complianceYearNumber);
     const endingBalances = await prisma.zevUnitEndingBalance.findMany({
