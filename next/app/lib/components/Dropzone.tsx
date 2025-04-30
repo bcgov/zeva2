@@ -1,10 +1,9 @@
 "use client";
 
 import { JSX, useState, useCallback, useMemo } from "react";
-import { useDropzone } from "react-dropzone";
+import { useDropzone, FileWithPath } from "react-dropzone";
 import { Button } from "./inputs";
 import { LoadingSkeleton } from "./skeletons";
-import { FileWithPath } from "react-dropzone";
 
 export const Dropzone = (props: {
   handleSubmit: (files: File[]) => Promise<void>;

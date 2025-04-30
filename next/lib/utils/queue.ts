@@ -1,4 +1,4 @@
-import { DefaultJobOptions, Queue, Worker } from "bullmq";
+import { Queue } from "bullmq";
 import { bullmqConfig } from "@/bullmq/config";
 import { emailQueueName, icbcQueueName } from "@/lib/constants/queue";
 import { JobsOptions } from "bullmq";
