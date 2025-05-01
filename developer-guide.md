@@ -76,6 +76,14 @@ You can use a Redis GUI such as Redis Insight (https://redis.io/insight/) to ins
 Within our project, the `next` service acts as a producer of jobs, and the `bullmq` service
 acts as the consumer that works on the jobs.
 
+## Object Storage
+
+We use S3-compatible services; for local development, this is a local Minio deployment.
+
+For presigned urls to work locally, you'll need to add this entry to your computer's `/etc/hosts` file:
+
+`127.0.0.1 minio`
+
 ## DevOps
 
 Suggested Dockerfile build steps for the `next` service, which assumes a base node image; in development, we're currently using node 22.13.1

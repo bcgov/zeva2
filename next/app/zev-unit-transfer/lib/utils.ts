@@ -53,16 +53,9 @@ export const getValidatedTransferContent = (
   return contentToBeAdded;
 };
 
-export type FilterableFields = {
-  id?: string;
-  status?: string;
-  transferTo?: string;
-  transferFrom?: string;
-};
-
-export const getWhereClause = (
-  filters: FilterableFields,
-): Prisma.ZevUnitTransferWhereInput => {
+export const getWhereClause = (filters: {
+  [key: string]: string;
+}): Prisma.ZevUnitTransferWhereInput => {
   const result: Prisma.ZevUnitTransferWhereInput = {};
   for (const [key, value] of Object.entries(filters)) {
     if (key === "id") {
@@ -94,15 +87,8 @@ export const getWhereClause = (
   return result;
 };
 
-export type SortableFields = {
-  id?: Prisma.SortOrder;
-  status?: Prisma.SortOrder;
-  transferTo?: Prisma.SortOrder;
-  transferFrom?: Prisma.SortOrder;
-};
-
 export const getOrderByClause = (
-  sorts: SortableFields,
+  sorts: { [key: string]: string },
   defaultSortById: boolean,
 ): Prisma.ZevUnitTransferOrderByWithRelationInput[] => {
   const result: Prisma.ZevUnitTransferOrderByWithRelationInput[] = [];

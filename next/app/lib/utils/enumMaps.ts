@@ -13,7 +13,7 @@ const lowerCaseAndCapitalize = (s: string) => {
 };
 
 export const getVehicleClassEnumMap = () => {
-  const result: { [key: string]: string } = {};
+  const result: { [key: string]: string | undefined } = {};
   for (const key of Object.keys(VehicleClass)) {
     result[key] = lowerCaseAndCapitalize(key);
   }
@@ -21,7 +21,7 @@ export const getVehicleClassEnumMap = () => {
 };
 
 export const getZevClassEnumMap = () => {
-  const result: { [key: string]: string } = {};
+  const result: { [key: string]: string | undefined } = {};
   for (const key of Object.keys(ZevClass)) {
     if (key.length > 1) {
       result[key] = lowerCaseAndCapitalize(key);
@@ -33,7 +33,7 @@ export const getZevClassEnumMap = () => {
 };
 
 export const getModelYearEnumMap = () => {
-  const result: { [key: string]: string } = {};
+  const result: { [key: string]: string | undefined } = {};
   for (const key of Object.keys(ModelYear)) {
     result[key] = key.split("_")[1];
   }
@@ -41,13 +41,15 @@ export const getModelYearEnumMap = () => {
 };
 
 // expects map to be 1-1
-export const getInverseMap = (map: { [key: string]: string }) => {
-  const result: { [key: string]: string } = {};
+export const getInverseMap = (map: { [key: string]: string | undefined }) => {
+  const result: { [key: string]: string | undefined } = {};
   for (const [key, value] of Object.entries(map)) {
-    if (result[value]) {
-      throw new Error();
+    if (value) {
+      if (result[value]) {
+        throw new Error();
+      }
+      result[value] = key;
     }
-    result[value] = key;
   }
   return result;
 };
