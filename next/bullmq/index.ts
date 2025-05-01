@@ -27,8 +27,8 @@ if (bullmqConfig.startWorkers) {
   }
   // for run once jobs:
   for (const defn of bullmqConfig.runOnceJobDefns) {
-    const schedulerName = defn.name;
-    const queueName = "run-once-job-" + schedulerName;
+    const jobName = defn.name;
+    const queueName = "run-once-job-" + jobName;
     const queue = new Queue(queueName, {
       connection: defaultConnection,
       defaultJobOptions: bullmqConfig.queueDefaultJobOptions,
@@ -46,10 +46,7 @@ if (bullmqConfig.startWorkers) {
       if (completedCount >= 1) {
         await close();
       } else {
-        await queue.upsertJobScheduler(schedulerName, {
-          every: 1000,
-          limit: 1,
-        });
+        await queue.add(jobName, defn.data);
       }
     });
     worker.on("completed", async () => {
