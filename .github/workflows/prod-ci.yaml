@@ -1,10 +1,17 @@
+# This workflow builds and deploys the Zeva2 application to the production environment in OpenShift.
+
 name: Zeva2 Prod CI
 
 on:
-  push:
+  pull_request:
+    types: [closed]
     branches:
       - main
   workflow_dispatch:
+    inputs:
+      branch:
+        description: 'Please carefully choose the release branch merged into main, it impacts the versioning'
+        required: false
 
 env:
   TOOLS_NAMESPACE: ${{ secrets.OPENSHIFT_NAMESPACE_PLATE }}-tools
@@ -15,8 +22,18 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  on-merge-only:
+    if: github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+    steps:
+      - name: show pr
+        run: |
+         echo "PR #${{ github.event.pull_request.number }} was merged from ${{ github.event.pull_request.head.ref }}"
+
+  # install oc command line tool
   install-oc:
     runs-on: ubuntu-latest
+    needs: [on-merge-only]
     outputs:
       cache-hit: ${{ steps.cache.outputs.cache-hit }}
     steps:
@@ -41,7 +58,10 @@ jobs:
       - name: Confirm OpenShift CLI is Available
         run: oc version --client
 
+  # determine the version of the application
+  # A sample version 0.1.0
   versioning:
+    needs: [on-merge-only]
     runs-on: ubuntu-latest
 
     outputs:
@@ -53,6 +73,16 @@ jobs:
         with:
           fetch-depth: 0
 
+      # Create a tag on the commit on Main,  the tag name is based on the version in the release branch name
+      - name: Create tag on the commit on Main
+        run: |
+          ref="${{ github.event.pull_request.head.ref }}"   # e.g. "release/0.2.0"
+          version="${ref##*/}"                              # => "0.2.0"
+          git config --global user.email "kuan.fan@gov.bc.ca"
+          git config --global user.name "Kuan Fan"
+          git tag -a "$version" -m "prod-ci tag $version"
+          git push origin "$version"
+        
       - name: Install GitVersion
         uses: gittools/actions/gitversion/setup@v3.1.11
         with:
@@ -69,7 +99,8 @@ jobs:
         run: |
           echo "VERSION=${{ steps.version-step.outputs.SemVer }}"
           echo "VERSION=${{ steps.version-step.outputs.SemVer }}" >> $GITHUB_OUTPUT
-
+  
+  # Build the application
   build:
     name: Build Zeva2 from release branch
     needs: [install-oc, versioning]
@@ -82,9 +113,27 @@ jobs:
       openshift-server: ${{ secrets.OPENSHIFT_SERVER }}
       openshift-token: ${{ secrets.OPENSHIFT_TOKEN }}
 
+  # Approve the deployment to production
+  # This step requires manual approval from the specified approvers
+  approve-prod-deployment:
+    name: Approve Prod Deployment
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    needs: [versioning, build]
+
+    steps:
+      - name: Ask for approval for ZEVA2 ${{ needs.versioning.outputs.VERSION  }} Prod deployment
+        uses: trstringer/manual-approval@v1.6.0
+        with:
+          secret: ${{ github.TOKEN }}
+          approvers: emi-hi,tim738745,kuanfandevops,JulianForeman,rogerlcleung
+          minimum-approvals: 2
+          issue-title: "ZEVA2 ${{ needs.versioning.outputs.VERSION  }} Prod Deployment"
+
+  # Tag the images to the production namespace
   tag-images:
     name: Tag Zeva2 images to Prod
-    needs: [versioning, build]
+    needs: [versioning, approve-prod-deployment]
     runs-on: ubuntu-latest
     steps:
       - name: Restore oc command from Cache
@@ -106,25 +155,10 @@ jobs:
           oc tag ${{ env.TOOLS_NAMESPACE }}/zeva2-next:${{ needs.versioning.outputs.VERSION}} ${{ env.PROD_NAMESPACE}}/zeva2-next:${{ needs.versioning.outputs.VERSION}}
           oc tag ${{ env.TOOLS_NAMESPACE }}/zeva2-bullmq:${{ needs.versioning.outputs.VERSION}} ${{ env.PROD_NAMESPACE }}/zeva2-bullmq:${{ needs.versioning.outputs.VERSION}}
 
-
-  approve-prod-deployment:
-    name: Approve Prod Deployment
-    runs-on: ubuntu-latest
-    timeout-minutes: 60
-    needs: [versioning, tag-images]
-
-    steps:
-      - name: Ask for approval for ZEVA2 ${{ needs.versioning.outputs.VERSION  }} Prod deployment
-        uses: trstringer/manual-approval@v1.6.0
-        with:
-          secret: ${{ github.TOKEN }}
-          approvers: emi-hi,tim738745,kuanfandevops,JulianForeman,rogerlcleung
-          minimum-approvals: 2
-          issue-title: "ZEVA2 ${{ needs.versioning.outputs.VERSION  }} Prod Deployment"
-
+  # Deploy the application to production
   deploy:
     name: Deploy Zeva2 main branch to Prod
-    needs: [versioning, approve-prod-deployment]
+    needs: [versioning, tag-images]
     uses: ./.github/workflows/deploy-template.yaml
     with:
       git_ref: ${{ github.ref_name }}

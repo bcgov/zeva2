@@ -1,3 +1,4 @@
+# This workflow builds and deploys the Zeva2 application to the development environment in OpenShift.
 name: Zeva2 Dev CI
 
 on:
@@ -15,6 +16,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  # install oc command line tool
   install-oc:
     runs-on: ubuntu-latest
     outputs:
@@ -40,7 +42,9 @@ jobs:
 
       - name: Confirm OpenShift CLI is Available
         run: oc version --client
-
+        
+  # determine the version of the application
+  # A sample version 0.1.0-alpha.91
   versioning:
     runs-on: ubuntu-latest
 
@@ -70,6 +74,7 @@ jobs:
           echo "VERSION=${{ steps.version-step.outputs.SemVer }}"
           echo "VERSION=${{ steps.version-step.outputs.SemVer }}" >> $GITHUB_OUTPUT
 
+  # build Zeva2 applications on Openshift
   build:
     name: Build Zeva2 from develop
     needs: [install-oc, versioning]
@@ -82,6 +87,7 @@ jobs:
       openshift-server: ${{ secrets.OPENSHIFT_SERVER }}
       openshift-token: ${{ secrets.OPENSHIFT_TOKEN }}
 
+  # Tag the images from tools namespace to dev namespace
   tag-images:
     name: Tag Zeva2 images to Dev
     needs: [versioning, build]
@@ -108,6 +114,7 @@ jobs:
           oc tag ${{ env.TOOLS_NAMESPACE }}/zeva2-bullmq:${{ needs.versioning.outputs.VERSION}} ${{ env.DEV_NAMESPACE }}/zeva2-bullmq:${{ needs.versioning.outputs.VERSION}}
 
 
+  # deploy to Dev
   deploy:
     name: Deploy Zeva2 develop branch TO Dev
     needs: [install-oc, versioning,tag-images]

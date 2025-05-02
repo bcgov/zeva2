@@ -1,4 +1,4 @@
-export const getOptions = (object: { [key: string]: string }) => {
+export const getOptions = (object: { [key: string]: string | undefined }) => {
   const result = [];
   for (const [key, value] of Object.entries(object)) {
     result.push(

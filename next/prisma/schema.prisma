@@ -40,6 +40,8 @@ model Organization {
   zevUnitEndingBalances ZevUnitEndingBalance[]
   zevUnitTransferTo     ZevUnitTransfer[]      @relation("zevUnitTransferTo")
   zevUnitTransferFrom   ZevUnitTransfer[]      @relation("zevUnitTransferFrom")
+  Vehicle               Vehicle[]
+  VehicleChangeHistory  VehicleChangeHistory[]
 
   @@map("organization")
 }
@@ -233,4 +235,136 @@ model ZevUnitTransferHistory {
   comment           String?
 
   @@map("zev_unit_transfer_history")
+}
+
+enum VehicleZevType {
+  BEV
+  PHEV
+  EREV
+  FCEV
+}
+
+enum VehicleClassCode {
+  T
+  I
+  S
+  C
+  M
+  L
+  WS
+  WM
+  PS
+  PL
+  US
+  UL
+  V
+  VC
+  VP
+  SP
+}
+
+model Vehicle {
+  id                   Int                    @id @default(autoincrement())
+  createTimestamp      DateTime?              @map("create_timestamp") @db.Timestamptz(6)
+  updateTimestamp      DateTime?              @updatedAt @map("update_timestamp") @db.Timestamptz(6)
+  range                Int
+  make                 String
+  modelYear            ModelYear[]            @map("model_year")
+  validationStatus     String                 @map("validation_status")
+  modelName            String                 @map("model_name")
+  creditValue          Decimal?               @map("credit_value")
+  vehicleZevType       VehicleZevType[]       @map("vehicle_zev_type")
+  vehicleClassCode     VehicleClassCode[]     @map("vehicle_class_code")
+  weightKg             Decimal                @map("weight_kg") @db.Decimal(6, 0)
+  organization         Organization           @relation(fields: [organizationId], references: [id])
+  organizationId       Int                    @map("organization_id")
+  createUser           String                 @map("create_user")
+  updateUser           String?                @map("update_user")
+  creditClass          ZevClass?              @map("credit_class")
+  hasPassedUs06Test    Boolean                @map("has_passed_us_06_test")
+  isActive             Boolean                @map("is_active")
+  VehicleChangeHistory VehicleChangeHistory[]
+  VehicleComment       VehicleComment[]
+  VehicleAttachment    VehicleAttachment[]
+
+  @@map("vehicle")
+}
+
+model VehicleChangeHistory {
+  id               Int                @id @default(autoincrement())
+  createTimestamp  DateTime?          @default(now()) @map("create_timestamp") @db.Timestamptz(6)
+  vehicleClassCode VehicleClassCode[] @map("vehicle_class_code")
+  createUser       String             @default("SYSTEM") @map("create_user")
+  vehicleZevType   VehicleZevType[]   @map("vehicle_zev_type")
+  range            Int
+  make             String?            @map("make")
+  weightKg         Decimal            @map("weight_kg")
+  modelName        String?            @map("model_name")
+  modelYearId      Int                @map("model_year_id")
+  organization     Organization       @relation(fields: [organizationId], references: [id])
+  organizationId   Int                @map("organization_id")
+  validationStatus String?            @map("validation_status")
+  vehicle          Vehicle            @relation(fields: [vehicleId], references: [id])
+  vehicleId        Int                @map("vehicle_id")
+  userRole         String[]           @map("user_role")
+
+  @@map("vehicle_change_history")
+}
+
+model VehicleComment {
+  id              Int       @id @default(autoincrement())
+  createTimestamp DateTime? @default(now()) @map("create_timestamp") @db.Timestamptz(6)
+  createUser      String    @map("create_user") @db.VarChar(130)
+  updateTimestamp DateTime? @updatedAt @map("update_timestamp") @db.Timestamptz(6)
+  updateUser      String?   @map("update_user") @db.VarChar(130)
+  vehicleId       Int       @map("vehicle_id")
+  vehicle         Vehicle   @relation(fields: [vehicleId], references: [id], onDelete: Restrict)
+  comment         String    @map("vehicle_comment")
+
+  @@map("vehicle_comment")
+}
+
+model VehicleAttachment {
+  id              Int       @id @default(autoincrement())
+  createTimestamp DateTime? @default(now()) @map("create_timestamp") @db.Timestamptz(6)
+  updateTimestamp DateTime? @updatedAt @map("update_timestamp") @db.Timestamptz(6)
+  vehicleId       Int       @map("vehicle_id")
+  vehicle         Vehicle   @relation(fields: [vehicleId], references: [id], onDelete: Restrict)
+  filename        String    @db.VarChar(260)
+  minioObjectName String    @map("minio_object_name")
+  size            BigInt    @default(0)
+  mimeType        String?   @map("mime_type")
+  isRemoved       Boolean   @default(false) @map("is_removed")
+  createUser      String    @map("create_user") @db.VarChar(130)
+  updateUser      String?   @map("update_user") @db.VarChar(130)
+
+  @@map("vehicle_file_attachment")
+}
+
+enum IcbcFileStatus {
+  FAILURE
+  PROCESSING
+  SUCCESS
+}
+
+model IcbcFile {
+  id          Int            @id @default(autoincrement())
+  name        String         @unique
+  status      IcbcFileStatus
+  timestamp   DateTime       @db.Timestamptz(6)
+  icbcRecords IcbcRecord[]
+
+  @@map("icbc_file")
+}
+
+model IcbcRecord {
+  id         Int      @id @default(autoincrement())
+  icbcFileId Int      @map("icbc_file_id")
+  icbcFile   IcbcFile @relation(fields: [icbcFileId], references: [id])
+  vin        String   @unique @db.VarChar(20)
+  make       String
+  model      String
+  year       String
+
+  @@map("icbc_record")
 }

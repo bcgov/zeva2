@@ -26,6 +26,20 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
+  minio:
+    image: minio/minio:RELEASE.2025-04-22T22-12-26Z
+    volumes:
+      - ./minio:/minio_files
+    command: "minio server /minio_files --console-address \":9001\""
+    ports:
+      - 9000:9000
+      - 9001:9001
+    healthcheck:
+      test: "curl -I --fail --max-time 10 http://localhost:9000/minio/health/live"
+      start_period: 5s
+      interval: 5s
+      timeout: 5s
+      retries: 3
   next:
     build: ./next
     command: npm run dev
@@ -34,6 +48,8 @@ services:
       - /next/node_modules
     ports:
       - 3000:3000
+    env_file:
+      - minio.env
     environment:
       - AUTH_SECRET=Ils7nkPcqmp+RHvx2uX8Nwl/MUI8cHnNfmeZS7F8M7k=
       - AUTH_KEYCLOAK_ID=zeva-on-gold-4543
@@ -53,6 +69,8 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+      minio:
+        condition: service_healthy
     healthcheck:
       test: "curl --fail --max-time 5 http://localhost:3000/api/health"
       start_period: 15s
@@ -65,6 +83,8 @@ services:
     volumes:
       - ./next:/next
       - /next/node_modules
+    env_file:
+      - minio.env
     environment:
       - DATABASE_URL=postgresql://postgres:postgres@db:5432/zeva?schema=public
       - CHECKPOINT_DISABLE=1
