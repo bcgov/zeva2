@@ -606,7 +606,7 @@ const main = () => {
       mapOfTransferIdsToHistories[newTransferId].push(newTransferHistoryData);
     }
 
-    // -- Step 2: for each credit-tranfer id, remove obsolute history records
+    // -- Step 2: for each credit-transfer id, remove obsolete history records
     //      and convert old history statuses to new user-actions
     for (const histories of Object.values(mapOfTransferIdsToHistories)) {
       histories.sort((a, b) => {
