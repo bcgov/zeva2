@@ -33,7 +33,7 @@ const main = () => {
     const mapOfOldUsernamesToNewUserIds: {
       [username: string]: number | undefined;
     } = {};
-    const listOfNewGovUserIds: number[] = [];
+    const setOfNewGovUserIds = new Set<number>();
     const mapOfOldCreditTransferIdsToNewZevUnitTransferIds: {
       [id: number]: number | undefined;
     } = {};
@@ -115,7 +115,7 @@ const main = () => {
       mapOfOldUserIdsToNewUserIds[userOld.id] = userNew.id;
       mapOfOldUsernamesToNewUserIds[userOld.username] = userNew.id;
       if (userOld.organization?.is_government) {
-        listOfNewGovUserIds.push(userNew.id);
+        setOfNewGovUserIds.add(userNew.id);
       }
     }
 
@@ -662,7 +662,7 @@ const main = () => {
           if (!history.comment) {
             continue;
           }
-          if (!listOfNewGovUserIds.includes(history.userId)) {
+          if (!setOfNewGovUserIds.has(history.userId)) {
             throw new Error(
               `A credit transfer comment by a non-government user exists without associating with a status change.`
             )
