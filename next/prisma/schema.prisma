@@ -191,7 +191,7 @@ model ZevUnitTransfer {
   transferFrom           Organization             @relation("zevUnitTransferFrom", fields: [transferFromId], references: [id])
   status                 ZevUnitTransferStatuses
   zevUnitTransferContent ZevUnitTransferContent[]
-  ZevUnitTransferHistory ZevUnitTransferHistory[]
+  zevUnitTransferHistory ZevUnitTransferHistory[]
 
   @@map("zev_unit_transfer")
 }
@@ -209,7 +209,7 @@ model ZevUnitTransferContent {
   @@map("zev_unit_transfer_content")
 }
 
-enum ZevUnitTransferHistoryStatuses {
+enum ZevUnitTransferHistoryUserActions {
   SUBMITTED_TO_TRANSFER_TO
   RESCINDED_BY_TRANSFER_FROM
   APPROVED_BY_TRANSFER_TO
@@ -219,17 +219,18 @@ enum ZevUnitTransferHistoryStatuses {
   RETURNED_TO_ANALYST
   APPROVED_BY_GOV
   REJECTED_BY_GOV
+  ADDED_COMMENT
 }
 
 model ZevUnitTransferHistory {
-  id                    Int                            @id @default(autoincrement())
-  zevUnitTransferId     Int                            @map("zev_unit_transfer_id")
-  zevUnitTransfer       ZevUnitTransfer                @relation(fields: [zevUnitTransferId], references: [id])
-  userId                Int                            @map("user_id")
-  user                  User                           @relation(fields: [userId], references: [id])
-  timestamp             DateTime                       @default(now()) @db.Timestamptz(6)
-  afterUserActionStatus ZevUnitTransferHistoryStatuses @map("after_user_action_status")
-  comment               String?
+  id                Int                               @id @default(autoincrement())
+  zevUnitTransferId Int                               @map("zev_unit_transfer_id")
+  zevUnitTransfer   ZevUnitTransfer                   @relation(fields: [zevUnitTransferId], references: [id])
+  userId            Int                               @map("user_id")
+  user              User                              @relation(fields: [userId], references: [id])
+  timestamp         DateTime                          @default(now()) @db.Timestamptz(6)
+  userAction        ZevUnitTransferHistoryUserActions @map("user_action")
+  comment           String?
 
   @@map("zev_unit_transfer_history")
 }

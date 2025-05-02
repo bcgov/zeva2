@@ -10,6 +10,7 @@ import {
   BalanceType,
   ZevUnitTransferStatuses,
   ZevUnitTransferHistory,
+  ZevUnitTransferHistoryUserActions,
 } from "./generated/client";
 import { getModelYearEnum, getRoleEnum } from "@/lib/utils/getEnums";
 import { Decimal } from "./generated/client/runtime/library";
@@ -530,15 +531,19 @@ const main = () => {
     }
 
     // add ZevUnitTransferHistories (previously called credit transfer histories)
+
+    // -- Step 1: group histories by transfer id
     const mapOfTransferIdsToHistories: {
       [id: number]: Omit<ZevUnitTransferHistory, "id">[];
     } = {};
+
     const creditTransferHistoriesOld =
       await prismaOld.credit_transfer_history.findMany({
         include: {
           credit_transfer_comment: true,
         },
       });
+
     for (const creditTransferHistoryOld of creditTransferHistoriesOld) {
       const newTransferId =
         mapOfOldCreditTransferIdsToNewZevUnitTransferIds[
@@ -559,43 +564,32 @@ const main = () => {
       }
       if (!newTransferId) {
         throw new Error(
-          "transfer history " +
-            creditTransferHistoryOld.id +
-            " with unknown transfer id!",
+          `transfer history ${creditTransferHistoryOld.id} with unknown transfer id!`
         );
       }
       if (!newCreateUserId) {
         throw new Error(
-          "transfer history " +
-            creditTransferHistoryOld.id +
-            " with unknown create user!",
+          `transfer history ${creditTransferHistoryOld.id} with unknown create user!`
         );
       }
       if (!newStatus) {
         throw new Error(
-          "transfer history " +
-            creditTransferHistoryOld.id +
-            " with unknown status!",
+          `transfer history ${creditTransferHistoryOld.id} with unknown status!`
         );
       }
       if (!timestamp) {
         throw new Error(
-          "transfer history " +
-            creditTransferHistoryOld.id +
-            " with no create_timestamp!",
+          `transfer history ${creditTransferHistoryOld.id} with no create_timestamp!`
         );
       }
-      const commentArray = [];
-      for (const oldComment of creditTransferHistoryOld.credit_transfer_comment) {
-        const text =
-          oldComment.create_user + ": " + oldComment.credit_transfer_comment;
-        if (text) {
-          commentArray.push(text);
-        }
-      }
+
+      const commentArray = creditTransferHistoryOld.credit_transfer_comment.map(
+        x => x.credit_transfer_comment
+      );
+
       const newTransferHistoryData = {
         zevUnitTransferId: newTransferId,
-        afterUserActionStatus: newStatus,
+        userAction: newStatus,
         userId: newCreateUserId,
         timestamp: timestamp,
         comment: commentArray.length > 0 ? commentArray.join(" | ") : null,
@@ -605,6 +599,9 @@ const main = () => {
       }
       mapOfTransferIdsToHistories[newTransferId].push(newTransferHistoryData);
     }
+
+    // -- Step 2: for each credit-tranfer id, remove obsolute history records
+    //      and convert old history statuses to new user-actions
     for (const histories of Object.values(mapOfTransferIdsToHistories)) {
       histories.sort((a, b) => {
         if (a.timestamp < b.timestamp) {
@@ -614,18 +611,20 @@ const main = () => {
         }
         return 0;
       });
-      // remove "submitted-rescinded pairs" where "rescinded" is not the status of the final history record
+
+      // -- Step 2.1: remove "submitted-rescinded" pairs where "rescinded" is not
+      //      the final action of that credit-transfer
       let counter = null;
       let leftIndex = Number.POSITIVE_INFINITY;
       let rightIndex = Number.NEGATIVE_INFINITY;
       const indicesToRemove = new Set();
       for (const [index, history] of histories.entries()) {
-        const status = history.afterUserActionStatus;
-        if (status === ZevUnitTransferStatuses.SUBMITTED_TO_TRANSFER_TO) {
+        const userAction = history.userAction;
+        if (userAction === ZevUnitTransferHistoryUserActions.SUBMITTED_TO_TRANSFER_TO) {
           leftIndex = index;
           counter = counter === null ? -1 : counter - 1;
         } else if (
-          status === ZevUnitTransferStatuses.RESCINDED_BY_TRANSFER_FROM
+          userAction === ZevUnitTransferHistoryUserActions.RESCINDED_BY_TRANSFER_FROM
         ) {
           rightIndex = index;
           counter = counter === null ? 1 : counter + 1;
@@ -642,51 +641,36 @@ const main = () => {
         }
         return true;
       });
+
+      // -- Step 2.2: for each consecutive identical user-action,
+      //      change action to "ADDED_COMMENT" (if a comment exists)
+      //      or skip the history record (if no comment exists)
       const result: Omit<ZevUnitTransferHistory, "id">[] = [];
-      let previousStatus: ZevUnitTransferStatuses | null = null;
+      let previousAction: ZevUnitTransferHistoryUserActions | null = null;
       for (const history of filteredHistories) {
-        const status = history.afterUserActionStatus;
-        if (status === previousStatus) {
-          // move comments
-          const comment = history.comment;
-          if (comment) {
-            const previousHistory = result[result.length - 1];
-            let existingComment = previousHistory.comment;
-            if (existingComment) {
-              previousHistory.comment = existingComment + " | " + comment;
-            } else {
-              previousHistory.comment = comment;
-            }
+        const userAction = history.userAction;
+        // either remove the record or change the action to "ADDED_COMMENT" for duplicated actions
+        if (userAction === previousAction) {
+          if (!history.comment) {
+            continue;
           }
-          continue;
+          history.userAction = ZevUnitTransferHistoryUserActions.ADDED_COMMENT;
         }
-        if (
-          status === ZevUnitTransferStatuses.APPROVED_BY_TRANSFER_TO &&
-          (previousStatus === ZevUnitTransferStatuses.RECOMMEND_APPROVAL_GOV ||
-            previousStatus === ZevUnitTransferStatuses.RECOMMEND_REJECTION_GOV)
+        // convert action to "RETURNED_TO_ANALYST" whenever it is the case
+        else if (
+          userAction === ZevUnitTransferHistoryUserActions.APPROVED_BY_TRANSFER_TO && (
+            previousAction === ZevUnitTransferHistoryUserActions.RECOMMEND_APPROVAL_GOV ||
+            previousAction === ZevUnitTransferHistoryUserActions.RECOMMEND_REJECTION_GOV
+          )
         ) {
-          history.afterUserActionStatus =
-            ZevUnitTransferStatuses.RETURNED_TO_ANALYST;
+          history.userAction = ZevUnitTransferHistoryUserActions.RETURNED_TO_ANALYST;
         }
+
         result.push(history);
-        previousStatus = status;
+        previousAction = userAction;
       }
-      for (const [index, history] of result.entries()) {
-        const comment = history.comment;
-        if (
-          history.afterUserActionStatus ===
-            ZevUnitTransferStatuses.APPROVED_BY_TRANSFER_TO &&
-          comment &&
-          (result[index + 1]?.afterUserActionStatus ===
-            ZevUnitTransferStatuses.RECOMMEND_APPROVAL_GOV ||
-            result[index + 1]?.afterUserActionStatus ===
-              ZevUnitTransferStatuses.RECOMMEND_REJECTION_GOV)
-        ) {
-          history.comment = null;
-          result[index + 1].comment =
-            comment + (result[index + 1].comment ?? "");
-        }
-      }
+
+      // -- Step 3: add histories to the new zevUnitTransferHistory table
       await tx.zevUnitTransferHistory.createMany({
         data: result,
       });
