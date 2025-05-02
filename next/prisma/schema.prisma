@@ -219,7 +219,7 @@ enum ZevUnitTransferHistoryUserActions {
   RETURNED_TO_ANALYST
   APPROVED_BY_GOV
   REJECTED_BY_GOV
-  ADDED_COMMENT
+  ADDED_COMMENT_GOV_INTERNAL
 }
 
 model ZevUnitTransferHistory {

@@ -31,6 +31,7 @@ const main = () => {
     const mapOfOldUsernamesToNewUserIds: {
       [username: string]: number | undefined;
     } = {};
+    const listOfNewGovUserIds: number[] = [];
     const mapOfOldCreditTransferIdsToNewZevUnitTransferIds: {
       [id: number]: number | undefined;
     } = {};
@@ -111,6 +112,9 @@ const main = () => {
       });
       mapOfOldUserIdsToNewUserIds[userOld.id] = userNew.id;
       mapOfOldUsernamesToNewUserIds[userOld.username] = userNew.id;
+      if (userOld.organization?.is_government) {
+        listOfNewGovUserIds.push(userNew.id);
+      }
     }
 
     // update each user with their roles:
@@ -649,13 +653,21 @@ const main = () => {
       let previousAction: ZevUnitTransferHistoryUserActions | null = null;
       for (const history of filteredHistories) {
         const userAction = history.userAction;
-        // either remove the record or change the action to "ADDED_COMMENT" for duplicated actions
+
+        // either remove the record or change the action to "ADDED_COMMENT_GOV_INTERNAL"
+        //   for duplicated actions
         if (userAction === previousAction) {
           if (!history.comment) {
             continue;
           }
-          history.userAction = ZevUnitTransferHistoryUserActions.ADDED_COMMENT;
+          if (!listOfNewGovUserIds.includes(history.userId)) {
+            throw new Error(
+              `A credit transfer comment by a non-government user exists without associating with a status change.`
+            )
+          }
+          history.userAction = ZevUnitTransferHistoryUserActions.ADDED_COMMENT_GOV_INTERNAL;
         }
+
         // convert action to "RETURNED_TO_ANALYST" whenever it is the case
         else if (
           userAction === ZevUnitTransferHistoryUserActions.APPROVED_BY_TRANSFER_TO && (
