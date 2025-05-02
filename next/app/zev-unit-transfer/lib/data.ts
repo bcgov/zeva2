@@ -55,9 +55,9 @@ export const getZevUnitTransfers = async (
   const where = getWhereClause(filters);
   const orderBy = getOrderByClause(sorts, true);
   if (userIsGov) {
-    where.ZevUnitTransferHistory = {
+    where.zevUnitTransferHistory = {
       some: {
-        afterUserActionStatus: ZevUnitTransferStatuses.APPROVED_BY_TRANSFER_TO,
+        userAction: ZevUnitTransferStatuses.APPROVED_BY_TRANSFER_TO,
       },
     };
   } else {
@@ -107,9 +107,9 @@ export const getZevUnitTransfer = async (
     return await prisma.zevUnitTransfer.findUnique({
       where: {
         id: id,
-        ZevUnitTransferHistory: {
+        zevUnitTransferHistory: {
           some: {
-            afterUserActionStatus:
+            userAction:
               ZevUnitTransferStatuses.APPROVED_BY_TRANSFER_TO,
           },
         },
@@ -157,15 +157,15 @@ export const getZevUnitTransferHistories = async (
     const transfer = await prisma.zevUnitTransfer.findUnique({
       where: {
         id: transferId,
-        ZevUnitTransferHistory: {
+        zevUnitTransferHistory: {
           some: {
-            afterUserActionStatus:
+            userAction:
               ZevUnitTransferStatuses.APPROVED_BY_TRANSFER_TO,
           },
         },
       },
       include: {
-        ZevUnitTransferHistory: {
+        zevUnitTransferHistory: {
           include: {
             user: true,
           },
@@ -176,7 +176,7 @@ export const getZevUnitTransferHistories = async (
       },
     });
     if (transfer) {
-      return transfer.ZevUnitTransferHistory;
+      return transfer.zevUnitTransferHistory;
     }
   } else {
     const histories = await prisma.zevUnitTransferHistory.findMany({
@@ -199,7 +199,7 @@ export const getZevUnitTransferHistories = async (
       ) {
         return histories.filter((history) => {
           return visibleToSupplierHistoryStatuses.some((status) => {
-            return history.afterUserActionStatus === status;
+            return history.userAction === status;
           });
         });
       }
