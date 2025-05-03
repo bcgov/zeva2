@@ -3,7 +3,7 @@ import {
   ZevUnitTransferStatuses,
 } from "@/prisma/generated/client";
 
-export const visibleToSupplierHistoryStatuses: readonly ZevUnitTransferHistoryUserActions[] =
+export const visibleToSupplierHistoryUserActions: readonly ZevUnitTransferHistoryUserActions[] =
   [
     ZevUnitTransferHistoryUserActions.SUBMITTED_TO_TRANSFER_TO,
     ZevUnitTransferHistoryUserActions.RESCINDED_BY_TRANSFER_FROM,

@@ -8,7 +8,7 @@ import {
   ZevUnitTransferHistory,
   ZevUnitTransferStatuses,
 } from "@/prisma/generated/client";
-import { visibleToSupplierHistoryStatuses } from "./constants";
+import { visibleToSupplierHistoryUserActions } from "./constants";
 import { getOrderByClause, getWhereClause } from "./utils";
 
 export type ZevUnitTransferSparse = {
@@ -193,7 +193,7 @@ export const getZevUnitTransferHistories = async (
         transfer.transferToId === userOrgId
       ) {
         return histories.filter((history) => {
-          return visibleToSupplierHistoryStatuses.some((status) => {
+          return visibleToSupplierHistoryUserActions.some((status) => {
             return history.userAction === status;
           });
         });
