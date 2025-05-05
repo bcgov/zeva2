@@ -1,7 +1,7 @@
 import { PrismaClient } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import {
-  ZevUnitTransferHistoryStatuses,
+  ZevUnitTransferHistoryUserActions,
   ZevUnitTransferStatuses,
   ZevUnitTransferHistory,
   ZevUnitTransfer,
@@ -77,7 +77,7 @@ export const updateTransferStatus = async (
 export const updateTransferStatusAndCreateHistory = async (
   transferId: number,
   userId: number,
-  status: ZevUnitTransferHistoryStatuses,
+  status: ZevUnitTransferStatuses & ZevUnitTransferHistoryUserActions,
   comment: string | null,
   transactionClient?: PrismaClient,
 ) => {
@@ -87,7 +87,7 @@ export const updateTransferStatusAndCreateHistory = async (
     {
       zevUnitTransferId: transferId,
       userId: userId,
-      afterUserActionStatus: status,
+      userAction: status,
       comment: comment,
     },
     prismaClient,

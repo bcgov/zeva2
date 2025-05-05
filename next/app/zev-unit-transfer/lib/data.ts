@@ -8,7 +8,7 @@ import {
   ZevUnitTransferHistory,
   ZevUnitTransferStatuses,
 } from "@/prisma/generated/client";
-import { visibleToSupplierHistoryStatuses } from "./constants";
+import { visibleToSupplierHistoryUserActions } from "./constants";
 import { getOrderByClause, getWhereClause } from "./utils";
 
 export type ZevUnitTransferSparse = {
@@ -50,9 +50,9 @@ export const getZevUnitTransfers = async (
   const where = getWhereClause(filters);
   const orderBy = getOrderByClause(sorts, true);
   if (userIsGov) {
-    where.ZevUnitTransferHistory = {
+    where.zevUnitTransferHistory = {
       some: {
-        afterUserActionStatus: ZevUnitTransferStatuses.APPROVED_BY_TRANSFER_TO,
+        userAction: ZevUnitTransferStatuses.APPROVED_BY_TRANSFER_TO,
       },
     };
   } else {
@@ -102,9 +102,9 @@ export const getZevUnitTransfer = async (
     return await prisma.zevUnitTransfer.findUnique({
       where: {
         id: id,
-        ZevUnitTransferHistory: {
+        zevUnitTransferHistory: {
           some: {
-            afterUserActionStatus:
+            userAction:
               ZevUnitTransferStatuses.APPROVED_BY_TRANSFER_TO,
           },
         },
@@ -152,15 +152,15 @@ export const getZevUnitTransferHistories = async (
     const transfer = await prisma.zevUnitTransfer.findUnique({
       where: {
         id: transferId,
-        ZevUnitTransferHistory: {
+        zevUnitTransferHistory: {
           some: {
-            afterUserActionStatus:
+            userAction:
               ZevUnitTransferStatuses.APPROVED_BY_TRANSFER_TO,
           },
         },
       },
       include: {
-        ZevUnitTransferHistory: {
+        zevUnitTransferHistory: {
           include: {
             user: true,
           },
@@ -171,7 +171,7 @@ export const getZevUnitTransferHistories = async (
       },
     });
     if (transfer) {
-      return transfer.ZevUnitTransferHistory;
+      return transfer.zevUnitTransferHistory;
     }
   } else {
     const histories = await prisma.zevUnitTransferHistory.findMany({
@@ -193,8 +193,8 @@ export const getZevUnitTransferHistories = async (
         transfer.transferToId === userOrgId
       ) {
         return histories.filter((history) => {
-          return visibleToSupplierHistoryStatuses.some((status) => {
-            return history.afterUserActionStatus === status;
+          return visibleToSupplierHistoryUserActions.some((status) => {
+            return history.userAction === status;
           });
         });
       }
