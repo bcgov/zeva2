@@ -51,7 +51,7 @@ export const Navbar: React.FC<INavbarProps> = ({ user }) => {
     },
     {
       label: "ZEV Models",
-      route: Routes.ZEVModels,
+      route: Routes.Vehicle,
       roles: [Role.ZEVA_USER, Role.DIRECTOR, Role.ENGINEER_ANALYST],
     },
     {

@@ -13,6 +13,7 @@ import {
   ZevUnitTransferHistoryUserActions,
   VehicleClassCode,
   VehicleZevType,
+  VehicleStatus,
 } from "./generated/client";
 import { getModelYearEnum, getRoleEnum } from "@/lib/utils/getEnums";
 import { Decimal } from "./generated/client/runtime/library";
@@ -700,6 +701,18 @@ const main = () => {
       vZevIdToEnum[r.id] = r.vehicle_zev_code as VehicleZevType;
     }
 
+    const mapOfOldVehStatusesToNewStatuses: {
+      [key: string]: VehicleStatus | undefined;
+    } = {
+      NEW: VehicleStatus.DRAFT,
+      DRAFT: VehicleStatus.DRAFT,
+      SUBMITTED: VehicleStatus.SUBMITTED,
+      VALIDATED: VehicleStatus.VALIDATED,
+      REJECTED: VehicleStatus.REJECTED,
+      CHANGES_REQUESTED: VehicleStatus.CHANGES_REQUESTED,
+      DELETED: VehicleStatus.DELETED,
+    };
+
     const oldVehIdToNew: Record<number, number> = {};
 
     const vehiclesOld = await prismaOld.vehicle.findMany();
@@ -720,28 +733,32 @@ const main = () => {
       }
       const zevEnum = vZevIdToEnum[vehicleOld.vehicle_zev_type_id];
       const classEnum = vClassIdToEnum[vehicleOld.vehicle_class_code_id];
-      const creditEnum = vehicleOld.credit_class_id
+      const zevClassEnum = vehicleOld.credit_class_id
         ? mapOfOldCreditClassIdsToZevClasses[vehicleOld.credit_class_id]
         : undefined;
+      const newStatus =
+        mapOfOldVehStatusesToNewStatuses[vehicleOld.validation_status];
+
+      if (!newStatus) {
+        throw new Error(
+          "vehicle with id " + vehicleOld.id + " has unknown status",
+        );
+      }
 
       const created = await tx.vehicle.create({
         select: { id: true },
         data: {
           range: vehicleOld.range,
           make: vehicleOld.make,
-          createTimestamp: vehicleOld.create_timestamp,
-          updateTimestamp: vehicleOld.update_timestamp,
-          modelYear: { set: [modelYearEnum] },
-          validationStatus: vehicleOld.validation_status,
+          modelYear: modelYearEnum,
+          status: newStatus,
           modelName: vehicleOld.model_name,
           creditValue: vehicleOld.credit_value,
-          vehicleZevType: { set: [zevEnum] },
-          vehicleClassCode: { set: [classEnum] },
+          vehicleZevType: zevEnum,
+          vehicleClassCode: classEnum,
           weightKg: Number(vehicleOld.weight_kg),
           organizationId: orgNewId,
-          createUser: vehicleOld.create_user,
-          updateUser: vehicleOld.update_user,
-          creditClass: creditEnum,
+          zevClass: zevClassEnum,
           hasPassedUs06Test: vehicleOld.has_passed_us_06_test,
           isActive: vehicleOld.is_active,
         },
