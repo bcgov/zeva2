@@ -40,7 +40,6 @@ if (bullmqConfig.startWorkers) {
       await queue.close();
       await worker.close();
     };
-
     worker.on("ready", async () => {
       const completedCount = await queue.getCompletedCount();
       if (completedCount >= 1) {

@@ -40,6 +40,7 @@ export const bullmqConfig = {
     removeOnComplete: 100,
     removeOnFail: 5000,
   },
+  // any 2 run once job names should be distinct from each other
   runOnceJobDefns: [
     {
       name: "create-minio-bucket",

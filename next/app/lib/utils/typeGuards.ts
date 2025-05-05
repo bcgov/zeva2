@@ -2,6 +2,8 @@ import {
   ModelYear,
   Notification,
   VehicleClass,
+  VehicleStatus,
+  VehicleZevType,
   ZevClass,
   ZevUnitTransferStatuses,
 } from "@/prisma/generated/client";
@@ -34,6 +36,18 @@ export const isZevUnitTransferStatus = (
   s: string,
 ): s is ZevUnitTransferStatuses => {
   return Object.keys(ZevUnitTransferStatuses).some((status) => {
+    return status === s;
+  });
+};
+
+export const isVehicleZevType = (s: string): s is VehicleZevType => {
+  return Object.keys(VehicleZevType).some((type) => {
+    return type === s;
+  });
+};
+
+export const isVehicleStatus = (s: string): s is VehicleStatus => {
+  return Object.keys(VehicleStatus).some((status) => {
     return status === s;
   });
 };

@@ -56,7 +56,7 @@ export default function ZevUnitTransferTable({
   );
 
   return (
-    <Table
+    <Table<ZevUnitTransferSparse>
       columns={columns}
       data={transfers}
       totalNumberOfRecords={totalNumbeOfTransfers}

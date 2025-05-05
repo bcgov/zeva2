@@ -263,24 +263,29 @@ enum VehicleClassCode {
   SP
 }
 
+enum VehicleStatus {
+  CHANGES_REQUESTED
+  DELETED
+  DRAFT
+  REJECTED
+  SUBMITTED
+  VALIDATED
+}
+
 model Vehicle {
   id                   Int                    @id @default(autoincrement())
-  createTimestamp      DateTime?              @map("create_timestamp") @db.Timestamptz(6)
-  updateTimestamp      DateTime?              @updatedAt @map("update_timestamp") @db.Timestamptz(6)
   range                Int
   make                 String
-  modelYear            ModelYear[]            @map("model_year")
-  validationStatus     String                 @map("validation_status")
+  modelYear            ModelYear              @map("model_year")
+  status               VehicleStatus
   modelName            String                 @map("model_name")
-  creditValue          Decimal?               @map("credit_value")
-  vehicleZevType       VehicleZevType[]       @map("vehicle_zev_type")
-  vehicleClassCode     VehicleClassCode[]     @map("vehicle_class_code")
+  creditValue          Decimal?               @map("credit_value") @db.Decimal(65, 2)
+  vehicleZevType       VehicleZevType         @map("vehicle_zev_type")
+  vehicleClassCode     VehicleClassCode       @map("vehicle_class_code")
   weightKg             Decimal                @map("weight_kg") @db.Decimal(6, 0)
   organization         Organization           @relation(fields: [organizationId], references: [id])
   organizationId       Int                    @map("organization_id")
-  createUser           String                 @map("create_user")
-  updateUser           String?                @map("update_user")
-  creditClass          ZevClass?              @map("credit_class")
+  zevClass             ZevClass?              @map("credit_class")
   hasPassedUs06Test    Boolean                @map("has_passed_us_06_test")
   isActive             Boolean                @map("is_active")
   VehicleChangeHistory VehicleChangeHistory[]

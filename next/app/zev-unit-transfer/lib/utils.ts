@@ -93,10 +93,12 @@ export const getOrderByClause = (
 ): Prisma.ZevUnitTransferOrderByWithRelationInput[] => {
   const result: Prisma.ZevUnitTransferOrderByWithRelationInput[] = [];
   for (const [key, value] of Object.entries(sorts)) {
-    if (key === "id" || key === "status") {
-      result.push({ [key]: value });
-    } else if (key === "transferTo" || key === "transferFrom") {
-      result.push({ [key]: { name: value } });
+    if (value === "asc" || value === "desc") {
+      if (key === "id" || key === "status") {
+        result.push({ [key]: value });
+      } else if (key === "transferTo" || key === "transferFrom") {
+        result.push({ [key]: { name: value } });
+      }
     }
   }
   if (defaultSortById && result.length === 0) {
