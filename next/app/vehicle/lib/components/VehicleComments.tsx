@@ -10,7 +10,6 @@ const VehicleComments = async (props: { id: number }) => {
           <div>
             <b>
               {each.createTimestamp &&
-                each.createTimestamp &&
                 each.createTimestamp.toLocaleString("en-US", {
                   timeZone: "America/Los_Angeles",
                 })}{" "}
