@@ -54,3 +54,65 @@ export const getVehicles = async (
     }),
   ]);
 };
+
+export const getVehicleComments = async (vehicleId: number) => {
+  const { userIsGov, userOrgId } = await getUserInfo();
+  const vehicle_comments = await prisma.vehicleComment.findMany({
+    where: {
+      vehicleId: vehicleId,
+    },
+    include: {
+      vehicle: {
+        include: {
+          organization: true,
+        },
+      },
+    },
+  });
+  if (
+    vehicle_comments &&
+    vehicle_comments.length >= 1 &&
+    (userIsGov || userOrgId == vehicle_comments[0].vehicle.id)
+  ) {
+    return vehicle_comments;
+  }
+  return [];
+};
+
+export const getVehicle = async (vehicleId: number) => {
+  const { userIsGov, userOrgId } = await getUserInfo();
+  const vehicle = await prisma.vehicle.findUnique({
+    where: {
+      id: vehicleId,
+    },
+    include: {
+      organization: true,
+    },
+  });
+  if (vehicle && (userIsGov || userOrgId == vehicle.organization.id)) {
+    return vehicle;
+  }
+};
+
+export const getVehicleHistories = async (vehicleId: number) => {
+  const { userIsGov, userOrgId } = await getUserInfo();
+  const vehicle_history = await prisma.vehicleChangeHistory.findMany({
+    where: {
+      vehicleId: vehicleId,
+    },
+    include: {
+      vehicle: {
+        include: {
+          organization: true,
+        },
+      },
+    },
+  });
+  if (
+    vehicle_history &&
+    vehicle_history.length >= 1 &&
+    (userIsGov || userOrgId == vehicle_history[0].vehicle.organization.id)
+  ) {
+    return vehicle_history;
+  }
+};
