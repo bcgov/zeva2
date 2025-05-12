@@ -16,7 +16,7 @@ import {
 } from "@/lib/utils/zevUnit";
 import { getCompliancePeriod } from "@/app/lib/utils/complianceYear";
 import { ZevUnitTransferContentPayload } from "./actions";
-import { getModelYearEnumMap } from "@/app/lib/utils/enumMaps";
+import { getModelYearEnumsToStringsMap } from "@/app/lib/utils/enumMaps";
 
 export const getTransfer = async (transferId: number) => {
   return await prisma.zevUnitTransfer.findUnique({
@@ -114,7 +114,7 @@ export const transferIsCovered = async (
   if (mostRecentComplianceYearWithEndingBalances) {
     const complianceYear =
       mostRecentComplianceYearWithEndingBalances.complianceYear;
-    const modelYearsMap = getModelYearEnumMap();
+    const modelYearsMap = getModelYearEnumsToStringsMap();
     const complianceYearNumber = parseInt(modelYearsMap[complianceYear] ?? "");
     if (Number.isNaN(complianceYearNumber)) {
       throw new Error("unknown model year!");

@@ -32,24 +32,18 @@ export const getZevClassEnumMap = () => {
   return result;
 };
 
-export const getModelYearEnumMap = () => {
-  const result: { [key: string]: string | undefined } = {};
+export const getModelYearEnumsToStringsMap = () => {
+  const result: Partial<Record<ModelYear, string>> = {};
   for (const key of Object.keys(ModelYear)) {
-    result[key] = key.split("_")[1];
+    result[key as ModelYear] = key.split("_")[1];
   }
   return result;
 };
 
-// expects map to be 1-1
-export const getInverseMap = (map: { [key: string]: string | undefined }) => {
-  const result: { [key: string]: string | undefined } = {};
-  for (const [key, value] of Object.entries(map)) {
-    if (value) {
-      if (result[value]) {
-        throw new Error();
-      }
-      result[value] = key;
-    }
+export const getStringsToModelYearsEnumsMap = () => {
+  const result: Record<string, ModelYear> = {};
+  for (const key of Object.keys(ModelYear)) {
+    result[key.split("_")[1]] = key as ModelYear;
   }
   return result;
 };

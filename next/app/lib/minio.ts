@@ -2,6 +2,12 @@
 import * as Minio from "minio";
 import { Readable } from "stream";
 
+export enum Directory {
+  Templates = "templates/",
+  CreditApplication = "creditApplications/",
+  CreditApplicationTmp = "creditApplications/tmp/",
+}
+
 export const getClient = () => {
   return new Minio.Client({
     endPoint: process.env.MINIO_ENDPOINT ?? "",
@@ -18,7 +24,10 @@ export const getObject = async (objectName: string) => {
   return await client.getObject(bucketName, objectName);
 };
 
-export const putObject = async (objectName: string, object: Readable) => {
+export const putObject = async (
+  objectName: string,
+  object: Readable | Buffer,
+) => {
   const client = getClient();
   const bucketName = process.env.MINIO_BUCKET_NAME ?? "";
   return await client.putObject(bucketName, objectName, object);
@@ -34,4 +43,14 @@ export const getPresignedPutObjectUrl = async (objectName: string) => {
   const client = getClient();
   const bucketName = process.env.MINIO_BUCKET_NAME ?? "";
   return await client.presignedPutObject(bucketName, objectName);
+};
+
+export const setObjectLegalHold = async (objectName: string) => {
+  const client = getClient();
+  const bucketName = process.env.MINIO_BUCKET_NAME ?? "";
+  // minio's setObjectLegalHold is mis-typed; it does return a Promise
+  await (client.setObjectLegalHold(
+    bucketName,
+    objectName,
+  ) as unknown as Promise<void>);
 };
