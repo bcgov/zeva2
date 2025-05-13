@@ -111,6 +111,8 @@ const main = () => {
           idpUsername: userOld.username,
           isActive: userOld.is_active,
           organizationId: orgIdNew,
+          firstName: userOld.first_name ?? "",
+          lastName: userOld.last_name ?? "",
         },
       });
       mapOfOldUserIdsToNewUserIds[userOld.id] = userNew.id;
@@ -571,27 +573,27 @@ const main = () => {
       }
       if (!newTransferId) {
         throw new Error(
-          `transfer history ${creditTransferHistoryOld.id} with unknown transfer id!`
+          `transfer history ${creditTransferHistoryOld.id} with unknown transfer id!`,
         );
       }
       if (!newCreateUserId) {
         throw new Error(
-          `transfer history ${creditTransferHistoryOld.id} with unknown create user!`
+          `transfer history ${creditTransferHistoryOld.id} with unknown create user!`,
         );
       }
       if (!newStatus) {
         throw new Error(
-          `transfer history ${creditTransferHistoryOld.id} with unknown status!`
+          `transfer history ${creditTransferHistoryOld.id} with unknown status!`,
         );
       }
       if (!timestamp) {
         throw new Error(
-          `transfer history ${creditTransferHistoryOld.id} with no create_timestamp!`
+          `transfer history ${creditTransferHistoryOld.id} with no create_timestamp!`,
         );
       }
 
       const commentArray = creditTransferHistoryOld.credit_transfer_comment.map(
-        x => x.credit_transfer_comment
+        (x) => x.credit_transfer_comment,
       );
 
       const newTransferHistoryData = {
@@ -627,11 +629,15 @@ const main = () => {
       const indicesToRemove = new Set();
       for (const [index, history] of histories.entries()) {
         const userAction = history.userAction;
-        if (userAction === ZevUnitTransferHistoryUserActions.SUBMITTED_TO_TRANSFER_TO) {
+        if (
+          userAction ===
+          ZevUnitTransferHistoryUserActions.SUBMITTED_TO_TRANSFER_TO
+        ) {
           leftIndex = index;
           counter = counter === null ? -1 : counter - 1;
         } else if (
-          userAction === ZevUnitTransferHistoryUserActions.RESCINDED_BY_TRANSFER_FROM
+          userAction ===
+          ZevUnitTransferHistoryUserActions.RESCINDED_BY_TRANSFER_FROM
         ) {
           rightIndex = index;
           counter = counter === null ? 1 : counter + 1;
@@ -665,20 +671,24 @@ const main = () => {
           }
           if (!setOfNewGovUserIds.has(history.userId)) {
             throw new Error(
-              `A credit transfer comment by a non-government user exists without associating with a status change.`
-            )
+              `A credit transfer comment by a non-government user exists without associating with a status change.`,
+            );
           }
-          history.userAction = ZevUnitTransferHistoryUserActions.ADDED_COMMENT_GOV_INTERNAL;
+          history.userAction =
+            ZevUnitTransferHistoryUserActions.ADDED_COMMENT_GOV_INTERNAL;
         }
 
         // convert action to "RETURNED_TO_ANALYST" whenever it is the case
         else if (
-          userAction === ZevUnitTransferHistoryUserActions.APPROVED_BY_TRANSFER_TO && (
-            previousAction === ZevUnitTransferHistoryUserActions.RECOMMEND_APPROVAL_GOV ||
-            previousAction === ZevUnitTransferHistoryUserActions.RECOMMEND_REJECTION_GOV
-          )
+          userAction ===
+            ZevUnitTransferHistoryUserActions.APPROVED_BY_TRANSFER_TO &&
+          (previousAction ===
+            ZevUnitTransferHistoryUserActions.RECOMMEND_APPROVAL_GOV ||
+            previousAction ===
+              ZevUnitTransferHistoryUserActions.RECOMMEND_REJECTION_GOV)
         ) {
-          history.userAction = ZevUnitTransferHistoryUserActions.RETURNED_TO_ANALYST;
+          history.userAction =
+            ZevUnitTransferHistoryUserActions.RETURNED_TO_ANALYST;
         }
 
         result.push(history);
@@ -798,6 +808,10 @@ const main = () => {
 
     for (const commentOld of commentsOld) {
       const vehIdNew = oldVehIdToNew[commentOld.vehicle_id];
+      const newCreateUserId =
+        mapOfOldUsernamesToNewUserIds[commentOld.create_user];
+      const newUpdateUserId =
+        mapOfOldUsernamesToNewUserIds[commentOld.update_user];
       if (commentOld.vehicle_comment) {
         await tx.vehicleComment.create({
           data: {
@@ -805,8 +819,8 @@ const main = () => {
             createTimestamp: commentOld.create_timestamp,
             updateTimestamp: commentOld.update_timestamp,
             comment: commentOld.vehicle_comment,
-            createUser: commentOld.create_user,
-            updateUser: commentOld.update_user,
+            createUserId: newCreateUserId,
+            ...(newUpdateUserId ? { updateUserId: newUpdateUserId } : {}),
           },
         });
       }

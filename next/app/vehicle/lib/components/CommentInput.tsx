@@ -9,13 +9,12 @@ export default function CommentInput({ vehicleId }: { vehicleId: number }) {
   const [comment, setComment] = useState("");
   const [isPending, startTransition] = useTransition();
   const { data: session } = useSession();
-  const userName = session?.user?.name;
+  const userId = session?.user?.internalId;
   const router = useRouter();
-
   const handleSubmit = () => {
-    if (!userName || !comment.trim()) return;
+    if (!userId || !comment.trim()) return;
     startTransition(() => {
-      createVehicleComment(vehicleId, comment, userName);
+      createVehicleComment(vehicleId, comment, userId);
       setComment("");
       router.refresh();
     });
