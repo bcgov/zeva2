@@ -810,8 +810,16 @@ const main = () => {
       const vehIdNew = oldVehIdToNew[commentOld.vehicle_id];
       const newCreateUserId =
         mapOfOldUsernamesToNewUserIds[commentOld.create_user];
-      const newUpdateUserId =
-        mapOfOldUsernamesToNewUserIds[commentOld.update_user];
+      const newUpdateUserId = commentOld.update_user
+        ? mapOfOldUsernamesToNewUserIds[commentOld.update_user]
+        : undefined;
+      if (!newCreateUserId) {
+        throw new Error(
+          "vehicle comment with id " +
+            commentOld.id +
+            " has an unknown create user!",
+        );
+      }
       if (commentOld.vehicle_comment) {
         await tx.vehicleComment.create({
           data: {
@@ -820,7 +828,7 @@ const main = () => {
             updateTimestamp: commentOld.update_timestamp,
             comment: commentOld.vehicle_comment,
             createUserId: newCreateUserId,
-            ...(newUpdateUserId ? { updateUserId: newUpdateUserId } : {}),
+            updateUserId: newUpdateUserId,
           },
         });
       }

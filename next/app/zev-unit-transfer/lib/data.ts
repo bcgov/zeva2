@@ -104,8 +104,7 @@ export const getZevUnitTransfer = async (
         id: id,
         zevUnitTransferHistory: {
           some: {
-            userAction:
-              ZevUnitTransferStatuses.APPROVED_BY_TRANSFER_TO,
+            userAction: ZevUnitTransferStatuses.APPROVED_BY_TRANSFER_TO,
           },
         },
       },
@@ -154,8 +153,7 @@ export const getZevUnitTransferHistories = async (
         id: transferId,
         zevUnitTransferHistory: {
           some: {
-            userAction:
-              ZevUnitTransferStatuses.APPROVED_BY_TRANSFER_TO,
+            userAction: ZevUnitTransferStatuses.APPROVED_BY_TRANSFER_TO,
           },
         },
       },
