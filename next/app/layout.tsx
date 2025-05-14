@@ -2,7 +2,6 @@ import { auth } from "@/auth";
 import type { Metadata } from "next";
 import "./globals.css";
 import { Header } from "./lib/components";
-import { SessionProvider } from "next-auth/react";
 
 export const metadata: Metadata = {
   title: "ZEVA",
@@ -19,12 +18,10 @@ export default async function RootLayout({
     // Authenticated layout
     return (
       <html lang="en">
-        <SessionProvider session={session}>
-          <body className="antialiased h-screen flex flex-col">
-            <Header session={session} />
-            <main className="flex-1 overflow-auto">{children}</main>
-          </body>
-        </SessionProvider>
+        <body className="antialiased h-screen flex flex-col">
+          <Header session={session} />
+          <main className="flex-1 overflow-auto">{children}</main>
+        </body>
       </html>
     );
   } else {
