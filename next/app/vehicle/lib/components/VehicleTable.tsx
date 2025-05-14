@@ -10,7 +10,6 @@ export const VehicleTable = (props: {
   totalNumbeOfVehicles: number;
   navigationAction: (id: number) => Promise<void>;
 }) => {
-  console.log(props.vehicles);
   const columnHelper = createColumnHelper<VehicleSparseSerialized>();
 
   const columns = useMemo(() => {

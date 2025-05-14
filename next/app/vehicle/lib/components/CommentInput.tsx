@@ -2,20 +2,17 @@
 
 import { useState, useTransition } from "react";
 import { createVehicleComment } from "../actions";
-import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 
 export default function CommentInput({ vehicleId }: { vehicleId: number }) {
   const [comment, setComment] = useState("");
   const [isPending, startTransition] = useTransition();
-  const { data: session } = useSession();
-  const userId = session?.user?.internalId;
   const router = useRouter();
   const handleSubmit = () => {
-    if (!userId || !comment.trim()) return;
-    startTransition(() => {
-      createVehicleComment(vehicleId, comment, userId);
+    if (!comment.trim()) return;
+    startTransition(async () => {
       setComment("");
+      await createVehicleComment(vehicleId, comment);
       router.refresh();
     });
   };
