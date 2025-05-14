@@ -71,6 +71,11 @@ export const getVehicleComments = async (vehicleId: number) => {
           organization: true,
         },
       },
+      createUser: {
+        include: {
+          organization: true,
+        },
+      },
     },
   });
 };

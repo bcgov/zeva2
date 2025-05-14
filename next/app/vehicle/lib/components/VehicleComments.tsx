@@ -13,7 +13,8 @@ const VehicleComments = async (props: { id: number }) => {
                 each.createTimestamp.toLocaleString("en-US", {
                   timeZone: "America/Los_Angeles",
                 })}{" "}
-              {each.createUser}
+              {each.createUser.firstName} {each.createUser.lastName}{" "}
+              {each.createUser.organization.name}
             </b>
           </div>
           {each.comment && <div>Comment: {each.comment}</div>}
@@ -21,7 +22,7 @@ const VehicleComments = async (props: { id: number }) => {
         </div>,
       );
     }
-    return <div>{entries}</div>;
+    return <div>{entries.reverse()}</div>;
   }
   return null;
 };

@@ -4,6 +4,7 @@ import { ContentCard } from "@/app/lib/components";
 import VehicleHistories from "../lib/components/VehicleHistories";
 import VehicleComments from "../lib/components/VehicleComments";
 import Vehicle from "../lib/components/Vehicle";
+import CommentInput from "../lib/components/CommentInput";
 
 const Page = async (props: { params: Promise<{ id: string }> }) => {
   const args = await props.params;
@@ -14,6 +15,9 @@ const Page = async (props: { params: Promise<{ id: string }> }) => {
         <Suspense fallback={<LoadingSkeleton />}>
           <Vehicle id={id} />
         </Suspense>
+      </ContentCard>
+      <ContentCard title="Add New Comment">
+        <CommentInput vehicleId={id} />
       </ContentCard>
       <ContentCard title="Comments">
         <Suspense fallback={<LoadingSkeleton />}>

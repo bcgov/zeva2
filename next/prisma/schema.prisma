@@ -99,6 +99,11 @@ model User {
   roles                  Role[]
   zevUnitTransferHistory ZevUnitTransferHistory[]
   notifications          Notification[]
+  firstName              String                   @map("first_name")
+  lastName               String                   @map("last_name")
+
+  vehicleCommentsCreated VehicleComment[] @relation("user that created comment")
+  vehicleCommentsUpdated VehicleComment[] @relation("user that updated comment")
 
   @@unique([idp, idpUsername, idpEmail])
   @@map("user")
@@ -319,9 +324,11 @@ model VehicleChangeHistory {
 model VehicleComment {
   id              Int       @id @default(autoincrement())
   createTimestamp DateTime? @default(now()) @map("create_timestamp") @db.Timestamptz(6)
-  createUser      String    @map("create_user") @db.VarChar(130)
+  createUserId    Int       @map("create_user_id")
+  createUser      User      @relation("user that created comment", fields: [createUserId], references: [id])
   updateTimestamp DateTime? @updatedAt @map("update_timestamp") @db.Timestamptz(6)
-  updateUser      String?   @map("update_user") @db.VarChar(130)
+  updateUserId    Int?      @map("update_user_id")
+  updateUser      User?     @relation("user that updated comment", fields: [updateUserId], references: [id])
   vehicleId       Int       @map("vehicle_id")
   vehicle         Vehicle   @relation(fields: [vehicleId], references: [id], onDelete: Restrict)
   comment         String    @map("vehicle_comment")
