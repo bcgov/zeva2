@@ -1,0 +1,117 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import { getTransactionsByComplianceYear, getComplianceYears } from "../actions";
+import type { ZevUnitTransaction } from "@/prisma/generated/client";
+
+export default function TransactionAccordion({ orgId }: { orgId: number }) {
+  const [years, setYears] = useState<number[] | null>(null);
+  const [openYear, setOpenYear] = useState<number | null>(null);
+  const [txCache, setTxCache] = useState<Record<number, ZevUnitTransaction[]>>(
+    {}
+  );
+
+  useEffect(() => {
+    (async () => setYears(await getComplianceYears(orgId)))();
+  }, [orgId]);
+
+  const toggleYear = async (y: number) => {
+    setOpenYear((prev) => (prev === y ? null : y));
+    if (!txCache[y]) {
+      const tx = await getTransactionsByComplianceYear(orgId, y);
+      setTxCache((prev) => ({ ...prev, [y]: tx }));
+    }
+  };
+
+  const formatDate = (d: string | Date) =>
+    new Date(d).toISOString().slice(0, 10);
+
+  if (!years) return <>Loading years…</>;
+  if (years.length === 0) return <>No transactions found.</>;
+
+  return (
+    <div>
+      {years.map((y) => (
+        <div
+          key={y}
+          style={{
+            border: "1px solid #ccc",
+            borderRadius: 4,
+            marginBottom: 8,
+            overflow: "hidden",
+          }}
+        >
+          <button
+            onClick={() => toggleYear(y)}
+            style={{
+              width: "100%",
+              padding: "8px 12px",
+              textAlign: "left",
+              border: "none",
+              fontWeight: 600,
+            }}
+          >
+            {openYear === y ? "▾" : "▸"} Compliance&nbsp;Year&nbsp;{y}
+          </button>
+          
+          {openYear === y && (
+            <div style={{ padding: 8 }}>
+              {!txCache[y] ? (
+                "Loading…"
+              ) : txCache[y].length === 0 ? (
+                "No transactions for this compliance year."
+              ) : (
+                <table
+                  style={{
+                    borderCollapse: "collapse",
+                    width: "100%",
+                    fontSize: 14,
+                  }}
+                >
+                  <thead>
+                    <tr>
+                      {["ID", "Type", "Units", "Class", "Model Year", "Date"].map(
+                        (h) => (
+                          <th
+                            key={h}
+                            style={{
+                              textAlign: "left",
+                              borderBottom: "1px solid #ddd",
+                              padding: "4px",
+                            }}
+                          >
+                            {h}
+                          </th>
+                        )
+                      )}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {txCache[y].map((t) => (
+                      <tr key={t.id}>
+                        <td style={{ padding: "4px" }}>{t.id}</td>
+                        <td style={{ padding: "4px" }}>{t.type}</td>
+                        <td
+                          style={{ padding: "4px", textAlign: "right" }}
+                        >
+                          {t.numberOfUnits.toString()}
+                        </td>
+                        <td style={{ padding: "4px" }}>{t.zevClass}</td>
+                        <td style={{ padding: "4px" }}>
+                          {t.modelYear.replace("MY_", "")}
+                        </td>
+                        <td style={{ padding: "4px" }}>
+                          {formatDate(t.timestamp)}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+            </div>
+          )}
+        </div>
+      ))}
+    </div>
+  );
+}
