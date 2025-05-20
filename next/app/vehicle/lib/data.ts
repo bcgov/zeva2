@@ -112,6 +112,11 @@ export const getVehicleHistories = async (vehicleId: number) => {
           organization: true,
         },
       },
+      createUser: {
+        include: {
+          organization: true,
+        },
+      },
     },
   });
 };

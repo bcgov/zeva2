@@ -779,6 +779,8 @@ const main = () => {
 
     for (const historyOld of await prismaOld.vehicle_change_history.findMany()) {
       const vehIdNew = oldVehIdToNew[historyOld.vehicle_id];
+      const newCreateUserId =
+        mapOfOldUsernamesToNewUserIds[historyOld.create_user];
 
       await tx.vehicleChangeHistory.create({
         data: {
@@ -786,7 +788,7 @@ const main = () => {
           vehicleClassCode: {
             set: [vClassIdToEnum[historyOld.vehicle_class_code_id]],
           },
-          createUser: historyOld.create_user,
+          createUserId: newCreateUserId,
           vehicleZevType: {
             set: [vZevIdToEnum[historyOld.vehicle_zev_type_id]],
           },

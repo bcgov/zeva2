@@ -9,7 +9,8 @@ const VehicleHistories = async (props: { id: number }) => {
         <div key={each.id}>
           <div>
             <b>
-              {each.validationStatus} {each.createUser}
+              {each.validationStatus} {each.createUser.firstName}{" "}
+              {each.createUser.lastName} - {each.createUser.organization.name}
             </b>
           </div>
           {each.createTimestamp &&

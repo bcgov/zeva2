@@ -1,14 +1,19 @@
-import { Suspense } from "react";
-import { LoadingSkeleton } from "@/app/lib/components/skeletons";
 import { ContentCard } from "@/app/lib/components";
+import { getUserInfo } from "@/auth";
+import { LoadingSkeleton } from "@/app/lib/components/skeletons";
+import { Suspense } from "react";
 import VehicleHistories from "../lib/components/VehicleHistories";
 import VehicleComments from "../lib/components/VehicleComments";
 import Vehicle from "../lib/components/Vehicle";
 import CommentInput from "../lib/components/CommentInput";
+import ActionBar from "../lib/components/ActionBar";
 
 const Page = async (props: { params: Promise<{ id: string }> }) => {
+  const { userIsGov, userId, userOrgId } = await getUserInfo();
+
   const args = await props.params;
   const id = parseInt(args.id);
+
   return (
     <div className="flex flex-col w-1/3">
       <ContentCard title="Vehicle Details">
@@ -29,7 +34,11 @@ const Page = async (props: { params: Promise<{ id: string }> }) => {
           <VehicleHistories id={id} />
         </Suspense>
       </ContentCard>
-      <ContentCard title="Actions">Todo</ContentCard>
+      <ContentCard title="Actions">
+        <Suspense fallback={<LoadingSkeleton />}>
+          <ActionBar vehicleId={id} userIsGov={userIsGov} />
+        </Suspense>
+      </ContentCard>
     </div>
   );
 };
