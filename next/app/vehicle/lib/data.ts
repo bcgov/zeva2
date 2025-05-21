@@ -54,3 +54,64 @@ export const getVehicles = async (
     }),
   ]);
 };
+
+export const getVehicleComments = async (vehicleId: number) => {
+  const { userIsGov, userOrgId } = await getUserInfo();
+  let whereClause: Prisma.VehicleCommentWhereInput = {
+    vehicleId: vehicleId,
+  };
+  if (!userIsGov) {
+    whereClause = { ...whereClause, vehicle: { organizationId: userOrgId } };
+  }
+  return await prisma.vehicleComment.findMany({
+    where: whereClause,
+    include: {
+      vehicle: {
+        include: {
+          organization: true,
+        },
+      },
+      createUser: {
+        include: {
+          organization: true,
+        },
+      },
+    },
+  });
+};
+
+export const getVehicle = async (vehicleId: number) => {
+  const { userIsGov, userOrgId } = await getUserInfo();
+  let whereClause: Prisma.VehicleWhereUniqueInput = {
+    id: vehicleId,
+  };
+  if (!userIsGov) {
+    whereClause = { ...whereClause, organizationId: userOrgId };
+  }
+  return await prisma.vehicle.findUnique({
+    where: whereClause,
+    include: {
+      organization: true,
+    },
+  });
+};
+
+export const getVehicleHistories = async (vehicleId: number) => {
+  const { userIsGov, userOrgId } = await getUserInfo();
+  let whereClause: Prisma.VehicleChangeHistoryWhereInput = {
+    vehicleId: vehicleId,
+  };
+  if (!userIsGov) {
+    whereClause = { ...whereClause, vehicle: { organizationId: userOrgId } };
+  }
+  return await prisma.vehicleChangeHistory.findMany({
+    where: whereClause,
+    include: {
+      vehicle: {
+        include: {
+          organization: true,
+        },
+      },
+    },
+  });
+};
