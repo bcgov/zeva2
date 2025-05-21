@@ -1,6 +1,5 @@
 "use server";
 
-import { isVehicleStatus } from "@/app/lib/utils/typeGuards";
 import { getUserInfo } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { VehicleStatus } from "@/prisma/generated/client";
@@ -32,72 +31,46 @@ export async function createVehicleComment(vehicleId: number, comment: string) {
   }
 }
 
-export async function handleValidateorReject(
-  choice: string,
-  vehicleId: number,
-) {
-  const { userId, userIsGov } = await getUserInfo();
-
-  const statusMap: Record<string, VehicleStatus> = {
-    validate: VehicleStatus.VALIDATED,
-    reject: VehicleStatus.REJECTED,
-    delete: VehicleStatus.DELETED,
-    "request changes": VehicleStatus.CHANGES_REQUESTED,
-    submit: VehicleStatus.SUBMITTED,
-  };
-
-  const validation_status = statusMap[choice];
-  if (
-    !userIsGov &&
-    !(
-      [VehicleStatus.SUBMITTED, VehicleStatus.DELETED] as VehicleStatus[]
-    ).includes(validation_status)
-  ) {
-    throw new Error("Only government users can complete this status change");
+export async function updateStatus(status: VehicleStatus, vehicleId: number) {
+  const { userId, userIsGov, userOrgId } = await getUserInfo();
+  if (!userIsGov) {
+    const { organizationId: vehicleOrgId } =
+      await prisma.vehicle.findUniqueOrThrow({
+        where: {
+          id: vehicleId,
+        },
+      });
+    if (userOrgId !== vehicleOrgId) {
+      throw new Error("Permission Denied");
+    }
+    if (
+      status !== VehicleStatus.SUBMITTED &&
+      status !== VehicleStatus.DELETED
+    ) {
+      throw new Error("Only government users can complete this status change");
+    }
   }
-  if (!validation_status) {
-    throw new Error(`Unsupported action: ${choice}`);
-  }
-  //update the status
-  await prisma.vehicle.update({
-    where: { id: vehicleId },
-    data: { status: validation_status },
-  });
-  //grab the most recent history record
-  const mostRecentHistory = await prisma.vehicleChangeHistory.findFirst({
-    where: { vehicleId: vehicleId },
-    orderBy: { createTimestamp: "desc" },
-    select: {
-      vehicleId: true,
-      vehicleClassCode: true,
-      vehicleZevType: true,
-      createTimestamp: true,
-      validationStatus: true,
-      modelName: true,
-      createUserId: true,
-      range: true,
-      weightKg: true,
-      modelYearId: true,
-      organizationId: true,
-      userRole: true,
-    },
-  });
-
-  const {
-    id,
-    createTimestamp,
-    createUserId: _prevUserId,
-    validationStatus: _prevStatus,
-    ...rest
-  } = mostRecentHistory;
-  //create a new history record with a copy of the most
-  //recent one and only change the status/update user
-  await prisma.vehicleChangeHistory.create({
-    data: {
-      ...rest,
-      vehicleId: vehicleId,
-      validationStatus: validation_status,
-      createUserId: userId,
-    },
+  await prisma.$transaction(async (tx) => {
+    await tx.vehicle.update({
+      where: { id: vehicleId },
+      data: { status },
+    });
+    const mostRecentHistory = await tx.vehicleChangeHistory.findFirst({
+      where: { vehicleId: vehicleId },
+      orderBy: { createTimestamp: "desc" },
+    });
+    if (mostRecentHistory) {
+      await tx.vehicleChangeHistory.create({
+        data: {
+          ...mostRecentHistory,
+          id: undefined,
+          createTimestamp: new Date(),
+          createUserId: userId,
+          validationStatus: status,
+        },
+      });
+    } else {
+      // do something here? Or will there always be a mostRecentHistory (one is created when a vehicle is created)?
+    }
   });
 }

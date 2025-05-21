@@ -1,7 +1,8 @@
 "use client";
-import { useState, useTransition } from "react";
+import { useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { handleValidateorReject } from "../actions";
+import { updateStatus } from "../actions";
+import { VehicleStatus } from "@/prisma/generated/client";
 
 type Props = {
   vehicleId: number;
@@ -12,10 +13,14 @@ export default function ActionBar({ vehicleId, userIsGov }: Props) {
   const [isPending, startTransition] = useTransition();
   const router = useRouter();
 
-  const handleSubmit = (choice: string) => {
+  const handleSubmit = (choice: VehicleStatus) => {
     startTransition(async () => {
-      await handleValidateorReject(choice, vehicleId);
-      router.refresh();
+      try {
+        await updateStatus(choice, vehicleId);
+        router.refresh();
+      } catch (e) {
+        console.error(e);
+      }
     });
   };
 
@@ -23,17 +28,26 @@ export default function ActionBar({ vehicleId, userIsGov }: Props) {
     <div className="space-y-2">
       {userIsGov && (
         <>
-          <button onClick={() => handleSubmit("reject")} disabled={isPending}>
+          <button
+            onClick={() => handleSubmit(VehicleStatus.REJECTED)}
+            disabled={isPending}
+          >
             {isPending ? "..." : "Reject"}
           </button>
-          <button onClick={() => handleSubmit("validate")} disabled={isPending}>
+          <button
+            onClick={() => handleSubmit(VehicleStatus.VALIDATED)}
+            disabled={isPending}
+          >
             {isPending ? "..." : "Validate"}
           </button>
-          <button onClick={() => handleSubmit("delete")} disabled={isPending}>
+          <button
+            onClick={() => handleSubmit(VehicleStatus.DELETED)}
+            disabled={isPending}
+          >
             {isPending ? "..." : "Delete"}
           </button>
           <button
-            onClick={() => handleSubmit("request changes")}
+            onClick={() => handleSubmit(VehicleStatus.CHANGES_REQUESTED)}
             disabled={isPending}
           >
             {isPending ? "..." : "Request Changes"}
@@ -42,10 +56,16 @@ export default function ActionBar({ vehicleId, userIsGov }: Props) {
       )}
       {!userIsGov && (
         <>
-          <button onClick={() => handleSubmit("submit")} disabled={isPending}>
+          <button
+            onClick={() => handleSubmit(VehicleStatus.SUBMITTED)}
+            disabled={isPending}
+          >
             {isPending ? "..." : "Submit"}
           </button>
-          <button onClick={() => handleSubmit("delete")} disabled={isPending}>
+          <button
+            onClick={() => handleSubmit(VehicleStatus.DELETED)}
+            disabled={isPending}
+          >
             {isPending ? "..." : "Delete"}
           </button>
         </>
