@@ -1,64 +1,93 @@
-
 import { prisma } from "@/lib/prisma";
 import {
   ZevUnitTransaction,
   ZevUnitEndingBalance,
   ModelYear,
   Prisma,
-  TransactionType
+  Organization,
 } from "@/prisma/generated/client";
-import { getBalance } from "../../../lib/utils/zevUnit";
-import { auth } from "@/auth";
-
-async function assertAccess(orgId: number) {
-  const session = await auth();
-  if (!session) throw new Error("Unauthenticated");
-
-  const user = session.user
-  const isGov = user?.isGovernment
-  const isSupplier = user?.organizationId === orgId && !user?.isGovernment;
-
-  if (!isGov && !isSupplier) throw new Error("Unauthorized");
-}
-
-export class UnauthorizedError extends Error {
-  constructor() {
-    super("Not authorized to access this organisation's data");
-  }
-}
+import { getBalance, ZevUnitRecordsObj } from "../../../lib/utils/zevUnit";
+import { getUserInfo } from "@/auth";
+import { getModelYearEnumMap } from "@/app/lib/utils/enumMaps";
+import { getCompliancePeriod } from "@/app/lib/utils/complianceYear";
 
 export async function fetchTransactions(
-    orgId: number,
-    modelYear?: ModelYear
-  ): Promise<ZevUnitTransaction[]> {
-    await assertAccess(orgId);
-  
-    const where: Prisma.ZevUnitTransactionWhereInput = { organizationId: orgId, type: { in: [TransactionType.CREDIT, TransactionType.TRANSFER_AWAY] } };
-    if (modelYear) where.modelYear = modelYear;
-  
+  orgId: number,
+  gteDate?: Date,
+): Promise<ZevUnitTransaction[]> {
+  const { userIsGov, userOrgId } = await getUserInfo();
+  if (userIsGov || userOrgId === orgId) {
+    const where: Prisma.ZevUnitTransactionWhereInput = {
+      organizationId: orgId,
+    };
+    if (gteDate) {
+      where.timestamp = { gte: gteDate };
+    }
     return prisma.zevUnitTransaction.findMany({
       where,
       orderBy: { modelYear: "asc" },
     });
   }
-  
-  export async function fetchEndingBalances(
-    orgId: number,
-    modelYear?: ModelYear
-  ): Promise<ZevUnitEndingBalance[]> {
-    await assertAccess(orgId);
-  
-    const where: Prisma.ZevUnitEndingBalanceWhereInput = { organizationId: orgId };
-    if (modelYear) where.complianceYear = modelYear;
-  
+  return [];
+}
+
+export async function fetchEndingBalances(
+  orgId: number,
+  complianceYear: ModelYear,
+): Promise<ZevUnitEndingBalance[]> {
+  const { userIsGov, userOrgId } = await getUserInfo();
+  if (userIsGov || userOrgId === orgId) {
+    const where: Prisma.ZevUnitEndingBalanceWhereInput = {
+      organizationId: orgId,
+      complianceYear: complianceYear,
+    };
     return prisma.zevUnitEndingBalance.findMany({ where });
   }
-  
-  export async function fetchBalance(orgId: number, modelYear?: ModelYear) {
-    const [endingBalances, transactions] = await Promise.all([
-      fetchEndingBalances(orgId, modelYear),
-      fetchTransactions(orgId, modelYear),
-    ]);
-  
-    return getBalance(endingBalances, transactions);
+  return [];
+}
+
+export async function fetchBalance(
+  orgId: number,
+  modelYear?: ModelYear,
+): Promise<ZevUnitRecordsObj | "deficit" | undefined> {
+  const { userIsGov, userOrgId } = await getUserInfo();
+  if (userIsGov || userOrgId === orgId) {
+    const mostRecentEndingBalance = await prisma.zevUnitEndingBalance.findFirst(
+      {
+        where: {
+          organizationId: orgId,
+        },
+        select: {
+          complianceYear: true,
+        },
+        orderBy: [{ complianceYear: "desc" }],
+      },
+    );
+    if (mostRecentEndingBalance) {
+      const modelYearsMap = getModelYearEnumMap();
+      const complianceYear = mostRecentEndingBalance.complianceYear;
+      const intYear = parseInt(modelYearsMap[complianceYear] ?? "");
+      if (Number.isNaN(intYear)) {
+        return undefined;
+      }
+      const { closedLowerBound } = getCompliancePeriod(intYear + 1);
+      const endingBalances = await fetchEndingBalances(orgId, complianceYear);
+      const transactions = await fetchTransactions(orgId, closedLowerBound);
+      return getBalance(endingBalances, transactions);
+    } else {
+      const transactions = await fetchTransactions(orgId);
+      return getBalance([], transactions);
+    }
   }
+}
+
+export async function getOrg(
+  orgId: number,
+): Promise<Organization | null | undefined> {
+  const { userIsGov, userOrgId } = await getUserInfo();
+  if (userIsGov || userOrgId === orgId) {
+    return await prisma.organization.findUnique({
+      where: { id: orgId },
+    });
+  }
+}
