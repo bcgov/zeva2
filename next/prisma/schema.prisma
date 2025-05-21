@@ -328,6 +328,7 @@ model Vehicle {
   weightKg                           Decimal                              @map("weight_kg") @db.Decimal(6, 0)
   organization                       Organization                         @relation(fields: [organizationId], references: [id])
   organizationId                     Int                                  @map("organization_id")
+  vehicleClass                       VehicleClass?                        @map("vehicle_class")
   zevClass                           ZevClass?                            @map("credit_class")
   hasPassedUs06Test                  Boolean                              @map("has_passed_us_06_test")
   isActive                           Boolean                              @map("is_active")

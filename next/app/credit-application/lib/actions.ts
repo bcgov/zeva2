@@ -1,3 +1,5 @@
+"use server"
+
 import {
   getObject,
   getPresignedGetObjectUrl,
@@ -22,6 +24,7 @@ import {
   getModelYearEnumsToStringsMap,
   getStringsToModelYearsEnumsMap,
 } from "@/app/lib/utils/enumMaps";
+import { getHeadersMap } from "./utils";
 
 export const getSupplierTemplateDownloadUrl = async () => {
   const templateName = "credit_application_supplier_template.xlsx";
@@ -41,6 +44,12 @@ export const getSupplierTemplateDownloadUrl = async () => {
     where: {
       organizationId: userOrgId,
       status: VehicleStatus.VALIDATED,
+      vehicleClass: {
+        not: null
+      },
+      zevClass: {
+        not: null
+      },
       creditValue: {
         not: null,
       },
@@ -108,18 +117,10 @@ export const processSupplierFile = async (
           timestamp: Date;
         }
       > = {};
-      const headersMap: { [key: string]: string | undefined } = {};
+      const headersMap = getHeadersMap(dataSheet.getRow(1), true);
       const modelYearsMap = getStringsToModelYearsEnumsMap();
       dataSheet.eachRow((row, rowNumber) => {
-        if (rowNumber === 1) {
-          row.eachCell((cell) => {
-            const col = cell.col;
-            const value = cell.value?.toString();
-            if (value) {
-              headersMap[col] = value;
-            }
-          });
-        } else {
+        if (rowNumber > 1) {
           let vin: string | undefined;
           let make: string | undefined;
           let modelName: string | undefined;
@@ -135,9 +136,9 @@ export const processSupplierFile = async (
                   vin = value;
                 } else if (header === "Make") {
                   make = value;
-                } else if (header === "Model") {
+                } else if (header === "Model Name") {
                   modelName = value;
-                } else if (header === "Year") {
+                } else if (header === "Model Year") {
                   const year = modelYearsMap[value];
                   if (year) {
                     modelYear = year;
@@ -172,6 +173,12 @@ export const processSupplierFile = async (
           status: VehicleStatus.VALIDATED,
           creditValue: {
             not: null,
+          },
+          vehicleClass: {
+            not: null
+          },
+          zevClass: {
+            not: null
           },
           isActive: true,
           OR: vehicleOrClause,
@@ -224,6 +231,8 @@ export const processSupplierFile = async (
               vehicleId,
               timestamp: info.timestamp,
             });
+          } else {
+            throw new Error(`No system vehicle found for VIN ${vin}!`)
           }
         }
         await tx.vinAssociatedWithCreditApplication.createMany({
@@ -284,6 +293,8 @@ export const validateCreditApplication = async (
             make: true,
             modelName: true,
             modelYear: true,
+            vehicleClass: true,
+            zevClass: true,
             creditValue: true,
           },
         },
