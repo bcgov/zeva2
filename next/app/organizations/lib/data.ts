@@ -59,6 +59,5 @@ export const getOrganizations = async (
   const organizations = filterOrganizations(await getAllSuppliers(), filters);
   sortOrganzations(organizations, sorts);
   const start = (page - 1) * pageSize;
-
-  return [organizations.slice(start, pageSize), organizations.length];
+  return [organizations.slice(start, start + pageSize), organizations.length];
 };
