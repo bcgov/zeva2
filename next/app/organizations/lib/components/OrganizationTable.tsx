@@ -19,28 +19,28 @@ export const OrganizationTable = (props: {
         enableSorting: true,
         enableColumnFilter: true,
         cell: (info) => info.getValue(),
-        header: () => <span>Company Name</span>,
+        header: "Company Name",
       }),
       columnHelper.accessor((row) => "TBD", {
         id: "class",
         enableSorting: true,
         enableColumnFilter: true,
         cell: (info) => info.getValue(),
-        header: () => <span>Class</span>,
+        header: "Class",
       }),
       columnHelper.accessor((row) => row.zevUnitBalanceA, {
         id: "zevUnitBalanceA",
         enableSorting: true,
         enableColumnFilter: true,
         cell: (info) => info.getValue(),
-        header: () => <span>ZEV Unit A Balance</span>,
+        header: "ZEV Unit A Balance",
       }),
       columnHelper.accessor((row) => row.zevUnitBalanceB, {
         id: "zevUnitBalanceB",
         enableSorting: true,
         enableColumnFilter: true,
         cell: (info) => info.getValue(),
-        header: () => <span>ZEV Unit B Balance</span>,
+        header: "ZEV Unit B Balance",
       }),
     ];
     

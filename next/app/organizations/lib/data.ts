@@ -51,7 +51,7 @@ export const getOrganizations = async (
   filters: { [key: string]: string },
   sorts: { [key: string]: string },
 ): Promise<[OrganizationSparse[], number]> => {
-  const { userIsGov, userOrgId } = await getUserInfo();
+  const { userIsGov } = await getUserInfo();
   if (!userIsGov) {
     return [[], 0];
   }
