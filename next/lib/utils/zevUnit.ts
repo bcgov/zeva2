@@ -14,6 +14,8 @@ import {
   specialZevClasses,
   otherZevClasses,
 } from "@/lib/constants/zevUnit";
+import { getCompliancePeriod } from "../../app/lib/utils/complianceYear";
+import modelYearEnumToInt from "./modelYearEnumToInt";
 
 interface ZevUnitRecordBase {
   numberOfUnits: Decimal;
@@ -56,20 +58,7 @@ export class UnexpectedDebit extends Error {}
 export class UncoveredTransfer extends Error {}
 export class IncompleteOrdering extends Error {}
 
-/**
- * This function is used to convert a ModelYear enum value to the actual year as a number
- * @param yearEnum - The ModelYear enum value to convert.
- * @returns The year as an integer of the model year.
- */
-export const modelYearEnumToInt = (yearEnum: ModelYear) => {
-  const year = yearEnum.toString().substring(3);
-  return parseInt(year);
-};
 
-export const getComplianceYearPeriod = (year: number) => ({
-    start: new Date(year, 9, 1),  // October 1st of the current year (inclusive)
-    end: new Date(year + 1, 9, 1) // October 1st of the next year (exclusive)
-});
 
 // to be used when generating a supplier's MYR/Supplementary/Assessment/Reassessment;
 // inputed zevUnitRecords should consist of:
@@ -143,7 +132,7 @@ export const getCurrentBalance = (
   const finalYearEndingBalances = endingBalances.filter(
     (balance) => balance.complianceYear === finalComplianceYear,
   );
-  const finalYearEnd = getComplianceYearPeriod(modelYearEnumToInt(finalComplianceYear)).end;
+  const finalYearEnd = getCompliancePeriod(modelYearEnumToInt(finalComplianceYear)).openUpperBound;
   const finalTransactions = transactions.filter((transaction) => 
     transaction.timestamp >= finalYearEnd
   );
