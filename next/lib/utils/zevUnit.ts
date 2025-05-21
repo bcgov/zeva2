@@ -56,6 +56,21 @@ export class UnexpectedDebit extends Error {}
 export class UncoveredTransfer extends Error {}
 export class IncompleteOrdering extends Error {}
 
+/**
+ * This function is used to convert a ModelYear enum value to the actual year as a number
+ * @param yearEnum - The ModelYear enum value to convert.
+ * @returns The year as an integer of the model year.
+ */
+export const modelYearEnumToInt = (yearEnum: ModelYear) => {
+  const year = yearEnum.toString().substring(3);
+  return parseInt(year);
+};
+
+export const getComplianceYearPeriod = (year: number) => ({
+    start: new Date(year, 9, 1),  // October 1st of the current year (inclusive)
+    end: new Date(year + 1, 9, 1) // October 1st of the next year (exclusive)
+});
+
 // to be used when generating a supplier's MYR/Supplementary/Assessment/Reassessment;
 // inputed zevUnitRecords should consist of:
 // (1) the supplier's ending balance records with compliance year N (if any exist), and
@@ -99,6 +114,63 @@ export const getBalance = (
   const zevUnitRecords = getZevUnitRecords(endingBalances).concat(transactions);
   const recordsAfterTransfersAway = applyTransfersAway(zevUnitRecords);
   return getSummedZevUnitRecordsObj(recordsAfterTransfersAway);
+};
+
+/**
+ * This funcion calls getBalance()
+ * with the ending balances filtered to only containig records of the final compliance year, and
+ * with the transactions filtered to only containing records with timestamp after end of
+ * the final compliance year.
+ * @param endingBalances - All ending balance records for the supplier.
+ * @param transactions - All transaction records for the supplier.
+ * @returns a ZevUnitRecordsObj containing the ZEV unit balances, or the string "deficit" if
+ * the supplier has a deficit.
+ */
+export const getCurrentBalance = (
+  endingBalances: ZevUnitEndingBalance[],
+  transactions: ZevUnitTransaction[],
+) => {
+  let finalComplianceYear: ModelYear | undefined;
+  for (const balance of endingBalances) {
+    if (finalComplianceYear === undefined || balance.complianceYear > finalComplianceYear) {
+      finalComplianceYear = balance.complianceYear;
+    }
+  }
+  if (!finalComplianceYear) {
+    return getBalance(endingBalances, transactions);
+  }
+
+  const finalYearEndingBalances = endingBalances.filter(
+    (balance) => balance.complianceYear === finalComplianceYear,
+  );
+  const finalYearEnd = getComplianceYearPeriod(modelYearEnumToInt(finalComplianceYear)).end;
+  const finalTransactions = transactions.filter((transaction) => 
+    transaction.timestamp >= finalYearEnd
+  );
+
+  return getBalance(finalYearEndingBalances, finalTransactions);
+};
+
+/**
+ * This function sums the balances of a specific transaction type, vehicle class, and zev class.
+ * @param balances - a ZevUnitRecordsObj containing all the ZEV unit balances
+ * @param transactionType - the transaction type of the balances to be summed
+ * @param vehicleClass - the vehicle class of the balances to be summed
+ * @param zevClass - the zev class of the balances to be summed
+ * @returns the sum of the balances of the specified transaction type, vehicle class, and zev class
+ */
+export const sumBalance = (
+  balances: ZevUnitRecordsObj,
+  transactionType: TransactionType,
+  vehicleClass: VehicleClass,
+  zevClass: ZevClass,
+) => {
+  const filteredBalance = balances[transactionType]?.[vehicleClass]?.[zevClass] || {};
+  const total = Object.values(filteredBalance).reduce(
+    (acc, value) => acc.plus(value),
+    new Decimal(0)
+  );
+  return total;
 };
 
 export const getZevUnitRecords = (
