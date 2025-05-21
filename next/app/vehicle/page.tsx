@@ -1,21 +1,13 @@
-import { getObject } from "@/lib/utils/urlSearchParams";
 import { Suspense } from "react";
 import { LoadingSkeleton } from "../lib/components/skeletons";
+import { getPageParams, pageStringParams } from "../lib/utils/page";
 import { VehicleList } from "./lib/components/VehicleList";
 
 const Page = async (props: {
-  searchParams?: Promise<{
-    page?: string;
-    pageSize?: string;
-    filters?: string;
-    sorts?: string;
-  }>;
+  searchParams?: Promise<pageStringParams>
 }) => {
   const searchParams = await props.searchParams;
-  const page = parseInt(searchParams?.page ?? "") || 1;
-  const pageSize = parseInt(searchParams?.pageSize ?? "") || 10;
-  const filters = getObject(searchParams?.filters ?? null);
-  const sorts = getObject(searchParams?.sorts ?? null);
+  const { page, pageSize, filters, sorts } = getPageParams(searchParams, 1, 10);
 
   return (
     <Suspense key={Date.now()} fallback={<LoadingSkeleton />}>
