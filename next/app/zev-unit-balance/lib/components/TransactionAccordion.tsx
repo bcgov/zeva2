@@ -1,15 +1,18 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { getTransactionsByComplianceYear, getComplianceYears } from "../actions";
-import type { ZevUnitTransaction } from "@/prisma/generated/client";
+import {
+  getTransactionsByComplianceYear,
+  getComplianceYears,
+  SerializedZevUnitTransaction,
+} from "../actions";
 
 export default function TransactionAccordion({ orgId }: { orgId: number }) {
   const [years, setYears] = useState<number[] | null>(null);
   const [openYear, setOpenYear] = useState<number | null>(null);
-  const [txCache, setTxCache] = useState<Record<number, ZevUnitTransaction[]>>(
-    {}
-  );
+  const [txCache, setTxCache] = useState<
+    Record<number, SerializedZevUnitTransaction[]>
+  >({});
 
   useEffect(() => {
     (async () => setYears(await getComplianceYears(orgId)))();
@@ -18,7 +21,7 @@ export default function TransactionAccordion({ orgId }: { orgId: number }) {
   const toggleYear = async (y: number) => {
     setOpenYear((prev) => (prev === y ? null : y));
     if (!txCache[y]) {
-      const tx = await getTransactionsByComplianceYear(orgId, y);
+      const tx = await getTransactionsByComplianceYear(orgId, y, "desc");
       setTxCache((prev) => ({ ...prev, [y]: tx }));
     }
   };
@@ -53,7 +56,7 @@ export default function TransactionAccordion({ orgId }: { orgId: number }) {
           >
             {openYear === y ? "▾" : "▸"} Compliance&nbsp;Year&nbsp;{y}
           </button>
-          
+
           {openYear === y && (
             <div style={{ padding: 8 }}>
               {!txCache[y] ? (
@@ -70,20 +73,25 @@ export default function TransactionAccordion({ orgId }: { orgId: number }) {
                 >
                   <thead>
                     <tr>
-                      {["ID", "Type", "Units", "Class", "Model Year", "Date"].map(
-                        (h) => (
-                          <th
-                            key={h}
-                            style={{
-                              textAlign: "left",
-                              borderBottom: "1px solid #ddd",
-                              padding: "4px",
-                            }}
-                          >
-                            {h}
-                          </th>
-                        )
-                      )}
+                      {[
+                        "ID",
+                        "Type",
+                        "Units",
+                        "Class",
+                        "Model Year",
+                        "Date",
+                      ].map((h) => (
+                        <th
+                          key={h}
+                          style={{
+                            textAlign: "left",
+                            borderBottom: "1px solid #ddd",
+                            padding: "4px",
+                          }}
+                        >
+                          {h}
+                        </th>
+                      ))}
                     </tr>
                   </thead>
                   <tbody>
@@ -91,9 +99,7 @@ export default function TransactionAccordion({ orgId }: { orgId: number }) {
                       <tr key={t.id}>
                         <td style={{ padding: "4px" }}>{t.id}</td>
                         <td style={{ padding: "4px" }}>{t.type}</td>
-                        <td
-                          style={{ padding: "4px", textAlign: "right" }}
-                        >
+                        <td style={{ padding: "4px", textAlign: "right" }}>
                           {t.numberOfUnits.toString()}
                         </td>
                         <td style={{ padding: "4px" }}>{t.zevClass}</td>

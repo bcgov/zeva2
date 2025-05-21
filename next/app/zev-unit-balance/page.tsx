@@ -1,27 +1,26 @@
-import { auth } from "@/auth";
+import { getUserInfo } from "@/auth";
 import { fetchBalance } from "./lib/data";
-import { ModelYear } from "@/prisma/generated/client";
 import BalanceTable from "./lib/components/BalanceTable";
 import TransactionAccordion from "./lib/components/TransactionAccordion";
 
 export default async function BalancePage() {
-  const session = await auth();
-  const orgId = session?.user?.organizationId || 0;
-  const currentYear = 2025
-  const yearEnum = ("MY_" + currentYear) as ModelYear;
+  const { userIsGov, userOrgId } = await getUserInfo();
+  if (!userIsGov) {
+    const balance = await fetchBalance(userOrgId);
+    if (balance) {
+      return (
+        <main>
+          <h1>Current Balance</h1>
 
-  const balance = await fetchBalance(orgId);
-
-  return (
-    <main>
-      <h1>Balance ({currentYear})</h1>
-
-      {balance === "deficit" ? (
-      <p style={{ color: "red" }}>Deficit</p>
-      ) : (
-        <BalanceTable balance={balance} />
-      )}
-      <TransactionAccordion orgId={orgId} />
-    </main>
-  );
+          {balance === "deficit" ? (
+            <p style={{ color: "red" }}>Deficit</p>
+          ) : (
+            <BalanceTable balance={balance} />
+          )}
+          <TransactionAccordion orgId={userOrgId} />
+        </main>
+      );
+    }
+  }
+  return null;
 }
