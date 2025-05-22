@@ -2,21 +2,22 @@
 import { useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { updateStatus } from "../actions";
-import { VehicleStatus } from "@/prisma/generated/client";
+import { VehicleStatus, Vehicle } from "@/prisma/generated/client";
 
 type Props = {
   vehicleId: number;
   userIsGov: Boolean;
+  vehicle: Vehicle;
 };
 
-export default function ActionBar({ vehicleId, userIsGov }: Props) {
+export default function ActionBar({ vehicleId, userIsGov, vehicle }: Props) {
   const [isPending, startTransition] = useTransition();
   const router = useRouter();
 
   const handleSubmit = (choice: VehicleStatus) => {
     startTransition(async () => {
       try {
-        await updateStatus(choice, vehicleId);
+        await updateStatus(vehicle, choice);
         router.refresh();
       } catch (e) {
         console.error(e);
@@ -30,16 +31,17 @@ export default function ActionBar({ vehicleId, userIsGov }: Props) {
         <>
           <button
             onClick={() => handleSubmit(VehicleStatus.REJECTED)}
-            disabled={isPending}
+            disabled={isPending || vehicle.status !== VehicleStatus.SUBMITTED}
           >
             {isPending ? "..." : "Reject"}
           </button>
           <button
             onClick={() => handleSubmit(VehicleStatus.VALIDATED)}
-            disabled={isPending}
+            disabled={isPending || vehicle.status !== VehicleStatus.SUBMITTED}
           >
             {isPending ? "..." : "Validate"}
           </button>
+
           <button
             onClick={() => handleSubmit(VehicleStatus.DELETED)}
             disabled={isPending}
@@ -48,7 +50,7 @@ export default function ActionBar({ vehicleId, userIsGov }: Props) {
           </button>
           <button
             onClick={() => handleSubmit(VehicleStatus.CHANGES_REQUESTED)}
-            disabled={isPending}
+            disabled={isPending || vehicle.status !== VehicleStatus.SUBMITTED}
           >
             {isPending ? "..." : "Request Changes"}
           </button>
@@ -58,13 +60,13 @@ export default function ActionBar({ vehicleId, userIsGov }: Props) {
         <>
           <button
             onClick={() => handleSubmit(VehicleStatus.SUBMITTED)}
-            disabled={isPending}
+            disabled={isPending || vehicle.status !== VehicleStatus.DRAFT}
           >
             {isPending ? "..." : "Submit"}
           </button>
           <button
             onClick={() => handleSubmit(VehicleStatus.DELETED)}
-            disabled={isPending}
+            disabled={isPending || vehicle.status !== VehicleStatus.DRAFT}
           >
             {isPending ? "..." : "Delete"}
           </button>

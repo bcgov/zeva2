@@ -2,7 +2,7 @@
 
 import { getUserInfo } from "@/auth";
 import { prisma } from "@/lib/prisma";
-import { VehicleStatus } from "@/prisma/generated/client";
+import { VehicleStatus, Vehicle } from "@/prisma/generated/client";
 
 export async function createVehicleComment(vehicleId: number, comment: string) {
   const { userIsGov, userId, userOrgId } = await getUserInfo();
@@ -31,32 +31,34 @@ export async function createVehicleComment(vehicleId: number, comment: string) {
   }
 }
 
-export async function updateStatus(status: VehicleStatus, vehicleId: number) {
+export async function updateStatus(vehicle: Vehicle, newStatus: VehicleStatus) {
   const { userId, userIsGov, userOrgId } = await getUserInfo();
+
   if (!userIsGov) {
-    const { organizationId: vehicleOrgId } =
-      await prisma.vehicle.findUniqueOrThrow({
-        where: {
-          id: vehicleId,
-        },
-      });
-    if (userOrgId !== vehicleOrgId) {
+    if (userOrgId !== vehicle.organizationId) {
       throw new Error("Permission Denied");
     }
     if (
-      status !== VehicleStatus.SUBMITTED &&
-      status !== VehicleStatus.DELETED
+      newStatus !== VehicleStatus.SUBMITTED &&
+      newStatus !== VehicleStatus.DELETED
     ) {
       throw new Error("Only government users can complete this status change");
+    }
+    if (
+      (vehicle.status !== VehicleStatus.DRAFT &&
+        newStatus == VehicleStatus.SUBMITTED) ||
+      newStatus == VehicleStatus.DELETED
+    ) {
+      throw new Error("That status change cannot be performed");
     }
   }
   await prisma.$transaction(async (tx) => {
     await tx.vehicle.update({
-      where: { id: vehicleId },
-      data: { status },
+      where: { id: vehicle.id },
+      data: { status: newStatus },
     });
     const mostRecentHistory = await tx.vehicleChangeHistory.findFirst({
-      where: { vehicleId: vehicleId },
+      where: { vehicleId: vehicle.id },
       orderBy: { createTimestamp: "desc" },
     });
     if (mostRecentHistory) {
@@ -66,7 +68,7 @@ export async function updateStatus(status: VehicleStatus, vehicleId: number) {
           id: undefined,
           createTimestamp: new Date(),
           createUserId: userId,
-          validationStatus: status,
+          validationStatus: newStatus,
         },
       });
     } else {
