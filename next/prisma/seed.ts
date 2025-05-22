@@ -782,6 +782,12 @@ const main = () => {
       const newCreateUserId =
         mapOfOldUsernamesToNewUserIds[historyOld.create_user];
 
+      if (!newCreateUserId) {
+        throw new Error(
+          "vehicle history with id " + historyOld.id + " has unknown create user id!",
+        );
+      }
+
       await tx.vehicleChangeHistory.create({
         data: {
           createTimestamp: historyOld.create_timestamp,
