@@ -2,22 +2,22 @@
 import { useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { updateStatus } from "../actions";
-import { VehicleStatus, Vehicle } from "@/prisma/generated/client";
+import { VehicleStatus } from "@/prisma/generated/client";
+import { SerializedVehicleWithOrg } from "../data";
 
 type Props = {
-  vehicleId: number;
   userIsGov: Boolean;
-  vehicle: Vehicle;
+  vehicle: SerializedVehicleWithOrg;
 };
 
-export default function ActionBar({ vehicleId, userIsGov, vehicle }: Props) {
+export default function ActionBar({ userIsGov, vehicle }: Props) {
   const [isPending, startTransition] = useTransition();
   const router = useRouter();
 
   const handleSubmit = (choice: VehicleStatus) => {
     startTransition(async () => {
       try {
-        await updateStatus(vehicle, choice);
+        await updateStatus(vehicle.id, choice);
         router.refresh();
       } catch (e) {
         console.error(e);
