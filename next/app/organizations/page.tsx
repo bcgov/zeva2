@@ -1,7 +1,7 @@
 import { Suspense } from "react";
 import { LoadingSkeleton } from "../lib/components/skeletons";
 import { getPageParams, pageStringParams } from "../lib/utils/page";
-import ZevUnitTransferList from "./lib/components/ZevUnitTransferList";
+import { OrganizationList } from "./lib/components/OrganizationList";
 
 const Page = async (props: {
   searchParams?: Promise<pageStringParams>
@@ -11,7 +11,7 @@ const Page = async (props: {
 
   return (
     <Suspense key={Date.now()} fallback={<LoadingSkeleton />}>
-      <ZevUnitTransferList
+      <OrganizationList
         page={page}
         pageSize={pageSize}
         filters={filters}
