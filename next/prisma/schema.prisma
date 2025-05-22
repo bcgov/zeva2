@@ -102,8 +102,9 @@ model User {
   firstName              String                   @map("first_name")
   lastName               String                   @map("last_name")
 
-  vehicleCommentsCreated VehicleComment[] @relation("user that created comment")
-  vehicleCommentsUpdated VehicleComment[] @relation("user that updated comment")
+  vehicleCommentsCreated VehicleComment[]       @relation("user that created comment")
+  vehicleCommentsUpdated VehicleComment[]       @relation("user that updated comment")
+  vehicleStatusChanged   VehicleChangeHistory[] @relation("user that changed the status")
 
   @@unique([idp, idpUsername, idpEmail])
   @@map("user")
@@ -304,7 +305,8 @@ model VehicleChangeHistory {
   id               Int                @id @default(autoincrement())
   createTimestamp  DateTime?          @default(now()) @map("create_timestamp") @db.Timestamptz(6)
   vehicleClassCode VehicleClassCode[] @map("vehicle_class_code")
-  createUser       String             @default("SYSTEM") @map("create_user")
+  createUserId     Int                @map("create_user_id")
+  createUser       User               @relation("user that changed the status", fields: [createUserId], references: [id])
   vehicleZevType   VehicleZevType[]   @map("vehicle_zev_type")
   range            Int
   make             String?            @map("make")

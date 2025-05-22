@@ -1,7 +1,9 @@
-import { getVehicle } from "../data";
+import { SerializedVehicleWithOrg } from "../data";
+type VehicleProps = {
+  vehicle: SerializedVehicleWithOrg;
+};
 
-const Vehicle = async (props: { id: number }) => {
-  const vehicle = await getVehicle(props.id);
+const VehicleDetails = async ({ vehicle }: VehicleProps) => {
   if (vehicle) {
     return (
       <div key={vehicle.id}>
@@ -29,4 +31,4 @@ const Vehicle = async (props: { id: number }) => {
   }
 };
 
-export default Vehicle;
+export default VehicleDetails;

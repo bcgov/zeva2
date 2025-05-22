@@ -1,7 +1,12 @@
 import { getUserInfo } from "@/auth";
 import { getOrderByClause, getWhereClause } from "./utils";
 import { prisma } from "@/lib/prisma";
-import { Prisma, Vehicle, VehicleStatus } from "@/prisma/generated/client";
+import {
+  Organization,
+  Prisma,
+  Vehicle,
+  VehicleStatus,
+} from "@/prisma/generated/client";
 
 export type VehicleSparse = Omit<
   Vehicle,
@@ -80,7 +85,11 @@ export const getVehicleComments = async (vehicleId: number) => {
   });
 };
 
-export const getVehicle = async (vehicleId: number) => {
+export type VehicleWithOrg = Vehicle & { organization: Organization };
+
+export const getVehicle = async (
+  vehicleId: number,
+): Promise<VehicleWithOrg | null> => {
   const { userIsGov, userOrgId } = await getUserInfo();
   let whereClause: Prisma.VehicleWhereUniqueInput = {
     id: vehicleId,
@@ -96,6 +105,27 @@ export const getVehicle = async (vehicleId: number) => {
   });
 };
 
+export type SerializedVehicleWithOrg = Omit<
+  Vehicle,
+  "weightKg" | "creditValue"
+> & { weightKg: string; creditValue: string | undefined } & {
+  organization: Organization;
+};
+
+export const getSerializedVehicle = async (
+  vehicleId: number,
+): Promise<SerializedVehicleWithOrg | null> => {
+  const vehicle = await getVehicle(vehicleId);
+  if (vehicle) {
+    return {
+      ...vehicle,
+      weightKg: vehicle.weightKg.toString(),
+      creditValue: vehicle.creditValue?.toString(),
+    };
+  }
+  return null;
+};
+
 export const getVehicleHistories = async (vehicleId: number) => {
   const { userIsGov, userOrgId } = await getUserInfo();
   let whereClause: Prisma.VehicleChangeHistoryWhereInput = {
@@ -108,6 +138,11 @@ export const getVehicleHistories = async (vehicleId: number) => {
     where: whereClause,
     include: {
       vehicle: {
+        include: {
+          organization: true,
+        },
+      },
+      createUser: {
         include: {
           organization: true,
         },
