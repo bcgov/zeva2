@@ -1,10 +1,9 @@
-import { Vehicle } from "@/prisma/generated/client";
+import { SerializedVehicleWithOrg } from "../data";
 type VehicleProps = {
-  id: number;
-  vehicle: Vehicle;
+  vehicle: SerializedVehicleWithOrg;
 };
 
-const VehicleDetails = async ({ id, vehicle }: VehicleProps) => {
+const VehicleDetails = async ({ vehicle }: VehicleProps) => {
   if (vehicle) {
     return (
       <div key={vehicle.id}>

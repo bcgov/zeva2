@@ -2,7 +2,7 @@
 
 import { getUserInfo } from "@/auth";
 import { prisma } from "@/lib/prisma";
-import { VehicleStatus, Vehicle } from "@/prisma/generated/client";
+import { VehicleStatus } from "@/prisma/generated/client";
 
 export async function createVehicleComment(vehicleId: number, comment: string) {
   const { userIsGov, userId, userOrgId } = await getUserInfo();
@@ -31,11 +31,20 @@ export async function createVehicleComment(vehicleId: number, comment: string) {
   }
 }
 
-export async function updateStatus(vehicle: Vehicle, newStatus: VehicleStatus) {
+export async function updateStatus(
+  vehicleId: number,
+  newStatus: VehicleStatus,
+) {
   const { userId, userIsGov, userOrgId } = await getUserInfo();
 
   if (!userIsGov) {
-    if (userOrgId !== vehicle.organizationId) {
+    const { organizationId: vehicleOrgId, status } =
+      await prisma.vehicle.findUniqueOrThrow({
+        where: {
+          id: vehicleId,
+        },
+      });
+    if (userOrgId !== vehicleOrgId) {
       throw new Error("Permission Denied");
     }
     if (
@@ -45,7 +54,7 @@ export async function updateStatus(vehicle: Vehicle, newStatus: VehicleStatus) {
       throw new Error("Only government users can complete this status change");
     }
     if (
-      (vehicle.status !== VehicleStatus.DRAFT &&
+      (status !== VehicleStatus.DRAFT &&
         newStatus == VehicleStatus.SUBMITTED) ||
       newStatus == VehicleStatus.DELETED
     ) {
@@ -54,19 +63,21 @@ export async function updateStatus(vehicle: Vehicle, newStatus: VehicleStatus) {
   }
   await prisma.$transaction(async (tx) => {
     await tx.vehicle.update({
-      where: { id: vehicle.id },
+      where: { id: vehicleId },
       data: { status: newStatus },
     });
     const mostRecentHistory = await tx.vehicleChangeHistory.findFirst({
-      where: { vehicleId: vehicle.id },
+      where: { vehicleId: vehicleId },
+      omit: {
+        id: true,
+        createTimestamp: true,
+      },
       orderBy: { createTimestamp: "desc" },
     });
     if (mostRecentHistory) {
       await tx.vehicleChangeHistory.create({
         data: {
           ...mostRecentHistory,
-          id: undefined,
-          createTimestamp: new Date(),
           createUserId: userId,
           validationStatus: newStatus,
         },

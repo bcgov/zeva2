@@ -7,19 +7,20 @@ import VehicleComments from "../lib/components/VehicleComments";
 import VehicleDetails from "../lib/components/VehicleDetails";
 import CommentInput from "../lib/components/CommentInput";
 import ActionBar from "../lib/components/ActionBar";
-import { getVehicle } from "../lib/data";
+import { getSerializedVehicle } from "../lib/data";
 const Page = async (props: { params: Promise<{ id: string }> }) => {
-  const { userIsGov, userId, userOrgId } = await getUserInfo();
-
+  const { userIsGov } = await getUserInfo();
   const args = await props.params;
   const id = parseInt(args.id);
-  const vehicle = await getVehicle(id);
-  const parsedVehicle = JSON.parse(JSON.stringify(vehicle));
+  const vehicle = await getSerializedVehicle(id);
+  if (!vehicle) {
+    return null;
+  }
   return (
     <div className="flex flex-col w-1/3">
       <ContentCard title="Vehicle Details">
         <Suspense fallback={<LoadingSkeleton />}>
-          <VehicleDetails id={id} vehicle={parsedVehicle} />
+          <VehicleDetails vehicle={vehicle} />
         </Suspense>
       </ContentCard>
       <ContentCard title="Add New Comment">
@@ -37,11 +38,7 @@ const Page = async (props: { params: Promise<{ id: string }> }) => {
       </ContentCard>
       <ContentCard title="Actions">
         <Suspense fallback={<LoadingSkeleton />}>
-          <ActionBar
-            vehicleId={id}
-            userIsGov={userIsGov}
-            vehicle={parsedVehicle}
-          />
+          <ActionBar userIsGov={userIsGov} vehicle={vehicle} />
         </Suspense>
       </ContentCard>
     </div>
