@@ -11,6 +11,10 @@ export type OrganizationSparse = {
 };
 
 export const getAllSuppliers = async () => {
+  const { userIsGov } = await getUserInfo();
+  if (!userIsGov) {
+    return []
+  }
   const organizations = await prisma.organization.findMany({
     select: {
       id: true,
