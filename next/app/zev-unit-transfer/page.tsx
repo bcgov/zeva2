@@ -1,6 +1,6 @@
 import { Suspense } from "react";
 import { LoadingSkeleton } from "../lib/components/skeletons";
-import { getPageParams, pageStringParams } from "../lib/utils/page";
+import { getPageParams, pageStringParams } from "../lib/utils/nextPage";
 import ZevUnitTransferList from "./lib/components/ZevUnitTransferList";
 
 const Page = async (props: {
