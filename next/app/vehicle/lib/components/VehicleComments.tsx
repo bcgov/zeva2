@@ -22,7 +22,7 @@ const VehicleComments = async (props: { id: number }) => {
         </div>,
       );
     }
-    return <div>{entries.reverse()}</div>;
+    return <div>{entries.toReversed()}</div>;
   }
   return null;
 };
