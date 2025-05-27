@@ -3,9 +3,7 @@ import { LoadingSkeleton } from "../lib/components/skeletons";
 import { getPageParams, pageStringParams } from "../lib/utils/nextPage";
 import { VehicleList } from "./lib/components/VehicleList";
 
-const Page = async (props: {
-  searchParams?: Promise<pageStringParams>
-}) => {
+const Page = async (props: { searchParams?: Promise<pageStringParams> }) => {
   const searchParams = await props.searchParams;
   const { page, pageSize, filters, sorts } = getPageParams(searchParams, 1, 10);
 

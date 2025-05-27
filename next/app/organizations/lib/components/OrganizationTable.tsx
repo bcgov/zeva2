@@ -43,7 +43,7 @@ export const OrganizationTable = (props: {
         header: "ZEV Unit B Balance",
       }),
     ];
-    
+
     return result;
   }, [columnHelper]);
 

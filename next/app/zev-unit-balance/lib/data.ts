@@ -8,7 +8,7 @@ import {
 } from "@/prisma/generated/client";
 import { getBalance, ZevUnitRecordsObj } from "../../../lib/utils/zevUnit";
 import { getUserInfo } from "@/auth";
-import { getModelYearEnumMap } from "@/app/lib/utils/enumMaps";
+import { getModelYearEnumsToStringsMap } from "@/app/lib/utils/enumMaps";
 import { getCompliancePeriod } from "@/app/lib/utils/complianceYear";
 
 export async function fetchTransactions(
@@ -64,7 +64,7 @@ export async function fetchBalance(
       },
     );
     if (mostRecentEndingBalance) {
-      const modelYearsMap = getModelYearEnumMap();
+      const modelYearsMap = getModelYearEnumsToStringsMap();
       const complianceYear = mostRecentEndingBalance.complianceYear;
       const intYear = parseInt(modelYearsMap[complianceYear] ?? "");
       if (Number.isNaN(intYear)) {

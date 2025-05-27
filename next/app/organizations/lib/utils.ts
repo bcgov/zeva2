@@ -44,18 +44,22 @@ const decomposeFilterValue = (filterValue: string) => {
   let filterType = filterValue.substring(0, 2);
   if (filterType === "==" || filterType === ">=" || filterType === "<=") {
     const numberValue = parseFloat(filterValue.substring(2));
-    return isNaN(numberValue) ? undefined : {
-      filterType,
-      numberValue,
-    };
+    return isNaN(numberValue)
+      ? undefined
+      : {
+          filterType,
+          numberValue,
+        };
   }
   filterType = filterValue.substring(0, 1);
   if (filterType === "=" || filterType === ">" || filterType === "<") {
     const numberValue = parseFloat(filterValue.substring(1));
-    return isNaN(numberValue) ? undefined : {
-      filterType,
-      numberValue,
-    };
+    return isNaN(numberValue)
+      ? undefined
+      : {
+          filterType,
+          numberValue,
+        };
   }
   return undefined;
 };
@@ -71,7 +75,7 @@ export const filterOrganizations = (
       const decomposedValue = decomposeFilterValue(value);
       if (decomposedValue) {
         const { filterType, numberValue } = decomposedValue;
-        organizations = organizations.filter(org => {
+        organizations = organizations.filter((org) => {
           const orgValue = org[key];
           switch (filterType) {
             case "==":
@@ -93,8 +97,10 @@ export const filterOrganizations = (
       }
     }
 
-    organizations = organizations.filter(org =>
-      org[key as keyof Omit<OrganizationSparse, "id">].toLowerCase().includes(value)
+    organizations = organizations.filter((org) =>
+      org[key as keyof Omit<OrganizationSparse, "id">]
+        .toLowerCase()
+        .includes(value),
     );
   }
   return organizations;
@@ -107,9 +113,11 @@ export const sortOrganzations = (
   for (const [key, value] of Object.entries(sorts)) {
     switch (key) {
       case "name":
-        organizations.sort((a, b) => value === "asc" ?
-          a[key].localeCompare(b[key]) :
-          b[key].localeCompare(a[key]));
+        organizations.sort((a, b) =>
+          value === "asc"
+            ? a[key].localeCompare(b[key])
+            : b[key].localeCompare(a[key]),
+        );
         break;
       case "zevUnitBalanceA":
       case "zevUnitBalanceB":
@@ -121,4 +129,4 @@ export const sortOrganzations = (
         break;
     }
   }
-}
+};

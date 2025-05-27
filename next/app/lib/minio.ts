@@ -2,12 +2,6 @@
 import * as Minio from "minio";
 import { Readable } from "stream";
 
-export enum Directory {
-  Templates = "templates/",
-  CreditApplication = "creditApplications/",
-  CreditApplicationTmp = "creditApplications/tmp/",
-}
-
 export const getClient = () => {
   return new Minio.Client({
     endPoint: process.env.MINIO_ENDPOINT ?? "",

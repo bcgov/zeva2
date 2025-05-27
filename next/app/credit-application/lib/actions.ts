@@ -1,97 +1,76 @@
-"use server"
+"use server";
 
 import {
   getObject,
   getPresignedGetObjectUrl,
-  putObject,
-  Directory,
   getPresignedPutObjectUrl,
   setObjectLegalHold,
 } from "@/app/lib/minio";
 import { getUserInfo } from "@/auth";
 import { prisma } from "@/lib/prisma";
-import {
-  CreditApplicationStatus,
-  ModelYear,
-  Role,
-  VehicleStatus,
-} from "@/prisma/generated/client";
+import { CreditApplicationStatus, Role } from "@/prisma/generated/client";
 import { randomUUID } from "crypto";
 import Excel from "exceljs";
-import { createReadStream } from "fs";
 import { Prisma } from "@/prisma/generated/client";
+import { getModelYearEnumsToStringsMap } from "@/app/lib/utils/enumMaps";
 import {
-  getModelYearEnumsToStringsMap,
-  getStringsToModelYearsEnumsMap,
-} from "@/app/lib/utils/enumMaps";
-import { getHeadersMap } from "./utils";
+  populateCurableVins,
+  populateErrors,
+  populateValidVins,
+  validateSupplierSheet,
+} from "./utils";
+import {
+  createTransactions,
+  getCreditApplicationTemplate,
+  getIcbcRecordsMap,
+  getSupplierVehiclesMap,
+  getSupplierVehiclesMapSparse,
+  getSupplierVehiclesSparse,
+  getVinRecordsMap,
+  putWorkbook,
+  updateVins,
+} from "./services";
+import {
+  Directory,
+  GovTemplateSheetNames,
+  SupplierTemplateSheetNames,
+  TemplateNames,
+} from "./constants";
+import { CreditsPayload } from "./components/ParsedApplication";
 
 export const getSupplierTemplateDownloadUrl = async () => {
-  const templateName = "credit_application_supplier_template.xlsx";
-  const generatedTemplateName = Directory.CreditApplicationTmp + randomUUID();
-  const { userOrgId } = await getUserInfo();
-  let template;
-  // there may be cwd/path differences/issues after the app is built/deployed,
-  // so, in that case, we get the template from object storage
-  if (process.env.NODE_ENV === "production") {
-    template = await getObject(Directory.Templates + templateName);
-  } else {
-    template = createReadStream(
-      "app/credit-application/lib/templates/" + templateName,
+  const { userIsGov, userOrgId } = await getUserInfo();
+  if (!userIsGov) {
+    const vehicles = await getSupplierVehiclesSparse(userOrgId);
+    const template = await getCreditApplicationTemplate(
+      TemplateNames.SupplierTemplate,
     );
-  }
-  const vehicles = await prisma.vehicle.findMany({
-    where: {
-      organizationId: userOrgId,
-      status: VehicleStatus.VALIDATED,
-      vehicleClass: {
-        not: null
-      },
-      zevClass: {
-        not: null
-      },
-      creditValue: {
-        not: null,
-      },
-      isActive: true,
-    },
-    select: {
-      make: true,
-      modelName: true,
-      modelYear: true,
-    },
-  });
-  const workbook = new Excel.Workbook();
-  await workbook.xlsx.read(template);
-  const vehiclesSheet = workbook.getWorksheet("Valid Vehicles");
-  if (vehiclesSheet) {
-    const modelYearsMap = getModelYearEnumsToStringsMap();
-    vehicles.forEach((vehicle) => {
-      vehiclesSheet.addRow([
-        vehicle.make,
-        vehicle.modelName,
-        modelYearsMap[vehicle.modelYear],
-      ]);
-    });
-    const buffer = await workbook.xlsx.writeBuffer();
-    // use ts-ignore below; the return type of writeBuffer() is mis-typed;
-    // see: https://github.com/exceljs/exceljs/issues/1032
-    // @ts-ignore
-    await putObject(generatedTemplateName, buffer);
-    return await getPresignedGetObjectUrl(generatedTemplateName);
+    const workbook = new Excel.Workbook();
+    await workbook.xlsx.read(template);
+    const vehiclesSheet = workbook.getWorksheet(
+      SupplierTemplateSheetNames.ValidVehicles,
+    );
+    if (vehiclesSheet) {
+      const modelYearsMap = getModelYearEnumsToStringsMap();
+      vehicles.forEach((vehicle) => {
+        vehiclesSheet.addRow([
+          vehicle.make,
+          vehicle.modelName,
+          modelYearsMap[vehicle.modelYear],
+        ]);
+      });
+      return await putWorkbook(Directory.CreditApplicationTmp, workbook);
+    }
   }
 };
 
-export const getSupplierPutData = async () => {
-  const { userIsGov } = await getUserInfo();
-  if (!userIsGov) {
-    const objectName = Directory.CreditApplication + randomUUID();
-    const url = await getPresignedPutObjectUrl(objectName);
-    return {
-      objectName,
-      url,
-    };
-  }
+export const getCreditApplicationPutData = async () => {
+  const objectName = Directory.CreditApplication + randomUUID();
+  const url = await getPresignedPutObjectUrl(objectName);
+  return {
+    objectName,
+    url,
+  };
 };
 
 export const processSupplierFile = async (
@@ -104,143 +83,46 @@ export const processSupplierFile = async (
   const file = await getObject(objectName);
   const workbook = new Excel.Workbook();
   await workbook.xlsx.read(file);
-  const dataSheet = workbook.getWorksheet("ZEVs Supplied");
+  const dataSheet = workbook.getWorksheet(
+    SupplierTemplateSheetNames.ZEVsSupplied,
+  );
   if (dataSheet) {
-    const rowCount = dataSheet.rowCount;
-    if (rowCount >= 2 && rowCount <= 2001) {
-      const data: Record<
-        string,
-        {
-          make: string;
-          modelName: string;
-          modelYear: ModelYear;
-          timestamp: Date;
-        }
-      > = {};
-      const headersMap = getHeadersMap(dataSheet.getRow(1), true);
-      const modelYearsMap = getStringsToModelYearsEnumsMap();
-      dataSheet.eachRow((row, rowNumber) => {
-        if (rowNumber > 1) {
-          let vin: string | undefined;
-          let make: string | undefined;
-          let modelName: string | undefined;
-          let modelYear: ModelYear | undefined;
-          let timestamp: Date | undefined;
-          row.eachCell((cell) => {
-            const col = cell.col;
-            const header = headersMap[col];
-            if (header) {
-              const value = cell.value?.toString();
-              if (value) {
-                if (header === "VIN") {
-                  vin = value;
-                } else if (header === "Make") {
-                  make = value;
-                } else if (header === "Model Name") {
-                  modelName = value;
-                } else if (header === "Model Year") {
-                  const year = modelYearsMap[value];
-                  if (year) {
-                    modelYear = year;
-                  }
-                } else if (header === "Date (YYYY-MM-DD)") {
-                  timestamp = new Date(value);
-                }
-              }
-            }
-          });
-          if (vin && make && modelName && modelYear && timestamp) {
-            data[vin] = {
-              make,
-              modelName,
-              modelYear,
-              timestamp,
-            };
-          }
-        }
-      });
-      const vehicleOrClause: Prisma.VehicleWhereInput[] = [];
-      for (const vehicle of Object.values(data)) {
-        vehicleOrClause.push({
-          make: vehicle.make,
-          modelName: vehicle.modelName,
-          modelYear: vehicle.modelYear,
-        });
-      }
-      const sysVehicles = await prisma.vehicle.findMany({
-        where: {
+    const data = validateSupplierSheet(dataSheet);
+    const vehiclesMap = await getSupplierVehiclesMapSparse(userOrgId);
+    await prisma.$transaction(async (tx) => {
+      const { id } = await tx.creditApplication.create({
+        data: {
           organizationId: userOrgId,
-          status: VehicleStatus.VALIDATED,
-          creditValue: {
-            not: null,
-          },
-          vehicleClass: {
-            not: null
-          },
-          zevClass: {
-            not: null
-          },
-          isActive: true,
-          OR: vehicleOrClause,
+          status: CreditApplicationStatus.SUBMITTED,
+          supplierFileId: objectName,
+          supplierFileName: fileName,
         },
         select: {
           id: true,
-          make: true,
-          modelName: true,
-          modelYear: true,
         },
       });
-      const sysVehiclesMap: Record<
-        string,
-        Record<string, Partial<Record<ModelYear, number>>>
-      > = {};
-      for (const vehicle of sysVehicles) {
-        const make = vehicle.make;
-        const modelName = vehicle.modelName;
-        const modelYear = vehicle.modelYear;
-        if (!sysVehiclesMap[make]) {
-          sysVehiclesMap[make] = {};
+      result = id;
+      const toInsert: Prisma.VinAssociatedWithCreditApplicationCreateManyInput[] =
+        [];
+      for (const [vin, info] of Object.entries(data)) {
+        const vehicleId =
+          vehiclesMap[info.make]?.[info.modelName]?.[info.modelYear];
+        if (vehicleId) {
+          toInsert.push({
+            vin,
+            creditApplicationId: id,
+            vehicleId,
+            timestamp: info.timestamp,
+          });
+        } else {
+          throw new Error(`No system vehicle found for VIN ${vin}!`);
         }
-        if (!sysVehiclesMap[make][modelName]) {
-          sysVehiclesMap[make][modelName] = {};
-        }
-        sysVehiclesMap[make][modelName][modelYear] = vehicle.id;
       }
-      await prisma.$transaction(async (tx) => {
-        const { id } = await tx.creditApplication.create({
-          data: {
-            organizationId: userOrgId,
-            status: CreditApplicationStatus.SUBMITTED,
-            supplierFileId: objectName,
-            supplierFileName: fileName,
-          },
-          select: {
-            id: true,
-          },
-        });
-        result = id;
-        const toInsert: Prisma.VinAssociatedWithCreditApplicationCreateManyInput[] =
-          [];
-        for (const [vin, info] of Object.entries(data)) {
-          const vehicleId =
-            sysVehiclesMap[info.make]?.[info.modelName]?.[info.modelYear];
-          if (vehicleId) {
-            toInsert.push({
-              vin,
-              creditApplicationId: id,
-              vehicleId,
-              timestamp: info.timestamp,
-            });
-          } else {
-            throw new Error(`No system vehicle found for VIN ${vin}!`)
-          }
-        }
-        await tx.vinAssociatedWithCreditApplication.createMany({
-          data: toInsert,
-        });
-        await setObjectLegalHold(objectName);
+      await tx.vinAssociatedWithCreditApplication.createMany({
+        data: toInsert,
       });
-    }
+      await setObjectLegalHold(objectName);
+    });
   }
   return result;
 };
@@ -275,170 +157,148 @@ export const validateCreditApplication = async (
 ) => {
   const { userIsGov, userRoles } = await getUserInfo();
   if (userIsGov && userRoles.some((role) => role === Role.ENGINEER_ANALYST)) {
-    const records = await prisma.vinAssociatedWithCreditApplication.findMany({
+    const creditApplication = await prisma.creditApplication.findUnique({
       where: {
-        creditApplication: {
-          id: creditApplicationId,
-          OR: [
-            { status: CreditApplicationStatus.SUBMITTED },
-            { status: CreditApplicationStatus.RETURNED_TO_ANALYST },
-          ],
-        },
+        id: creditApplicationId,
       },
       select: {
-        vin: true,
-        timestamp: true,
-        vehicle: {
-          select: {
-            make: true,
-            modelName: true,
-            modelYear: true,
-            vehicleClass: true,
-            zevClass: true,
-            creditValue: true,
-          },
-        },
+        organizationId: true,
       },
     });
-    const recordsMap: {
-      [key: string]: {
-        make: string;
-        model: string;
-        year: ModelYear;
-        credits: string;
-      };
-    } = {};
-    for (const record of records) {
-      recordsMap[record.vin] = {
-        make: record.vehicle.make,
-        model: record.vehicle.modelName,
-        year: record.vehicle.modelYear,
-        credits: record.vehicle.creditValue
-          ? record.vehicle.creditValue.toString()
-          : "",
-      };
+    if (!creditApplication) {
+      throw new Error(`Credit Application ${creditApplicationId} not found!`);
     }
-    const icbcRecords = await prisma.icbcRecord.findMany({
-      where: {
-        vin: {
-          in: Object.keys(recordsMap),
-        },
-      },
-      select: {
-        vin: true,
-        make: true,
-        model: true,
-        year: true,
-        icbcFile: {
-          select: {
-            timestamp: true,
-          },
-        },
-      },
-    });
-    const icbcMap: {
-      [key: string]: {
-        make: string;
-        model: string;
-        year: ModelYear;
-        timestamp: Date;
-      };
-    } = {};
-    for (const icbcRecord of icbcRecords) {
-      icbcMap[icbcRecord.vin] = {
-        make: icbcRecord.make,
-        model: icbcRecord.model,
-        year: icbcRecord.year,
-        timestamp: icbcRecord.icbcFile.timestamp,
-      };
-    }
-    const validRecords: any[][] = [];
-    const invalidRecords: any[][] = [];
-    const modelYearsMap = getModelYearEnumsToStringsMap();
-    for (const [vin, data] of Object.entries(recordsMap)) {
-      const make = data.make;
-      const model = data.model;
-      const year = data.year;
-      const credits = data.credits;
-      const associatedIcbcRecord = icbcMap[vin];
-      if (associatedIcbcRecord) {
-        const icbcMake = associatedIcbcRecord.make;
-        const icbcModel = associatedIcbcRecord.model;
-        const icbcYear = associatedIcbcRecord.year;
-        const icbcTimestamp = associatedIcbcRecord.timestamp;
-        const errors: string[] = [];
-        if (make !== icbcMake) {
-          errors.push("mismatched make");
-        }
-        if (year !== icbcYear) {
-          errors.push("mismatched year");
-        }
-        if (errors.length > 0) {
-          invalidRecords.push([
-            vin,
-            make,
-            model,
-            modelYearsMap[year],
-            icbcMake,
-            icbcModel,
-            modelYearsMap[icbcYear],
-            icbcTimestamp,
-            errors.join(", "),
-          ]);
-        } else {
-          validRecords.push([
-            vin,
-            make,
-            model,
-            modelYearsMap[year],
-            icbcMake,
-            icbcModel,
-            modelYearsMap[icbcYear],
-            icbcTimestamp,
-            credits,
-          ]);
-        }
-      } else {
-        invalidRecords.push([
-          vin,
-          make,
-          model,
-          modelYearsMap[year],
-          ,
-          ,
-          ,
-          ,
-          "no icbc record found",
-        ]);
-      }
-    }
-    const templateName = "credit_application_gov_template.xlsx";
-    const generatedTemplateName = Directory.CreditApplicationTmp + randomUUID();
-    let template;
-    // there may be cwd/path differences/issues after the app is built/deployed,
-    // so, in that case, we get the template from object storage
-    if (process.env.NODE_ENV === "production") {
-      template = await getObject(Directory.Templates + templateName);
-    } else {
-      template = createReadStream(
-        "app/credit-application/lib/templates/" + templateName,
-      );
-    }
+    const vinRecordsMap = await getVinRecordsMap(creditApplicationId);
+    const vehiclesMap = await getSupplierVehiclesMap(
+      creditApplication.organizationId,
+    );
+    const icbcMap = await getIcbcRecordsMap(Object.keys(vinRecordsMap));
+    const template = await getCreditApplicationTemplate(
+      TemplateNames.GovTemplate,
+    );
     const workbook = new Excel.Workbook();
     await workbook.xlsx.read(template);
-    const validSheet = workbook.getWorksheet("Valid");
-    if (validSheet) {
-      validRecords.forEach((record) => [validSheet.addRow(record)]);
+    const validSheet = workbook.getWorksheet(GovTemplateSheetNames.ValidVins);
+    const curableSheet = workbook.getWorksheet(
+      GovTemplateSheetNames.CurableVins,
+    );
+    const incurableSheet = workbook.getWorksheet(
+      GovTemplateSheetNames.IncurableVins,
+    );
+    if (validSheet && curableSheet && incurableSheet) {
+      populateErrors(vinRecordsMap, vehiclesMap, icbcMap);
+      populateValidVins(validSheet, vinRecordsMap, vehiclesMap, icbcMap);
+      populateCurableVins(curableSheet, vinRecordsMap, vehiclesMap, icbcMap);
+    } else {
+      throw new Error("Invalid Template");
     }
-    const invalidSheet = workbook.getWorksheet("Invalid");
-    if (invalidSheet) {
-      invalidRecords.forEach((record) => [invalidSheet.addRow(record)]);
-    }
-    const buffer = await workbook.xlsx.writeBuffer();
-    // use ts-ignore below; the return type of writeBuffer() is mis-typed;
-    // see: https://github.com/exceljs/exceljs/issues/1032
-    // @ts-ignore
-    await putObject(generatedTemplateName, buffer);
-    return await getPresignedGetObjectUrl(generatedTemplateName);
+    return await putWorkbook(Directory.CreditApplicationTmp, workbook);
   }
+};
+
+export const analystRecommend = async (
+  creditApplicationId: number,
+  status: CreditApplicationStatus,
+  fileId: string,
+  fileName: string,
+) => {
+  const { userIsGov } = await getUserInfo();
+  if (!userIsGov) {
+    throw new Error("Unauthorized");
+  }
+  if (
+    status !== CreditApplicationStatus.RECOMMEND_APPROVAL &&
+    status !== CreditApplicationStatus.RECOMMEND_REJECTION
+  ) {
+    throw new Error("Invalid Action");
+  }
+  const creditApplication = await prisma.creditApplication.findUnique({
+    where: {
+      id: creditApplicationId,
+    },
+  });
+  if (
+    !creditApplication ||
+    (creditApplication.status !== CreditApplicationStatus.SUBMITTED &&
+      creditApplication.status !== CreditApplicationStatus.RETURNED_TO_ANALYST)
+  ) {
+    throw new Error("Invalid Action");
+  }
+
+  await prisma.$transaction(async (tx) => {
+    await tx.creditApplication.update({
+      where: {
+        id: creditApplicationId,
+      },
+      data: {
+        status,
+        govFileId: fileId,
+        govFileName: fileName,
+      },
+    });
+    await setObjectLegalHold(fileId);
+  });
+};
+
+export const getGovFileDownloadInfo = async (
+  creditApplicationId: number,
+): Promise<{ url: string; fileName: string }> => {
+  const { userIsGov } = await getUserInfo();
+  if (!userIsGov) {
+    throw new Error("Unauthorized!");
+  }
+  const creditApplication = await prisma.creditApplication.findUnique({
+    where: {
+      id: creditApplicationId,
+    },
+    select: {
+      govFileId: true,
+      govFileName: true,
+    },
+  });
+  if (
+    !creditApplication ||
+    !creditApplication.govFileId ||
+    !creditApplication.govFileName
+  ) {
+    throw new Error("Not found!");
+  }
+  const url = await getPresignedGetObjectUrl(creditApplication.govFileId);
+  return {
+    url,
+    fileName: creditApplication.govFileName,
+  };
+};
+
+export const directorApprove = async (
+  creditApplicationId: number,
+  credits: CreditsPayload,
+  approvedVins: string[],
+) => {
+  const { userIsGov, userRoles } = await getUserInfo();
+  if (!userIsGov || !userRoles.some((role) => role === Role.DIRECTOR)) {
+    throw new Error("Unauthorized!");
+  }
+  const creditApplication = await prisma.creditApplication.findUnique({
+    where: {
+      id: creditApplicationId,
+      status: CreditApplicationStatus.RECOMMEND_APPROVAL,
+    },
+  });
+  if (!creditApplication) {
+    throw new Error("Invalid Action!");
+  }
+  const orgId = creditApplication.organizationId;
+  await prisma.$transaction(async (tx) => {
+    await tx.creditApplication.update({
+      where: {
+        id: creditApplicationId,
+      },
+      data: {
+        status: CreditApplicationStatus.APPROVED,
+      },
+    });
+    await updateVins(creditApplicationId, approvedVins, tx);
+    await createTransactions(creditApplicationId, orgId, credits, tx);
+  });
 };

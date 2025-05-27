@@ -3,9 +3,9 @@ import axios from "axios";
 import { useCallback } from "react";
 import Excel from "exceljs";
 import { Dropzone } from "@/app/lib/components/Dropzone";
+import { getCreditApplicationPutData } from "../actions";
 
 export const SupplierUpload = (props: {
-  getPutData: () => Promise<{ objectName: string; url: string } | undefined>;
   processFile: (objectName: string, fileName: string) => Promise<void>;
 }) => {
   const handleSubmit = useCallback(
@@ -21,7 +21,7 @@ export const SupplierUpload = (props: {
             // todo: in frontend, check for duplicate vins; send vins to backend to check for
             // vins that were awarded credits; send vehicle info to backend to check for
             // vins not associated with a supplier's vehicles, etc.
-            const putData = await props.getPutData();
+            const putData = await getCreditApplicationPutData();
             if (putData) {
               const objectName = putData.objectName;
               const url = putData.url;
@@ -32,7 +32,7 @@ export const SupplierUpload = (props: {
         }
       }
     },
-    [props.getPutData, props.processFile],
+    [props.processFile],
   );
 
   return (

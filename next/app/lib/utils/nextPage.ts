@@ -1,10 +1,10 @@
 import { getObject } from "@/lib/utils/urlSearchParams";
 
 export type pageStringParams = {
-  page?: string,
-  pageSize?: string,
-  filters?: string,
-  sorts?: string,
+  page?: string;
+  pageSize?: string;
+  filters?: string;
+  sorts?: string;
 };
 
 export const getPageParams = (

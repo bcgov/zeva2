@@ -6,7 +6,8 @@ import { Button } from "./inputs";
 import { LoadingSkeleton } from "./skeletons";
 
 export const Dropzone = (props: {
-  handleSubmit: (files: File[]) => Promise<void>;
+  handleSubmit?: (files: File[]) => Promise<void>;
+  handleDrop?: (acceptedFiles: FileWithPath[]) => Promise<void>;
   maxNumberOfFiles?: number;
   allowedFileTypes?: { [key: string]: string[] };
 }) => {
@@ -14,6 +15,9 @@ export const Dropzone = (props: {
   const [actionPending, setActionPending] = useState<boolean>(false);
   const onDrop = useCallback((acceptedFiles: FileWithPath[]) => {
     setFiles(acceptedFiles);
+    if (props.handleDrop) {
+      props.handleDrop(acceptedFiles);
+    }
   }, []);
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
@@ -22,12 +26,14 @@ export const Dropzone = (props: {
   });
 
   const handleSubmit = useCallback(async () => {
-    setActionPending(true);
-    try {
-      await props.handleSubmit(files);
-      setActionPending(false);
-    } catch (e) {
-      console.error(e);
+    if (props.handleSubmit) {
+      setActionPending(true);
+      try {
+        await props.handleSubmit(files);
+        setActionPending(false);
+      } catch (e) {
+        console.error(e);
+      }
     }
   }, [props.handleSubmit, files]);
 
@@ -53,7 +59,7 @@ export const Dropzone = (props: {
         )}
       </div>
       <ul>{filesJSX}</ul>
-      <Button onClick={handleSubmit}>Submit</Button>
+      {props.handleSubmit && <Button onClick={handleSubmit}>Submit</Button>}
     </div>
   );
 };

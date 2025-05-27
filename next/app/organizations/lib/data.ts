@@ -14,7 +14,7 @@ export type OrganizationSparse = {
 export const getAllSuppliers = async (): Promise<OrganizationSparse[]> => {
   const { userIsGov } = await getUserInfo();
   if (!userIsGov) {
-    return []
+    return [];
   }
   const organizations = await prisma.organization.findMany({
     select: {
@@ -32,8 +32,11 @@ export const getAllSuppliers = async (): Promise<OrganizationSparse[]> => {
     },
   });
 
-  const supplierInfo = organizations.map(org => {
-    const balance = getCurrentBalance(org.zevUnitEndingBalances, org.zevUnitTransactions);
+  const supplierInfo = organizations.map((org) => {
+    const balance = getCurrentBalance(
+      org.zevUnitEndingBalances,
+      org.zevUnitTransactions,
+    );
     return {
       id: org.id,
       name: org.name,
@@ -48,7 +51,7 @@ export const getAllSuppliers = async (): Promise<OrganizationSparse[]> => {
   });
 
   return supplierInfo;
-}
+};
 
 // page is 1-based
 // currently, this function is not used with SSR, so it is important to select only the data you need!

@@ -1,6 +1,5 @@
 import { getUserInfo } from "@/auth";
 import {
-  getSupplierPutData,
   getSupplierTemplateDownloadUrl,
   processSupplierFile,
 } from "../lib/actions";
@@ -8,16 +7,13 @@ import { redirect } from "next/navigation";
 import { Routes } from "@/app/lib/constants";
 import { Download } from "../lib/components/Download";
 import { SupplierUpload } from "../lib/components/SupplierUpload";
+import { ContentCard } from "@/app/lib/components";
 
 const Page = async () => {
   const { userOrgName } = await getUserInfo();
   const retrieveDownloadInfo = async () => {
     "use server";
     return await getSupplierTemplateDownloadUrl();
-  };
-  const retrieveSupplierPutFileData = async () => {
-    "use server";
-    return await getSupplierPutData();
   };
   const templateFileName =
     "credit-application-template-" +
@@ -32,15 +28,16 @@ const Page = async () => {
   };
   return (
     <div>
-      <Download
-        getDownloadInfo={retrieveDownloadInfo}
-        fileName={templateFileName}
-        text="Download template"
-      />
-      <SupplierUpload
-        getPutData={retrieveSupplierPutFileData}
-        processFile={processFile}
-      />
+      <ContentCard title="Download Template">
+        <Download
+          getDownloadInfo={retrieveDownloadInfo}
+          fileName={templateFileName}
+          text="Download Template"
+        />
+      </ContentCard>
+      <ContentCard title="Upload File">
+        <SupplierUpload processFile={processFile} />
+      </ContentCard>
     </div>
   );
 };

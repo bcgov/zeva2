@@ -58,8 +58,6 @@ export class UnexpectedDebit extends Error {}
 export class UncoveredTransfer extends Error {}
 export class IncompleteOrdering extends Error {}
 
-
-
 // to be used when generating a supplier's MYR/Supplementary/Assessment/Reassessment;
 // inputed zevUnitRecords should consist of:
 // (1) the supplier's ending balance records with compliance year N (if any exist), and
@@ -121,7 +119,10 @@ export const getCurrentBalance = (
 ) => {
   let finalComplianceYear: ModelYear | undefined;
   for (const balance of endingBalances) {
-    if (finalComplianceYear === undefined || balance.complianceYear > finalComplianceYear) {
+    if (
+      finalComplianceYear === undefined ||
+      balance.complianceYear > finalComplianceYear
+    ) {
       finalComplianceYear = balance.complianceYear;
     }
   }
@@ -132,9 +133,11 @@ export const getCurrentBalance = (
   const finalYearEndingBalances = endingBalances.filter(
     (balance) => balance.complianceYear === finalComplianceYear,
   );
-  const finalYearEnd = getCompliancePeriod(modelYearEnumToInt(finalComplianceYear)).openUpperBound;
-  const finalTransactions = transactions.filter((transaction) => 
-    transaction.timestamp >= finalYearEnd
+  const finalYearEnd = getCompliancePeriod(
+    modelYearEnumToInt(finalComplianceYear),
+  ).openUpperBound;
+  const finalTransactions = transactions.filter(
+    (transaction) => transaction.timestamp >= finalYearEnd,
   );
 
   return getBalance(finalYearEndingBalances, finalTransactions);
@@ -154,10 +157,11 @@ export const sumBalance = (
   vehicleClass: VehicleClass,
   zevClass: ZevClass,
 ) => {
-  const filteredBalance = balances[transactionType]?.[vehicleClass]?.[zevClass] || {};
+  const filteredBalance =
+    balances[transactionType]?.[vehicleClass]?.[zevClass] || {};
   const total = Object.values(filteredBalance).reduce(
     (acc, value) => acc.plus(value),
-    new Decimal(0)
+    new Decimal(0),
   );
   return total;
 };
