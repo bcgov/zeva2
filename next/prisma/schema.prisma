@@ -42,8 +42,31 @@ model Organization {
   zevUnitTransferFrom   ZevUnitTransfer[]      @relation("zevUnitTransferFrom")
   Vehicle               Vehicle[]
   VehicleChangeHistory  VehicleChangeHistory[]
+  organizationAddress   OrganizationAddress[]
 
   @@map("organization")
+}
+
+model OrganizationAddress {
+  id             Int          @id @default(autoincrement())
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  organizationId Int          @map("organization_id")
+  addressType    AddressType  @map("address_type")
+  expirationDate DateTime?    @map("expiration_date")
+  addressLines   String?      @map("address_lines")
+  city           String?
+  postalCode     String?      @map("postal_code")
+  state          String?
+  county         String?
+  country        String?
+  representative String?
+
+  @@map("organization_address")
+}
+
+enum AddressType {
+  RECORDS
+  SERVICE
 }
 
 enum Role {

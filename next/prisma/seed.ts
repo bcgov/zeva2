@@ -14,8 +14,9 @@ import {
   VehicleClassCode,
   VehicleZevType,
   VehicleStatus,
+  AddressType,
 } from "./generated/client";
-import { getModelYearEnum, getRoleEnum } from "@/lib/utils/getEnums";
+import { getAddressTypeEnum, getModelYearEnum, getRoleEnum } from "@/lib/utils/getEnums";
 import { Decimal } from "./generated/client/runtime/library";
 import { Notification } from "./generated/client";
 import { isNotification } from "@/app/lib/utils/typeGuards";
@@ -83,6 +84,41 @@ const main = () => {
         },
       });
       mapOfOldOrgIdsToNewOrgIds[orgOld.id] = orgNew.id;
+    }
+
+    // add orgs addresses:
+    const orgAddressesOld = await prismaOld.organization_address.findMany({
+      include: {
+        address_type: {
+          select: {
+            address_type: true,
+          },
+        }
+      }
+    });
+    for (const orgAddressOld of orgAddressesOld) {
+      const orgIdNew = mapOfOldOrgIdsToNewOrgIds[orgAddressOld.organization_id];
+      if (!orgIdNew) {
+        throw new Error("organization_address " + orgAddressOld.id + " with unknown organization id!");
+      }
+      await tx.organizationAddress.create({
+        data: {
+          organizationId: orgIdNew,
+          expirationDate: orgAddressOld.expiration_date,
+          addressType: getAddressTypeEnum(orgAddressOld.address_type.address_type),
+          addressLines: [
+            orgAddressOld.address_line_1,
+            orgAddressOld.address_line_2,
+            orgAddressOld.address_line_3,
+          ].filter((line) => line && line.trim() !== "").join("\n"),
+          city: orgAddressOld.city,
+          postalCode: orgAddressOld.postal_code,
+          state: orgAddressOld.state,
+          county: orgAddressOld.county,
+          country: orgAddressOld.country,
+          representative: orgAddressOld.representative_name,
+        },
+      });
     }
 
     // add users:

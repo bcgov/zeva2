@@ -15,7 +15,7 @@ import {
   otherZevClasses,
 } from "@/lib/constants/zevUnit";
 import { getCompliancePeriod } from "../../app/lib/utils/complianceYear";
-import modelYearEnumToInt from "./modelYearEnumToInt";
+import { modelYearEnumToInt } from "./convertEnums";
 
 interface ZevUnitRecordBase {
   numberOfUnits: Decimal;
