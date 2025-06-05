@@ -1,60 +1,95 @@
 "use client";
 
-import axios from "axios";
 import { Button } from "@/app/lib/components";
-import { useCallback, useTransition } from "react";
 import { CreditApplicationStatus } from "@/prisma/generated/client";
-import { analystRecommend, getCreditApplicationPutData } from "../actions";
 import { useRouter } from "next/navigation";
+import { useCallback, useTransition } from "react";
+import { analystRecommend } from "../actions";
 
 export const AnalystActions = (props: {
-  creditApplicationId: number;
-  file: File;
-  fileName: string;
+  id: number;
+  status: CreditApplicationStatus;
+  validatedBefore: boolean;
+  validateAction: () => Promise<void>;
+  goToValidatedAction: (readOnly: boolean) => void;
 }) => {
   const [isPending, startTransition] = useTransition();
   const router = useRouter();
-  const recommend = useCallback(
-    (status: CreditApplicationStatus) => {
+
+  const handleValidate = useCallback(() => {
+    startTransition(async () => {
+      try {
+        await props.validateAction();
+      } catch (e) {
+        console.error(e);
+      }
+    });
+  }, [props.validateAction]);
+
+  const handleEditValidated = useCallback(() => {
+    startTransition(() => {
+      try {
+        props.goToValidatedAction(false);
+      } catch (e) {
+        console.error(e);
+      }
+    });
+  }, [props.goToValidatedAction]);
+
+  const handleRecommend = useCallback(
+    (newStatus: CreditApplicationStatus) => {
       startTransition(async () => {
         try {
-          const putData = await getCreditApplicationPutData();
-          if (putData) {
-            const objectName = putData.objectName;
-            const url = putData.url;
-            await axios.put(url, props.file);
-            await analystRecommend(
-              props.creditApplicationId,
-              status,
-              objectName,
-              props.fileName,
-            );
-            router.refresh();
-          }
+          await analystRecommend(props.id, newStatus);
+          router.refresh();
         } catch (e) {
           console.error(e);
         }
       });
     },
-    [props, router, startTransition],
+    [router],
   );
 
   return (
     <>
-      <Button
-        onClick={() => {
-          recommend(CreditApplicationStatus.RECOMMEND_APPROVAL);
-        }}
-        disabled={isPending}
-      >
-        {isPending ? "..." : "Recommend Approval"}
-      </Button>
-      <Button onClick={() => {}} disabled={isPending}>
-        {isPending ? "..." : "Recommend Rejection"}
-      </Button>
-      <Button onClick={() => {}} disabled={isPending}>
-        {isPending ? "..." : "Return to Supplier"}
-      </Button>
+      {(props.status === CreditApplicationStatus.SUBMITTED ||
+        props.status === CreditApplicationStatus.RETURNED_TO_ANALYST) && (
+        <Button onClick={handleValidate} disabled={isPending}>
+          {isPending ? "..." : "Validate"}
+        </Button>
+      )}
+      {(props.status === CreditApplicationStatus.SUBMITTED ||
+        props.status === CreditApplicationStatus.RETURNED_TO_ANALYST) &&
+        props.validatedBefore && (
+          <Button onClick={handleEditValidated} disabled={isPending}>
+            {isPending ? "..." : "Edit Validated Records"}
+          </Button>
+        )}
+      {(props.status === CreditApplicationStatus.SUBMITTED ||
+        props.status === CreditApplicationStatus.RETURNED_TO_ANALYST) &&
+        props.validatedBefore && (
+          <>
+            <Button
+              onClick={() => {
+                handleRecommend(CreditApplicationStatus.RECOMMEND_APPROVAL);
+              }}
+              disabled={isPending}
+            >
+              {isPending ? "..." : "Recommend Approval"}
+            </Button>
+            <Button
+              onClick={() => {
+                handleRecommend(CreditApplicationStatus.RECOMMEND_REJECTION);
+              }}
+              disabled={isPending}
+            >
+              {isPending ? "..." : "Recommend Rejection"}
+            </Button>
+            <Button onClick={() => {}} disabled={isPending}>
+              {isPending ? "..." : "Return to Supplier"}
+            </Button>
+          </>
+        )}
     </>
   );
 };

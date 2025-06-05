@@ -1,21 +1,93 @@
 import Excel from "exceljs";
 import { ModelYear, VehicleStatus } from "@/prisma/generated/client";
+import { getStringsToModelYearsEnumsMap } from "@/app/lib/utils/enumMaps";
 import {
-  getModelYearEnumsToStringsMap,
-  getStringsToModelYearsEnumsMap,
-  getVehicleClassEnumsToStringsMap,
-  getZevClassEnumsToStringsMap,
-} from "@/app/lib/utils/enumMaps";
-import {
-  curableErrors,
-  GovTemplateCurableVinsHeaderNames,
-  GovTemplateValidVinsHeaderNames,
-  incurableErrors,
-  SheetStructure,
+  CreditApplicationSubDirectory,
+  SupplierTemplate,
   SupplierTemplateZEVsSuppliedHeaderNames,
 } from "./constants";
-import { IcbcRecordsMap, VehiclesMap, VinRecordsMap } from "./services";
+import { IcbcRecordsMap, VehicleSparse, VinRecordsMap } from "./services";
 import { Prisma } from "@/prisma/generated/client";
+import { CreditApplicationCredit } from "./data";
+
+export const getCreditApplicationFullObjectName = (
+  userOrgId: number,
+  objectName: string,
+) => {
+  return `${userOrgId}/${CreditApplicationSubDirectory.CreditApplications}/${objectName}`;
+};
+
+// make -> modelName -> modelYear -> id
+export type VehiclesMapSparse = Record<
+  string,
+  Record<string, Partial<Record<ModelYear, number>>>
+>;
+
+export const getSupplierVehiclesMap = (vehicles: VehicleSparse[]) => {
+  const result: VehiclesMapSparse = {};
+  vehicles.forEach((vehicle) => {
+    const make = vehicle.make;
+    const modelName = vehicle.modelName;
+    const modelYear = vehicle.modelYear;
+    if (!result[make]) {
+      result[make] = {};
+    }
+    if (!result[make][modelName]) {
+      result[make][modelName] = {};
+    }
+    result[make][modelName][modelYear] = vehicle.id;
+  });
+  return result;
+};
+
+export const getRecordsWhereClause = (
+  filters: Record<string, string>,
+): Prisma.CreditApplicationRecordWhereInput => {
+  const result: Prisma.CreditApplicationRecordWhereInput = {};
+  Object.entries(filters).forEach(([key, value]) => {
+    if (key === "validated") {
+    } else if (key === "modelYear" || key === "icbcModelYear") {
+    } else if (key === "timestamp" || key === "icbcTimestamp") {
+    } else if (
+      key === "vin" ||
+      key === "make" ||
+      key === "modelName" ||
+      key === "icbcMake" ||
+      key === "icbcModelName"
+    ) {
+      const newValue = value.trim().toLowerCase();
+      result[key] = {
+        contains: newValue,
+        mode: "insensitive",
+      };
+    } else if (key === "warnings") {
+      const newValue = value.replaceAll(" ", "").split(",");
+      result[key] = {
+        hasSome: newValue,
+      };
+    }
+  });
+  return result;
+};
+
+export const getRecordsOrderByClause = (
+  sorts: Record<string, string>,
+  defaultSortById: boolean,
+): Prisma.CreditApplicationRecordOrderByWithRelationInput[] => {
+  const result: Prisma.CreditApplicationRecordOrderByWithRelationInput[] = [];
+  Object.entries(sorts).forEach(([key, value]) => {
+    if (
+      (value === "asc" || value === "desc") &&
+      (key === "vin" || key === "timestamp")
+    ) {
+      result.push({ [key]: value });
+    }
+  });
+  if (defaultSortById && result.length === 0) {
+    result.push({ id: "desc" });
+  }
+  return result;
+};
 
 export type ColsToHeadersMap = Partial<Record<string, string>>;
 
@@ -31,51 +103,7 @@ export const getColsToHeadersMap = (headersRow: Excel.Row) => {
   return headersMap;
 };
 
-export type HeadersToColsMap = Partial<Record<string, number>>;
-
-export const getHeadersToColsMap = (
-  headersRow: Excel.Row,
-): HeadersToColsMap => {
-  const headersMap: HeadersToColsMap = {};
-  headersRow.eachCell((cell) => {
-    let col = parseInt(cell.col, 10);
-    const value = cell.value?.toString();
-    if (col && value) {
-      headersMap[value] = col;
-    }
-  });
-  return headersMap;
-};
-
-export const getSupplierVehiclesWhereClause = (
-  orgId: number,
-): Prisma.VehicleWhereInput => {
-  return {
-    organizationId: orgId,
-    status: VehicleStatus.VALIDATED,
-    vehicleClass: {
-      not: null,
-    },
-    zevClass: {
-      not: null,
-    },
-    creditValue: {
-      not: null,
-    },
-    isActive: true,
-  };
-};
-
-export const getSupplierVehiclesSelectClause = (): Prisma.VehicleSelect => {
-  return {
-    id: true,
-    make: true,
-    modelName: true,
-    modelYear: true,
-  };
-};
-
-export const validateSupplierSheet = (sheet: Excel.Worksheet) => {
+export const parseSupplierSubmission = (sheet: Excel.Worksheet) => {
   const data: Record<
     string,
     {
@@ -85,20 +113,22 @@ export const validateSupplierSheet = (sheet: Excel.Worksheet) => {
       timestamp: Date;
     }
   > = {};
+  const duplicateVins: string[] = [];
+  const invalidRows: number[] = [];
   const rowCount = sheet.rowCount;
   const actualRowCount = sheet.actualRowCount;
   if (rowCount !== actualRowCount) {
     throw new Error("All rows in the submission must be consecutive!");
   }
   if (
-    rowCount < SheetStructure.FirstRowIndex ||
-    rowCount > SheetStructure.FinalRowIndex
+    rowCount < SupplierTemplate.FirstRowIndex ||
+    rowCount > SupplierTemplate.FinalRowIndex
   ) {
     throw new Error(
       "Submission must have at least one VIN, and no more than 2000 VINs",
     );
   }
-  const headersIndex = SheetStructure.HeaderIndex;
+  const headersIndex = SupplierTemplate.HeaderIndex;
   const modelYearsMap = getStringsToModelYearsEnumsMap();
   const headers = sheet.getRow(headersIndex);
   const headersMap = getColsToHeadersMap(headers);
@@ -129,8 +159,9 @@ export const validateSupplierSheet = (sheet: Excel.Worksheet) => {
         const col = cell.col;
         const header = headersMap[col];
         if (header) {
-          const value = cell.value?.toString();
-          if (value) {
+          const originalValue = cell.value;
+          const value = originalValue?.toString();
+          if (originalValue && value) {
             if (
               header === SupplierTemplateZEVsSuppliedHeaderNames.VIN &&
               value.length === 17
@@ -154,14 +185,17 @@ export const validateSupplierSheet = (sheet: Excel.Worksheet) => {
             } else if (
               header === SupplierTemplateZEVsSuppliedHeaderNames.Date
             ) {
-              timestamp = new Date(value);
+              if (originalValue instanceof Date) {
+                originalValue.setHours(8);
+                timestamp = originalValue;
+              }
             }
           }
         }
       });
       if (vin && make && modelName && modelYear && timestamp) {
         if (data[vin]) {
-          throw new Error(`Duplicate Vin at row ${rowNumber}`);
+          duplicateVins.push(vin);
         }
         data[vin] = {
           make,
@@ -170,245 +204,97 @@ export const validateSupplierSheet = (sheet: Excel.Worksheet) => {
           timestamp,
         };
       } else {
-        throw new Error(`Invalid row at row ${rowNumber}`);
+        invalidRows.push(rowNumber);
       }
     }
   });
+  if (duplicateVins.length > 0) {
+    throw new Error(`Duplicate VINs: ${duplicateVins.join(", ")}`);
+  }
+  if (invalidRows.length > 0) {
+    throw new Error(
+      `Rows with missing or invalid data: ${invalidRows.join(", ")}`,
+    );
+  }
   return data;
 };
 
-export const populateErrors = (
+export type WarningsMap = Partial<Record<string, string[]>>;
+
+export const getWarningsMap = (
   recordsMap: VinRecordsMap,
-  vehiclesMap: VehiclesMap,
   icbcMap: IcbcRecordsMap,
-) => {
-  for (const [vin, data] of Object.entries(recordsMap)) {
-    const vehicle = vehiclesMap[data.vehicleId];
+): WarningsMap => {
+  const result: WarningsMap = {};
+  Object.entries(recordsMap).forEach(([vin, data]) => {
+    result[vin] = [];
+    const vehicle = data.vehicle;
     const icbcRecord = icbcMap[vin];
-    const errors = data.errors;
-    if (!vehicle) {
-      errors.push("1");
+    if (
+      vehicle.status !== VehicleStatus.VALIDATED ||
+      !vehicle.isActive ||
+      !vehicle.creditValue ||
+      !vehicle.zevClass ||
+      !vehicle.vehicleClass
+    ) {
+      result[vin].push("1");
     }
     if (!icbcRecord) {
-      errors.push("11");
+      result[vin].push("11");
     }
-    if (
-      vehicle &&
-      icbcRecord &&
-      (icbcRecord.make !== vehicle.make ||
-        icbcRecord.year !== vehicle.modelYear)
-    ) {
-      errors.push("41");
+    if (vehicle && icbcRecord) {
+      if (icbcRecord.make !== vehicle.make) {
+        result[vin].push("21");
+      }
+      if (icbcRecord.modelYear !== vehicle.modelYear) {
+        result[vin].push("31");
+      }
     }
-  }
+    if (result[vin].length === 0) {
+      delete result[vin];
+    }
+  });
+  return result;
 };
 
-export const populateValidVins = (
-  sheet: Excel.Worksheet,
-  recordsMap: VinRecordsMap,
-  vehiclesMap: VehiclesMap,
-  icbcMap: IcbcRecordsMap,
-) => {
-  const headerIndex = SheetStructure.HeaderIndex;
-  const headersRow = sheet.getRow(headerIndex);
-  const headersMap = getHeadersToColsMap(headersRow);
-  const vinCol = headersMap[GovTemplateValidVinsHeaderNames.VIN];
-  const makeCol = headersMap[GovTemplateValidVinsHeaderNames.Make];
-  const modelNameCol = headersMap[GovTemplateValidVinsHeaderNames.ModelName];
-  const modelYearCol = headersMap[GovTemplateValidVinsHeaderNames.ModelYear];
-  const icbcMakeCol = headersMap[GovTemplateValidVinsHeaderNames.IcbcMake];
-  const icbcModelNameCol =
-    headersMap[GovTemplateValidVinsHeaderNames.IcbcModelName];
-  const icbcModelYearCol =
-    headersMap[GovTemplateValidVinsHeaderNames.IcbcModelYear];
-  const icbcFileDateCol =
-    headersMap[GovTemplateValidVinsHeaderNames.IcbcFileDate];
-  const dateCol = headersMap[GovTemplateValidVinsHeaderNames.Date];
-  const vehicleClassCol =
-    headersMap[GovTemplateValidVinsHeaderNames.VehicleClass];
-  const zevClassCol = headersMap[GovTemplateValidVinsHeaderNames.ZevClass];
-  const numberOfCreditsCol =
-    headersMap[GovTemplateValidVinsHeaderNames.NumberOfCredits];
-
-  if (
-    !vinCol ||
-    !makeCol ||
-    !modelNameCol ||
-    !modelYearCol ||
-    !icbcMakeCol ||
-    !icbcModelNameCol ||
-    !icbcModelYearCol ||
-    !icbcFileDateCol ||
-    !dateCol ||
-    !vehicleClassCol ||
-    !zevClassCol ||
-    !numberOfCreditsCol
-  ) {
-    throw new Error("Missing required headers!");
-  }
-
-  const vehicleClassMap = getVehicleClassEnumsToStringsMap();
-  const zevClassMap = getZevClassEnumsToStringsMap();
-  const modelYearMap = getModelYearEnumsToStringsMap();
-
-  const dataRows: Record<string, any>[] = [];
-  for (const [vin, data] of Object.entries(recordsMap)) {
-    if (data.errors.length > 0) {
-      continue;
-    }
-    const vehicle = vehiclesMap[data.vehicleId];
-    const associatedIcbcRecord = icbcMap[vin];
-    if (!vehicle || !associatedIcbcRecord) {
-      throw new Error(
-        `You must call "populateErrors" before calling "populateValidVins"!`,
+export const sumCredits = (credits: CreditApplicationCredit[]) => {
+  const result: CreditApplicationCredit[] = [];
+  credits.forEach((credit) => {
+    const vehicleClass = credit.vehicleClass;
+    const zevClass = credit.zevClass;
+    const modelYear = credit.modelYear;
+    const numberOfUnits = credit.numberOfUnits;
+    const index = result.findIndex((result) => {
+      return (
+        result.vehicleClass === vehicleClass &&
+        result.zevClass === zevClass &&
+        result.modelYear === modelYear
       );
-    }
-    const make = vehicle.make;
-    const modelYear = vehicle.modelYear;
-    const icbcMake = associatedIcbcRecord.make;
-    const icbcYear = associatedIcbcRecord.year;
-    const modelName = vehicle.modelName;
-    const vehicleClass = vehicle.vehicleClass;
-    const zevClass = vehicle.zevClass;
-    const creditValue = vehicle.creditValue;
-    const icbcModel = associatedIcbcRecord.model;
-    const icbcTimestamp = associatedIcbcRecord.timestamp;
-    const recordTimestamp = data.timestamp;
-
-    const row: Record<string, any> = {};
-    row[vinCol] = vin;
-    row[makeCol] = make;
-    row[modelNameCol] = modelName;
-    row[modelYearCol] = modelYearMap[modelYear];
-    row[icbcMakeCol] = icbcMake;
-    row[icbcModelNameCol] = icbcModel;
-    row[icbcModelYearCol] = modelYearMap[icbcYear];
-    row[icbcFileDateCol] = icbcTimestamp;
-    row[dateCol] = recordTimestamp;
-    row[vehicleClassCol] = vehicleClassMap[vehicleClass];
-    row[zevClassCol] = zevClassMap[zevClass];
-    row[numberOfCreditsCol] = creditValue;
-    dataRows.push(row);
-  }
-  dataRows.forEach((dataRow, index) => {
-    const sheetRow = sheet.getRow(index + 1 + headerIndex);
-    const cols = Object.keys(dataRow).map(Number);
-    cols.forEach((col) => {
-      const cell = sheetRow.getCell(col);
-      cell.value = dataRow[col];
     });
+    if (index > -1) {
+      const credit = result[index];
+      credit.numberOfUnits = credit.numberOfUnits.plus(numberOfUnits);
+    } else {
+      result.push({
+        vehicleClass,
+        zevClass,
+        modelYear,
+        numberOfUnits,
+      });
+    }
   });
+  return result;
 };
 
-export const populateCurableVins = (
-  sheet: Excel.Worksheet,
-  recordsMap: VinRecordsMap,
-  vehiclesMap: VehiclesMap,
-  icbcMap: IcbcRecordsMap,
-) => {
-  const headerIndex = SheetStructure.HeaderIndex;
-  const headersRow = sheet.getRow(headerIndex);
-  const headersMap = getHeadersToColsMap(headersRow);
-  const vinCol = headersMap[GovTemplateCurableVinsHeaderNames.VIN];
-  const makeCol = headersMap[GovTemplateCurableVinsHeaderNames.Make];
-  const modelNameCol = headersMap[GovTemplateCurableVinsHeaderNames.ModelName];
-  const modelYearCol = headersMap[GovTemplateCurableVinsHeaderNames.ModelYear];
-  const icbcMakeCol = headersMap[GovTemplateCurableVinsHeaderNames.IcbcMake];
-  const icbcModelNameCol =
-    headersMap[GovTemplateCurableVinsHeaderNames.IcbcModelName];
-  const icbcModelYearCol =
-    headersMap[GovTemplateCurableVinsHeaderNames.IcbcModelYear];
-  const icbcFileDateCol =
-    headersMap[GovTemplateCurableVinsHeaderNames.IcbcFileDate];
-  const dateCol = headersMap[GovTemplateCurableVinsHeaderNames.Date];
-  const vehicleClassCol =
-    headersMap[GovTemplateCurableVinsHeaderNames.VehicleClass];
-  const zevClassCol = headersMap[GovTemplateCurableVinsHeaderNames.ZevClass];
-  const numberOfCreditsCol =
-    headersMap[GovTemplateCurableVinsHeaderNames.NumberOfCredits];
-  const errorsCol = headersMap[GovTemplateCurableVinsHeaderNames.Errors];
+export type CreditApplicationCreditSerialized = Omit<
+  CreditApplicationCredit,
+  "numberOfUnits"
+> & { numberOfUnits: string };
 
-  if (
-    !vinCol ||
-    !makeCol ||
-    !modelNameCol ||
-    !modelYearCol ||
-    !icbcMakeCol ||
-    !icbcModelNameCol ||
-    !icbcModelYearCol ||
-    !icbcFileDateCol ||
-    !dateCol ||
-    !vehicleClassCol ||
-    !zevClassCol ||
-    !numberOfCreditsCol ||
-    !errorsCol
-  ) {
-    throw new Error("Missing required headers!");
-  }
-
-  const vehicleClassMap = getVehicleClassEnumsToStringsMap();
-  const zevClassMap = getZevClassEnumsToStringsMap();
-  const modelYearMap = getModelYearEnumsToStringsMap();
-  const incurableErrorsSet = new Set(incurableErrors);
-  const curableErrorsSet = new Set(curableErrors);
-
-  const dataRows: Record<string, any>[] = [];
-  for (const [vin, data] of Object.entries(recordsMap)) {
-    const errors = new Set(data.errors);
-    if (errors.size === 0) {
-      continue;
-    }
-    if (errors.isSubsetOf(incurableErrorsSet)) {
-      continue;
-    }
-    if (errors.isSubsetOf(curableErrorsSet)) {
-      const row: Record<string, any> = {};
-      const vehicle = vehiclesMap[data.vehicleId];
-      if (!vehicle) {
-        throw new Error(
-          "No incurable errors implies associated vehicle exists!",
-        );
-      }
-      const recordTimestamp = data.timestamp;
-      const make = vehicle.make;
-      const modelName = vehicle.modelName;
-      const modelYear = vehicle.modelYear;
-      const vehicleClass = vehicle.vehicleClass;
-      const zevClass = vehicle.zevClass;
-      const creditValue = vehicle.creditValue;
-
-      row[vinCol] = vin;
-      row[makeCol] = make;
-      row[modelNameCol] = modelName;
-      row[modelYearCol] = modelYearMap[modelYear];
-      row[dateCol] = recordTimestamp;
-      row[vehicleClassCol] = vehicleClassMap[vehicleClass];
-      row[zevClassCol] = zevClassMap[zevClass];
-      row[numberOfCreditsCol] = creditValue;
-      row[errorsCol] = data.errors.join(", ");
-
-      const associatedIcbcRecord = icbcMap[vin];
-      if (associatedIcbcRecord) {
-        const icbcMake = associatedIcbcRecord.make;
-        const icbcModel = associatedIcbcRecord.model;
-        const icbcYear = associatedIcbcRecord.year;
-        const icbcTimestamp = associatedIcbcRecord.timestamp;
-        row[icbcMakeCol] = icbcMake;
-        row[icbcModelNameCol] = icbcModel;
-        row[icbcModelYearCol] = modelYearMap[icbcYear];
-        row[icbcFileDateCol] = icbcTimestamp;
-      }
-      dataRows.push(row);
-    }
-  }
-  dataRows.forEach((dataRow, index) => {
-    const sheetRow = sheet.getRow(index + 1 + headerIndex);
-    const cols = Object.keys(dataRow).map(Number);
-    cols.forEach((col) => {
-      const cell = sheetRow.getCell(col);
-      cell.value = dataRow[col];
-    });
+export const serializeCredits = (
+  credits: CreditApplicationCredit[],
+): CreditApplicationCreditSerialized[] => {
+  return credits.map((credit) => {
+    return { ...credit, numberOfUnits: credit.numberOfUnits.toString() };
   });
 };
-
-export const populateIncurableVins = () => {};

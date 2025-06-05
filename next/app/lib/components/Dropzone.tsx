@@ -1,6 +1,6 @@
 "use client";
 
-import { JSX, useState, useCallback, useMemo } from "react";
+import { JSX, useState, useCallback, useMemo, useTransition } from "react";
 import { useDropzone, FileWithPath } from "react-dropzone";
 import { Button } from "./inputs";
 import { LoadingSkeleton } from "./skeletons";
@@ -11,8 +11,8 @@ export const Dropzone = (props: {
   maxNumberOfFiles?: number;
   allowedFileTypes?: { [key: string]: string[] };
 }) => {
+  const [isPending, startTransition] = useTransition();
   const [files, setFiles] = useState<FileWithPath[]>([]);
-  const [actionPending, setActionPending] = useState<boolean>(false);
   const onDrop = useCallback((acceptedFiles: FileWithPath[]) => {
     setFiles(acceptedFiles);
     if (props.handleDrop) {
@@ -25,16 +25,16 @@ export const Dropzone = (props: {
     accept: props.allowedFileTypes,
   });
 
-  const handleSubmit = useCallback(async () => {
-    if (props.handleSubmit) {
-      setActionPending(true);
-      try {
-        await props.handleSubmit(files);
-        setActionPending(false);
-      } catch (e) {
-        console.error(e);
+  const handleSubmit = useCallback(() => {
+    startTransition(async () => {
+      if (props.handleSubmit) {
+        try {
+          await props.handleSubmit(files);
+        } catch (e) {
+          console.error(e);
+        }
       }
-    }
+    });
   }, [props.handleSubmit, files]);
 
   const filesJSX = useMemo(() => {
@@ -45,7 +45,7 @@ export const Dropzone = (props: {
     return result;
   }, [files]);
 
-  if (actionPending) {
+  if (isPending) {
     return <LoadingSkeleton />;
   }
   return (

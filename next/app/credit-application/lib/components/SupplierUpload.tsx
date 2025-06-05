@@ -1,49 +1,52 @@
 "use client";
 import axios from "axios";
-import { useCallback } from "react";
-import Excel from "exceljs";
+import { useCallback, useState } from "react";
 import { Dropzone } from "@/app/lib/components/Dropzone";
 import { getCreditApplicationPutData } from "../actions";
 
 export const SupplierUpload = (props: {
   processFile: (objectName: string, fileName: string) => Promise<void>;
 }) => {
+  const [error, setError] = useState<string>("");
+
   const handleSubmit = useCallback(
     async (files: File[]) => {
-      if (files.length === 1) {
-        const file = files[0];
-        const workbook = new Excel.Workbook();
-        await workbook.xlsx.load(await file.arrayBuffer());
-        const dataSheet = workbook.getWorksheet("ZEVs Supplied");
-        if (dataSheet) {
-          const rowCount = dataSheet.rowCount;
-          if (rowCount >= 2 && rowCount <= 2001) {
-            // todo: in frontend, check for duplicate vins; send vins to backend to check for
-            // vins that were awarded credits; send vehicle info to backend to check for
-            // vins not associated with a supplier's vehicles, etc.
-            const putData = await getCreditApplicationPutData();
-            if (putData) {
-              const objectName = putData.objectName;
-              const url = putData.url;
-              await axios.put(url, file);
-              await props.processFile(objectName, file.name);
-            }
-          }
+      if (files.length !== 1) {
+        setError("Exactly 1 file expected!");
+      }
+      const file = files[0];
+      const putData = await getCreditApplicationPutData();
+      const objectName = putData.objectName;
+      const url = putData.url;
+      await axios.put(url, file);
+      try {
+        await props.processFile(objectName, file.name);
+      } catch (e) {
+        if (e instanceof Error) {
+          setError(e.message);
         }
       }
     },
     [props.processFile],
   );
 
+  const handleDrop = useCallback(async () => {
+    setError("");
+  }, []);
+
   return (
-    <Dropzone
-      handleSubmit={handleSubmit}
-      maxNumberOfFiles={1}
-      allowedFileTypes={{
-        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": [
-          ".xlsx",
-        ],
-      }}
-    />
+    <>
+      <Dropzone
+        handleSubmit={handleSubmit}
+        handleDrop={handleDrop}
+        maxNumberOfFiles={1}
+        allowedFileTypes={{
+          "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": [
+            ".xlsx",
+          ],
+        }}
+      />
+      <span>{error}</span>
+    </>
   );
 };

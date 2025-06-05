@@ -39,6 +39,12 @@ export const getPresignedPutObjectUrl = async (objectName: string) => {
   return await client.presignedPutObject(bucketName, objectName);
 };
 
+export const removeObject = async (objectName: string) => {
+  const client = getClient();
+  const bucketName = process.env.MINIO_BUCKET_NAME ?? "";
+  await client.removeObject(bucketName, objectName);
+};
+
 export const setObjectLegalHold = async (objectName: string) => {
   const client = getClient();
   const bucketName = process.env.MINIO_BUCKET_NAME ?? "";
