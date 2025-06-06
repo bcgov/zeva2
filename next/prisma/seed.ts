@@ -14,7 +14,6 @@ import {
   VehicleClassCode,
   VehicleZevType,
   VehicleStatus,
-  AddressType,
 } from "./generated/client";
 import { getAddressTypeEnum, getModelYearEnum, getRoleEnum } from "@/lib/utils/getEnums";
 import { Decimal } from "./generated/client/runtime/library";
@@ -117,6 +116,24 @@ const main = () => {
           county: orgAddressOld.county,
           country: orgAddressOld.country,
           representative: orgAddressOld.representative_name,
+        },
+      });
+    }
+
+    // add orgs LDV supplied volumes (from old LDV sales table):
+    const orgLDVSalesOld = await prismaOld.organization_ldv_sales.findMany({
+      where: { is_supplied: true },
+    });
+    for (const orgLDVSaleOld of orgLDVSalesOld) {
+      const orgIdNew = mapOfOldOrgIdsToNewOrgIds[orgLDVSaleOld.organization_id];
+      if (!orgIdNew) {
+        throw new Error("organization_ldv_sales " + orgLDVSaleOld.id + " with unknown organization id!");
+      }
+      await tx.organizationLDVSupplied.create({
+        data: {
+          organizationId: orgIdNew,
+          modelYear: mapOfModelYearIdsToModelYearEnum[orgLDVSaleOld.model_year_id] ?? ModelYear.MY_2019,
+          volume: orgLDVSaleOld.ldv_sales,
         },
       });
     }

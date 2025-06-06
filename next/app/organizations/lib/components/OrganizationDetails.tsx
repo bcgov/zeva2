@@ -55,33 +55,29 @@ const OrganizationDetails = async (props: {
   firstModelYear: string,
   serviceAddress?: OrganizationAddress,
   recordsAddress?: OrganizationAddress,
+  supplierClass: string,
   users: OrganizationUser[],
 }) => {
-  const { organizationName, firstModelYear, serviceAddress, recordsAddress } = props;
   return (
     <div>
-      <h2 className="text-xl font-semibold text-primaryBlue">{organizationName}</h2>
+      <h2 className="text-xl font-semibold text-primaryBlue">{props.organizationName}</h2>
       <div className="flex flex-row mt-2">
         <div className="w-1/3">
           <h3 className="font-semibold">Service Address</h3>
-          {formattedAddress(serviceAddress)}
+          {formattedAddress(props.serviceAddress)}
         </div>
         <div className="w-1/3">
           <h3 className="font-semibold">Records Address</h3>
-          {formattedAddress(recordsAddress)}
+          {formattedAddress(props.recordsAddress)}
         </div>
       </div>
       <div className="mt-4">
         <span className="font-semibold mr-2">Vehicle Supplier Class:</span>
-        TBD (Small / Medium / Large)
+        {props.supplierClass}
       </div>
       <div className="mt-4">
         <span className="font-semibold mr-2">First Model Year Report:</span>
-        {firstModelYear}
-      </div>
-      <div className="mt-4">
-        <span className="font-semibold mr-2">3 Year Average Sales:</span>
-        TBD
+        {props.firstModelYear}
       </div>
       <div className="mt-4">
         <h3 className="font-semibold mr-2">User(s):</h3>

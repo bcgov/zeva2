@@ -1,5 +1,6 @@
 import { getUserInfo } from "@/auth";
 import { prisma } from "@/lib/prisma";
+import { organizationLDVSuppliedClause } from "./utils";
 
 export const getOrganizationDetails = async (id: number) => {
   const { userIsGov, userOrgId } = await getUserInfo();
@@ -39,6 +40,7 @@ export const getOrganizationDetails = async (id: number) => {
           isActive: true, // Only get active users
         }
       },
+      ldvSupplied: organizationLDVSuppliedClause
     },
   });
   return organization;

@@ -3,6 +3,7 @@ import { LoadingSkeleton } from "@/app/lib/components/skeletons";
 import { AddressType } from "@/prisma/generated/client";
 import { getOrganizationDetails } from "../lib/services";
 import OrganizationDetails from "../lib/components/OrganizationDetails";
+import { getSupplierClass } from "../lib/utils";
 
 const Page = async (props: { params: Promise<{ id: string }> }) => {
   const { id } = await props.params;
@@ -31,6 +32,7 @@ const Page = async (props: { params: Promise<{ id: string }> }) => {
           firstModelYear={organization.firstModelYear.toString().substring(3)}
           serviceAddress={serviceAddress}
           recordsAddress={recordsAddress}
+          supplierClass={getSupplierClass(organization.ldvSupplied)}
           users={organization.users}
         />
       </Suspense>

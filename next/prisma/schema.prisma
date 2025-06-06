@@ -31,18 +31,19 @@ enum ModelYear {
 }
 
 model Organization {
-  id                    Int                    @id @default(autoincrement())
+  id                    Int                       @id @default(autoincrement())
   name                  String
-  isGovernment          Boolean                @default(false) @map("is_government")
-  firstModelYear        ModelYear              @map("first_model_year")
+  isGovernment          Boolean                   @default(false) @map("is_government")
+  firstModelYear        ModelYear                 @map("first_model_year")
   users                 User[]
   zevUnitTransactions   ZevUnitTransaction[]
   zevUnitEndingBalances ZevUnitEndingBalance[]
-  zevUnitTransferTo     ZevUnitTransfer[]      @relation("zevUnitTransferTo")
-  zevUnitTransferFrom   ZevUnitTransfer[]      @relation("zevUnitTransferFrom")
+  zevUnitTransferTo     ZevUnitTransfer[]         @relation("zevUnitTransferTo")
+  zevUnitTransferFrom   ZevUnitTransfer[]         @relation("zevUnitTransferFrom")
   Vehicle               Vehicle[]
   VehicleChangeHistory  VehicleChangeHistory[]
   organizationAddress   OrganizationAddress[]
+  ldvSupplied           OrganizationLDVSupplied[]
 
   @@map("organization")
 }
@@ -61,7 +62,19 @@ model OrganizationAddress {
   country        String?
   representative String?
 
+  @@index([organizationId, addressType, expirationDate], map: "organization_address_organization_type_expiration")
   @@map("organization_address")
+}
+
+model OrganizationLDVSupplied {
+  id             Int          @id @default(autoincrement())
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  organizationId Int          @map("organization_id")
+  volume         Int
+  modelYear      ModelYear    @map("model_year")
+
+  @@index([organizationId, modelYear], map: "organization_id_model_year")
+  @@map("organization_ldv_supplied")
 }
 
 enum AddressType {
