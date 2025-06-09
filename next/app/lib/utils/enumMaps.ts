@@ -14,8 +14,8 @@ const lowerCaseAndCapitalize = (s: string) => {
 
 export const getModelYearEnumsToStringsMap = () => {
   const result: Partial<Record<ModelYear, string>> = {};
-  for (const key of Object.keys(ModelYear)) {
-    result[key as ModelYear] = key.split("_")[1];
+  for (const value of Object.values(ModelYear)) {
+    result[value] = value.split("_")[1];
   }
   return result;
 };
@@ -63,7 +63,7 @@ export const getVehicleClassEnumsToStringsMap = () => {
 export const getStringsToVehiclClassEnumsMap = () => {
   const result: Partial<Record<string, VehicleClass>> = {};
   for (const value of Object.values(VehicleClass)) {
-    result[lowerCaseAndCapitalize(value)] = value as VehicleClass;
+    result[lowerCaseAndCapitalize(value)] = value;
   }
   return result;
 };
