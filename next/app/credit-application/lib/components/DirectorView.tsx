@@ -1,10 +1,10 @@
-import { ContentCard } from "@/app/lib/components";
 import { getData } from "../data";
 import { serializeCredits, sumCredits } from "../utils";
 import { ApplicationCredits } from "./ApplicationCredits";
-import { directorApprove } from "../actions";
 import { DirectorActions } from "./DirectorActions";
 import { CreditApplicationStatus } from "@/prisma/generated/client";
+import { redirect, RedirectType } from "next/navigation";
+import { Routes } from "@/app/lib/constants";
 
 export const DirectorView = async (props: {
   id: number;
@@ -14,18 +14,23 @@ export const DirectorView = async (props: {
   const summedCredits = sumCredits(data.credits);
   const serializedCredits = serializeCredits(summedCredits);
 
-  const directorApproveWrapped = async () => {
+  const goToValidated = async () => {
     "use server";
-    await directorApprove(props.id, serializedCredits);
+    redirect(
+      `${Routes.CreditApplication}/${props.id}/validated?readOnly=Y`,
+      RedirectType.push,
+    );
   };
 
   return (
-    <ContentCard title="Actions">
+    <>
       <ApplicationCredits credits={summedCredits} />
       <DirectorActions
+        id={props.id}
         status={props.status}
-        approveAction={directorApproveWrapped}
+        credits={serializedCredits}
+        goToValidatedAction={goToValidated}
       />
-    </ContentCard>
+    </>
   );
 };

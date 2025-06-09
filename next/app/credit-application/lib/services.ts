@@ -2,21 +2,32 @@ import { prisma } from "@/lib/prisma";
 import {
   CreditApplicationStatus,
   ModelYear,
+  Prisma,
   Vehicle,
   VehicleStatus,
 } from "@/prisma/generated/client";
+import { mapOfStatusToSupplierStatus } from "./constants";
 
 export const getReservedVins = async (vins: string[]) => {
-  return await prisma.reservedVin.findMany({
-    where: {
-      vin: {
-        in: vins,
-      },
+  const where = {
+    vin: {
+      in: vins,
     },
-    select: {
-      vin: true,
-    },
-  });
+  };
+  const select = {
+    vin: true,
+  };
+  const [vinRecords, legacyVinRecords] = await prisma.$transaction([
+    prisma.creditApplicationVin.findMany({
+      where,
+      select,
+    }),
+    prisma.creditApplicationVinLegacy.findMany({
+      where,
+      select,
+    }),
+  ]);
+  return vinRecords.concat(legacyVinRecords);
 };
 
 export type VehicleSparse = {
@@ -77,7 +88,7 @@ export const getVinRecordsMap = async (
   creditApplicationId: number,
 ): Promise<VinRecordsMap> => {
   const result: VinRecordsMap = {};
-  const records = await prisma.reservedVin.findMany({
+  const records = await prisma.creditApplicationVin.findMany({
     where: {
       creditApplicationId,
     },
@@ -160,5 +171,34 @@ export const createHistory = (
       userAction,
       comment,
     },
+  });
+};
+
+export const updateStatus = (
+  creditApplicationId: number,
+  status: CreditApplicationStatus,
+) => {
+  return prisma.creditApplication.update({
+    where: {
+      id: creditApplicationId,
+    },
+    data: {
+      status: status,
+      supplierStatus: mapOfStatusToSupplierStatus[status],
+    },
+  });
+};
+
+export const unreserveVins = (creditApplicationId: number, vins?: string[]) => {
+  const where: Prisma.CreditApplicationVinWhereInput = {
+    creditApplicationId,
+  };
+  if (vins) {
+    where.vin = {
+      in: vins,
+    };
+  }
+  return prisma.creditApplicationVin.deleteMany({
+    where,
   });
 };

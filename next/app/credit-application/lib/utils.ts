@@ -1,14 +1,24 @@
 import Excel from "exceljs";
-import { ModelYear, VehicleStatus } from "@/prisma/generated/client";
+import {
+  CreditApplicationStatus,
+  CreditApplicationSupplierStatus,
+  ModelYear,
+  VehicleStatus,
+} from "@/prisma/generated/client";
 import { getStringsToModelYearsEnumsMap } from "@/app/lib/utils/enumMaps";
 import {
   CreditApplicationSubDirectory,
-  SupplierTemplate,
-  SupplierTemplateZEVsSuppliedHeaderNames,
+  SupplierTemplateZEVsSuppliedSheetHeaderNames,
+  SupplierTemplateZEVsSuppliedSheetData,
 } from "./constants";
 import { IcbcRecordsMap, VehicleSparse, VinRecordsMap } from "./services";
 import { Prisma } from "@/prisma/generated/client";
-import { CreditApplicationCredit } from "./data";
+import {
+  CreditApplicationCredit,
+  CreditApplicationRecordSparse,
+  CreditApplicationSparse,
+} from "./data";
+import { getIsoYmdString, validateDate } from "@/app/lib/utils/date";
 
 export const getCreditApplicationFullObjectName = (
   userOrgId: number,
@@ -40,14 +50,122 @@ export const getSupplierVehiclesMap = (vehicles: VehicleSparse[]) => {
   return result;
 };
 
+export const getWhereClause = (
+  filters: Record<string, string>,
+  userIsGov: boolean,
+): Prisma.CreditApplicationWhereInput => {
+  const result: Prisma.CreditApplicationWhereInput = {};
+  Object.entries(filters).forEach(([key, value]) => {
+    if (key === "id") {
+      result[key] = parseInt(value, 10);
+    } else if (key === "status") {
+      const newValue = value.replaceAll(" ", "").toLowerCase();
+      const statuses = Object.values(CreditApplicationStatus);
+      const matches = statuses.filter((status) => {
+        const newStatus = status.replaceAll("_", "").toLowerCase();
+        return newStatus.includes(newValue);
+      });
+      if (userIsGov) {
+        result[key] = {
+          in: matches,
+        };
+      } else {
+        const supplierMatches = new Set(matches).intersection(
+          new Set(Object.values(CreditApplicationSupplierStatus)),
+        );
+        result.supplierStatus = {
+          in: Array.from(supplierMatches),
+        };
+      }
+    } else if (key === "submissionTimestamp") {
+      const [isValidDate, date] = validateDate(value);
+      if (isValidDate) {
+        const datePlusOneDay = new Date(date);
+        datePlusOneDay.setDate(date.getDate() + 1);
+        result.AND = [
+          { [key]: { gte: date } },
+          { [key]: { lt: datePlusOneDay } },
+        ];
+      } else {
+        result.id = -1;
+      }
+    } else if (key === "organization" && userIsGov) {
+      const newValue = value.trim();
+      result[key] = {
+        is: {
+          name: {
+            contains: newValue,
+            mode: "insensitive",
+          },
+        },
+      };
+    }
+  });
+  return result;
+};
+
+export const getOrderByClause = (
+  sorts: Record<string, string>,
+  defaultSortById: boolean,
+  userIsGov: boolean,
+): Prisma.CreditApplicationOrderByWithRelationInput[] => {
+  const result: Prisma.CreditApplicationOrderByWithRelationInput[] = [];
+  Object.entries(sorts).forEach(([key, value]) => {
+    if (value === "asc" || value === "desc") {
+      if (key === "id" || key === "submissionTimestamp") {
+        result.push({ [key]: value });
+      } else if (key === "status") {
+        if (userIsGov) {
+          result.push({ status: value });
+        } else {
+          result.push({ supplierStatus: value });
+        }
+      } else if (key === "organization" && userIsGov) {
+        result.push({
+          [key]: {
+            name: value,
+          },
+        });
+      }
+    }
+  });
+  if (defaultSortById && result.length === 0) {
+    result.push({ id: "desc" });
+  }
+  return result;
+};
+
 export const getRecordsWhereClause = (
   filters: Record<string, string>,
 ): Prisma.CreditApplicationRecordWhereInput => {
   const result: Prisma.CreditApplicationRecordWhereInput = {};
+  const modelYearsMap = getStringsToModelYearsEnumsMap();
   Object.entries(filters).forEach(([key, value]) => {
     if (key === "validated") {
+      const newValue = value.toLowerCase().trim();
+      if (newValue === "y") {
+        result[key] = true;
+      } else if (newValue === "n") {
+        result[key] = false;
+      }
     } else if (key === "modelYear" || key === "icbcModelYear") {
+      const modelYearEnums: ModelYear[] = [];
+      const modelYearStrings = Object.keys(modelYearsMap);
+      modelYearStrings.forEach((my) => {
+        if (my.includes(value) && modelYearsMap[my]) {
+          modelYearEnums.push(modelYearsMap[my]);
+        }
+      });
+      result[key] = {
+        in: modelYearEnums,
+      };
     } else if (key === "timestamp" || key === "icbcTimestamp") {
+      const [isValidDate, date] = validateDate(value);
+      if (isValidDate) {
+        result[key] = date;
+      } else {
+        result.id = -1;
+      }
     } else if (
       key === "vin" ||
       key === "make" ||
@@ -61,10 +179,35 @@ export const getRecordsWhereClause = (
         mode: "insensitive",
       };
     } else if (key === "warnings") {
-      const newValue = value.replaceAll(" ", "").split(",");
-      result[key] = {
-        hasSome: newValue,
-      };
+      let newValue: string | string[] = value.toLowerCase().trim();
+      if (newValue === "any") {
+        result[key] = {
+          isEmpty: false,
+        };
+      } else if (newValue === "none") {
+        result[key] = {
+          isEmpty: true,
+        };
+      } else {
+        newValue = value.replaceAll(" ", "").split(",");
+        result[key] = {
+          hasSome: newValue,
+        };
+      }
+    } else if (key === "reason") {
+      let newValue: string = value.toLowerCase().trim();
+      if (newValue === "any") {
+        result[key] = {
+          not: null,
+        };
+      } else if (newValue === "none") {
+        result[key] = null;
+      } else {
+        result[key] = {
+          contains: newValue,
+          mode: "insensitive",
+        };
+      }
     }
   });
   return result;
@@ -78,7 +221,18 @@ export const getRecordsOrderByClause = (
   Object.entries(sorts).forEach(([key, value]) => {
     if (
       (value === "asc" || value === "desc") &&
-      (key === "vin" || key === "timestamp")
+      (key === "vin" ||
+        key === "timestamp" ||
+        key === "make" ||
+        key === "modelName" ||
+        key === "modelYear" ||
+        key === "icbcTimestamp" ||
+        key === "icbcMake" ||
+        key === "icbcModelName" ||
+        key === "icbcModelYear" ||
+        key === "validated" ||
+        key === "warnings" ||
+        key === "reason")
     ) {
       result.push({ [key]: value });
     }
@@ -86,6 +240,51 @@ export const getRecordsOrderByClause = (
   if (defaultSortById && result.length === 0) {
     result.push({ id: "desc" });
   }
+  return result;
+};
+
+export type CreditApplicationRecordSparseSerialized = Omit<
+  CreditApplicationRecordSparse,
+  "timestamp" | "icbcTimestamp"
+> & { timestamp: string; icbcTimestamp: string | null };
+
+export const getSerializedRecords = (
+  records: CreditApplicationRecordSparse[],
+) => {
+  const result: CreditApplicationRecordSparseSerialized[] = [];
+  records.forEach((record) => {
+    result.push({
+      ...record,
+      timestamp: getIsoYmdString(record.timestamp),
+      icbcTimestamp: record.icbcTimestamp
+        ? getIsoYmdString(record.icbcTimestamp)
+        : null,
+    });
+  });
+  return result;
+};
+
+export type CreditApplicationSparseSerialized = Omit<
+  CreditApplicationSparse,
+  "submissionTimestamp" | "supplierStatus" | "organization"
+> & { submissionTimestamp: string; organization?: string };
+
+export const getSerializedApplications = (
+  records: CreditApplicationSparse[],
+  userIsGov: boolean,
+) => {
+  const result: CreditApplicationSparseSerialized[] = [];
+  records.forEach((record) => {
+    const resultRecord: CreditApplicationSparseSerialized = {
+      id: record.id,
+      status: userIsGov ? record.status : record.supplierStatus,
+      submissionTimestamp: getIsoYmdString(record.submissionTimestamp),
+    };
+    if (userIsGov) {
+      resultRecord.organization = record.organization.name;
+    }
+    result.push(resultRecord);
+  });
   return result;
 };
 
@@ -115,25 +314,12 @@ export const parseSupplierSubmission = (sheet: Excel.Worksheet) => {
   > = {};
   const duplicateVins: string[] = [];
   const invalidRows: number[] = [];
-  const rowCount = sheet.rowCount;
-  const actualRowCount = sheet.actualRowCount;
-  if (rowCount !== actualRowCount) {
-    throw new Error("All rows in the submission must be consecutive!");
-  }
-  if (
-    rowCount < SupplierTemplate.FirstRowIndex ||
-    rowCount > SupplierTemplate.FinalRowIndex
-  ) {
-    throw new Error(
-      "Submission must have at least one VIN, and no more than 2000 VINs",
-    );
-  }
-  const headersIndex = SupplierTemplate.HeaderIndex;
+  const headersIndex = SupplierTemplateZEVsSuppliedSheetData.HeaderIndex;
   const modelYearsMap = getStringsToModelYearsEnumsMap();
   const headers = sheet.getRow(headersIndex);
   const headersMap = getColsToHeadersMap(headers);
   const requiredHeaders = Object.values(
-    SupplierTemplateZEVsSuppliedHeaderNames,
+    SupplierTemplateZEVsSuppliedSheetHeaderNames,
   );
   requiredHeaders.forEach((requiredHeader) => {
     let found = false;
@@ -159,35 +345,34 @@ export const parseSupplierSubmission = (sheet: Excel.Worksheet) => {
         const col = cell.col;
         const header = headersMap[col];
         if (header) {
-          const originalValue = cell.value;
-          const value = originalValue?.toString();
-          if (originalValue && value) {
+          const value = cell.value?.toString();
+          if (value) {
             if (
-              header === SupplierTemplateZEVsSuppliedHeaderNames.VIN &&
+              header === SupplierTemplateZEVsSuppliedSheetHeaderNames.VIN &&
               value.length === 17
             ) {
               vin = value;
             } else if (
-              header === SupplierTemplateZEVsSuppliedHeaderNames.Make
+              header === SupplierTemplateZEVsSuppliedSheetHeaderNames.Make
             ) {
               make = value;
             } else if (
-              header === SupplierTemplateZEVsSuppliedHeaderNames.ModelName
+              header === SupplierTemplateZEVsSuppliedSheetHeaderNames.ModelName
             ) {
               modelName = value;
             } else if (
-              header === SupplierTemplateZEVsSuppliedHeaderNames.ModelYear
+              header === SupplierTemplateZEVsSuppliedSheetHeaderNames.ModelYear
             ) {
               const year = modelYearsMap[value];
               if (year) {
                 modelYear = year;
               }
             } else if (
-              header === SupplierTemplateZEVsSuppliedHeaderNames.Date
+              header === SupplierTemplateZEVsSuppliedSheetHeaderNames.Date
             ) {
-              if (originalValue instanceof Date) {
-                originalValue.setHours(8);
-                timestamp = originalValue;
+              const [isValidDate, date] = validateDate(value);
+              if (isValidDate) {
+                timestamp = date;
               }
             }
           }
@@ -216,6 +401,13 @@ export const parseSupplierSubmission = (sheet: Excel.Worksheet) => {
       `Rows with missing or invalid data: ${invalidRows.join(", ")}`,
     );
   }
+  const numberOfVins = Object.keys(data).length;
+  const maxVins = SupplierTemplateZEVsSuppliedSheetData.MaxNumberOfRecords;
+  if (numberOfVins === 0 || numberOfVins > maxVins) {
+    throw new Error(
+      `Submission must have at least one VIN, and no more than ${maxVins} VINs`,
+    );
+  }
   return data;
 };
 
@@ -239,15 +431,18 @@ export const getWarningsMap = (
     ) {
       result[vin].push("1");
     }
+    if (data.timestamp < new Date("2018-01-02T00:00:00")) {
+      result[vin].push("51");
+    }
     if (!icbcRecord) {
       result[vin].push("11");
     }
     if (vehicle && icbcRecord) {
-      if (icbcRecord.make !== vehicle.make) {
-        result[vin].push("21");
-      }
-      if (icbcRecord.modelYear !== vehicle.modelYear) {
-        result[vin].push("31");
+      if (
+        icbcRecord.make !== vehicle.make ||
+        icbcRecord.modelYear !== vehicle.modelYear
+      ) {
+        result[vin].push("41");
       }
     }
     if (result[vin].length === 0) {

@@ -1,4 +1,5 @@
 import { getValidatedRecords } from "../data";
+import { getSerializedRecords } from "../utils";
 import { RecordsTable } from "./RecordsTable";
 
 export const RecordsList = async (props: {
@@ -16,11 +17,12 @@ export const RecordsList = async (props: {
     props.filters,
     props.sorts,
   );
+  const serializedRecords = getSerializedRecords(records);
 
   return (
     <RecordsTable
       id={props.id}
-      records={records}
+      records={serializedRecords}
       totalNumbeOfRecords={totalNumberOfRecords}
       readOnly={props.readOnly}
     />

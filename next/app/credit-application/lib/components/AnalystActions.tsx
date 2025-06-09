@@ -4,14 +4,14 @@ import { Button } from "@/app/lib/components";
 import { CreditApplicationStatus } from "@/prisma/generated/client";
 import { useRouter } from "next/navigation";
 import { useCallback, useTransition } from "react";
-import { analystRecommend } from "../actions";
+import { analystRecommend, returnToSupplier } from "../actions";
 
 export const AnalystActions = (props: {
   id: number;
   status: CreditApplicationStatus;
   validatedBefore: boolean;
   validateAction: () => Promise<void>;
-  goToValidatedAction: (readOnly: boolean) => void;
+  goToValidatedAction: (readOnly: boolean) => Promise<never>;
 }) => {
   const [isPending, startTransition] = useTransition();
   const router = useRouter();
@@ -26,15 +26,18 @@ export const AnalystActions = (props: {
     });
   }, [props.validateAction]);
 
-  const handleEditValidated = useCallback(() => {
-    startTransition(() => {
-      try {
-        props.goToValidatedAction(false);
-      } catch (e) {
-        console.error(e);
-      }
-    });
-  }, [props.goToValidatedAction]);
+  const handleGoToValidated = useCallback(
+    (edit: boolean) => {
+      startTransition(() => {
+        try {
+          props.goToValidatedAction(!edit);
+        } catch (e) {
+          console.error(e);
+        }
+      });
+    },
+    [props.goToValidatedAction],
+  );
 
   const handleRecommend = useCallback(
     (newStatus: CreditApplicationStatus) => {
@@ -50,6 +53,17 @@ export const AnalystActions = (props: {
     [router],
   );
 
+  const handleReturnToSupplier = useCallback(() => {
+    startTransition(async () => {
+      try {
+        await returnToSupplier(props.id);
+        router.refresh();
+      } catch (e) {
+        console.error(e);
+      }
+    });
+  }, []);
+
   return (
     <>
       {(props.status === CreditApplicationStatus.SUBMITTED ||
@@ -58,17 +72,30 @@ export const AnalystActions = (props: {
           {isPending ? "..." : "Validate"}
         </Button>
       )}
-      {(props.status === CreditApplicationStatus.SUBMITTED ||
-        props.status === CreditApplicationStatus.RETURNED_TO_ANALYST) &&
+      {props.status !== CreditApplicationStatus.SUBMITTED &&
+        props.status !== CreditApplicationStatus.RETURNED_TO_ANALYST &&
         props.validatedBefore && (
-          <Button onClick={handleEditValidated} disabled={isPending}>
-            {isPending ? "..." : "Edit Validated Records"}
+          <Button
+            onClick={() => {
+              handleGoToValidated(false);
+            }}
+            disabled={isPending}
+          >
+            {isPending ? "..." : "View Validated Records"}
           </Button>
         )}
       {(props.status === CreditApplicationStatus.SUBMITTED ||
         props.status === CreditApplicationStatus.RETURNED_TO_ANALYST) &&
         props.validatedBefore && (
           <>
+            <Button
+              onClick={() => {
+                handleGoToValidated(true);
+              }}
+              disabled={isPending}
+            >
+              {isPending ? "..." : "Edit Validated Records"}
+            </Button>
             <Button
               onClick={() => {
                 handleRecommend(CreditApplicationStatus.RECOMMEND_APPROVAL);
@@ -85,7 +112,7 @@ export const AnalystActions = (props: {
             >
               {isPending ? "..." : "Recommend Rejection"}
             </Button>
-            <Button onClick={() => {}} disabled={isPending}>
+            <Button onClick={handleReturnToSupplier} disabled={isPending}>
               {isPending ? "..." : "Return to Supplier"}
             </Button>
           </>

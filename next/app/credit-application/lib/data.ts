@@ -1,18 +1,31 @@
 import { getUserInfo } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import {
+  CreditApplication,
+  CreditApplicationHistory,
   CreditApplicationRecord,
+  CreditApplicationStatus,
+  CreditApplicationSupplierStatus,
+  Organization,
   Prisma,
-  TransactionType,
+  Role,
+  User,
 } from "@/prisma/generated/client";
-import { getRecordsOrderByClause, getRecordsWhereClause } from "./utils";
 import {
-  getSummedZevUnitRecordsObj,
-  ZevUnitRecord,
-  ZevUnitRecordsObj,
-} from "@/lib/utils/zevUnit";
+  getOrderByClause,
+  getRecordsOrderByClause,
+  getRecordsWhereClause,
+  getWhereClause,
+} from "./utils";
+import { ZevUnitRecord } from "@/lib/utils/zevUnit";
 
-export const getCreditApplication = async (creditApplicationId: number) => {
+export type CreditApplicationWithOrg = CreditApplication & {
+  organization: Organization;
+};
+
+export const getCreditApplication = async (
+  creditApplicationId: number,
+): Promise<CreditApplicationWithOrg | null> => {
   const { userIsGov, userOrgId } = await getUserInfo();
   let whereClause: Prisma.CreditApplicationWhereUniqueInput = {
     id: creditApplicationId,
@@ -22,6 +35,9 @@ export const getCreditApplication = async (creditApplicationId: number) => {
   }
   return await prisma.creditApplication.findUnique({
     where: whereClause,
+    include: {
+      organization: true,
+    },
   });
 };
 
@@ -108,4 +124,103 @@ export const getData = async (
     numberOfRecords: records.length,
     credits: zevUnitRecords,
   };
+};
+
+export type CreditApplicationSparse = Pick<
+  CreditApplication,
+  "id" | "status" | "submissionTimestamp" | "supplierStatus"
+> & { organization: { name: string } };
+
+export const getCreditApplications = async (
+  page: number,
+  pageSize: number,
+  filters: { [key: string]: string },
+  sorts: { [key: string]: string },
+): Promise<[CreditApplicationSparse[], number]> => {
+  const { userIsGov, userOrgId, userRoles } = await getUserInfo();
+  const skip = (page - 1) * pageSize;
+  const take = pageSize;
+  const where = getWhereClause(filters, userIsGov);
+  const orderBy = getOrderByClause(sorts, true, userIsGov);
+  if (userRoles.some((role) => role === Role.DIRECTOR)) {
+    const statusFilters = [
+      { status: { not: CreditApplicationStatus.SUBMITTED } },
+      { status: { not: CreditApplicationStatus.RETURNED_TO_ANALYST } },
+      { status: { not: CreditApplicationStatus.RETURNED_TO_SUPPLIER } },
+    ];
+    if (Array.isArray(where.AND)) {
+      where.AND.push(...statusFilters);
+    } else if (where.AND) {
+      where.AND = [where.AND, ...statusFilters];
+    } else {
+      where.AND = statusFilters;
+    }
+  }
+  if (!userIsGov) {
+    where.organizationId = userOrgId;
+  }
+  return await prisma.$transaction([
+    prisma.creditApplication.findMany({
+      skip,
+      take,
+      where,
+      select: {
+        id: true,
+        status: true,
+        submissionTimestamp: true,
+        supplierStatus: true,
+        organization: {
+          select: {
+            name: true,
+          },
+        },
+      },
+      orderBy,
+    }),
+    prisma.creditApplication.count({
+      where,
+    }),
+  ]);
+};
+
+export type CreditApplicationHistoryWithUser = CreditApplicationHistory & {
+  user: Pick<User, "firstName" | "lastName"> & {
+    organization: Pick<Organization, "isGovernment">;
+  };
+};
+
+export const getApplicationHistories = async (
+  creditApplicationId: number,
+): Promise<CreditApplicationHistoryWithUser[]> => {
+  const { userIsGov, userOrgId } = await getUserInfo();
+  const where: Prisma.CreditApplicationHistoryWhereInput = {
+    creditApplicationId,
+  };
+  if (!userIsGov) {
+    where.creditApplication = {
+      organizationId: userOrgId,
+    };
+    where.userAction = {
+      in: Object.values(CreditApplicationSupplierStatus),
+    };
+  }
+  return await prisma.creditApplicationHistory.findMany({
+    where,
+    include: {
+      user: {
+        select: {
+          firstName: true,
+          lastName: true,
+          organization: {
+            select: {
+              isGovernment: true,
+            },
+          },
+        },
+      },
+    },
+    orderBy: {
+      timestamp: "asc",
+    },
+  });
 };

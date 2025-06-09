@@ -7,7 +7,7 @@ import {
   getSupplierEligibleVehicles,
   getSupplierTemplateDownloadUrl,
 } from "../actions";
-import { SupplierTemplateSheetNames } from "../constants";
+import { SupplierTemplate } from "../constants";
 import { getModelYearEnumsToStringsMap } from "@/app/lib/utils/enumMaps";
 import { Button } from "@/app/lib/components";
 import { LoadingSkeleton } from "@/app/lib/components/skeletons";
@@ -28,10 +28,11 @@ export const SupplierDownload = (props: { userOrgName: string }) => {
         const workbook = new Excel.Workbook();
         await workbook.xlsx.load(template);
         const vehiclesSheet = workbook.getWorksheet(
-          SupplierTemplateSheetNames.ValidVehicles,
+          SupplierTemplate.ValidVehiclesSheetName,
         );
         if (vehiclesSheet) {
           const modelYearsMap = getModelYearEnumsToStringsMap();
+          console.log(vehicles);
           vehicles.forEach((vehicle) => {
             vehiclesSheet.addRow([
               vehicle.make,

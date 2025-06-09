@@ -14,6 +14,7 @@ import {
   VehicleClassCode,
   VehicleZevType,
   VehicleStatus,
+  CreditApplicationVinLegacy,
 } from "./generated/client";
 import { getAddressTypeEnum, getModelYearEnum, getRoleEnum } from "@/lib/utils/getEnums";
 import { Decimal } from "./generated/client/runtime/library";
@@ -22,40 +23,43 @@ import { isNotification } from "@/app/lib/utils/typeGuards";
 
 // prismaOld to interact with old zeva db; prisma to interact with new zeva db
 const main = () => {
-  return prisma.$transaction(async (tx) => {
-    const decimalZero = new Decimal(0);
-    const mapOfModelYearIdsToModelYearEnum: {
-      [id: number]: ModelYear | undefined;
-    } = {};
-    const mapOfRoleIdsToRoleEnum: { [id: number]: Role | undefined } = {};
-    const mapOfOldOrgIdsToNewOrgIds: { [id: number]: number | undefined } = {};
-    const mapOfOldUserIdsToNewUserIds: { [id: number]: number | undefined } =
-      {};
-    const mapOfOldUsernamesToNewUserIds: {
-      [username: string]: number | undefined;
-    } = {};
-    const setOfNewGovUserIds = new Set<number>();
-    const mapOfOldCreditTransferIdsToNewZevUnitTransferIds: {
-      [id: number]: number | undefined;
-    } = {};
-    const mapOfOldTransferStatusesToNewTransferStatuses: {
-      [key: string]: ZevUnitTransferStatuses | undefined;
-    } = {
-      DRAFT: ZevUnitTransferStatuses.DRAFT,
-      SUBMITTED: ZevUnitTransferStatuses.SUBMITTED_TO_TRANSFER_TO,
-      APPROVED: ZevUnitTransferStatuses.APPROVED_BY_TRANSFER_TO,
-      DISAPPROVED: ZevUnitTransferStatuses.REJECTED_BY_TRANSFER_TO,
-      RECOMMEND_APPROVAL: ZevUnitTransferStatuses.RECOMMEND_APPROVAL_GOV,
-      RECOMMEND_REJECTION: ZevUnitTransferStatuses.RECOMMEND_REJECTION_GOV,
-      VALIDATED: ZevUnitTransferStatuses.APPROVED_BY_GOV,
-      RESCIND_PRE_APPROVAL: ZevUnitTransferStatuses.RESCINDED_BY_TRANSFER_FROM,
-      RESCINDED: ZevUnitTransferStatuses.RESCINDED_BY_TRANSFER_FROM,
-      REJECTED: ZevUnitTransferStatuses.REJECTED_BY_GOV,
-      DELETED: ZevUnitTransferStatuses.DELETED,
-    };
-    const mapOfOldCreditClassIdsToZevClasses: {
-      [id: number]: ZevClass | undefined;
-    } = {};
+  return prisma.$transaction(
+    async (tx) => {
+      const decimalZero = new Decimal(0);
+      const mapOfModelYearIdsToModelYearEnum: {
+        [id: number]: ModelYear | undefined;
+      } = {};
+      const mapOfRoleIdsToRoleEnum: { [id: number]: Role | undefined } = {};
+      const mapOfOldOrgIdsToNewOrgIds: { [id: number]: number | undefined } =
+        {};
+      const mapOfOldUserIdsToNewUserIds: { [id: number]: number | undefined } =
+        {};
+      const mapOfOldUsernamesToNewUserIds: {
+        [username: string]: number | undefined;
+      } = {};
+      const setOfNewGovUserIds = new Set<number>();
+      const mapOfOldCreditTransferIdsToNewZevUnitTransferIds: {
+        [id: number]: number | undefined;
+      } = {};
+      const mapOfOldTransferStatusesToNewTransferStatuses: {
+        [key: string]: ZevUnitTransferStatuses | undefined;
+      } = {
+        DRAFT: ZevUnitTransferStatuses.DRAFT,
+        SUBMITTED: ZevUnitTransferStatuses.SUBMITTED_TO_TRANSFER_TO,
+        APPROVED: ZevUnitTransferStatuses.APPROVED_BY_TRANSFER_TO,
+        DISAPPROVED: ZevUnitTransferStatuses.REJECTED_BY_TRANSFER_TO,
+        RECOMMEND_APPROVAL: ZevUnitTransferStatuses.RECOMMEND_APPROVAL_GOV,
+        RECOMMEND_REJECTION: ZevUnitTransferStatuses.RECOMMEND_REJECTION_GOV,
+        VALIDATED: ZevUnitTransferStatuses.APPROVED_BY_GOV,
+        RESCIND_PRE_APPROVAL:
+          ZevUnitTransferStatuses.RESCINDED_BY_TRANSFER_FROM,
+        RESCINDED: ZevUnitTransferStatuses.RESCINDED_BY_TRANSFER_FROM,
+        REJECTED: ZevUnitTransferStatuses.REJECTED_BY_GOV,
+        DELETED: ZevUnitTransferStatuses.DELETED,
+      };
+      const mapOfOldCreditClassIdsToZevClasses: {
+        [id: number]: ZevClass | undefined;
+      } = {};
 
     const modelYearsOld = await prismaOld.model_year.findMany();
     for (const modelYearOld of modelYearsOld) {
@@ -251,674 +255,704 @@ const main = () => {
             " with unknown credit class!",
         );
       }
-      if (!modelYear) {
-        throw new Error(
-          "credit transaction " + transaction.id + " with unknown model year!",
-        );
-      }
-      const totalValueOld = transaction.total_value;
-      const numberOfUnits = totalValueOld.lessThan(decimalZero)
-        ? totalValueOld.times(new Decimal(-1))
-        : totalValueOld;
-      if (transaction.credit_to_id && !transaction.debit_from_id) {
-        transactionType = TransactionType.CREDIT;
-        organizationId = transaction.credit_to_id;
-      } else if (!transaction.credit_to_id && transaction.debit_from_id) {
-        transactionType = TransactionType.DEBIT;
-        organizationId = transaction.debit_from_id;
-      }
-
-      if (transactionType && organizationId) {
-        const newOrgId = mapOfOldOrgIdsToNewOrgIds[organizationId];
-        if (!newOrgId) {
-          throw new Error(
-            "credit transaction " + transaction.id + " with unknown org id!",
-          );
-        }
-        await tx.zevUnitTransaction.create({
-          data: {
-            type: transactionType,
-            organizationId: newOrgId,
-            numberOfUnits: numberOfUnits,
-            zevClass: zevClass,
-            vehicleClass: VehicleClass.REPORTABLE,
-            modelYear: modelYear,
-            timestamp: transaction.transaction_timestamp,
-          },
-        });
-      } else if (transaction.credit_to_id && transaction.debit_from_id) {
-        const newCreditToOrgId =
-          mapOfOldOrgIdsToNewOrgIds[transaction.credit_to_id];
-        const newDebitFromOrgId =
-          mapOfOldOrgIdsToNewOrgIds[transaction.debit_from_id];
-        if (!newCreditToOrgId) {
+        if (!modelYear) {
           throw new Error(
             "credit transaction " +
               transaction.id +
+              " with unknown model year!",
+          );
+        }
+        const totalValueOld = transaction.total_value;
+        const numberOfUnits = totalValueOld.lessThan(decimalZero)
+          ? totalValueOld.times(new Decimal(-1))
+          : totalValueOld;
+        if (transaction.credit_to_id && !transaction.debit_from_id) {
+          transactionType = TransactionType.CREDIT;
+          organizationId = transaction.credit_to_id;
+        } else if (!transaction.credit_to_id && transaction.debit_from_id) {
+          transactionType = TransactionType.DEBIT;
+          organizationId = transaction.debit_from_id;
+        }
+
+        if (transactionType && organizationId) {
+          const newOrgId = mapOfOldOrgIdsToNewOrgIds[organizationId];
+          if (!newOrgId) {
+            throw new Error(
+              "credit transaction " + transaction.id + " with unknown org id!",
+            );
+          }
+          await tx.zevUnitTransaction.create({
+            data: {
+              type: transactionType,
+              organizationId: newOrgId,
+              numberOfUnits: numberOfUnits,
+              zevClass: zevClass,
+              vehicleClass: VehicleClass.REPORTABLE,
+              modelYear: modelYear,
+              timestamp: transaction.transaction_timestamp,
+            },
+          });
+        } else if (transaction.credit_to_id && transaction.debit_from_id) {
+          const newCreditToOrgId =
+            mapOfOldOrgIdsToNewOrgIds[transaction.credit_to_id];
+          const newDebitFromOrgId =
+            mapOfOldOrgIdsToNewOrgIds[transaction.debit_from_id];
+          if (!newCreditToOrgId) {
+            throw new Error(
+              "credit transaction " +
+                transaction.id +
+                " with unknown credit to id!",
+            );
+          }
+          if (!newDebitFromOrgId) {
+            throw new Error(
+              "credit transaction " +
+                transaction.id +
+                " with unknown debit from id!",
+            );
+          }
+          await tx.zevUnitTransaction.create({
+            data: {
+              type: TransactionType.CREDIT,
+              organizationId: newCreditToOrgId,
+              numberOfUnits: numberOfUnits,
+              zevClass: zevClass,
+              vehicleClass: VehicleClass.REPORTABLE,
+              modelYear: modelYear,
+              timestamp: transaction.transaction_timestamp,
+            },
+          });
+          await tx.zevUnitTransaction.create({
+            data: {
+              type: TransactionType.TRANSFER_AWAY,
+              organizationId: newDebitFromOrgId,
+              numberOfUnits: numberOfUnits,
+              zevClass: zevClass,
+              vehicleClass: VehicleClass.REPORTABLE,
+              modelYear: modelYear,
+              timestamp: transaction.transaction_timestamp,
+            },
+          });
+        }
+      }
+
+      // add ending balances
+      type OldBalance = {
+        idOld: number;
+        orgIdOld: number;
+        balanceType: BalanceType;
+        complianceYearIdOld: number;
+        creditAValue: Decimal | null;
+        creditBValue: Decimal | null;
+        modelYearIdOld: number;
+        fromReassessment: boolean;
+      };
+      const creditCategory = "ProvisionalBalanceAfterCreditReduction";
+      const debitCategory = "CreditDeficit";
+      const endingBalancesOld =
+        await prismaOld.model_year_report_compliance_obligation.findMany({
+          include: {
+            model_year_report: true,
+          },
+        });
+      const reassessmentEndingBalancesOld =
+        await prismaOld.supplemental_report_credit_activity.findMany({
+          include: {
+            supplemental_report: {
+              include: {
+                model_year_report: true,
+              },
+            },
+          },
+        });
+      const balancesOld: OldBalance[] = [];
+      for (const balance of endingBalancesOld) {
+        const category = balance.category;
+        if (
+          (category === creditCategory || category === debitCategory) &&
+          balance.from_gov
+        ) {
+          balancesOld.push({
+            idOld: balance.id,
+            orgIdOld: balance.model_year_report.organization_id,
+            balanceType:
+              category === creditCategory
+                ? BalanceType.CREDIT
+                : BalanceType.DEBIT,
+            complianceYearIdOld: balance.model_year_report.model_year_id,
+            modelYearIdOld: balance.model_year_id,
+            creditAValue: balance.credit_a_value,
+            creditBValue: balance.credit_b_value,
+            fromReassessment: false,
+          });
+        }
+      }
+      for (const balance of reassessmentEndingBalancesOld) {
+        const status = balance.supplemental_report.status;
+        const category = balance.category;
+        if (
+          balance.model_year_id &&
+          (category === creditCategory || category === debitCategory) &&
+          status === "ASSESSED"
+        ) {
+          balancesOld.push({
+            idOld: balance.id,
+            orgIdOld:
+              balance.supplemental_report.model_year_report.organization_id,
+            balanceType:
+              category === creditCategory
+                ? BalanceType.CREDIT
+                : BalanceType.DEBIT,
+            complianceYearIdOld:
+              balance.supplemental_report.model_year_report.model_year_id,
+            modelYearIdOld: balance.model_year_id,
+            creditAValue: balance.credit_a_value,
+            creditBValue: balance.credit_b_value,
+            fromReassessment: true,
+          });
+        }
+      }
+      for (const balance of balancesOld) {
+        const fromReassessment = balance.fromReassessment;
+        const errorMessagePrefix = `${fromReassessment ? "SRCA " : "MYRCO "} ${balance.idOld} with unknown `;
+        const modelYear =
+          mapOfModelYearIdsToModelYearEnum[balance.modelYearIdOld];
+        if (!modelYear) {
+          throw new Error(errorMessagePrefix + "model year!");
+        }
+        const complianceYear =
+          mapOfModelYearIdsToModelYearEnum[balance.complianceYearIdOld];
+        if (!complianceYear) {
+          throw new Error(errorMessagePrefix + "compliance year!");
+        }
+        const orgId = mapOfOldOrgIdsToNewOrgIds[balance.orgIdOld];
+        if (!orgId) {
+          throw new Error(errorMessagePrefix + "org id!");
+        }
+
+        const creditAValue = balance.creditAValue;
+        const creditBValue = balance.creditBValue;
+        const uniqueDataBase = {
+          organizationId: orgId,
+          complianceYear: complianceYear,
+          vehicleClass: VehicleClass.REPORTABLE,
+          modelYear: modelYear,
+        };
+        const data = {
+          ...uniqueDataBase,
+          type: balance.balanceType,
+        };
+        if (fromReassessment) {
+          if (creditAValue && !creditAValue.equals(decimalZero)) {
+            await tx.zevUnitEndingBalance.upsert({
+              where: {
+                organizationId_complianceYear_zevClass_vehicleClass_modelYear: {
+                  ...uniqueDataBase,
+                  zevClass: ZevClass.A,
+                },
+              },
+              create: {
+                ...data,
+                zevClass: ZevClass.A,
+                initialNumberOfUnits: creditAValue,
+                finalNumberOfUnits: creditAValue,
+              },
+              update: {
+                initialNumberOfUnits: creditAValue,
+                finalNumberOfUnits: creditAValue,
+              },
+            });
+          }
+          if (creditBValue && !creditBValue.equals(decimalZero)) {
+            await tx.zevUnitEndingBalance.upsert({
+              where: {
+                organizationId_complianceYear_zevClass_vehicleClass_modelYear: {
+                  ...uniqueDataBase,
+                  zevClass: ZevClass.B,
+                },
+              },
+              create: {
+                ...data,
+                zevClass: ZevClass.B,
+                initialNumberOfUnits: creditBValue,
+                finalNumberOfUnits: creditBValue,
+              },
+              update: {
+                initialNumberOfUnits: creditBValue,
+                finalNumberOfUnits: creditBValue,
+              },
+            });
+          }
+        } else {
+          if (creditAValue && !creditAValue.equals(decimalZero)) {
+            await tx.zevUnitEndingBalance.create({
+              data: {
+                ...data,
+                initialNumberOfUnits: creditAValue,
+                finalNumberOfUnits: creditAValue,
+                zevClass: ZevClass.A,
+              },
+            });
+          }
+          if (creditBValue && !creditBValue.equals(decimalZero)) {
+            await tx.zevUnitEndingBalance.create({
+              data: {
+                ...data,
+                initialNumberOfUnits: creditBValue,
+                finalNumberOfUnits: creditBValue,
+                zevClass: ZevClass.B,
+              },
+            });
+          }
+        }
+      }
+
+      // add ZEV Unit Transfer (formerly Credit Transfer in old DB) records
+      const creditTransfersOld = await prismaOld.credit_transfer.findMany();
+      for (const creditTransferOld of creditTransfersOld) {
+        const oldStatus = creditTransferOld.status;
+        const status = mapOfOldTransferStatusesToNewTransferStatuses[oldStatus];
+        if (!status) {
+          throw new Error(
+            "unknown status: " +
+              oldStatus +
+              " when seeding credit transfer " +
+              creditTransferOld.id,
+          );
+        }
+        const newCreditToOrgId =
+          mapOfOldOrgIdsToNewOrgIds[creditTransferOld.credit_to_id];
+        const newDebitFromOrgId =
+          mapOfOldOrgIdsToNewOrgIds[creditTransferOld.debit_from_id];
+        if (!newCreditToOrgId) {
+          throw new Error(
+            "credit transfer " +
+              creditTransferOld.id +
               " with unknown credit to id!",
           );
         }
         if (!newDebitFromOrgId) {
           throw new Error(
-            "credit transaction " +
-              transaction.id +
+            "credit trasnfer " +
+              creditTransferOld.id +
               " with unknown debit from id!",
           );
         }
-        await tx.zevUnitTransaction.create({
+        const zevUnitTransfer = await tx.zevUnitTransfer.create({
           data: {
-            type: TransactionType.CREDIT,
-            organizationId: newCreditToOrgId,
-            numberOfUnits: numberOfUnits,
-            zevClass: zevClass,
-            vehicleClass: VehicleClass.REPORTABLE,
-            modelYear: modelYear,
-            timestamp: transaction.transaction_timestamp,
+            transferToId: newCreditToOrgId,
+            transferFromId: newDebitFromOrgId,
+            status: status,
+            legacyId: creditTransferOld.id,
           },
         });
-        await tx.zevUnitTransaction.create({
+        mapOfOldCreditTransferIdsToNewZevUnitTransferIds[creditTransferOld.id] =
+          zevUnitTransfer.id;
+      }
+
+      // add ZEV Unit Transfer Content (formerly Credit Transfer Content in old DB) records
+      const creditTransferContentsOld =
+        await prismaOld.credit_transfer_content.findMany();
+      for (const creditTransferContentOld of creditTransferContentsOld) {
+        const zevClass =
+          mapOfOldCreditClassIdsToZevClasses[
+            creditTransferContentOld.credit_class_id
+          ];
+        if (!zevClass) {
+          throw new Error(
+            "Unknown credit class in credit_transfer_content. Old record id: " +
+              creditTransferContentOld.id,
+          );
+        }
+        const modelYear =
+          mapOfModelYearIdsToModelYearEnum[
+            creditTransferContentOld.model_year_id
+          ];
+        if (!modelYear) {
+          throw new Error(
+            "Unknown model year in credit_transfer_content. Old record id: " +
+              creditTransferContentOld.id,
+          );
+        }
+        const newCreditTransferId =
+          mapOfOldCreditTransferIdsToNewZevUnitTransferIds[
+            creditTransferContentOld.credit_transfer_id
+          ];
+        if (!newCreditTransferId) {
+          throw new Error(
+            "credit transfer content " +
+              creditTransferContentOld.id +
+              " with unknown transfer id!",
+          );
+        }
+
+        await tx.zevUnitTransferContent.create({
           data: {
-            type: TransactionType.TRANSFER_AWAY,
-            organizationId: newDebitFromOrgId,
-            numberOfUnits: numberOfUnits,
-            zevClass: zevClass,
+            zevUnitTransferId: newCreditTransferId,
+            numberOfUnits: creditTransferContentOld.credit_value,
+            dollarValuePerUnit: creditTransferContentOld.dollar_value,
+            zevClass,
+            modelYear,
             vehicleClass: VehicleClass.REPORTABLE,
-            modelYear: modelYear,
-            timestamp: transaction.transaction_timestamp,
           },
         });
       }
-    }
 
-    // add ending balances
-    type OldBalance = {
-      idOld: number;
-      orgIdOld: number;
-      balanceType: BalanceType;
-      complianceYearIdOld: number;
-      creditAValue: Decimal | null;
-      creditBValue: Decimal | null;
-      modelYearIdOld: number;
-      fromReassessment: boolean;
-    };
-    const creditCategory = "ProvisionalBalanceAfterCreditReduction";
-    const debitCategory = "CreditDeficit";
-    const endingBalancesOld =
-      await prismaOld.model_year_report_compliance_obligation.findMany({
-        include: {
-          model_year_report: true,
-        },
-      });
-    const reassessmentEndingBalancesOld =
-      await prismaOld.supplemental_report_credit_activity.findMany({
-        include: {
-          supplemental_report: {
-            include: {
-              model_year_report: true,
-            },
+      // add ZevUnitTransferHistories (previously called credit transfer histories)
+
+      // -- Step 1: group histories by transfer id
+      const mapOfTransferIdsToHistories: {
+        [id: number]: Omit<ZevUnitTransferHistory, "id">[];
+      } = {};
+
+      const creditTransferHistoriesOld =
+        await prismaOld.credit_transfer_history.findMany({
+          include: {
+            credit_transfer_comment: true,
           },
-        },
-      });
-    const balancesOld: OldBalance[] = [];
-    for (const balance of endingBalancesOld) {
-      const category = balance.category;
-      if (
-        (category === creditCategory || category === debitCategory) &&
-        balance.from_gov
-      ) {
-        balancesOld.push({
-          idOld: balance.id,
-          orgIdOld: balance.model_year_report.organization_id,
-          balanceType:
-            category === creditCategory
-              ? BalanceType.CREDIT
-              : BalanceType.DEBIT,
-          complianceYearIdOld: balance.model_year_report.model_year_id,
-          modelYearIdOld: balance.model_year_id,
-          creditAValue: balance.credit_a_value,
-          creditBValue: balance.credit_b_value,
-          fromReassessment: false,
         });
-      }
-    }
-    for (const balance of reassessmentEndingBalancesOld) {
-      const status = balance.supplemental_report.status;
-      const category = balance.category;
-      if (
-        balance.model_year_id &&
-        (category === creditCategory || category === debitCategory) &&
-        status === "ASSESSED"
-      ) {
-        balancesOld.push({
-          idOld: balance.id,
-          orgIdOld:
-            balance.supplemental_report.model_year_report.organization_id,
-          balanceType:
-            category === creditCategory
-              ? BalanceType.CREDIT
-              : BalanceType.DEBIT,
-          complianceYearIdOld:
-            balance.supplemental_report.model_year_report.model_year_id,
-          modelYearIdOld: balance.model_year_id,
-          creditAValue: balance.credit_a_value,
-          creditBValue: balance.credit_b_value,
-          fromReassessment: true,
-        });
-      }
-    }
-    for (const balance of balancesOld) {
-      const fromReassessment = balance.fromReassessment;
-      const errorMessagePrefix = `${fromReassessment ? "SRCA " : "MYRCO "} ${balance.idOld} with unknown `;
-      const modelYear =
-        mapOfModelYearIdsToModelYearEnum[balance.modelYearIdOld];
-      if (!modelYear) {
-        throw new Error(errorMessagePrefix + "model year!");
-      }
-      const complianceYear =
-        mapOfModelYearIdsToModelYearEnum[balance.complianceYearIdOld];
-      if (!complianceYear) {
-        throw new Error(errorMessagePrefix + "compliance year!");
-      }
-      const orgId = mapOfOldOrgIdsToNewOrgIds[balance.orgIdOld];
-      if (!orgId) {
-        throw new Error(errorMessagePrefix + "org id!");
-      }
 
-      const creditAValue = balance.creditAValue;
-      const creditBValue = balance.creditBValue;
-      const uniqueDataBase = {
-        organizationId: orgId,
-        complianceYear: complianceYear,
-        vehicleClass: VehicleClass.REPORTABLE,
-        modelYear: modelYear,
-      };
-      const data = {
-        ...uniqueDataBase,
-        type: balance.balanceType,
-      };
-      if (fromReassessment) {
-        if (creditAValue && !creditAValue.equals(decimalZero)) {
-          await tx.zevUnitEndingBalance.upsert({
-            where: {
-              organizationId_complianceYear_zevClass_vehicleClass_modelYear: {
-                ...uniqueDataBase,
-                zevClass: ZevClass.A,
-              },
-            },
-            create: {
-              ...data,
-              zevClass: ZevClass.A,
-              initialNumberOfUnits: creditAValue,
-              finalNumberOfUnits: creditAValue,
-            },
-            update: {
-              initialNumberOfUnits: creditAValue,
-              finalNumberOfUnits: creditAValue,
-            },
-          });
-        }
-        if (creditBValue && !creditBValue.equals(decimalZero)) {
-          await tx.zevUnitEndingBalance.upsert({
-            where: {
-              organizationId_complianceYear_zevClass_vehicleClass_modelYear: {
-                ...uniqueDataBase,
-                zevClass: ZevClass.B,
-              },
-            },
-            create: {
-              ...data,
-              zevClass: ZevClass.B,
-              initialNumberOfUnits: creditBValue,
-              finalNumberOfUnits: creditBValue,
-            },
-            update: {
-              initialNumberOfUnits: creditBValue,
-              finalNumberOfUnits: creditBValue,
-            },
-          });
-        }
-      } else {
-        if (creditAValue && !creditAValue.equals(decimalZero)) {
-          await tx.zevUnitEndingBalance.create({
-            data: {
-              ...data,
-              initialNumberOfUnits: creditAValue,
-              finalNumberOfUnits: creditAValue,
-              zevClass: ZevClass.A,
-            },
-          });
-        }
-        if (creditBValue && !creditBValue.equals(decimalZero)) {
-          await tx.zevUnitEndingBalance.create({
-            data: {
-              ...data,
-              initialNumberOfUnits: creditBValue,
-              finalNumberOfUnits: creditBValue,
-              zevClass: ZevClass.B,
-            },
-          });
-        }
-      }
-    }
-
-    // add ZEV Unit Transfer (formerly Credit Transfer in old DB) records
-    const creditTransfersOld = await prismaOld.credit_transfer.findMany();
-    for (const creditTransferOld of creditTransfersOld) {
-      const oldStatus = creditTransferOld.status;
-      const status = mapOfOldTransferStatusesToNewTransferStatuses[oldStatus];
-      if (!status) {
-        throw new Error(
-          "unknown status: " +
-            oldStatus +
-            " when seeding credit transfer " +
-            creditTransferOld.id,
-        );
-      }
-      const newCreditToOrgId =
-        mapOfOldOrgIdsToNewOrgIds[creditTransferOld.credit_to_id];
-      const newDebitFromOrgId =
-        mapOfOldOrgIdsToNewOrgIds[creditTransferOld.debit_from_id];
-      if (!newCreditToOrgId) {
-        throw new Error(
-          "credit transfer " +
-            creditTransferOld.id +
-            " with unknown credit to id!",
-        );
-      }
-      if (!newDebitFromOrgId) {
-        throw new Error(
-          "credit trasnfer " +
-            creditTransferOld.id +
-            " with unknown debit from id!",
-        );
-      }
-      const zevUnitTransfer = await tx.zevUnitTransfer.create({
-        data: {
-          transferToId: newCreditToOrgId,
-          transferFromId: newDebitFromOrgId,
-          status: status,
-          legacyId: creditTransferOld.id,
-        },
-      });
-      mapOfOldCreditTransferIdsToNewZevUnitTransferIds[creditTransferOld.id] =
-        zevUnitTransfer.id;
-    }
-
-    // add ZEV Unit Transfer Content (formerly Credit Transfer Content in old DB) records
-    const creditTransferContentsOld =
-      await prismaOld.credit_transfer_content.findMany();
-    for (const creditTransferContentOld of creditTransferContentsOld) {
-      const zevClass =
-        mapOfOldCreditClassIdsToZevClasses[
-          creditTransferContentOld.credit_class_id
-        ];
-      if (!zevClass) {
-        throw new Error(
-          "Unknown credit class in credit_transfer_content. Old record id: " +
-            creditTransferContentOld.id,
-        );
-      }
-      const modelYear =
-        mapOfModelYearIdsToModelYearEnum[
-          creditTransferContentOld.model_year_id
-        ];
-      if (!modelYear) {
-        throw new Error(
-          "Unknown model year in credit_transfer_content. Old record id: " +
-            creditTransferContentOld.id,
-        );
-      }
-      const newCreditTransferId =
-        mapOfOldCreditTransferIdsToNewZevUnitTransferIds[
-          creditTransferContentOld.credit_transfer_id
-        ];
-      if (!newCreditTransferId) {
-        throw new Error(
-          "credit transfer content " +
-            creditTransferContentOld.id +
-            " with unknown transfer id!",
-        );
-      }
-
-      await tx.zevUnitTransferContent.create({
-        data: {
-          zevUnitTransferId: newCreditTransferId,
-          numberOfUnits: creditTransferContentOld.credit_value,
-          dollarValuePerUnit: creditTransferContentOld.dollar_value,
-          zevClass,
-          modelYear,
-          vehicleClass: VehicleClass.REPORTABLE,
-        },
-      });
-    }
-
-    // add ZevUnitTransferHistories (previously called credit transfer histories)
-
-    // -- Step 1: group histories by transfer id
-    const mapOfTransferIdsToHistories: {
-      [id: number]: Omit<ZevUnitTransferHistory, "id">[];
-    } = {};
-
-    const creditTransferHistoriesOld =
-      await prismaOld.credit_transfer_history.findMany({
-        include: {
-          credit_transfer_comment: true,
-        },
-      });
-
-    for (const creditTransferHistoryOld of creditTransferHistoriesOld) {
-      const newTransferId =
-        mapOfOldCreditTransferIdsToNewZevUnitTransferIds[
-          creditTransferHistoryOld.transfer_id
-        ];
-      const newCreateUserId =
-        mapOfOldUsernamesToNewUserIds[creditTransferHistoryOld.create_user];
-      const newStatus =
-        mapOfOldTransferStatusesToNewTransferStatuses[
-          creditTransferHistoryOld.status
-        ];
-      const timestamp = creditTransferHistoryOld.create_timestamp;
-      if (
-        newStatus === ZevUnitTransferStatuses.DRAFT ||
-        newStatus === ZevUnitTransferStatuses.DELETED
-      ) {
-        continue;
-      }
-      if (!newTransferId) {
-        throw new Error(
-          `transfer history ${creditTransferHistoryOld.id} with unknown transfer id!`,
-        );
-      }
-      if (!newCreateUserId) {
-        throw new Error(
-          `transfer history ${creditTransferHistoryOld.id} with unknown create user!`,
-        );
-      }
-      if (!newStatus) {
-        throw new Error(
-          `transfer history ${creditTransferHistoryOld.id} with unknown status!`,
-        );
-      }
-      if (!timestamp) {
-        throw new Error(
-          `transfer history ${creditTransferHistoryOld.id} with no create_timestamp!`,
-        );
-      }
-
-      const commentArray = creditTransferHistoryOld.credit_transfer_comment.map(
-        (x) => x.credit_transfer_comment,
-      );
-
-      const newTransferHistoryData = {
-        zevUnitTransferId: newTransferId,
-        userAction: newStatus,
-        userId: newCreateUserId,
-        timestamp: timestamp,
-        comment: commentArray.length > 0 ? commentArray.join(" | ") : null,
-      };
-      if (!mapOfTransferIdsToHistories[newTransferId]) {
-        mapOfTransferIdsToHistories[newTransferId] = [];
-      }
-      mapOfTransferIdsToHistories[newTransferId].push(newTransferHistoryData);
-    }
-
-    // -- Step 2: for each credit-transfer id, remove obsolete history records
-    //      and convert old history statuses to new user-actions
-    for (const histories of Object.values(mapOfTransferIdsToHistories)) {
-      histories.sort((a, b) => {
-        if (a.timestamp < b.timestamp) {
-          return -1;
-        } else if (a.timestamp > b.timestamp) {
-          return 1;
-        }
-        return 0;
-      });
-
-      // -- Step 2.1: remove "submitted-rescinded" pairs where "rescinded" is not
-      //      the final action of that credit-transfer
-      let counter = null;
-      let leftIndex = Number.POSITIVE_INFINITY;
-      let rightIndex = Number.NEGATIVE_INFINITY;
-      const indicesToRemove = new Set();
-      for (const [index, history] of histories.entries()) {
-        const userAction = history.userAction;
+      for (const creditTransferHistoryOld of creditTransferHistoriesOld) {
+        const newTransferId =
+          mapOfOldCreditTransferIdsToNewZevUnitTransferIds[
+            creditTransferHistoryOld.transfer_id
+          ];
+        const newCreateUserId =
+          mapOfOldUsernamesToNewUserIds[creditTransferHistoryOld.create_user];
+        const newStatus =
+          mapOfOldTransferStatusesToNewTransferStatuses[
+            creditTransferHistoryOld.status
+          ];
+        const timestamp = creditTransferHistoryOld.create_timestamp;
         if (
-          userAction ===
-          ZevUnitTransferHistoryUserActions.SUBMITTED_TO_TRANSFER_TO
+          newStatus === ZevUnitTransferStatuses.DRAFT ||
+          newStatus === ZevUnitTransferStatuses.DELETED
         ) {
-          leftIndex = index;
-          counter = counter === null ? -1 : counter - 1;
-        } else if (
-          userAction ===
-          ZevUnitTransferHistoryUserActions.RESCINDED_BY_TRANSFER_FROM
-        ) {
-          rightIndex = index;
-          counter = counter === null ? 1 : counter + 1;
+          continue;
         }
-        if (counter === 0 && rightIndex !== histories.length - 1) {
-          for (let i = leftIndex; i <= rightIndex; i++) {
-            indicesToRemove.add(i);
+        if (!newTransferId) {
+          throw new Error(
+            `transfer history ${creditTransferHistoryOld.id} with unknown transfer id!`,
+          );
+        }
+        if (!newCreateUserId) {
+          throw new Error(
+            `transfer history ${creditTransferHistoryOld.id} with unknown create user!`,
+          );
+        }
+        if (!newStatus) {
+          throw new Error(
+            `transfer history ${creditTransferHistoryOld.id} with unknown status!`,
+          );
+        }
+        if (!timestamp) {
+          throw new Error(
+            `transfer history ${creditTransferHistoryOld.id} with no create_timestamp!`,
+          );
+        }
+
+        const commentArray =
+          creditTransferHistoryOld.credit_transfer_comment.map(
+            (x) => x.credit_transfer_comment,
+          );
+
+        const newTransferHistoryData = {
+          zevUnitTransferId: newTransferId,
+          userAction: newStatus,
+          userId: newCreateUserId,
+          timestamp: timestamp,
+          comment: commentArray.length > 0 ? commentArray.join(" | ") : null,
+        };
+        if (!mapOfTransferIdsToHistories[newTransferId]) {
+          mapOfTransferIdsToHistories[newTransferId] = [];
+        }
+        mapOfTransferIdsToHistories[newTransferId].push(newTransferHistoryData);
+      }
+
+      // -- Step 2: for each credit-transfer id, remove obsolete history records
+      //      and convert old history statuses to new user-actions
+      for (const histories of Object.values(mapOfTransferIdsToHistories)) {
+        histories.sort((a, b) => {
+          if (a.timestamp < b.timestamp) {
+            return -1;
+          } else if (a.timestamp > b.timestamp) {
+            return 1;
+          }
+          return 0;
+        });
+
+        // -- Step 2.1: remove "submitted-rescinded" pairs where "rescinded" is not
+        //      the final action of that credit-transfer
+        let counter = null;
+        let leftIndex = Number.POSITIVE_INFINITY;
+        let rightIndex = Number.NEGATIVE_INFINITY;
+        const indicesToRemove = new Set();
+        for (const [index, history] of histories.entries()) {
+          const userAction = history.userAction;
+          if (
+            userAction ===
+            ZevUnitTransferHistoryUserActions.SUBMITTED_TO_TRANSFER_TO
+          ) {
+            leftIndex = index;
+            counter = counter === null ? -1 : counter - 1;
+          } else if (
+            userAction ===
+            ZevUnitTransferHistoryUserActions.RESCINDED_BY_TRANSFER_FROM
+          ) {
+            rightIndex = index;
+            counter = counter === null ? 1 : counter + 1;
+          }
+          if (counter === 0 && rightIndex !== histories.length - 1) {
+            for (let i = leftIndex; i <= rightIndex; i++) {
+              indicesToRemove.add(i);
+            }
           }
         }
-      }
-      const filteredHistories = histories.filter((_, index) => {
-        if (indicesToRemove.has(index)) {
-          return false;
-        }
-        return true;
-      });
-
-      // -- Step 2.2: for each consecutive identical user-action,
-      //      change action to "ADDED_COMMENT" (if a comment exists)
-      //      or skip the history record (if no comment exists)
-      const result: Omit<ZevUnitTransferHistory, "id">[] = [];
-      let previousAction: ZevUnitTransferHistoryUserActions | null = null;
-      for (const history of filteredHistories) {
-        const userAction = history.userAction;
-
-        // either remove the record or change the action to "ADDED_COMMENT_GOV_INTERNAL"
-        //   for duplicated actions
-        if (userAction === previousAction) {
-          if (!history.comment) {
-            continue;
+        const filteredHistories = histories.filter((_, index) => {
+          if (indicesToRemove.has(index)) {
+            return false;
           }
-          if (!setOfNewGovUserIds.has(history.userId)) {
-            throw new Error(
-              `A credit transfer comment by a non-government user exists without associating with a status change.`,
-            );
+          return true;
+        });
+
+        // -- Step 2.2: for each consecutive identical user-action,
+        //      change action to "ADDED_COMMENT" (if a comment exists)
+        //      or skip the history record (if no comment exists)
+        const result: Omit<ZevUnitTransferHistory, "id">[] = [];
+        let previousAction: ZevUnitTransferHistoryUserActions | null = null;
+        for (const history of filteredHistories) {
+          const userAction = history.userAction;
+
+          // either remove the record or change the action to "ADDED_COMMENT_GOV_INTERNAL"
+          //   for duplicated actions
+          if (userAction === previousAction) {
+            if (!history.comment) {
+              continue;
+            }
+            if (!setOfNewGovUserIds.has(history.userId)) {
+              throw new Error(
+                `A credit transfer comment by a non-government user exists without associating with a status change.`,
+              );
+            }
+            history.userAction =
+              ZevUnitTransferHistoryUserActions.ADDED_COMMENT_GOV_INTERNAL;
           }
-          history.userAction =
-            ZevUnitTransferHistoryUserActions.ADDED_COMMENT_GOV_INTERNAL;
+
+          // convert action to "RETURNED_TO_ANALYST" whenever it is the case
+          else if (
+            userAction ===
+              ZevUnitTransferHistoryUserActions.APPROVED_BY_TRANSFER_TO &&
+            (previousAction ===
+              ZevUnitTransferHistoryUserActions.RECOMMEND_APPROVAL_GOV ||
+              previousAction ===
+                ZevUnitTransferHistoryUserActions.RECOMMEND_REJECTION_GOV)
+          ) {
+            history.userAction =
+              ZevUnitTransferHistoryUserActions.RETURNED_TO_ANALYST;
+          }
+
+          result.push(history);
+          previousAction = userAction;
         }
 
-        // convert action to "RETURNED_TO_ANALYST" whenever it is the case
-        else if (
-          userAction ===
-            ZevUnitTransferHistoryUserActions.APPROVED_BY_TRANSFER_TO &&
-          (previousAction ===
-            ZevUnitTransferHistoryUserActions.RECOMMEND_APPROVAL_GOV ||
-            previousAction ===
-              ZevUnitTransferHistoryUserActions.RECOMMEND_REJECTION_GOV)
-        ) {
-          history.userAction =
-            ZevUnitTransferHistoryUserActions.RETURNED_TO_ANALYST;
+        // -- Step 3: add histories to the new zevUnitTransferHistory table
+        await tx.zevUnitTransferHistory.createMany({
+          data: result,
+        });
+      }
+
+      const vClassIdToEnum: Record<number, VehicleClassCode> = {};
+      for (const r of await prismaOld.vehicle_class_code.findMany()) {
+        vClassIdToEnum[r.id] = r.vehicle_class_code as VehicleClassCode;
+      }
+
+      const vZevIdToEnum: Record<number, VehicleZevType> = {};
+      for (const r of await prismaOld.vehicle_zev_type.findMany()) {
+        vZevIdToEnum[r.id] = r.vehicle_zev_code as VehicleZevType;
+      }
+
+      const mapOfOldVehStatusesToNewStatuses: {
+        [key: string]: VehicleStatus | undefined;
+      } = {
+        NEW: VehicleStatus.DRAFT,
+        DRAFT: VehicleStatus.DRAFT,
+        SUBMITTED: VehicleStatus.SUBMITTED,
+        VALIDATED: VehicleStatus.VALIDATED,
+        REJECTED: VehicleStatus.REJECTED,
+        CHANGES_REQUESTED: VehicleStatus.CHANGES_REQUESTED,
+        DELETED: VehicleStatus.DELETED,
+      };
+
+      const oldVehIdToNew: Record<number, number> = {};
+
+      const vehiclesOld = await prismaOld.vehicle.findMany();
+
+      for (const vehicleOld of vehiclesOld) {
+        const modelYearEnum =
+          mapOfModelYearIdsToModelYearEnum[vehicleOld.model_year_id];
+        const orgNewId = mapOfOldOrgIdsToNewOrgIds[vehicleOld.organization_id];
+        if (!modelYearEnum) {
+          throw new Error(
+            "vehicle with id " + vehicleOld.id + " has unknown model year!",
+          );
+        }
+        if (orgNewId === undefined) {
+          throw new Error(
+            "vehicle with id " + vehicleOld.id + " has unknown orgId",
+          );
+        }
+        const zevEnum = vZevIdToEnum[vehicleOld.vehicle_zev_type_id];
+        const classEnum = vClassIdToEnum[vehicleOld.vehicle_class_code_id];
+        const zevClassEnum = vehicleOld.credit_class_id
+          ? mapOfOldCreditClassIdsToZevClasses[vehicleOld.credit_class_id]
+          : undefined;
+        const newStatus =
+          mapOfOldVehStatusesToNewStatuses[vehicleOld.validation_status];
+
+        if (!newStatus) {
+          throw new Error(
+            "vehicle with id " + vehicleOld.id + " has unknown status",
+          );
         }
 
-        result.push(history);
-        previousAction = userAction;
-      }
-
-      // -- Step 3: add histories to the new zevUnitTransferHistory table
-      await tx.zevUnitTransferHistory.createMany({
-        data: result,
-      });
-    }
-
-    const vClassIdToEnum: Record<number, VehicleClassCode> = {};
-    for (const r of await prismaOld.vehicle_class_code.findMany()) {
-      vClassIdToEnum[r.id] = r.vehicle_class_code as VehicleClassCode;
-    }
-
-    const vZevIdToEnum: Record<number, VehicleZevType> = {};
-    for (const r of await prismaOld.vehicle_zev_type.findMany()) {
-      vZevIdToEnum[r.id] = r.vehicle_zev_code as VehicleZevType;
-    }
-
-    const mapOfOldVehStatusesToNewStatuses: {
-      [key: string]: VehicleStatus | undefined;
-    } = {
-      NEW: VehicleStatus.DRAFT,
-      DRAFT: VehicleStatus.DRAFT,
-      SUBMITTED: VehicleStatus.SUBMITTED,
-      VALIDATED: VehicleStatus.VALIDATED,
-      REJECTED: VehicleStatus.REJECTED,
-      CHANGES_REQUESTED: VehicleStatus.CHANGES_REQUESTED,
-      DELETED: VehicleStatus.DELETED,
-    };
-
-    const oldVehIdToNew: Record<number, number> = {};
-
-    const vehiclesOld = await prismaOld.vehicle.findMany();
-
-    for (const vehicleOld of vehiclesOld) {
-      const modelYearEnum =
-        mapOfModelYearIdsToModelYearEnum[vehicleOld.model_year_id];
-      const orgNewId = mapOfOldOrgIdsToNewOrgIds[vehicleOld.organization_id];
-      if (!modelYearEnum) {
-        throw new Error(
-          "vehicle with id " + vehicleOld.id + " has unknown model year!",
-        );
-      }
-      if (orgNewId === undefined) {
-        throw new Error(
-          "vehicle with id " + vehicleOld.id + " has unknown orgId",
-        );
-      }
-      const zevEnum = vZevIdToEnum[vehicleOld.vehicle_zev_type_id];
-      const classEnum = vClassIdToEnum[vehicleOld.vehicle_class_code_id];
-      const zevClassEnum = vehicleOld.credit_class_id
-        ? mapOfOldCreditClassIdsToZevClasses[vehicleOld.credit_class_id]
-        : undefined;
-      const newStatus =
-        mapOfOldVehStatusesToNewStatuses[vehicleOld.validation_status];
-
-      if (!newStatus) {
-        throw new Error(
-          "vehicle with id " + vehicleOld.id + " has unknown status",
-        );
-      }
-
-      const created = await tx.vehicle.create({
-        select: { id: true },
-        data: {
-          range: vehicleOld.range,
-          make: vehicleOld.make,
-          modelYear: modelYearEnum,
-          status: newStatus,
-          modelName: vehicleOld.model_name,
-          creditValue: vehicleOld.credit_value,
-          vehicleZevType: zevEnum,
-          vehicleClassCode: classEnum,
-          weightKg: Number(vehicleOld.weight_kg),
-          organizationId: orgNewId,
-          zevClass: zevClassEnum,
-          hasPassedUs06Test: vehicleOld.has_passed_us_06_test,
-          isActive: vehicleOld.is_active,
-          vehicleClass: VehicleClass.REPORTABLE,
-        },
-      });
-
-      oldVehIdToNew[vehicleOld.id] = created.id;
-    }
-
-    for (const historyOld of await prismaOld.vehicle_change_history.findMany()) {
-      const vehIdNew = oldVehIdToNew[historyOld.vehicle_id];
-      const newCreateUserId =
-        mapOfOldUsernamesToNewUserIds[historyOld.create_user];
-
-      if (!newCreateUserId) {
-        throw new Error(
-          "vehicle history with id " +
-            historyOld.id +
-            " has unknown create user id!",
-        );
-      }
-
-      await tx.vehicleChangeHistory.create({
-        data: {
-          createTimestamp: historyOld.create_timestamp,
-          vehicleClassCode: {
-            set: [vClassIdToEnum[historyOld.vehicle_class_code_id]],
+        const created = await tx.vehicle.create({
+          select: { id: true },
+          data: {
+            range: vehicleOld.range,
+            make: vehicleOld.make,
+            modelYear: modelYearEnum,
+            status: newStatus,
+            modelName: vehicleOld.model_name,
+            creditValue: vehicleOld.credit_value,
+            vehicleZevType: zevEnum,
+            vehicleClassCode: classEnum,
+            weightKg: Number(vehicleOld.weight_kg),
+            organizationId: orgNewId,
+            zevClass: zevClassEnum,
+            hasPassedUs06Test: vehicleOld.has_passed_us_06_test,
+            isActive: vehicleOld.is_active,
+            vehicleClass: VehicleClass.REPORTABLE,
           },
-          createUserId: newCreateUserId,
-          vehicleZevType: {
-            set: [vZevIdToEnum[historyOld.vehicle_zev_type_id]],
-          },
-          range: historyOld.range,
-          make: historyOld.make,
-          weightKg: historyOld.weight_kg,
-          modelName: historyOld.model_name,
-          modelYearId: historyOld.model_year_id,
-          organizationId:
-            mapOfOldOrgIdsToNewOrgIds[historyOld.organization_id]!,
-          validationStatus: historyOld.validation_status,
-          vehicleId: vehIdNew,
-          userRole: historyOld.user_role,
-        },
-      });
-    }
+        });
 
-    const commentsOld = await prismaOld.vehicle_comment.findMany();
-
-    for (const commentOld of commentsOld) {
-      const vehIdNew = oldVehIdToNew[commentOld.vehicle_id];
-      const newCreateUserId =
-        mapOfOldUsernamesToNewUserIds[commentOld.create_user];
-      const newUpdateUserId = commentOld.update_user
-        ? mapOfOldUsernamesToNewUserIds[commentOld.update_user]
-        : undefined;
-      if (!newCreateUserId) {
-        throw new Error(
-          "vehicle comment with id " +
-            commentOld.id +
-            " has an unknown create user!",
-        );
+        oldVehIdToNew[vehicleOld.id] = created.id;
       }
-      if (commentOld.vehicle_comment) {
-        await tx.vehicleComment.create({
+
+      for (const historyOld of await prismaOld.vehicle_change_history.findMany()) {
+        const vehIdNew = oldVehIdToNew[historyOld.vehicle_id];
+        const newCreateUserId =
+          mapOfOldUsernamesToNewUserIds[historyOld.create_user];
+
+        if (!newCreateUserId) {
+          throw new Error(
+            "vehicle history with id " +
+              historyOld.id +
+              " has unknown create user id!",
+          );
+        }
+
+        await tx.vehicleChangeHistory.create({
+          data: {
+            createTimestamp: historyOld.create_timestamp,
+            vehicleClassCode: {
+              set: [vClassIdToEnum[historyOld.vehicle_class_code_id]],
+            },
+            createUserId: newCreateUserId,
+            vehicleZevType: {
+              set: [vZevIdToEnum[historyOld.vehicle_zev_type_id]],
+            },
+            range: historyOld.range,
+            make: historyOld.make,
+            weightKg: historyOld.weight_kg,
+            modelName: historyOld.model_name,
+            modelYearId: historyOld.model_year_id,
+            organizationId:
+              mapOfOldOrgIdsToNewOrgIds[historyOld.organization_id]!,
+            validationStatus: historyOld.validation_status,
+            vehicleId: vehIdNew,
+            userRole: historyOld.user_role,
+          },
+        });
+      }
+
+      const commentsOld = await prismaOld.vehicle_comment.findMany();
+
+      for (const commentOld of commentsOld) {
+        const vehIdNew = oldVehIdToNew[commentOld.vehicle_id];
+        const newCreateUserId =
+          mapOfOldUsernamesToNewUserIds[commentOld.create_user];
+        const newUpdateUserId = commentOld.update_user
+          ? mapOfOldUsernamesToNewUserIds[commentOld.update_user]
+          : undefined;
+        if (!newCreateUserId) {
+          throw new Error(
+            "vehicle comment with id " +
+              commentOld.id +
+              " has an unknown create user!",
+          );
+        }
+        if (commentOld.vehicle_comment) {
+          await tx.vehicleComment.create({
+            data: {
+              vehicleId: vehIdNew,
+              createTimestamp: commentOld.create_timestamp,
+              updateTimestamp: commentOld.update_timestamp,
+              comment: commentOld.vehicle_comment,
+              createUserId: newCreateUserId,
+              updateUserId: newUpdateUserId,
+            },
+          });
+        }
+      }
+
+      const attachmentsOld = await prismaOld.vehicle_file_attachment.findMany();
+
+      for (const attachemntOld of attachmentsOld) {
+        const vehIdNew = oldVehIdToNew[attachemntOld.vehicle_id];
+
+        await tx.vehicleAttachment.create({
           data: {
             vehicleId: vehIdNew,
-            createTimestamp: commentOld.create_timestamp,
-            updateTimestamp: commentOld.update_timestamp,
-            comment: commentOld.vehicle_comment,
-            createUserId: newCreateUserId,
-            updateUserId: newUpdateUserId,
+            createTimestamp: attachemntOld.create_timestamp,
+            updateTimestamp: attachemntOld.update_timestamp,
+            createUser: attachemntOld.create_user,
+            updateUser: attachemntOld.update_user,
+            filename: attachemntOld.filename,
+            minioObjectName: attachemntOld.minio_object_name,
+            size: attachemntOld.size,
+            mimeType: attachemntOld.mime_type,
+            isRemoved: attachemntOld.is_removed,
           },
         });
       }
-    }
 
-    const attachmentsOld = await prismaOld.vehicle_file_attachment.findMany();
-
-    for (const attachemntOld of attachmentsOld) {
-      const vehIdNew = oldVehIdToNew[attachemntOld.vehicle_id];
-
-      await tx.vehicleAttachment.create({
-        data: {
-          vehicleId: vehIdNew,
-          createTimestamp: attachemntOld.create_timestamp,
-          updateTimestamp: attachemntOld.update_timestamp,
-          createUser: attachemntOld.create_user,
-          updateUser: attachemntOld.update_user,
-          filename: attachemntOld.filename,
-          minioObjectName: attachemntOld.minio_object_name,
-          size: attachemntOld.size,
-          mimeType: attachemntOld.mime_type,
-          isRemoved: attachemntOld.is_removed,
+      const issuedVinRecords = await prismaOld.record_of_sale.findMany({
+        where: {
+          sales_submission: {
+            is: {
+              validation_status: "VALIDATED",
+            },
+          },
+        },
+        select: {
+          vin: true,
         },
       });
-    }
-  });
+      const legacyVinsToCreate: Omit<CreditApplicationVinLegacy, "id">[] = [];
+      issuedVinRecords.forEach((record) => {
+        const vin = record.vin;
+        if (vin) {
+          legacyVinsToCreate.push({ vin });
+        }
+      });
+      await tx.creditApplicationVinLegacy.createMany({
+        data: legacyVinsToCreate,
+      });
+    },
+    {
+      timeout: 10000,
+    },
+  );
 };
 
 main()

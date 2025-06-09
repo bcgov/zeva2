@@ -1,4 +1,3 @@
-import { ContentCard } from "@/app/lib/components";
 import { getData } from "../data";
 import { AnalystActions } from "./AnalystActions";
 import { sumCredits } from "../utils";
@@ -34,7 +33,7 @@ export const AnalystView = async (props: {
   };
 
   return (
-    <ContentCard title="Actions">
+    <>
       <ApplicationCredits credits={summedCredits} />
       <AnalystActions
         id={props.id}
@@ -43,6 +42,6 @@ export const AnalystView = async (props: {
         validateAction={validateWrapped}
         goToValidatedAction={goToValidated}
       />
-    </ContentCard>
+    </>
   );
 };

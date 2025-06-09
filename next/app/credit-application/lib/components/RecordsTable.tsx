@@ -1,7 +1,6 @@
 "use client";
 
 import { ColumnDef, createColumnHelper } from "@tanstack/react-table";
-import { CreditApplicationRecordSparse } from "../data";
 import {
   JSX,
   useCallback,
@@ -14,11 +13,11 @@ import { Button, ContentCard, Table } from "@/app/lib/components";
 import { ReasonsMap, updateValidatedRecords, ValidatedMap } from "../actions";
 import { useRouter } from "next/navigation";
 import { getModelYearEnumsToStringsMap } from "@/app/lib/utils/enumMaps";
-import { getDate } from "@/app/lib/utils/date";
+import { CreditApplicationRecordSparseSerialized } from "../utils";
 
 export const RecordsTable = (props: {
   id: number;
-  records: CreditApplicationRecordSparse[];
+  records: CreditApplicationRecordSparseSerialized[];
   totalNumbeOfRecords: number;
   readOnly: boolean;
 }) => {
@@ -94,16 +93,17 @@ export const RecordsTable = (props: {
     return getModelYearEnumsToStringsMap();
   }, []);
 
-  const columnHelper = createColumnHelper<CreditApplicationRecordSparse>();
+  const columnHelper =
+    createColumnHelper<CreditApplicationRecordSparseSerialized>();
   const columns = useMemo(() => {
-    const result: ColumnDef<CreditApplicationRecordSparse, any>[] = [
+    const result: ColumnDef<CreditApplicationRecordSparseSerialized, any>[] = [
       columnHelper.accessor((row) => row.vin, {
         id: "vin",
         enableSorting: true,
         enableColumnFilter: true,
         header: () => <span>VIN</span>,
       }),
-      columnHelper.accessor((row) => getDate(row.timestamp), {
+      columnHelper.accessor((row) => row.timestamp, {
         id: "timestamp",
         enableSorting: true,
         enableColumnFilter: true,
@@ -127,15 +127,12 @@ export const RecordsTable = (props: {
         enableColumnFilter: true,
         header: () => <span>Model Year</span>,
       }),
-      columnHelper.accessor(
-        (row) => (row.icbcTimestamp ? getDate(row.icbcTimestamp) : null),
-        {
-          id: "icbcTimestamp",
-          enableSorting: true,
-          enableColumnFilter: true,
-          header: () => <span>ICBC File Date</span>,
-        },
-      ),
+      columnHelper.accessor((row) => row.icbcTimestamp, {
+        id: "icbcTimestamp",
+        enableSorting: true,
+        enableColumnFilter: true,
+        header: () => <span>ICBC File Date</span>,
+      }),
       columnHelper.accessor((row) => row.icbcMake, {
         id: "icbcMake",
         enableSorting: true,
@@ -173,7 +170,11 @@ export const RecordsTable = (props: {
         cell: (cellProps) => {
           const id = cellProps.row.original.id;
           let disabled = false;
-          if (cellProps.row.original.warnings.includes("1")) {
+          if (
+            cellProps.row.original.warnings.some(
+              (warning) => warning === "1" || warning === "51",
+            )
+          ) {
             disabled = true;
           }
           return (
@@ -198,7 +199,7 @@ export const RecordsTable = (props: {
           const id = cellProps.row.original.id;
           const reason = reasonsMap[id];
           if (props.readOnly) {
-            return false;
+            return cellProps.row.original.reason;
           }
           return getReasonsJSX(id, reason);
         },
@@ -219,16 +220,18 @@ export const RecordsTable = (props: {
 
   return (
     <div>
-      <Table<CreditApplicationRecordSparse>
+      <Table<CreditApplicationRecordSparseSerialized>
         columns={columns}
         data={props.records}
         totalNumberOfRecords={props.totalNumbeOfRecords}
       />
-      <ContentCard title="Actions">
-        <Button onClick={handleSave} disabled={isPending}>
-          {isPending ? "..." : "Save"}
-        </Button>
-      </ContentCard>
+      {!props.readOnly && (
+        <ContentCard title="Actions">
+          <Button onClick={handleSave} disabled={isPending}>
+            {isPending ? "..." : "Save"}
+          </Button>
+        </ContentCard>
+      )}
     </div>
   );
 };

@@ -11,6 +11,7 @@ import { getUserInfo } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import {
   CreditApplicationStatus,
+  CreditApplicationSupplierStatus,
   Role,
   TransactionType,
 } from "@/prisma/generated/client";
@@ -30,8 +31,10 @@ import {
   getIcbcRecordsMap,
   getReservedVins,
   getVinRecordsMap,
+  unreserveVins,
+  updateStatus,
 } from "./services";
-import { SupplierTemplate, SupplierTemplateSheetNames } from "./constants";
+import { SupplierTemplate } from "./constants";
 import { Directory } from "@/app/lib/constants/minio";
 
 export const getSupplierTemplateDownloadUrl = async () => {
@@ -74,7 +77,7 @@ export const processSupplierFile = async (
     const workbook = new Excel.Workbook();
     await workbook.xlsx.read(file);
     const dataSheet = workbook.getWorksheet(
-      SupplierTemplateSheetNames.ZEVsSupplied,
+      SupplierTemplate.ZEVsSuppliedSheetName,
     );
     if (!dataSheet) {
       throw new Error("Expected sheet not found!");
@@ -91,7 +94,7 @@ export const processSupplierFile = async (
     const vehicles = await getEligibleVehicles(userOrgId);
     const vehiclesMap = getSupplierVehiclesMap(vehicles);
     const toInsertPrelim: Omit<
-      Prisma.ReservedVinCreateManyInput,
+      Prisma.CreditApplicationVinCreateManyInput,
       "creditApplicationId"
     >[] = [];
     const vinsMissingVehicles: string[] = [];
@@ -118,6 +121,7 @@ export const processSupplierFile = async (
         data: {
           organizationId: userOrgId,
           status: CreditApplicationStatus.SUBMITTED,
+          supplierStatus: CreditApplicationSupplierStatus.SUBMITTED,
           supplierFileId: objectName,
           supplierFileName: fileName,
         },
@@ -126,14 +130,14 @@ export const processSupplierFile = async (
         },
       });
       result = id;
-      const toInsert: Prisma.ReservedVinCreateManyInput[] = [];
+      const toInsert: Prisma.CreditApplicationVinCreateManyInput[] = [];
       toInsertPrelim.forEach((obj) => {
         toInsert.push({
           ...obj,
           creditApplicationId: id,
         });
       });
-      await tx.reservedVin.createMany({
+      await tx.creditApplicationVin.createMany({
         data: toInsert,
       });
       await tx.creditApplicationHistory.create({
@@ -269,9 +273,6 @@ export const updateValidatedRecords = async (
     .concat(Object.keys(reasonsMap))
     .forEach((id) => {
       const idInt = parseInt(id, 10);
-      if (Number.isNaN(idInt)) {
-        throw new Error("Encountered an ID that is not a number!");
-      }
       ids.add(idInt);
     });
   const records = await prisma.creditApplicationRecord.findMany({
@@ -306,8 +307,8 @@ export const analystRecommend = async (
   creditApplicationId: number,
   status: CreditApplicationStatus,
 ) => {
-  const { userIsGov, userId } = await getUserInfo();
-  if (!userIsGov) {
+  const { userIsGov, userId, userRoles } = await getUserInfo();
+  if (!userIsGov || !userRoles.some((role) => role === Role.ENGINEER_ANALYST)) {
     throw new Error("Unauthorized");
   }
   if (
@@ -329,15 +330,73 @@ export const analystRecommend = async (
     throw new Error("Invalid Action");
   }
   await prisma.$transaction([
-    prisma.creditApplication.update({
-      where: {
-        id: creditApplicationId,
-      },
-      data: {
-        status,
-      },
-    }),
+    updateStatus(creditApplicationId, status),
     createHistory(userId, creditApplicationId, status),
+  ]);
+};
+
+export const returnToSupplier = async (creditApplicationId: number) => {
+  const { userIsGov, userId, userRoles } = await getUserInfo();
+  if (!userIsGov || !userRoles.some((role) => role === Role.ENGINEER_ANALYST)) {
+    throw new Error("Unauthorized");
+  }
+  const creditApplication = await prisma.creditApplication.findUnique({
+    where: {
+      id: creditApplicationId,
+      status: {
+        in: [
+          CreditApplicationStatus.SUBMITTED,
+          CreditApplicationStatus.RETURNED_TO_ANALYST,
+        ],
+      },
+    },
+  });
+  if (!creditApplication) {
+    throw new Error("Invalid Action!");
+  }
+  await prisma.$transaction([
+    updateStatus(
+      creditApplicationId,
+      CreditApplicationStatus.RETURNED_TO_SUPPLIER,
+    ),
+    unreserveVins(creditApplicationId),
+    createHistory(
+      userId,
+      creditApplicationId,
+      CreditApplicationStatus.RETURNED_TO_SUPPLIER,
+    ),
+  ]);
+};
+
+export const returnToAnalyst = async (creditApplicationId: number) => {
+  const { userIsGov, userId, userRoles } = await getUserInfo();
+  if (!userIsGov || !userRoles.some((role) => role === Role.DIRECTOR)) {
+    throw new Error("Unauthorized");
+  }
+  const creditApplication = await prisma.creditApplication.findUnique({
+    where: {
+      id: creditApplicationId,
+      status: {
+        in: [
+          CreditApplicationStatus.RECOMMEND_APPROVAL,
+          CreditApplicationStatus.RECOMMEND_REJECTION,
+        ],
+      },
+    },
+  });
+  if (!creditApplication) {
+    throw new Error("Invalid Action!");
+  }
+  await prisma.$transaction([
+    updateStatus(
+      creditApplicationId,
+      CreditApplicationStatus.RETURNED_TO_ANALYST,
+    ),
+    createHistory(
+      userId,
+      creditApplicationId,
+      CreditApplicationStatus.RETURNED_TO_ANALYST,
+    ),
   ]);
 };
 
@@ -383,21 +442,8 @@ export const directorApprove = async (
     });
   });
   await prisma.$transaction([
-    prisma.creditApplication.update({
-      where: {
-        id: creditApplicationId,
-      },
-      data: {
-        status: CreditApplicationStatus.APPROVED,
-      },
-    }),
-    prisma.reservedVin.deleteMany({
-      where: {
-        vin: {
-          in: invalidVins,
-        },
-      },
-    }),
+    updateStatus(creditApplicationId, CreditApplicationStatus.APPROVED),
+    unreserveVins(creditApplicationId, invalidVins),
     prisma.zevUnitTransaction.createMany({
       data: transactionsToCreate,
     }),
@@ -405,6 +451,31 @@ export const directorApprove = async (
       userId,
       creditApplicationId,
       CreditApplicationStatus.APPROVED,
+    ),
+  ]);
+};
+
+export const directorReject = async (creditApplicationId: number) => {
+  const { userIsGov, userRoles, userId } = await getUserInfo();
+  if (!userIsGov || !userRoles.some((role) => role === Role.DIRECTOR)) {
+    throw new Error("Unauthorized!");
+  }
+  const creditApplication = await prisma.creditApplication.findUnique({
+    where: {
+      id: creditApplicationId,
+      status: CreditApplicationStatus.RECOMMEND_REJECTION,
+    },
+  });
+  if (!creditApplication) {
+    throw new Error("Invalid Action!");
+  }
+  await prisma.$transaction([
+    updateStatus(creditApplicationId, CreditApplicationStatus.REJECTED),
+    unreserveVins(creditApplicationId),
+    createHistory(
+      userId,
+      creditApplicationId,
+      CreditApplicationStatus.REJECTED,
     ),
   ]);
 };
