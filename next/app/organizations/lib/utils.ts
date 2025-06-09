@@ -1,4 +1,44 @@
+import { Prisma } from "@/prisma/generated/client";
 import { OrganizationSparse } from "./data";
+
+const YEARS_OF_AVG_SUPPLIED_VOL_USED = 3; // Number of years to average the supplied volume for LDVs
+
+export const organizationLDVSuppliedClause: Prisma.Organization$ldvSuppliedArgs = {
+  select: {
+    modelYear: true,
+    volume: true,
+  },
+  orderBy: { modelYear: "desc" },
+  take: YEARS_OF_AVG_SUPPLIED_VOL_USED,
+  distinct: ["modelYear"], // Ensure unique model years
+};
+
+/**
+ * Determines the supplier class based on the average supplied volume of LDVs.
+ * @param ldvSupplied - volumes of LDVs supplied by the organization over the last few years,
+ *                      already sorted by model year in descending order.
+ * @returns the supplier class
+ */
+export const getSupplierClass = (ldvSupplied: { volume: number }[]) => {
+  const volumes = ldvSupplied
+    .slice(0, YEARS_OF_AVG_SUPPLIED_VOL_USED)
+    .map(item => item.volume)
+    .filter(volume => volume > 0);
+
+  if (volumes.length === 0) {
+    return "N/A";
+  }
+  const avgVolume = volumes.length !== YEARS_OF_AVG_SUPPLIED_VOL_USED ?
+    volumes[0] :
+    volumes.reduce((sum, vol) => sum + vol, 0) / volumes.length;
+  if (avgVolume < 1000) {
+    return "SMALL";
+  } else if (avgVolume < 5000) {
+    return "MEDIUM";
+  } else {
+    return "LARGE";
+  }
+}
 
 const decomposeFilterValue = (filterValue: string) => {
   let filterType = filterValue.substring(0, 2);

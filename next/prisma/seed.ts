@@ -15,7 +15,7 @@ import {
   VehicleZevType,
   VehicleStatus,
 } from "./generated/client";
-import { getModelYearEnum, getRoleEnum } from "@/lib/utils/getEnums";
+import { getAddressTypeEnum, getModelYearEnum, getRoleEnum } from "@/lib/utils/getEnums";
 import { Decimal } from "./generated/client/runtime/library";
 import { Notification } from "./generated/client";
 import { isNotification } from "@/app/lib/utils/typeGuards";
@@ -83,6 +83,59 @@ const main = () => {
         },
       });
       mapOfOldOrgIdsToNewOrgIds[orgOld.id] = orgNew.id;
+    }
+
+    // add orgs addresses:
+    const orgAddressesOld = await prismaOld.organization_address.findMany({
+      include: {
+        address_type: {
+          select: {
+            address_type: true,
+          },
+        }
+      }
+    });
+    for (const orgAddressOld of orgAddressesOld) {
+      const orgIdNew = mapOfOldOrgIdsToNewOrgIds[orgAddressOld.organization_id];
+      if (!orgIdNew) {
+        throw new Error("organization_address " + orgAddressOld.id + " with unknown organization id!");
+      }
+      await tx.organizationAddress.create({
+        data: {
+          organizationId: orgIdNew,
+          expirationDate: orgAddressOld.expiration_date,
+          addressType: getAddressTypeEnum(orgAddressOld.address_type.address_type),
+          addressLines: [
+            orgAddressOld.address_line_1,
+            orgAddressOld.address_line_2,
+            orgAddressOld.address_line_3,
+          ].filter((line) => line && line.trim() !== "").join("\n"),
+          city: orgAddressOld.city,
+          postalCode: orgAddressOld.postal_code,
+          state: orgAddressOld.state,
+          county: orgAddressOld.county,
+          country: orgAddressOld.country,
+          representative: orgAddressOld.representative_name,
+        },
+      });
+    }
+
+    // add orgs LDV supplied volumes (from old LDV sales table):
+    const orgLDVSalesOld = await prismaOld.organization_ldv_sales.findMany({
+      where: { is_supplied: true },
+    });
+    for (const orgLDVSaleOld of orgLDVSalesOld) {
+      const orgIdNew = mapOfOldOrgIdsToNewOrgIds[orgLDVSaleOld.organization_id];
+      if (!orgIdNew) {
+        throw new Error("organization_ldv_sales " + orgLDVSaleOld.id + " with unknown organization id!");
+      }
+      await tx.organizationLDVSupplied.create({
+        data: {
+          organizationId: orgIdNew,
+          modelYear: mapOfModelYearIdsToModelYearEnum[orgLDVSaleOld.model_year_id] ?? ModelYear.MY_2019,
+          volume: orgLDVSaleOld.ldv_sales,
+        },
+      });
     }
 
     // add users:
