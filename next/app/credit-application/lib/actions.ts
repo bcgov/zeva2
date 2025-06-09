@@ -14,7 +14,7 @@ import {
   CreditApplicationSupplierStatus,
   Role,
   TransactionType,
-  Prisma
+  Prisma,
 } from "@/prisma/generated/client";
 import { randomUUID } from "crypto";
 import Excel from "exceljs";

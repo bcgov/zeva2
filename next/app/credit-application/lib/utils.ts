@@ -4,7 +4,7 @@ import {
   CreditApplicationSupplierStatus,
   ModelYear,
   VehicleStatus,
-  Prisma
+  Prisma,
 } from "@/prisma/generated/client";
 import { getStringsToModelYearsEnumsMap } from "@/app/lib/utils/enumMaps";
 import {

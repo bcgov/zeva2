@@ -7,7 +7,7 @@ export const ApplicationCredits = (props: {
 }) => {
   const modelYearsMap = getModelYearEnumsToStringsMap();
   const rows: JSX.Element[] = [];
-  let counter = 0
+  let counter = 0;
   props.credits.forEach((credit) => {
     rows.push(
       <tr key={counter}>
@@ -17,7 +17,7 @@ export const ApplicationCredits = (props: {
         <th key="numberOfCredits">{credit.numberOfUnits.toString()}</th>
       </tr>,
     );
-    counter = counter + 1
+    counter = counter + 1;
   });
   if (rows.length === 0) {
     return null;
