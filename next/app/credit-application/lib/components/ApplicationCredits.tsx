@@ -7,15 +7,17 @@ export const ApplicationCredits = (props: {
 }) => {
   const modelYearsMap = getModelYearEnumsToStringsMap();
   const rows: JSX.Element[] = [];
-  props.credits.forEach((credit, index) => {
+  let counter = 0
+  props.credits.forEach((credit) => {
     rows.push(
-      <tr key={index}>
+      <tr key={counter}>
         <th key="vehicleClass">{credit.vehicleClass}</th>
         <th key="zevClass">{credit.zevClass}</th>
         <th key="modelYear">{modelYearsMap[credit.modelYear]}</th>
         <th key="numberOfCredits">{credit.numberOfUnits.toString()}</th>
       </tr>,
     );
+    counter = counter + 1
   });
   if (rows.length === 0) {
     return null;

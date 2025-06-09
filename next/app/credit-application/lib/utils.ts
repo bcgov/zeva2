@@ -4,6 +4,7 @@ import {
   CreditApplicationSupplierStatus,
   ModelYear,
   VehicleStatus,
+  Prisma
 } from "@/prisma/generated/client";
 import { getStringsToModelYearsEnumsMap } from "@/app/lib/utils/enumMaps";
 import {
@@ -12,7 +13,6 @@ import {
   SupplierTemplateZEVsSuppliedSheetData,
 } from "./constants";
 import { IcbcRecordsMap, VehicleSparse, VinRecordsMap } from "./services";
-import { Prisma } from "@/prisma/generated/client";
 import {
   CreditApplicationCredit,
   CreditApplicationRecordSparse,
@@ -327,7 +327,6 @@ export const parseSupplierSubmission = (sheet: Excel.Worksheet) => {
       const headerText = header.value?.toString();
       if (headerText && headerText === requiredHeader) {
         found = true;
-        return;
       }
     });
     if (!found) {

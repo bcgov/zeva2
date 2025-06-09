@@ -28,9 +28,9 @@ export const AnalystActions = (props: {
 
   const handleGoToValidated = useCallback(
     (edit: boolean) => {
-      startTransition(() => {
+      startTransition(async () => {
         try {
-          props.goToValidatedAction(!edit);
+          await props.goToValidatedAction(!edit);
         } catch (e) {
           console.error(e);
         }
