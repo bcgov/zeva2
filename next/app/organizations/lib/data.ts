@@ -1,14 +1,19 @@
 import { getUserInfo } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { getCurrentBalance, sumBalance } from "../../../lib/utils/zevUnit";
-import { filterOrganizations, getSupplierClass, organizationLDVSuppliedClause, sortOrganzations } from "./utils";
+import {
+  filterOrganizations,
+  getSupplierClass,
+  organizationLDVSuppliedClause,
+  sortOrganzations,
+} from "./utils";
 
 export type OrganizationSparse = {
-  id: number,
-  name: string,
-  supplierClass: string,
-  zevUnitBalanceA: string,
-  zevUnitBalanceB: string,
+  id: number;
+  name: string;
+  supplierClass: string;
+  zevUnitBalanceA: string;
+  zevUnitBalanceB: string;
 };
 
 export const getAllSuppliers = async (): Promise<OrganizationSparse[]> => {
@@ -41,13 +46,15 @@ export const getAllSuppliers = async (): Promise<OrganizationSparse[]> => {
       id: org.id,
       name: org.name,
       supplierClass: getSupplierClass(org.ldvSupplied),
-      zevUnitBalanceA: balance === "deficit" ?
-        "DEFICIT" :
-        sumBalance(balance, "CREDIT", "REPORTABLE", "A").toFixed(2),
-      zevUnitBalanceB: balance === "deficit" ?
-        "DEFICIT" :
-        sumBalance(balance, "CREDIT", "REPORTABLE", "B").toFixed(2),
-    }
+      zevUnitBalanceA:
+        balance === "deficit"
+          ? "DEFICIT"
+          : sumBalance(balance, "CREDIT", "REPORTABLE", "A").toFixed(2),
+      zevUnitBalanceB:
+        balance === "deficit"
+          ? "DEFICIT"
+          : sumBalance(balance, "CREDIT", "REPORTABLE", "B").toFixed(2),
+    };
   });
 
   return supplierInfo;

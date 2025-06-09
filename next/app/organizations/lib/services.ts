@@ -38,9 +38,9 @@ export const getOrganizationDetails = async (id: number) => {
         },
         where: {
           isActive: true, // Only get active users
-        }
+        },
       },
-      ldvSupplied: organizationLDVSuppliedClause
+      ldvSupplied: organizationLDVSuppliedClause,
     },
   });
   return organization;

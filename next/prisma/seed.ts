@@ -16,7 +16,11 @@ import {
   VehicleStatus,
   CreditApplicationVinLegacy,
 } from "./generated/client";
-import { getAddressTypeEnum, getModelYearEnum, getRoleEnum } from "@/lib/utils/getEnums";
+import {
+  getAddressTypeEnum,
+  getModelYearEnum,
+  getRoleEnum,
+} from "@/lib/utils/getEnums";
 import { Decimal } from "./generated/client/runtime/library";
 import { Notification } from "./generated/client";
 import { isNotification } from "@/app/lib/utils/typeGuards";
@@ -61,200 +65,217 @@ const main = () => {
         [id: number]: ZevClass | undefined;
       } = {};
 
-    const modelYearsOld = await prismaOld.model_year.findMany();
-    for (const modelYearOld of modelYearsOld) {
-      mapOfModelYearIdsToModelYearEnum[modelYearOld.id] = getModelYearEnum(
-        modelYearOld.description,
-      );
-    }
-
-    const rolesOld = await prismaOld.role.findMany();
-    for (const roleOld of rolesOld) {
-      mapOfRoleIdsToRoleEnum[roleOld.id] = getRoleEnum(roleOld.role_code);
-    }
-
-    // add orgs:
-    const orgsOld = await prismaOld.organization.findMany();
-    for (const orgOld of orgsOld) {
-      const orgNew = await tx.organization.create({
-        data: {
-          name: orgOld.organization_name,
-          firstModelYear:
-            mapOfModelYearIdsToModelYearEnum[
-              orgOld.first_model_year_id ?? -1
-            ] ?? ModelYear.MY_2019,
-          isGovernment: orgOld.is_government,
-        },
-      });
-      mapOfOldOrgIdsToNewOrgIds[orgOld.id] = orgNew.id;
-    }
-
-    // add orgs addresses:
-    const orgAddressesOld = await prismaOld.organization_address.findMany({
-      include: {
-        address_type: {
-          select: {
-            address_type: true,
-          },
-        }
-      }
-    });
-    for (const orgAddressOld of orgAddressesOld) {
-      const orgIdNew = mapOfOldOrgIdsToNewOrgIds[orgAddressOld.organization_id];
-      if (!orgIdNew) {
-        throw new Error("organization_address " + orgAddressOld.id + " with unknown organization id!");
-      }
-      await tx.organizationAddress.create({
-        data: {
-          organizationId: orgIdNew,
-          expirationDate: orgAddressOld.expiration_date,
-          addressType: getAddressTypeEnum(orgAddressOld.address_type.address_type),
-          addressLines: [
-            orgAddressOld.address_line_1,
-            orgAddressOld.address_line_2,
-            orgAddressOld.address_line_3,
-          ].filter((line) => line && line.trim() !== "").join("\n"),
-          city: orgAddressOld.city,
-          postalCode: orgAddressOld.postal_code,
-          state: orgAddressOld.state,
-          county: orgAddressOld.county,
-          country: orgAddressOld.country,
-          representative: orgAddressOld.representative_name,
-        },
-      });
-    }
-
-    // add orgs LDV supplied volumes (from old LDV sales table):
-    const orgLDVSalesOld = await prismaOld.organization_ldv_sales.findMany({
-      where: { is_supplied: true },
-    });
-    for (const orgLDVSaleOld of orgLDVSalesOld) {
-      const orgIdNew = mapOfOldOrgIdsToNewOrgIds[orgLDVSaleOld.organization_id];
-      if (!orgIdNew) {
-        throw new Error("organization_ldv_sales " + orgLDVSaleOld.id + " with unknown organization id!");
-      }
-      await tx.organizationLDVSupplied.create({
-        data: {
-          organizationId: orgIdNew,
-          modelYear: mapOfModelYearIdsToModelYearEnum[orgLDVSaleOld.model_year_id] ?? ModelYear.MY_2019,
-          volume: orgLDVSaleOld.ldv_sales,
-        },
-      });
-    }
-
-    // add users:
-    const usersOld = await prismaOld.user_profile.findMany({
-      include: {
-        organization: true,
-      },
-    });
-    for (const [index, userOld] of usersOld.entries()) {
-      if (!userOld.organization_id) {
-        throw new Error("user " + userOld.id + " with no org id!");
-      }
-      const orgIdNew = mapOfOldOrgIdsToNewOrgIds[userOld.organization_id];
-      if (!orgIdNew) {
-        throw new Error("user " + userOld.id + " with unknown org id!");
-      }
-      const userNew = await tx.user.create({
-        data: {
-          contactEmail: userOld.email,
-          idpEmail:
-            userOld.keycloak_email ?? "noSuchEmail" + index + "@email.com",
-          idpSub: userOld.keycloak_user_id,
-          idp: userOld.organization?.is_government
-            ? Idp.IDIR
-            : Idp.BCEID_BUSINESS,
-          idpUsername: userOld.username,
-          isActive: userOld.is_active,
-          organizationId: orgIdNew,
-          firstName: userOld.first_name ?? "",
-          lastName: userOld.last_name ?? "",
-        },
-      });
-      mapOfOldUserIdsToNewUserIds[userOld.id] = userNew.id;
-      mapOfOldUsernamesToNewUserIds[userOld.username] = userNew.id;
-      if (userOld.organization?.is_government) {
-        setOfNewGovUserIds.add(userNew.id);
-      }
-    }
-
-    // update each user with their roles:
-    const usersRolesOld = await prismaOld.user_role.findMany();
-    for (const userRoleOld of usersRolesOld) {
-      await tx.user.update({
-        where: {
-          id: mapOfOldUserIdsToNewUserIds[userRoleOld.user_profile_id],
-        },
-        data: {
-          roles: {
-            push: mapOfRoleIdsToRoleEnum[userRoleOld.role_id],
-          },
-        },
-      });
-    }
-
-    const creditClassesOld = await prismaOld.credit_class_code.findMany();
-    for (const creditClass of creditClassesOld) {
-      mapOfOldCreditClassIdsToZevClasses[creditClass.id] =
-        ZevClass[creditClass.credit_class as keyof typeof ZevClass];
-    }
-
-    // add notifications from old subscription table
-    const notificationsOld = await prismaOld.notification.findMany({
-      select: { id: true, notification_code: true },
-    });
-
-    const notifCodeById = notificationsOld.reduce<Record<number, string>>(
-      (acc, n) => {
-        acc[n.id] = n.notification_code;
-        return acc;
-      },
-      {},
-    );
-
-    const subsOld = await prismaOld.notification_subscription.findMany({
-      select: { user_profile_id: true, notification_id: true },
-    });
-
-    const grouped = subsOld.reduce<Record<number, string[]>>((acc, sub) => {
-      const code = notifCodeById[sub.notification_id];
-      if (!code) return acc;
-      acc[sub.user_profile_id] ??= [];
-      acc[sub.user_profile_id].push(code);
-      return acc;
-    }, {});
-
-    for (const [oldUserId, codes] of Object.entries(grouped)) {
-      const newUserId = mapOfOldUserIdsToNewUserIds[Number(oldUserId)];
-      if (!newUserId) continue;
-
-      const validNotifications = codes
-        .map((code) => code as Notification)
-        .filter((n) => isNotification(n));
-
-      await tx.user.update({
-        where: { id: newUserId },
-        data: { notifications: { set: validNotifications } },
-      });
-    }
-
-    // add ZevUnitTransactions (in old db, these are called credit transactions)
-    const creditTransactionsOld = await prismaOld.credit_transaction.findMany();
-    for (const transaction of creditTransactionsOld) {
-      let transactionType;
-      let organizationId;
-      const zevClass =
-        mapOfOldCreditClassIdsToZevClasses[transaction.credit_class_id];
-      const modelYear =
-        mapOfModelYearIdsToModelYearEnum[transaction.model_year_id];
-      if (!zevClass) {
-        throw new Error(
-          "credit transaction " +
-            transaction.id +
-            " with unknown credit class!",
+      const modelYearsOld = await prismaOld.model_year.findMany();
+      for (const modelYearOld of modelYearsOld) {
+        mapOfModelYearIdsToModelYearEnum[modelYearOld.id] = getModelYearEnum(
+          modelYearOld.description,
         );
       }
+
+      const rolesOld = await prismaOld.role.findMany();
+      for (const roleOld of rolesOld) {
+        mapOfRoleIdsToRoleEnum[roleOld.id] = getRoleEnum(roleOld.role_code);
+      }
+
+      // add orgs:
+      const orgsOld = await prismaOld.organization.findMany();
+      for (const orgOld of orgsOld) {
+        const orgNew = await tx.organization.create({
+          data: {
+            name: orgOld.organization_name,
+            firstModelYear:
+              mapOfModelYearIdsToModelYearEnum[
+                orgOld.first_model_year_id ?? -1
+              ] ?? ModelYear.MY_2019,
+            isGovernment: orgOld.is_government,
+          },
+        });
+        mapOfOldOrgIdsToNewOrgIds[orgOld.id] = orgNew.id;
+      }
+
+      // add orgs addresses:
+      const orgAddressesOld = await prismaOld.organization_address.findMany({
+        include: {
+          address_type: {
+            select: {
+              address_type: true,
+            },
+          },
+        },
+      });
+      for (const orgAddressOld of orgAddressesOld) {
+        const orgIdNew =
+          mapOfOldOrgIdsToNewOrgIds[orgAddressOld.organization_id];
+        if (!orgIdNew) {
+          throw new Error(
+            "organization_address " +
+              orgAddressOld.id +
+              " with unknown organization id!",
+          );
+        }
+        await tx.organizationAddress.create({
+          data: {
+            organizationId: orgIdNew,
+            expirationDate: orgAddressOld.expiration_date,
+            addressType: getAddressTypeEnum(
+              orgAddressOld.address_type.address_type,
+            ),
+            addressLines: [
+              orgAddressOld.address_line_1,
+              orgAddressOld.address_line_2,
+              orgAddressOld.address_line_3,
+            ]
+              .filter((line) => line && line.trim() !== "")
+              .join("\n"),
+            city: orgAddressOld.city,
+            postalCode: orgAddressOld.postal_code,
+            state: orgAddressOld.state,
+            county: orgAddressOld.county,
+            country: orgAddressOld.country,
+            representative: orgAddressOld.representative_name,
+          },
+        });
+      }
+
+      // add orgs LDV supplied volumes (from old LDV sales table):
+      const orgLDVSalesOld = await prismaOld.organization_ldv_sales.findMany({
+        where: { is_supplied: true },
+      });
+      for (const orgLDVSaleOld of orgLDVSalesOld) {
+        const orgIdNew =
+          mapOfOldOrgIdsToNewOrgIds[orgLDVSaleOld.organization_id];
+        if (!orgIdNew) {
+          throw new Error(
+            "organization_ldv_sales " +
+              orgLDVSaleOld.id +
+              " with unknown organization id!",
+          );
+        }
+        await tx.organizationLDVSupplied.create({
+          data: {
+            organizationId: orgIdNew,
+            modelYear:
+              mapOfModelYearIdsToModelYearEnum[orgLDVSaleOld.model_year_id] ??
+              ModelYear.MY_2019,
+            volume: orgLDVSaleOld.ldv_sales,
+          },
+        });
+      }
+
+      // add users:
+      const usersOld = await prismaOld.user_profile.findMany({
+        include: {
+          organization: true,
+        },
+      });
+      for (const [index, userOld] of usersOld.entries()) {
+        if (!userOld.organization_id) {
+          throw new Error("user " + userOld.id + " with no org id!");
+        }
+        const orgIdNew = mapOfOldOrgIdsToNewOrgIds[userOld.organization_id];
+        if (!orgIdNew) {
+          throw new Error("user " + userOld.id + " with unknown org id!");
+        }
+        const userNew = await tx.user.create({
+          data: {
+            contactEmail: userOld.email,
+            idpEmail:
+              userOld.keycloak_email ?? "noSuchEmail" + index + "@email.com",
+            idpSub: userOld.keycloak_user_id,
+            idp: userOld.organization?.is_government
+              ? Idp.IDIR
+              : Idp.BCEID_BUSINESS,
+            idpUsername: userOld.username,
+            isActive: userOld.is_active,
+            organizationId: orgIdNew,
+            firstName: userOld.first_name ?? "",
+            lastName: userOld.last_name ?? "",
+          },
+        });
+        mapOfOldUserIdsToNewUserIds[userOld.id] = userNew.id;
+        mapOfOldUsernamesToNewUserIds[userOld.username] = userNew.id;
+        if (userOld.organization?.is_government) {
+          setOfNewGovUserIds.add(userNew.id);
+        }
+      }
+
+      // update each user with their roles:
+      const usersRolesOld = await prismaOld.user_role.findMany();
+      for (const userRoleOld of usersRolesOld) {
+        await tx.user.update({
+          where: {
+            id: mapOfOldUserIdsToNewUserIds[userRoleOld.user_profile_id],
+          },
+          data: {
+            roles: {
+              push: mapOfRoleIdsToRoleEnum[userRoleOld.role_id],
+            },
+          },
+        });
+      }
+
+      const creditClassesOld = await prismaOld.credit_class_code.findMany();
+      for (const creditClass of creditClassesOld) {
+        mapOfOldCreditClassIdsToZevClasses[creditClass.id] =
+          ZevClass[creditClass.credit_class as keyof typeof ZevClass];
+      }
+
+      // add notifications from old subscription table
+      const notificationsOld = await prismaOld.notification.findMany({
+        select: { id: true, notification_code: true },
+      });
+
+      const notifCodeById = notificationsOld.reduce<Record<number, string>>(
+        (acc, n) => {
+          acc[n.id] = n.notification_code;
+          return acc;
+        },
+        {},
+      );
+
+      const subsOld = await prismaOld.notification_subscription.findMany({
+        select: { user_profile_id: true, notification_id: true },
+      });
+
+      const grouped = subsOld.reduce<Record<number, string[]>>((acc, sub) => {
+        const code = notifCodeById[sub.notification_id];
+        if (!code) return acc;
+        acc[sub.user_profile_id] ??= [];
+        acc[sub.user_profile_id].push(code);
+        return acc;
+      }, {});
+
+      for (const [oldUserId, codes] of Object.entries(grouped)) {
+        const newUserId = mapOfOldUserIdsToNewUserIds[Number(oldUserId)];
+        if (!newUserId) continue;
+
+        const validNotifications = codes
+          .map((code) => code as Notification)
+          .filter((n) => isNotification(n));
+
+        await tx.user.update({
+          where: { id: newUserId },
+          data: { notifications: { set: validNotifications } },
+        });
+      }
+
+      // add ZevUnitTransactions (in old db, these are called credit transactions)
+      const creditTransactionsOld =
+        await prismaOld.credit_transaction.findMany();
+      for (const transaction of creditTransactionsOld) {
+        let transactionType;
+        let organizationId;
+        const zevClass =
+          mapOfOldCreditClassIdsToZevClasses[transaction.credit_class_id];
+        const modelYear =
+          mapOfModelYearIdsToModelYearEnum[transaction.model_year_id];
+        if (!zevClass) {
+          throw new Error(
+            "credit transaction " +
+              transaction.id +
+              " with unknown credit class!",
+          );
+        }
         if (!modelYear) {
           throw new Error(
             "credit transaction " +

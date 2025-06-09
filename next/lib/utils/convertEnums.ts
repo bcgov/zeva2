@@ -16,8 +16,8 @@ export const modelYearEnumToInt = (yearEnum: ModelYear) => {
  * @returns The enum value as a title case string.
  */
 export const enumToTitleString = (enumValue: string) => {
-  const words = enumValue.split("_").map(word =>
-    word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
-  );
+  const words = enumValue
+    .split("_")
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase());
   return words.join(" ");
-}
+};

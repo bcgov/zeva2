@@ -8,22 +8,24 @@ import { getSupplierClass } from "../lib/utils";
 const Page = async (props: { params: Promise<{ id: string }> }) => {
   const { id } = await props.params;
   const orgId = parseInt(id, 10);
-  const organization = isNaN(orgId) ? null : await getOrganizationDetails(orgId);
+  const organization = isNaN(orgId)
+    ? null
+    : await getOrganizationDetails(orgId);
   if (!organization) {
     return (
       <div className="p-6 font-semibold">
         Organization not found or you do not have access to it.
       </div>
-    )
+    );
   }
 
   const serviceAddress = organization.organizationAddress.find(
-    item => item.addressType === AddressType.SERVICE
+    (item) => item.addressType === AddressType.SERVICE,
   );
   const recordsAddress = organization.organizationAddress.find(
-    item => item.addressType === AddressType.RECORDS
+    (item) => item.addressType === AddressType.RECORDS,
   );
-  
+
   return (
     <div className="p-6">
       <Suspense fallback={<LoadingSkeleton />}>
@@ -38,7 +40,6 @@ const Page = async (props: { params: Promise<{ id: string }> }) => {
       </Suspense>
     </div>
   );
-
 };
 
 export default Page;
