@@ -22,19 +22,19 @@ export const getModelYearEnumsToStringsMap = () => {
 
 export const getStringsToModelYearsEnumsMap = () => {
   const result: Partial<Record<string, ModelYear>> = {};
-  for (const key of Object.keys(ModelYear)) {
-    result[key.split("_")[1]] = key as ModelYear;
+  for (const value of Object.values(ModelYear)) {
+    result[value.split("_")[1]] = value;
   }
   return result;
 };
 
 export const getZevClassEnumsToStringsMap = () => {
   const result: Partial<Record<ZevClass, string>> = {};
-  for (const key of Object.keys(ZevClass)) {
-    if (key.length > 1) {
-      result[key as ZevClass] = lowerCaseAndCapitalize(key);
+  for (const value of Object.values(ZevClass)) {
+    if (value.length > 1) {
+      result[value] = lowerCaseAndCapitalize(value);
     } else {
-      result[key as ZevClass] = key;
+      result[value] = value;
     }
   }
   return result;
@@ -42,11 +42,11 @@ export const getZevClassEnumsToStringsMap = () => {
 
 export const getStringsToZevClassEnumsMap = () => {
   const result: Partial<Record<string, ZevClass>> = {};
-  for (const key of Object.keys(ZevClass)) {
-    if (key.length > 1) {
-      result[lowerCaseAndCapitalize(key)] = key as ZevClass;
+  for (const value of Object.values(ZevClass)) {
+    if (value.length > 1) {
+      result[lowerCaseAndCapitalize(value)] = value;
     } else {
-      result[key] = key as ZevClass;
+      result[value] = value;
     }
   }
   return result;
@@ -54,16 +54,16 @@ export const getStringsToZevClassEnumsMap = () => {
 
 export const getVehicleClassEnumsToStringsMap = () => {
   const result: Partial<Record<VehicleClass, string>> = {};
-  for (const key of Object.keys(VehicleClass)) {
-    result[key as VehicleClass] = lowerCaseAndCapitalize(key);
+  for (const value of Object.values(VehicleClass)) {
+    result[value] = lowerCaseAndCapitalize(value);
   }
   return result;
 };
 
 export const getStringsToVehiclClassEnumsMap = () => {
   const result: Partial<Record<string, VehicleClass>> = {};
-  for (const key of Object.keys(VehicleClass)) {
-    result[lowerCaseAndCapitalize(key)] = key as VehicleClass;
+  for (const value of Object.values(VehicleClass)) {
+    result[lowerCaseAndCapitalize(value)] = value as VehicleClass;
   }
   return result;
 };
