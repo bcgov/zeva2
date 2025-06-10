@@ -3,15 +3,16 @@ import { OrganizationSparse } from "./data";
 
 const YEARS_OF_AVG_SUPPLIED_VOL_USED = 3; // Number of years to average the supplied volume for LDVs
 
-export const organizationLDVSuppliedClause: Prisma.Organization$ldvSuppliedArgs = {
-  select: {
-    modelYear: true,
-    volume: true,
-  },
-  orderBy: { modelYear: "desc" },
-  take: YEARS_OF_AVG_SUPPLIED_VOL_USED,
-  distinct: ["modelYear"], // Ensure unique model years
-};
+export const organizationLDVSuppliedClause: Prisma.Organization$ldvSuppliedArgs =
+  {
+    select: {
+      modelYear: true,
+      volume: true,
+    },
+    orderBy: { modelYear: "desc" },
+    take: YEARS_OF_AVG_SUPPLIED_VOL_USED,
+    distinct: ["modelYear"], // Ensure unique model years
+  };
 
 /**
  * Determines the supplier class based on the average supplied volume of LDVs.
@@ -22,15 +23,16 @@ export const organizationLDVSuppliedClause: Prisma.Organization$ldvSuppliedArgs 
 export const getSupplierClass = (ldvSupplied: { volume: number }[]) => {
   const volumes = ldvSupplied
     .slice(0, YEARS_OF_AVG_SUPPLIED_VOL_USED)
-    .map(item => item.volume)
-    .filter(volume => volume > 0);
+    .map((item) => item.volume)
+    .filter((volume) => volume > 0);
 
   if (volumes.length === 0) {
     return "N/A";
   }
-  const avgVolume = volumes.length !== YEARS_OF_AVG_SUPPLIED_VOL_USED ?
-    volumes[0] :
-    volumes.reduce((sum, vol) => sum + vol, 0) / volumes.length;
+  const avgVolume =
+    volumes.length !== YEARS_OF_AVG_SUPPLIED_VOL_USED
+      ? volumes[0]
+      : volumes.reduce((sum, vol) => sum + vol, 0) / volumes.length;
   if (avgVolume < 1000) {
     return "SMALL";
   } else if (avgVolume < 5000) {
@@ -38,24 +40,28 @@ export const getSupplierClass = (ldvSupplied: { volume: number }[]) => {
   } else {
     return "LARGE";
   }
-}
+};
 
 const decomposeFilterValue = (filterValue: string) => {
   let filterType = filterValue.substring(0, 2);
   if (filterType === "==" || filterType === ">=" || filterType === "<=") {
     const numberValue = parseFloat(filterValue.substring(2));
-    return isNaN(numberValue) ? undefined : {
-      filterType,
-      numberValue,
-    };
+    return isNaN(numberValue)
+      ? undefined
+      : {
+          filterType,
+          numberValue,
+        };
   }
   filterType = filterValue.substring(0, 1);
   if (filterType === "=" || filterType === ">" || filterType === "<") {
     const numberValue = parseFloat(filterValue.substring(1));
-    return isNaN(numberValue) ? undefined : {
-      filterType,
-      numberValue,
-    };
+    return isNaN(numberValue)
+      ? undefined
+      : {
+          filterType,
+          numberValue,
+        };
   }
   return undefined;
 };
@@ -71,7 +77,7 @@ export const filterOrganizations = (
       const decomposedValue = decomposeFilterValue(value);
       if (decomposedValue) {
         const { filterType, numberValue } = decomposedValue;
-        organizations = organizations.filter(org => {
+        organizations = organizations.filter((org) => {
           const orgValue = org[key];
           switch (filterType) {
             case "==":
@@ -93,8 +99,10 @@ export const filterOrganizations = (
       }
     }
 
-    organizations = organizations.filter(org =>
-      org[key as keyof Omit<OrganizationSparse, "id">].toLowerCase().includes(value)
+    organizations = organizations.filter((org) =>
+      org[key as keyof Omit<OrganizationSparse, "id">]
+        .toLowerCase()
+        .includes(value),
     );
   }
   return organizations;
@@ -107,9 +115,11 @@ export const sortOrganzations = (
   for (const [key, value] of Object.entries(sorts)) {
     switch (key) {
       case "name":
-        organizations.sort((a, b) => value === "asc" ?
-          a[key].localeCompare(b[key]) :
-          b[key].localeCompare(a[key]));
+        organizations.sort((a, b) =>
+          value === "asc"
+            ? a[key].localeCompare(b[key])
+            : b[key].localeCompare(a[key]),
+        );
         break;
       case "zevUnitBalanceA":
       case "zevUnitBalanceB":
@@ -121,4 +131,4 @@ export const sortOrganzations = (
         break;
     }
   }
-}
+};

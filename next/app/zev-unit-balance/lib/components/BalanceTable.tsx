@@ -1,4 +1,4 @@
-import { getModelYearEnumMap } from "@/app/lib/utils/enumMaps";
+import { getModelYearEnumsToStringsMap } from "@/app/lib/utils/enumMaps";
 import { ZevUnitRecordsObj } from "@/lib/utils/zevUnit";
 import { ModelYear } from "@/prisma/generated/client";
 import React from "react";
@@ -20,7 +20,7 @@ export default function BalanceTable({
   ]);
 
   const sortedYears = Array.from(years).sort().reverse();
-  const modelYearsMap = getModelYearEnumMap();
+  const modelYearsMap = getModelYearEnumsToStringsMap();
 
   return (
     <table style={{ borderCollapse: "collapse", minWidth: "20rem" }}>
@@ -34,7 +34,7 @@ export default function BalanceTable({
       <tbody>
         {sortedYears.map((y) => (
           <tr key={y}>
-            <td style={{ padding: "4px" }}>{modelYearsMap[y]}</td>
+            <td style={{ padding: "4px" }}>{modelYearsMap[y as ModelYear]}</td>
             <td style={{ textAlign: "right", padding: "4px" }}>
               {aRecords[y as ModelYear]?.toString() ?? "—"}
             </td>

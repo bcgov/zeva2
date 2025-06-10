@@ -44,6 +44,7 @@ model Organization {
   VehicleChangeHistory  VehicleChangeHistory[]
   organizationAddress   OrganizationAddress[]
   ldvSupplied           OrganizationLDVSupplied[]
+  CreditApplication     CreditApplication[]
 
   @@map("organization")
 }
@@ -138,9 +139,10 @@ model User {
   firstName              String                   @map("first_name")
   lastName               String                   @map("last_name")
 
-  vehicleCommentsCreated VehicleComment[]       @relation("user that created comment")
-  vehicleCommentsUpdated VehicleComment[]       @relation("user that updated comment")
-  vehicleStatusChanged   VehicleChangeHistory[] @relation("user that changed the status")
+  vehicleCommentsCreated   VehicleComment[]           @relation("user that created comment")
+  vehicleCommentsUpdated   VehicleComment[]           @relation("user that updated comment")
+  vehicleStatusChanged     VehicleChangeHistory[]     @relation("user that changed the status")
+  CreditApplicationHistory CreditApplicationHistory[]
 
   @@unique([idp, idpUsername, idpEmail])
   @@map("user")
@@ -327,12 +329,14 @@ model Vehicle {
   weightKg             Decimal                @map("weight_kg") @db.Decimal(6, 0)
   organization         Organization           @relation(fields: [organizationId], references: [id])
   organizationId       Int                    @map("organization_id")
+  vehicleClass         VehicleClass?          @map("vehicle_class")
   zevClass             ZevClass?              @map("credit_class")
   hasPassedUs06Test    Boolean                @map("has_passed_us_06_test")
   isActive             Boolean                @map("is_active")
   VehicleChangeHistory VehicleChangeHistory[]
   VehicleComment       VehicleComment[]
   VehicleAttachment    VehicleAttachment[]
+  CreditApplicationVin CreditApplicationVin[]
 
   @@map("vehicle")
 }
@@ -408,13 +412,101 @@ model IcbcFile {
 }
 
 model IcbcRecord {
-  id         Int      @id @default(autoincrement())
-  icbcFileId Int      @map("icbc_file_id")
-  icbcFile   IcbcFile @relation(fields: [icbcFileId], references: [id])
-  vin        String   @unique @db.VarChar(20)
+  id         Int       @id @default(autoincrement())
+  icbcFileId Int       @map("icbc_file_id")
+  icbcFile   IcbcFile  @relation(fields: [icbcFileId], references: [id])
+  vin        String    @unique @db.VarChar(17)
   make       String
   model      String
-  year       String
+  year       ModelYear
 
   @@map("icbc_record")
+}
+
+enum CreditApplicationStatus {
+  APPROVED
+  RECOMMEND_APPROVAL
+  RECOMMEND_REJECTION
+  REJECTED
+  RETURNED_TO_ANALYST
+  RETURNED_TO_SUPPLIER
+  SUBMITTED
+}
+
+enum CreditApplicationSupplierStatus {
+  APPROVED
+  REJECTED
+  RETURNED_TO_SUPPLIER
+  SUBMITTED
+}
+
+model CreditApplication {
+  id                       Int                             @id @default(autoincrement())
+  organization             Organization                    @relation(fields: [organizationId], references: [id])
+  organizationId           Int                             @map("organization_id")
+  submissionTimestamp      DateTime                        @default(now()) @map("submission_timestamp") @db.Timestamptz(6)
+  status                   CreditApplicationStatus         @map("status")
+  supplierStatus           CreditApplicationSupplierStatus @map("supplier_status")
+  supplierFileId           String                          @map("supplier_file_id")
+  supplierFileName         String                          @map("supplier_file_name")
+  CreditApplicationHistory CreditApplicationHistory[]
+  CreditApplicationRecord  CreditApplicationRecord[]
+  CreditApplicationVin     CreditApplicationVin[]
+
+  @@map("credit_application")
+}
+
+model CreditApplicationHistory {
+  id                  Int                     @id @default(autoincrement())
+  creditApplicationId Int                     @map("credit_application_id")
+  creditApplication   CreditApplication       @relation(fields: [creditApplicationId], references: [id])
+  userId              Int                     @map("user_id")
+  user                User                    @relation(fields: [userId], references: [id])
+  timestamp           DateTime                @default(now()) @db.Timestamptz(6)
+  userAction          CreditApplicationStatus @map("user_action")
+  comment             String?
+
+  @@map("credit_application_history")
+}
+
+model CreditApplicationRecord {
+  id                  Int               @id @default(autoincrement())
+  creditApplicationId Int               @map("credit_application_id")
+  creditApplication   CreditApplication @relation(fields: [creditApplicationId], references: [id])
+  vin                 String            @db.VarChar(17)
+  timestamp           DateTime          @db.Timestamptz(6)
+  vehicleClass        VehicleClass?     @map("vehicle_class")
+  zevClass            ZevClass?         @map("zev_class")
+  modelYear           ModelYear         @map("model_year")
+  numberOfUnits       Decimal?          @map("number_of_units") @db.Decimal(65, 2)
+  make                String
+  modelName           String            @map("model_name")
+  icbcMake            String?           @map("icbc_make")
+  icbcModelName       String?           @map("icbc_model_name")
+  icbcModelYear       ModelYear?        @map("icbc_model_year")
+  icbcTimestamp       DateTime?         @map("icbc_timestamp") @db.Timestamptz(6)
+  validated           Boolean
+  reason              String?
+  warnings            String[]
+
+  @@map("credit_application_record")
+}
+
+model CreditApplicationVin {
+  id                  Int               @id @default(autoincrement())
+  creditApplicationId Int               @map("credit_application_id")
+  creditApplication   CreditApplication @relation(fields: [creditApplicationId], references: [id])
+  vin                 String            @unique @db.VarChar(17)
+  vehicleId           Int               @map("vehicle_id")
+  vehicle             Vehicle           @relation(fields: [vehicleId], references: [id])
+  timestamp           DateTime          @db.Timestamptz(6)
+
+  @@map("credit_application_vin")
+}
+
+model CreditApplicationVinLegacy {
+  id  Int    @id @default(autoincrement())
+  vin String @unique @db.VarChar(17)
+
+  @@map("credit_application_vin_legacy")
 }

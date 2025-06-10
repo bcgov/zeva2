@@ -12,44 +12,58 @@ const lowerCaseAndCapitalize = (s: string) => {
   return firstLetter + lowerCasedTail;
 };
 
-export const getVehicleClassEnumMap = () => {
-  const result: { [key: string]: string | undefined } = {};
-  for (const key of Object.keys(VehicleClass)) {
-    result[key] = lowerCaseAndCapitalize(key);
+export const getModelYearEnumsToStringsMap = () => {
+  const result: Partial<Record<ModelYear, string>> = {};
+  for (const value of Object.values(ModelYear)) {
+    result[value] = value.split("_")[1];
   }
   return result;
 };
 
-export const getZevClassEnumMap = () => {
-  const result: { [key: string]: string | undefined } = {};
-  for (const key of Object.keys(ZevClass)) {
-    if (key.length > 1) {
-      result[key] = lowerCaseAndCapitalize(key);
+export const getStringsToModelYearsEnumsMap = () => {
+  const result: Partial<Record<string, ModelYear>> = {};
+  for (const value of Object.values(ModelYear)) {
+    result[value.split("_")[1]] = value;
+  }
+  return result;
+};
+
+export const getZevClassEnumsToStringsMap = () => {
+  const result: Partial<Record<ZevClass, string>> = {};
+  for (const value of Object.values(ZevClass)) {
+    if (value.length > 1) {
+      result[value] = lowerCaseAndCapitalize(value);
     } else {
-      result[key] = key;
+      result[value] = value;
     }
   }
   return result;
 };
 
-export const getModelYearEnumMap = () => {
-  const result: { [key: string]: string | undefined } = {};
-  for (const key of Object.keys(ModelYear)) {
-    result[key] = key.split("_")[1];
+export const getStringsToZevClassEnumsMap = () => {
+  const result: Partial<Record<string, ZevClass>> = {};
+  for (const value of Object.values(ZevClass)) {
+    if (value.length > 1) {
+      result[lowerCaseAndCapitalize(value)] = value;
+    } else {
+      result[value] = value;
+    }
   }
   return result;
 };
 
-// expects map to be 1-1
-export const getInverseMap = (map: { [key: string]: string | undefined }) => {
-  const result: { [key: string]: string | undefined } = {};
-  for (const [key, value] of Object.entries(map)) {
-    if (value) {
-      if (result[value]) {
-        throw new Error();
-      }
-      result[value] = key;
-    }
+export const getVehicleClassEnumsToStringsMap = () => {
+  const result: Partial<Record<VehicleClass, string>> = {};
+  for (const value of Object.values(VehicleClass)) {
+    result[value] = lowerCaseAndCapitalize(value);
+  }
+  return result;
+};
+
+export const getStringsToVehiclClassEnumsMap = () => {
+  const result: Partial<Record<string, VehicleClass>> = {};
+  for (const value of Object.values(VehicleClass)) {
+    result[lowerCaseAndCapitalize(value)] = value;
   }
   return result;
 };

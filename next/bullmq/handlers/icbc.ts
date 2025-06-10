@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { getObject } from "@/app/lib/minio";
 import { IcbcFileStatus, IcbcRecord } from "@/prisma/generated/client";
 import { parse } from "fast-csv";
+import { getModelYearEnum } from "@/lib/utils/getEnums";
 
 type Row = { [key: string]: string };
 
@@ -89,13 +90,16 @@ const deleteAndCreate = async (map: MapOfVinsToData, icbcFileId: number) => {
   const vins = Object.keys(map);
   const toCreate: Omit<IcbcRecord, "id">[] = [];
   for (const [vin, data] of Object.entries(map)) {
-    toCreate.push({
-      vin,
-      make: data.make,
-      model: data.model,
-      year: data.year,
-      icbcFileId,
-    });
+    const modelYearEnum = getModelYearEnum(data.year);
+    if (modelYearEnum) {
+      toCreate.push({
+        vin,
+        make: data.make,
+        model: data.model,
+        year: modelYearEnum,
+        icbcFileId,
+      });
+    }
   }
   await prisma.$transaction([
     prisma.icbcRecord.deleteMany({
