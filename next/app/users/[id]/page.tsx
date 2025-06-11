@@ -1,5 +1,5 @@
 import { getUser } from "../lib/data";
-import { updateUser } from "../lib/actions";
+import { updateUser, UserUpdatePayload } from "../lib/actions";
 import { EditUserForm } from "../lib/components/EditUserForm";
 import { getUserInfo } from "@/auth";
 import { redirect } from "next/navigation";
@@ -12,9 +12,9 @@ export default async function Page({ params }: { params: { id: string } }) {
 
   if (!user) return <div>User not found</div>;
 
-  async function handleSubmit(updated) {
+  async function handleSubmit(updated: UserUpdatePayload) {
     "use server";
-    await updateUser(id, userOrgId, "/users", updated);
+    await updateUser(id, userOrgId, updated);
     redirect("/users");
   }
 
