@@ -36,7 +36,7 @@ export async function createUser(user: UserCreatePayload) {
   const { userIsGov, userOrgId } = await getUserInfo();
   const isAuthorized = userIsGov || userOrgId === user.organizationId;
   if (!isAuthorized) throw new Error("Unauthorized");
-
+  
   if (userIsGov) {
     await prisma.user.create({
       data: { ...user, idp: Idp.IDIR },

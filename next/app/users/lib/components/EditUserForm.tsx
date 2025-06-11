@@ -1,9 +1,11 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useTransition } from "react";
 import { Button } from "@/app/lib/components";
 import { Role, User } from "@/prisma/generated/client";
 import { UserUpdatePayload } from "../actions";
+import { UserFormFields } from "./UserFormFields";
+import { deleteUser } from "../actions";
 
 export function EditUserForm({
   user,
@@ -14,12 +16,24 @@ export function EditUserForm({
   onSubmit: (updated: UserUpdatePayload) => void;
   isGovernment: boolean;
 }) {
+  const [form, setForm] = useState<UserUpdatePayload>({
+    firstName: user.firstName ?? "",
+    lastName: user.lastName ?? "",
+    contactEmail: user.contactEmail ?? "",
+    idpEmail: user.idpEmail ?? "",
+    idpSub: user.idpSub ?? "",
+    idpUsername: user.idpUsername ?? "",
+    isActive: user.isActive,
+    roles: user.roles,
+  });
+
+  const [isPending, startTransition] = useTransition();
+
   const GOV_ROLES: Role[] = [
     Role.ADMINISTRATOR,
     Role.DIRECTOR,
     Role.ENGINEER_ANALYST,
   ];
-
   const ORG_ROLES: Role[] = [
     Role.ORGANIZATION_ADMINISTRATOR,
     Role.SIGNING_AUTHORITY,
@@ -27,16 +41,6 @@ export function EditUserForm({
   ];
 
   const availableRoles = isGovernment ? GOV_ROLES : ORG_ROLES;
-  const [form, setForm] = useState<UserUpdatePayload>({
-    firstName: user.firstName,
-    lastName: user.lastName,
-    contactEmail: user.contactEmail ?? "",
-    idpEmail: user.idpEmail,
-    idpSub: user.idpSub,
-    idpUsername: user.idpUsername,
-    isActive: user.isActive,
-    roles: user.roles,
-  });
 
   const handleChange = (field: string, value: any) => {
     setForm((prev) => ({ ...prev, [field]: value }));
@@ -51,6 +55,14 @@ export function EditUserForm({
     }));
   };
 
+  const handleDelete = () => {
+    if (confirm("Are you sure you want to delete this user?")) {
+      startTransition(() => {
+        deleteUser(user.id);
+      });
+    }
+  };
+
   return (
     <form
       className="space-y-4"
@@ -59,96 +71,22 @@ export function EditUserForm({
         onSubmit(form);
       }}
     >
-      <div>
-        <label>First Name</label>
-        <input
-          value={form.firstName}
-          onChange={(e) => handleChange("firstName", e.target.value)}
-        />
-      </div>
+      <UserFormFields
+        form={form}
+        availableRoles={availableRoles}
+        onChange={handleChange}
+        toggleRole={toggleRole}
+      />
 
-      <div>
-        <label>Last Name</label>
-        <input
-          value={form.lastName}
-          onChange={(e) => handleChange("lastName", e.target.value)}
-        />
-      </div>
-
-      <div>
-        <label>Contact Email</label>
-        <input
-          type="email"
-          value={form.contactEmail ?? undefined}
-          onChange={(e) => handleChange("contactEmail", e.target.value)}
-        />
-      </div>
-
-      <div>
-        <label>IDP Email</label>
-        <input
-          type="email"
-          value={form.idpEmail}
-          onChange={(e) => handleChange("idpEmail", e.target.value)}
-        />
-      </div>
-
-      <div>
-        <label>IDP Sub</label>
-        <input
-          value={form.idpSub ?? undefined}
-          onChange={(e) => handleChange("idpSub", e.target.value)}
-        />
-      </div>
-
-      <div>
-        <label>IDP Username</label>
-        <input
-          value={form.idpUsername}
-          onChange={(e) => handleChange("idpUsername", e.target.value)}
-        />
-      </div>
-
-      <div>
-        <label>Status</label>
-        <label>
-          <input
-            type="radio"
-            name="isActive"
-            value="true"
-            checked={form.isActive === true}
-            onChange={() => handleChange("isActive", true)}
-          />
-          Active
-        </label>
-        <label>
-          <input
-            type="radio"
-            name="isActive"
-            value="false"
-            checked={form.isActive === false}
-            onChange={() => handleChange("isActive", false)}
-          />
-          Inactive
-        </label>
-      </div>
-
-      <div>
-        <label>Roles</label>
-        {availableRoles.map((role) => (
-          <label key={role}>
-            <input
-              type="checkbox"
-              checked={form.roles.includes(role)}
-              onChange={() => toggleRole(role)}
-            />
-            {role.replaceAll("_", " ")}
-          </label>
-        ))}
-      </div>
-
-      <div className="pt-4">
+      <div className="pt-4 flex gap-4">
         <Button type="submit">Save</Button>
+        <Button
+          type="button"
+          onClick={handleDelete}
+          disabled={isPending}
+        >
+          Delete User
+        </Button>
       </div>
     </form>
   );
