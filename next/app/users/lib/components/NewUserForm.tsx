@@ -1,30 +1,30 @@
-'use client';
+"use client";
 
 import React, { useState } from "react";
 import { Button } from "@/app/lib/components";
 import { Role } from "@/prisma/generated/client";
-import { createUser } from "../actions";
+import { createUser, UserCreatePayload } from "../actions";
 
 const GOV_ROLES: Role[] = [
-    Role.ADMINISTRATOR,
-    Role.DIRECTOR,
-    Role.ENGINEER_ANALYST,
-  ];
-  
-  const ORG_ROLES: Role[] = [
-    Role.ORGANIZATION_ADMINISTRATOR,
-    Role.SIGNING_AUTHORITY,
-    Role.ZEVA_USER,
-  ];
+  Role.ADMINISTRATOR,
+  Role.DIRECTOR,
+  Role.ENGINEER_ANALYST,
+];
+
+const ORG_ROLES: Role[] = [
+  Role.ORGANIZATION_ADMINISTRATOR,
+  Role.SIGNING_AUTHORITY,
+  Role.ZEVA_USER,
+];
 
 export function NewUserForm({
-    organizationId,
-    isGovernment,
-  }: {
-    organizationId: number;
-    isGovernment: boolean;
-  }) {
-  const [form, setForm] = useState({
+  organizationId,
+  isGovernment,
+}: {
+  organizationId: number;
+  isGovernment: boolean;
+}) {
+  const [form, setForm] = useState<UserCreatePayload>({
     firstName: "",
     lastName: "",
     contactEmail: "",
@@ -33,7 +33,7 @@ export function NewUserForm({
     idpUsername: "",
     isActive: true,
     organizationId,
-    roles: [] as Role[],
+    roles: [],
   });
 
   const availableRoles = isGovernment ? GOV_ROLES : ORG_ROLES;
@@ -42,12 +42,12 @@ export function NewUserForm({
     setForm((prev) => ({ ...prev, [field]: value }));
   };
 
-  const toggleRole = (role: string) => {
+  const toggleRole = (role: Role) => {
     setForm((prev) => ({
       ...prev,
-      roles: prev.roles.includes(role as Role)
+      roles: prev.roles.includes(role)
         ? prev.roles.filter((r) => r !== role)
-        : [...prev.roles, role as Role],
+        : [...prev.roles, role],
     }));
   };
 
@@ -79,7 +79,7 @@ export function NewUserForm({
         <label>Contact Email</label>
         <input
           type="email"
-          value={form.contactEmail}
+          value={form.contactEmail ?? undefined}
           onChange={(e) => handleChange("contactEmail", e.target.value)}
         />
       </div>
@@ -96,7 +96,7 @@ export function NewUserForm({
       <div>
         <label>IDP Sub</label>
         <input
-          value={form.idpSub}
+          value={form.idpSub ?? undefined}
           onChange={(e) => handleChange("idpSub", e.target.value)}
         />
       </div>
