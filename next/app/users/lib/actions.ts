@@ -13,7 +13,6 @@ export type UserUpdatePayload = Omit<
 export const updateUser = async (
   id: number,
   organizationId: number,
-  redirectTo?: string,
   updated?: UserUpdatePayload,
 ) => {
   const { userIsGov, userOrgId } = await getUserInfo();
@@ -24,10 +23,6 @@ export const updateUser = async (
     where: { id },
     data: updated,
   });
-
-  if (redirectTo) {
-    redirect(redirectTo);
-  }
 };
 
 export type UserCreatePayload = UserUpdatePayload & { organizationId: number };
