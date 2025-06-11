@@ -1,4 +1,4 @@
-import { Idp, Role, ModelYear } from "@/prisma/generated/client";
+import { Idp, Role, ModelYear, AddressType } from "@/prisma/generated/client";
 
 export const getIdpEnum = (idpName?: string) => {
   for (const idp of Object.keys(Idp)) {
@@ -46,4 +46,12 @@ export const getEnumOr = (
     result.push({ id: -1 });
   }
   return result;
+};
+
+export const getAddressTypeEnum = (addressType: string) => {
+  const addressTypeUpper = addressType.toUpperCase();
+  if (!(addressTypeUpper in AddressType)) {
+    throw new Error(`Invalid address type: ${addressType}`);
+  }
+  return AddressType[addressTypeUpper as keyof typeof AddressType];
 };

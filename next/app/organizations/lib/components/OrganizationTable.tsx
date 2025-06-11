@@ -21,8 +21,8 @@ export const OrganizationTable = (props: {
         cell: (info) => info.getValue(),
         header: "Company Name",
       }),
-      columnHelper.accessor((row) => "TBD", {
-        id: "class",
+      columnHelper.accessor((row) => row.supplierClass, {
+        id: "supplierClass",
         enableSorting: true,
         enableColumnFilter: true,
         cell: (info) => info.getValue(),
@@ -43,7 +43,7 @@ export const OrganizationTable = (props: {
         header: "ZEV Unit B Balance",
       }),
     ];
-    
+
     return result;
   }, [columnHelper]);
 

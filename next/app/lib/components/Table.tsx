@@ -26,7 +26,7 @@ interface ITableProps<T> {
   columns: ColumnDef<T, any>[];
   data: T[];
   totalNumberOfRecords: number;
-  navigationAction: (id: number) => Promise<void>;
+  navigationAction?: (id: number) => Promise<void>;
   footer?: boolean;
 }
 
@@ -158,8 +158,10 @@ export const Table = <T extends ZevaObject>({
   );
 
   const handleNavigation = async (id: number) => {
-    setNavigationPending(true);
-    await navigationAction(id);
+    if (navigationAction) {
+      setNavigationPending(true);
+      await navigationAction(id);
+    }
   };
 
   const numberOfPages = React.useMemo(() => {
@@ -256,7 +258,11 @@ export const Table = <T extends ZevaObject>({
           {table.getRowModel().rows.map((row) => (
             <tr
               key={row.id}
-              className="hover:bg-gray-200 transition-colors cursor-pointer"
+              className={
+                navigationAction
+                  ? "hover:bg-gray-200 transition-colors cursor-pointer"
+                  : ""
+              }
               onClick={() => handleNavigation(row.original.id)}
             >
               {row.getVisibleCells().map((cell) => (

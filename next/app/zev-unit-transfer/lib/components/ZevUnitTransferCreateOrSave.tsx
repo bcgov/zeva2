@@ -5,9 +5,9 @@ import { useState, useMemo, useCallback, JSX } from "react";
 import { ModelYear, VehicleClass, ZevClass } from "@/prisma/generated/client";
 import { getOptions } from "@/app/lib/utils/jsxHelpers";
 import {
-  getModelYearEnumMap,
-  getVehicleClassEnumMap,
-  getZevClassEnumMap,
+  getModelYearEnumsToStringsMap,
+  getVehicleClassEnumsToStringsMap,
+  getZevClassEnumsToStringsMap,
 } from "@/app/lib/utils/enumMaps";
 import {
   ZevUnitTransferContentPayload,
@@ -51,7 +51,7 @@ const ZevUnitTransferCreateOrSave = (props: {
 
   const handleContentRemove = useCallback((index: number) => {
     setContent((prev) => {
-      const newContent = [];
+      const newContent: ZevUnitTransferContentPayload[] = [];
       for (let i = 0; i < prev.length; i++) {
         if (i !== index) {
           newContent.push(prev[i]);
@@ -128,19 +128,19 @@ const ZevUnitTransferCreateOrSave = (props: {
   }, [props.transferCandidatesMap]);
 
   const vehicleClassOptions = useMemo(() => {
-    const map = getVehicleClassEnumMap();
+    const map = getVehicleClassEnumsToStringsMap();
     return getOptions(map);
   }, []);
 
   const zevClassOptions = useMemo(() => {
-    const map = getZevClassEnumMap();
+    const map = getZevClassEnumsToStringsMap();
     delete map[ZevClass.C];
     delete map[ZevClass.UNSPECIFIED];
     return getOptions(map);
   }, []);
 
   const modelYearOptions = useMemo(() => {
-    const map = getModelYearEnumMap();
+    const map = getModelYearEnumsToStringsMap();
     return getOptions(map);
   }, []);
 

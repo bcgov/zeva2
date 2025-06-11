@@ -1,7 +1,7 @@
 import { Suspense } from "react";
-import { LoadingSkeleton } from "../lib/components/skeletons";
 import { getPageParams, pageStringParams } from "../lib/utils/nextPage";
-import { VehicleList } from "./lib/components/VehicleList";
+import { LoadingSkeleton } from "../lib/components/skeletons";
+import { CreditApplicationList } from "./lib/components/CreditApplicationList";
 
 const Page = async (props: { searchParams?: Promise<pageStringParams> }) => {
   const searchParams = await props.searchParams;
@@ -9,7 +9,7 @@ const Page = async (props: { searchParams?: Promise<pageStringParams> }) => {
 
   return (
     <Suspense key={Date.now()} fallback={<LoadingSkeleton />}>
-      <VehicleList
+      <CreditApplicationList
         page={page}
         pageSize={pageSize}
         filters={filters}

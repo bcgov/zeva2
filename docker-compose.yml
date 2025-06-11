@@ -64,6 +64,7 @@ services:
       - SENDER_EMAIL
       - SENDER_NAME
       - START_WORKERS=false
+      - TZ=America/Vancouver
     depends_on:
       db:
         condition: service_healthy
@@ -89,6 +90,7 @@ services:
       - DATABASE_URL=postgresql://postgres:postgres@db:5432/zeva?schema=public
       - CHECKPOINT_DISABLE=1
       - START_WORKERS=true
+      - TZ=America/Vancouver
     depends_on:
       next:
         condition: service_healthy
