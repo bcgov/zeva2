@@ -4,10 +4,10 @@ import { EditUserForm } from "../lib/components/EditUserForm";
 import { getUserInfo } from "@/auth";
 import { redirect } from "next/navigation";
 
-export default async function Page({ params }: { params: { id: string } }) {
+export default async function Page(props: { params: Promise<{ id: string }> }) {
   const { userIsGov, userOrgId } = await getUserInfo();
-
-  const id = parseInt(params.id, 10);
+  const args = await props.params;
+  const id = parseInt(args.id, 10);
   const user = await getUser(id);
 
   if (!user) return <div>User not found</div>;
