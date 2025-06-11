@@ -1,72 +1,61 @@
-import { auth } from "@/auth";
+import { getUserInfo } from "@/auth";
 import { prisma } from "@/lib/prisma";
-import { Role } from "@/prisma/generated/client";
+import { Prisma, Role, User } from "@/prisma/generated/client";
 
-export async function fetchUsers() {
+export type UserWithOrgName = User & { organization?: { name: string } };
+
+export async function fetchUsers(): Promise<UserWithOrgName[]> {
   let result;
-  const session = await auth();
-  const isGov = session?.user?.isGovernment;
-  const organizationId = session?.user?.organizationId;
-  if (isGov) {
+  const { userIsGov, userOrgId } = await getUserInfo();
+  const orderBy: Prisma.UserOrderByWithRelationInput[] = [
+    {
+      id: "asc",
+    },
+  ];
+  if (userIsGov) {
     result = await prisma.user.findMany({
-      orderBy: [
-        {
-          id: "asc",
+      orderBy,
+      include: {
+        organization: {
+          select: {
+            name: true,
+          },
         },
-      ],
+      },
     });
   } else {
     result = await prisma.user.findMany({
       where: {
-        organizationId: organizationId,
+        organizationId: userOrgId,
       },
-      orderBy: [
-        {
-          id: "asc",
-        },
-      ],
+      orderBy,
     });
   }
   return result;
 }
 
 export async function getUser(id: number) {
-  const session = await auth();
-  const isGov = session?.user?.isGovernment;
-  const roles = session?.user?.roles;
-  const organizationId = session?.user?.organizationId;
-  const organization = {
+  const { userIsGov, userOrgId, userRoles } = await getUserInfo();
+  const include = {
     organization: {
       select: {
         name: true,
       },
     },
   };
-  if (isGov && roles?.includes(Role.ADMINISTRATOR)) {
+  if (userIsGov && userRoles.includes(Role.ADMINISTRATOR)) {
     return await prisma.user.findUnique({
       where: { id },
-      include: {
-        organization: {
-          select: {
-            name: true,
-          },
-        },
-      },
+      include,
     });
   }
-  if (!isGov && roles?.includes(Role.ORGANIZATION_ADMINISTRATOR)) {
+  if (!userIsGov && userRoles.includes(Role.ORGANIZATION_ADMINISTRATOR)) {
     return await prisma.user.findUnique({
-      where: { 
+      where: {
         id: id,
-        organizationId: organizationId
-       },
-      include: {
-        organization: {
-          select: {
-            name: true,
-          },
-        },
+        organizationId: userOrgId,
       },
+      include,
     });
   }
   return null;

@@ -3,30 +3,16 @@
 import React, { useMemo } from "react";
 import { ColumnDef, createColumnHelper } from "@tanstack/react-table";
 import { Table } from "@/app/lib/components";
-import { Role } from "@/prisma/generated/client";
-
-interface UserRow {
-  id: number;
-  firstName: string;
-  lastName: string;
-  contactEmail: string;
-  idpEmail: string;
-  idpUsername: string;
-  isActive: boolean;
-  roles: Role[];
-  organization?: {
-    name: string;
-  };
-}
+import { UserWithOrgName } from "../data";
 
 export const UserTable = (props: {
-  users: UserRow[];
+  users: UserWithOrgName[];
   navigationAction: (id: number) => Promise<void>;
 }) => {
-  const columnHelper = createColumnHelper<UserRow>();
+  const columnHelper = createColumnHelper<UserWithOrgName>();
 
   const columns = useMemo(() => {
-    const base: ColumnDef<UserRow, any>[] = [
+    const base: ColumnDef<UserWithOrgName, any>[] = [
       columnHelper.accessor("firstName", {
         header: () => <span>First Name</span>,
         cell: (info) => info.getValue(),
@@ -64,7 +50,7 @@ export const UserTable = (props: {
           id: "organization",
           header: () => <span>Organization</span>,
           cell: (info) => info.getValue(),
-        })
+        }),
       );
     }
 
@@ -72,7 +58,7 @@ export const UserTable = (props: {
   }, [props.users]);
 
   return (
-    <Table<UserRow>
+    <Table<UserWithOrgName>
       columns={columns}
       data={props.users}
       totalNumberOfRecords={props.users.length}

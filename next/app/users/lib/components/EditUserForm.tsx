@@ -1,48 +1,48 @@
-'use client';
+"use client";
 
 import React, { useState } from "react";
 import { Button } from "@/app/lib/components";
-import { Role } from "@/prisma/generated/client";
+import { Role, User } from "@/prisma/generated/client";
+import { UserUpdatePayload } from "../actions";
 
 export function EditUserForm({
-    user,
-    onSubmit,
-    isGovernment,
-  }: {
-    user: any;
-    onSubmit: (updated: any) => void;
-    isGovernment: boolean;
-  }) {
-    const GOV_ROLES: Role[] = [
-      Role.ADMINISTRATOR,
-      Role.DIRECTOR,
-      Role.ENGINEER_ANALYST,
-    ];
-  
-    const ORG_ROLES: Role[] = [
-      Role.ORGANIZATION_ADMINISTRATOR,
-      Role.SIGNING_AUTHORITY,
-      Role.ZEVA_USER,
-    ];
-  
-    const availableRoles = isGovernment ? GOV_ROLES : ORG_ROLES;
-  const [form, setForm] = useState({
-    firstName: user.firstName ?? "",
-    lastName: user.lastName ?? "",
+  user,
+  onSubmit,
+  isGovernment,
+}: {
+  user: User;
+  onSubmit: (updated: UserUpdatePayload) => void;
+  isGovernment: boolean;
+}) {
+  const GOV_ROLES: Role[] = [
+    Role.ADMINISTRATOR,
+    Role.DIRECTOR,
+    Role.ENGINEER_ANALYST,
+  ];
+
+  const ORG_ROLES: Role[] = [
+    Role.ORGANIZATION_ADMINISTRATOR,
+    Role.SIGNING_AUTHORITY,
+    Role.ZEVA_USER,
+  ];
+
+  const availableRoles = isGovernment ? GOV_ROLES : ORG_ROLES;
+  const [form, setForm] = useState<UserUpdatePayload>({
+    firstName: user.firstName,
+    lastName: user.lastName,
     contactEmail: user.contactEmail ?? "",
-    idpEmail: user.idpEmail ?? "",
-    idpSub: user.idpSub ?? "",
-    idpUsername: user.idpUsername ?? "",
-    isActive: user.isActive ?? true,
-    organizationId: user.organizationId,
-    roles: user.roles ?? [],
+    idpEmail: user.idpEmail,
+    idpSub: user.idpSub,
+    idpUsername: user.idpUsername,
+    isActive: user.isActive,
+    roles: user.roles,
   });
 
   const handleChange = (field: string, value: any) => {
     setForm((prev) => ({ ...prev, [field]: value }));
   };
 
-  const toggleRole = (role: string) => {
+  const toggleRole = (role: Role) => {
     setForm((prev) => ({
       ...prev,
       roles: prev.roles.includes(role)
@@ -79,7 +79,7 @@ export function EditUserForm({
         <label>Contact Email</label>
         <input
           type="email"
-          value={form.contactEmail}
+          value={form.contactEmail ?? undefined}
           onChange={(e) => handleChange("contactEmail", e.target.value)}
         />
       </div>
@@ -96,7 +96,7 @@ export function EditUserForm({
       <div>
         <label>IDP Sub</label>
         <input
-          value={form.idpSub}
+          value={form.idpSub ?? undefined}
           onChange={(e) => handleChange("idpSub", e.target.value)}
         />
       </div>
