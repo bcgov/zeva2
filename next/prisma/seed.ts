@@ -863,7 +863,8 @@ const main = () => {
         const vehIdNew = oldVehIdToNew[historyOld.vehicle_id];
         const newCreateUserId =
           mapOfOldUsernamesToNewUserIds[historyOld.create_user];
-
+        const modelYearEnum =
+          mapOfModelYearIdsToModelYearEnum[historyOld.model_year_id];
         if (!newCreateUserId) {
           throw new Error(
             "vehicle history with id " +
@@ -875,18 +876,14 @@ const main = () => {
         await tx.vehicleChangeHistory.create({
           data: {
             createTimestamp: historyOld.create_timestamp,
-            vehicleClassCode: {
-              set: [vClassIdToEnum[historyOld.vehicle_class_code_id]],
-            },
+            vehicleClassCode: vClassIdToEnum[historyOld.vehicle_class_code_id],
             createUserId: newCreateUserId,
-            vehicleZevType: {
-              set: [vZevIdToEnum[historyOld.vehicle_zev_type_id]],
-            },
+            vehicleZevType: vZevIdToEnum[historyOld.vehicle_zev_type_id],
             range: historyOld.range,
             make: historyOld.make,
             weightKg: historyOld.weight_kg,
             modelName: historyOld.model_name,
-            modelYearId: historyOld.model_year_id,
+            modelYear: modelYearEnum,
             organizationId:
               mapOfOldOrgIdsToNewOrgIds[historyOld.organization_id]!,
             validationStatus: historyOld.validation_status,
@@ -966,9 +963,9 @@ const main = () => {
           legacyVinsToCreate.push({ vin });
         }
       });
-      await tx.creditApplicationVinLegacy.createMany({
-        data: legacyVinsToCreate,
-      });
+      // await tx.creditApplicationVinLegacy.createMany({
+      //   data: legacyVinsToCreate,
+      // });
     },
     {
       timeout: 10000,
