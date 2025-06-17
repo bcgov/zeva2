@@ -4,6 +4,8 @@ import React, { useMemo } from "react";
 import { ColumnDef, createColumnHelper } from "@tanstack/react-table";
 import { Table } from "@/app/lib/components";
 import { VehicleSparseSerialized } from "./VehicleList";
+import Link from "next/link";
+import { getModelYearEnumsToStringsMap } from "@/app/lib/utils/enumMaps";
 
 export const VehicleTable = (props: {
   vehicles: VehicleSparseSerialized[];
@@ -11,7 +13,7 @@ export const VehicleTable = (props: {
   navigationAction: (id: number) => Promise<void>;
 }) => {
   const columnHelper = createColumnHelper<VehicleSparseSerialized>();
-
+  const modelYearEnumMap = getModelYearEnumsToStringsMap();
   const columns = useMemo(() => {
     const result: ColumnDef<VehicleSparseSerialized, any>[] = [
       columnHelper.accessor((row) => row.status, {
@@ -39,7 +41,7 @@ export const VehicleTable = (props: {
         id: "modelYear",
         enableSorting: true,
         enableColumnFilter: true,
-        cell: (info) => info.getValue(),
+        cell: (info) => modelYearEnumMap[info.row.original.modelYear],
         header: () => <span>Model Year</span>,
       }),
       columnHelper.accessor((row) => row.modelName, {
@@ -97,11 +99,16 @@ export const VehicleTable = (props: {
   }, [columnHelper, props.vehicles]);
 
   return (
-    <Table<VehicleSparseSerialized>
-      columns={columns}
-      data={props.vehicles}
-      totalNumberOfRecords={props.totalNumbeOfVehicles}
-      navigationAction={props.navigationAction}
-    />
+    <>
+      <Link href="/vehicle/new">
+        <button>Add New Vehicle</button>
+      </Link>
+      <Table<VehicleSparseSerialized>
+        columns={columns}
+        data={props.vehicles}
+        totalNumberOfRecords={props.totalNumbeOfVehicles}
+        navigationAction={props.navigationAction}
+      />
+    </>
   );
 };

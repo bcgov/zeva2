@@ -2,7 +2,8 @@
 
 import { getUserInfo } from "@/auth";
 import { prisma } from "@/lib/prisma";
-import { VehicleStatus } from "@/prisma/generated/client";
+import { VehicleStatus, Vehicle } from "@/prisma/generated/client";
+import { createHistory } from "./services";
 
 export async function createVehicleComment(vehicleId: number, comment: string) {
   const { userIsGov, userId, userOrgId } = await getUserInfo();
@@ -86,4 +87,56 @@ export async function updateStatus(
       // do something here? Or will there always be a mostRecentHistory (one is created when a vehicle is created)?
     }
   });
+}
+
+export type VehiclePayload = Omit<
+  Vehicle,
+  "id" | "organizationId" | "weightKg" | "isActive"
+> & {
+  id?: number;
+  weightKg: string;
+};
+
+export async function createOrUpdateVehicle(
+  data: VehiclePayload,
+): Promise<number | null> {
+  let result = null;
+  const { userIsGov, userId, userOrgId } = await getUserInfo();
+  const vehicleId = data.id;
+  if (!vehicleId) {
+    // create new vehicle:
+    if (userIsGov) {
+      throw new Error("Gov users cannot create vehicles?");
+    }
+    await prisma.$transaction(async (tx) => {
+      const newVehicle = await tx.vehicle.create({
+        data: { ...data, organizationId: userOrgId, isActive: true },
+      });
+      result = newVehicle.id;
+      await createHistory(newVehicle, userId, tx);
+    });
+    return result;
+  }
+  // update vehicle:
+  const vehicleToUpdate = await prisma.vehicle.findUnique({
+    where: {
+      id: vehicleId,
+    },
+  });
+  if (
+    !vehicleToUpdate ||
+    (!userIsGov && userOrgId !== vehicleToUpdate.organizationId)
+  ) {
+    throw new Error("Unauthorized!");
+  }
+  await prisma.$transaction(async (tx) => {
+    const updatedVehicle = await tx.vehicle.update({
+      where: {
+        id: vehicleId,
+      },
+      data: { ...data, organizationId: userOrgId },
+    });
+    await createHistory(updatedVehicle, userId, tx);
+  });
+  return vehicleId;
 }

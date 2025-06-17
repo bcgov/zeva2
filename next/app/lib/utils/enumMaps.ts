@@ -60,10 +60,9 @@ export const getVehicleClassEnumsToStringsMap = () => {
   return result;
 };
 
-export const getStringsToVehiclClassEnumsMap = () => {
+export const getStringsToVehicleClassEnumsMap = () => {
   const result: Partial<Record<string, VehicleClass>> = {};
   for (const value of Object.values(VehicleClass)) {
     result[lowerCaseAndCapitalize(value)] = value;
   }
-  return result;
 };
