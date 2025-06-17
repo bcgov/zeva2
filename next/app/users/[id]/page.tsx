@@ -20,9 +20,17 @@ export default async function Page(props: { params: Promise<{ id: string }> }) {
 
   return (
     <div className="p-6 max-w-3xl mx-auto">
-      <h1 className="text-2xl font-bold mb-4">{user.organization.name} User Management</h1>
-      <div className="mb-4 text-sm text-gray-600">User subject identifier: {user.idpSub}</div>
-      <EditUserForm user={user} onSubmit={handleSubmit} isGovernment={userIsGov} />
+      <h1 className="text-2xl font-bold mb-4">
+        {user.organization.name} User Management
+      </h1>
+      <div className="mb-4 text-sm text-gray-600">
+        User subject identifier: {user.idpSub}
+      </div>
+      <EditUserForm
+        user={user}
+        onSubmit={handleSubmit}
+        isGovernment={userIsGov}
+      />
     </div>
   );
 }
