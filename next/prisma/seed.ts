@@ -970,9 +970,9 @@ const main = () => {
           legacyVinsToCreate.push({ vin });
         }
       });
-      // await tx.creditApplicationVinLegacy.createMany({
-      //   data: legacyVinsToCreate,
-      // });
+      await tx.creditApplicationVinLegacy.createMany({
+        data: legacyVinsToCreate,
+      });
     },
     {
       timeout: 10000,
