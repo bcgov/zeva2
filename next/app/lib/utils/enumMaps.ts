@@ -65,4 +65,5 @@ export const getStringsToVehicleClassEnumsMap = () => {
   for (const value of Object.values(VehicleClass)) {
     result[lowerCaseAndCapitalize(value)] = value;
   }
+  return result;
 };

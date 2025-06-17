@@ -80,11 +80,7 @@ export function EditUserForm({
 
       <div className="pt-4 flex gap-4">
         <Button type="submit">Save</Button>
-        <Button
-          type="button"
-          onClick={handleDelete}
-          disabled={isPending}
-        >
+        <Button type="button" onClick={handleDelete} disabled={isPending}>
           Delete User
         </Button>
       </div>
