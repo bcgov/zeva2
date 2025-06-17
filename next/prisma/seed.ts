@@ -872,6 +872,13 @@ const main = () => {
               " has unknown create user id!",
           );
         }
+        if (!modelYearEnum) {
+          throw new Error(
+            "vehicle history with id " +
+              historyOld.id +
+              " has unknown model year!",
+          );
+        }
 
         await tx.vehicleChangeHistory.create({
           data: {
