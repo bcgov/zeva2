@@ -41,7 +41,7 @@ export const VehicleTable = (props: {
         id: "modelYear",
         enableSorting: true,
         enableColumnFilter: true,
-        cell: (info) => modelYearEnumMap[info.getValue()],
+        cell: (info) => modelYearEnumMap[info.row.original.modelYear],
         header: () => <span>Model Year</span>,
       }),
       columnHelper.accessor((row) => row.modelName, {

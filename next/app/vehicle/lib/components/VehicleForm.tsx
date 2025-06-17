@@ -1,78 +1,51 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useActionState } from "react";
-import { createOrUpdateVehicle } from "../actions";
+import { useState, useCallback, useTransition, useMemo } from "react";
+import { VehiclePayload } from "../actions";
+import { getStringsToModelYearsEnumsMap } from "@/app/lib/utils/enumMaps";
 import {
-  getZevTypeEnumsToStringsMap,
-  getModelYearEnumsToStringsMap,
-  getVehicleClassCodeEnumsToStringsMap,
-} from "@/app/lib/utils/enumMaps";
+  ModelYear,
+  VehicleClassCode,
+  VehicleStatus,
+  VehicleZevType,
+} from "@/prisma/generated/client";
+import { getVehiclePayload } from "../utilsClient";
+import { SerializedVehicleWithOrg } from "../data";
 
-const initialState = { error: "", success: false };
-
-type VehicleFormData = {
+export type VehicleFormData = {
   modelName: string;
   make: string;
-  modelYear: string;
-  zevType: string;
+  modelYear: ModelYear | "";
+  zevType: VehicleZevType | "";
   us06: boolean;
-  bodyType: string;
+  bodyType: VehicleClassCode | "";
   range: string;
   gvwr: string;
 };
 
-export default function VehicleForm({
-  initialValues = {},
-}: {
-  initialValues?: Partial<VehicleFormData> & {
-    id?: number;
-    organizationId?: number;
-  };
+export function VehicleForm(props: {
+  vehicle?: SerializedVehicleWithOrg;
+  handleSave?: (data: VehiclePayload) => Promise<void>;
 }) {
+  const [isPending, startTransition] = useTransition();
+
+  const initialValues = useMemo(() => {
+    return props.vehicle;
+  }, [props.vehicle]);
+
+  const [error, setError] = useState<string>("");
   const [formData, setFormData] = useState<VehicleFormData>({
-    modelYear: initialValues.modelYear || "",
-    make: initialValues.make || "",
-    modelName: initialValues.modelName || "",
-    zevType: initialValues.zevType || "",
-    us06: initialValues.us06 || false,
-    range: initialValues.range?.toString() || "",
-    bodyType: initialValues.bodyType || "",
-    gvwr: initialValues.gvwr?.toString() || "",
+    modelYear: initialValues?.modelYear || "",
+    make: initialValues?.make || "",
+    modelName: initialValues?.modelName || "",
+    zevType: initialValues?.vehicleZevType || "",
+    us06: initialValues?.hasPassedUs06Test || false,
+    range: initialValues?.range?.toString() || "",
+    bodyType: initialValues?.vehicleClassCode || "",
+    gvwr: initialValues?.weightKg || "",
   });
 
-  const [state, formAction] = useActionState(
-    async (_: any, formDataObj: FormData) => {
-      if (initialValues.id) {
-        formDataObj.set("vehicleId", initialValues.id.toString());
-      }
-      if (initialValues.organizationId) {
-        formDataObj.set(
-          "organizationId",
-          initialValues.organizationId.toString(),
-        );
-      }
-      return await createOrUpdateVehicle(formDataObj);
-    },
-    initialState,
-  );
-  useEffect(() => {
-    if (state.success) {
-      setFormData({
-        modelYear: "",
-        make: "",
-        modelName: "",
-        zevType: "",
-        us06: false,
-        range: "",
-        bodyType: "",
-        gvwr: "",
-      });
-    }
-  }, [state.success]);
-  const modelYearMap = getModelYearEnumsToStringsMap();
-  const zevClassMap = getZevTypeEnumsToStringsMap();
-  const vehicleClassCodeMap = getVehicleClassCodeEnumsToStringsMap();
+  const modelYearMap = getStringsToModelYearsEnumsMap();
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
@@ -89,36 +62,28 @@ export default function VehicleForm({
     }));
   };
 
-  const setStatusAndSubmit = (status: string) => {
-    const statusInput = document.getElementById("status") as HTMLInputElement;
-    if (statusInput) {
-      statusInput.value = status;
-      statusInput.form?.requestSubmit();
-    }
-  };
+  const handleSubmit = useCallback(
+    (status: VehicleStatus) => {
+      startTransition(async () => {
+        //only handle creating new vehicle for now:
+        if (!initialValues && props.handleSave) {
+          try {
+            const vehiclePayload = getVehiclePayload(formData, status);
+            await props.handleSave(vehiclePayload);
+          } catch (e) {
+            if (e instanceof Error) {
+              setError(e.message);
+            }
+          }
+        }
+      });
+    },
+    [formData, initialValues, props.handleSave],
+  );
 
   return (
-    <form action={formAction} className="space-y-4" onChange={handleChange}>
-      {state.error && <p className="text-red-600">{state.error}</p>}
-      {state.success && <p className="text-green-600">Saved successfully!</p>}
-
-      {initialValues.id && (
-        <input
-          type="hidden"
-          name="vehicleId"
-          value={initialValues.id.toString()}
-        />
-      )}
-      {initialValues.organizationId && (
-        <input
-          type="hidden"
-          name="organizationId"
-          value={initialValues.organizationId.toString()}
-        />
-      )}
-
-      <input type="hidden" name="status" id="status" />
-
+    <div>
+      {error && <p className="text-red-600">{error}</p>}
       <select
         name="modelYear"
         className="border p-2 w-full"
@@ -126,7 +91,7 @@ export default function VehicleForm({
         onChange={handleChange}
       >
         <option value="">Model Year</option>
-        {Object.entries(modelYearMap).map(([enumValue, label]) => (
+        {Object.entries(modelYearMap).map(([label, enumValue]) => (
           <option key={enumValue} value={enumValue}>
             {label}
           </option>
@@ -158,7 +123,7 @@ export default function VehicleForm({
         onChange={handleChange}
       >
         <option value="">Select ZEV Type</option>
-        {Object.entries(zevClassMap).map(([enumKey, label]) => (
+        {Object.entries(VehicleZevType).map(([enumKey, label]) => (
           <option key={enumKey} value={enumKey}>
             {label}
           </option>
@@ -193,7 +158,7 @@ export default function VehicleForm({
         onChange={handleChange}
       >
         <option value="">Select Body Type</option>
-        {Object.entries(vehicleClassCodeMap).map(([enumKey, label]) => (
+        {Object.entries(VehicleClassCode).map(([enumKey, label]) => (
           <option key={enumKey} value={enumKey}>
             {label}
           </option>
@@ -210,14 +175,14 @@ export default function VehicleForm({
       />
 
       <div className="flex space-x-2">
-        <button type="button" onClick={() => setStatusAndSubmit("draft")}>
-          Save draft
-        </button>
-
-        <button type="button" onClick={() => setStatusAndSubmit("submitted")}>
-          Submit
+        <button
+          type="button"
+          disabled={isPending}
+          onClick={() => handleSubmit(VehicleStatus.DRAFT)}
+        >
+          {isPending ? "..." : "Save Draft"}
         </button>
       </div>
-    </form>
+    </div>
   );
 }

@@ -4,13 +4,7 @@
 // to overcome this issue, we can use the maps below; not great from a maintenance perspective,
 // so hopefully prisma addresses this soon!
 
-import {
-  VehicleClass,
-  ZevClass,
-  ModelYear,
-  VehicleZevType,
-  VehicleClassCode,
-} from "@/prisma/generated/client";
+import { VehicleClass, ZevClass, ModelYear } from "@/prisma/generated/client";
 
 const lowerCaseAndCapitalize = (s: string) => {
   const firstLetter = s.charAt(0);
@@ -46,6 +40,18 @@ export const getZevClassEnumsToStringsMap = () => {
   return result;
 };
 
+export const getStringsToZevClassEnumsMap = () => {
+  const result: Partial<Record<string, ZevClass>> = {};
+  for (const value of Object.values(ZevClass)) {
+    if (value.length > 1) {
+      result[lowerCaseAndCapitalize(value)] = value;
+    } else {
+      result[value] = value;
+    }
+  }
+  return result;
+};
+
 export const getVehicleClassEnumsToStringsMap = () => {
   const result: Partial<Record<VehicleClass, string>> = {};
   for (const value of Object.values(VehicleClass)) {
@@ -54,18 +60,9 @@ export const getVehicleClassEnumsToStringsMap = () => {
   return result;
 };
 
-export const getZevTypeEnumsToStringsMap = () => {
-  const result: Partial<Record<VehicleZevType, string>> = {};
-  for (const value of Object.values(VehicleZevType)) {
-    result[value] = value;
+export const getStringsToVehicleClassEnumsMap = () => {
+  const result: Partial<Record<string, VehicleClass>> = {};
+  for (const value of Object.values(VehicleClass)) {
+    result[lowerCaseAndCapitalize(value)] = value;
   }
-  return result;
-};
-
-export const getVehicleClassCodeEnumsToStringsMap = () => {
-  const result: Partial<Record<VehicleClassCode, string>> = {};
-  for (const value of Object.values(VehicleClassCode)) {
-    result[value] = value;
-  }
-  return result;
 };
