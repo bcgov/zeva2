@@ -86,8 +86,10 @@ const main = () => {
             firstModelYear:
               mapOfModelYearIdsToModelYearEnum[
                 orgOld.first_model_year_id ?? -1
-              ] ?? ModelYear.MY_2019,
+              ],
             isGovernment: orgOld.is_government,
+            isActive: orgOld.is_active,
+            shortName: orgOld.short_name,
           },
         });
         mapOfOldOrgIdsToNewOrgIds[orgOld.id] = orgNew.id;
