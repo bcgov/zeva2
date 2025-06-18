@@ -1,9 +1,12 @@
 import { Suspense } from "react";
 import { LoadingSkeleton } from "@/app/lib/components/skeletons";
-import { AddressType } from "@/prisma/generated/client";
 import { getOrganizationDetails } from "../lib/services";
 import OrganizationDetails from "../lib/components/OrganizationDetails";
 import { getSupplierClass } from "../lib/utils";
+import { OrganizationPayload, saveOrganization } from "../lib/action";
+import { Routes } from "@/app/lib/constants";
+import { redirect } from "next/navigation";
+import { revalidatePath } from "next/cache"
 
 const Page = async (props: { params: Promise<{ id: string }> }) => {
   const { id } = await props.params;
@@ -19,23 +22,29 @@ const Page = async (props: { params: Promise<{ id: string }> }) => {
     );
   }
 
-  const serviceAddress = organization.organizationAddress.find(
-    (item) => item.addressType === AddressType.SERVICE,
-  );
-  const recordsAddress = organization.organizationAddress.find(
-    (item) => item.addressType === AddressType.RECORDS,
-  );
+  const updateOrganization = async (data: OrganizationPayload) => {
+    "use server";
+    const isSaved = await saveOrganization(orgId, data);
+    if (isSaved) {
+      revalidatePath(`${Routes.VehicleSuppliers}/${orgId}`);
+    } else {
+      redirect(`${Routes.VehicleSuppliers}/error`);
+    }
+  };
 
   return (
     <div className="p-6">
       <Suspense fallback={<LoadingSkeleton />}>
         <OrganizationDetails
           organizationName={organization.name}
-          firstModelYear={organization.firstModelYear.toString().substring(3)}
-          serviceAddress={serviceAddress}
-          recordsAddress={recordsAddress}
+          shortName={organization.shortName ?? undefined}
+          isActive={organization.isActive}
+          firstModelYear={organization.firstModelYear?.toString().substring(3) ?? "N/A"}
+          serviceAddress={organization.serviceAddress}
+          recordsAddress={organization.recordsAddress}
           supplierClass={getSupplierClass(organization.ldvSupplied)}
           users={organization.users}
+          update={updateOrganization}
         />
       </Suspense>
     </div>

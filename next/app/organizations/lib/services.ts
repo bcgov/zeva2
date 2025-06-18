@@ -1,6 +1,8 @@
 import { getUserInfo } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { organizationLDVSuppliedClause } from "./utils";
+import { AddressType } from "@/prisma/generated/client";
+import { OrganizationAddressSparse } from "./data";
 
 export const getOrganizationDetails = async (id: number) => {
   const { userIsGov, userOrgId } = await getUserInfo();
@@ -43,5 +45,26 @@ export const getOrganizationDetails = async (id: number) => {
       ldvSupplied: organizationLDVSuppliedClause,
     },
   });
-  return organization;
+
+  if (!organization) {
+    return null; // Organization not found
+  }
+
+  const findAddress = (typeToFind: AddressType) => {
+    const {addressType, ...address} = organization.organizationAddress.find(
+      (item) => item.addressType === typeToFind,
+    ) || {};
+    if (!addressType) {
+      return undefined; // No address found for this type
+    }
+    return address as OrganizationAddressSparse;
+  };
+
+  const { organizationAddress, ...rest } = organization;
+
+  return {
+    ...rest,
+    serviceAddress: findAddress(AddressType.SERVICE),
+    recordsAddress: findAddress(AddressType.RECORDS),
+  };
 };
