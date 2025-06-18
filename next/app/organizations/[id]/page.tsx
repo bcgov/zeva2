@@ -4,6 +4,7 @@ import { getOrganizationDetails } from "../lib/services";
 import OrganizationDetails from "../lib/components/OrganizationDetails";
 import { getSupplierClass } from "../lib/utils";
 import { OrganizationPayload, saveOrganization } from "../lib/action";
+import { getUserInfo } from "@/auth";
 import { Routes } from "@/app/lib/constants";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache"
@@ -21,6 +22,9 @@ const Page = async (props: { params: Promise<{ id: string }> }) => {
       </div>
     );
   }
+
+  const { userRoles } = await getUserInfo();
+  const canEdit = userRoles.includes("ADMINISTRATOR");
 
   const updateOrganization = async (data: OrganizationPayload) => {
     "use server";
@@ -44,7 +48,7 @@ const Page = async (props: { params: Promise<{ id: string }> }) => {
           recordsAddress={organization.recordsAddress}
           supplierClass={getSupplierClass(organization.ldvSupplied)}
           users={organization.users}
-          update={updateOrganization}
+          update={canEdit ? updateOrganization : undefined}
         />
       </Suspense>
     </div>

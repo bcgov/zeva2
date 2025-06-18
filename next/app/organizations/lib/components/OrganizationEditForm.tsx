@@ -4,7 +4,7 @@ import { Button } from "@/app/lib/components";
 import { OrganizationPayload } from "../action";
 import AddressEditForm from "./AddressEditForm";
 import { OrganizationAddressSparse } from "../data";
-import { cleanupStringData } from "../utils";
+import { cleanupAddressData, cleanupStringData } from "../utils";
 
 const mainFieldClass = "grid grid-cols-[220px_1fr]";
 const addressFrameClass = "w-1/2 border border-borderGrey p-2";
@@ -54,8 +54,8 @@ const OrganizationEditForm = (props: {
       shortName: cleanupStringData(shortName),
       isActive,
       isGovernment: false,
-      serviceAddress,
-      recordsAddress,
+      serviceAddress: cleanupAddressData(serviceAddress),
+      recordsAddress: cleanupAddressData(recordsAddress),
     };
     await props.upsertData(data);
     window.location.reload(); // Reload to reflect changes if not redirected

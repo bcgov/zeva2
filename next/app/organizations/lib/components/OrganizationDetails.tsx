@@ -65,7 +65,7 @@ const OrganizationDetails = (props: {
   recordsAddress?: OrganizationAddressSparse;
   supplierClass: string;
   users: OrganizationUser[];
-  update: (data: OrganizationPayload) => Promise<void>;
+  update?: (data: OrganizationPayload) => Promise<void>;
 }) => {
   const [mode, setMode] = useState<"view" | "edit">("view");
 
@@ -79,7 +79,7 @@ const OrganizationDetails = (props: {
         isActive={props.isActive}
         serviceAddress={props.serviceAddress}
         recordsAddress={props.recordsAddress}
-        upsertData={props.update}
+        upsertData={props.update ?? (() => Promise.resolve())}
         handleCancel={() => setMode("view")}
       />
     )
@@ -91,7 +91,11 @@ const OrganizationDetails = (props: {
         <h2 className="text-xl font-semibold text-primaryBlue py-1">
           {props.organizationName}
         </h2>
-        <Button className="py-1 w-16" onClick={() => setMode("edit")}>Edit</Button>
+        {props.update && (
+          <Button className="py-1 w-16" onClick={() => setMode("edit")}>
+            Edit
+          </Button>
+        )}
       </div>
 
       <div>

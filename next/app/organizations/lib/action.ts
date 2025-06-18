@@ -19,9 +19,9 @@ export type OrganizationPayload = Omit<Organization, "id" | "firstModelYear"> & 
  * @returns the created organization or undefined if no organization is created.
  */
 export const createOrganization = async (data: OrganizationPayload) => {
-  const { userIsGov } = await getUserInfo();
-  if (!userIsGov) {
-    return undefined;
+  const { userIsGov, userRoles } = await getUserInfo();
+  if (!userIsGov || !userRoles.includes("ADMINISTRATOR")) {
+    return undefined; // Only government users with ADMINISTRATOR role can create organizations
   }
   try {
     return await prisma.$transaction(async (tx) => {
@@ -80,9 +80,9 @@ export const saveOrganization = async (
   organizationId: number,
   data: OrganizationPayload,
 ) => {
-  const { userIsGov, userOrgId } = await getUserInfo();
-  if (!userIsGov && userOrgId !== organizationId) {
-    return false; // Only government users or users from the organization itself can save changes
+  const { userIsGov, userRoles } = await getUserInfo();
+  if (!userIsGov || !userRoles.includes("ADMINISTRATOR")) {
+    return false; // Only government users with ADMINISTRATOR role can update organizations
   }
 
   try {
