@@ -44,14 +44,14 @@ const AddressEditForm = (props: {
   return (
     <div className="space-y-2">
       <div className={fieldMainClass}>
-        <label className="mb-1">Representative</label>
+        <span className="mb-1">Representative</span>
         <AddressField
           addressState={props.addressState}
           fieldName="representative"
         />
       </div>
       <div className={fieldMainClass}>
-        <label className="mb-1">Street Address</label>
+        <span className="mb-1">Street Address</span>
         <AddressField
           addressState={props.addressState}
           fieldName="addressLines"
@@ -59,28 +59,28 @@ const AddressEditForm = (props: {
         />
       </div>
       <div className={fieldMainClass}>
-        <label className="mb-1">City</label>
+        <span className="mb-1">City</span>
         <AddressField
           addressState={props.addressState}
           fieldName="city"
         />
       </div>
       <div className={fieldMainClass}>
-        <label className="mb-1">Province/State</label>
+        <span className="mb-1">Province/State</span>
         <AddressField
           addressState={props.addressState}
           fieldName="state"
         />
       </div>
       <div className={fieldMainClass}>
-        <label className="mb-1">Postal Code</label>
+        <span className="mb-1">Postal Code</span>
         <AddressField
           addressState={props.addressState}
           fieldName="postalCode"
         />
       </div>
       <div className={fieldMainClass}>
-        <label className="mb-1">Country</label>
+        <span className="mb-1">Country</span>
         <AddressField
           addressState={props.addressState}
           fieldName="country"

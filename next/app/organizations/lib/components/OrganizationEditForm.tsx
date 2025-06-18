@@ -69,7 +69,7 @@ const OrganizationEditForm = (props: {
 
       <form className="space-y-4" onSubmit={handleSubmit}>
         <div className={mainFieldClass}>
-          <label className="p-1">Legal Organization Name</label>
+          <span className="p-1">Legal Organization Name</span>
           <input
             className="p-1"
             type="text"
@@ -80,7 +80,7 @@ const OrganizationEditForm = (props: {
         </div>
 
         <div className={mainFieldClass}>
-          <label className="p-1">Common Name</label>
+          <span className="p-1">Common Name</span>
           <input
             className="p-1"
             type="text"
@@ -89,7 +89,7 @@ const OrganizationEditForm = (props: {
           />
         </div>
         <div className={mainFieldClass + " p-1"}>
-          <label>Status</label>
+          <span>Status</span>
           <div className="flex flex-row gap-12">
             <label>
               <input
