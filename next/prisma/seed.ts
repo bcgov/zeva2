@@ -24,6 +24,7 @@ import {
 import { Decimal } from "./generated/client/runtime/library";
 import { Notification } from "./generated/client";
 import { isNotification } from "@/app/lib/utils/typeGuards";
+import { cleanupStringData, isEmptyAddress } from "@/app/organizations/lib/utils";
 
 // prismaOld to interact with old zeva db; prisma to interact with new zeva db
 const main = () => {
@@ -115,28 +116,38 @@ const main = () => {
               " with unknown organization id!",
           );
         }
-        await tx.organizationAddress.create({
-          data: {
-            organizationId: orgIdNew,
-            expirationDate: orgAddressOld.expiration_date,
-            addressType: getAddressTypeEnum(
-              orgAddressOld.address_type.address_type,
-            ),
-            addressLines: [
-              orgAddressOld.address_line_1,
-              orgAddressOld.address_line_2,
-              orgAddressOld.address_line_3,
-            ]
-              .filter((line) => line && line.trim() !== "")
-              .join("\n"),
-            city: orgAddressOld.city,
-            postalCode: orgAddressOld.postal_code,
-            state: orgAddressOld.state,
-            county: orgAddressOld.county,
-            country: orgAddressOld.country,
-            representative: orgAddressOld.representative_name,
-          },
-        });
+
+        const addressLinesOld = [
+          orgAddressOld.address_line_1,
+          orgAddressOld.address_line_2,
+          orgAddressOld.address_line_3,
+        ].filter((line) => line && line.trim() !== "");
+
+        const newAddressSparse = {
+          addressLines: cleanupStringData(addressLinesOld.join("\n")),
+          city: cleanupStringData(orgAddressOld.city),
+          postalCode: cleanupStringData(orgAddressOld.postal_code),
+          state: cleanupStringData(orgAddressOld.state),
+          county: cleanupStringData(orgAddressOld.county),
+          country: cleanupStringData(orgAddressOld.country),
+          representative: cleanupStringData(
+            orgAddressOld.representative_name
+          ),
+        }
+
+        // Create the address record only if it has non-empty fields
+        if (!isEmptyAddress(newAddressSparse)) {
+          await tx.organizationAddress.create({
+            data: {
+              organizationId: orgIdNew,
+              expirationDate: orgAddressOld.expiration_date,
+              addressType: getAddressTypeEnum(
+                orgAddressOld.address_type.address_type,
+              ),
+              ...newAddressSparse,
+            }
+          });
+        }
       }
 
       // add orgs LDV supplied volumes (from old LDV sales table):
