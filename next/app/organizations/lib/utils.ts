@@ -1,6 +1,5 @@
 import { Prisma } from "@/prisma/generated/client";
-import { OrganizationSparse } from "./data";
-import { OrganizationAddressSparse } from "./data";
+import { OrganizationSparse, OrganizationAddressSparse } from "./data";
 
 const YEARS_OF_AVG_SUPPLIED_VOL_USED = 3; // Number of years to average the supplied volume for LDVs
 

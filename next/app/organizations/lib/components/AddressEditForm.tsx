@@ -15,7 +15,7 @@ const AddressField = (props: {
   multiline?: boolean;
 }) => {
   const [address, setAddress] = props.addressState;
-  const value = address[props.fieldName] || "";
+  const value = address[props.fieldName] ?? "";
   const handleChange = (value: string) => setAddress({
     ...address,
     [props.fieldName]: value

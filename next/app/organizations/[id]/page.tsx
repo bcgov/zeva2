@@ -5,14 +5,14 @@ import OrganizationDetails from "../lib/components/OrganizationDetails";
 import { getSupplierClass } from "../lib/utils";
 import { OrganizationPayload, saveOrganization } from "../lib/action";
 import { getUserInfo } from "@/auth";
-import { MY_ORGANGIZATION, Routes } from "@/app/lib/constants";
+import { MY_ORGANIZATION, Routes } from "@/app/lib/constants";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache"
 
 const Page = async (props: { params: Promise<{ id: string }> }) => {
   const { userOrgId, userRoles } = await getUserInfo();
   const { id } = await props.params;
-  const orgId = id === MY_ORGANGIZATION ? userOrgId : parseInt(id);
+  const orgId = id === MY_ORGANIZATION ? userOrgId : parseInt(id);
   const organization = isNaN(orgId)
     ? null
     : await getOrganizationDetails(orgId);

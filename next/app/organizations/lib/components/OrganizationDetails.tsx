@@ -100,7 +100,7 @@ const OrganizationDetails = (props: {
 
       <div>
         <span className="font-semibold mr-2">Common Name:</span>
-        {props.shortName || "N/A"}
+        {props.shortName ?? "N/A"}
       </div>
 
       <div className="flex flex-row">

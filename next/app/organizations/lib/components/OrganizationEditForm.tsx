@@ -21,8 +21,8 @@ const OrganizationEditForm = (props: {
   upsertData: (data: OrganizationPayload) => Promise<void>,
   handleCancel: () => void,
 }) => {
-  const [organizationName, setOrganizationName] = useState(props.organizationName || "");
-  const [shortName, setShortName] = useState(props.shortName || "");
+  const [organizationName, setOrganizationName] = useState(props.organizationName ?? "");
+  const [shortName, setShortName] = useState(props.shortName ?? "");
   const [isActive, setIsActive] = useState(props.isActive);
   const emptyAddress: OrganizationAddressSparse = {
     addressLines: "",
@@ -33,11 +33,11 @@ const OrganizationEditForm = (props: {
     country: "",
     representative: "",
   };
-  const serviceAddressState = useState(props.serviceAddress || {
+  const serviceAddressState = useState(props.serviceAddress ?? {
     ...emptyAddress,
   });
   const [serviceAddress] = serviceAddressState;
-  const recordsAddressState = useState(props.recordsAddress || {
+  const recordsAddressState = useState(props.recordsAddress ?? {
     ...emptyAddress,
   });
   const [recordsAddress] = recordsAddressState;
