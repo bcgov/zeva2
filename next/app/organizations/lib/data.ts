@@ -1,6 +1,7 @@
 import { getUserInfo } from "@/auth";
 import { prisma } from "@/lib/prisma";
-import { getCurrentBalance, sumBalance } from "../../../lib/utils/zevUnit";
+import { OrganizationAddress } from "@/prisma/generated/client";
+import { getCurrentBalance, sumBalance } from "@/lib/utils/zevUnit";
 import {
   filterOrganizations,
   getSupplierClass,
@@ -16,7 +17,14 @@ export type OrganizationSparse = {
   zevUnitBalanceB: string;
 };
 
-export const getAllSuppliers = async (): Promise<OrganizationSparse[]> => {
+export type OrganizationAddressSparse = Omit<OrganizationAddress,
+  "id" |
+  "organizationId" |
+  "expirationDate" |
+  "addressType"
+>;
+
+export const getAllSuppliers = async (activeOnly: boolean = false): Promise<OrganizationSparse[]> => {
   const { userIsGov } = await getUserInfo();
   if (!userIsGov) {
     return [];
@@ -25,12 +33,15 @@ export const getAllSuppliers = async (): Promise<OrganizationSparse[]> => {
     select: {
       id: true,
       name: true,
+      isActive: true,
+      shortName: true,
       zevUnitTransactions: true,
       zevUnitEndingBalances: true,
       ldvSupplied: organizationLDVSuppliedClause,
     },
     where: {
       isGovernment: false,
+      isActive: activeOnly ? true : undefined,
     },
     orderBy: {
       name: "asc",
@@ -73,7 +84,7 @@ export const getOrganizations = async (
     return [[], 0];
   }
 
-  const organizations = filterOrganizations(await getAllSuppliers(), filters);
+  const organizations = filterOrganizations(await getAllSuppliers(true), filters);
   sortOrganzations(organizations, sorts);
   const start = (page - 1) * pageSize;
   return [organizations.slice(start, start + pageSize), organizations.length];

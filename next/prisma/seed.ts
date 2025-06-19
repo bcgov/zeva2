@@ -17,13 +17,13 @@ import {
   CreditApplicationVinLegacy,
 } from "./generated/client";
 import {
-  getAddressTypeEnum,
   getModelYearEnum,
   getRoleEnum,
 } from "@/lib/utils/getEnums";
 import { Decimal } from "./generated/client/runtime/library";
 import { Notification } from "./generated/client";
 import { isNotification } from "@/app/lib/utils/typeGuards";
+import seedOrganizations from "./seedProcesses/seedOrganizations";
 
 // prismaOld to interact with old zeva db; prisma to interact with new zeva db
 const main = () => {
@@ -34,8 +34,6 @@ const main = () => {
         [id: number]: ModelYear | undefined;
       } = {};
       const mapOfRoleIdsToRoleEnum: { [id: number]: Role | undefined } = {};
-      const mapOfOldOrgIdsToNewOrgIds: { [id: number]: number | undefined } =
-        {};
       const mapOfOldUserIdsToNewUserIds: { [id: number]: number | undefined } =
         {};
       const mapOfOldUsernamesToNewUserIds: {
@@ -77,90 +75,13 @@ const main = () => {
         mapOfRoleIdsToRoleEnum[roleOld.id] = getRoleEnum(roleOld.role_code);
       }
 
-      // add orgs:
-      const orgsOld = await prismaOld.organization.findMany();
-      for (const orgOld of orgsOld) {
-        const orgNew = await tx.organization.create({
-          data: {
-            name: orgOld.organization_name,
-            firstModelYear:
-              mapOfModelYearIdsToModelYearEnum[
-                orgOld.first_model_year_id ?? -1
-              ] ?? ModelYear.MY_2019,
-            isGovernment: orgOld.is_government,
-          },
-        });
-        mapOfOldOrgIdsToNewOrgIds[orgOld.id] = orgNew.id;
-      }
-
-      // add orgs addresses:
-      const orgAddressesOld = await prismaOld.organization_address.findMany({
-        include: {
-          address_type: {
-            select: {
-              address_type: true,
-            },
-          },
-        },
-      });
-      for (const orgAddressOld of orgAddressesOld) {
-        const orgIdNew =
-          mapOfOldOrgIdsToNewOrgIds[orgAddressOld.organization_id];
-        if (!orgIdNew) {
-          throw new Error(
-            "organization_address " +
-              orgAddressOld.id +
-              " with unknown organization id!",
-          );
-        }
-        await tx.organizationAddress.create({
-          data: {
-            organizationId: orgIdNew,
-            expirationDate: orgAddressOld.expiration_date,
-            addressType: getAddressTypeEnum(
-              orgAddressOld.address_type.address_type,
-            ),
-            addressLines: [
-              orgAddressOld.address_line_1,
-              orgAddressOld.address_line_2,
-              orgAddressOld.address_line_3,
-            ]
-              .filter((line) => line && line.trim() !== "")
-              .join("\n"),
-            city: orgAddressOld.city,
-            postalCode: orgAddressOld.postal_code,
-            state: orgAddressOld.state,
-            county: orgAddressOld.county,
-            country: orgAddressOld.country,
-            representative: orgAddressOld.representative_name,
-          },
-        });
-      }
-
-      // add orgs LDV supplied volumes (from old LDV sales table):
-      const orgLDVSalesOld = await prismaOld.organization_ldv_sales.findMany({
-        where: { is_supplied: true },
-      });
-      for (const orgLDVSaleOld of orgLDVSalesOld) {
-        const orgIdNew =
-          mapOfOldOrgIdsToNewOrgIds[orgLDVSaleOld.organization_id];
-        if (!orgIdNew) {
-          throw new Error(
-            "organization_ldv_sales " +
-              orgLDVSaleOld.id +
-              " with unknown organization id!",
-          );
-        }
-        await tx.organizationLDVSupplied.create({
-          data: {
-            organizationId: orgIdNew,
-            modelYear:
-              mapOfModelYearIdsToModelYearEnum[orgLDVSaleOld.model_year_id] ??
-              ModelYear.MY_2019,
-            volume: orgLDVSaleOld.ldv_sales,
-          },
-        });
-      }
+      // seed organization tables
+      const {
+        mapOfOldOrgIdsToNewOrgIds
+      } = await seedOrganizations(
+        tx,
+        mapOfModelYearIdsToModelYearEnum,
+      );
 
       // add users:
       const usersOld = await prismaOld.user_profile.findMany({

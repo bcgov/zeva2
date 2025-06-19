@@ -1,15 +1,11 @@
+"use client";
 import { $Enums } from "@/prisma/generated/client";
 import { enumToTitleString } from "@/lib/utils/convertEnums";
-
-type OrganizationAddress = {
-  addressLines: string | null;
-  city: string | null;
-  state: string | null;
-  postalCode: string | null;
-  county: string | null;
-  country: string | null;
-  representative: string | null;
-};
+import { Button } from "@/app/lib/components";
+import { useState } from "react";
+import OrganizationEditForm from "./OrganizationEditForm";
+import { OrganizationPayload } from "../action";
+import { OrganizationAddressSparse } from "../data";
 
 type OrganizationUser = {
   id: number;
@@ -18,7 +14,7 @@ type OrganizationUser = {
   roles: $Enums.Role[];
 };
 
-const formattedAddress = (address: OrganizationAddress | undefined) => {
+const formattedAddress = (address: OrganizationAddressSparse | undefined) => {
   if (!address) return <span>N/A</span>;
   const { addressLines, city, state, postalCode, country, representative } =
     address;
@@ -60,20 +56,54 @@ const organizationUsers = (users: OrganizationUser[]) => {
   );
 };
 
-const OrganizationDetails = async (props: {
+const OrganizationDetails = (props: {
   organizationName: string;
+  shortName?: string;
+  isActive: boolean;
   firstModelYear: string;
-  serviceAddress?: OrganizationAddress;
-  recordsAddress?: OrganizationAddress;
+  serviceAddress?: OrganizationAddressSparse;
+  recordsAddress?: OrganizationAddressSparse;
   supplierClass: string;
   users: OrganizationUser[];
+  update?: (data: OrganizationPayload) => Promise<void>;
 }) => {
+  const [mode, setMode] = useState<"view" | "edit">("view");
+
+  if (mode === "edit") {
+    return (
+      <OrganizationEditForm
+        formHeading="Edit Vehicle Supplier"
+        submitButtonText="Save"
+        organizationName={props.organizationName}
+        shortName={props.shortName}
+        isActive={props.isActive}
+        serviceAddress={props.serviceAddress}
+        recordsAddress={props.recordsAddress}
+        upsertData={props.update ?? (() => Promise.resolve())}
+        handleCancel={() => setMode("view")}
+      />
+    )
+  }
+
   return (
-    <div>
-      <h2 className="text-xl font-semibold text-primaryBlue">
-        {props.organizationName}
-      </h2>
-      <div className="flex flex-row mt-2">
+    <div className="space-y-4">
+      <div className="flex flex-row gap-8">
+        <h2 className="text-xl font-semibold text-primaryBlue py-1">
+          {props.organizationName}
+        </h2>
+        {props.update && (
+          <Button className="py-1 w-16" onClick={() => setMode("edit")}>
+            Edit
+          </Button>
+        )}
+      </div>
+
+      <div>
+        <span className="font-semibold mr-2">Common Name:</span>
+        {props.shortName ?? "N/A"}
+      </div>
+
+      <div className="flex flex-row">
         <div className="w-1/3">
           <h3 className="font-semibold">Service Address</h3>
           {formattedAddress(props.serviceAddress)}
@@ -83,15 +113,18 @@ const OrganizationDetails = async (props: {
           {formattedAddress(props.recordsAddress)}
         </div>
       </div>
-      <div className="mt-4">
+
+      <div>
         <span className="font-semibold mr-2">Vehicle Supplier Class:</span>
         {props.supplierClass}
       </div>
-      <div className="mt-4">
+
+      <div>
         <span className="font-semibold mr-2">First Model Year Report:</span>
         {props.firstModelYear}
       </div>
-      <div className="mt-4">
+
+      <div>
         <h3 className="font-semibold mr-2">User(s):</h3>
         {organizationUsers(props.users)}
       </div>

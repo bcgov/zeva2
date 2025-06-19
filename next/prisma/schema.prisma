@@ -34,7 +34,9 @@ model Organization {
   id                    Int                       @id @default(autoincrement())
   name                  String
   isGovernment          Boolean                   @default(false) @map("is_government")
-  firstModelYear        ModelYear                 @map("first_model_year")
+  isActive              Boolean                   @default(true) @map("is_active")
+  shortName             String?                   @map("short_name")
+  firstModelYear        ModelYear?                @map("first_model_year")
   users                 User[]
   zevUnitTransactions   ZevUnitTransaction[]
   zevUnitEndingBalances ZevUnitEndingBalance[]

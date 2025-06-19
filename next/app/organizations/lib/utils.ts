@@ -1,5 +1,5 @@
 import { Prisma } from "@/prisma/generated/client";
-import { OrganizationSparse } from "./data";
+import { OrganizationSparse, OrganizationAddressSparse } from "./data";
 
 const YEARS_OF_AVG_SUPPLIED_VOL_USED = 3; // Number of years to average the supplied volume for LDVs
 
@@ -131,4 +131,35 @@ export const sortOrganzations = (
         break;
     }
   }
+};
+
+// If this cleanup function is useful in other places,
+//   consider moving it to a shared utility file.
+export const cleanupStringData = (str: string | null) => {
+  if (!str) {
+    return null;
+  }
+  const trimmed = str.trim();
+  return trimmed.length > 0 ? trimmed : null;
+};
+
+export const cleanupAddressData = (address?: OrganizationAddressSparse) => {
+  if (!address) {
+    return undefined;
+  }
+  const cleanedAddress: OrganizationAddressSparse = { ...address };
+  for (const key in cleanedAddress) {
+    cleanedAddress[key as keyof OrganizationAddressSparse] =
+      cleanupStringData(cleanedAddress[key as keyof OrganizationAddressSparse]);
+  }
+  return cleanedAddress;
+}
+
+export const isEmptyAddress = (address: OrganizationAddressSparse) => {
+  for (const value of Object.values(address)) {
+    if (value && value.trim().length > 0) {
+      return false; // At least one field is not empty
+    }
+  }
+  return true; // All fields are empty
 };
