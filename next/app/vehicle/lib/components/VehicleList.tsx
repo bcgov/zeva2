@@ -17,11 +17,15 @@ export const VehicleList = async (props: {
   pageSize: number;
   filters: { [key: string]: string };
   sorts: { [key: string]: string };
+  queryString: string;
 }) => {
   const navigationAction = async (id: number) => {
     "use server";
-    redirect(`${Routes.Vehicle}/${id}`);
-  };
+    const url = props.queryString
+      ? `${Routes.Vehicle}/${id}?${props.queryString}`
+      : `${Routes.Vehicle}/${id}`;
+    redirect(url);
+  };  
   const [vehicles, totalNumberOfVehicles] = await getVehicles(
     props.page,
     props.pageSize,

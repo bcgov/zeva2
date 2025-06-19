@@ -18,7 +18,8 @@ export default function ActionBar({ userIsGov, vehicle }: Props) {
     startTransition(async () => {
       try {
         await updateStatus(vehicle.id, choice);
-        router.refresh();
+        const query = window.location.search;
+        router.push(`/vehicle${query}`);
       } catch (e) {
         console.error(e);
       }

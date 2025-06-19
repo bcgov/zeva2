@@ -7,6 +7,10 @@ const Page = async (props: { searchParams?: Promise<pageStringParams> }) => {
   const searchParams = await props.searchParams;
   const { page, pageSize, filters, sorts } = getPageParams(searchParams, 1, 10);
 
+  const queryString = searchParams
+    ? new URLSearchParams(searchParams as Record<string, string>).toString()
+    : "";
+
   return (
     <Suspense key={Date.now()} fallback={<LoadingSkeleton />}>
       <VehicleList
@@ -14,6 +18,7 @@ const Page = async (props: { searchParams?: Promise<pageStringParams> }) => {
         pageSize={pageSize}
         filters={filters}
         sorts={sorts}
+        queryString={queryString}
       />
     </Suspense>
   );
