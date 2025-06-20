@@ -90,6 +90,11 @@ export function VehicleForm(props: {
       <div className="p-6 font-semibold">This vehicle cannot be modified.</div>
     );
   }
+  const buttonLabel = isPending
+    ? "..."
+    : initialValues?.id
+      ? "Save"
+      : "Save Draft";
   return (
     <div>
       {error && <p className="text-red-600">{error}</p>}
@@ -214,7 +219,7 @@ export function VehicleForm(props: {
           disabled={isPending}
           onClick={() => handleSubmit(VehicleStatus.DRAFT)}
         >
-          {isPending ? "..." : initialValues?.id ? "Save" : "Save Draft"}
+          {buttonLabel}
         </button>
       </div>
     </div>
