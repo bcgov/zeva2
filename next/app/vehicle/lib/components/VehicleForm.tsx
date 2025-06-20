@@ -82,6 +82,11 @@ export function VehicleForm(props: {
     },
     [formData, initialValues, props.handleSave],
   );
+  const buttonLabel = useMemo(() => {
+    if (isPending) return "...";
+    if (initialValues?.id) return "Save";
+    return "Save Draft";
+  }, [isPending, initialValues]);
   if (
     props.vehicle &&
     !["DRAFT", "CHANGES_REQUESTED"].includes(props.vehicle.status)
@@ -90,11 +95,7 @@ export function VehicleForm(props: {
       <div className="p-6 font-semibold">This vehicle cannot be modified.</div>
     );
   }
-  const buttonLabel = useMemo(() => {
-    if (isPending) return "...";
-    if (initialValues?.id) return "Save";
-    return "Save Draft";
-  }, [isPending, initialValues]);
+
   return (
     <div>
       {error && <p className="text-red-600">{error}</p>}
