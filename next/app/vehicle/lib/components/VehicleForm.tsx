@@ -27,14 +27,6 @@ export function VehicleForm(props: {
   vehicle?: SerializedVehicleWithOrg;
   handleSave?: (data: VehiclePayload) => Promise<void>;
 }) {
-  if (
-    props.vehicle &&
-    !["DRAFT", "CHANGES_REQUESTED"].includes(props.vehicle.status)
-  ) {
-    return (
-      <div className="p-6 font-semibold">This vehicle cannot be modified.</div>
-    );
-  }
   const [isPending, startTransition] = useTransition();
 
   const initialValues = useMemo(() => {
@@ -90,7 +82,14 @@ export function VehicleForm(props: {
     },
     [formData, initialValues, props.handleSave],
   );
-
+  if (
+    props.vehicle &&
+    !["DRAFT", "CHANGES_REQUESTED"].includes(props.vehicle.status)
+  ) {
+    return (
+      <div className="p-6 font-semibold">This vehicle cannot be modified.</div>
+    );
+  }
   return (
     <div>
       {error && <p className="text-red-600">{error}</p>}
