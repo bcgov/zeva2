@@ -90,11 +90,11 @@ export function VehicleForm(props: {
       <div className="p-6 font-semibold">This vehicle cannot be modified.</div>
     );
   }
-  const buttonLabel = isPending
-    ? "..."
-    : initialValues?.id
-      ? "Save"
-      : "Save Draft";
+  const buttonLabel = useMemo(() => {
+    if (isPending) return "...";
+    if (initialValues?.id) return "Save";
+    return "Save Draft";
+  }, [isPending, initialValues]);
   return (
     <div>
       {error && <p className="text-red-600">{error}</p>}
