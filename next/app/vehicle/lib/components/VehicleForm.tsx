@@ -27,6 +27,14 @@ export function VehicleForm(props: {
   vehicle?: SerializedVehicleWithOrg;
   handleSave?: (data: VehiclePayload) => Promise<void>;
 }) {
+  if (
+    props.vehicle &&
+    !["DRAFT", "CHANGES_REQUESTED"].includes(props.vehicle.status)
+  ) {
+    return (
+      <div className="p-6 font-semibold">This vehicle cannot be modified.</div>
+    );
+  }
   const [isPending, startTransition] = useTransition();
 
   const initialValues = useMemo(() => {
@@ -65,10 +73,12 @@ export function VehicleForm(props: {
   const handleSubmit = useCallback(
     (status: VehicleStatus) => {
       startTransition(async () => {
-        //only handle creating new vehicle for now:
-        if (!initialValues && props.handleSave) {
+        if (props.handleSave) {
           try {
             const vehiclePayload = getVehiclePayload(formData, status);
+            if (initialValues?.id) {
+              vehiclePayload.id = initialValues.id;
+            }
             await props.handleSave(vehiclePayload);
           } catch (e) {
             if (e instanceof Error) {
@@ -84,53 +94,68 @@ export function VehicleForm(props: {
   return (
     <div>
       {error && <p className="text-red-600">{error}</p>}
-      <select
-        name="modelYear"
-        className="border p-2 w-full"
-        value={formData.modelYear}
-        onChange={handleChange}
-      >
-        <option value="">Model Year</option>
-        {Object.entries(modelYearMap).map(([label, enumValue]) => (
-          <option key={enumValue} value={enumValue}>
-            {label}
-          </option>
-        ))}
-      </select>
+      <div className="flex items-center py-2 my-2">
+        <label htmlFor="make" className="w-72">
+          Model Year
+        </label>
+        <select
+          name="modelYear"
+          className="border p-2 w-full"
+          value={formData.modelYear}
+          onChange={handleChange}
+        >
+          <option value="">--</option>
+          {Object.entries(modelYearMap).map(([label, enumValue]) => (
+            <option key={enumValue} value={enumValue}>
+              {label}
+            </option>
+          ))}
+        </select>
+      </div>
+      <div className="flex items-center py-2 my-2">
+        <label htmlFor="make" className="w-72">
+          Make
+        </label>
+        <input
+          name="make"
+          type="text"
+          onChange={handleChange}
+          value={formData.make}
+          className="border p-2 w-full"
+        />
+      </div>
+      <div className="flex items-center py-2 my-2">
+        <label htmlFor="make" className="w-72">
+          Model Name
+        </label>
+        <input
+          name="modelName"
+          type="text"
+          value={formData.modelName}
+          onChange={handleChange}
+          className="border p-2 w-full"
+        />
+      </div>
+      <div className="flex items-center py-2 my-2">
+        <label htmlFor="make" className="w-72">
+          ZEV Type
+        </label>
+        <select
+          name="zevType"
+          value={formData.zevType}
+          className="border p-2 w-full"
+          onChange={handleChange}
+        >
+          <option value="">--</option>
+          {Object.entries(VehicleZevType).map(([enumKey, label]) => (
+            <option key={enumKey} value={enumKey}>
+              {label}
+            </option>
+          ))}
+        </select>
+      </div>
 
-      <input
-        name="make"
-        type="text"
-        onChange={handleChange}
-        placeholder="Make"
-        value={formData.make}
-        className="border p-2 w-full"
-      />
-
-      <input
-        name="modelName"
-        type="text"
-        placeholder="Model"
-        value={formData.modelName}
-        onChange={handleChange}
-        className="border p-2 w-full"
-      />
-
-      <select
-        name="zevType"
-        value={formData.zevType}
-        className="border p-2 w-full"
-        onChange={handleChange}
-      >
-        <option value="">Select ZEV Type</option>
-        {Object.entries(VehicleZevType).map(([enumKey, label]) => (
-          <option key={enumKey} value={enumKey}>
-            {label}
-          </option>
-        ))}
-      </select>
-
-      <div className="flex items-center space-x-2">
+      <div className="flex items-center space-x-4">
         <span>Claim Additional US06 0.2 credit</span>
         <input
           type="checkbox"
@@ -142,45 +167,55 @@ export function VehicleForm(props: {
         <span>(requires certificate upload)</span>
       </div>
 
-      <input
-        name="range"
-        type="text"
-        placeholder="Electric EPA Range (km)"
-        value={formData.range}
-        className="border p-2 w-full"
-        onChange={handleChange}
-      />
-
-      <select
-        name="bodyType"
-        value={formData.bodyType}
-        className="border p-2 w-full"
-        onChange={handleChange}
-      >
-        <option value="">Select Body Type</option>
-        {Object.entries(VehicleClassCode).map(([enumKey, label]) => (
-          <option key={enumKey} value={enumKey}>
-            {label}
-          </option>
-        ))}
-      </select>
-
-      <input
-        name="gvwr"
-        type="text"
-        placeholder="GVWR (kg)"
-        value={formData.gvwr}
-        className="border p-2 w-full"
-        onChange={handleChange}
-      />
-
+      <div className="flex items-center py-2 my-2">
+        <label htmlFor="make" className="w-72">
+          Electric EPA Range (km)
+        </label>
+        <input
+          name="range"
+          type="text"
+          value={formData.range}
+          className="border p-2 w-full"
+          onChange={handleChange}
+        />
+      </div>
+      <div className="flex items-center py-2 my-2">
+        <label htmlFor="make" className="w-72">
+          Body Type
+        </label>
+        <select
+          name="bodyType"
+          value={formData.bodyType}
+          className="border p-2 w-full"
+          onChange={handleChange}
+        >
+          <option value="">--</option>
+          {Object.entries(VehicleClassCode).map(([enumKey, label]) => (
+            <option key={enumKey} value={enumKey}>
+              {label}
+            </option>
+          ))}
+        </select>
+      </div>
+      <div className="flex items-center py-2 my-2">
+        <label htmlFor="make" className="w-72">
+          GVWR (kg)
+        </label>
+        <input
+          name="gvwr"
+          type="text"
+          value={formData.gvwr}
+          className="border p-2 w-full"
+          onChange={handleChange}
+        />
+      </div>
       <div className="flex space-x-2">
         <button
           type="button"
           disabled={isPending}
           onClick={() => handleSubmit(VehicleStatus.DRAFT)}
         >
-          {isPending ? "..." : "Save Draft"}
+          {isPending ? "..." : initialValues?.id ? "Save" : "Save Draft"}
         </button>
       </div>
     </div>
