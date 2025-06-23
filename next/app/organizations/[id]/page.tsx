@@ -7,7 +7,7 @@ import { OrganizationPayload, saveOrganization } from "../lib/action";
 import { getUserInfo } from "@/auth";
 import { MY_ORGANIZATION, Routes } from "@/app/lib/constants";
 import { redirect } from "next/navigation";
-import { revalidatePath } from "next/cache"
+import { revalidatePath } from "next/cache";
 
 const Page = async (props: { params: Promise<{ id: string }> }) => {
   const { userOrgId, userRoles } = await getUserInfo();
@@ -43,7 +43,9 @@ const Page = async (props: { params: Promise<{ id: string }> }) => {
           organizationName={organization.name}
           shortName={organization.shortName ?? undefined}
           isActive={organization.isActive}
-          firstModelYear={organization.firstModelYear?.toString().substring(3) ?? "N/A"}
+          firstModelYear={
+            organization.firstModelYear?.toString().substring(3) ?? "N/A"
+          }
           serviceAddress={organization.serviceAddress}
           recordsAddress={organization.recordsAddress}
           supplierClass={getSupplierClass(organization.ldvSupplied)}

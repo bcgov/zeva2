@@ -82,7 +82,7 @@ const OrganizationDetails = (props: {
         upsertData={props.update ?? (() => Promise.resolve())}
         handleCancel={() => setMode("view")}
       />
-    )
+    );
   }
 
   return (

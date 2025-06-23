@@ -4,12 +4,25 @@
 // to overcome this issue, we can use the maps below; not great from a maintenance perspective,
 // so hopefully prisma addresses this soon!
 
-import { VehicleClass, ZevClass, ModelYear } from "@/prisma/generated/client";
+import {
+  VehicleClass,
+  ZevClass,
+  ModelYear,
+  PenaltyCreditStatus,
+} from "@/prisma/generated/client";
 
 const lowerCaseAndCapitalize = (s: string) => {
   const firstLetter = s.charAt(0);
   const lowerCasedTail = s.toLowerCase().slice(1);
   return firstLetter + lowerCasedTail;
+};
+
+const getTransformedStatus = (s: string) => {
+  const splitString = s.split("_");
+  const transformed = splitString.map((t) => {
+    return lowerCaseAndCapitalize(t);
+  });
+  return transformed.join(" ");
 };
 
 export const getModelYearEnumsToStringsMap = () => {
@@ -64,6 +77,22 @@ export const getStringsToVehicleClassEnumsMap = () => {
   const result: Partial<Record<string, VehicleClass>> = {};
   for (const value of Object.values(VehicleClass)) {
     result[lowerCaseAndCapitalize(value)] = value;
+  }
+  return result;
+};
+
+export const getPenaltyCreditStatusEnumsToStringsMap = () => {
+  const result: Partial<Record<PenaltyCreditStatus, string>> = {};
+  for (const value of Object.values(PenaltyCreditStatus)) {
+    result[value] = getTransformedStatus(value);
+  }
+  return result;
+};
+
+export const getStringsToPenaltyCreditStatusEnumsMap = () => {
+  const result: Partial<Record<string, PenaltyCreditStatus>> = {};
+  for (const value of Object.values(PenaltyCreditStatus)) {
+    result[getTransformedStatus(value)] = value;
   }
   return result;
 };

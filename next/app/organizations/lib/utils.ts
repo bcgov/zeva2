@@ -149,11 +149,12 @@ export const cleanupAddressData = (address?: OrganizationAddressSparse) => {
   }
   const cleanedAddress: OrganizationAddressSparse = { ...address };
   for (const key in cleanedAddress) {
-    cleanedAddress[key as keyof OrganizationAddressSparse] =
-      cleanupStringData(cleanedAddress[key as keyof OrganizationAddressSparse]);
+    cleanedAddress[key as keyof OrganizationAddressSparse] = cleanupStringData(
+      cleanedAddress[key as keyof OrganizationAddressSparse],
+    );
   }
   return cleanedAddress;
-}
+};
 
 export const isEmptyAddress = (address: OrganizationAddressSparse) => {
   for (const value of Object.values(address)) {
