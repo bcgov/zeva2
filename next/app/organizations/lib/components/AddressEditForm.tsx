@@ -6,20 +6,21 @@ const textboxClass = "p-1 border border-gray-300 rounded";
 
 type AddressState = [
   OrganizationAddressSparse,
-  (address: OrganizationAddressSparse) => void
+  (address: OrganizationAddressSparse) => void,
 ];
 
 const AddressField = (props: {
-  addressState: AddressState,
-  fieldName: keyof OrganizationAddressSparse,
+  addressState: AddressState;
+  fieldName: keyof OrganizationAddressSparse;
   multiline?: boolean;
 }) => {
   const [address, setAddress] = props.addressState;
   const value = address[props.fieldName] ?? "";
-  const handleChange = (value: string) => setAddress({
-    ...address,
-    [props.fieldName]: value
-  });
+  const handleChange = (value: string) =>
+    setAddress({
+      ...address,
+      [props.fieldName]: value,
+    });
 
   return props.multiline ? (
     <textarea
@@ -38,9 +39,7 @@ const AddressField = (props: {
   );
 };
 
-const AddressEditForm = (props: {
-  addressState: AddressState,
-}) => {
+const AddressEditForm = (props: { addressState: AddressState }) => {
   return (
     <div className="space-y-2">
       <div className={fieldMainClass}>
@@ -60,17 +59,11 @@ const AddressEditForm = (props: {
       </div>
       <div className={fieldMainClass}>
         <span className="mb-1">City</span>
-        <AddressField
-          addressState={props.addressState}
-          fieldName="city"
-        />
+        <AddressField addressState={props.addressState} fieldName="city" />
       </div>
       <div className={fieldMainClass}>
         <span className="mb-1">Province/State</span>
-        <AddressField
-          addressState={props.addressState}
-          fieldName="state"
-        />
+        <AddressField addressState={props.addressState} fieldName="state" />
       </div>
       <div className={fieldMainClass}>
         <span className="mb-1">Postal Code</span>
@@ -81,10 +74,7 @@ const AddressEditForm = (props: {
       </div>
       <div className={fieldMainClass}>
         <span className="mb-1">Country</span>
-        <AddressField
-          addressState={props.addressState}
-          fieldName="country"
-        />
+        <AddressField addressState={props.addressState} fieldName="country" />
       </div>
     </div>
   );

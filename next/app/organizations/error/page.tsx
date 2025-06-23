@@ -6,11 +6,14 @@ const Page = async () => {
       <p className="font-semibold mb-4">
         An error occurred while processing your request.
       </p>
-      <a className="text-defaultLinkBlue hover:underline" href={Routes.VehicleSuppliers}>
+      <a
+        className="text-defaultLinkBlue hover:underline"
+        href={Routes.VehicleSuppliers}
+      >
         Back to the vehicle suppliers page
       </a>
     </div>
   );
-}
+};
 
 export default Page;

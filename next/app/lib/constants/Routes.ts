@@ -10,4 +10,5 @@ export enum Routes {
   Vehicle = "/vehicle",
   Users = "/users",
   CreditApplication = "/credit-application",
+  PenaltyCredit = "/penalty-credits",
 }

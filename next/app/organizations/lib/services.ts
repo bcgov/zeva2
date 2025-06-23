@@ -51,9 +51,10 @@ export const getOrganizationDetails = async (id: number) => {
   }
 
   const findAddress = (typeToFind: AddressType) => {
-    const {addressType, ...address} = organization.organizationAddress.find(
-      (item) => item.addressType === typeToFind,
-    ) ?? {};
+    const { addressType, ...address } =
+      organization.organizationAddress.find(
+        (item) => item.addressType === typeToFind,
+      ) ?? {};
     if (!addressType) {
       return undefined; // No address found for this type
     }

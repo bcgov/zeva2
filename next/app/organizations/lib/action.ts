@@ -8,9 +8,12 @@ import {
 import { isEmptyAddress } from "./utils";
 import { OrganizationAddressSparse } from "./data";
 
-export type OrganizationPayload = Omit<Organization, "id" | "firstModelYear"> & {
-  serviceAddress?: OrganizationAddressSparse,
-  recordsAddress?: OrganizationAddressSparse,
+export type OrganizationPayload = Omit<
+  Organization,
+  "id" | "firstModelYear"
+> & {
+  serviceAddress?: OrganizationAddressSparse;
+  recordsAddress?: OrganizationAddressSparse;
 };
 
 /**
@@ -62,7 +65,7 @@ export const createOrganization = async (data: OrganizationPayload) => {
         ...createdOrganization,
         serviceAddress: createdServiceAddress,
         recordsAddress: createdRecordsAddress,
-      } as Organization
+      } as Organization;
     });
   } catch (error) {
     console.error("Error creating organization:", (error as Error).message);
@@ -93,13 +96,19 @@ export const saveOrganization = async (
         addressType: AddressType,
         newAddress: OrganizationAddressSparse | undefined,
       ) => {
-        const whereClause = { organizationId, addressType, expirationDate: null };
+        const whereClause = {
+          organizationId,
+          addressType,
+          expirationDate: null,
+        };
         if (
           !newAddress ||
-          (await tx.organizationAddress.findMany({
-            select: { id: true },
-            where: { ...whereClause, ...newAddress },
-          })).length > 0
+          (
+            await tx.organizationAddress.findMany({
+              select: { id: true },
+              where: { ...whereClause, ...newAddress },
+            })
+          ).length > 0
         ) {
           // No update needed if the new address is not provided or if it already exists
           return;
@@ -120,7 +129,7 @@ export const saveOrganization = async (
         await tx.organizationAddress.create({
           data: { ...newAddress, organizationId, addressType },
         });
-      }
+      };
 
       await tx.organization.update({
         where: { id: organizationId },

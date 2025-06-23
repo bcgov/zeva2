@@ -17,14 +17,14 @@ export type OrganizationSparse = {
   zevUnitBalanceB: string;
 };
 
-export type OrganizationAddressSparse = Omit<OrganizationAddress,
-  "id" |
-  "organizationId" |
-  "expirationDate" |
-  "addressType"
+export type OrganizationAddressSparse = Omit<
+  OrganizationAddress,
+  "id" | "organizationId" | "expirationDate" | "addressType"
 >;
 
-export const getAllSuppliers = async (activeOnly: boolean = false): Promise<OrganizationSparse[]> => {
+export const getAllSuppliers = async (
+  activeOnly: boolean = false,
+): Promise<OrganizationSparse[]> => {
   const { userIsGov } = await getUserInfo();
   if (!userIsGov) {
     return [];
@@ -84,7 +84,10 @@ export const getOrganizations = async (
     return [[], 0];
   }
 
-  const organizations = filterOrganizations(await getAllSuppliers(true), filters);
+  const organizations = filterOrganizations(
+    await getAllSuppliers(true),
+    filters,
+  );
   sortOrganzations(organizations, sorts);
   const start = (page - 1) * pageSize;
   return [organizations.slice(start, start + pageSize), organizations.length];
