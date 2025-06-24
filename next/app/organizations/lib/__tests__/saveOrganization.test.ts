@@ -43,7 +43,7 @@ const mockDate = () => {
   } as DateConstructor;
 };
 
-describe("Organization Action: saveOrganization", () => {
+describe("Organization action: saveOrganization", () => {
   beforeEach(() => {
     jest.clearAllMocks();
     mockDate(); // Mock the Date constructor to return a fixed date

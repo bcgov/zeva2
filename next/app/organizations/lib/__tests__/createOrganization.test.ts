@@ -30,7 +30,7 @@ jest.mock("@/lib/prisma", () => ({
   },
 }));
 
-describe("Organization Action: createOrganization", () => {
+describe("Organization action: createOrganization", () => {
   beforeEach(() => {
     jest.clearAllMocks();
   });
