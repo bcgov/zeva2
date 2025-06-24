@@ -1,160 +1,163 @@
 "use client";
 
-import { useState, useCallback, useTransition, useMemo } from "react";
-import { VehiclePayload } from "../actions";
-import { getStringsToModelYearsEnumsMap } from "@/app/lib/utils/enumMaps";
 import {
-  ModelYear,
+  useState,
+  useCallback,
+  useTransition,
+  useMemo,
+  useEffect,
+} from "react";
+import { VehiclePayload } from "../actions";
+import {
   VehicleClassCode,
   VehicleStatus,
   VehicleZevType,
 } from "@/prisma/generated/client";
 import { getVehiclePayload } from "../utilsClient";
 import { SerializedVehicleWithOrg } from "../data";
-
-export type VehicleFormData = {
-  modelName: string;
-  make: string;
-  modelYear: ModelYear | "";
-  zevType: VehicleZevType | "";
-  us06: boolean;
-  bodyType: VehicleClassCode | "";
-  range: string;
-  gvwr: string;
-};
+import { getModelYearEnumsToStringsMap } from "@/app/lib/utils/enumMaps";
+import { REDIRECT_ERROR_CODE } from "next/dist/client/components/redirect-error";
 
 export function VehicleForm(props: {
   vehicle?: SerializedVehicleWithOrg;
-  handleSave?: (data: VehiclePayload) => Promise<void>;
+  handleSave: (data: VehiclePayload) => Promise<void>;
 }) {
   const [isPending, startTransition] = useTransition();
+  const [error, setError] = useState<string>("");
+  const [formData, setFormData] = useState<Partial<Record<string, string>>>({});
 
-  const initialValues = useMemo(() => {
-    return props.vehicle;
+  const modelYearsMap = useMemo(() => {
+    return getModelYearEnumsToStringsMap();
+  }, []);
+
+  useEffect(() => {
+    const vehicle = props.vehicle;
+    if (vehicle) {
+      // read vehicle data into formData
+      setFormData({
+        modelYear: modelYearsMap[vehicle.modelYear],
+        make: vehicle.make,
+        modelName: vehicle.modelName,
+        zevType: vehicle.vehicleZevType,
+        us06: vehicle.hasPassedUs06Test.toString(),
+        range: vehicle.range.toString(),
+        bodyType: vehicle.vehicleClassCode,
+        gvwr: vehicle.weightKg,
+      });
+    }
   }, [props.vehicle]);
 
-  const [error, setError] = useState<string>("");
-  const [formData, setFormData] = useState<VehicleFormData>({
-    modelYear: initialValues?.modelYear || "",
-    make: initialValues?.make || "",
-    modelName: initialValues?.modelName || "",
-    zevType: initialValues?.vehicleZevType || "",
-    us06: initialValues?.hasPassedUs06Test || false,
-    range: initialValues?.range?.toString() || "",
-    bodyType: initialValues?.vehicleClassCode || "",
-    gvwr: initialValues?.weightKg || "",
-  });
-
-  const modelYearMap = getStringsToModelYearsEnumsMap();
-
-  const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
-  ) => {
-    const { name, type } = e.target;
-    const value =
-      type === "checkbox"
-        ? (e.target as HTMLInputElement).checked
-        : e.target.value;
-
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
-  };
+  const handleChange = useCallback((key: string, value: string) => {
+    setFormData((prev) => {
+      return { ...prev, [key]: value };
+    });
+  }, []);
 
   const handleSubmit = useCallback(
     (status: VehicleStatus) => {
       startTransition(async () => {
-        if (props.handleSave) {
-          try {
-            const vehiclePayload = getVehiclePayload(formData, status);
-            if (initialValues?.id) {
-              vehiclePayload.id = initialValues.id;
-            }
-            await props.handleSave(vehiclePayload);
-          } catch (e) {
-            if (e instanceof Error) {
-              setError(e.message);
-            }
+        try {
+          const vehiclePayload = getVehiclePayload(formData, status);
+          if (props.vehicle) {
+            vehiclePayload.id = props.vehicle.id;
+          }
+          await props.handleSave(vehiclePayload);
+        } catch (e) {
+          if (e instanceof Error && e.message !== REDIRECT_ERROR_CODE) {
+            setError(e.message);
           }
         }
       });
     },
-    [formData, initialValues, props.handleSave],
+    [formData, props.vehicle, props.handleSave],
   );
-  const buttonLabel = useMemo(() => {
-    if (isPending) return "...";
-    if (initialValues?.id) return "Save";
-    return "Save Draft";
-  }, [isPending, initialValues]);
+
+  const button = useMemo(() => {
+    let status: VehicleStatus = VehicleStatus.DRAFT;
+    let label = "Save Draft";
+    if (props.vehicle) {
+      status = props.vehicle.status;
+      label = "Save";
+    }
+    return (
+      <button
+        type="button"
+        disabled={isPending}
+        onClick={() => handleSubmit(status)}
+      >
+        {isPending ? "..." : label}
+      </button>
+    );
+  }, [props.vehicle, isPending, handleSubmit]);
+
   if (
     props.vehicle &&
-    !["DRAFT", "CHANGES_REQUESTED"].includes(props.vehicle.status)
+    props.vehicle.status !== VehicleStatus.DRAFT &&
+    props.vehicle.status !== VehicleStatus.CHANGES_REQUESTED
   ) {
     return (
       <div className="p-6 font-semibold">This vehicle cannot be modified.</div>
     );
   }
-
   return (
     <div>
       {error && <p className="text-red-600">{error}</p>}
       <div className="flex items-center py-2 my-2">
-        <label htmlFor="make" className="w-72">
-          Model Year
-        </label>
+        <label className="w-72">Model Year</label>
         <select
           name="modelYear"
           className="border p-2 w-full"
           value={formData.modelYear}
-          onChange={handleChange}
+          onChange={(e) => {
+            handleChange(e.target.name, e.target.value);
+          }}
         >
           <option value="">--</option>
-          {Object.entries(modelYearMap).map(([label, enumValue]) => (
-            <option key={enumValue} value={enumValue}>
-              {label}
+          {Object.values(modelYearsMap).map((year) => (
+            <option key={year} value={year}>
+              {year}
             </option>
           ))}
         </select>
       </div>
       <div className="flex items-center py-2 my-2">
-        <label htmlFor="make" className="w-72">
-          Make
-        </label>
+        <label className="w-72">Make</label>
         <input
           name="make"
           type="text"
-          onChange={handleChange}
-          value={formData.make}
+          onChange={(e) => {
+            handleChange(e.target.name, e.target.value);
+          }}
+          value={formData.make ?? ""}
           className="border p-2 w-full"
         />
       </div>
       <div className="flex items-center py-2 my-2">
-        <label htmlFor="make" className="w-72">
-          Model Name
-        </label>
+        <label className="w-72">Model Name</label>
         <input
           name="modelName"
           type="text"
-          value={formData.modelName}
-          onChange={handleChange}
+          value={formData.modelName ?? ""}
+          onChange={(e) => {
+            handleChange(e.target.name, e.target.value);
+          }}
           className="border p-2 w-full"
         />
       </div>
       <div className="flex items-center py-2 my-2">
-        <label htmlFor="make" className="w-72">
-          ZEV Type
-        </label>
+        <label className="w-72">ZEV Type</label>
         <select
           name="zevType"
           value={formData.zevType}
           className="border p-2 w-full"
-          onChange={handleChange}
+          onChange={(e) => {
+            handleChange(e.target.name, e.target.value);
+          }}
         >
           <option value="">--</option>
-          {Object.entries(VehicleZevType).map(([enumKey, label]) => (
-            <option key={enumKey} value={enumKey}>
-              {label}
+          {Object.keys(VehicleZevType).map((zevType) => (
+            <option key={zevType} value={zevType}>
+              {zevType}
             </option>
           ))}
         </select>
@@ -165,64 +168,58 @@ export function VehicleForm(props: {
         <input
           type="checkbox"
           name="us06"
-          checked={formData.us06}
+          checked={formData.us06 === "true"}
           disabled={formData.zevType !== "EREV"}
-          onChange={handleChange}
+          onChange={(e) => {
+            handleChange(e.target.name, e.target.checked ? "true" : "false");
+          }}
         />
         <span>(requires certificate upload)</span>
       </div>
 
       <div className="flex items-center py-2 my-2">
-        <label htmlFor="make" className="w-72">
-          Electric EPA Range (km)
-        </label>
+        <label className="w-72">Electric EPA Range (km)</label>
         <input
           name="range"
           type="text"
-          value={formData.range}
+          value={formData.range ?? ""}
           className="border p-2 w-full"
-          onChange={handleChange}
+          onChange={(e) => {
+            handleChange(e.target.name, e.target.value);
+          }}
         />
       </div>
       <div className="flex items-center py-2 my-2">
-        <label htmlFor="make" className="w-72">
-          Body Type
-        </label>
+        <label className="w-72">Body Type</label>
         <select
           name="bodyType"
           value={formData.bodyType}
           className="border p-2 w-full"
-          onChange={handleChange}
+          onChange={(e) => {
+            handleChange(e.target.name, e.target.value);
+          }}
         >
           <option value="">--</option>
-          {Object.entries(VehicleClassCode).map(([enumKey, label]) => (
-            <option key={enumKey} value={enumKey}>
-              {label}
+          {Object.keys(VehicleClassCode).map((classCode) => (
+            <option key={classCode} value={classCode}>
+              {classCode}
             </option>
           ))}
         </select>
       </div>
       <div className="flex items-center py-2 my-2">
-        <label htmlFor="make" className="w-72">
-          GVWR (kg)
-        </label>
+        <label className="w-72">GVWR (kg)</label>
         <input
           name="gvwr"
           type="text"
-          value={formData.gvwr}
+          value={formData.gvwr ?? ""}
           className="border p-2 w-full"
-          onChange={handleChange}
+          onChange={(e) => {
+            handleChange(e.target.name, e.target.value);
+          }}
         />
       </div>
-      <div className="flex space-x-2">
-        <button
-          type="button"
-          disabled={isPending}
-          onClick={() => handleSubmit(VehicleStatus.DRAFT)}
-        >
-          {buttonLabel}
-        </button>
-      </div>
+      <div className="flex space-x-2">{button}</div>
     </div>
   );
 }

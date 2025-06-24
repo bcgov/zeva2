@@ -1,10 +1,14 @@
 import { VehicleStatus } from "@/prisma/generated/client";
-import { VehicleFormData } from "./components/VehicleForm";
 import { VehiclePayload } from "./actions";
 import { Decimal } from "@prisma/client/runtime/index-browser.js";
+import { getStringsToModelYearsEnumsMap } from "@/app/lib/utils/enumMaps";
+import {
+  isVehicleClassCode,
+  isVehicleZevType,
+} from "@/app/lib/utils/typeGuards";
 
 export const getVehiclePayload = (
-  data: VehicleFormData,
+  data: Partial<Record<string, string>>,
   status: VehicleStatus,
 ): VehiclePayload => {
   if (
@@ -12,9 +16,22 @@ export const getVehiclePayload = (
     !data.make ||
     !data.modelName ||
     !data.zevType ||
-    !data.bodyType
+    !data.bodyType ||
+    !data.range ||
+    !data.gvwr
   ) {
     throw new Error("All fields are required!");
+  }
+  const modelYearsMap = getStringsToModelYearsEnumsMap();
+  const modelYearEnum = modelYearsMap[data.modelYear];
+  if (!modelYearEnum) {
+    throw new Error("Invalid Model Year!");
+  }
+  if (!isVehicleZevType(data.zevType)) {
+    throw new Error("Invalid ZEV Type!");
+  }
+  if (!isVehicleClassCode(data.bodyType)) {
+    throw new Error("Invalid Body type!");
   }
   const range = parseInt(data.range, 10);
   if (Number.isNaN(range)) {
@@ -26,10 +43,10 @@ export const getVehiclePayload = (
     throw new Error("Invalid GVWR!");
   }
   return {
-    modelYear: data.modelYear,
+    modelYear: modelYearEnum,
     make: data.make,
     modelName: data.modelName,
-    hasPassedUs06Test: data.us06,
+    hasPassedUs06Test: data.us06 === "true",
     range,
     vehicleClassCode: data.bodyType,
     vehicleZevType: data.zevType,
