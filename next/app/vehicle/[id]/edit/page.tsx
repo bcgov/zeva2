@@ -4,8 +4,9 @@ import { VehicleForm } from "../../lib/components/VehicleForm";
 import { notFound, redirect } from "next/navigation";
 import { getSerializedVehicle } from "../../lib/data";
 
-const Page = async ({ params }: { params: { id: string } }) => {
-  const id = parseInt(params.id);
+const Page = async (props: { params: Promise<{ id: string }> }) => {
+  const args = await props.params;
+  const id = parseInt(args.id);
   const vehicle = await getSerializedVehicle(id);
   if (!vehicle) {
     notFound();
