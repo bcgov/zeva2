@@ -317,7 +317,7 @@ describe("Organization utils: cleanupAddressData", () => {
   });
 
   it("returns undefined if address is undefined", () => {
-    expect(cleanupAddressData(undefined)).toBeUndefined();
+    expect(cleanupAddressData()).toBeUndefined();
   });
 });
 

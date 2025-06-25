@@ -5,9 +5,8 @@ import {
   expect,
   beforeEach,
 } from "@jest/globals";
-import { Role } from "@/prisma/generated/client";
+import { Role, AddressType } from "@/prisma/generated/client";
 import { createOrganization } from "../action";
-import { AddressType } from "@/prisma/generated/client";
 import { prisma } from "@/lib/prisma";
 import {
   baseGovUserInfo,
