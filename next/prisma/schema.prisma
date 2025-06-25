@@ -47,6 +47,7 @@ model Organization {
   organizationAddress   OrganizationAddress[]
   ldvSupplied           OrganizationLDVSupplied[]
   CreditApplication     CreditApplication[]
+  PenaltyCredit         PenaltyCredit[]
 
   @@map("organization")
 }
@@ -145,6 +146,7 @@ model User {
   vehicleCommentsUpdated   VehicleComment[]           @relation("user that updated comment")
   vehicleStatusChanged     VehicleChangeHistory[]     @relation("user that changed the status")
   CreditApplicationHistory CreditApplicationHistory[]
+  PenaltyCreditHistory     PenaltyCreditHistory[]
 
   @@unique([idp, idpUsername, idpEmail])
   @@map("user")
@@ -344,23 +346,23 @@ model Vehicle {
 }
 
 model VehicleChangeHistory {
-  id               Int                @id @default(autoincrement())
-  createTimestamp  DateTime?          @default(now()) @map("create_timestamp") @db.Timestamptz(6)
-  vehicleClassCode VehicleClassCode[] @map("vehicle_class_code")
-  createUserId     Int                @map("create_user_id")
-  createUser       User               @relation("user that changed the status", fields: [createUserId], references: [id])
-  vehicleZevType   VehicleZevType[]   @map("vehicle_zev_type")
+  id               Int              @id @default(autoincrement())
+  createTimestamp  DateTime?        @default(now()) @map("create_timestamp") @db.Timestamptz(6)
+  vehicleClassCode VehicleClassCode @map("vehicle_class_code")
+  createUserId     Int              @map("create_user_id")
+  createUser       User             @relation("user that changed the status", fields: [createUserId], references: [id])
+  vehicleZevType   VehicleZevType   @map("vehicle_zev_type")
   range            Int
-  make             String?            @map("make")
-  weightKg         Decimal            @map("weight_kg")
-  modelName        String?            @map("model_name")
-  modelYearId      Int                @map("model_year_id")
-  organization     Organization       @relation(fields: [organizationId], references: [id])
-  organizationId   Int                @map("organization_id")
-  validationStatus String?            @map("validation_status")
-  vehicle          Vehicle            @relation(fields: [vehicleId], references: [id])
-  vehicleId        Int                @map("vehicle_id")
-  userRole         String[]           @map("user_role")
+  make             String?          @map("make")
+  weightKg         Decimal          @map("weight_kg")
+  modelName        String?          @map("model_name")
+  modelYear        ModelYear        @map("model_year")
+  organization     Organization     @relation(fields: [organizationId], references: [id])
+  organizationId   Int              @map("organization_id")
+  validationStatus String?          @map("validation_status")
+  vehicle          Vehicle          @relation(fields: [vehicleId], references: [id])
+  vehicleId        Int              @map("vehicle_id")
+  userRole         String[]         @map("user_role")
 
   @@map("vehicle_change_history")
 }
@@ -511,4 +513,38 @@ model CreditApplicationVinLegacy {
   vin String @unique @db.VarChar(17)
 
   @@map("credit_application_vin_legacy")
+}
+
+enum PenaltyCreditStatus {
+  APPROVED
+  REJECTED
+  SUBMITTED_TO_DIRECTOR
+}
+
+model PenaltyCredit {
+  id                   Int                    @id @default(autoincrement())
+  organization         Organization           @relation(fields: [organizationId], references: [id])
+  organizationId       Int                    @map("organization_id")
+  complianceYear       ModelYear              @map("compliance_year")
+  status               PenaltyCreditStatus
+  vehicleClass         VehicleClass           @map("vehicle_class")
+  zevClass             ZevClass               @map("zev_class")
+  modelYear            ModelYear              @map("model_year")
+  numberOfUnits        Decimal                @map("number_of_units") @db.Decimal(65, 2)
+  PenaltyCreditHistory PenaltyCreditHistory[]
+
+  @@map("penalty_credit")
+}
+
+model PenaltyCreditHistory {
+  id              Int                 @id @default(autoincrement())
+  penaltyCredit   PenaltyCredit       @relation(fields: [penaltyCreditId], references: [id])
+  penaltyCreditId Int                 @map("penalty_credit_id")
+  userId          Int                 @map("user_id")
+  user            User                @relation(fields: [userId], references: [id])
+  timestamp       DateTime            @default(now()) @db.Timestamptz(6)
+  userAction      PenaltyCreditStatus @map("user_action")
+  comment         String?
+
+  @@map("penalty_credit_history")
 }

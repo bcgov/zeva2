@@ -1,21 +1,29 @@
 import { SerializedVehicleWithOrg } from "../data";
+import Link from "next/link";
 type VehicleProps = {
   vehicle: SerializedVehicleWithOrg;
 };
-
+import { getModelYearEnumsToStringsMap } from "@/app/lib/utils/enumMaps";
 const VehicleDetails = async ({ vehicle }: VehicleProps) => {
+  const modelYearMap = getModelYearEnumsToStringsMap();
   if (vehicle) {
     return (
       <div key={vehicle.id}>
+        {(vehicle.status === "DRAFT" ||
+          vehicle.status === "CHANGES_REQUESTED") && (
+          <Link href={`/vehicle/${vehicle.id}/edit`}>
+            <button>Edit</button>
+          </Link>
+        )}
         <ul>
           <li key="validationStatus">Validation Status: {vehicle.status}</li>
           <li key="supplier">Supplier: {vehicle.organization.name} </li>
-          <li key="modelYear">Model Year: {vehicle.modelYear}</li>
+          <li key="modelYear">Model Year: {modelYearMap[vehicle.modelYear]}</li>
           <li key="vehicleMake">Make: {vehicle.make}</li>
           <li key="vehicleModel">Model: {vehicle.modelName}</li>
           <li key="zevType">ZEV Type: {vehicle.vehicleZevType}</li>
           <li key="passedTest">
-            Has passed US06 Test: {vehicle?.hasPassedUs06Test}
+            Has passed US06 Test: {vehicle?.hasPassedUs06Test ? "Yes" : "No"}
           </li>
           <li key="bodyType">Body Type: {vehicle.vehicleClassCode}</li>
           <li key="range">Electric EPA Range (km): {vehicle.range}</li>

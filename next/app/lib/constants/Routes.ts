@@ -8,5 +8,7 @@ export enum Routes {
   Administration = `/organizations/${MY_ORGANIZATION}`,
   Icbc = "/icbc",
   Vehicle = "/vehicle",
+  Users = "/users",
   CreditApplication = "/credit-application",
+  PenaltyCredit = "/penalty-credits",
 }

@@ -11,17 +11,19 @@ const addressFrameClass = "w-1/2 border border-borderGrey p-2";
 const addressHeadingClass = "text-lg font-semibold text-primaryBlue pb-4";
 
 const OrganizationEditForm = (props: {
-  formHeading: string
-  submitButtonText: string,
-  organizationName?: string,
-  shortName?: string,
-  isActive: boolean,
-  serviceAddress?: OrganizationAddressSparse,
-  recordsAddress?: OrganizationAddressSparse,
-  upsertData: (data: OrganizationPayload) => Promise<void>,
-  handleCancel: () => void,
+  formHeading: string;
+  submitButtonText: string;
+  organizationName?: string;
+  shortName?: string;
+  isActive: boolean;
+  serviceAddress?: OrganizationAddressSparse;
+  recordsAddress?: OrganizationAddressSparse;
+  upsertData: (data: OrganizationPayload) => Promise<void>;
+  handleCancel: () => void;
 }) => {
-  const [organizationName, setOrganizationName] = useState(props.organizationName ?? "");
+  const [organizationName, setOrganizationName] = useState(
+    props.organizationName ?? "",
+  );
   const [shortName, setShortName] = useState(props.shortName ?? "");
   const [isActive, setIsActive] = useState(props.isActive);
   const emptyAddress: OrganizationAddressSparse = {
@@ -33,13 +35,17 @@ const OrganizationEditForm = (props: {
     country: "",
     representative: "",
   };
-  const serviceAddressState = useState(props.serviceAddress ?? {
-    ...emptyAddress,
-  });
+  const serviceAddressState = useState(
+    props.serviceAddress ?? {
+      ...emptyAddress,
+    },
+  );
   const [serviceAddress] = serviceAddressState;
-  const recordsAddressState = useState(props.recordsAddress ?? {
-    ...emptyAddress,
-  });
+  const recordsAddressState = useState(
+    props.recordsAddress ?? {
+      ...emptyAddress,
+    },
+  );
   const [recordsAddress] = recordsAddressState;
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
@@ -116,28 +122,17 @@ const OrganizationEditForm = (props: {
 
         <div className="flex flex-row gap-4">
           <div className={addressFrameClass}>
-            <h3 className={addressHeadingClass}>
-              Service Address
-            </h3>
-            <AddressEditForm
-              addressState={serviceAddressState}
-            />
+            <h3 className={addressHeadingClass}>Service Address</h3>
+            <AddressEditForm addressState={serviceAddressState} />
           </div>
           <div className={addressFrameClass}>
-            <h3 className={addressHeadingClass}>
-              Records Address
-            </h3>
-            <AddressEditForm
-              addressState={recordsAddressState}
-            />
+            <h3 className={addressHeadingClass}>Records Address</h3>
+            <AddressEditForm addressState={recordsAddressState} />
           </div>
         </div>
 
         <div className="flex flex-row gap-12 my-2">
-          <Button
-            className="py-1 w-16"
-            type="submit"
-          >
+          <Button className="py-1 w-16" type="submit">
             {props.submitButtonText}
           </Button>
           <Button
@@ -151,6 +146,6 @@ const OrganizationEditForm = (props: {
       </form>
     </>
   );
-}
+};
 
 export default OrganizationEditForm;

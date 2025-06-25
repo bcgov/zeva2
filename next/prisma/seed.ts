@@ -16,10 +16,7 @@ import {
   VehicleStatus,
   CreditApplicationVinLegacy,
 } from "./generated/client";
-import {
-  getModelYearEnum,
-  getRoleEnum,
-} from "@/lib/utils/getEnums";
+import { getModelYearEnum, getRoleEnum } from "@/lib/utils/getEnums";
 import { Decimal } from "./generated/client/runtime/library";
 import { Notification } from "./generated/client";
 import { isNotification } from "@/app/lib/utils/typeGuards";
@@ -76,9 +73,7 @@ const main = () => {
       }
 
       // seed organization tables
-      const {
-        mapOfOldOrgIdsToNewOrgIds
-      } = await seedOrganizations(
+      const { mapOfOldOrgIdsToNewOrgIds } = await seedOrganizations(
         tx,
         mapOfModelYearIdsToModelYearEnum,
       );
@@ -410,12 +405,18 @@ const main = () => {
               where: {
                 organizationId_complianceYear_zevClass_vehicleClass_modelYear: {
                   ...uniqueDataBase,
-                  zevClass: ZevClass.B,
+                  zevClass:
+                    data.type === BalanceType.DEBIT
+                      ? ZevClass.UNSPECIFIED
+                      : ZevClass.B,
                 },
               },
               create: {
                 ...data,
-                zevClass: ZevClass.B,
+                zevClass:
+                  data.type === BalanceType.DEBIT
+                    ? ZevClass.UNSPECIFIED
+                    : ZevClass.B,
                 initialNumberOfUnits: creditBValue,
                 finalNumberOfUnits: creditBValue,
               },
@@ -442,7 +443,10 @@ const main = () => {
                 ...data,
                 initialNumberOfUnits: creditBValue,
                 finalNumberOfUnits: creditBValue,
-                zevClass: ZevClass.B,
+                zevClass:
+                  data.type === BalanceType.DEBIT
+                    ? ZevClass.UNSPECIFIED
+                    : ZevClass.B,
               },
             });
           }
@@ -784,7 +788,8 @@ const main = () => {
         const vehIdNew = oldVehIdToNew[historyOld.vehicle_id];
         const newCreateUserId =
           mapOfOldUsernamesToNewUserIds[historyOld.create_user];
-
+        const modelYearEnum =
+          mapOfModelYearIdsToModelYearEnum[historyOld.model_year_id];
         if (!newCreateUserId) {
           throw new Error(
             "vehicle history with id " +
@@ -792,22 +797,25 @@ const main = () => {
               " has unknown create user id!",
           );
         }
+        if (!modelYearEnum) {
+          throw new Error(
+            "vehicle history with id " +
+              historyOld.id +
+              " has unknown model year!",
+          );
+        }
 
         await tx.vehicleChangeHistory.create({
           data: {
             createTimestamp: historyOld.create_timestamp,
-            vehicleClassCode: {
-              set: [vClassIdToEnum[historyOld.vehicle_class_code_id]],
-            },
+            vehicleClassCode: vClassIdToEnum[historyOld.vehicle_class_code_id],
             createUserId: newCreateUserId,
-            vehicleZevType: {
-              set: [vZevIdToEnum[historyOld.vehicle_zev_type_id]],
-            },
+            vehicleZevType: vZevIdToEnum[historyOld.vehicle_zev_type_id],
             range: historyOld.range,
             make: historyOld.make,
             weightKg: historyOld.weight_kg,
             modelName: historyOld.model_name,
-            modelYearId: historyOld.model_year_id,
+            modelYear: modelYearEnum,
             organizationId:
               mapOfOldOrgIdsToNewOrgIds[historyOld.organization_id]!,
             validationStatus: historyOld.validation_status,

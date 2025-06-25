@@ -1,11 +1,17 @@
 import { PrismaClient } from "@prisma/client";
 import { prismaOld } from "@/lib/prismaOld";
 import { ModelYear } from "../generated/client";
-import { cleanupStringData, isEmptyAddress } from "@/app/organizations/lib/utils";
+import {
+  cleanupStringData,
+  isEmptyAddress,
+} from "@/app/organizations/lib/utils";
 import { getAddressTypeEnum } from "@/lib/utils/getEnums";
 
 const seedOrganizations = async (
-  tx: Omit<PrismaClient, "$connect" | "$disconnect" | "$use" | "$on" | "$transaction" | "$extends">,
+  tx: Omit<
+    PrismaClient,
+    "$connect" | "$disconnect" | "$use" | "$on" | "$transaction" | "$extends"
+  >,
   mapOfModelYearIdsToModelYearEnum: {
     [id: number]: ModelYear | undefined;
   },
@@ -19,9 +25,7 @@ const seedOrganizations = async (
       data: {
         name: orgOld.organization_name,
         firstModelYear:
-          mapOfModelYearIdsToModelYearEnum[
-            orgOld.first_model_year_id ?? -1
-          ],
+          mapOfModelYearIdsToModelYearEnum[orgOld.first_model_year_id ?? -1],
         isGovernment: orgOld.is_government,
         isActive: orgOld.is_active,
         shortName: orgOld.short_name,
@@ -42,8 +46,7 @@ const seedOrganizations = async (
   });
 
   for (const orgAddressOld of orgAddressesOld) {
-    const orgIdNew =
-      mapOfOldOrgIdsToNewOrgIds[orgAddressOld.organization_id];
+    const orgIdNew = mapOfOldOrgIdsToNewOrgIds[orgAddressOld.organization_id];
     if (!orgIdNew) {
       throw new Error(
         "organization_address " +
@@ -65,10 +68,8 @@ const seedOrganizations = async (
       state: cleanupStringData(orgAddressOld.state),
       county: cleanupStringData(orgAddressOld.county),
       country: cleanupStringData(orgAddressOld.country),
-      representative: cleanupStringData(
-        orgAddressOld.representative_name
-      ),
-    }
+      representative: cleanupStringData(orgAddressOld.representative_name),
+    };
 
     // Create the address record only if it has non-empty fields
     if (!isEmptyAddress(newAddressSparse)) {
@@ -80,7 +81,7 @@ const seedOrganizations = async (
             orgAddressOld.address_type.address_type,
           ),
           ...newAddressSparse,
-        }
+        },
       });
     }
   }
@@ -90,8 +91,7 @@ const seedOrganizations = async (
     where: { is_supplied: true },
   });
   for (const orgLDVSaleOld of orgLDVSalesOld) {
-    const orgIdNew =
-      mapOfOldOrgIdsToNewOrgIds[orgLDVSaleOld.organization_id];
+    const orgIdNew = mapOfOldOrgIdsToNewOrgIds[orgLDVSaleOld.organization_id];
     if (!orgIdNew) {
       throw new Error(
         "organization_ldv_sales " +
@@ -112,7 +112,7 @@ const seedOrganizations = async (
 
   return {
     mapOfOldOrgIdsToNewOrgIds,
-  }
-}
+  };
+};
 
 export default seedOrganizations;

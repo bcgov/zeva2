@@ -2,6 +2,7 @@ import {
   ModelYear,
   Notification,
   VehicleClass,
+  VehicleClassCode,
   VehicleStatus,
   VehicleZevType,
   ZevClass,
@@ -49,5 +50,11 @@ export const isVehicleZevType = (s: string): s is VehicleZevType => {
 export const isVehicleStatus = (s: string): s is VehicleStatus => {
   return Object.keys(VehicleStatus).some((status) => {
     return status === s;
+  });
+};
+
+export const isVehicleClassCode = (s: string): s is VehicleClassCode => {
+  return Object.keys(VehicleClassCode).some((classCode) => {
+    return classCode === s;
   });
 };
