@@ -6,9 +6,8 @@ import {
   beforeEach,
   afterEach,
 } from "@jest/globals";
-import { Role } from "@/prisma/generated/client";
+import { Role, AddressType } from "@/prisma/generated/client";
 import { saveOrganization } from "../action";
-import { AddressType } from "@/prisma/generated/client";
 import { prisma } from "@/lib/prisma";
 import {
   baseGovUserInfo,
@@ -18,7 +17,8 @@ import {
   baseAddress2,
   baseOrganization,
   mockFunctions,
-  mockFunctionsWithError
+  mockFunctionsWithError,
+  assertCreatedAddresses
 } from "./__test-utilities__/action-test-data";
 
 jest.mock("@/auth", () => ({
@@ -31,6 +31,8 @@ jest.mock("@/lib/prisma", () => ({
   },
 }));
 
+const testOrgId = 2;
+
 // Mock the Date constructor to control the current date
 const originalDate = Date;
 const mockedDate = new Date("2025-03-09T02:15:00.000Z");
@@ -41,6 +43,25 @@ const mockDate = () => {
       return mockedDate;
     }
   } as DateConstructor;
+};
+
+const assertExpiringAddresses = (
+  updateManyAddressFn: jest.Mock,
+  addressTypes: AddressType[],
+) => {
+  expect(updateManyAddressFn).toHaveBeenCalledTimes(addressTypes.length);
+  addressTypes.forEach((addressType, index) => {
+    expect(updateManyAddressFn).toHaveBeenNthCalledWith(index + 1, {
+      where: {
+        organizationId: testOrgId,
+        addressType,
+        expirationDate: null,
+      },
+      data: {
+        expirationDate: mockedDate,
+      }
+    });
+  });
 };
 
 describe("Organization action: saveOrganization", () => {
@@ -56,12 +77,13 @@ describe("Organization action: saveOrganization", () => {
 
   it("returns false if user is not gov", async () => {
     mockFunctions({
+      // test for non-gov user even with ADMINISTRATOR role
       userInfo: {
         ...baseNonGovUserInfo,
-        userRoles: [Role.ADMINISTRATOR], // test for non-gov user even with ADMINISTRATOR role
+        userRoles: [Role.ADMINISTRATOR],
       }
     });
-    const result = await saveOrganization(1, baseOrganization);
+    const result = await saveOrganization(testOrgId, baseOrganization);
     expect(result).toBe(false);
     expect(prisma.$transaction).not.toHaveBeenCalled();
   });
@@ -74,18 +96,16 @@ describe("Organization action: saveOrganization", () => {
         userRoles: [Role.DIRECTOR], // Not an ADMINISTRATOR
       }
     });
-    const result = await saveOrganization(1, baseOrganization);
+    const result = await saveOrganization(testOrgId, baseOrganization);
     expect(result).toBe(false);
     expect(prisma.$transaction).not.toHaveBeenCalled();
   });
 
 
   it("updates organization and creates new addresses", async () => {
-    const testOrgId = 2;
     const {
       updateOrgFn,
       createAddressFn,
-      findManyAddressFn,
       updateManyAddressFn,
     } = mockFunctions({
       userInfo: baseGovUserInfo,
@@ -113,49 +133,18 @@ describe("Organization action: saveOrganization", () => {
       }
     });
 
-    // Expect that tx.organizationAddress.findMany was called twice, once for each address type
-    expect(findManyAddressFn).toHaveBeenCalledTimes(2);
-
     // Expect that the existing service and records addresses were updated with the mocked date
-    expect(updateManyAddressFn).toHaveBeenCalledTimes(2);
-    expect(updateManyAddressFn).toHaveBeenNthCalledWith(1, {
-      where: {
-        organizationId: testOrgId,
-        addressType: AddressType.SERVICE,
-        expirationDate: null,
-      },
-      data: {
-        expirationDate: mockedDate,
-      }
-    });
-    expect(updateManyAddressFn).toHaveBeenNthCalledWith(2, {
-      where: {
-        organizationId: testOrgId,
-        addressType: AddressType.RECORDS,
-        expirationDate: null,
-      },
-      data: {
-        expirationDate: mockedDate,
-      }
-    });
+    assertExpiringAddresses(updateManyAddressFn, [
+      AddressType.SERVICE,
+      AddressType.RECORDS,
+    ]);
 
     // Expect that new addresses were created
-    expect(createAddressFn).toHaveBeenCalledTimes(2);
-    expect(createAddressFn).toHaveBeenNthCalledWith(1, {
-      data: {
-        ...baseAddress1,
-        organizationId: testOrgId,
-        addressType: AddressType.SERVICE,
-      },
-    });
-    expect(createAddressFn).toHaveBeenNthCalledWith(2, {
-      data: {
-        ...baseAddress2,
-        organizationId: testOrgId,
-        addressType: AddressType.RECORDS,
-      },
-    });
-    
+    assertCreatedAddresses(createAddressFn, testOrgId, [
+      { addressType: AddressType.SERVICE, ...baseAddress1 },
+      { addressType: AddressType.RECORDS, ...baseAddress2 },
+    ]);
+
     // Expect the result to be true
     expect(result).toBe(true);
     expect(prisma.$transaction).toHaveBeenCalled();
@@ -163,11 +152,9 @@ describe("Organization action: saveOrganization", () => {
 
 
   it("updates organization without re-creating existing addresses", async () => {
-    const testOrgId = 2;
     const {
       updateOrgFn,
       createAddressFn,
-      findManyAddressFn,
       updateManyAddressFn,
     } = mockFunctions({
       userInfo: baseGovUserInfo,
@@ -193,9 +180,6 @@ describe("Organization action: saveOrganization", () => {
       }
     });
 
-    // Expect that tx.organizationAddress.findMany was called twice, once for each address type
-    expect(findManyAddressFn).toHaveBeenCalledTimes(2);
-
     // Expect that the existing service and records addresses were not updated
     expect(updateManyAddressFn).not.toHaveBeenCalled();
 
@@ -209,11 +193,9 @@ describe("Organization action: saveOrganization", () => {
 
 
   it("updates organization with existing addresses expired", async () => {
-    const testOrgId = 2;
     const {
       updateOrgFn,
       createAddressFn,
-      findManyAddressFn,
       updateManyAddressFn,
     } = mockFunctions({
       userInfo: baseGovUserInfo,
@@ -239,31 +221,11 @@ describe("Organization action: saveOrganization", () => {
       }
     });
 
-    // Expect that tx.organizationAddress.findMany was called twice, once for each address type
-    expect(findManyAddressFn).toHaveBeenCalledTimes(2);
-
     // Expect that the existing service and records addresses were updated with the mocked date
-    expect(updateManyAddressFn).toHaveBeenCalledTimes(2);
-    expect(updateManyAddressFn).toHaveBeenNthCalledWith(1, {
-      where: {
-        organizationId: testOrgId,
-        addressType: AddressType.SERVICE,
-        expirationDate: null,
-      },
-      data: {
-        expirationDate: mockedDate,
-      }
-    });
-    expect(updateManyAddressFn).toHaveBeenNthCalledWith(2, {
-      where: {
-        organizationId: testOrgId,
-        addressType: AddressType.RECORDS,
-        expirationDate: null,
-      },
-      data: {
-        expirationDate: mockedDate,
-      }
-    });
+    assertExpiringAddresses(updateManyAddressFn, [
+      AddressType.SERVICE,
+      AddressType.RECORDS,
+    ]);
 
     // Expect that new addresses were not created
     expect(createAddressFn).not.toHaveBeenCalled();
@@ -275,11 +237,9 @@ describe("Organization action: saveOrganization", () => {
 
 
   it("updates organization with one address updated", async () => {
-    const testOrgId = 2;
     const {
       updateOrgFn,
       createAddressFn,
-      findManyAddressFn,
       updateManyAddressFn,
     } = mockFunctions({
       userInfo: baseGovUserInfo,
@@ -307,31 +267,15 @@ describe("Organization action: saveOrganization", () => {
       }
     });
 
-    // Expect that tx.organizationAddress.findMany was called twice, once for each address type
-    expect(findManyAddressFn).toHaveBeenCalledTimes(2);
-
     // Expect that the existing service and records addresses were updated with the mocked date
-    expect(updateManyAddressFn).toHaveBeenCalledTimes(1);
-    expect(updateManyAddressFn).toHaveBeenNthCalledWith(1, {
-      where: {
-        organizationId: testOrgId,
-        addressType: AddressType.SERVICE,
-        expirationDate: null,
-      },
-      data: {
-        expirationDate: mockedDate,
-      }
-    });
+    assertExpiringAddresses(updateManyAddressFn, [
+      AddressType.SERVICE,
+    ]);
 
     // Expect that new addresses were created
-    expect(createAddressFn).toHaveBeenCalledTimes(1);
-    expect(createAddressFn).toHaveBeenNthCalledWith(1, {
-      data: {
-        ...baseAddress1,
-        organizationId: testOrgId,
-        addressType: AddressType.SERVICE,
-      },
-    });
+    assertCreatedAddresses(createAddressFn, testOrgId, [
+      { addressType: AddressType.SERVICE, ...baseAddress1 },
+    ]);
 
     // Expect the result to be true
     expect(result).toBe(true);
@@ -341,7 +285,7 @@ describe("Organization action: saveOrganization", () => {
 
   it("returns undefined and logs error if transaction fails", async () => {
     const { consoleSpy } = mockFunctionsWithError("Operation failed");
-    const result = await saveOrganization(2, {
+    const result = await saveOrganization(testOrgId, {
       ...baseOrganization,
       serviceAddress: baseAddress1,
       recordsAddress: baseAddress2,

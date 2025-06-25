@@ -6,7 +6,7 @@ import {
 } from "@/prisma/generated/client";
 import { OrganizationAddressSparse } from "../../data";
 import { UserInfo } from "@/auth";
-import { jest } from "@jest/globals";
+import { expect, jest } from "@jest/globals";
 import { OrganizationPayload } from "../../action";
 import { prisma } from "@/lib/prisma";
 
@@ -181,3 +181,22 @@ export const mockFunctionsWithError = (errorMessage: string) => {
     consoleSpy,
   };
 }
+
+export const assertCreatedAddresses = (
+  createAddressFn: jest.Mock,
+  organizationId: number,
+  expectedAddresses: (
+    { addressType: AddressType } &
+    OrganizationAddressSparse
+  )[],
+) => {
+  expect(createAddressFn).toHaveBeenCalledTimes(expectedAddresses.length);
+  expectedAddresses.forEach((address, index) => {
+    expect(createAddressFn).toHaveBeenNthCalledWith(index + 1, {
+      data: {
+        ...address,
+        organizationId,
+      },
+    });
+  });
+};

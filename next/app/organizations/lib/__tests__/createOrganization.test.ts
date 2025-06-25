@@ -18,6 +18,7 @@ import {
   baseOrganization,
   mockFunctions,
   mockFunctionsWithError,
+  assertCreatedAddresses,
 } from "./__test-utilities__/action-test-data";
 
 jest.mock("@/auth", () => ({
@@ -30,6 +31,8 @@ jest.mock("@/lib/prisma", () => ({
   },
 }));
 
+const testOrgId = 1;
+
 describe("Organization action: createOrganization", () => {
   beforeEach(() => {
     jest.clearAllMocks();
@@ -37,9 +40,10 @@ describe("Organization action: createOrganization", () => {
 
   it("returns undefined if user is not gov", async () => {
     mockFunctions({
+      // test for non-gov user even with ADMINISTRATOR role
       userInfo: {
         ...baseNonGovUserInfo,
-        userRoles: [Role.ADMINISTRATOR], // test for non-gov user even with ADMINISTRATOR role
+        userRoles: [Role.ADMINISTRATOR],
       }
     });
     const result = await createOrganization(baseOrganization);
@@ -69,7 +73,7 @@ describe("Organization action: createOrganization", () => {
       createOrgFn,
       createAddressFn,
     } = mockFunctions({
-      orgWithId: { ...baseOrganization, id: 1 },
+      orgWithId: { ...baseOrganization, id: testOrgId },
       serviceAddressWithId: { ...baseAddress1, id: 10 },
       recordsAddressWithId: { ...baseAddress2, id: 11 },
     });
@@ -84,21 +88,10 @@ describe("Organization action: createOrganization", () => {
     expect(createOrgFn).toHaveBeenCalledWith({
       data: baseOrganization
     });
-    expect(createAddressFn).toHaveBeenCalledTimes(2);
-    expect(createAddressFn).toHaveBeenNthCalledWith(1, {
-      data: {
-        ...baseAddress1,
-        organizationId: 1,
-        addressType: AddressType.SERVICE,
-      }
-    });
-    expect(createAddressFn).toHaveBeenNthCalledWith(2, {
-      data: {
-        ...baseAddress2,
-        organizationId: 1,
-        addressType: AddressType.RECORDS,
-      }
-    });
+    assertCreatedAddresses(createAddressFn, testOrgId, [
+      { addressType: AddressType.SERVICE, ...baseAddress1 },
+      { addressType: AddressType.RECORDS, ...baseAddress2 },
+    ]);
     expect(result).toEqual({
       ...createdOrg,
       serviceAddress: createdServiceAddress,
@@ -113,7 +106,7 @@ describe("Organization action: createOrganization", () => {
       createOrgFn,
       createAddressFn,
     } = mockFunctions({
-      orgWithId: { ...baseOrganization, id: 1 },
+      orgWithId: { ...baseOrganization, id: testOrgId },
       serviceAddressWithId: { ...emptyAddress, id: 10 },
       recordsAddressWithId: { ...emptyAddress, id: 11 },
     });
@@ -124,10 +117,10 @@ describe("Organization action: createOrganization", () => {
       recordsAddress: emptyAddress,
     });
 
+    expect(createOrgFn).toHaveBeenCalledTimes(1);
     expect(createOrgFn).toHaveBeenCalledWith({
       data: baseOrganization
     });
-    expect(createOrgFn).toHaveBeenCalledTimes(1);
     expect(createAddressFn).not.toHaveBeenCalled();
     expect(result).toEqual({
       ...createdOrg,
@@ -143,7 +136,7 @@ describe("Organization action: createOrganization", () => {
       createOrgFn,
       createAddressFn,
     } = mockFunctions({
-      orgWithId: { ...baseOrganization, id: 1 },
+      orgWithId: { ...baseOrganization, id: testOrgId },
       serviceAddressWithId: { ...emptyAddress, id: 10 },
       recordsAddressWithId: { ...emptyAddress, id: 11 },
     });
@@ -154,10 +147,10 @@ describe("Organization action: createOrganization", () => {
       recordsAddress: undefined,
     });
 
+    expect(createOrgFn).toHaveBeenCalledTimes(1);
     expect(createOrgFn).toHaveBeenCalledWith({
       data: baseOrganization
     });
-    expect(createOrgFn).toHaveBeenCalledTimes(1);
     expect(createAddressFn).not.toHaveBeenCalled();
     expect(result).toEqual({
       ...createdOrg,
