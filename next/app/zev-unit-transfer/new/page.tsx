@@ -1,9 +1,9 @@
-import { getOrgsMap } from "../lib/data";
 import ZevUnitTransferCreateOrSave from "../lib/components/ZevUnitTransferCreateOrSave";
 import { getUserInfo } from "@/auth";
 import { createTransfer, ZevUnitTransferPayload } from "../lib/actions";
 import { redirect } from "next/navigation";
 import { Routes } from "@/app/lib/constants";
+import { getOrgsMap } from "@/app/lib/data/orgs";
 
 const Page = async () => {
   const { userOrgId } = await getUserInfo();

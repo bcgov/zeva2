@@ -27,7 +27,7 @@ const keycloakSignOut = async () => {
       console.log("error logging out of keycloak");
     }
   }
-  await signOut();
+  await signOut({ redirectTo: "/" });
 };
 
 export { keycloakSignIn, keycloakSignOut };

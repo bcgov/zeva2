@@ -1,65 +1,47 @@
 "use server";
 
-import { redirect } from "next/navigation";
 import { getUserInfo } from "@/auth";
 import { prisma } from "@/lib/prisma";
-import { Idp, Role, User } from "@/prisma/generated/client";
+import { Idp, User } from "@/prisma/generated/client";
 
-export type UserUpdatePayload = Omit<
+export type UserPayload = Omit<
   User,
-  "id" | "organizationId" | "idp" | "notifications"
+  "id" | "idp" | "idpSub" | "notifications" | "wasUpdated"
 >;
 
-export const updateUser = async (
-  id: number,
-  organizationId: number,
-  updated?: UserUpdatePayload,
-) => {
+export const updateUser = async (id: number, data: UserPayload) => {
   const { userIsGov, userOrgId } = await getUserInfo();
-  const hasAccess = userIsGov || userOrgId === organizationId;
-  if (!updated || !hasAccess) return;
-
+  const user = await prisma.user.findUnique({
+    where: {
+      id,
+    },
+  });
+  if (!user) {
+    throw new Error("No such user!");
+  }
+  if (!userIsGov && userOrgId !== user.organizationId) {
+    throw new Error("Unauthorized!");
+  }
   await prisma.user.update({
     where: { id },
-    data: updated,
+    data: { ...data, organizationId: user.organizationId, wasUpdated: true },
   });
 };
 
-export type UserCreatePayload = UserUpdatePayload & { organizationId: number };
-
-export async function createUser(user: UserCreatePayload) {
+export async function createUser(user: UserPayload) {
   const { userIsGov, userOrgId } = await getUserInfo();
-  const isAuthorized = userIsGov || userOrgId === user.organizationId;
-  if (!isAuthorized) throw new Error("Unauthorized");
-
-  if (userIsGov) {
-    await prisma.user.create({
-      data: { ...user, idp: Idp.IDIR },
-    });
-  } else {
-    await prisma.user.create({
-      data: { ...user, idp: Idp.BCEID_BUSINESS },
-    });
+  if (!userIsGov && userOrgId !== user.organizationId) {
+    throw new Error("Unauthorized");
   }
-  redirect("/users");
+  const overridingData: { idp: Idp; organizationId?: number } = {
+    idp: Idp.IDIR,
+  };
+  if (!userIsGov) {
+    overridingData.idp = Idp.BCEID_BUSINESS;
+    overridingData.organizationId = userOrgId;
+  }
+  const createdUser = await prisma.user.create({
+    data: { ...user, ...overridingData, idpSub: null },
+  });
+  return createdUser.id;
 }
-
-export const deleteUser = async (id: number) => {
-  const { userIsGov, userRoles } = await getUserInfo();
-
-  const allowedRoles: Role[] = [
-    Role.ADMINISTRATOR,
-    Role.ORGANIZATION_ADMINISTRATOR,
-  ];
-  const isAllowed =
-    userIsGov || userRoles.some((role: Role) => allowedRoles.includes(role));
-
-  if (isAllowed) {
-    await prisma.user.delete({
-      where: { id },
-    });
-    redirect("/users");
-  } else {
-    throw new Error("Unauthorized to delete users.");
-  }
-};
