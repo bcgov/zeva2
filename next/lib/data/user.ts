@@ -28,7 +28,7 @@ export const getActiveUser = async (
   let idpUsername: string | undefined;
   if (idpEnum === Idp.BCEID_BUSINESS) {
     idpUsername = profile.bceid_username;
-  } else if (idpEnum === Idp.IDIR) {
+  } else if (idpEnum === Idp.AZURE_IDIR) {
     idpUsername = profile.idir_username;
   }
   if (!idpUsername) {

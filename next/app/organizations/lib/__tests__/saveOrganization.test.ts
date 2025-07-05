@@ -18,7 +18,7 @@ import {
   baseOrganization,
   mockFunctions,
   mockFunctionsWithError,
-  assertCreatedAddresses
+  assertCreatedAddresses,
 } from "./__test-utilities__/action-test-data";
 
 jest.mock("@/auth", () => ({
@@ -59,7 +59,7 @@ const assertExpiringAddresses = (
       },
       data: {
         expirationDate: mockedDate,
-      }
+      },
     });
   });
 };
@@ -81,56 +81,52 @@ describe("Organization action: saveOrganization", () => {
       userInfo: {
         ...baseNonGovUserInfo,
         userRoles: [Role.ADMINISTRATOR],
-      }
+      },
     });
     const result = await saveOrganization(testOrgId, baseOrganization);
     expect(result).toBe(false);
     expect(prisma.$transaction).not.toHaveBeenCalled();
   });
-
 
   it("returns undefined if user is not ADMINISTRATOR", async () => {
     mockFunctions({
       userInfo: {
         ...baseNonGovUserInfo,
         userRoles: [Role.DIRECTOR], // Not an ADMINISTRATOR
-      }
+      },
     });
     const result = await saveOrganization(testOrgId, baseOrganization);
     expect(result).toBe(false);
     expect(prisma.$transaction).not.toHaveBeenCalled();
   });
 
-
   it("updates organization and creates new addresses", async () => {
-    const {
-      updateOrgFn,
-      createAddressFn,
-      updateManyAddressFn,
-    } = mockFunctions({
-      userInfo: baseGovUserInfo,
-      orgWithId: { id: testOrgId, ...baseOrganization },
-      serviceAddressWithId: { id: 10, ...baseAddress1 },
-      recordsAddressWithId: { id: 11, ...baseAddress2 },
-      existingAddressIds: {
-        service: [],
-        records: [],
+    const { updateOrgFn, createAddressFn, updateManyAddressFn } = mockFunctions(
+      {
+        userInfo: baseGovUserInfo,
+        orgWithId: { id: testOrgId, ...baseOrganization },
+        serviceAddressWithId: { id: 10, ...baseAddress1 },
+        recordsAddressWithId: { id: 11, ...baseAddress2 },
+        existingAddressIds: {
+          service: [],
+          records: [],
+        },
       },
-    });
+    );
 
     const result = await saveOrganization(testOrgId, {
       ...baseOrganization,
       serviceAddress: baseAddress1,
       recordsAddress: baseAddress2,
     });
-    
+
     // Expect that organization was updated
     expect(updateOrgFn).toHaveBeenCalledTimes(1);
     expect(updateOrgFn).toHaveBeenCalledWith({
       where: { id: testOrgId },
       data: {
         ...baseOrganization,
-      }
+      },
     });
 
     // Expect that the existing service and records addresses were updated with the mocked date
@@ -150,34 +146,31 @@ describe("Organization action: saveOrganization", () => {
     expect(prisma.$transaction).toHaveBeenCalled();
   });
 
-
   it("updates organization without re-creating existing addresses", async () => {
-    const {
-      updateOrgFn,
-      createAddressFn,
-      updateManyAddressFn,
-    } = mockFunctions({
-      userInfo: baseGovUserInfo,
-      orgWithId: { id: testOrgId, ...baseOrganization },
-      existingAddressIds: {
-        service: [3, 4], // Existing service addresses
-        records: [5], // Existing records address
+    const { updateOrgFn, createAddressFn, updateManyAddressFn } = mockFunctions(
+      {
+        userInfo: baseGovUserInfo,
+        orgWithId: { id: testOrgId, ...baseOrganization },
+        existingAddressIds: {
+          service: [3, 4], // Existing service addresses
+          records: [5], // Existing records address
+        },
       },
-    });
+    );
 
     const result = await saveOrganization(testOrgId, {
       ...baseOrganization,
       serviceAddress: baseAddress1,
       recordsAddress: baseAddress2,
     });
-    
+
     // Expect that organization was updated
     expect(updateOrgFn).toHaveBeenCalledTimes(1);
     expect(updateOrgFn).toHaveBeenCalledWith({
       where: { id: testOrgId },
       data: {
         ...baseOrganization,
-      }
+      },
     });
 
     // Expect that the existing service and records addresses were not updated
@@ -185,40 +178,37 @@ describe("Organization action: saveOrganization", () => {
 
     // Expect that new addresses were not created
     expect(createAddressFn).not.toHaveBeenCalled();
-    
+
     // Expect the result to be true
     expect(result).toBe(true);
     expect(prisma.$transaction).toHaveBeenCalled();
   });
 
-
   it("updates organization with existing addresses expired", async () => {
-    const {
-      updateOrgFn,
-      createAddressFn,
-      updateManyAddressFn,
-    } = mockFunctions({
-      userInfo: baseGovUserInfo,
-      orgWithId: { id: testOrgId, ...baseOrganization },
-      existingAddressIds: {
-        service: [],
-        records: [],
+    const { updateOrgFn, createAddressFn, updateManyAddressFn } = mockFunctions(
+      {
+        userInfo: baseGovUserInfo,
+        orgWithId: { id: testOrgId, ...baseOrganization },
+        existingAddressIds: {
+          service: [],
+          records: [],
+        },
       },
-    });
+    );
 
     const result = await saveOrganization(testOrgId, {
       ...baseOrganization,
       serviceAddress: emptyAddress,
       recordsAddress: emptyAddress,
     });
-    
+
     // Expect that organization was updated
     expect(updateOrgFn).toHaveBeenCalledTimes(1);
     expect(updateOrgFn).toHaveBeenCalledWith({
       where: { id: testOrgId },
       data: {
         ...baseOrganization,
-      }
+      },
     });
 
     // Expect that the existing service and records addresses were updated with the mocked date
@@ -229,48 +219,43 @@ describe("Organization action: saveOrganization", () => {
 
     // Expect that new addresses were not created
     expect(createAddressFn).not.toHaveBeenCalled();
-    
+
     // Expect the result to be true
     expect(result).toBe(true);
     expect(prisma.$transaction).toHaveBeenCalled();
   });
 
-
   it("updates organization with one address updated", async () => {
-    const {
-      updateOrgFn,
-      createAddressFn,
-      updateManyAddressFn,
-    } = mockFunctions({
-      userInfo: baseGovUserInfo,
-      orgWithId: { id: testOrgId, ...baseOrganization },
-      serviceAddressWithId: { id: 10, ...baseAddress1 },
-      recordsAddressWithId: { id: 11, ...baseAddress2 },
-      existingAddressIds: {
-        service: [],
-        records: [9],  // Existing records address
+    const { updateOrgFn, createAddressFn, updateManyAddressFn } = mockFunctions(
+      {
+        userInfo: baseGovUserInfo,
+        orgWithId: { id: testOrgId, ...baseOrganization },
+        serviceAddressWithId: { id: 10, ...baseAddress1 },
+        recordsAddressWithId: { id: 11, ...baseAddress2 },
+        existingAddressIds: {
+          service: [],
+          records: [9], // Existing records address
+        },
       },
-    });
+    );
 
     const result = await saveOrganization(testOrgId, {
       ...baseOrganization,
       serviceAddress: baseAddress1,
       recordsAddress: baseAddress2,
     });
-    
+
     // Expect that organization was updated
     expect(updateOrgFn).toHaveBeenCalledTimes(1);
     expect(updateOrgFn).toHaveBeenCalledWith({
       where: { id: testOrgId },
       data: {
         ...baseOrganization,
-      }
+      },
     });
 
     // Expect that the existing service and records addresses were updated with the mocked date
-    assertExpiringAddresses(updateManyAddressFn, [
-      AddressType.SERVICE,
-    ]);
+    assertExpiringAddresses(updateManyAddressFn, [AddressType.SERVICE]);
 
     // Expect that new addresses were created
     assertCreatedAddresses(createAddressFn, testOrgId, [
@@ -281,7 +266,6 @@ describe("Organization action: saveOrganization", () => {
     expect(result).toBe(true);
     expect(prisma.$transaction).toHaveBeenCalled();
   });
-
 
   it("returns undefined and logs error if transaction fails", async () => {
     const { consoleSpy } = mockFunctionsWithError("Operation failed");

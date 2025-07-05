@@ -96,8 +96,8 @@ enum Role {
 }
 
 enum Idp {
+  AZURE_IDIR     @map("azureidir")
   BCEID_BUSINESS @map("bceidbusiness")
-  IDIR           @map("idir")
 }
 
 enum Notification {

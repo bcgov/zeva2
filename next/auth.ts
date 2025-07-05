@@ -78,6 +78,7 @@ export interface UserInfo {
   userOrgId: number;
   userRoles: Role[];
   userOrgName: string;
+  userIdToken: string;
 }
 
 export const getUserInfo = async (): Promise<UserInfo> => {
@@ -89,5 +90,6 @@ export const getUserInfo = async (): Promise<UserInfo> => {
     userOrgId: user?.organizationId ?? -1,
     userRoles: user?.roles ?? [],
     userOrgName: user?.organizationName ?? "",
+    userIdToken: user?.idToken ?? "",
   };
 };

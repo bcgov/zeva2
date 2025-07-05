@@ -2,7 +2,7 @@ import {
   AddressType,
   Organization,
   OrganizationAddress,
-  Role
+  Role,
 } from "@/prisma/generated/client";
 import { OrganizationAddressSparse } from "../../data";
 import { UserInfo } from "@/auth";
@@ -16,6 +16,7 @@ export const baseGovUserInfo = {
   userOrgId: 1,
   userRoles: [Role.ADMINISTRATOR],
   userOrgName: "BC Government",
+  userIdToken: "",
 };
 
 export const baseNonGovUserInfo = {
@@ -24,6 +25,7 @@ export const baseNonGovUserInfo = {
   userOrgId: 2,
   userRoles: [],
   userOrgName: "Test Organization",
+  userIdToken: "",
 };
 
 export const emptyAddress: OrganizationAddressSparse = {
@@ -64,9 +66,8 @@ export const baseOrganization = {
 };
 
 export const mockGetUserInfo = (userInfo: UserInfo) => {
-  jest.spyOn(require("@/auth"), "getUserInfo")
-    .mockResolvedValue(userInfo);
-}
+  jest.spyOn(require("@/auth"), "getUserInfo").mockResolvedValue(userInfo);
+};
 
 export const mockFunctions = (opt: {
   userInfo?: UserInfo;
@@ -76,7 +77,7 @@ export const mockFunctions = (opt: {
   existingAddressIds?: {
     service: number[];
     records: number[];
-  }
+  };
 }) => {
   const {
     userInfo,
@@ -90,43 +91,56 @@ export const mockFunctions = (opt: {
   mockGetUserInfo(userInfo ?? baseGovUserInfo);
 
   // Create mock data for organization and addresses.
-  const createdOrg: Organization | undefined = orgWithId ? {
-    ...orgWithId,
-    firstModelYear: null,
-  } : undefined;
-  const createdServiceAddress: OrganizationAddress | undefined = serviceAddressWithId ? {
-    ...serviceAddressWithId,
-    addressType: AddressType.SERVICE,
-    expirationDate: null,
-    organizationId: orgWithId?.id ?? 1, // Use org ID or default to 1
-  } : undefined;
-  const createdRecordsAddress: OrganizationAddress | undefined = recordsAddressWithId ? {
-    ...recordsAddressWithId,
-    addressType: AddressType.RECORDS,
-    expirationDate: null,
-    organizationId: orgWithId?.id ?? 1, // Use org ID or default to 1
-  } : undefined;
+  const createdOrg: Organization | undefined = orgWithId
+    ? {
+        ...orgWithId,
+        firstModelYear: null,
+      }
+    : undefined;
+  const createdServiceAddress: OrganizationAddress | undefined =
+    serviceAddressWithId
+      ? {
+          ...serviceAddressWithId,
+          addressType: AddressType.SERVICE,
+          expirationDate: null,
+          organizationId: orgWithId?.id ?? 1, // Use org ID or default to 1
+        }
+      : undefined;
+  const createdRecordsAddress: OrganizationAddress | undefined =
+    recordsAddressWithId
+      ? {
+          ...recordsAddressWithId,
+          addressType: AddressType.RECORDS,
+          expirationDate: null,
+          organizationId: orgWithId?.id ?? 1, // Use org ID or default to 1
+        }
+      : undefined;
 
   // Mock prisma.$transaction to simulate database operations.
   const createOrgFn = jest.fn(() => Promise.resolve(createdOrg));
   const updateOrgFn = jest.fn(() => Promise.resolve(createdOrg));
-  const createAddressFn = jest.fn()
+  const createAddressFn = jest
+    .fn()
     .mockImplementationOnce(() => Promise.resolve(createdServiceAddress))
     .mockImplementationOnce(() => Promise.resolve(createdRecordsAddress));
   const findManyAddressFn = jest.fn(
     (options: { where: { addressType: AddressType } }) => {
       switch (options.where.addressType) {
         case AddressType.SERVICE:
-          return Promise.resolve(existingAddressIds?.service?.map(id => ({id})));
+          return Promise.resolve(
+            existingAddressIds?.service?.map((id) => ({ id })),
+          );
         case AddressType.RECORDS:
-          return Promise.resolve(existingAddressIds?.records?.map(id => ({id})));
+          return Promise.resolve(
+            existingAddressIds?.records?.map((id) => ({ id })),
+          );
         default:
           return Promise.resolve([]);
       }
-    }
+    },
   );
   const updateManyAddressFn = jest.fn();
-  
+
   // Use jest.spyOn to mock prisma.$transaction
   jest.spyOn(prisma, "$transaction").mockImplementation(async (cb: any) =>
     cb({
@@ -139,7 +153,7 @@ export const mockFunctions = (opt: {
         findMany: findManyAddressFn,
         updateMany: updateManyAddressFn,
       },
-    })
+    }),
   );
 
   return {
@@ -171,7 +185,7 @@ export const mockFunctionsWithError = (errorMessage: string) => {
         findMany: jest.fn(() => Promise.reject(err)),
         updateMany: jest.fn(() => Promise.reject(err)),
       },
-    })
+    }),
   );
 
   // Mock console.error to suppress error logs during tests
@@ -180,15 +194,14 @@ export const mockFunctionsWithError = (errorMessage: string) => {
   return {
     consoleSpy,
   };
-}
+};
 
 export const assertCreatedAddresses = (
   createAddressFn: jest.Mock,
   organizationId: number,
-  expectedAddresses: (
-    { addressType: AddressType } &
-    OrganizationAddressSparse
-  )[],
+  expectedAddresses: ({
+    addressType: AddressType;
+  } & OrganizationAddressSparse)[],
 ) => {
   expect(createAddressFn).toHaveBeenCalledTimes(expectedAddresses.length);
   expectedAddresses.forEach((address, index) => {
