@@ -32,7 +32,6 @@ export const SupplierDownload = (props: { userOrgName: string }) => {
         );
         if (vehiclesSheet) {
           const modelYearsMap = getModelYearEnumsToStringsMap();
-          console.log(vehicles);
           vehicles.forEach((vehicle) => {
             vehiclesSheet.addRow([
               vehicle.make,

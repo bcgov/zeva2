@@ -34,7 +34,7 @@ export async function createUser(user: UserPayload) {
     throw new Error("Unauthorized");
   }
   const overridingData: { idp: Idp; organizationId?: number } = {
-    idp: Idp.IDIR,
+    idp: Idp.AZURE_IDIR,
   };
   if (!userIsGov) {
     overridingData.idp = Idp.BCEID_BUSINESS;

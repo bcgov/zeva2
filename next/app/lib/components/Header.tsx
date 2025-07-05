@@ -6,7 +6,7 @@ import {
   navbarMainItems,
   navbarSubItems,
   MenuItem,
-  NavbarSubItems
+  NavbarSubItems,
 } from "../constants/navbarItems";
 
 export interface IHeaderProps {
@@ -17,9 +17,9 @@ export interface IHeaderProps {
 export const Header: React.FC<IHeaderProps> = ({ session }) => {
   const userRoles = session.user?.roles ?? [];
   const filterByRoles = (items: MenuItem[]) =>
-    items.filter(item =>
-      !item.roles ||
-      item.roles.some(role => userRoles.includes(role))
+    items.filter(
+      (item) =>
+        !item.roles || item.roles.some((role) => userRoles.includes(role)),
     );
   const filteredSubItems = (items: NavbarSubItems) => {
     const filtered: NavbarSubItems = {};
@@ -43,13 +43,13 @@ export const Header: React.FC<IHeaderProps> = ({ session }) => {
         <span className="text-xl">Zero-Emission Vehicles Reporting System</span>
         <span className="ml-auto">{session.user?.organizationName}</span>
       </Row>
-      {session.user &&
+      {session.user && (
         <Navbar
           mainItems={filterByRoles(navbarMainItems)}
           subItems={filteredSubItems(navbarSubItems)}
           userName={session.user?.name ?? "User"}
         />
-      }
+      )}
     </div>
   );
 };

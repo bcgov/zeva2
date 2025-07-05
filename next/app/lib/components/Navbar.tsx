@@ -42,10 +42,14 @@ export const Navbar: React.FC<{
       }
     }
     return params;
-  }
+  };
 
-  const [activeLabel, setActiveLabel] = React.useState<string | undefined>(undefined);
-  const [activeSubMenu, setActiveSubMenu] = React.useState<MenuItem[] | undefined>(undefined);
+  const [activeLabel, setActiveLabel] = React.useState<string | undefined>(
+    undefined,
+  );
+  const [activeSubMenu, setActiveSubMenu] = React.useState<
+    MenuItem[] | undefined
+  >(undefined);
   const [showUserDropDown, setShowUserDropDown] = React.useState(false);
 
   /**
@@ -63,81 +67,89 @@ export const Navbar: React.FC<{
         const params = checkRoute(item.route);
         if (params) {
           // Return the menu with params in all routes replaced with the actual values
-          return ({
+          return {
             label,
-            menu: menu.map(item => {
+            menu: menu.map((item) => {
               let newRoute = item.route;
               Object.entries(params).forEach(([key, value]) => {
                 newRoute = newRoute.replace(`:${key}`, value);
               });
               return { ...item, route: newRoute };
-            })
-          });
+            }),
+          };
         }
       }
     }
     return {};
-  }
+  };
 
   useEffect(() => {
     const { label, menu } = findMenuMatchingPathname(subItems);
-    setActiveLabel(label ?? mainItems.find(item => checkRoute(item.route))?.label);
+    setActiveLabel(
+      label ?? mainItems.find((item) => checkRoute(item.route))?.label,
+    );
     setActiveSubMenu(menu);
   }, [pathname, mainItems, subItems]);
 
-  return <>
-    <Row className="w-full bg-defaultBackgroundBlue border-t-2 border-primaryYellow mr-[16rem] px-1 mb-3 text-white">
-      {mainItems.map(item => (
-        <Link
-          key={item.label}
-          className={
-            "cursor-pointer px-2" +
-            (activeLabel === item.label ? " border-b-2 border-primaryYellow" : "")
-          }
-          href={item.route}
-        >
-          {item.label}
-        </Link>
-      ))}
-
-      <div className="ml-auto relative">
-        <div
-          onClick={() => setShowUserDropDown(!showUserDropDown)}
-          className="cursor-pointer flex flex-row items-center"
-        >
-          {userName}
-          {!showUserDropDown ? (
-            <FaAngleDown className="mt-[0.5px] ml-1" />
-          ) : (
-            <FaAngleUp className="mt-[0.5px] ml-1" />
-          )}
-        </div>
-        {showUserDropDown && (
-          <div
-            onClick={keycloakSignOut}
-            className="absolute right-0 bg-defaultBackgroundBlue border mt-[0.5px] p-2 shadow-lg cursor-pointer"
-          >
-            Sign Out
-          </div>
-        )}
-      </div>
-    </Row>
-
-    {activeSubMenu && (
-      <Row className="m-2 border-b border-gray-300">
-        {activeSubMenu.map((item, index) => (
+  return (
+    <>
+      <Row className="w-full bg-defaultBackgroundBlue border-t-2 border-primaryYellow mr-[16rem] px-1 mb-3 text-white">
+        {mainItems.map((item) => (
           <Link
-            key={index}
+            key={item.label}
             className={
-              "p-3 border border-gray-300" +
-              (checkRoute(item.route) ? " bg-blue-50 font-semibold text-defaultTextBlue border-black" : "")
+              "cursor-pointer px-2" +
+              (activeLabel === item.label
+                ? " border-b-2 border-primaryYellow"
+                : "")
             }
             href={item.route}
           >
             {item.label}
           </Link>
         ))}
+
+        <div className="ml-auto relative">
+          <div
+            onClick={() => setShowUserDropDown(!showUserDropDown)}
+            className="cursor-pointer flex flex-row items-center"
+          >
+            {userName}
+            {!showUserDropDown ? (
+              <FaAngleDown className="mt-[0.5px] ml-1" />
+            ) : (
+              <FaAngleUp className="mt-[0.5px] ml-1" />
+            )}
+          </div>
+          {showUserDropDown && (
+            <div
+              onClick={keycloakSignOut}
+              className="absolute right-0 bg-defaultBackgroundBlue border mt-[0.5px] p-2 shadow-lg cursor-pointer"
+            >
+              Sign Out
+            </div>
+          )}
+        </div>
       </Row>
-    )}
-  </>;
+
+      {activeSubMenu && (
+        <Row className="m-2 border-b border-gray-300">
+          {activeSubMenu.map((item, index) => (
+            <Link
+              key={index}
+              className={
+                "p-3 border border-gray-300" +
+                (checkRoute(item.route)
+                  ? " bg-blue-50 font-semibold text-defaultTextBlue border-black"
+                  : "")
+              }
+              href={item.route}
+            >
+              {item.label}
+            </Link>
+          ))}
+        </Row>
+      )}
+    </>
+  );
 };

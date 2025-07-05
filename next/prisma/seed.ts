@@ -92,12 +92,16 @@ const main = () => {
         if (!orgIdNew) {
           throw new Error("user " + userOld.id + " with unknown org id!");
         }
+        let idpSub = userOld.keycloak_user_id;
+        if (userOld.organization?.is_government && idpSub) {
+          idpSub = idpSub.split("@")[0] + "@azureidir";
+        }
         const userNew = await tx.user.create({
           data: {
             contactEmail: userOld.email,
-            idpSub: userOld.keycloak_user_id,
+            idpSub,
             idp: userOld.organization?.is_government
-              ? Idp.IDIR
+              ? Idp.AZURE_IDIR
               : Idp.BCEID_BUSINESS,
             idpUsername: userOld.username,
             isActive: userOld.is_active,

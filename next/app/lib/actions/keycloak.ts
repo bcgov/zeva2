@@ -1,33 +1,40 @@
 "use server";
 
-import { auth, signIn, signOut } from "@/auth";
+import { getUserInfo, signIn, signOut } from "@/auth";
+import { headers } from "next/headers";
+import { redirect } from "next/navigation";
 
 const keycloakSignIn = async (idpHint: string) => {
   await signIn("keycloak", undefined, { kc_idp_hint: idpHint });
 };
 
 const keycloakSignOut = async () => {
-  const session = await auth();
-  const idToken = session?.user?.idToken;
+  const { userIsGov, userIdToken } = await getUserInfo();
   const keycloakUrl = process.env.AUTH_KEYCLOAK_ISSUER;
   const keycloakClient = process.env.AUTH_KEYCLOAK_ID;
-  if (idToken && keycloakUrl && keycloakClient) {
-    //next-auth doesn't sign you out from keycloak; it just terminates the next-auth session
-    //see https://github.com/nextauthjs/next-auth/discussions/3938; so we do:
-    const url =
+  if (userIdToken && keycloakUrl && keycloakClient) {
+    let url =
       keycloakUrl +
       "/protocol/openid-connect/logout" +
       "?client_id=" +
       encodeURIComponent(keycloakClient) +
       "&id_token_hint=" +
-      encodeURIComponent(idToken);
-    try {
+      encodeURIComponent(userIdToken);
+    if (userIsGov) {
+      // when using the azureidir IDP, calling the above logout url from the server
+      // doesn't seem to work, so we do:
+      const headersList = await headers();
+      const origin = headersList.get("origin");
+      url =
+        url +
+        "&post_logout_redirect_uri=" +
+        encodeURIComponent(`${origin}/api/signOut`);
+      redirect(url);
+    } else {
       await fetch(url);
-    } catch (error) {
-      console.log("error logging out of keycloak");
+      await signOut({ redirectTo: "/" });
     }
   }
-  await signOut({ redirectTo: "/" });
 };
 
 export { keycloakSignIn, keycloakSignOut };

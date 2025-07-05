@@ -1,10 +1,4 @@
-import {
-  jest,
-  describe,
-  it,
-  expect,
-  beforeEach,
-} from "@jest/globals";
+import { jest, describe, it, expect, beforeEach } from "@jest/globals";
 import { Role, AddressType } from "@/prisma/generated/client";
 import { createOrganization } from "../action";
 import { prisma } from "@/lib/prisma";
@@ -43,26 +37,24 @@ describe("Organization action: createOrganization", () => {
       userInfo: {
         ...baseNonGovUserInfo,
         userRoles: [Role.ADMINISTRATOR],
-      }
+      },
     });
     const result = await createOrganization(baseOrganization);
     expect(result).toBeUndefined();
     expect(prisma.$transaction).not.toHaveBeenCalled();
   });
-
 
   it("returns undefined if user is not ADMINISTRATOR", async () => {
     mockFunctions({
       userInfo: {
         ...baseGovUserInfo,
         userRoles: [Role.DIRECTOR], // Not an ADMINISTRATOR
-      }
+      },
     });
     const result = await createOrganization(baseOrganization);
     expect(result).toBeUndefined();
     expect(prisma.$transaction).not.toHaveBeenCalled();
   });
-
 
   it("creates organization and addresses records", async () => {
     const {
@@ -85,7 +77,7 @@ describe("Organization action: createOrganization", () => {
 
     expect(createOrgFn).toHaveBeenCalledTimes(1);
     expect(createOrgFn).toHaveBeenCalledWith({
-      data: baseOrganization
+      data: baseOrganization,
     });
     assertCreatedAddresses(createAddressFn, testOrgId, [
       { addressType: AddressType.SERVICE, ...baseAddress1 },
@@ -98,13 +90,8 @@ describe("Organization action: createOrganization", () => {
     });
   });
 
-
   it("creates organization but not empty addresses", async () => {
-    const {
-      createdOrg,
-      createOrgFn,
-      createAddressFn,
-    } = mockFunctions({
+    const { createdOrg, createOrgFn, createAddressFn } = mockFunctions({
       orgWithId: { ...baseOrganization, id: testOrgId },
       serviceAddressWithId: { ...emptyAddress, id: 10 },
       recordsAddressWithId: { ...emptyAddress, id: 11 },
@@ -118,7 +105,7 @@ describe("Organization action: createOrganization", () => {
 
     expect(createOrgFn).toHaveBeenCalledTimes(1);
     expect(createOrgFn).toHaveBeenCalledWith({
-      data: baseOrganization
+      data: baseOrganization,
     });
     expect(createAddressFn).not.toHaveBeenCalled();
     expect(result).toEqual({
@@ -128,13 +115,8 @@ describe("Organization action: createOrganization", () => {
     });
   });
 
-
   it("creates organization but not undefined addresses", async () => {
-    const {
-      createdOrg,
-      createOrgFn,
-      createAddressFn,
-    } = mockFunctions({
+    const { createdOrg, createOrgFn, createAddressFn } = mockFunctions({
       orgWithId: { ...baseOrganization, id: testOrgId },
       serviceAddressWithId: { ...emptyAddress, id: 10 },
       recordsAddressWithId: { ...emptyAddress, id: 11 },
@@ -148,7 +130,7 @@ describe("Organization action: createOrganization", () => {
 
     expect(createOrgFn).toHaveBeenCalledTimes(1);
     expect(createOrgFn).toHaveBeenCalledWith({
-      data: baseOrganization
+      data: baseOrganization,
     });
     expect(createAddressFn).not.toHaveBeenCalled();
     expect(result).toEqual({
@@ -157,7 +139,6 @@ describe("Organization action: createOrganization", () => {
       recordsAddress: undefined,
     });
   });
-
 
   it("returns undefined and logs error if transaction fails", async () => {
     const { consoleSpy } = mockFunctionsWithError("Operation failed");
