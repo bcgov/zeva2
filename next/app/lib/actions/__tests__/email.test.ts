@@ -9,6 +9,7 @@ import {
 import { sendEmail } from "../email";
 
 describe("email", () => {
+  const originalFetch = global.fetch;
   const originalEnv = process.env;
   const CHES_AUTH_URL = "https://mocked-token-url";
   const CHES_EMAIL_URL = "https://mocked-email-url";
@@ -58,12 +59,13 @@ describe("email", () => {
       return Promise.resolve(fetchRequest(data));
     });
 
-    console.error = jest.fn(); // Mock console.error to prevent actual error logging
-    console.log = jest.fn(); // Mock console.log to prevent actual logging
+    jest.spyOn(console, "error").mockImplementation(() => {});
+    jest.spyOn(console, "log").mockImplementation(() => {});
   });
 
   afterEach(() => {
     process.env = { ...originalEnv }; // Restore original environment variables
+    global.fetch = originalFetch; // Restore original fetch implementation
     jest.restoreAllMocks(); // Restore original implementations of mocked functions
   });
 
