@@ -6,7 +6,6 @@ import ZevUnitTransferHistories from "../lib/components/ZevUnitTransferHistories
 import { getSerializableTransferContent, getTransfer } from "../lib/services";
 import { ZevUnitTransferStatuses } from "@/prisma/generated/client";
 import { getUserInfo } from "@/auth";
-import { getOrgsMap } from "../lib/data";
 import {
   saveTransfer,
   submitTransferToPartner,
@@ -18,6 +17,7 @@ import { Routes } from "@/app/lib/constants";
 import { revalidateAndRedirect } from "@/app/lib/utils/routing";
 import ZevUnitTransferCreateOrSave from "../lib/components/ZevUnitTransferCreateOrSave";
 import ZevUnitTransferActions from "../lib/components/ZevUnitTransferActions";
+import { getOrgsMap } from "@/app/lib/data/orgs";
 
 const Page = async (props: { params: Promise<{ id: string }> }) => {
   const args = await props.params;

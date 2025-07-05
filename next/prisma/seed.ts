@@ -95,8 +95,6 @@ const main = () => {
         const userNew = await tx.user.create({
           data: {
             contactEmail: userOld.email,
-            idpEmail:
-              userOld.keycloak_email ?? "noSuchEmail" + index + "@email.com",
             idpSub: userOld.keycloak_user_id,
             idp: userOld.organization?.is_government
               ? Idp.IDIR

@@ -9,6 +9,8 @@ import {
   ZevClass,
   ModelYear,
   PenaltyCreditStatus,
+  Idp,
+  Role,
 } from "@/prisma/generated/client";
 
 const lowerCaseAndCapitalize = (s: string) => {
@@ -17,7 +19,7 @@ const lowerCaseAndCapitalize = (s: string) => {
   return firstLetter + lowerCasedTail;
 };
 
-const getTransformedStatus = (s: string) => {
+const getTransformed = (s: string) => {
   const splitString = s.split("_");
   const transformed = splitString.map((t) => {
     return lowerCaseAndCapitalize(t);
@@ -84,7 +86,7 @@ export const getStringsToVehicleClassEnumsMap = () => {
 export const getPenaltyCreditStatusEnumsToStringsMap = () => {
   const result: Partial<Record<PenaltyCreditStatus, string>> = {};
   for (const value of Object.values(PenaltyCreditStatus)) {
-    result[value] = getTransformedStatus(value);
+    result[value] = getTransformed(value);
   }
   return result;
 };
@@ -92,7 +94,39 @@ export const getPenaltyCreditStatusEnumsToStringsMap = () => {
 export const getStringsToPenaltyCreditStatusEnumsMap = () => {
   const result: Partial<Record<string, PenaltyCreditStatus>> = {};
   for (const value of Object.values(PenaltyCreditStatus)) {
-    result[getTransformedStatus(value)] = value;
+    result[getTransformed(value)] = value;
+  }
+  return result;
+};
+
+export const getStringsToIdpEnumsMap = () => {
+  const result: Partial<Record<string, Idp>> = {};
+  for (const value of Object.values(Idp)) {
+    result[value.toLowerCase().replaceAll("_", "")] = value;
+  }
+  return result;
+};
+
+export const getIdpEnumsToStringsMap = () => {
+  const result: Partial<Record<Idp, string>> = {};
+  for (const value of Object.values(Idp)) {
+    result[value] = value.toLowerCase().replaceAll("_", "");
+  }
+  return result;
+};
+
+export const getStringsToRoleEnumsMap = () => {
+  const result: Partial<Record<string, Role>> = {};
+  for (const value of Object.values(Role)) {
+    result[getTransformed(value)] = value;
+  }
+  return result;
+};
+
+export const getRoleEnumsToStringsMap = () => {
+  const result: Partial<Record<Role, string>> = {};
+  for (const value of Object.values(Role)) {
+    result[value] = getTransformed(value);
   }
   return result;
 };

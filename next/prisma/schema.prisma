@@ -129,7 +129,6 @@ enum Notification {
 model User {
   id                     Int                      @id @default(autoincrement())
   contactEmail           String?                  @map("contact_email")
-  idpEmail               String                   @map("idp_email")
   idpSub                 String?                  @map("idp_sub")
   idp                    Idp                      @map("idp")
   idpUsername            String                   @map("idp_username")
@@ -141,6 +140,7 @@ model User {
   notifications          Notification[]
   firstName              String                   @map("first_name")
   lastName               String                   @map("last_name")
+  wasUpdated             Boolean                  @default(false) @map("was_updated")
 
   vehicleCommentsCreated   VehicleComment[]           @relation("user that created comment")
   vehicleCommentsUpdated   VehicleComment[]           @relation("user that updated comment")
@@ -148,7 +148,7 @@ model User {
   CreditApplicationHistory CreditApplicationHistory[]
   PenaltyCreditHistory     PenaltyCreditHistory[]
 
-  @@unique([idp, idpUsername, idpEmail])
+  @@unique([idp, idpUsername])
   @@map("user")
 }
 

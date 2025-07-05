@@ -29,10 +29,6 @@ export const UserTable = (props: {
         header: () => <span>IDP Username</span>,
         cell: (info) => info.getValue(),
       }),
-      columnHelper.accessor("idpEmail", {
-        header: () => <span>IDP Email</span>,
-        cell: (info) => info.getValue(),
-      }),
       columnHelper.accessor("isActive", {
         header: () => <span>Status</span>,
         cell: (info) => (info.getValue() ? "Active" : "Inactive"),
