@@ -59,7 +59,6 @@ export const seedTransactions = async (
   ): [ReferenceType, number] => {
     const agreementId =
       mapOfOldTransactionIdsToOldAgreementIds[oldTransactionId];
-    const transferId = mapOfOldTransactionIdsToOldTransferIds[oldTransactionId];
     const myrId = mapOfOldTransactionIdsToOldMYRIds[oldTransactionId];
     const submissionId =
       mapOfOldTransactionIdsToOldSalesSubmissionIds[oldTransactionId];
