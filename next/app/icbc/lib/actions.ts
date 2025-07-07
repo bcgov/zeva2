@@ -19,7 +19,9 @@ export const getPutObjectData = async (): Promise<
   }
 };
 
-export const createIcbcFile = async (data: Omit<IcbcFile, "id">) => {
+export const createIcbcFile = async (
+  data: Omit<IcbcFile, "id" | "isLegacy">,
+) => {
   const { userIsGov } = await getUserInfo();
   if (userIsGov) {
     await prisma.$transaction(async (tx) => {
