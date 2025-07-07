@@ -1,113 +1,155 @@
 "use client";
 
-import React from "react";
-import { Routes } from "../constants";
+import React, { useEffect } from "react";
+import { MenuItem, NavbarSubItems } from "../constants/navbarItems";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { FaAngleDown, FaAngleUp } from "react-icons/fa";
 import { keycloakSignOut } from "../actions/keycloak";
-import { Role } from "@/prisma/generated/client";
-import { User } from "@auth/core/types";
 import { Row } from "./layout";
 
-export interface INavbarOption {
-  label: string;
-  route: string;
-  roles: Role[];
-}
-
-export interface INavbarProps {
-  user: User;
-}
-
 /** Client Component used for navigation */
-export const Navbar: React.FC<INavbarProps> = ({ user }) => {
+export const Navbar: React.FC<{
+  userName: string;
+  mainItems: MenuItem[];
+  subItems: NavbarSubItems;
+}> = ({ userName, mainItems, subItems }) => {
   const pathname = usePathname();
+
+  /**
+   * Check if the current pathname matches a route
+   *    and extract numeric parameters if any.
+   * @param route - The route to check against the current pathname.
+   * @returns an object of parameters if the route matches,
+   *    or undefined if it does not match.
+   */
+  const checkRoute = (route: string) => {
+    const params: Record<string, string> = {};
+    const pathnameParts = pathname.split("/");
+    const routeParts = route.split("/");
+    if (pathnameParts.length < routeParts.length) {
+      return undefined;
+    }
+    for (let i = 0; i < routeParts.length; i++) {
+      if (routeParts[i].startsWith(":")) {
+        if (!isNaN(parseInt(pathnameParts[i], 10))) {
+          params[routeParts[i].slice(1)] = pathnameParts[i];
+          continue;
+        }
+      }
+      if (routeParts[i] !== pathnameParts[i]) {
+        return undefined;
+      }
+    }
+    return params;
+  };
+
+  const [activeLabel, setActiveLabel] = React.useState<string | undefined>(
+    undefined,
+  );
+  const [activeSubMenu, setActiveSubMenu] = React.useState<
+    MenuItem[] | undefined
+  >(undefined);
   const [showUserDropDown, setShowUserDropDown] = React.useState(false);
 
-  const navItems: INavbarOption[] = [
-    { label: "Home", route: Routes.Home, roles: [] },
-    {
-      label: "Compliance Reporting",
-      route: Routes.ComplianceReporting,
-      roles: [
-        Role.ZEVA_USER,
-        Role.DIRECTOR,
-        Role.SIGNING_AUTHORITY,
-        Role.ORGANIZATION_ADMINISTRATOR,
-        Role.ENGINEER_ANALYST,
-      ],
-    },
-    {
-      label: "Credit Transactions",
-      route: Routes.CreditTransactions,
-      roles: [
-        Role.ZEVA_USER,
-        Role.DIRECTOR,
-        Role.SIGNING_AUTHORITY,
-        Role.ORGANIZATION_ADMINISTRATOR,
-        Role.ENGINEER_ANALYST,
-      ],
-    },
-    {
-      label: "ZEV Models",
-      route: Routes.Vehicle,
-      roles: [Role.ZEVA_USER, Role.DIRECTOR, Role.ENGINEER_ANALYST],
-    },
-    {
-      label: "Vehicle Suppliers",
-      route: Routes.VehicleSuppliers,
-      roles: [Role.ADMINISTRATOR, Role.DIRECTOR, Role.ENGINEER_ANALYST],
-    },
-    {
-      label: "Administration",
-      route: Routes.Administration,
-      roles: [Role.ORGANIZATION_ADMINISTRATOR],
-    },
-  ];
+  /**
+   * Find the first sub-menu with at least one item having a route matching
+   *    the pattern of the current pathname. Then return that sub-menu with
+   *    all routes having the parameters replaced with the actual values.
+   * @param menus - An array of sub-menus to search for.
+   * @returns the first sub-menu with an item matching the current pathname,
+   *    with parameters replaced; or an empty array if no match is found.
+   */
+  const findMenuMatchingPathname = (menus: NavbarSubItems) => {
+    for (const label in menus) {
+      const menu = menus[label];
+      for (const item of menu) {
+        const params = checkRoute(item.route);
+        if (params) {
+          // Return the menu with params in all routes replaced with the actual values
+          return {
+            label,
+            menu: menu.map((item) => {
+              let newRoute = item.route;
+              Object.entries(params).forEach(([key, value]) => {
+                newRoute = newRoute.replace(`:${key}`, value);
+              });
+              return { ...item, route: newRoute };
+            }),
+          };
+        }
+      }
+    }
+    return {};
+  };
+
+  useEffect(() => {
+    const { label, menu } = findMenuMatchingPathname(subItems);
+    setActiveLabel(
+      label ?? mainItems.find((item) => checkRoute(item.route))?.label,
+    );
+    setActiveSubMenu(menu);
+  }, [pathname, mainItems, subItems]);
 
   return (
-    <Row className="w-full bg-defaultBackgroundBlue border-t-2 border-primaryYellow mr-[16rem] px-1 mb-3 text-white">
-      {navItems.map((item) => {
-        if (
-          item.roles.some((role) => user.roles?.includes(role)) ||
-          user.roles?.includes(Role.ADMINISTRATOR) ||
-          !item.roles.length
-        ) {
-          return (
+    <>
+      <Row className="w-full bg-defaultBackgroundBlue border-t-2 border-primaryYellow mr-[16rem] px-1 mb-3 text-white">
+        {mainItems.map((item) => (
+          <Link
+            key={item.label}
+            className={
+              "cursor-pointer px-2" +
+              (activeLabel === item.label
+                ? " border-b-2 border-primaryYellow"
+                : "")
+            }
+            href={item.route}
+          >
+            {item.label}
+          </Link>
+        ))}
+
+        <div className="ml-auto relative">
+          <div
+            onClick={() => setShowUserDropDown(!showUserDropDown)}
+            className="cursor-pointer flex flex-row items-center"
+          >
+            {userName}
+            {!showUserDropDown ? (
+              <FaAngleDown className="mt-[0.5px] ml-1" />
+            ) : (
+              <FaAngleUp className="mt-[0.5px] ml-1" />
+            )}
+          </div>
+          {showUserDropDown && (
+            <div
+              onClick={keycloakSignOut}
+              className="absolute right-0 bg-defaultBackgroundBlue border mt-[0.5px] p-2 shadow-lg cursor-pointer"
+            >
+              Sign Out
+            </div>
+          )}
+        </div>
+      </Row>
+
+      {activeSubMenu && (
+        <Row className="m-2 border-b border-gray-300">
+          {activeSubMenu.map((item, index) => (
             <Link
-              key={item.label}
+              key={index}
+              className={
+                "p-3 border border-gray-300" +
+                (checkRoute(item.route)
+                  ? " bg-blue-50 font-semibold text-defaultTextBlue border-black"
+                  : "")
+              }
               href={item.route}
-              className={`cursor-pointer px-2 ${pathname === item.route ? "border-b-2 border-primaryYellow" : ""}`}
             >
               {item.label}
             </Link>
-          );
-        }
-        return null;
-      })}
-
-      <div className="ml-auto relative">
-        <div
-          onClick={() => setShowUserDropDown(!showUserDropDown)}
-          className="cursor-pointer flex flex-row items-center"
-        >
-          {user?.name || "User"}
-          {!showUserDropDown ? (
-            <FaAngleDown className="mt-[0.5px] ml-1" />
-          ) : (
-            <FaAngleUp className="mt-[0.5px] ml-1" />
-          )}
-        </div>
-        {showUserDropDown && (
-          <div
-            onClick={keycloakSignOut}
-            className="absolute right-0 bg-defaultBackgroundBlue border mt-[0.5px] p-2 shadow-lg cursor-pointer"
-          >
-            Sign Out
-          </div>
-        )}
-      </div>
-    </Row>
+          ))}
+        </Row>
+      )}
+    </>
   );
 };

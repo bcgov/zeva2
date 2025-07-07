@@ -1,6 +1,7 @@
 "use server";
 
 import { getCompliancePeriod } from "@/app/lib/utils/complianceYear";
+import { getIsoYmdString } from "@/app/lib/utils/date";
 import { getUserInfo } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { ZevUnitTransaction } from "@/prisma/generated/client";
@@ -26,8 +27,8 @@ export async function getComplianceYears(orgId: number): Promise<number[]> {
 
 export type SerializedZevUnitTransaction = Omit<
   ZevUnitTransaction,
-  "numberOfUnits"
-> & { numberOfUnits: string };
+  "numberOfUnits" | "timestamp"
+> & { numberOfUnits: string; timestamp: string };
 
 export async function getTransactionsByComplianceYear(
   orgId: number,
@@ -49,6 +50,7 @@ export async function getTransactionsByComplianceYear(
       result.push({
         ...transaction,
         numberOfUnits: transaction.numberOfUnits.toString(),
+        timestamp: getIsoYmdString(transaction.timestamp),
       });
     });
   }

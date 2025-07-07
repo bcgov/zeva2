@@ -6,6 +6,7 @@
     "dev": "npm run pushSchemaToDB && next dev --turbopack",
     "pushSchemaToDB": "prisma format && prisma db push --schema prisma/schema.prisma --accept-data-loss",
     "seedFromOldDB": "prisma db push --schema prisma/schema.prisma --force-reset && prisma db pull --schema prisma/schemaOld.prisma && prisma generate --schema prisma/schemaOld.prisma && prisma db seed",
+    "pushAndSeed": "prisma db push --schema prisma/schema.prisma --force-reset --skip-generate && prisma db seed",
     "bullmqDev": "NODE_ENV=development tsx watch bullmq/index.ts",
     "bullmq": "NODE_ENV=production tsx bullmq/index.ts",
     "build": "next build",

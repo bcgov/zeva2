@@ -96,8 +96,8 @@ enum Role {
 }
 
 enum Idp {
+  AZURE_IDIR     @map("azureidir")
   BCEID_BUSINESS @map("bceidbusiness")
-  IDIR           @map("idir")
 }
 
 enum Notification {
@@ -129,7 +129,6 @@ enum Notification {
 model User {
   id                     Int                      @id @default(autoincrement())
   contactEmail           String?                  @map("contact_email")
-  idpEmail               String                   @map("idp_email")
   idpSub                 String?                  @map("idp_sub")
   idp                    Idp                      @map("idp")
   idpUsername            String                   @map("idp_username")
@@ -141,6 +140,7 @@ model User {
   notifications          Notification[]
   firstName              String                   @map("first_name")
   lastName               String                   @map("last_name")
+  wasUpdated             Boolean                  @default(false) @map("was_updated")
 
   vehicleCommentsCreated   VehicleComment[]           @relation("user that created comment")
   vehicleCommentsUpdated   VehicleComment[]           @relation("user that updated comment")
@@ -148,7 +148,7 @@ model User {
   CreditApplicationHistory CreditApplicationHistory[]
   PenaltyCreditHistory     PenaltyCreditHistory[]
 
-  @@unique([idp, idpUsername, idpEmail])
+  @@unique([idp, idpUsername])
   @@map("user")
 }
 
@@ -164,7 +164,7 @@ enum ReferenceType {
   OBLIGATION_REDUCTION
   ASSESSMENT_ADJUSTMENT
   SUPPLY_CREDITS
-  AGREEMENT_CREDITS
+  AGREEMENT
 }
 
 enum ZevClass {
@@ -179,19 +179,18 @@ enum VehicleClass {
 }
 
 model ZevUnitTransaction {
-  id             Int             @id @default(autoincrement())
-  organization   Organization    @relation(fields: [organizationId], references: [id])
-  organizationId Int             @map("organization_id")
-  type           TransactionType
-  // referenceType and referenceId nullable for now; make non-nullable later when
-  // associated models (e.g. agreements, transfers, etc.) created
-  referenceType  ReferenceType?  @map("reference_type")
-  referenceId    Int?            @map("reference_id")
-  numberOfUnits  Decimal         @map("number_of_units") @db.Decimal(65, 2)
-  zevClass       ZevClass        @map("zev_class")
-  vehicleClass   VehicleClass    @map("vehicle_class")
-  modelYear      ModelYear       @map("model_year")
-  timestamp      DateTime        @default(now()) @db.Timestamptz(6)
+  id                Int             @id @default(autoincrement())
+  organization      Organization    @relation(fields: [organizationId], references: [id])
+  organizationId    Int             @map("organization_id")
+  type              TransactionType
+  referenceType     ReferenceType   @map("reference_type")
+  referenceId       Int?            @map("reference_id")
+  legacyReferenceId Int?            @map("legacy_reference_id")
+  numberOfUnits     Decimal         @map("number_of_units") @db.Decimal(65, 2)
+  zevClass          ZevClass        @map("zev_class")
+  vehicleClass      VehicleClass    @map("vehicle_class")
+  modelYear         ModelYear       @map("model_year")
+  timestamp         DateTime        @default(now()) @db.Timestamptz(6)
 
   @@map("zev_unit_transaction")
 }
@@ -233,8 +232,6 @@ enum ZevUnitTransferStatuses {
 
 model ZevUnitTransfer {
   id                     Int                      @id @default(autoincrement())
-  // we display ids to the user, so they may expect to see the same ids from zeva1
-  legacyId               Int?                     @unique @map("legacy_id")
   transferToId           Int                      @map("transfer_to_id")
   transferTo             Organization             @relation("zevUnitTransferTo", fields: [transferToId], references: [id])
   transferFromId         Int                      @map("transfer_from_id")
@@ -407,6 +404,7 @@ enum IcbcFileStatus {
 
 model IcbcFile {
   id          Int            @id @default(autoincrement())
+  isLegacy    Boolean        @default(false) @map("is_legacy")
   name        String         @unique
   status      IcbcFileStatus
   timestamp   DateTime       @db.Timestamptz(6)

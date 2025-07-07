@@ -92,3 +92,15 @@ export const getOrganizations = async (
   const start = (page - 1) * pageSize;
   return [organizations.slice(start, start + pageSize), organizations.length];
 };
+
+export const getGovOrgId = async () => {
+  const orgs = await prisma.organization.findMany({
+    where: {
+      isGovernment: true,
+    },
+  });
+  if (orgs.length !== 1) {
+    throw new Error("Something is terribly wrong!");
+  }
+  return orgs[0].id;
+};

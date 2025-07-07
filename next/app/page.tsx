@@ -3,7 +3,7 @@ import { Button } from "@/app/lib/components/inputs";
 
 export default function Home() {
   const bceidSignin = keycloakSignIn.bind(null, "bceidbusiness");
-  const idirSignin = keycloakSignIn.bind(null, "idir");
+  const idirSignin = keycloakSignIn.bind(null, "azureidir");
   return (
     <div>
       <Button onClick={bceidSignin}>Sign in with BCeID</Button>

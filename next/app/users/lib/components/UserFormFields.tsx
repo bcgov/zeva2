@@ -1,96 +1,99 @@
-import React from "react";
+"use client";
+
+import { getRoleEnumsToStringsMap } from "@/app/lib/utils/enumMaps";
 import { Role } from "@/prisma/generated/client";
+import { useMemo } from "react";
 
 export function UserFormFields({
   form,
-  availableRoles,
+  selectedRoles,
+  govRoles,
   onChange,
   toggleRole,
 }: {
   form: any;
-  availableRoles: Role[];
+  selectedRoles: Role[];
+  govRoles: boolean;
   onChange: (field: string, value: any) => void;
   toggleRole: (role: Role) => void;
 }) {
+  const rolesMap = useMemo(() => {
+    return getRoleEnumsToStringsMap();
+  }, []);
+
+  const availableRoles = useMemo(() => {
+    if (govRoles) {
+      return [Role.ADMINISTRATOR, Role.DIRECTOR, Role.ENGINEER_ANALYST];
+    }
+    return [
+      Role.ORGANIZATION_ADMINISTRATOR,
+      Role.SIGNING_AUTHORITY,
+      Role.ZEVA_USER,
+    ];
+  }, [govRoles]);
+
   return (
     <>
-      <div>
-        <label>First Name</label>
+      <div className="flex items-center py-2 my-2">
+        <label className="w-72">First Name</label>
         <input
-          value={form.firstName}
-          onChange={(e) => onChange("firstName", e.target.value)}
+          name="firstName"
+          className="border p-2 w-full"
+          value={form.firstName ?? ""}
+          onChange={(e) => onChange(e.target.name, e.target.value)}
         />
       </div>
-      <div>
-        <label>Last Name</label>
+      <div className="flex items-center py-2 my-2">
+        <label className="w-72">Last Name</label>
         <input
-          value={form.lastName}
-          onChange={(e) => onChange("lastName", e.target.value)}
+          name="lastName"
+          className="border p-2 w-full"
+          value={form.lastName ?? ""}
+          onChange={(e) => onChange(e.target.name, e.target.value)}
         />
       </div>
-      <div>
-        <label>Contact Email</label>
+      <div className="flex items-center py-2 my-2">
+        <label className="w-72">Contact Email</label>
         <input
-          type="email"
-          value={form.contactEmail}
-          onChange={(e) => onChange("contactEmail", e.target.value)}
+          name="contactEmail"
+          className="border p-2 w-full"
+          value={form.contactEmail ?? ""}
+          onChange={(e) => onChange(e.target.name, e.target.value)}
         />
       </div>
-      <div>
-        <label>IDP Email</label>
+      <div className="flex items-center py-2 my-2">
+        <label className="w-72">IDP Username</label>
         <input
-          type="email"
-          value={form.idpEmail}
-          onChange={(e) => onChange("idpEmail", e.target.value)}
+          name="idpUsername"
+          className="border p-2 w-full"
+          value={form.idpUsername ?? ""}
+          onChange={(e) => onChange(e.target.name, e.target.value)}
         />
       </div>
-      <div>
-        <label>IDP Sub</label>
+      <div className="flex items-center py-2 my-2">
+        <label className="w-72">Is Active</label>
         <input
-          value={form.idpSub}
-          onChange={(e) => onChange("idpSub", e.target.value)}
+          className="border p-2 w-full"
+          type="checkbox"
+          name="isActive"
+          value="true"
+          checked={form.isActive === "true"}
+          onChange={(e) =>
+            onChange(e.target.name, e.target.checked ? "true" : "false")
+          }
         />
       </div>
-      <div>
-        <label>IDP Username</label>
-        <input
-          value={form.idpUsername}
-          onChange={(e) => onChange("idpUsername", e.target.value)}
-        />
-      </div>
-      <div>
-        <label>Status</label>
-        <label>
-          <input
-            type="radio"
-            name="isActive"
-            value="true"
-            checked={form.isActive === true}
-            onChange={() => onChange("isActive", true)}
-          />
-          Active
-        </label>
-        <label>
-          <input
-            type="radio"
-            name="isActive"
-            value="false"
-            checked={form.isActive === false}
-            onChange={() => onChange("isActive", false)}
-          />
-          Inactive
-        </label>
-      </div>
-      <div>
-        <label>Roles</label>
+      <div className="flex items-center py-2 my-2">
+        <label className="w-72">Roles</label>
         {availableRoles.map((role) => (
-          <label key={role}>
+          <label className="w-72" key={role}>
             <input
+              className="border p-2 w-full"
               type="checkbox"
-              checked={form.roles.includes(role)}
+              checked={selectedRoles.includes(role)}
               onChange={() => toggleRole(role)}
             />
-            {role.replaceAll("_", " ")}
+            {rolesMap[role]}
           </label>
         ))}
       </div>

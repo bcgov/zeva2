@@ -15,6 +15,7 @@ import {
   Role,
   TransactionType,
   Prisma,
+  ReferenceType,
 } from "@/prisma/generated/client";
 import { randomUUID } from "crypto";
 import Excel from "exceljs";
@@ -435,6 +436,8 @@ export const directorApprove = async (
     transactionsToCreate.push({
       organizationId: orgId,
       type: TransactionType.CREDIT,
+      referenceType: ReferenceType.SUPPLY_CREDITS,
+      referenceId: creditApplicationId,
       vehicleClass: credit.vehicleClass,
       zevClass: credit.zevClass,
       modelYear: credit.modelYear,
