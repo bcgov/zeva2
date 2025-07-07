@@ -1,25 +1,26 @@
-import Link from "next/link";
+// app/users/page.tsx
+import { Suspense } from "react";
+import { getPageParams } from "@/app/lib/utils/nextPage";
 import { fetchUsers } from "./lib/data";
-import { Button } from "@/app/lib/components";
-import { UserTable } from "./lib/components/UserTable";
-import { redirect } from "next/navigation";
-import { Routes } from "@/app/lib/constants";
+import { LoadingSkeleton } from "@/app/lib/components/skeletons";
+import UserTableClient from "./lib/components/UserTableClient";
 
-export default async function Users() {
-  const users = await fetchUsers();
+export default async function Page({ searchParams }) {
+  const { page, pageSize, filters, sorts } = getPageParams(
+    searchParams,
+    1,
+    10
+  );
+  const { users, totalCount } = await fetchUsers({
+    page,
+    pageSize,
+    filters,
+    sorts,
+  });
 
   return (
-    <div>
-      <Link href="/users/new">
-        <Button>New User</Button>
-      </Link>
-      <UserTable
-        users={users}
-        navigationAction={async (id: number) => {
-          "use server";
-          redirect(`${Routes.Users}/${id}`);
-        }}
-      />
-    </div>
+    <Suspense fallback={<LoadingSkeleton />}>
+      <UserTableClient users={users} totalCount={totalCount} />
+    </Suspense>
   );
 }
