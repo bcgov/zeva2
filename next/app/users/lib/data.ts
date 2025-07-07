@@ -18,12 +18,11 @@ export async function fetchUsers(opts: {
     sortOrder = "asc",
     filters = {},
   } = opts;
-  const { userIsGov, userOrgId } = await getUserInfo();
+  const { userOrgId } = await getUserInfo();
 
-  const where: Prisma.UserWhereInput = {};
-  if (!userIsGov) {
-    where.organizationId = userOrgId;
-  }
+  const where: Prisma.UserWhereInput = {
+    organizationId: userOrgId,
+  };
 
   for (const [id, value] of Object.entries(filters)) {
     if (id === "organization") {
