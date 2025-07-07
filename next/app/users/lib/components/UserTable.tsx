@@ -3,6 +3,7 @@
 import React, { useMemo } from "react";
 import { ColumnDef, createColumnHelper } from "@tanstack/react-table";
 import { Table } from "@/app/lib/components";
+import { useRouter } from "next/navigation";
 import type { UserWithOrgName } from "../data";
 
 export interface UserTableProps {
@@ -11,12 +12,12 @@ export interface UserTableProps {
   navigationAction?: (id: number) => void;
 }
 
-export const UserTable: React.FC<UserTableProps> = ({
+export default function UserTable({
   users,
   totalCount,
   navigationAction,
-  footer = false,
-}) => {
+}: UserTableProps) {
+  const router = useRouter();
   const columnHelper = createColumnHelper<UserWithOrgName>();
 
   const columns = useMemo<ColumnDef<UserWithOrgName, any>[]>(() => {
@@ -86,7 +87,9 @@ export const UserTable: React.FC<UserTableProps> = ({
       columns={columns}
       data={users}
       totalNumberOfRecords={totalCount}
-      navigationAction={navigationAction}
+      navigationAction={
+        navigationAction ?? ((id) => router.push(`/users/${id}`))
+      }
     />
   );
-};
+}
