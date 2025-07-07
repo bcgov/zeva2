@@ -4,7 +4,6 @@ import React, { useMemo } from "react";
 import { ColumnDef, createColumnHelper } from "@tanstack/react-table";
 import { Table } from "@/app/lib/components";
 import { VehicleSparseSerialized } from "./VehicleList";
-import Link from "next/link";
 import { getModelYearEnumsToStringsMap } from "@/app/lib/utils/enumMaps";
 
 export const VehicleTable = (props: {
@@ -99,16 +98,11 @@ export const VehicleTable = (props: {
   }, [columnHelper, props.vehicles]);
 
   return (
-    <>
-      <Link href="/vehicle/new">
-        <button>Add New Vehicle</button>
-      </Link>
-      <Table<VehicleSparseSerialized>
-        columns={columns}
-        data={props.vehicles}
-        totalNumberOfRecords={props.totalNumbeOfVehicles}
-        navigationAction={props.navigationAction}
-      />
-    </>
+    <Table<VehicleSparseSerialized>
+      columns={columns}
+      data={props.vehicles}
+      totalNumberOfRecords={props.totalNumbeOfVehicles}
+      navigationAction={props.navigationAction}
+    />
   );
 };

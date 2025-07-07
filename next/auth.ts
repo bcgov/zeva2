@@ -2,6 +2,7 @@ import NextAuth from "next-auth";
 import Keycloak from "next-auth/providers/keycloak";
 import { getActiveUser, resetFlag } from "./lib/data/user";
 import { Role } from "@/prisma/generated/client";
+import { userConfiguredCorrectly } from "./app/users/lib/utils";
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
   providers: [Keycloak],
@@ -12,7 +13,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     signIn: async ({ profile }) => {
       console.log("profile encountered at %s: %s", new Date(), profile);
       const user = await getActiveUser(profile);
-      if (user) {
+      if (user && userConfiguredCorrectly(user)) {
         await resetFlag(user.id);
         return true;
       }

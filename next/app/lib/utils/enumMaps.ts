@@ -11,6 +11,7 @@ import {
   PenaltyCreditStatus,
   Idp,
   Role,
+  ReferenceType,
 } from "@/prisma/generated/client";
 
 const lowerCaseAndCapitalize = (s: string) => {
@@ -126,6 +127,22 @@ export const getStringsToRoleEnumsMap = () => {
 export const getRoleEnumsToStringsMap = () => {
   const result: Partial<Record<Role, string>> = {};
   for (const value of Object.values(Role)) {
+    result[value] = getTransformed(value);
+  }
+  return result;
+};
+
+export const getStringsToReferenceTypeEnumsMap = () => {
+  const result: Partial<Record<string, ReferenceType>> = {};
+  for (const value of Object.values(ReferenceType)) {
+    result[getTransformed(value)] = value;
+  }
+  return result;
+};
+
+export const getReferenceTypeEnumsToStringsMap = () => {
+  const result: Partial<Record<ReferenceType, string>> = {};
+  for (const value of Object.values(ReferenceType)) {
     result[value] = getTransformed(value);
   }
   return result;

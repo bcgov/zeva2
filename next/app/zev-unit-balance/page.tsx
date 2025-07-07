@@ -17,7 +17,7 @@ export default async function BalancePage() {
           ) : (
             <BalanceTable balance={balance} />
           )}
-          <TransactionAccordion orgId={userOrgId} />
+          <TransactionAccordion orgId={userOrgId} userIsGov={userIsGov} />
         </main>
       );
     }
