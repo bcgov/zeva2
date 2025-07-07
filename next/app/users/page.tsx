@@ -1,9 +1,8 @@
-// app/users/page.tsx
 import { Suspense } from "react";
 import { getPageParams } from "@/app/lib/utils/nextPage";
 import { fetchUsers } from "./lib/data";
 import { LoadingSkeleton } from "@/app/lib/components/skeletons";
-import UserTableClient from "./lib/components/UserTableClient";
+import UserTable from "./lib/components/UserTableClient";
 
 export default async function Page({ searchParams }) {
   const { page, pageSize, filters, sorts } = getPageParams(
@@ -20,7 +19,7 @@ export default async function Page({ searchParams }) {
 
   return (
     <Suspense fallback={<LoadingSkeleton />}>
-      <UserTableClient users={users} totalCount={totalCount} />
+      <UserTable users={users} totalCount={totalCount} />
     </Suspense>
   );
 }
