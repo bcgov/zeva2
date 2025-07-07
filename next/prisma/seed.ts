@@ -2,24 +2,22 @@ import { prisma } from "@/lib/prisma";
 import { prismaOld } from "@/lib/prismaOld";
 import {
   ModelYear,
-  Role,
-  Idp,
   ZevClass,
   VehicleClass,
   BalanceType,
-  ZevUnitTransferStatuses,
   VehicleClassCode,
   VehicleZevType,
   VehicleStatus,
   CreditApplicationVinLegacy,
 } from "./generated/client";
-import { getModelYearEnum, getRoleEnum } from "@/lib/utils/getEnums";
+import { getModelYearEnum } from "@/lib/utils/getEnums";
 import { Decimal } from "./generated/client/runtime/library";
 import { Notification } from "./generated/client";
 import { isNotification } from "@/app/lib/utils/typeGuards";
 import seedOrganizations from "./seedProcesses/seedOrganizations";
 import { seedTransactions } from "./seedProcesses/seedTransactions";
 import { seedIcbc } from "./seedProcesses/seedIcbc";
+import { seedUsers } from "./seedProcesses/seedUsers";
 
 // prismaOld to interact with old zeva db; prisma to interact with new zeva db
 const main = () => {
@@ -29,13 +27,6 @@ const main = () => {
       const mapOfModelYearIdsToModelYearEnum: {
         [id: number]: ModelYear | undefined;
       } = {};
-      const mapOfRoleIdsToRoleEnum: { [id: number]: Role | undefined } = {};
-      const mapOfOldUserIdsToNewUserIds: { [id: number]: number | undefined } =
-        {};
-      const mapOfOldUsernamesToNewUserIds: {
-        [username: string]: number | undefined;
-      } = {};
-      const setOfNewGovUserIds = new Set<number>();
       const mapOfOldCreditClassIdsToZevClasses: {
         [id: number]: ZevClass | undefined;
       } = {};
@@ -47,70 +38,16 @@ const main = () => {
         );
       }
 
-      const rolesOld = await prismaOld.role.findMany();
-      for (const roleOld of rolesOld) {
-        mapOfRoleIdsToRoleEnum[roleOld.id] = getRoleEnum(roleOld.role_code);
-      }
-
       // seed organization tables
       const { mapOfOldOrgIdsToNewOrgIds } = await seedOrganizations(
         tx,
         mapOfModelYearIdsToModelYearEnum,
       );
 
-      // add users:
-      const usersOld = await prismaOld.user_profile.findMany({
-        include: {
-          organization: true,
-        },
-      });
-      for (const [index, userOld] of usersOld.entries()) {
-        if (!userOld.organization_id) {
-          throw new Error("user " + userOld.id + " with no org id!");
-        }
-        const orgIdNew = mapOfOldOrgIdsToNewOrgIds[userOld.organization_id];
-        if (!orgIdNew) {
-          throw new Error("user " + userOld.id + " with unknown org id!");
-        }
-        let idpSub = userOld.keycloak_user_id;
-        if (userOld.organization?.is_government && idpSub) {
-          idpSub = idpSub.split("@")[0] + "@azureidir";
-        }
-        const userNew = await tx.user.create({
-          data: {
-            contactEmail: userOld.email,
-            idpSub,
-            idp: userOld.organization?.is_government
-              ? Idp.AZURE_IDIR
-              : Idp.BCEID_BUSINESS,
-            idpUsername: userOld.username,
-            isActive: userOld.is_active,
-            organizationId: orgIdNew,
-            firstName: userOld.first_name ?? "",
-            lastName: userOld.last_name ?? "",
-          },
-        });
-        mapOfOldUserIdsToNewUserIds[userOld.id] = userNew.id;
-        mapOfOldUsernamesToNewUserIds[userOld.username] = userNew.id;
-        if (userOld.organization?.is_government) {
-          setOfNewGovUserIds.add(userNew.id);
-        }
-      }
-
-      // update each user with their roles:
-      const usersRolesOld = await prismaOld.user_role.findMany();
-      for (const userRoleOld of usersRolesOld) {
-        await tx.user.update({
-          where: {
-            id: mapOfOldUserIdsToNewUserIds[userRoleOld.user_profile_id],
-          },
-          data: {
-            roles: {
-              push: mapOfRoleIdsToRoleEnum[userRoleOld.role_id],
-            },
-          },
-        });
-      }
+      const mapOfOldUserIdsToNewUserIds = await seedUsers(
+        tx,
+        mapOfOldOrgIdsToNewOrgIds,
+      );
 
       const creditClassesOld = await prismaOld.credit_class_code.findMany();
       for (const creditClass of creditClassesOld) {
