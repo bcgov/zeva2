@@ -10,7 +10,9 @@ import { Role } from "@/prisma/generated/client";
 import UserTable from "./lib/components/UserTable";
 import { redirect } from "next/navigation";
 
-export default async function Page(props: { searchParams?: Promise<pageStringParams> }) {
+export default async function Page(props: {
+  searchParams?: Promise<pageStringParams>;
+}) {
   const { userIsGov, userRoles } = await getUserInfo();
   const searchParams = await props.searchParams;
   const { page, pageSize, filters, sorts } = getPageParams(searchParams, 1, 10);
