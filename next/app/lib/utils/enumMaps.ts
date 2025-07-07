@@ -119,7 +119,13 @@ export const getIdpEnumsToStringsMap = () => {
 export const getStringsToRoleEnumsMap = () => {
   const result: Partial<Record<string, Role>> = {};
   for (const value of Object.values(Role)) {
-    result[getTransformed(value)] = value;
+    if (value === Role.ENGINEER_ANALYST) {
+      result["Engineer/Analyst"] = value;
+    } else if (value === Role.ZEVA_USER) {
+      result["ZEVA User"] = value;
+    } else {
+      result[getTransformed(value)] = value;
+    }
   }
   return result;
 };
@@ -127,7 +133,13 @@ export const getStringsToRoleEnumsMap = () => {
 export const getRoleEnumsToStringsMap = () => {
   const result: Partial<Record<Role, string>> = {};
   for (const value of Object.values(Role)) {
-    result[value] = getTransformed(value);
+    if (value === Role.ENGINEER_ANALYST) {
+      result[value] = "Engineer/Analyst";
+    } else if (value === Role.ZEVA_USER) {
+      result[value] = "ZEVA User";
+    } else {
+      result[value] = getTransformed(value);
+    }
   }
   return result;
 };

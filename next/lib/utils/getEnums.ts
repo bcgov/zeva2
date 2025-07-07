@@ -1,30 +1,8 @@
-import { Idp, Role, ModelYear, AddressType } from "@/prisma/generated/client";
-
-export const getIdpEnum = (idpName?: string) => {
-  for (const idp of Object.keys(Idp)) {
-    const name = idp.toLowerCase().replaceAll("_", "");
-    if (name === idpName) {
-      return Idp[idp as keyof typeof Idp];
-    }
-  }
-  return undefined;
-};
+import { ModelYear, AddressType } from "@/prisma/generated/client";
 
 export const getModelYearEnum = (modelYear?: string | number) => {
   if (modelYear) {
     return ModelYear[("MY_" + modelYear) as keyof typeof ModelYear];
-  }
-  return undefined;
-};
-
-export const getRoleEnum = (role?: string) => {
-  if (role) {
-    return Role[
-      role
-        .toUpperCase()
-        .replaceAll(" ", "_")
-        .replaceAll("/", "_") as keyof typeof Role
-    ];
   }
   return undefined;
 };
