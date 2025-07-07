@@ -4,34 +4,57 @@ import { Prisma, Role, User } from "@/prisma/generated/client";
 
 export type UserWithOrgName = User & { organization?: { name: string } };
 
-export async function fetchUsers(): Promise<UserWithOrgName[]> {
-  let result;
-  const { userIsGov, userOrgId } = await getUserInfo();
-  const orderBy: Prisma.UserOrderByWithRelationInput[] = [
-    {
-      id: "asc",
-    },
-  ];
-  if (userIsGov) {
-    result = await prisma.user.findMany({
-      orderBy,
-      include: {
-        organization: {
-          select: {
-            name: true,
-          },
+export async function fetchUsers(opts: {
+  page?: number;
+  pageSize?: number;
+  sortBy?: string;
+  sortOrder?: "asc" | "desc";
+  filters?: Record<string, string>;
+}): Promise<{ users: UserWithOrgName[]; totalCount: number }> {
+  const {
+    page = 1,
+    pageSize = 10,
+    sortBy,
+    sortOrder = "asc",
+    filters = {},
+  } = opts;
+  const { userOrgId } = await getUserInfo();
+
+  const where: Prisma.UserWhereInput = {
+    organizationId: userOrgId,
+  };
+
+  for (const [id, value] of Object.entries(filters)) {
+    if (id === "organization") {
+      where.organization = {
+        is: {
+          name: { contains: value, mode: "insensitive" },
         },
-      },
-    });
-  } else {
-    result = await prisma.user.findMany({
-      where: {
-        organizationId: userOrgId,
-      },
-      orderBy,
-    });
+      };
+    } else {
+      where[id as keyof Prisma.UserWhereInput] = {
+        contains: value,
+        mode: "insensitive",
+      } as any;
+    }
   }
-  return result;
+
+  const orderBy: Prisma.UserOrderByWithRelationInput = sortBy
+    ? { [sortBy]: sortOrder }
+    : { id: "asc" };
+
+  const [users, totalCount] = await prisma.$transaction([
+    prisma.user.findMany({
+      where,
+      orderBy,
+      include: { organization: { select: { name: true } } },
+      skip: (page - 1) * pageSize,
+      take: pageSize,
+    }),
+    prisma.user.count({ where }),
+  ]);
+
+  return { users, totalCount };
 }
 
 export async function getUser(id: number) {
@@ -43,20 +66,20 @@ export async function getUser(id: number) {
       },
     },
   };
+
   if (userIsGov && userRoles.includes(Role.ADMINISTRATOR)) {
-    return await prisma.user.findUnique({
+    return prisma.user.findUnique({
       where: { id },
       include,
     });
   }
+
   if (!userIsGov && userRoles.includes(Role.ORGANIZATION_ADMINISTRATOR)) {
-    return await prisma.user.findUnique({
-      where: {
-        id: id,
-        organizationId: userOrgId,
-      },
+    return prisma.user.findUnique({
+      where: { id, organizationId: userOrgId },
       include,
     });
   }
+
   return null;
 }
