@@ -3,22 +3,27 @@
 import React, { useMemo } from "react";
 import { ColumnDef, createColumnHelper } from "@tanstack/react-table";
 import { Table } from "@/app/lib/components";
-import { useRouter } from "next/navigation";
 import type { UserWithOrgName } from "../data";
+import { getRoleEnumsToStringsMap } from "@/app/lib/utils/enumMaps";
 
 export interface UserTableProps {
   users: UserWithOrgName[];
   totalCount: number;
-  navigationAction?: (id: number) => void;
+  navigationAction: (id: number) => Promise<void>;
+  userIsGov: boolean;
 }
 
 export default function UserTable({
   users,
   totalCount,
   navigationAction,
+  userIsGov,
 }: UserTableProps) {
-  const router = useRouter();
   const columnHelper = createColumnHelper<UserWithOrgName>();
+
+  const rolesMap = useMemo(() => {
+    return getRoleEnumsToStringsMap();
+  }, []);
 
   const columns = useMemo<ColumnDef<UserWithOrgName, any>[]>(() => {
     const base: ColumnDef<UserWithOrgName, any>[] = [
@@ -46,28 +51,25 @@ export default function UserTable({
         enableSorting: true,
         enableColumnFilter: true,
       }),
-      columnHelper.accessor("idpEmail", {
-        header: () => <span>IDP Email</span>,
-        cell: (info) => info.getValue(),
-        enableSorting: true,
-        enableColumnFilter: true,
-      }),
       columnHelper.accessor("isActive", {
         header: () => <span>Status</span>,
         cell: (info) => (info.getValue() ? "Active" : "Inactive"),
         enableSorting: true,
         enableColumnFilter: true,
       }),
-      columnHelper.accessor((row) => row.roles.join(", "), {
-        id: "roles",
-        header: () => <span>Roles</span>,
-        cell: (info) => info.getValue(),
-        enableSorting: true,
-        enableColumnFilter: true,
-      }),
+      columnHelper.accessor(
+        (row) => row.roles.map((role) => rolesMap[role]).join(", "),
+        {
+          id: "roles",
+          header: () => <span>Roles</span>,
+          cell: (info) => info.getValue(),
+          enableSorting: false,
+          enableColumnFilter: true,
+        },
+      ),
     ];
 
-    if (users.some((u) => u.organization)) {
+    if (userIsGov) {
       base.unshift(
         columnHelper.accessor((row) => row.organization?.name, {
           id: "organization",
@@ -75,21 +77,18 @@ export default function UserTable({
           cell: (info) => info.getValue(),
           enableSorting: true,
           enableColumnFilter: true,
-        })
+        }),
       );
     }
-
     return base;
-  }, [users]);
+  }, [users, userIsGov]);
 
   return (
     <Table<UserWithOrgName>
       columns={columns}
       data={users}
       totalNumberOfRecords={totalCount}
-      navigationAction={
-        navigationAction ?? ((id) => router.push(`/users/${id}`))
-      }
+      navigationAction={navigationAction}
     />
   );
 }

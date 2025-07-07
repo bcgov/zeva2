@@ -1,59 +1,48 @@
 import { getUserInfo } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { Prisma, Role, User } from "@/prisma/generated/client";
+import { getOrderByClause, getWhereClause } from "./utils";
 
 export type UserWithOrgName = User & { organization?: { name: string } };
 
-export async function fetchUsers(opts: {
-  page?: number;
-  pageSize?: number;
-  sortBy?: string;
-  sortOrder?: "asc" | "desc";
-  filters?: Record<string, string>;
-}): Promise<{ users: UserWithOrgName[]; totalCount: number }> {
-  const {
-    page = 1,
-    pageSize = 10,
-    sortBy,
-    sortOrder = "asc",
-    filters = {},
-  } = opts;
-  const { userOrgId } = await getUserInfo();
-
-  const where: Prisma.UserWhereInput = {
-    organizationId: userOrgId,
-  };
-
-  for (const [id, value] of Object.entries(filters)) {
-    if (id === "organization") {
-      where.organization = {
-        is: {
-          name: { contains: value, mode: "insensitive" },
-        },
-      };
-    } else {
-      where[id as keyof Prisma.UserWhereInput] = {
-        contains: value,
-        mode: "insensitive",
-      } as any;
-    }
+export async function fetchUsers(
+  page: number,
+  pageSize: number,
+  filters: Record<string, string>,
+  sorts: Record<string, string>,
+): Promise<{ users: UserWithOrgName[]; totalCount: number }> {
+  const { userIsGov, userOrgId, userRoles } = await getUserInfo();
+  if (userIsGov && !userRoles.includes(Role.ADMINISTRATOR)) {
+    throw new Error("Unauthorized!");
   }
-
-  const orderBy: Prisma.UserOrderByWithRelationInput = sortBy
-    ? { [sortBy]: sortOrder }
-    : { id: "asc" };
-
+  if (!userIsGov && !userRoles.includes(Role.ORGANIZATION_ADMINISTRATOR)) {
+    throw new Error("Unauthorized!");
+  }
+  const skip = (page - 1) * pageSize;
+  const take = pageSize;
+  let where = getWhereClause(filters, userIsGov);
+  const orderBy = getOrderByClause(sorts, true, userIsGov);
+  if (!userIsGov) {
+    where = { ...where, organizationId: userOrgId };
+  }
+  const include: Prisma.UserInclude = {};
+  if (userIsGov) {
+    include["organization"] = {
+      select: {
+        name: true,
+      },
+    };
+  }
   const [users, totalCount] = await prisma.$transaction([
     prisma.user.findMany({
       where,
       orderBy,
-      include: { organization: { select: { name: true } } },
-      skip: (page - 1) * pageSize,
-      take: pageSize,
+      include,
+      skip,
+      take,
     }),
     prisma.user.count({ where }),
   ]);
-
   return { users, totalCount };
 }
 
@@ -68,14 +57,14 @@ export async function getUser(id: number) {
   };
 
   if (userIsGov && userRoles.includes(Role.ADMINISTRATOR)) {
-    return prisma.user.findUnique({
+    return await prisma.user.findUnique({
       where: { id },
       include,
     });
   }
 
   if (!userIsGov && userRoles.includes(Role.ORGANIZATION_ADMINISTRATOR)) {
-    return prisma.user.findUnique({
+    return await prisma.user.findUnique({
       where: { id, organizationId: userOrgId },
       include,
     });
