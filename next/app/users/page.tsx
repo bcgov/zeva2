@@ -1,5 +1,5 @@
 import { Suspense } from "react";
-import { getPageParams } from "@/app/lib/utils/nextPage";
+import { getPageParams, pageStringParams } from "@/app/lib/utils/nextPage";
 import { fetchUsers } from "./lib/data";
 import { LoadingSkeleton } from "@/app/lib/components/skeletons";
 import Link from "next/link";
@@ -10,12 +10,9 @@ import { Role } from "@/prisma/generated/client";
 import UserTable from "./lib/components/UserTable";
 import { redirect } from "next/navigation";
 
-export default async function Page({
-  searchParams,
-}: {
-  searchParams: Record<string, string>;
-}) {
+export default async function Page(props: { searchParams?: Promise<pageStringParams> }) {
   const { userIsGov, userRoles } = await getUserInfo();
+  const searchParams = await props.searchParams;
   const { page, pageSize, filters, sorts } = getPageParams(searchParams, 1, 10);
   const { users, totalCount } = await fetchUsers(
     page,
