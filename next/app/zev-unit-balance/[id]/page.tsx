@@ -1,6 +1,7 @@
 import { fetchBalance, getOrg } from "../lib/data";
 import BalanceTable from "../lib/components/BalanceTable";
 import TransactionAccordion from "../lib/components/TransactionAccordion";
+import { getUserInfo } from "@/auth";
 
 type Props = { params: Promise<{ id: string }> };
 
@@ -9,6 +10,7 @@ export default async function OrgBalancePage({ params }: Props) {
   const orgId = Number(args.id);
   const org = await getOrg(orgId);
   const balance = await fetchBalance(orgId);
+  const { userIsGov } = await getUserInfo();
 
   if (org && balance) {
     return (
@@ -20,7 +22,7 @@ export default async function OrgBalancePage({ params }: Props) {
         ) : (
           <BalanceTable balance={balance} />
         )}
-        <TransactionAccordion orgId={orgId} />
+        <TransactionAccordion orgId={orgId} userIsGov={userIsGov} />
       </main>
     );
   }

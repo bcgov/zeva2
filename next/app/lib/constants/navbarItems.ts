@@ -62,7 +62,6 @@ export const navbarSubItems: NavbarSubItems = {
     {
       label: "Credit Applications",
       route: Routes.CreditApplication,
-      roles: govRoles,
     },
     {
       label: "Credit Balance",
