@@ -12,19 +12,34 @@ import {
 import { createHistory, validatePenaltyCredit } from "./services";
 import { Decimal } from "@/prisma/generated/client/runtime/library";
 import { getPenaltyCreditTransactionDate } from "./utils";
+import {
+  DataOrErrorActionResponse,
+  ErrorOrSuccessActionResponse,
+  getDataActionResponse,
+  getErrorActionResponse,
+  getSuccessActionResponse,
+} from "@/app/lib/utils/actionResponse";
 
 export type PenaltyCreditPayload = Omit<
   PenaltyCredit,
   "id" | "status" | "numberOfUnits"
 > & { numberOfUnits: Decimal | string; comment?: string };
 
-export const analystSubmit = async (data: PenaltyCreditPayload) => {
+export const analystSubmit = async (
+  data: PenaltyCreditPayload,
+): Promise<DataOrErrorActionResponse<number>> => {
   let result = NaN;
   const { userIsGov, userRoles, userId } = await getUserInfo();
   if (!(userIsGov && userRoles.includes(Role.ENGINEER_ANALYST))) {
-    throw new Error("Unauthorized!");
+    return getErrorActionResponse("Unauthorized!");
   }
-  await validatePenaltyCredit(data);
+  try {
+    await validatePenaltyCredit(data);
+  } catch (e) {
+    if (e instanceof Error) {
+      return getErrorActionResponse(e.message);
+    }
+  }
   const comment = data.comment;
   delete data.comment;
   await prisma.$transaction(async (tx) => {
@@ -43,17 +58,20 @@ export const analystSubmit = async (data: PenaltyCreditPayload) => {
       tx,
     );
   });
-  return result;
+  if (Number.isNaN(result)) {
+    return getErrorActionResponse("Something went wrong!");
+  }
+  return getDataActionResponse<number>(result);
 };
 
 export const directorUpdate = async (
   penaltyCreditId: number,
   status: PenaltyCreditStatus,
   comment?: string,
-) => {
+): Promise<ErrorOrSuccessActionResponse> => {
   const { userIsGov, userRoles, userId } = await getUserInfo();
   if (!(userIsGov && userRoles.includes(Role.DIRECTOR))) {
-    throw new Error("Unauthorized!");
+    return getErrorActionResponse("Unauthorized!");
   }
   const penaltyCredit = await prisma.penaltyCredit.findUnique({
     where: {
@@ -66,9 +84,15 @@ export const directorUpdate = async (
     (status !== PenaltyCreditStatus.APPROVED &&
       status !== PenaltyCreditStatus.REJECTED)
   ) {
-    throw new Error("Invalid Action");
+    return getErrorActionResponse("Invalid Action!");
   }
-  await validatePenaltyCredit(penaltyCredit);
+  try {
+    await validatePenaltyCredit(penaltyCredit);
+  } catch (e) {
+    if (e instanceof Error) {
+      return getErrorActionResponse(e.message);
+    }
+  }
   await prisma.$transaction(async (tx) => {
     await tx.penaltyCredit.update({
       where: {
@@ -97,4 +121,5 @@ export const directorUpdate = async (
     }
     await createHistory(penaltyCreditId, userId, status, comment, tx);
   });
+  return getSuccessActionResponse();
 };

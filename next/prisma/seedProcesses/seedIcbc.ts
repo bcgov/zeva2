@@ -2,6 +2,7 @@ import { TransactionClient } from "@/types/prisma";
 import { IcbcFileStatus, IcbcRecord, ModelYear } from "../generated/client";
 import { prismaOld } from "@/lib/prismaOld";
 import { randomUUID } from "crypto";
+import { getIsoYmdString, validateDate } from "@/app/lib/utils/date";
 
 export const seedIcbc = async (
   tx: TransactionClient,
@@ -14,12 +15,21 @@ export const seedIcbc = async (
     if (!name) {
       name = `seedGen-${randomUUID()}`;
     }
+    const oldTs = fileOld.upload_date;
+    oldTs.setDate(oldTs.getDate() + 1);
+    const newDateString = getIsoYmdString(oldTs);
+    const [dateIsValid, newTs] = validateDate(newDateString);
+    if (!dateIsValid) {
+      throw new Error(
+        "Error parsing the upload date of the icbc file  with id " + fileOld.id,
+      );
+    }
     const newFile = await tx.icbcFile.create({
       data: {
         name,
         isLegacy: true,
         status: IcbcFileStatus.SUCCESS,
-        timestamp: fileOld.upload_date,
+        timestamp: newTs,
       },
     });
     mapOfOldFileIdsToNewFileIds[fileOld.id] = newFile.id;

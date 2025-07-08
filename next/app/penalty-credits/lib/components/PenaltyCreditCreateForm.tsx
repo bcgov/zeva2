@@ -1,7 +1,7 @@
 "use client";
 
 import { JSX, useCallback, useMemo, useState, useTransition } from "react";
-import { PenaltyCreditPayload } from "../actions";
+import { analystSubmit } from "../actions";
 import { OrgNamesAndIds } from "../data";
 import {
   getStringsToModelYearsEnumsMap,
@@ -11,11 +11,13 @@ import {
 import { Button } from "@/app/lib/components";
 import { getPenaltyCreditPayload } from "../utilsClient";
 import { ZevClass } from "@/prisma/generated/client";
+import { useRouter } from "next/navigation";
+import { Routes } from "@/app/lib/constants";
 
 export const PenaltyCreditCreateForm = (props: {
   orgNamesAndIds: OrgNamesAndIds[];
-  submitAction: (data: PenaltyCreditPayload) => Promise<void>;
 }) => {
+  const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string>("");
   const [data, setData] = useState<Partial<Record<string, string>>>({});
@@ -73,14 +75,18 @@ export const PenaltyCreditCreateForm = (props: {
     startTransition(async () => {
       try {
         const payload = getPenaltyCreditPayload(data);
-        await props.submitAction(payload);
+        const response = await analystSubmit(payload);
+        if (response.responseType === "error") {
+          throw new Error(response.message);
+        }
+        router.push(`${Routes.PenaltyCredit}/${response.data}`);
       } catch (e) {
         if (e instanceof Error) {
           setError(e.message);
         }
       }
     });
-  }, [data, props.submitAction]);
+  }, [data, router]);
 
   return (
     <div>
