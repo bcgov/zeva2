@@ -23,7 +23,14 @@ export const PenaltyCreditActionsClient = (props: {
       startTransition(async () => {
         try {
           const commentToSubmit = comment === "" ? undefined : comment;
-          await directorUpdate(props.penaltyCreditId, status, commentToSubmit);
+          const response = await directorUpdate(
+            props.penaltyCreditId,
+            status,
+            commentToSubmit,
+          );
+          if (response.responseType === "error") {
+            throw new Error(response.message);
+          }
           router.refresh();
         } catch (e) {
           if (e instanceof Error) {

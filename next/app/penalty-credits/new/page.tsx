@@ -12,22 +12,12 @@ const Page = async () => {
     return null;
   }
   const orgNamesAndIds = await getOrgNamesAndIds();
-  const submitAction = async (data: PenaltyCreditPayload) => {
-    "use server";
-    const penaltyCreditId = await analystSubmit(data);
-    if (!Number.isNaN(penaltyCreditId)) {
-      redirect(`${Routes.PenaltyCredit}/${penaltyCreditId}`);
-    }
-  };
   return (
     <div className="max-w-xl mx-auto p-4">
       <h1 className="text-xl font-bold mb-4">
         Submit Penalty Credits To Director
       </h1>
-      <PenaltyCreditCreateForm
-        orgNamesAndIds={orgNamesAndIds}
-        submitAction={submitAction}
-      />
+      <PenaltyCreditCreateForm orgNamesAndIds={orgNamesAndIds} />
     </div>
   );
 };
