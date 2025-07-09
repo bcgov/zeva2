@@ -8,4 +8,11 @@ RUN npm install
 
 RUN npx prisma generate && npx prisma generate --schema prisma/schemaOld.prisma
 
-CMD ["/bin/sh", "-c", "if [ -f /vault/secrets/config ]; then . /vault/secrets/config; fi; npm run bullmq"]
+CMD ["/bin/sh", "-c", "\
+  for cfg in minio; do \
+    if [ -f /vault/secrets/$cfg ]; then \
+      . /vault/secrets/$cfg; \
+    fi; \
+  done; \
+  npm run bullmq\
+"]
