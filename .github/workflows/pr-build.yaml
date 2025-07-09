@@ -16,7 +16,6 @@ env:
   DEV_NAMESPACE: ${{ secrets.OPENSHIFT_NAMESPACE_PLATE }}-dev
   PR_NUMBER: ${{ github.event.pull_request.number }}
 
-
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
@@ -126,7 +125,7 @@ jobs:
             if (!allowedAuthors.includes(prAuthor)) {
               throw new Error(`PR author ${prAuthor} is not allowed.`);
             }
-      
+
   # build zeva2 from pull request
   build:
     name: Build Zeva2 Pull Request
@@ -151,7 +150,7 @@ jobs:
         with:
           path: /usr/local/bin/oc
           key: oc-cli-${{ runner.os }}
-          
+
       - name: Log in to Openshift
         uses: redhat-actions/oc-login@v1.3
         with:
@@ -165,7 +164,7 @@ jobs:
           echo "VERSION=${{ needs.versioning.outputs.VERSION }}"
           oc tag ${{ env.TOOLS_NAMESPACE }}/zeva2-next:${{ needs.versioning.outputs.VERSION}} ${{ env.DEV_NAMESPACE}}/zeva2-next:${{ needs.versioning.outputs.VERSION}}
           oc tag ${{  env.TOOLS_NAMESPACE }}/zeva2-bullmq:${{ needs.versioning.outputs.VERSION}} ${{ env.DEV_NAMESPACE }}/zeva2-bullmq:${{ needs.versioning.outputs.VERSION}}
-    
+
   # Kick off the redis and postgresql for the pull request
   # Deploys the pull request to development environment
   deploy:
@@ -175,7 +174,6 @@ jobs:
     timeout-minutes: 60
 
     steps:
-
       - name: Checkout Manifest repository
         uses: actions/checkout@v4.1.1
         with:
@@ -191,9 +189,10 @@ jobs:
             yq -i '.route.host = "zeva2-dev-${{ env.PR_NUMBER}}.apps.silver.devops.gov.bc.ca"' zeva2/zeva2-next/values-dev-pr.yaml
             yq -i '(.env[] | select(.name=="DATABASE_URL").value) = "postgresql://test:test@zeva2-postgresql-dev-${{ env.PR_NUMBER}}.${{ env.DEV_NAMESPACE }}.svc.cluster.local:5432/zeva?schema=public"' zeva2/zeva2-next/values-dev-pr.yaml
             yq -i '(.env[] | select(.name=="DATABASE_URL_OLD").value) = "postgresql://test:test@zeva2-postgresql-dev-${{ env.PR_NUMBER}}.${{ env.DEV_NAMESPACE }}.svc.cluster.local:5432/zeva?schema=public"' zeva2/zeva2-next/values-dev-pr.yaml
+            yq -i '(.env[] | select(.name=="AUTH_URL").value) = "https://zeva2-dev-${{ env.PR_NUMBER}}.apps.silver.devops.gov.bc.ca/api/auth"' zeva2/zeva2-next/values-dev-pr.yaml
             yq -i '.image.tag = "${{ needs.versioning.outputs.VERSION }}"' zeva2/zeva2-bullmq/values-dev-pr.yaml
             yq -i '(.env[] | select(.name=="DATABASE_URL").value) = "postgresql://test:test@zeva2-postgresql-dev-${{ env.PR_NUMBER}}.${{ env.DEV_NAMESPACE }}.svc.cluster.local:5432/zeva?schema=public"' zeva2/zeva2-bullmq/values-dev-pr.yaml
-            
+
       - name: Restore oc command from Cache
         uses: actions/cache@v4.2.0
         with:
