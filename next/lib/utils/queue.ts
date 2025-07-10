@@ -24,10 +24,15 @@ export const addJobToEmailQueue = async (
   await queue.add("anEmailJob", payload, opts);
 };
 
+// the icbc job will only be attempted once
 export const addJobToIcbcQueue = async (
   icbcFileId: number,
   opts?: JobsOptions,
 ) => {
   const queue = getQueue(icbcQueueName);
-  await queue.add("processIcbcFileJob", { icbcFileId }, opts);
+  await queue.add(
+    "processIcbcFileJob",
+    { icbcFileId },
+    { ...opts, attempts: 1 },
+  );
 };

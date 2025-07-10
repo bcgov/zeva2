@@ -403,12 +403,14 @@ enum IcbcFileStatus {
 }
 
 model IcbcFile {
-  id          Int            @id @default(autoincrement())
-  isLegacy    Boolean        @default(false) @map("is_legacy")
-  name        String         @unique
-  status      IcbcFileStatus
-  timestamp   DateTime       @db.Timestamptz(6)
-  icbcRecords IcbcRecord[]
+  id                            Int            @id @default(autoincrement())
+  isLegacy                      Boolean        @default(false) @map("is_legacy")
+  name                          String         @unique
+  status                        IcbcFileStatus
+  timestamp                     DateTime       @db.Timestamptz(6)
+  numberOfRecordsPreProcessing  Int?           @map("number_of_records_pre_processing")
+  numberOfRecordsPostProcessing Int?           @map("number_of_records_post_processing")
+  icbcRecords                   IcbcRecord[]
 
   @@map("icbc_file")
 }

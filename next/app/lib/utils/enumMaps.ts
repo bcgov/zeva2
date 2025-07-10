@@ -14,7 +14,7 @@ import {
   ReferenceType,
 } from "@/prisma/generated/client";
 
-const lowerCaseAndCapitalize = (s: string) => {
+export const lowerCaseAndCapitalize = (s: string) => {
   const firstLetter = s.charAt(0);
   const lowerCasedTail = s.toLowerCase().slice(1);
   return firstLetter + lowerCasedTail;

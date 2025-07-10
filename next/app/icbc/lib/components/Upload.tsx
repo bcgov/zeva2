@@ -1,43 +1,70 @@
 "use client";
+
 import axios from "axios";
 import { Dropzone } from "@/app/lib/components/Dropzone";
 import { useCallback, useState } from "react";
+import { useRouter } from "next/navigation";
+import { createIcbcFile, getPutObjectData } from "../actions";
+import { Routes } from "@/app/lib/constants";
 
-export const Upload = (props: {
-  getPutData: () => Promise<{ objectName: string; url: string } | undefined>;
-  createFile: (filename: string, datestring: string) => Promise<void>;
-}) => {
+export const Upload = () => {
+  const router = useRouter();
   const [datestring, setDatestring] = useState<string>("");
+  const [error, setError] = useState<string>("");
+
   const handleSubmit = useCallback(
     async (files: File[]) => {
-      if (files.length === 1) {
+      try {
+        if (files.length !== 1) {
+          throw new Error("Exactly 1 file expected!");
+        }
         const file = files[0];
-        const putData = await props.getPutData();
-        if (putData) {
-          const objectName = putData.objectName;
-          const url = putData.url;
-          await axios.put(url, file);
-          await props.createFile(objectName, datestring);
+        const getPutResponse = await getPutObjectData();
+        if (getPutResponse.responseType === "error") {
+          throw new Error(getPutResponse.message);
+        }
+        const objectName = getPutResponse.data.objectName;
+        const url = getPutResponse.data.url;
+        await axios.put(url, file);
+        const createResponse = await createIcbcFile(objectName, datestring);
+        if (createResponse.responseType === "error") {
+          throw new Error(createResponse.message);
+        }
+        router.push(Routes.Icbc);
+      } catch (e) {
+        if (e instanceof Error) {
+          setError(e.message);
         }
       }
     },
-    [props, datestring],
+    [datestring, router],
   );
+
   return (
     <div>
-      <input
-        className="border-2 border-solid"
-        placeholder="YYYY-MM-DD"
-        value={datestring}
-        onChange={(event) => {
-          setDatestring(event.target.value);
-        }}
-      />
-      <Dropzone
-        handleSubmit={handleSubmit}
-        maxNumberOfFiles={1}
-        allowedFileTypes={{ "text/csv": [".csv"] }}
-      />
+      {error && <p className="text-red-600">{error}</p>}
+      <div className="flex items-center py-2 my-2">
+        <label htmlFor="date" className="w-72">
+          Date
+        </label>
+        <input
+          name="date"
+          type="text"
+          placeholder="YYYY-MM-DD"
+          onChange={(e) => {
+            setDatestring(e.target.value);
+          }}
+          value={datestring}
+          className="border p-2 w-full"
+        />
+      </div>
+      <div className="flex items-center py-2 my-2">
+        <Dropzone
+          handleSubmit={handleSubmit}
+          maxNumberOfFiles={1}
+          allowedFileTypes={{ "text/csv": [".csv"] }}
+        />
+      </div>
     </div>
   );
 };
