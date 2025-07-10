@@ -65,6 +65,7 @@ services:
       - SENDER_NAME
       - START_WORKERS=false
       - TZ=America/Vancouver
+      - REDIS_TLS_DISABLED=true
     depends_on:
       db:
         condition: service_healthy
@@ -91,6 +92,7 @@ services:
       - CHECKPOINT_DISABLE=1
       - START_WORKERS=true
       - TZ=America/Vancouver
+      - REDIS_TLS_DISABLED=true
     depends_on:
       next:
         condition: service_healthy
