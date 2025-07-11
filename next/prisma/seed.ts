@@ -14,7 +14,7 @@ import { getModelYearEnum } from "@/lib/utils/getEnums";
 import { Decimal } from "./generated/client/runtime/library";
 import { Notification } from "./generated/client";
 import { isNotification } from "@/app/lib/utils/typeGuards";
-import seedOrganizations from "./seedProcesses/seedOrganizations";
+import { seedOrganizations } from "./seedProcesses/seedOrganizations";
 import { seedTransactions } from "./seedProcesses/seedTransactions";
 import { seedIcbc } from "./seedProcesses/seedIcbc";
 import { seedUsers } from "./seedProcesses/seedUsers";
