@@ -48,6 +48,7 @@ model Organization {
   ldvSupplied           OrganizationLDVSupplied[]
   CreditApplication     CreditApplication[]
   PenaltyCredit         PenaltyCredit[]
+  agreements            Agreement[]
 
   @@map("organization")
 }
@@ -147,6 +148,7 @@ model User {
   vehicleStatusChanged     VehicleChangeHistory[]     @relation("user that changed the status")
   CreditApplicationHistory CreditApplicationHistory[]
   PenaltyCreditHistory     PenaltyCreditHistory[]
+  agreementHistory         AgreementHistory[]
 
   @@unique([idp, idpUsername])
   @@map("user")
@@ -545,4 +547,65 @@ model PenaltyCreditHistory {
   comment         String?
 
   @@map("penalty_credit_history")
+}
+
+enum AgreementType {
+  INITIATIVE
+  PURCHASE
+}
+
+enum AgreementStatus {
+  DRAFT
+  RECOMMEND_APPROVAL
+  RETURNED_TO_ANALYST
+  ISSUED
+  DELETED
+}
+
+enum AgreementUserAction {
+  SAVED
+  RECOMMEND_APPROVAL
+  RETURNED_TO_ANALYST
+  ISSUED
+  DELETED
+  ADDED_COMMENT_GOV_INTERNAL
+}
+
+model Agreement {
+  id               Int                @id @default(autoincrement())
+  optionalId       String?            @map("optional_id")
+  organization     Organization       @relation(fields: [organizationId], references: [id])
+  organizationId   Int                @map("organization_id")
+  agreementType    AgreementType      @map("agreement_type")
+  status           AgreementStatus
+  effectiveDate    DateTime?          @map("effective_date")
+  comment          String?
+  agreementContent AgreementContent[]
+  agreementHistory AgreementHistory[]
+
+  @@map("agreement")
+}
+
+model AgreementContent {
+  id            Int       @id @default(autoincrement())
+  agreement     Agreement @relation(fields: [agreementId], references: [id])
+  agreementId   Int       @map("agreement_id")
+  zevClass      ZevClass  @map("zev_class")
+  modelYear     ModelYear @map("model_year")
+  numberOfUnits Decimal   @map("number_of_units") @db.Decimal(65, 2)
+
+  @@map("agreement_content")
+}
+
+model AgreementHistory {
+  id          Int             @id @default(autoincrement())
+  agreementId Int             @map("agreement_id")
+  agreement   Agreement       @relation(fields: [agreementId], references: [id])
+  userId      Int             @map("user_id")
+  user        User            @relation(fields: [userId], references: [id])
+  timestamp   DateTime        @default(now()) @db.Timestamptz(6)
+  userAction  AgreementStatus @map("user_action")
+  comment     String?
+
+  @@map("agreement_history")
 }
