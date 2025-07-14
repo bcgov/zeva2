@@ -1,7 +1,7 @@
 import { getUserInfo } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { Prisma, Role, User } from "@/prisma/generated/client";
-import { getOrderByClause, getWhereClause } from "./utils";
+import { getOrderByClause, getWhereClause, userIsAdmin } from "./utils";
 
 export type UserWithOrgName = User & { organization?: { name: string } };
 
@@ -11,13 +11,14 @@ export async function fetchUsers(
   filters: Record<string, string>,
   sorts: Record<string, string>,
 ): Promise<{ users: UserWithOrgName[]; totalCount: number }> {
-  const { userIsGov, userOrgId, userRoles } = await getUserInfo();
-  if (userIsGov && !userRoles.includes(Role.ADMINISTRATOR)) {
-    throw new Error("Unauthorized!");
+  const isAdmin = await userIsAdmin();
+  if (!isAdmin) {
+    return {
+      users: [],
+      totalCount: 0,
+    };
   }
-  if (!userIsGov && !userRoles.includes(Role.ORGANIZATION_ADMINISTRATOR)) {
-    throw new Error("Unauthorized!");
-  }
+  const { userIsGov, userOrgId } = await getUserInfo();
   const skip = (page - 1) * pageSize;
   const take = pageSize;
   let where = getWhereClause(filters, userIsGov);

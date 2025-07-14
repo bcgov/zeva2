@@ -6,14 +6,15 @@ import Link from "next/link";
 import { Routes } from "../lib/constants";
 import { Button } from "../lib/components";
 import { getUserInfo } from "@/auth";
-import { Role } from "@/prisma/generated/client";
 import UserTable from "./lib/components/UserTable";
 import { redirect } from "next/navigation";
+import { userIsAdmin } from "./lib/utils";
 
 export default async function Page(props: {
   searchParams?: Promise<pageStringParams>;
 }) {
-  const { userIsGov, userRoles } = await getUserInfo();
+  const { userIsGov } = await getUserInfo();
+  const isAdmin = await userIsAdmin();
   const searchParams = await props.searchParams;
   const { page, pageSize, filters, sorts } = getPageParams(searchParams, 1, 10);
   const { users, totalCount } = await fetchUsers(
@@ -25,8 +26,7 @@ export default async function Page(props: {
 
   return (
     <Suspense key={Date.now()} fallback={<LoadingSkeleton />}>
-      {(userRoles.includes(Role.ADMINISTRATOR) ||
-        userRoles.includes(Role.ORGANIZATION_ADMINISTRATOR)) && (
+      {isAdmin && (
         <Link href={`${Routes.Users}/new`}>
           <Button>Create New User</Button>
         </Link>
