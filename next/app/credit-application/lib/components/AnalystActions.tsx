@@ -4,65 +4,67 @@ import { Button } from "@/app/lib/components";
 import { CreditApplicationStatus } from "@/prisma/generated/client";
 import { useRouter } from "next/navigation";
 import { useCallback, useTransition } from "react";
-import { analystRecommend, returnToSupplier } from "../actions";
+import {
+  analystRecommend,
+  returnToSupplier,
+  validateCreditApplication,
+} from "../actions";
+import { Routes } from "@/app/lib/constants";
 
 export const AnalystActions = (props: {
   id: number;
   status: CreditApplicationStatus;
   validatedBefore: boolean;
-  validateAction: () => Promise<void>;
-  goToValidatedAction: (readOnly: boolean) => Promise<never>;
 }) => {
   const [isPending, startTransition] = useTransition();
   const router = useRouter();
 
   const handleValidate = useCallback(() => {
     startTransition(async () => {
-      try {
-        await props.validateAction();
-      } catch (e) {
-        console.error(e);
+      const response = await validateCreditApplication(props.id);
+      if (response.responseType === "error") {
+        console.error(response.message);
+      } else {
+        router.push(`${Routes.CreditApplication}/${props.id}/validated`);
       }
     });
-  }, [props.validateAction]);
+  }, [props.id, router]);
 
   const handleGoToValidated = useCallback(
     (edit: boolean) => {
-      startTransition(async () => {
-        try {
-          await props.goToValidatedAction(!edit);
-        } catch (e) {
-          console.error(e);
-        }
+      startTransition(() => {
+        router.push(
+          `${Routes.CreditApplication}/${props.id}/validated${edit ? "" : "?readOnly=Y"}`,
+        );
       });
     },
-    [props.goToValidatedAction],
+    [props.id, router],
   );
 
   const handleRecommend = useCallback(
     (newStatus: CreditApplicationStatus) => {
       startTransition(async () => {
-        try {
-          await analystRecommend(props.id, newStatus);
+        const response = await analystRecommend(props.id, newStatus);
+        if (response.responseType === "error") {
+          console.error(response.message);
+        } else {
           router.refresh();
-        } catch (e) {
-          console.error(e);
         }
       });
     },
-    [router],
+    [props.id, router],
   );
 
   const handleReturnToSupplier = useCallback(() => {
     startTransition(async () => {
-      try {
-        await returnToSupplier(props.id);
+      const response = await returnToSupplier(props.id);
+      if (response.responseType === "error") {
+        console.error(response.message);
+      } else {
         router.refresh();
-      } catch (e) {
-        console.error(e);
       }
     });
-  }, []);
+  }, [props.id, router]);
 
   return (
     <>

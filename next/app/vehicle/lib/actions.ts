@@ -4,6 +4,13 @@ import { getUserInfo } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { VehicleStatus, Vehicle } from "@/prisma/generated/client";
 import { createHistory } from "./services";
+import {
+  DataOrErrorActionResponse,
+  ErrorOrSuccessActionResponse,
+  getDataActionResponse,
+  getErrorActionResponse,
+  getSuccessActionResponse,
+} from "@/app/lib/utils/actionResponse";
 
 export async function createVehicleComment(vehicleId: number, comment: string) {
   const { userIsGov, userId, userOrgId } = await getUserInfo();
@@ -35,7 +42,7 @@ export async function createVehicleComment(vehicleId: number, comment: string) {
 export async function updateStatus(
   vehicleId: number,
   newStatus: VehicleStatus,
-) {
+): Promise<ErrorOrSuccessActionResponse> {
   const { userId, userIsGov, userOrgId } = await getUserInfo();
 
   if (!userIsGov) {
@@ -46,20 +53,22 @@ export async function updateStatus(
         },
       });
     if (userOrgId !== vehicleOrgId) {
-      throw new Error("Permission Denied");
+      return getErrorActionResponse("Permission Denied!");
     }
     if (
       newStatus !== VehicleStatus.SUBMITTED &&
       newStatus !== VehicleStatus.DELETED
     ) {
-      throw new Error("Only government users can complete this status change");
+      return getErrorActionResponse(
+        "Only government users can complete this status change!",
+      );
     }
     if (
       (status !== VehicleStatus.DRAFT &&
         newStatus == VehicleStatus.SUBMITTED) ||
       newStatus == VehicleStatus.DELETED
     ) {
-      throw new Error("That status change cannot be performed");
+      return getErrorActionResponse("That status change cannot be performed!");
     }
   }
   await prisma.$transaction(async (tx) => {
@@ -87,6 +96,7 @@ export async function updateStatus(
       // do something here? Or will there always be a mostRecentHistory (one is created when a vehicle is created)?
     }
   });
+  return getSuccessActionResponse();
 }
 
 export type VehiclePayload = Omit<
@@ -99,23 +109,23 @@ export type VehiclePayload = Omit<
 
 export async function createOrUpdateVehicle(
   data: VehiclePayload,
-): Promise<number | null> {
-  let result = null;
+): Promise<DataOrErrorActionResponse<number>> {
   const { userIsGov, userId, userOrgId } = await getUserInfo();
   const vehicleId = data.id;
   if (!vehicleId) {
     // create new vehicle:
     if (userIsGov) {
-      throw new Error("Gov users cannot create vehicles?");
+      return getErrorActionResponse("Government users cannot create vehicles!");
     }
+    let newVehicleId = NaN;
     await prisma.$transaction(async (tx) => {
       const newVehicle = await tx.vehicle.create({
         data: { ...data, organizationId: userOrgId, isActive: true },
       });
-      result = newVehicle.id;
+      newVehicleId = newVehicle.id;
       await createHistory(newVehicle, userId, tx);
     });
-    return result;
+    return getDataActionResponse<number>(newVehicleId);
   }
   // update vehicle:
   const vehicleToUpdate = await prisma.vehicle.findUnique({
@@ -127,7 +137,7 @@ export async function createOrUpdateVehicle(
     !vehicleToUpdate ||
     (!userIsGov && userOrgId !== vehicleToUpdate.organizationId)
   ) {
-    throw new Error("Unauthorized!");
+    return getErrorActionResponse("Unauthorized!");
   }
   await prisma.$transaction(async (tx) => {
     const updatedVehicle = await tx.vehicle.update({
@@ -138,5 +148,5 @@ export async function createOrUpdateVehicle(
     });
     await createHistory(updatedVehicle, userId, tx);
   });
-  return vehicleId;
+  return getDataActionResponse<number>(vehicleId);
 }

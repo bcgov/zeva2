@@ -81,7 +81,14 @@ export const RecordsTable = (props: {
   const handleSave = useCallback(() => {
     startTransition(async () => {
       try {
-        await updateValidatedRecords(props.id, validatedMap, reasonsMap);
+        const response = await updateValidatedRecords(
+          props.id,
+          validatedMap,
+          reasonsMap,
+        );
+        if (response.responseType === "error") {
+          throw new Error(response.message);
+        }
       } catch (e) {
         console.error(e);
       }
