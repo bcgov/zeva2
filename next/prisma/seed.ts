@@ -14,10 +14,11 @@ import { getModelYearEnum } from "@/lib/utils/getEnums";
 import { Decimal } from "./generated/client/runtime/library";
 import { Notification } from "./generated/client";
 import { isNotification } from "@/app/lib/utils/typeGuards";
-import seedOrganizations from "./seedProcesses/seedOrganizations";
+import { seedOrganizations } from "./seedProcesses/seedOrganizations";
 import { seedTransactions } from "./seedProcesses/seedTransactions";
 import { seedIcbc } from "./seedProcesses/seedIcbc";
 import { seedUsers } from "./seedProcesses/seedUsers";
+import { seedAgreements } from "./seedProcesses/seedAgreements";
 
 // prismaOld to interact with old zeva db; prisma to interact with new zeva db
 const main = () => {
@@ -44,6 +45,7 @@ const main = () => {
         mapOfModelYearIdsToModelYearEnum,
       );
 
+      // seed user tables
       const mapOfOldUserIdsToNewUserIds = await seedUsers(
         tx,
         mapOfOldOrgIdsToNewOrgIds,
@@ -100,6 +102,14 @@ const main = () => {
         mapOfModelYearIdsToModelYearEnum,
         mapOfOldOrgIdsToNewOrgIds,
       );
+
+      /** Uncomment the following code to seed Agreement tables for local testing **/
+      // await seedAgreements(
+      //   tx,
+      //   mapOfOldCreditClassIdsToZevClasses,
+      //   mapOfModelYearIdsToModelYearEnum,
+      //   mapOfOldOrgIdsToNewOrgIds,
+      // );
 
       // add ending balances
       type OldBalance = {

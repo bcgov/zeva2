@@ -1,4 +1,4 @@
-import { PrismaClient } from "@prisma/client";
+import { TransactionClient } from "@/types/prisma";
 import { prismaOld } from "@/lib/prismaOld";
 import { ModelYear } from "../generated/client";
 import {
@@ -7,16 +7,15 @@ import {
 } from "@/app/organizations/lib/utils";
 import { getAddressTypeEnum } from "@/lib/utils/getEnums";
 
-const seedOrganizations = async (
-  tx: Omit<
-    PrismaClient,
-    "$connect" | "$disconnect" | "$use" | "$on" | "$transaction" | "$extends"
-  >,
+export const seedOrganizations = async (
+  tx: TransactionClient,
   mapOfModelYearIdsToModelYearEnum: {
     [id: number]: ModelYear | undefined;
   },
 ) => {
-  const mapOfOldOrgIdsToNewOrgIds: { [id: number]: number | undefined } = {};
+  const mapOfOldOrgIdsToNewOrgIds: Partial<
+    Record<number, number>
+  > = {};
 
   // add orgs:
   const orgsOld = await prismaOld.organization.findMany();
@@ -114,5 +113,3 @@ const seedOrganizations = async (
     mapOfOldOrgIdsToNewOrgIds,
   };
 };
-
-export default seedOrganizations;
