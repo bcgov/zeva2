@@ -6,7 +6,7 @@ import VehicleHistories from "../lib/components/VehicleHistories";
 import VehicleComments from "../lib/components/VehicleComments";
 import VehicleDetails from "../lib/components/VehicleDetails";
 import CommentInput from "../lib/components/CommentInput";
-import ActionBar from "../lib/components/ActionBar";
+import { ActionBar } from "../lib/components/ActionBar";
 import { getSerializedVehicle } from "../lib/data";
 const Page = async (props: { params: Promise<{ id: string }> }) => {
   const { userIsGov } = await getUserInfo();

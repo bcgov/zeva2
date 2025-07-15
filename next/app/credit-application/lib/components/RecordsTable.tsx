@@ -80,19 +80,16 @@ export const RecordsTable = (props: {
 
   const handleSave = useCallback(() => {
     startTransition(async () => {
-      try {
-        const response = await updateValidatedRecords(
-          props.id,
-          validatedMap,
-          reasonsMap,
-        );
-        if (response.responseType === "error") {
-          throw new Error(response.message);
-        }
-      } catch (e) {
-        console.error(e);
+      const response = await updateValidatedRecords(
+        props.id,
+        validatedMap,
+        reasonsMap,
+      );
+      if (response.responseType === "error") {
+        console.error(response.message);
+      } else {
+        router.refresh();
       }
-      router.refresh();
     });
   }, [props.id, validatedMap, reasonsMap, router]);
 
