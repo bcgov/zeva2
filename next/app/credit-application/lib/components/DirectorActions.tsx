@@ -6,55 +6,53 @@ import { useRouter } from "next/navigation";
 import { useCallback, useTransition } from "react";
 import { directorApprove, directorReject, returnToAnalyst } from "../actions";
 import { CreditApplicationCreditSerialized } from "../utils";
+import { Routes } from "@/app/lib/constants";
 
 export const DirectorActions = (props: {
   id: number;
   status: CreditApplicationStatus;
   credits: CreditApplicationCreditSerialized[];
-  goToValidatedAction: () => Promise<never>;
 }) => {
   const [isPending, startTransition] = useTransition();
   const router = useRouter();
 
   const handleViewValidated = useCallback(() => {
-    startTransition(async () => {
-      try {
-        await props.goToValidatedAction();
-      } catch (e) {
-        console.error(e);
-      }
+    startTransition(() => {
+      router.push(
+        `${Routes.CreditApplication}/${props.id}/validated?readOnly=Y`,
+      );
     });
-  }, [props.goToValidatedAction]);
+  }, [props.id, router]);
 
   const handleReturn = useCallback(() => {
     startTransition(async () => {
-      try {
-        await returnToAnalyst(props.id);
+      const response = await returnToAnalyst(props.id);
+      if (response.responseType === "error") {
+        console.error(response.message);
+      } else {
         router.refresh();
-      } catch (e) {
-        console.error(e);
       }
     });
   }, [props.id, router]);
 
   const handleApprove = useCallback(() => {
     startTransition(async () => {
-      try {
-        await directorApprove(props.id, props.credits);
+      const response = await directorApprove(props.id, props.credits);
+      if (response.responseType === "error") {
+        console.error(response.message);
+      } else {
         router.refresh();
-      } catch (e) {
-        console.error(e);
       }
     });
   }, [props.id, props.credits, router]);
 
   const handleReject = useCallback(() => {
     startTransition(async () => {
-      try {
-        await directorReject(props.id);
+      const response = await directorReject(props.id);
+      if (response.responseType === "error") {
+        console.error(response.message);
+      } else {
         router.refresh();
-      } catch (e) {
-        console.error(e);
       }
     });
   }, [props.id, router]);

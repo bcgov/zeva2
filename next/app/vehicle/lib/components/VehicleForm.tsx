@@ -7,7 +7,6 @@ import {
   useMemo,
   useEffect,
 } from "react";
-import { VehiclePayload } from "../actions";
 import {
   VehicleClassCode,
   VehicleStatus,
@@ -16,12 +15,12 @@ import {
 import { getVehiclePayload } from "../utilsClient";
 import { SerializedVehicleWithOrg } from "../data";
 import { getModelYearEnumsToStringsMap } from "@/app/lib/utils/enumMaps";
-import { REDIRECT_ERROR_CODE } from "next/dist/client/components/redirect-error";
+import { createOrUpdateVehicle } from "../actions";
+import { useRouter } from "next/navigation";
+import { Routes } from "@/app/lib/constants";
 
-export function VehicleForm(props: {
-  vehicle?: SerializedVehicleWithOrg;
-  handleSave: (data: VehiclePayload) => Promise<void>;
-}) {
+export function VehicleForm(props: { vehicle?: SerializedVehicleWithOrg }) {
+  const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string>("");
   const [formData, setFormData] = useState<Partial<Record<string, string>>>({});
@@ -61,15 +60,20 @@ export function VehicleForm(props: {
           if (props.vehicle) {
             vehiclePayload.id = props.vehicle.id;
           }
-          await props.handleSave(vehiclePayload);
+          const response = await createOrUpdateVehicle(vehiclePayload);
+          if (response.responseType === "error") {
+            throw new Error(response.message);
+          }
+          const vehicleId = response.data;
+          router.push(`${Routes.Vehicle}/${vehicleId}`);
         } catch (e) {
-          if (e instanceof Error && e.message !== REDIRECT_ERROR_CODE) {
+          if (e instanceof Error) {
             setError(e.message);
           }
         }
       });
     },
-    [formData, props.vehicle, props.handleSave],
+    [formData, props.vehicle, router],
   );
 
   const button = useMemo(() => {
