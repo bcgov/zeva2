@@ -35,7 +35,7 @@ model Organization {
   name                  String
   isGovernment          Boolean                   @default(false) @map("is_government")
   isActive              Boolean                   @default(true) @map("is_active")
-  shortName             String?                   @map("short_name")
+  shortName             String                    @map("short_name")
   firstModelYear        ModelYear?                @map("first_model_year")
   users                 User[]
   zevUnitTransactions   ZevUnitTransaction[]

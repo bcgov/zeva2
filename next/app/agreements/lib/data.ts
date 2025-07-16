@@ -7,8 +7,7 @@ export type AgreementSparse = {
   id: number;
   optionalId: string | null;
   organization: {
-    name: string;
-    shortName: string | null;
+    shortName: string;
   };
   agreementType: AgreementType;
   status: AgreementStatus;
@@ -42,7 +41,7 @@ export const getAgreements = async (
         id: true,
         optionalId: true,
         organization: {
-          select: { name: true, shortName: true },
+          select: { shortName: true },
         },
         agreementType: true,
         status: true,

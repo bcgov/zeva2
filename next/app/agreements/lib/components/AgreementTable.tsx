@@ -24,14 +24,16 @@ export const AgreementTable = (props: {
         cell: (info) => info.getValue(),
         header: "ID",
       }),
-      columnHelper.accessor((row) => row.effectiveDate ? getIsoYmdString(row.effectiveDate) : "", {
+      columnHelper.accessor((row) =>
+        row.effectiveDate ? getIsoYmdString(row.effectiveDate) : "",
+      {
         id: "effectiveDate",
         enableSorting: true,
         enableColumnFilter: true,
         cell: (info) => info.getValue(),
         header: "Date",
       }),
-      columnHelper.accessor((row) => row.organization.shortName ?? row.organization.name, {
+      columnHelper.accessor((row) => row.organization.shortName, {
         id: "supplier",
         enableSorting: true,
         enableColumnFilter: true,

@@ -26,6 +26,7 @@ const OrganizationEditForm = (props: {
   );
   const [shortName, setShortName] = useState(props.shortName ?? "");
   const [isActive, setIsActive] = useState(props.isActive);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const emptyAddress: OrganizationAddressSparse = {
     addressLines: "",
     city: "",
@@ -51,13 +52,14 @@ const OrganizationEditForm = (props: {
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const orgName = cleanupStringData(organizationName);
-    if (!orgName) {
-      alert("Please enter a valid organization name.");
+    const shortOrgName = cleanupStringData(shortName);
+    if (!orgName || !shortOrgName) {
+      setErrorMsg("Both the organization name and the common name are required.");
       return;
     }
     const data: OrganizationPayload = {
       name: orgName,
-      shortName: cleanupStringData(shortName),
+      shortName: shortOrgName,
       isActive,
       isGovernment: false,
       serviceAddress: cleanupAddressData(serviceAddress),
@@ -74,6 +76,7 @@ const OrganizationEditForm = (props: {
       </h2>
 
       <form className="space-y-4" onSubmit={handleSubmit}>
+        {errorMsg && <p className="text-red-600">{errorMsg}</p>}
         <div className={mainFieldClass}>
           <span className="p-1">Legal Organization Name</span>
           <input
@@ -90,6 +93,7 @@ const OrganizationEditForm = (props: {
           <input
             className="p-1"
             type="text"
+            required
             value={shortName}
             onChange={(e) => setShortName(e.target.value)}
           />
