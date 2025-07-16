@@ -9,7 +9,11 @@ export type MenuItem = {
 
 export type NavbarSubItems = Record<string, MenuItem[]>;
 
-const govRoles = [Role.ADMINISTRATOR, Role.ENGINEER_ANALYST, Role.DIRECTOR];
+const govRoles = [
+  Role.ADMINISTRATOR,
+  Role.ENGINEER_ANALYST,
+  Role.DIRECTOR
+];
 
 const supplierRoles = [
   Role.ORGANIZATION_ADMINISTRATOR,
@@ -71,6 +75,11 @@ export const navbarSubItems: NavbarSubItems = {
     {
       label: "Credit Transfers",
       route: Routes.CreditTransactions,
+    },
+    {
+      label: "Credit Agreements",
+      route: Routes.CreditAgreements,
+      roles: govRoles,
     },
     {
       label: "Penalty Credits",

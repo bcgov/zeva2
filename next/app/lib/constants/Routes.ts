@@ -4,6 +4,7 @@ export enum Routes {
   Home = "/dashboard",
   ComplianceReporting = "/compliance/reports",
   CreditTransactions = "/zev-unit-transfer",
+  CreditAgreements = "/agreements",
   VehicleSuppliers = "/organizations",
   Administration = `/organizations/${MY_ORGANIZATION}`,
   Icbc = "/icbc",
