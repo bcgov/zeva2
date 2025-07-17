@@ -2,10 +2,11 @@ import { getUserInfo } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { AgreementType, AgreementStatus, ZevClass } from "@/prisma/generated/client";
 import { Decimal } from "@/prisma/generated/client/runtime/index-browser";
+import { getWhereClause, getOrderByClause } from "./utils";
 
 export type AgreementSparse = {
   id: number;
-  optionalId: string | null;
+  referenceId: string | null;
   organization: {
     shortName: string;
   };
@@ -28,18 +29,16 @@ export const getAgreements = async (
     return [[], 0];
   }
 
-  const skip = (page - 1) * pageSize;
-  const take = pageSize;
-  // const where = getWhereClause(filters);
-  // const orderBy = getOrderByClause(sorts, true);
+  const where = getWhereClause(filters);
+  const orderBy = getOrderByClause(sorts, true);
   const [agreementsRaw, numberOfAgreements] = await prisma.$transaction([
     prisma.agreement.findMany({
-      skip,
-      take,
-      //where,
+      skip: (page - 1) * pageSize,
+      take: pageSize,
+      where,
       select: {
         id: true,
-        optionalId: true,
+        referenceId: true,
         organization: {
           select: { shortName: true },
         },
@@ -52,11 +51,10 @@ export const getAgreements = async (
             numberOfUnits: true,
           }
         },
-      }
+      },
+      orderBy,
     }),
-    prisma.agreement.count({
-      //where,
-    }),
+    prisma.agreement.count({ where }),
   ]);
 
   const agreements: AgreementSparse[] = agreementsRaw.map((agreementRaw) => {

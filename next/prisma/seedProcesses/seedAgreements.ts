@@ -75,7 +75,7 @@ export const seedAgreements = async (
 
     const newAgreement = await tx.agreement.create({
       data: {
-        optionalId: oldAgreement.optional_agreement_id,
+        referenceId: oldAgreement.optional_agreement_id,
         organizationId: organizationId ?? 0,
         agreementType,
         status,

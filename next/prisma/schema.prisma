@@ -575,7 +575,7 @@ enum AgreementUserAction {
 
 model Agreement {
   id               Int                @id @default(autoincrement())
-  optionalId       String?            @map("optional_id")
+  referenceId      String?            @map("reference_id")
   organization     Organization       @relation(fields: [organizationId], references: [id])
   organizationId   Int                @map("organization_id")
   agreementType    AgreementType      @map("agreement_type")

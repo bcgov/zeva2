@@ -40,6 +40,11 @@ export const validateDate = (s: string): [boolean, Date] => {
   return [false, date];
 };
 
+export const getIsoYmdStringInUtc = (d: Date): string => {
+  // return "0NaN-NaN-NaN" if invalid date
+  return `${padZeros(d.getUTCFullYear().toString(), 4)}-${padZeros((d.getUTCMonth() + 1).toString(), 2)}-${padZeros(d.getUTCDate().toString(), 2)}`;
+};
+
 export const getIsoYmdString = (d: Date): string => {
   // return "0NaN-NaN-NaN" if invalid date
   return `${padZeros(d.getFullYear().toString(), 4)}-${padZeros((d.getMonth() + 1).toString(), 2)}-${padZeros(d.getDate().toString(), 2)}`;
