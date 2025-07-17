@@ -9,6 +9,7 @@ import { Suspense } from "react";
 import { LoadingSkeleton } from "@/app/lib/components/skeletons";
 import { ApplicationHistories } from "../lib/components/ApplicationHistories";
 import { ApplicationDetails } from "../lib/components/ApplicationDetails";
+import { CommentList } from "../lib/components/CommentList";
 
 const Page = async (props: { params: Promise<{ id: string }> }) => {
   const args = await props.params;
@@ -20,6 +21,7 @@ const Page = async (props: { params: Promise<{ id: string }> }) => {
   const { userIsGov, userRoles } = await getUserInfo();
   const applicationData = (
     <>
+      <CommentList creditApplicationId={id} />
       <ContentCard title="Application Details">
         <ApplicationDetails
           application={creditApplication}

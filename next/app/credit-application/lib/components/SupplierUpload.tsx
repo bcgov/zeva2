@@ -5,10 +5,12 @@ import { Dropzone } from "@/app/lib/components/Dropzone";
 import { getCreditApplicationPutData, processSupplierFile } from "../actions";
 import { useRouter } from "next/navigation";
 import { Routes } from "@/app/lib/constants";
+import { CommentBox } from "./CommentBox";
 
 export const SupplierUpload = () => {
   const router = useRouter();
   const [error, setError] = useState<string>("");
+  const [comment, setComment] = useState<string>("")
 
   const handleSubmit = useCallback(async (files: File[]) => {
     if (files.length !== 1) {
@@ -20,7 +22,7 @@ export const SupplierUpload = () => {
     const url = putData.url;
     await axios.put(url, file);
     try {
-      const response = await processSupplierFile(objectName, file.name);
+      const response = await processSupplierFile(objectName, file.name, comment);
       if (response.responseType === "error") {
         throw new Error(response.message);
       }
@@ -31,7 +33,7 @@ export const SupplierUpload = () => {
         setError(e.message);
       }
     }
-  }, []);
+  }, [comment]);
 
   const handleDrop = useCallback(async () => {
     setError("");
@@ -50,6 +52,7 @@ export const SupplierUpload = () => {
         }}
       />
       {error && <p className="text-red-600">{error}</p>}
+      <CommentBox comment={comment} setComment={setComment} />
     </>
   );
 };

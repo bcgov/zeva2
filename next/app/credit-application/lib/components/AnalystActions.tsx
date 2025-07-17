@@ -3,13 +3,14 @@
 import { Button } from "@/app/lib/components";
 import { CreditApplicationStatus } from "@/prisma/generated/client";
 import { useRouter } from "next/navigation";
-import { useCallback, useTransition } from "react";
+import { useCallback, useState, useTransition } from "react";
 import {
   analystRecommend,
   returnToSupplier,
   validateCreditApplication,
 } from "../actions";
 import { Routes } from "@/app/lib/constants";
+import { CommentBox } from "./CommentBox";
 
 export const AnalystActions = (props: {
   id: number;
@@ -18,6 +19,7 @@ export const AnalystActions = (props: {
 }) => {
   const [isPending, startTransition] = useTransition();
   const router = useRouter();
+  const [comment, setComment] = useState()
 
   const handleValidate = useCallback(() => {
     startTransition(async () => {
@@ -44,7 +46,7 @@ export const AnalystActions = (props: {
   const handleRecommend = useCallback(
     (newStatus: CreditApplicationStatus) => {
       startTransition(async () => {
-        const response = await analystRecommend(props.id, newStatus);
+        const response = await analystRecommend(props.id, newStatus, comment);
         if (response.responseType === "error") {
           console.error(response.message);
         } else {
@@ -52,22 +54,23 @@ export const AnalystActions = (props: {
         }
       });
     },
-    [props.id, router],
+    [props.id, comment, router],
   );
 
   const handleReturnToSupplier = useCallback(() => {
     startTransition(async () => {
-      const response = await returnToSupplier(props.id);
+      const response = await returnToSupplier(props.id, comment);
       if (response.responseType === "error") {
         console.error(response.message);
       } else {
         router.refresh();
       }
     });
-  }, [props.id, router]);
+  }, [props.id, comment, router]);
 
   return (
     <>
+      <CommentBox comment={comment} setComment={setComment} />
       {(props.status === CreditApplicationStatus.SUBMITTED ||
         props.status === CreditApplicationStatus.RETURNED_TO_ANALYST) && (
         <Button onClick={handleValidate} disabled={isPending}>
