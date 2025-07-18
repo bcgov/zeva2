@@ -1,11 +1,9 @@
 import { TransactionClient } from "@/types/prisma";
 import { prismaOld } from "@/lib/prismaOld";
 import { ModelYear } from "../generated/client";
-import {
-  cleanupStringData,
-  isEmptyAddress,
-} from "@/app/organizations/lib/utils";
+import { isEmptyAddress } from "@/app/organizations/lib/utils";
 import { getAddressTypeEnum } from "@/lib/utils/getEnums";
+import { cleanupStringData } from "@/lib/utils/dataCleanup";
 
 export const seedOrganizations = async (
   tx: TransactionClient,
