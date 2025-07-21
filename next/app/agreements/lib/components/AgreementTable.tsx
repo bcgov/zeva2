@@ -30,15 +30,17 @@ export const AgreementTable = (props: {
         cell: (info) => info.getValue(),
         header: "Ref. ID",
       }),
-      columnHelper.accessor((row) =>
-        row.effectiveDate ? getIsoYmdStringInUtc(row.effectiveDate) : "",
-      {
-        id: "effectiveDate",
-        enableSorting: true,
-        enableColumnFilter: true,
-        cell: (info) => info.getValue(),
-        header: "Date",
-      }),
+      columnHelper.accessor(
+        (row) =>
+          row.effectiveDate ? getIsoYmdStringInUtc(row.effectiveDate) : "",
+        {
+          id: "effectiveDate",
+          enableSorting: true,
+          enableColumnFilter: true,
+          cell: (info) => info.getValue(),
+          header: "Date",
+        },
+      ),
       columnHelper.accessor((row) => row.organization.shortName, {
         id: "supplier",
         enableSorting: true,
@@ -71,7 +73,11 @@ export const AgreementTable = (props: {
         id: "status",
         enableSorting: true,
         enableColumnFilter: true,
-        cell: (info) => <div className="text-center">{enumToTitleString(info.getValue())}</div>,
+        cell: (info) => (
+          <div className="text-center">
+            {enumToTitleString(info.getValue())}
+          </div>
+        ),
         header: "Status",
       }),
     ];

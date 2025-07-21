@@ -13,9 +13,7 @@ export const seedOrganizations = async (
     [id: number]: ModelYear | undefined;
   },
 ) => {
-  const mapOfOldOrgIdsToNewOrgIds: Partial<
-    Record<number, number>
-  > = {};
+  const mapOfOldOrgIdsToNewOrgIds: Partial<Record<number, number>> = {};
 
   // add orgs:
   const orgsOld = await prismaOld.organization.findMany();
