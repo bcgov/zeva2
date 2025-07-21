@@ -2,7 +2,7 @@ import { Suspense } from "react";
 import { LoadingSkeleton } from "../lib/components/skeletons";
 import { getPageParams, pageStringParams } from "../lib/utils/nextPage";
 import { getUserInfo } from "@/auth";
-import { OrganizationList } from "./lib/components/OrganizationList";
+import { AgreementList } from "./lib/components/AgreementList";
 import { Button } from "@/app/lib/components";
 import { Routes } from "@/app/lib/constants";
 import { Role } from "@/prisma/generated/client";
@@ -20,16 +20,16 @@ const Page = async (props: { searchParams?: Promise<pageStringParams> }) => {
     );
   }
 
-  const canCreateNewOrg = userRoles.includes(Role.ADMINISTRATOR);
+  const canCreateNewAgreement = userRoles.includes(Role.ENGINEER_ANALYST);
 
   return (
     <Suspense key={Date.now()} fallback={<LoadingSkeleton />}>
-      {canCreateNewOrg && (
-        <a href={`${Routes.VehicleSuppliers}/new`}>
-          <Button className="ml-4 p-2">+ New Supplier</Button>
+      {canCreateNewAgreement && (
+        <a href={`${Routes.CreditAgreements}/new`}>
+          <Button className="ml-4 p-2">+ New Agreement</Button>
         </a>
       )}
-      <OrganizationList
+      <AgreementList
         page={page}
         pageSize={pageSize}
         filters={filters}

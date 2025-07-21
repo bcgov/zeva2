@@ -35,7 +35,7 @@ model Organization {
   name                  String
   isGovernment          Boolean                   @default(false) @map("is_government")
   isActive              Boolean                   @default(true) @map("is_active")
-  shortName             String?                   @map("short_name")
+  shortName             String                    @map("short_name")
   firstModelYear        ModelYear?                @map("first_model_year")
   users                 User[]
   zevUnitTransactions   ZevUnitTransaction[]
@@ -58,7 +58,7 @@ model OrganizationAddress {
   organization   Organization @relation(fields: [organizationId], references: [id])
   organizationId Int          @map("organization_id")
   addressType    AddressType  @map("address_type")
-  expirationDate DateTime?    @map("expiration_date")
+  expirationDate DateTime?    @map("expiration_date") @db.Date
   addressLines   String?      @map("address_lines")
   city           String?
   postalCode     String?      @map("postal_code")
@@ -575,12 +575,12 @@ enum AgreementUserAction {
 
 model Agreement {
   id               Int                @id @default(autoincrement())
-  optionalId       String?            @map("optional_id")
+  referenceId      String?            @map("reference_id")
   organization     Organization       @relation(fields: [organizationId], references: [id])
   organizationId   Int                @map("organization_id")
   agreementType    AgreementType      @map("agreement_type")
   status           AgreementStatus
-  effectiveDate    DateTime?          @map("effective_date")
+  effectiveDate    DateTime?          @map("effective_date") @db.Date
   comment          String?
   agreementContent AgreementContent[]
   agreementHistory AgreementHistory[]

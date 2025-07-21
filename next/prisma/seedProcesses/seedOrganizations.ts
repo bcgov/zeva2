@@ -27,7 +27,7 @@ export const seedOrganizations = async (
           mapOfModelYearIdsToModelYearEnum[orgOld.first_model_year_id ?? -1],
         isGovernment: orgOld.is_government,
         isActive: orgOld.is_active,
-        shortName: orgOld.short_name,
+        shortName: orgOld.short_name ?? orgOld.organization_name,
       },
     });
     mapOfOldOrgIdsToNewOrgIds[orgOld.id] = orgNew.id;
