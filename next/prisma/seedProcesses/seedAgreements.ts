@@ -2,7 +2,7 @@
  * This process seeds the Initiative and Purchase Agreements from Old Database.
  * This is for local development/testing only.
  * Seeding Agreement data is not required for production.
-*/
+ */
 
 import { prismaOld } from "@/lib/prismaOld";
 import { TransactionClient } from "@/types/prisma";
@@ -48,10 +48,9 @@ export const seedAgreements = async (
   mapOfModelYearIdsToModelYearEnum: Partial<Record<number, ModelYear>>,
   mapOfOldOrgIdsToNewOrgIds: Partial<Record<number, number>>,
 ) => {
-  const mapOfOldAgreementIdsToNewAgreementIds: Partial<
-    Record<number, number>
-  > = {};
-  
+  const mapOfOldAgreementIdsToNewAgreementIds: Partial<Record<number, number>> =
+    {};
+
   /*** Transfer data from credit_agreement table to Agreement model ***/
   const oldAgreements = await prismaOld.credit_agreement.findMany();
   const oldComments = await prismaOld.credit_agreement_comment.findMany({
@@ -62,15 +61,16 @@ export const seedAgreements = async (
     if (!agreementType) {
       continue; // Skip invalid agreement types
     }
-    const organizationId = mapOfOldOrgIdsToNewOrgIds[oldAgreement.organization_id];
+    const organizationId =
+      mapOfOldOrgIdsToNewOrgIds[oldAgreement.organization_id];
     if (!organizationId) {
       throw new Error(
-        `Organization ID ${oldAgreement.organization_id} not found in new mapping`
+        `Organization ID ${oldAgreement.organization_id} not found in new mapping`,
       );
     }
     const status = mapAgreementStatus(oldAgreement.status);
     const comment = oldComments.findLast(
-      rec => rec.credit_agreement_id === oldAgreement.id
+      (rec) => rec.credit_agreement_id === oldAgreement.id,
     )?.comment;
 
     const newAgreement = await tx.agreement.create({
@@ -88,22 +88,26 @@ export const seedAgreements = async (
   }
 
   /*** Transfer data from credit_agreement_content table to AgreementContent model ***/
-  const oldAgreementContents = await prismaOld.credit_agreement_content.findMany();
+  const oldAgreementContents =
+    await prismaOld.credit_agreement_content.findMany();
   for (const oldContent of oldAgreementContents) {
-    const newAgreementId = mapOfOldAgreementIdsToNewAgreementIds[oldContent.credit_agreement_id];
+    const newAgreementId =
+      mapOfOldAgreementIdsToNewAgreementIds[oldContent.credit_agreement_id];
     if (!newAgreementId) {
       continue; // Skip if the agreement ID is not found in the new mapping
     }
-    const zevClass = mapOfOldCreditClassIdsToZevClasses[oldContent.credit_class_id];
+    const zevClass =
+      mapOfOldCreditClassIdsToZevClasses[oldContent.credit_class_id];
     if (!zevClass) {
       throw new Error(
-        `ZEV Class not found for credit class ID ${oldContent.credit_class_id}`
+        `ZEV Class not found for credit class ID ${oldContent.credit_class_id}`,
       );
     }
-    const modelYear = mapOfModelYearIdsToModelYearEnum[oldContent.model_year_id];
+    const modelYear =
+      mapOfModelYearIdsToModelYearEnum[oldContent.model_year_id];
     if (!modelYear) {
       throw new Error(
-        `Model Year not found for model year ID ${oldContent.model_year_id}`
+        `Model Year not found for model year ID ${oldContent.model_year_id}`,
       );
     }
     const numberOfUnits = oldContent.number_of_credits;
@@ -122,5 +126,5 @@ export const seedAgreements = async (
 
   return {
     mapOfOldAgreementIdsToNewAgreementIds,
-  }
+  };
 };

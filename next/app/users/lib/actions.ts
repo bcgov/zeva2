@@ -3,13 +3,28 @@
 import { getUserInfo } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { Idp, User } from "@/prisma/generated/client";
+import { userIsAdmin } from "./utils";
+import {
+  DataOrErrorActionResponse,
+  ErrorOrSuccessActionResponse,
+  getDataActionResponse,
+  getErrorActionResponse,
+  getSuccessActionResponse,
+} from "@/app/lib/utils/actionResponse";
 
 export type UserPayload = Omit<
   User,
   "id" | "idp" | "idpSub" | "notifications" | "wasUpdated"
 >;
 
-export const updateUser = async (id: number, data: UserPayload) => {
+export const updateUser = async (
+  id: number,
+  data: UserPayload,
+): Promise<ErrorOrSuccessActionResponse> => {
+  const isAdmin = await userIsAdmin();
+  if (!isAdmin) {
+    return getErrorActionResponse("Unauthorized!");
+  }
   const { userIsGov, userOrgId } = await getUserInfo();
   const user = await prisma.user.findUnique({
     where: {
@@ -17,21 +32,28 @@ export const updateUser = async (id: number, data: UserPayload) => {
     },
   });
   if (!user) {
-    throw new Error("No such user!");
+    return getErrorActionResponse("No such user!");
   }
   if (!userIsGov && userOrgId !== user.organizationId) {
-    throw new Error("Unauthorized!");
+    return getErrorActionResponse("Unauthorized!");
   }
   await prisma.user.update({
     where: { id },
     data: { ...data, organizationId: user.organizationId, wasUpdated: true },
   });
+  return getSuccessActionResponse();
 };
 
-export async function createUser(user: UserPayload) {
+export async function createUser(
+  user: UserPayload,
+): Promise<DataOrErrorActionResponse<number>> {
+  const isAdmin = await userIsAdmin();
+  if (!isAdmin) {
+    return getErrorActionResponse("Unauthorized!");
+  }
   const { userIsGov, userOrgId } = await getUserInfo();
   if (!userIsGov && userOrgId !== user.organizationId) {
-    throw new Error("Unauthorized");
+    return getErrorActionResponse("Unauthorized!");
   }
   const overridingData: { idp: Idp; organizationId?: number } = {
     idp: Idp.AZURE_IDIR,
@@ -43,5 +65,5 @@ export async function createUser(user: UserPayload) {
   const createdUser = await prisma.user.create({
     data: { ...user, ...overridingData, idpSub: null },
   });
-  return createdUser.id;
+  return getDataActionResponse<number>(createdUser.id);
 }

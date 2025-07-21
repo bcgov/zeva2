@@ -1,4 +1,8 @@
-import { AgreementType, AgreementStatus, Prisma } from "@/prisma/generated/client";
+import {
+  AgreementType,
+  AgreementStatus,
+  Prisma,
+} from "@/prisma/generated/client";
 
 export const getWhereClause = (
   filters: Record<string, string>,
@@ -20,9 +24,13 @@ export const getWhereClause = (
             break;
           }
           if (prefix === "I" || prefix === "IA") {
-            filteredTypes = filteredTypes.filter(t => t === AgreementType.INITIATIVE);
+            filteredTypes = filteredTypes.filter(
+              (t) => t === AgreementType.INITIATIVE,
+            );
           } else if (prefix === "P" || prefix === "PA") {
-            filteredTypes = filteredTypes.filter(t => t === AgreementType.PURCHASE);
+            filteredTypes = filteredTypes.filter(
+              (t) => t === AgreementType.PURCHASE,
+            );
           } else if (prefix !== "A") {
             filteredTypes = [];
           }
@@ -35,7 +43,9 @@ export const getWhereClause = (
         break;
       }
       case "referenceId": {
-        result.referenceId = val ? { contains: val, mode: "insensitive" } : undefined;
+        result.referenceId = val
+          ? { contains: val, mode: "insensitive" }
+          : undefined;
         break;
       }
       case "effectiveDate": {
@@ -51,14 +61,14 @@ export const getWhereClause = (
           result.effectiveDate = {
             gte: new Date(yearVal, 0, 1),
             lt: new Date(yearVal + 1, 0, 1),
-          }
+          };
           break;
         }
         if (isNaN(dayVal) || dayVal < 1 || dayVal > 31) {
           result.effectiveDate = {
             gte: new Date(yearVal, monthVal - 1, 1),
             lt: new Date(yearVal, monthVal, 1),
-          }
+          };
           break;
         }
         result.effectiveDate = {
@@ -69,15 +79,17 @@ export const getWhereClause = (
       }
       case "agreementType": {
         const typeVal = val.replaceAll(" ", "_");
-        filteredTypes = filteredTypes.filter(t => t.includes(typeVal));
+        filteredTypes = filteredTypes.filter((t) => t.includes(typeVal));
         result.agreementType = { in: filteredTypes };
         break;
       }
       case "status": {
         const statusVal = val.replaceAll(" ", "_");
         result.status = {
-          in: Object.values(AgreementStatus).filter(s => s.includes(statusVal)),
-        }
+          in: Object.values(AgreementStatus).filter((s) =>
+            s.includes(statusVal),
+          ),
+        };
         break;
       }
       case "supplier":

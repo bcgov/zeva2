@@ -37,6 +37,13 @@ import {
 } from "./services";
 import { SupplierTemplate } from "./constants";
 import { Directory } from "@/app/lib/constants/minio";
+import {
+  DataOrErrorActionResponse,
+  ErrorOrSuccessActionResponse,
+  getDataActionResponse,
+  getErrorActionResponse,
+  getSuccessActionResponse,
+} from "@/app/lib/utils/actionResponse";
 
 export const getSupplierTemplateDownloadUrl = async () => {
   return await getPresignedGetObjectUrl(
@@ -66,9 +73,9 @@ export const getCreditApplicationPutData = async () => {
 export const processSupplierFile = async (
   objectName: string,
   fileName: string,
-): Promise<number | null> => {
+): Promise<DataOrErrorActionResponse<number>> => {
   const { userOrgId, userId } = await getUserInfo();
-  let result = null;
+  let result = NaN;
   const fullObjectName = getCreditApplicationFullObjectName(
     userOrgId,
     objectName,
@@ -152,14 +159,22 @@ export const processSupplierFile = async (
     });
   } catch (e) {
     await removeObject(fullObjectName);
+    if (e instanceof Error) {
+      return getErrorActionResponse(e.message);
+    }
     throw e;
   }
-  return result;
+  return getDataActionResponse<number>(result);
+};
+
+export type FileInfo = {
+  fileName: string;
+  url: string;
 };
 
 export const getSupplierFileInfo = async (
   creditApplicationId: number,
-): Promise<{ fileName: string; url: string }> => {
+): Promise<DataOrErrorActionResponse<FileInfo>> => {
   const { userIsGov, userOrgId } = await getUserInfo();
   let whereClause: Prisma.CreditApplicationWhereUniqueInput = {
     id: creditApplicationId,
@@ -171,25 +186,25 @@ export const getSupplierFileInfo = async (
     where: whereClause,
   });
   if (!creditApplication) {
-    throw new Error("Credit Application Not Found!");
+    return getErrorActionResponse("Credit Application Not Found!");
   }
   const fullObjectName = getCreditApplicationFullObjectName(
     creditApplication.organizationId,
     creditApplication.supplierFileId,
   );
   const url = await getPresignedGetObjectUrl(fullObjectName);
-  return {
+  return getDataActionResponse<FileInfo>({
     fileName: creditApplication.supplierFileName,
     url,
-  };
+  });
 };
 
 export const validateCreditApplication = async (
   creditApplicationId: number,
-) => {
+): Promise<ErrorOrSuccessActionResponse> => {
   const { userIsGov, userRoles } = await getUserInfo();
   if (!userIsGov || !userRoles.some((role) => role === Role.ENGINEER_ANALYST)) {
-    throw new Error("Unauthorized!");
+    return getErrorActionResponse("Unauthorized!");
   }
   const creditApplication = await prisma.creditApplication.findUnique({
     where: {
@@ -204,7 +219,7 @@ export const validateCreditApplication = async (
     },
   });
   if (!creditApplication) {
-    throw new Error(`No matching credit application!`);
+    return getErrorActionResponse("Credit Application Not Found!");
   }
   const vinRecordsMap = await getVinRecordsMap(creditApplicationId);
   const icbcMap = await getIcbcRecordsMap(Object.keys(vinRecordsMap));
@@ -242,6 +257,7 @@ export const validateCreditApplication = async (
       data: recordsToCreate,
     }),
   ]);
+  return getSuccessActionResponse();
 };
 
 export type ValidatedMap = Record<number, boolean>;
@@ -252,10 +268,10 @@ export const updateValidatedRecords = async (
   id: number,
   validatedMap: ValidatedMap,
   reasonsMap: ReasonsMap,
-) => {
+): Promise<ErrorOrSuccessActionResponse> => {
   const { userIsGov, userRoles } = await getUserInfo();
   if (!userIsGov || !userRoles.some((role) => role === Role.ENGINEER_ANALYST)) {
-    throw new Error("Unauthorized!");
+    return getErrorActionResponse("Unauthorized!");
   }
   const creditApplication = await prisma.creditApplication.findUnique({
     where: {
@@ -267,7 +283,7 @@ export const updateValidatedRecords = async (
     (creditApplication.status !== CreditApplicationStatus.SUBMITTED &&
       creditApplication.status !== CreditApplicationStatus.RETURNED_TO_ANALYST)
   ) {
-    throw new Error("Invalid Action");
+    return getErrorActionResponse("Invalid Action!");
   }
   const ids = new Set<number>();
   Object.keys(validatedMap)
@@ -302,21 +318,22 @@ export const updateValidatedRecords = async (
       data: records,
     }),
   ]);
+  return getSuccessActionResponse();
 };
 
 export const analystRecommend = async (
   creditApplicationId: number,
   status: CreditApplicationStatus,
-) => {
+): Promise<ErrorOrSuccessActionResponse> => {
   const { userIsGov, userId, userRoles } = await getUserInfo();
   if (!userIsGov || !userRoles.some((role) => role === Role.ENGINEER_ANALYST)) {
-    throw new Error("Unauthorized");
+    return getErrorActionResponse("Unauthorized!");
   }
   if (
     status !== CreditApplicationStatus.RECOMMEND_APPROVAL &&
     status !== CreditApplicationStatus.RECOMMEND_REJECTION
   ) {
-    throw new Error("Invalid Action");
+    return getErrorActionResponse("Invalid Action!");
   }
   const creditApplication = await prisma.creditApplication.findUnique({
     where: {
@@ -328,18 +345,21 @@ export const analystRecommend = async (
     (creditApplication.status !== CreditApplicationStatus.SUBMITTED &&
       creditApplication.status !== CreditApplicationStatus.RETURNED_TO_ANALYST)
   ) {
-    throw new Error("Invalid Action");
+    return getErrorActionResponse("Invalid Action!");
   }
   await prisma.$transaction([
     updateStatus(creditApplicationId, status),
     createHistory(userId, creditApplicationId, status),
   ]);
+  return getSuccessActionResponse();
 };
 
-export const returnToSupplier = async (creditApplicationId: number) => {
+export const returnToSupplier = async (
+  creditApplicationId: number,
+): Promise<ErrorOrSuccessActionResponse> => {
   const { userIsGov, userId, userRoles } = await getUserInfo();
   if (!userIsGov || !userRoles.some((role) => role === Role.ENGINEER_ANALYST)) {
-    throw new Error("Unauthorized");
+    return getErrorActionResponse("Unauthorized!!");
   }
   const creditApplication = await prisma.creditApplication.findUnique({
     where: {
@@ -353,7 +373,7 @@ export const returnToSupplier = async (creditApplicationId: number) => {
     },
   });
   if (!creditApplication) {
-    throw new Error("Invalid Action!");
+    return getErrorActionResponse("Invalid Action!");
   }
   await prisma.$transaction([
     updateStatus(
@@ -367,12 +387,15 @@ export const returnToSupplier = async (creditApplicationId: number) => {
       CreditApplicationStatus.RETURNED_TO_SUPPLIER,
     ),
   ]);
+  return getSuccessActionResponse();
 };
 
-export const returnToAnalyst = async (creditApplicationId: number) => {
+export const returnToAnalyst = async (
+  creditApplicationId: number,
+): Promise<ErrorOrSuccessActionResponse> => {
   const { userIsGov, userId, userRoles } = await getUserInfo();
   if (!userIsGov || !userRoles.some((role) => role === Role.DIRECTOR)) {
-    throw new Error("Unauthorized");
+    return getErrorActionResponse("Unauthorized!");
   }
   const creditApplication = await prisma.creditApplication.findUnique({
     where: {
@@ -386,7 +409,7 @@ export const returnToAnalyst = async (creditApplicationId: number) => {
     },
   });
   if (!creditApplication) {
-    throw new Error("Invalid Action!");
+    return getErrorActionResponse("Invalid Action!");
   }
   await prisma.$transaction([
     updateStatus(
@@ -399,15 +422,16 @@ export const returnToAnalyst = async (creditApplicationId: number) => {
       CreditApplicationStatus.RETURNED_TO_ANALYST,
     ),
   ]);
+  return getSuccessActionResponse();
 };
 
 export const directorApprove = async (
   creditApplicationId: number,
   credits: CreditApplicationCreditSerialized[],
-) => {
+): Promise<ErrorOrSuccessActionResponse> => {
   const { userIsGov, userRoles, userId } = await getUserInfo();
   if (!userIsGov || !userRoles.some((role) => role === Role.DIRECTOR)) {
-    throw new Error("Unauthorized!");
+    return getErrorActionResponse("Unauthorized!");
   }
   const creditApplication = await prisma.creditApplication.findUnique({
     where: {
@@ -416,7 +440,7 @@ export const directorApprove = async (
     },
   });
   if (!creditApplication) {
-    throw new Error("Invalid Action!");
+    return getErrorActionResponse("Invalid Action!");
   }
   const orgId = creditApplication.organizationId;
   const invalidVinRecords = await prisma.creditApplicationRecord.findMany({
@@ -456,12 +480,15 @@ export const directorApprove = async (
       CreditApplicationStatus.APPROVED,
     ),
   ]);
+  return getSuccessActionResponse();
 };
 
-export const directorReject = async (creditApplicationId: number) => {
+export const directorReject = async (
+  creditApplicationId: number,
+): Promise<ErrorOrSuccessActionResponse> => {
   const { userIsGov, userRoles, userId } = await getUserInfo();
   if (!userIsGov || !userRoles.some((role) => role === Role.DIRECTOR)) {
-    throw new Error("Unauthorized!");
+    return getErrorActionResponse("Unauthorized!");
   }
   const creditApplication = await prisma.creditApplication.findUnique({
     where: {
@@ -470,7 +497,7 @@ export const directorReject = async (creditApplicationId: number) => {
     },
   });
   if (!creditApplication) {
-    throw new Error("Invalid Action!");
+    return getErrorActionResponse("Invalid Action!");
   }
   await prisma.$transaction([
     updateStatus(creditApplicationId, CreditApplicationStatus.REJECTED),
@@ -481,4 +508,5 @@ export const directorReject = async (creditApplicationId: number) => {
       CreditApplicationStatus.REJECTED,
     ),
   ]);
+  return getSuccessActionResponse();
 };

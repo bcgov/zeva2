@@ -1,4 +1,5 @@
 import { getStringsToRoleEnumsMap } from "@/app/lib/utils/enumMaps";
+import { getUserInfo } from "@/auth";
 import { UserWithOrg } from "@/lib/data/user";
 import { Prisma, Role } from "@/prisma/generated/client";
 
@@ -114,4 +115,15 @@ export const getOrderByClause = (
     result.push({ id: "desc" });
   }
   return result;
+};
+
+export const userIsAdmin = async () => {
+  const { userIsGov, userRoles } = await getUserInfo();
+  if (userIsGov && userRoles.includes(Role.ADMINISTRATOR)) {
+    return true;
+  }
+  if (!userIsGov && userRoles.includes(Role.ORGANIZATION_ADMINISTRATOR)) {
+    return true;
+  }
+  return false;
 };

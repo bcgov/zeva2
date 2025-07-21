@@ -80,18 +80,35 @@ export const RecordsTable = (props: {
 
   const handleSave = useCallback(() => {
     startTransition(async () => {
-      try {
-        await updateValidatedRecords(props.id, validatedMap, reasonsMap);
-      } catch (e) {
-        console.error(e);
+      const response = await updateValidatedRecords(
+        props.id,
+        validatedMap,
+        reasonsMap,
+      );
+      if (response.responseType === "error") {
+        console.error(response.message);
+      } else {
+        router.refresh();
       }
-      router.refresh();
     });
   }, [props.id, validatedMap, reasonsMap, router]);
 
   const modelYearsMap = useMemo(() => {
     return getModelYearEnumsToStringsMap();
   }, []);
+
+  const getHighlighted = useCallback(
+    (value: string | JSX.Element, warnings: string[]): string | JSX.Element => {
+      if (warnings.includes("1")) {
+        return <div className="bg-red-200 truncate">{value}</div>;
+      }
+      if (warnings.length > 0) {
+        return <div className="bg-yellow-200 truncate">{value}</div>;
+      }
+      return value;
+    },
+    [],
+  );
 
   const columnHelper =
     createColumnHelper<CreditApplicationRecordSparseSerialized>();
@@ -102,48 +119,62 @@ export const RecordsTable = (props: {
         enableSorting: true,
         enableColumnFilter: true,
         header: () => <span>VIN</span>,
+        cell: (cellProps) => {
+          return getHighlighted(
+            cellProps.row.original.vin,
+            cellProps.row.original.warnings,
+          );
+        },
+        size: 230,
       }),
       columnHelper.accessor((row) => row.timestamp, {
         id: "timestamp",
         enableSorting: true,
         enableColumnFilter: true,
         header: () => <span>Date</span>,
+        size: 150,
       }),
       columnHelper.accessor((row) => row.make, {
         id: "make",
         enableSorting: true,
         enableColumnFilter: true,
         header: () => <span>Make</span>,
+        size: 100,
       }),
       columnHelper.accessor((row) => row.modelName, {
         id: "modelName",
         enableSorting: true,
         enableColumnFilter: true,
         header: () => <span>Model Name</span>,
+        size: 150,
       }),
       columnHelper.accessor((row) => modelYearsMap[row.modelYear], {
         id: "modelYear",
         enableSorting: true,
         enableColumnFilter: true,
         header: () => <span>Model Year</span>,
+        size: 100,
       }),
       columnHelper.accessor((row) => row.icbcTimestamp, {
         id: "icbcTimestamp",
         enableSorting: true,
         enableColumnFilter: true,
         header: () => <span>ICBC File Date</span>,
+        size: 150,
       }),
       columnHelper.accessor((row) => row.icbcMake, {
         id: "icbcMake",
         enableSorting: true,
         enableColumnFilter: true,
         header: () => <span>ICBC Make</span>,
+        size: 100,
       }),
       columnHelper.accessor((row) => row.icbcModelName, {
         id: "icbcModelName",
         enableSorting: true,
         enableColumnFilter: true,
         header: () => <span>ICBC Model Name</span>,
+        size: 150,
       }),
       columnHelper.accessor(
         (row) => (row.icbcModelYear ? modelYearsMap[row.icbcModelYear] : null),
@@ -152,6 +183,7 @@ export const RecordsTable = (props: {
           enableSorting: true,
           enableColumnFilter: true,
           header: () => <span>ICBC Model Year</span>,
+          size: 100,
         },
       ),
       columnHelper.accessor((row) => row.warnings, {
@@ -159,9 +191,11 @@ export const RecordsTable = (props: {
         enableSorting: true,
         enableColumnFilter: true,
         cell: (cellProps) => {
-          return cellProps.row.original.warnings.join(", ");
+          const warnings = cellProps.row.original.warnings;
+          return getHighlighted(warnings.join(", "), warnings);
         },
         header: () => <span>Warnings</span>,
+        size: 125,
       }),
       columnHelper.accessor((row) => row.validated, {
         id: "validated",
@@ -169,15 +203,12 @@ export const RecordsTable = (props: {
         enableColumnFilter: true,
         cell: (cellProps) => {
           const id = cellProps.row.original.id;
+          const warnings = cellProps.row.original.warnings;
           let disabled = false;
-          if (
-            cellProps.row.original.warnings.some(
-              (warning) => warning === "1" || warning === "51",
-            )
-          ) {
+          if (warnings.includes("1")) {
             disabled = true;
           }
-          return (
+          const value = (
             <input
               checked={validatedMap[id]}
               onChange={() => {
@@ -187,9 +218,10 @@ export const RecordsTable = (props: {
               disabled={props.readOnly || disabled}
             />
           );
+          return getHighlighted(value, warnings);
         },
-
         header: () => <span>Validated</span>,
+        size: 75,
       }),
       columnHelper.accessor((row) => row.reason, {
         id: "reason",
@@ -204,6 +236,7 @@ export const RecordsTable = (props: {
           return getReasonsJSX(id, reason);
         },
         header: () => <span>Reason</span>,
+        size: 500,
       }),
     ];
     return result;
@@ -224,6 +257,9 @@ export const RecordsTable = (props: {
         columns={columns}
         data={props.records}
         totalNumberOfRecords={props.totalNumbeOfRecords}
+        explicitSizing={true}
+        paramsToPreserve={["readOnly"]}
+        stackHeaderContents={true}
       />
       {!props.readOnly && (
         <ContentCard title="Actions">

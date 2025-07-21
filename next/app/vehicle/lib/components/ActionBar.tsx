@@ -1,5 +1,6 @@
 "use client";
-import { useTransition } from "react";
+
+import { useCallback, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { updateStatus } from "../actions";
 import { VehicleStatus } from "@/prisma/generated/client";
@@ -10,20 +11,23 @@ type Props = {
   vehicle: SerializedVehicleWithOrg;
 };
 
-export default function ActionBar({ userIsGov, vehicle }: Props) {
+export const ActionBar = ({ userIsGov, vehicle }: Props) => {
   const [isPending, startTransition] = useTransition();
   const router = useRouter();
 
-  const handleSubmit = (choice: VehicleStatus) => {
-    startTransition(async () => {
-      try {
-        await updateStatus(vehicle.id, choice);
-        router.refresh();
-      } catch (e) {
-        console.error(e);
-      }
-    });
-  };
+  const handleSubmit = useCallback(
+    (choice: VehicleStatus) => {
+      startTransition(async () => {
+        const response = await updateStatus(vehicle.id, choice);
+        if (response.responseType === "error") {
+          console.error(response.message);
+        } else {
+          router.refresh();
+        }
+      });
+    },
+    [vehicle.id, router],
+  );
 
   return (
     <div className="space-y-2">
@@ -74,4 +78,4 @@ export default function ActionBar({ userIsGov, vehicle }: Props) {
       )}
     </div>
   );
-}
+};

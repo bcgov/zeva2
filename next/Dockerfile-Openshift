@@ -15,7 +15,7 @@ RUN npm run build
 EXPOSE 3000
 
 CMD ["/bin/sh", "-c", "\
-  for cfg in database minio; do \
+  for cfg in database minio redis; do \
     if [ -f /vault/secrets/$cfg ]; then \
       . /vault/secrets/$cfg; \
     fi; \

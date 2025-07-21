@@ -2,33 +2,36 @@
 import axios from "axios";
 import { useCallback, useState } from "react";
 import { Dropzone } from "@/app/lib/components/Dropzone";
-import { getCreditApplicationPutData } from "../actions";
+import { getCreditApplicationPutData, processSupplierFile } from "../actions";
+import { useRouter } from "next/navigation";
+import { Routes } from "@/app/lib/constants";
 
-export const SupplierUpload = (props: {
-  processFile: (objectName: string, fileName: string) => Promise<void>;
-}) => {
+export const SupplierUpload = () => {
+  const router = useRouter();
   const [error, setError] = useState<string>("");
 
-  const handleSubmit = useCallback(
-    async (files: File[]) => {
-      if (files.length !== 1) {
-        setError("Exactly 1 file expected!");
+  const handleSubmit = useCallback(async (files: File[]) => {
+    if (files.length !== 1) {
+      setError("Exactly 1 file expected!");
+    }
+    const file = files[0];
+    const putData = await getCreditApplicationPutData();
+    const objectName = putData.objectName;
+    const url = putData.url;
+    await axios.put(url, file);
+    try {
+      const response = await processSupplierFile(objectName, file.name);
+      if (response.responseType === "error") {
+        throw new Error(response.message);
       }
-      const file = files[0];
-      const putData = await getCreditApplicationPutData();
-      const objectName = putData.objectName;
-      const url = putData.url;
-      await axios.put(url, file);
-      try {
-        await props.processFile(objectName, file.name);
-      } catch (e) {
-        if (e instanceof Error) {
-          setError(e.message);
-        }
+      const applicationId = response.data;
+      router.push(`${Routes.CreditApplication}/${applicationId}`);
+    } catch (e) {
+      if (e instanceof Error) {
+        setError(e.message);
       }
-    },
-    [props.processFile],
-  );
+    }
+  }, []);
 
   const handleDrop = useCallback(async () => {
     setError("");
@@ -46,7 +49,7 @@ export const SupplierUpload = (props: {
           ],
         }}
       />
-      <span>{error}</span>
+      {error && <p className="text-red-600">{error}</p>}
     </>
   );
 };

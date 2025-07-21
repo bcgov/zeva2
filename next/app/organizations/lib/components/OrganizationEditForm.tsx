@@ -55,7 +55,9 @@ const OrganizationEditForm = (props: {
     const orgName = cleanupStringData(organizationName);
     const shortOrgName = cleanupStringData(shortName);
     if (!orgName || !shortOrgName) {
-      setErrorMsg("Both the organization name and the common name are required.");
+      setErrorMsg(
+        "Both the organization name and the common name are required.",
+      );
       return;
     }
     const data: OrganizationPayload = {

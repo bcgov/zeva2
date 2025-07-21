@@ -3,24 +3,28 @@
 import { useCallback, useEffect, useState, useTransition } from "react";
 import { Button } from "@/app/lib/components";
 import { Role, User } from "@/prisma/generated/client";
-import { UserPayload } from "../actions";
+import { createUser, updateUser } from "../actions";
 import { UserFormFields } from "./UserFormFields";
-import { REDIRECT_ERROR_CODE } from "next/dist/client/components/redirect-error";
 import { getUserPayload } from "../utilsClient";
+import { useRouter } from "next/navigation";
+import { Routes } from "@/app/lib/constants";
+import {
+  DataOrErrorActionResponse,
+  ErrorOrSuccessActionResponse,
+} from "@/app/lib/utils/actionResponse";
 
 export const UserForm = ({
   user,
   orgsMap,
   userOrgId,
   govOrgId,
-  onSubmit,
 }: {
   user?: User;
   orgsMap?: Record<number, string>;
   userOrgId: string;
   govOrgId: string;
-  onSubmit: (data: UserPayload) => Promise<never>;
 }) => {
+  const router = useRouter();
   const [error, setError] = useState<string>("");
   const [form, setForm] = useState<Partial<Record<string, string>>>({});
   const [roles, setRoles] = useState<Role[]>([]);
@@ -64,14 +68,31 @@ export const UserForm = ({
     startTransition(async () => {
       try {
         const payload = getUserPayload(form, roles);
-        await onSubmit(payload);
+        let response:
+          | ErrorOrSuccessActionResponse
+          | DataOrErrorActionResponse<number>
+          | undefined;
+        let userId: number | undefined;
+        if (user) {
+          userId = user.id;
+          response = await updateUser(user.id, payload);
+        } else {
+          response = await createUser(payload);
+          if (response.responseType === "data") {
+            userId = response.data;
+          }
+        }
+        if (response && response.responseType === "error") {
+          throw new Error(response.message);
+        }
+        router.push(`${Routes.Users}/${userId}`);
       } catch (e) {
-        if (e instanceof Error && e.message !== REDIRECT_ERROR_CODE) {
+        if (e instanceof Error) {
           setError(e.message);
         }
       }
     });
-  }, [user, onSubmit, form, roles]);
+  }, [user, form, roles, router]);
 
   return (
     <div>
