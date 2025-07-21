@@ -97,6 +97,24 @@ export const RecordsTable = (props: {
     return getModelYearEnumsToStringsMap();
   }, []);
 
+  const getHighlighted = useCallback(
+    (value: string | JSX.Element, warnings: string[]): string | JSX.Element => {
+      if (warnings.includes("1")) {
+        return <div className="bg-red-200 truncate">{value}</div>;
+      }
+      if (warnings.length > 0) {
+        return <div className="bg-yellow-200 truncate">{value}</div>;
+      }
+      return value;
+    },
+    [],
+  );
+
+  const onReset = useCallback(() => {
+    setValidatedMap({});
+    setReasonsMap({});
+  }, []);
+
   const columnHelper =
     createColumnHelper<CreditApplicationRecordSparseSerialized>();
   const columns = useMemo(() => {
@@ -106,6 +124,12 @@ export const RecordsTable = (props: {
         enableSorting: true,
         enableColumnFilter: true,
         header: () => <span>VIN</span>,
+        cell: (cellProps) => {
+          return getHighlighted(
+            cellProps.row.original.vin,
+            cellProps.row.original.warnings,
+          );
+        },
       }),
       columnHelper.accessor((row) => row.timestamp, {
         id: "timestamp",
@@ -163,7 +187,8 @@ export const RecordsTable = (props: {
         enableSorting: true,
         enableColumnFilter: true,
         cell: (cellProps) => {
-          return cellProps.row.original.warnings.join(", ");
+          const warnings = cellProps.row.original.warnings;
+          return getHighlighted(warnings.join(", "), warnings);
         },
         header: () => <span>Warnings</span>,
       }),
@@ -173,15 +198,12 @@ export const RecordsTable = (props: {
         enableColumnFilter: true,
         cell: (cellProps) => {
           const id = cellProps.row.original.id;
+          const warnings = cellProps.row.original.warnings;
           let disabled = false;
-          if (
-            cellProps.row.original.warnings.some(
-              (warning) => warning === "1" || warning === "51",
-            )
-          ) {
+          if (warnings.includes("1")) {
             disabled = true;
           }
-          return (
+          const value = (
             <input
               checked={validatedMap[id]}
               onChange={() => {
@@ -191,6 +213,7 @@ export const RecordsTable = (props: {
               disabled={props.readOnly || disabled}
             />
           );
+          return getHighlighted(value, warnings);
         },
 
         header: () => <span>Validated</span>,
@@ -228,6 +251,9 @@ export const RecordsTable = (props: {
         columns={columns}
         data={props.records}
         totalNumberOfRecords={props.totalNumbeOfRecords}
+        explicitSizing={true}
+        paramsToPreserve={["readOnly"]}
+        onReset={onReset}
       />
       {!props.readOnly && (
         <ContentCard title="Actions">

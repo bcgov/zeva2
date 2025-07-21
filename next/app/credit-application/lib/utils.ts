@@ -370,7 +370,7 @@ export const parseSupplierSubmission = (sheet: Excel.Worksheet) => {
               header === SupplierTemplateZEVsSuppliedSheetHeaderNames.Date
             ) {
               const [isValidDate, date] = validateDate(value);
-              if (isValidDate) {
+              if (isValidDate && date >= new Date("2018-01-02T00:00:00")) {
                 timestamp = date;
               }
             }
@@ -397,7 +397,7 @@ export const parseSupplierSubmission = (sheet: Excel.Worksheet) => {
   }
   if (invalidRows.length > 0) {
     throw new Error(
-      `Rows with missing or invalid data: ${invalidRows.join(", ")}`,
+      `Rows with missing or invalid data: ${invalidRows.join(", ")}. Please refer to the instructions sheet for guidance.`,
     );
   }
   const numberOfVins = Object.keys(data).length;
@@ -430,18 +430,15 @@ export const getWarningsMap = (
     ) {
       result[vin].push("1");
     }
-    if (data.timestamp < new Date("2018-01-02T00:00:00")) {
-      result[vin].push("51");
-    }
     if (!icbcRecord) {
-      result[vin].push("11");
+      result[vin].push("2");
     }
     if (vehicle && icbcRecord) {
-      if (
-        icbcRecord.make !== vehicle.make ||
-        icbcRecord.modelYear !== vehicle.modelYear
-      ) {
-        result[vin].push("41");
+      if (icbcRecord.make !== vehicle.make) {
+        result[vin].push("3");
+      }
+      if (icbcRecord.modelYear !== vehicle.modelYear) {
+        result[vin].push("4");
       }
     }
     if (result[vin].length === 0) {

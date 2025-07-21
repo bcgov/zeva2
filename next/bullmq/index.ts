@@ -13,8 +13,15 @@ if (bullmqConfig.startWorkers) {
       const worker = new Worker(queueName, handler, {
         connection: defaultConnection,
       });
+      worker.on("ready", () => {
+        console.log(
+          "At %s, a worker for the %s queue is ready!",
+          new Date(),
+          queueName,
+        );
+      });
       worker.on("error", (err) => {
-        console.error(err);
+        console.error("At %s, encountered error: %s", new Date(), err);
       });
       if (completedHandler) {
         worker.on("completed", completedHandler);

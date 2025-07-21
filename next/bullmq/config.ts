@@ -16,6 +16,15 @@ const connection: ConnectionOptions = {
     process.env.REDIS_TLS_ENABLED === "true"
       ? { rejectUnauthorized: false }
       : undefined,
+  // please see the "Reconnect on error" section of https://ioredis.readthedocs.io/en/latest/README/
+  reconnectOnError: (err) => {
+    const targetError = "READONLY";
+    if (err.message.slice(0, targetError.length) === targetError) {
+      // Only reconnect when the error starts with "READONLY"
+      return true; // or `return 1;`
+    }
+    return false;
+  },
 };
 
 export const bullmqConfig = {
