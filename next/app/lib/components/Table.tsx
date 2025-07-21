@@ -29,7 +29,7 @@ interface ITableProps<T> {
   navigationAction?: (id: number) => Promise<void>;
   explicitSizing?: boolean;
   paramsToPreserve?: string[];
-  onReset?: () => void;
+  stackHeaderContents?: boolean;
 }
 
 interface ZevaObject {
@@ -43,7 +43,7 @@ export const Table = <T extends ZevaObject>({
   navigationAction,
   explicitSizing,
   paramsToPreserve,
-  onReset,
+  stackHeaderContents,
 }: ITableProps<T>) => {
   const { replace } = useRouter();
   const table = useReactTable({
@@ -75,11 +75,8 @@ export const Table = <T extends ZevaObject>({
         newParams.set(param, paramValue);
       }
     });
-    if (onReset) {
-      onReset();
-    }
     replaceUrl(newParams);
-  }, [paramsToPreserve, searchParams, onReset, replaceUrl]);
+  }, [paramsToPreserve, searchParams, replaceUrl]);
 
   const currentPageSize = React.useMemo(() => {
     const pageSize = searchParams.get("pageSize");
@@ -271,7 +268,9 @@ export const Table = <T extends ZevaObject>({
                       explicitSizing ? { width: header.getSize() } : undefined
                     }
                   >
-                    <span className="inline-flex items-center gap-1">
+                    <span
+                      className={`inline-flex gap-1 ${stackHeaderContents ? "flex-col items-start" : "items-center"}`}
+                    >
                       {header.isPlaceholder ? null : (
                         <>
                           <div
