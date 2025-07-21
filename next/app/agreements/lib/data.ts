@@ -1,6 +1,10 @@
 import { getUserInfo } from "@/auth";
 import { prisma } from "@/lib/prisma";
-import { AgreementType, AgreementStatus, ZevClass } from "@/prisma/generated/client";
+import {
+  AgreementType,
+  AgreementStatus,
+  ZevClass,
+} from "@/prisma/generated/client";
 import { Decimal } from "@/prisma/generated/client/runtime/index-browser";
 import { getWhereClause, getOrderByClause } from "./utils";
 
@@ -49,7 +53,7 @@ export const getAgreements = async (
           select: {
             zevClass: true,
             numberOfUnits: true,
-          }
+          },
         },
       },
       orderBy,
@@ -63,13 +67,19 @@ export const getAgreements = async (
       ...agreement,
       creditA: agreementContent
         .filter((content) => content.zevClass === ZevClass.A)
-        .reduce((acc, content) => acc.add(new Decimal(content.numberOfUnits)), new Decimal(0))
+        .reduce(
+          (acc, content) => acc.add(new Decimal(content.numberOfUnits)),
+          new Decimal(0),
+        )
         .toNumber(),
       creditB: agreementContent
         .filter((content) => content.zevClass === ZevClass.B)
-        .reduce((acc, content) => acc.add(new Decimal(content.numberOfUnits)), new Decimal(0))
+        .reduce(
+          (acc, content) => acc.add(new Decimal(content.numberOfUnits)),
+          new Decimal(0),
+        )
         .toNumber(),
-    }
+    };
   });
 
   return [agreements, numberOfAgreements];
