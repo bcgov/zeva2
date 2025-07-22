@@ -10,30 +10,37 @@ import { CommentBox } from "./CommentBox";
 export const SupplierUpload = () => {
   const router = useRouter();
   const [error, setError] = useState<string>("");
-  const [comment, setComment] = useState<string>("")
+  const [comment, setComment] = useState<string>("");
 
-  const handleSubmit = useCallback(async (files: File[]) => {
-    if (files.length !== 1) {
-      setError("Exactly 1 file expected!");
-    }
-    const file = files[0];
-    const putData = await getCreditApplicationPutData();
-    const objectName = putData.objectName;
-    const url = putData.url;
-    await axios.put(url, file);
-    try {
-      const response = await processSupplierFile(objectName, file.name, comment);
-      if (response.responseType === "error") {
-        throw new Error(response.message);
+  const handleSubmit = useCallback(
+    async (files: File[]) => {
+      if (files.length !== 1) {
+        setError("Exactly 1 file expected!");
       }
-      const applicationId = response.data;
-      router.push(`${Routes.CreditApplication}/${applicationId}`);
-    } catch (e) {
-      if (e instanceof Error) {
-        setError(e.message);
+      const file = files[0];
+      const putData = await getCreditApplicationPutData();
+      const objectName = putData.objectName;
+      const url = putData.url;
+      await axios.put(url, file);
+      try {
+        const response = await processSupplierFile(
+          objectName,
+          file.name,
+          comment,
+        );
+        if (response.responseType === "error") {
+          throw new Error(response.message);
+        }
+        const applicationId = response.data;
+        router.push(`${Routes.CreditApplication}/${applicationId}`);
+      } catch (e) {
+        if (e instanceof Error) {
+          setError(e.message);
+        }
       }
-    }
-  }, [comment]);
+    },
+    [comment],
+  );
 
   const handleDrop = useCallback(async () => {
     setError("");

@@ -6,7 +6,7 @@ export const handleCreateDefaultBucket = async () => {
   if (bucketName) {
     const bucketExists = await client.bucketExists(bucketName);
     if (!bucketExists) {
-      await client.makeBucket(bucketName, undefined, { ObjectLocking: true });
+      await client.makeBucket(bucketName);
     }
   }
 };

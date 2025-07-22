@@ -12,10 +12,18 @@ export const getClient = () => {
   });
 };
 
+const getPrefixedObjectName = (objectName: string) => {
+  const prefix = process.env.MINIO_PREFIX;
+  if (prefix) {
+    return `${prefix}/${objectName}`;
+  }
+  return objectName;
+};
+
 export const getObject = async (objectName: string) => {
   const client = getClient();
   const bucketName = process.env.MINIO_BUCKET_NAME ?? "";
-  return await client.getObject(bucketName, objectName);
+  return await client.getObject(bucketName, getPrefixedObjectName(objectName));
 };
 
 export const putObject = async (
@@ -24,33 +32,33 @@ export const putObject = async (
 ) => {
   const client = getClient();
   const bucketName = process.env.MINIO_BUCKET_NAME ?? "";
-  return await client.putObject(bucketName, objectName, object);
+  return await client.putObject(
+    bucketName,
+    getPrefixedObjectName(objectName),
+    object,
+  );
 };
 
 export const getPresignedGetObjectUrl = async (objectName: string) => {
   const client = getClient();
   const bucketName = process.env.MINIO_BUCKET_NAME ?? "";
-  return await client.presignedGetObject(bucketName, objectName);
+  return await client.presignedGetObject(
+    bucketName,
+    getPrefixedObjectName(objectName),
+  );
 };
 
 export const getPresignedPutObjectUrl = async (objectName: string) => {
   const client = getClient();
   const bucketName = process.env.MINIO_BUCKET_NAME ?? "";
-  return await client.presignedPutObject(bucketName, objectName);
+  return await client.presignedPutObject(
+    bucketName,
+    getPrefixedObjectName(objectName),
+  );
 };
 
 export const removeObject = async (objectName: string) => {
   const client = getClient();
   const bucketName = process.env.MINIO_BUCKET_NAME ?? "";
-  await client.removeObject(bucketName, objectName);
-};
-
-export const setObjectLegalHold = async (objectName: string) => {
-  const client = getClient();
-  const bucketName = process.env.MINIO_BUCKET_NAME ?? "";
-  // minio's setObjectLegalHold is mis-typed; it does return a Promise
-  await (client.setObjectLegalHold(
-    bucketName,
-    objectName,
-  ) as unknown as Promise<void>);
+  await client.removeObject(bucketName, getPrefixedObjectName(objectName));
 };

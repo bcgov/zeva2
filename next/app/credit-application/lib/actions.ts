@@ -5,7 +5,6 @@ import {
   getPresignedGetObjectUrl,
   getPresignedPutObjectUrl,
   removeObject,
-  setObjectLegalHold,
 } from "@/app/lib/minio";
 import { getUserInfo } from "@/auth";
 import { prisma } from "@/lib/prisma";
@@ -73,7 +72,7 @@ export const getCreditApplicationPutData = async () => {
 export const processSupplierFile = async (
   objectName: string,
   fileName: string,
-  comment?: string
+  comment?: string,
 ): Promise<DataOrErrorActionResponse<number>> => {
   const { userOrgId, userId } = await getUserInfo();
   let result = NaN;
@@ -154,10 +153,9 @@ export const processSupplierFile = async (
           userId,
           userAction: CreditApplicationStatus.SUBMITTED,
           creditApplicationId: id,
-          comment
+          comment,
         },
       });
-      await setObjectLegalHold(fullObjectName);
     });
   } catch (e) {
     await removeObject(fullObjectName);
@@ -326,7 +324,7 @@ export const updateValidatedRecords = async (
 export const analystRecommend = async (
   creditApplicationId: number,
   status: CreditApplicationStatus,
-  comment?: string
+  comment?: string,
 ): Promise<ErrorOrSuccessActionResponse> => {
   const { userIsGov, userId, userRoles } = await getUserInfo();
   if (!userIsGov || !userRoles.some((role) => role === Role.ENGINEER_ANALYST)) {
@@ -359,7 +357,7 @@ export const analystRecommend = async (
 
 export const returnToSupplier = async (
   creditApplicationId: number,
-  comment?: string
+  comment?: string,
 ): Promise<ErrorOrSuccessActionResponse> => {
   const { userIsGov, userId, userRoles } = await getUserInfo();
   if (!userIsGov || !userRoles.some((role) => role === Role.ENGINEER_ANALYST)) {
@@ -389,7 +387,7 @@ export const returnToSupplier = async (
       userId,
       creditApplicationId,
       CreditApplicationStatus.RETURNED_TO_SUPPLIER,
-      comment
+      comment,
     ),
   ]);
   return getSuccessActionResponse();
@@ -397,7 +395,7 @@ export const returnToSupplier = async (
 
 export const returnToAnalyst = async (
   creditApplicationId: number,
-  comment?: string
+  comment?: string,
 ): Promise<ErrorOrSuccessActionResponse> => {
   const { userIsGov, userId, userRoles } = await getUserInfo();
   if (!userIsGov || !userRoles.some((role) => role === Role.DIRECTOR)) {
@@ -426,7 +424,7 @@ export const returnToAnalyst = async (
       userId,
       creditApplicationId,
       CreditApplicationStatus.RETURNED_TO_ANALYST,
-      comment
+      comment,
     ),
   ]);
   return getSuccessActionResponse();
@@ -435,7 +433,7 @@ export const returnToAnalyst = async (
 export const directorApprove = async (
   creditApplicationId: number,
   credits: CreditApplicationCreditSerialized[],
-  comment?: string
+  comment?: string,
 ): Promise<ErrorOrSuccessActionResponse> => {
   const { userIsGov, userRoles, userId } = await getUserInfo();
   if (!userIsGov || !userRoles.some((role) => role === Role.DIRECTOR)) {
@@ -486,7 +484,7 @@ export const directorApprove = async (
       userId,
       creditApplicationId,
       CreditApplicationStatus.APPROVED,
-      comment
+      comment,
     ),
   ]);
   return getSuccessActionResponse();
@@ -494,7 +492,7 @@ export const directorApprove = async (
 
 export const directorReject = async (
   creditApplicationId: number,
-  comment?: string
+  comment?: string,
 ): Promise<ErrorOrSuccessActionResponse> => {
   const { userIsGov, userRoles, userId } = await getUserInfo();
   if (!userIsGov || !userRoles.some((role) => role === Role.DIRECTOR)) {
@@ -516,7 +514,7 @@ export const directorReject = async (
       userId,
       creditApplicationId,
       CreditApplicationStatus.REJECTED,
-      comment
+      comment,
     ),
   ]);
   return getSuccessActionResponse();
