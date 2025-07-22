@@ -1,13 +1,13 @@
 "use client";
 
-import React from "react";
+import React, { Dispatch, SetStateAction } from "react";
 
 export const CommentBox = ({
   comment,
   setComment,
 }: {
-  comment: string;
-  setComment: (val: string) => void;
+  comment: string | undefined;
+  setComment: Dispatch<SetStateAction<string>>;
 }) => {
   return (
     <textarea
