@@ -11,6 +11,8 @@ import {
   getErrorActionResponse,
   getSuccessActionResponse,
 } from "@/app/lib/utils/actionResponse";
+import { getPresignedPutObjectUrl } from "@/app/lib/minio";
+import { randomUUID } from "crypto";
 
 export async function createVehicleComment(vehicleId: number, comment: string) {
   const { userIsGov, userId, userOrgId } = await getUserInfo();
@@ -150,3 +152,41 @@ export async function createOrUpdateVehicle(
   });
   return getDataActionResponse<number>(vehicleId);
 }
+
+export const createVehicleAttachment = async ({
+  vehicleId,
+  filename,
+  objectName,
+  size,
+  mimeType,
+}: {
+  vehicleId: number;
+  filename: string;
+  objectName: string;
+  size: bigint;
+  mimeType?: string | null;
+}) => {
+  const { userId } = await getUserInfo();
+
+  await prisma.vehicleAttachment.create({
+    data: {
+      vehicleId,
+      filename,
+      minioObjectName: objectName,
+      size,
+      mimeType,
+      createUser: userId,
+    },
+  });
+};
+
+export const getPutObjectData = async (): Promise<
+  { objectName: string; url: string } | undefined
+> => {
+  const objectName = randomUUID();
+  const url = await getPresignedPutObjectUrl(objectName);
+  return {
+    objectName,
+    url,
+  };
+};

@@ -7,6 +7,9 @@ import {
   useMemo,
   useEffect,
 } from "react";
+import { useRouter } from "next/navigation";
+import { VehiclePayload } from "../actions";
+import { Routes } from "@/app/lib/constants";
 import {
   VehicleClassCode,
   VehicleStatus,
@@ -15,19 +18,36 @@ import {
 import { getVehiclePayload } from "../utilsClient";
 import { SerializedVehicleWithOrg } from "../data";
 import { getModelYearEnumsToStringsMap } from "@/app/lib/utils/enumMaps";
-import { createOrUpdateVehicle } from "../actions";
-import { useRouter } from "next/navigation";
-import { Routes } from "@/app/lib/constants";
+import { REDIRECT_ERROR_CODE } from "next/dist/client/components/redirect-error";
+import { createVehicleAttachment } from "../actions";
+import { Dropzone } from "@/app/lib/components/Dropzone";
+import axios from "axios";
 
-export function VehicleForm(props: { vehicle?: SerializedVehicleWithOrg }) {
+export function VehicleForm(props: {
+  vehicle?: SerializedVehicleWithOrg;
+  handleSave: (data: VehiclePayload) => Promise<void>;
+}) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string>("");
   const [formData, setFormData] = useState<Partial<Record<string, string>>>({});
-
+  const [upload, setUpload] = useState(false);
+  const [file, setFile] = useState<File | null>(null);
   const modelYearsMap = useMemo(() => {
     return getModelYearEnumsToStringsMap();
   }, []);
+  const allowedFileTypes = {
+    "application/msword": [".doc", ".docx"],
+    "application/vnd.ms-excel": [".xls", ".xlsx"],
+    "application/pdf": [".pdf"],
+    "image/jpeg": [".jpg"],
+    "image/png": [".png"],
+  };
+  const handleDrop = (acceptedFiles: File[]) => {
+    if (acceptedFiles.length === 1) {
+      setFile(acceptedFiles[0]);
+    }
+  };
 
   useEffect(() => {
     const vehicle = props.vehicle;
@@ -43,6 +63,7 @@ export function VehicleForm(props: { vehicle?: SerializedVehicleWithOrg }) {
         bodyType: vehicle.vehicleClassCode,
         gvwr: vehicle.weightKg,
       });
+      setUpload(vehicle.hasPassedUs06Test);
     }
   }, [props.vehicle]);
 
@@ -60,12 +81,35 @@ export function VehicleForm(props: { vehicle?: SerializedVehicleWithOrg }) {
           if (props.vehicle) {
             vehiclePayload.id = props.vehicle.id;
           }
-          const response = await createOrUpdateVehicle(vehiclePayload);
-          if (response.responseType === "error") {
-            throw new Error(response.message);
+          const vehicleId = await props.handleSave(vehiclePayload);
+          if (upload) {
+            if (!file) {
+              setError("You must upload US06 certificate");
+              return;
+            }
+            const res = await fetch("/api/vehicle/upload-url");
+            if (!res.ok) {
+              setError("Failed to get upload URL");
+              return;
+            }
+            const { url, objectName } = await res.json();
+            await axios.put(url, file);
+
+            //adds record to db
+            const id = vehicleId ? vehicleId : vehiclePayload.id;
+
+            await createVehicleAttachment({
+              vehicleId: id,
+              filename: file.name,
+              objectName,
+              size: BigInt(file.size),
+              mimeType: file.type,
+            });
           }
-          const vehicleId = response.data;
-          router.push(`${Routes.Vehicle}/${vehicleId}`);
+
+          router.push(
+            `${Routes.Vehicle}/${vehicleId ? vehicleId : vehiclePayload.id}`,
+          );
         } catch (e) {
           if (e instanceof Error) {
             setError(e.message);
@@ -73,7 +117,7 @@ export function VehicleForm(props: { vehicle?: SerializedVehicleWithOrg }) {
         }
       });
     },
-    [formData, props.vehicle, router],
+    [formData, props.vehicle, props.handleSave, upload, file],
   );
 
   const button = useMemo(() => {
@@ -176,10 +220,18 @@ export function VehicleForm(props: { vehicle?: SerializedVehicleWithOrg }) {
           disabled={formData.zevType !== "EREV"}
           onChange={(e) => {
             handleChange(e.target.name, e.target.checked ? "true" : "false");
+            setUpload(e.target.checked);
           }}
         />
         <span>(requires certificate upload)</span>
       </div>
+      {(formData.us06 || upload) && (
+        <Dropzone
+          handleDrop={handleDrop}
+          maxNumberOfFiles={1}
+          allowedFileTypes={allowedFileTypes}
+        />
+      )}
 
       <div className="flex items-center py-2 my-2">
         <label className="w-72">Electric EPA Range (km)</label>
