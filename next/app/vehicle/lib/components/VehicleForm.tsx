@@ -18,21 +18,20 @@ import {
 import { getVehiclePayload } from "../utilsClient";
 import { SerializedVehicleWithOrg } from "../data";
 import { getModelYearEnumsToStringsMap } from "@/app/lib/utils/enumMaps";
-import { REDIRECT_ERROR_CODE } from "next/dist/client/components/redirect-error";
 import { createVehicleAttachment } from "../actions";
 import { Dropzone } from "@/app/lib/components/Dropzone";
 import axios from "axios";
 
 export function VehicleForm(props: {
   vehicle?: SerializedVehicleWithOrg;
-  handleSave: (data: VehiclePayload) => Promise<void>;
+  handleSave: (data: VehiclePayload) => Promise<number>;
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string>("");
   const [formData, setFormData] = useState<Partial<Record<string, string>>>({});
   const [upload, setUpload] = useState(false);
-  const [file, setFile] = useState<File | null>(null);
+  const [files, setFiles] = useState<File[]>([]);
   const modelYearsMap = useMemo(() => {
     return getModelYearEnumsToStringsMap();
   }, []);
@@ -43,11 +42,9 @@ export function VehicleForm(props: {
     "image/jpeg": [".jpg"],
     "image/png": [".png"],
   };
-  const handleDrop = (acceptedFiles: File[]) => {
-    if (acceptedFiles.length === 1) {
-      setFile(acceptedFiles[0]);
-    }
-  };
+  const handleDrop = useCallback((acceptedFiles: File[]) => {
+    setFiles((prev) => [...prev, ...acceptedFiles.slice(0, 20 - prev.length)]);
+  }, []);
 
   useEffect(() => {
     const vehicle = props.vehicle;
@@ -83,7 +80,7 @@ export function VehicleForm(props: {
           }
           const vehicleId = await props.handleSave(vehiclePayload);
           if (upload) {
-            if (!file) {
+            if (files.length == 0) {
               setError("You must upload US06 certificate");
               return;
             }
@@ -92,19 +89,24 @@ export function VehicleForm(props: {
               setError("Failed to get upload URL");
               return;
             }
-            const { url, objectName } = await res.json();
-            await axios.put(url, file);
-
-            //adds record to db
             const id = vehicleId ? vehicleId : vehiclePayload.id;
+            for (const file of files) {
+              const res = await fetch("/api/vehicle/upload-url");
+              if (!res.ok) {
+                setError("Failed to get upload URL");
+                return;
+              }
+              const { url, objectName } = await res.json();
+              await axios.put(url, file);
 
-            await createVehicleAttachment({
-              vehicleId: id,
-              filename: file.name,
-              objectName,
-              size: BigInt(file.size),
-              mimeType: file.type,
-            });
+              await createVehicleAttachment({
+                vehicleId: id,
+                filename: file.name,
+                objectName,
+                size: BigInt(file.size),
+                mimeType: file.type,
+              });
+            }
           }
 
           router.push(
@@ -117,7 +119,7 @@ export function VehicleForm(props: {
         }
       });
     },
-    [formData, props.vehicle, props.handleSave, upload, file],
+    [formData, props.vehicle, props.handleSave, upload, files],
   );
 
   const button = useMemo(() => {
@@ -228,7 +230,7 @@ export function VehicleForm(props: {
       {(formData.us06 || upload) && (
         <Dropzone
           handleDrop={handleDrop}
-          maxNumberOfFiles={1}
+          maxNumberOfFiles={20}
           allowedFileTypes={allowedFileTypes}
         />
       )}
