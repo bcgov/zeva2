@@ -22,6 +22,11 @@ export const AnalystActions = (props: {
   const router = useRouter();
   const [comment, setComment] = useState<string>("");
 
+  const refresh = useCallback(() => {
+    setComment("");
+    router.refresh();
+  }, [router]);
+
   const handleValidate = useCallback(() => {
     startTransition(async () => {
       const response = await validateCreditApplication(props.id);
@@ -55,11 +60,11 @@ export const AnalystActions = (props: {
         if (response.responseType === "error") {
           console.error(response.message);
         } else {
-          router.refresh();
+          refresh();
         }
       });
     },
-    [props.id, comment, router],
+    [props.id, comment, refresh],
   );
 
   const handleReturnToSupplier = useCallback(() => {
@@ -71,14 +76,13 @@ export const AnalystActions = (props: {
       if (response.responseType === "error") {
         console.error(response.message);
       } else {
-        router.refresh();
+        refresh();
       }
     });
-  }, [props.id, comment, router]);
+  }, [props.id, comment, refresh]);
 
   return (
     <>
-      <CommentBox comment={comment} setComment={setComment} />
       {(props.status === CreditApplicationStatus.SUBMITTED ||
         props.status === CreditApplicationStatus.RETURNED_TO_ANALYST) && (
         <Button onClick={handleValidate} disabled={isPending}>
@@ -101,6 +105,11 @@ export const AnalystActions = (props: {
         props.status === CreditApplicationStatus.RETURNED_TO_ANALYST) &&
         props.validatedBefore && (
           <>
+            <CommentBox
+              comment={comment}
+              setComment={setComment}
+              disabled={isPending}
+            />
             <Button
               onClick={() => {
                 handleGoToValidated(true);
