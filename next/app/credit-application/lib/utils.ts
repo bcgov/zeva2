@@ -489,10 +489,3 @@ export const serializeCredits = (
     return { ...credit, numberOfUnits: credit.numberOfUnits.toString() };
   });
 };
-
-export const getNormalizedComment = (comment: string) => {
-  if (comment === "") {
-    return undefined;
-  }
-  return comment;
-};

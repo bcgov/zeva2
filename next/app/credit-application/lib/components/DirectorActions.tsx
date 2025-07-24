@@ -5,10 +5,7 @@ import { CreditApplicationStatus } from "@/prisma/generated/client";
 import { useRouter } from "next/navigation";
 import { useCallback, useState, useTransition } from "react";
 import { directorApprove, directorReject, returnToAnalyst } from "../actions";
-import {
-  CreditApplicationCreditSerialized,
-  getNormalizedComment,
-} from "../utils";
+import { CreditApplicationCreditSerialized } from "../utils";
 import { Routes } from "@/app/lib/constants";
 import { CommentBox } from "./CommentBox";
 
@@ -36,10 +33,7 @@ export const DirectorActions = (props: {
 
   const handleReturn = useCallback(() => {
     startTransition(async () => {
-      const response = await returnToAnalyst(
-        props.id,
-        getNormalizedComment(comment),
-      );
+      const response = await returnToAnalyst(props.id, comment);
       if (response.responseType === "error") {
         console.error(response.message);
       } else {
@@ -50,11 +44,7 @@ export const DirectorActions = (props: {
 
   const handleApprove = useCallback(() => {
     startTransition(async () => {
-      const response = await directorApprove(
-        props.id,
-        props.credits,
-        getNormalizedComment(comment),
-      );
+      const response = await directorApprove(props.id, props.credits, comment);
       if (response.responseType === "error") {
         console.error(response.message);
       } else {
@@ -65,10 +55,7 @@ export const DirectorActions = (props: {
 
   const handleReject = useCallback(() => {
     startTransition(async () => {
-      const response = await directorReject(
-        props.id,
-        getNormalizedComment(comment),
-      );
+      const response = await directorReject(props.id, comment);
       if (response.responseType === "error") {
         console.error(response.message);
       } else {
