@@ -2,18 +2,23 @@
 
 import axios from "axios";
 import { Dropzone } from "@/app/lib/components/Dropzone";
-import { useCallback, useState } from "react";
+import { useCallback, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { createIcbcFile, getPutObjectData } from "../actions";
 import { Routes } from "@/app/lib/constants";
+import { Button } from "@/app/lib/components";
+import { FileWithPath } from "react-dropzone";
 
 export const Upload = () => {
   const router = useRouter();
+  const [isPending, startTransition] = useTransition();
+  const [files, setFiles] = useState<FileWithPath[]>([]);
   const [datestring, setDatestring] = useState<string>("");
   const [error, setError] = useState<string>("");
 
-  const handleSubmit = useCallback(
-    async (files: File[]) => {
+  const handleSubmit = useCallback(() => {
+    setError("");
+    startTransition(async () => {
       try {
         if (files.length !== 1) {
           throw new Error("Exactly 1 file expected!");
@@ -36,9 +41,8 @@ export const Upload = () => {
           setError(e.message);
         }
       }
-    },
-    [datestring, router],
-  );
+    });
+  }, [files, datestring, router]);
 
   return (
     <div>
@@ -60,10 +64,17 @@ export const Upload = () => {
       </div>
       <div className="flex items-center py-2 my-2">
         <Dropzone
-          handleSubmit={handleSubmit}
+          files={files}
+          setFiles={setFiles}
+          disabled={isPending}
           maxNumberOfFiles={1}
           allowedFileTypes={{ "text/csv": [".csv"] }}
         />
+      </div>
+      <div className="flex space-x-2">
+        <Button onClick={handleSubmit} disabled={isPending}>
+          {isPending ? "..." : "Submit"}
+        </Button>
       </div>
     </div>
   );
