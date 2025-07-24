@@ -1,0 +1,111 @@
+# this workflow builds and deploys pull requests to the development environment in OpenShift.
+
+name: PR Build on Dev
+
+on:
+  # have to use pull_request_target otherwise the workflow will not have access to the secrets
+  pull_request_target:
+    types: [labeled, synchronize]
+    branches:
+      - fix-prbuild
+
+env:
+  GIT_URL: https://github.com/bcgov/zeva2.git
+  TOOLS_NAMESPACE: ${{ secrets.OPENSHIFT_NAMESPACE_PLATE }}-tools
+  DEV_NAMESPACE: ${{ secrets.OPENSHIFT_NAMESPACE_PLATE }}-dev
+  PR_NUMBER: ${{ github.event.pull_request.number }}
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  versioning:
+    runs-on: ubuntu-latest
+
+    outputs:
+      VERSION: ${{ steps.export-version.outputs.VERSION }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: refs/pull/${{ github.event.pull_request.number }}/head
+
+      - name: verify files changed
+        run: |
+          pwd
+          ls -l
+          git status
+
+      - name: Install GitVersion
+        uses: gittools/actions/gitversion/setup@v3.1.11
+        with:
+          versionSpec: "6.0.x"
+
+      - name: Determine Version
+        id: version-step # step id used as reference for output values
+        uses: gittools/actions/gitversion/execute@v3.1.11
+        with:
+          useConfigFile: true
+
+      - name: Show GitVersion Config
+        run: |
+          pwd
+          ls -l /opt/hostedtoolcache/GitVersion.Tool
+          /opt/hostedtoolcache/GitVersion.Tool/6.0.5/dotnet-gitversion /showconfig
+
+      # The original version fron gitversion is in the format 0.1.0-alpha.91
+      # We need to change the alpha to pr<pr_number> so that we can deploy to dev
+      # The version will be in the format 0.1.0-pr<pr_number>.91
+      # The reason gitversion used the lable alpha is we use the pull_request_target event
+      - name: Export Version
+        id: export-version
+        run: |
+          VERSION="${{ steps.version-step.outputs.SemVer }}"
+          echo "ORIGINAL_VERSION=${VERSION}"
+          PR_NUMBER="${{ env.PR_NUMBER }}"
+          UPDATED_VERSION="${VERSION/alpha/pr${PR_NUMBER}}"
+          echo "VERSION=${UPDATED_VERSION}"
+          echo "VERSION=${UPDATED_VERSION}" >> $GITHUB_OUTPUT
+
+  # install oc command line tool
+  deploy:
+    name: Deploy pull request
+    needs: [versioning]
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+
+    steps:
+      - name: Checkout Manifest repository
+        uses: actions/checkout@v4.1.1
+        with:
+          repository: bcgov-c/tenant-gitops-ea8eab
+          ref: main
+          ssh-key: ${{ secrets.MANIFEST_REPO_DEPLOY_KEY }}
+
+      - name: Update values in next values-dev-pr.yaml
+        uses: mikefarah/yq@v4.40.5
+        with:
+          cmd: |
+            yq -i '.image.tag = "${{ needs.versioning.outputs.VERSION }}"' zeva2/zeva2-next/values-dev-pr.yaml
+            yq -i ".podAnnotations.rolloutTriggered = \"A$(date +%s)E\"" zeva2/zeva2-next/values-dev-pr.yaml
+            yq -i '.route.host = "zeva2-dev-${{ env.PR_NUMBER}}.apps.silver.devops.gov.bc.ca"' zeva2/zeva2-next/values-dev-pr.yaml
+            yq -i '(.env[] | select(.name=="AUTH_URL").value) = "https://zeva2-dev-${{ env.PR_NUMBER}}.apps.silver.devops.gov.bc.ca/api/auth"' zeva2/zeva2-next/values-dev-pr.yaml
+            yq -i '(.env[] | select(.name=="REDIS_HOST").value) = "zeva2-redis-dev-${{ env.PR_NUMBER}}-master.${{ env.DEV_NAMESPACE }}.svc.cluster.local"' zeva2/zeva2-next/values-dev-pr.yaml 
+            yq -i '(.env[] | select(.name=="DATABASE_URL").value) = "postgresql://test:test@zeva2-postgresql-dev-${{ env.PR_NUMBER}}.${{ env.DEV_NAMESPACE }}.svc.cluster.local:5432/zeva?schema=public"' zeva2/zeva2-next/values-dev-pr.yaml
+            yq -i eval '(.env[] | select(.name == "MINIO_ACCESS_KEY") | .valueFrom.secretKeyRef.name) = "zeva2-minio-dev-${{ env.PR_NUMBER }}"' zeva2/zeva2-next/values-dev-pr.yaml 
+            yq -i '(.env[] | select(.name=="MINIO_ENDPOINT").value) = "zeva2-minio-dev-${{ env.PR_NUMBER}}.ea8eab-dev.svc.cluster.local"' zeva2/zeva2-next/values-dev-pr.yaml
+            yq -i eval '(.env[] | select(.name == "MINIO_SECRET_KEY") | .valueFrom.secretKeyRef.name) = "zeva2-minio-dev-${{ env.PR_NUMBER }}"' zeva2/zeva2-next/values-dev-pr.yaml
+
+      - name: Update values in bullmq values-dev-pr.yaml
+        uses: mikefarah/yq@v4.40.5
+        with:
+          cmd: |
+            yq -i '.image.tag = "${{ needs.versioning.outputs.VERSION }}"' zeva2/zeva2-bullmq/values-dev-pr.yaml
+            yq -i ".podAnnotations.rolloutTriggered = \"A$(date +%s)E\"" zeva2/zeva2-bullmq/values-dev-pr.yaml
+            yq -i '(.env[] | select(.name=="DATABASE_URL").value) = "postgresql://test:test@zeva2-postgresql-dev-${{ env.PR_NUMBER}}.${{ env.DEV_NAMESPACE }}.svc.cluster.local:5432/zeva?schema=public"' zeva2/zeva2-bullmq/values-dev-pr.yaml
+            yq -i eval '(.env[] | select(.name == "MINIO_ACCESS_KEY") | .valueFrom.secretKeyRef.name) = "zeva2-minio-dev-${{ env.PR_NUMBER }}"' zeva2/zeva2-bullmq/values-dev-pr.yaml 
+            yq -i '(.env[] | select(.name=="MINIO_ENDPOINT").value) = "zeva2-minio-dev-${{ env.PR_NUMBER}}.ea8eab-dev.svc.cluster.local"' zeva2/zeva2-bullmq/values-dev-pr.yaml
+            yq -i eval '(.env[] | select(.name == "MINIO_SECRET_KEY") | .valueFrom.secretKeyRef.name) = "zeva2-minio-dev-${{ env.PR_NUMBER }}"' zeva2/zeva2-bullmq/values-dev-pr.yaml
