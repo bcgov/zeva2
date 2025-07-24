@@ -199,6 +199,7 @@ jobs:
         with:
           cmd: |
             yq -i '.image.tag = "${{ needs.versioning.outputs.VERSION }}"' zeva2/zeva2-bullmq/values-dev-pr.yaml
+            yq -i '(.env[] | select(.name=="REDIS_HOST").value) = "zeva2-redis-dev-${{ env.PR_NUMBER}}-master.ea8eab-dev.svc.cluster.local"' zeva2/zeva2-bullmq/values-dev-pr.yaml
             yq -i '(.env[] | select(.name=="DATABASE_URL").value) = "postgresql://test:test@zeva2-postgresql-dev-${{ env.PR_NUMBER}}.${{ env.DEV_NAMESPACE }}.svc.cluster.local:5432/zeva?schema=public"' zeva2/zeva2-bullmq/values-dev-pr.yaml
             yq -i eval '(.env[] | select(.name == "MINIO_ACCESS_KEY") | .valueFrom.secretKeyRef.name) = "zeva2-minio-dev-${{ env.PR_NUMBER }}"' zeva2/zeva2-bullmq/values-dev-pr.yaml 
             yq -i '(.env[] | select(.name=="MINIO_ENDPOINT").value) = "zeva2-minio-dev-${{ env.PR_NUMBER}}.ea8eab-dev.svc.cluster.local"' zeva2/zeva2-bullmq/values-dev-pr.yaml
