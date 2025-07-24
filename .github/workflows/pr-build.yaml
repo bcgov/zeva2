@@ -120,7 +120,7 @@ jobs:
         uses: actions/github-script@v6
         with:
           script: |
-            const allowedAuthors = ['kuanfandevops', 'emi-hi', 'JulianForeman', 'rogerlcleung', 'tim738745', 'dependabot'];
+            const allowedAuthors = ['kuanfandevops', 'emi-hi', 'JulianForeman', 'rogerlcleung', 'tim738745', 'dependabot[bot]'];
             const prAuthor = context.payload.pull_request.user.login;
             if (!allowedAuthors.includes(prAuthor)) {
               throw new Error(`PR author ${prAuthor} is not allowed.`);
