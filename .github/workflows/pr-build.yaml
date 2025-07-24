@@ -194,6 +194,8 @@ jobs:
             yq -i eval '(.env[] | select(.name == "MINIO_ACCESS_KEY") | .valueFrom.secretKeyRef.name) = "zeva2-minio-dev-${{ env.PR_NUMBER }}"' zeva2/zeva2-next/values-dev-pr.yaml 
             yq -i '(.env[] | select(.name=="MINIO_ENDPOINT").value) = "zeva2-minio-dev-${{ env.PR_NUMBER}}.ea8eab-dev.svc.cluster.local"' zeva2/zeva2-next/values-dev-pr.yaml
             yq -i eval '(.env[] | select(.name == "MINIO_SECRET_KEY") | .valueFrom.secretKeyRef.name) = "zeva2-minio-dev-${{ env.PR_NUMBER }}"' zeva2/zeva2-next/values-dev-pr.yaml 
+            yq -i '.podAnnotations.rolloutTriggered = "A$(date +%s)E"' zeva2/zeva2-next/values-dev-pr.yaml
+            yq -i '.podAnnotations.rolloutTriggered = "A$(date +%s)E"' zeva2/zeva2-bullmq/values-dev-pr.yaml
 
       - name: Restore oc command from Cache
         uses: actions/cache@v4.2.0
