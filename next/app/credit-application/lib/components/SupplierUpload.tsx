@@ -1,4 +1,5 @@
 "use client";
+
 import axios from "axios";
 import { useCallback, useState, useTransition } from "react";
 import { Dropzone } from "@/app/lib/components/Dropzone";
@@ -8,7 +9,6 @@ import { Routes } from "@/app/lib/constants";
 import { CommentBox } from "./CommentBox";
 import { FileWithPath } from "react-dropzone";
 import { Button } from "@/app/lib/components";
-import { getNormalizedComment } from "../utils";
 
 export const SupplierUpload = () => {
   const router = useRouter();
@@ -32,7 +32,7 @@ export const SupplierUpload = () => {
         const response = await processSupplierFile(
           objectName,
           file.name,
-          getNormalizedComment(comment),
+          comment,
         );
         if (response.responseType === "error") {
           throw new Error(response.message);
