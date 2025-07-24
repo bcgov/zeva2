@@ -12,7 +12,6 @@ import {
   createOrUpdateVehicle,
   getPutObjectData,
   VehicleFile,
-  VehiclePayload,
   VehiclePutObjectData,
 } from "../actions";
 import { Routes } from "@/app/lib/constants";
@@ -63,9 +62,19 @@ export function VehicleForm(props: { vehicle?: SerializedVehicleWithOrg }) {
   }, [props.vehicle]);
 
   const handleChange = useCallback((key: string, value: string) => {
-    setFormData((prev) => {
-      return { ...prev, [key]: value };
-    });
+    if (
+      (key === "zevType" && value !== "EREV") ||
+      (key === "us06" && value === "false")
+    ) {
+      setFiles([]);
+      setFormData((prev) => {
+        return { ...prev, [key]: value, us06: "false" };
+      });
+    } else {
+      setFormData((prev) => {
+        return { ...prev, [key]: value };
+      });
+    }
   }, []);
 
   const handleSubmit = useCallback(
@@ -219,7 +228,7 @@ export function VehicleForm(props: { vehicle?: SerializedVehicleWithOrg }) {
         />
         <span>(requires certificate upload)</span>
       </div>
-      {formData.us06 === "true" && (
+      {formData.us06 === "true" && formData.zevType === "EREV" && (
         <Dropzone
           files={files}
           setFiles={setFiles}
