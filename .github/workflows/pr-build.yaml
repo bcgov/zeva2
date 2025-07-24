@@ -230,6 +230,6 @@ jobs:
           cd ../minio-pr
           helm -n ${{ env.DEV_NAMESPACE }} -f ./values-dev-pr.yaml upgrade --install zeva2-minio-dev-${{ env.PR_NUMBER }} oci://registry-1.docker.io/bitnamicharts/minio --version 14.8.0
           cd ../../zeva2/zeva2-next
-          helm -n ${{ env.DEV_NAMESPACE }} -f ./values-dev-pr.yaml upgrade --install zeva2-next-dev-${{ env.PR_NUMBER }} . --set podAnnotations.rolloutTriggered="A$(date +%s)E"
+          helm -n ${{ env.DEV_NAMESPACE }} -f ./values-dev-pr.yaml upgrade --install zeva2-next-dev-${{ env.PR_NUMBER }} .
           cd ../zeva2-bullmq
-          helm -n ${{ env.DEV_NAMESPACE }} -f ./values-dev-pr.yaml upgrade --install zeva2-bullmq-dev-${{ env.PR_NUMBER }} . --set podAnnotations.rolloutTriggered="A$(date +%s)E"
+          helm -n ${{ env.DEV_NAMESPACE }} -f ./values-dev-pr.yaml upgrade --install zeva2-bullmq-dev-${{ env.PR_NUMBER }} .
