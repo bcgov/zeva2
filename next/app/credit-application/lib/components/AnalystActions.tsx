@@ -11,6 +11,7 @@ import {
 } from "../actions";
 import { Routes } from "@/app/lib/constants";
 import { CommentBox } from "./CommentBox";
+import { getNormalizedComment } from "../utils";
 
 export const AnalystActions = (props: {
   id: number;
@@ -51,7 +52,11 @@ export const AnalystActions = (props: {
   const handleRecommend = useCallback(
     (newStatus: CreditApplicationStatus) => {
       startTransition(async () => {
-        const response = await analystRecommend(props.id, newStatus, comment);
+        const response = await analystRecommend(
+          props.id,
+          newStatus,
+          getNormalizedComment(comment),
+        );
         if (response.responseType === "error") {
           console.error(response.message);
         } else {
@@ -64,7 +69,10 @@ export const AnalystActions = (props: {
 
   const handleReturnToSupplier = useCallback(() => {
     startTransition(async () => {
-      const response = await returnToSupplier(props.id, comment);
+      const response = await returnToSupplier(
+        props.id,
+        getNormalizedComment(comment),
+      );
       if (response.responseType === "error") {
         console.error(response.message);
       } else {
