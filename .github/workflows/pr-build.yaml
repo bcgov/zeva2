@@ -174,7 +174,6 @@ jobs:
     timeout-minutes: 60
 
     steps:
-
       - name: Checkout Manifest repository
         uses: actions/checkout@v4.1.1
         with:
@@ -187,25 +186,23 @@ jobs:
         with:
           cmd: |
             yq -i '.image.tag = "${{ needs.versioning.outputs.VERSION }}"' zeva2/zeva2-next/values-dev-pr.yaml
-            yq -i ".podAnnotations.rolloutTriggered = \"A$(date +%s)E\"" zeva2/zeva2-next/values-dev-pr.yaml
             yq -i '.route.host = "zeva2-dev-${{ env.PR_NUMBER}}.apps.silver.devops.gov.bc.ca"' zeva2/zeva2-next/values-dev-pr.yaml
             yq -i '(.env[] | select(.name=="AUTH_URL").value) = "https://zeva2-dev-${{ env.PR_NUMBER}}.apps.silver.devops.gov.bc.ca/api/auth"' zeva2/zeva2-next/values-dev-pr.yaml
             yq -i '(.env[] | select(.name=="REDIS_HOST").value) = "zeva2-redis-dev-${{ env.PR_NUMBER}}-master.${{ env.DEV_NAMESPACE }}.svc.cluster.local"' zeva2/zeva2-next/values-dev-pr.yaml 
             yq -i '(.env[] | select(.name=="DATABASE_URL").value) = "postgresql://test:test@zeva2-postgresql-dev-${{ env.PR_NUMBER}}.${{ env.DEV_NAMESPACE }}.svc.cluster.local:5432/zeva?schema=public"' zeva2/zeva2-next/values-dev-pr.yaml
             yq -i eval '(.env[] | select(.name == "MINIO_ACCESS_KEY") | .valueFrom.secretKeyRef.name) = "zeva2-minio-dev-${{ env.PR_NUMBER }}"' zeva2/zeva2-next/values-dev-pr.yaml 
             yq -i '(.env[] | select(.name=="MINIO_ENDPOINT").value) = "zeva2-minio-dev-${{ env.PR_NUMBER}}.ea8eab-dev.svc.cluster.local"' zeva2/zeva2-next/values-dev-pr.yaml
-            yq -i eval '(.env[] | select(.name == "MINIO_SECRET_KEY") | .valueFrom.secretKeyRef.name) = "zeva2-minio-dev-${{ env.PR_NUMBER }}"' zeva2/zeva2-next/values-dev-pr.yaml 
-            
+            yq -i eval '(.env[] | select(.name == "MINIO_SECRET_KEY") | .valueFrom.secretKeyRef.name) = "zeva2-minio-dev-${{ env.PR_NUMBER }}"' zeva2/zeva2-next/values-dev-pr.yaml
+
       - name: Update values in bullmq values-dev-pr.yaml
         uses: mikefarah/yq@v4.40.5
         with:
           cmd: |
             yq -i '.image.tag = "${{ needs.versioning.outputs.VERSION }}"' zeva2/zeva2-bullmq/values-dev-pr.yaml
-            yq -i ".podAnnotations.rolloutTriggered = \"A$(date +%s)E\"" zeva2/zeva2-bullmq/values-dev-pr.yaml
             yq -i '(.env[] | select(.name=="DATABASE_URL").value) = "postgresql://test:test@zeva2-postgresql-dev-${{ env.PR_NUMBER}}.${{ env.DEV_NAMESPACE }}.svc.cluster.local:5432/zeva?schema=public"' zeva2/zeva2-bullmq/values-dev-pr.yaml
             yq -i eval '(.env[] | select(.name == "MINIO_ACCESS_KEY") | .valueFrom.secretKeyRef.name) = "zeva2-minio-dev-${{ env.PR_NUMBER }}"' zeva2/zeva2-bullmq/values-dev-pr.yaml 
             yq -i '(.env[] | select(.name=="MINIO_ENDPOINT").value) = "zeva2-minio-dev-${{ env.PR_NUMBER}}.ea8eab-dev.svc.cluster.local"' zeva2/zeva2-bullmq/values-dev-pr.yaml
-            yq -i eval '(.env[] | select(.name == "MINIO_SECRET_KEY") | .valueFrom.secretKeyRef.name) = "zeva2-minio-dev-${{ env.PR_NUMBER }}"' zeva2/zeva2-bullmq/values-dev-pr.yaml 
+            yq -i eval '(.env[] | select(.name == "MINIO_SECRET_KEY") | .valueFrom.secretKeyRef.name) = "zeva2-minio-dev-${{ env.PR_NUMBER }}"' zeva2/zeva2-bullmq/values-dev-pr.yaml
 
       - name: Restore oc command from Cache
         uses: actions/cache@v4.2.0
@@ -220,7 +217,7 @@ jobs:
           openshift_token: ${{ secrets.OPENSHIFT_TOKEN }}
           insecure_skip_tls_verify: true
           namespace: ${{ env.DEV_NAMESPACE }}
-          
+
       - name: deploy zeva2 apps
         run: |
           cd services/postgres-pr
@@ -230,6 +227,6 @@ jobs:
           cd ../minio-pr
           helm -n ${{ env.DEV_NAMESPACE }} -f ./values-dev-pr.yaml upgrade --install zeva2-minio-dev-${{ env.PR_NUMBER }} oci://registry-1.docker.io/bitnamicharts/minio --version 14.8.0
           cd ../../zeva2/zeva2-next
-          helm -n ${{ env.DEV_NAMESPACE }} -f ./values-dev-pr.yaml upgrade --install zeva2-next-dev-${{ env.PR_NUMBER }} .
+          helm -n ${{ env.DEV_NAMESPACE }} -f ./values-dev-pr.yaml upgrade --install zeva2-next-dev-${{ env.PR_NUMBER }} . --set podAnnotations.rolloutTriggered="A$(date +%s)E"
           cd ../zeva2-bullmq
-          helm -n ${{ env.DEV_NAMESPACE }} -f ./values-dev-pr.yaml upgrade --install zeva2-bullmq-dev-${{ env.PR_NUMBER }} .
+          helm -n ${{ env.DEV_NAMESPACE }} -f ./values-dev-pr.yaml upgrade --install zeva2-bullmq-dev-${{ env.PR_NUMBER }} . --set podAnnotations.rolloutTriggered="A$(date +%s)E"
