@@ -8,7 +8,13 @@ import {
   useEffect,
 } from "react";
 import { useRouter } from "next/navigation";
-import { VehiclePayload } from "../actions";
+import {
+  createOrUpdateVehicle,
+  getPutObjectData,
+  VehicleFile,
+  VehiclePayload,
+  VehiclePutObjectData,
+} from "../actions";
 import { Routes } from "@/app/lib/constants";
 import {
   VehicleClassCode,
@@ -18,20 +24,16 @@ import {
 import { getVehiclePayload } from "../utilsClient";
 import { SerializedVehicleWithOrg } from "../data";
 import { getModelYearEnumsToStringsMap } from "@/app/lib/utils/enumMaps";
-import { createVehicleAttachment } from "../actions";
 import { Dropzone } from "@/app/lib/components/Dropzone";
 import axios from "axios";
+import { FileWithPath } from "react-dropzone";
 
-export function VehicleForm(props: {
-  vehicle?: SerializedVehicleWithOrg;
-  handleSave: (data: VehiclePayload) => Promise<number>;
-}) {
+export function VehicleForm(props: { vehicle?: SerializedVehicleWithOrg }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string>("");
   const [formData, setFormData] = useState<Partial<Record<string, string>>>({});
-  const [upload, setUpload] = useState(false);
-  const [files, setFiles] = useState<File[]>([]);
+  const [files, setFiles] = useState<FileWithPath[]>([]);
   const modelYearsMap = useMemo(() => {
     return getModelYearEnumsToStringsMap();
   }, []);
@@ -42,9 +44,6 @@ export function VehicleForm(props: {
     "image/jpeg": [".jpg"],
     "image/png": [".png"],
   };
-  const handleDrop = useCallback((acceptedFiles: File[]) => {
-    setFiles((prev) => [...prev, ...acceptedFiles.slice(0, 20 - prev.length)]);
-  }, []);
 
   useEffect(() => {
     const vehicle = props.vehicle;
@@ -60,7 +59,6 @@ export function VehicleForm(props: {
         bodyType: vehicle.vehicleClassCode,
         gvwr: vehicle.weightKg,
       });
-      setUpload(vehicle.hasPassedUs06Test);
     }
   }, [props.vehicle]);
 
@@ -72,43 +70,38 @@ export function VehicleForm(props: {
 
   const handleSubmit = useCallback(
     (status: VehicleStatus) => {
+      setError("");
       startTransition(async () => {
         try {
-          const vehiclePayload = getVehiclePayload(formData, status);
+          const vehiclePayload = getVehiclePayload(formData, files, status);
           if (props.vehicle) {
             vehiclePayload.id = props.vehicle.id;
           }
-          const vehicleId = await props.handleSave(vehiclePayload);
-          if (upload) {
-            if (files.length == 0) {
-              setError("You must upload US06 certificate");
-              return;
-            }
-            const res = await fetch("/api/vehicle/upload-url");
-            if (!res.ok) {
-              setError("Failed to get upload URL");
-              return;
-            }
-            const id = vehicleId ? vehicleId : vehiclePayload.id;
-            for (const file of files) {
-              const res = await fetch("/api/vehicle/upload-url");
-              if (!res.ok) {
-                setError("Failed to get upload URL");
-                return;
-              }
-              const { url, objectName } = await res.json();
-              await axios.put(url, file);
-
-              await createVehicleAttachment({
-                vehicleId: id,
+          const vehicleFiles: VehicleFile[] = [];
+          if (files.length > 0) {
+            const putData = await getPutObjectData(files.length);
+            const filesAndPutData: [FileWithPath, VehiclePutObjectData][] =
+              files.map((file, index) => [file, putData[index]]);
+            for (const tuple of filesAndPutData) {
+              const file = tuple[0];
+              const putData = tuple[1];
+              await axios.put(putData.url, file);
+              vehicleFiles.push({
                 filename: file.name,
-                objectName,
-                size: BigInt(file.size),
+                objectName: putData.objectName,
+                size: file.size,
                 mimeType: file.type,
               });
             }
           }
-
+          const response = await createOrUpdateVehicle(
+            vehiclePayload,
+            vehicleFiles,
+          );
+          if (response.responseType === "error") {
+            throw new Error(response.message);
+          }
+          const vehicleId = response.data;
           router.push(
             `${Routes.Vehicle}/${vehicleId ? vehicleId : vehiclePayload.id}`,
           );
@@ -119,7 +112,7 @@ export function VehicleForm(props: {
         }
       });
     },
-    [formData, props.vehicle, props.handleSave, upload, files],
+    [formData, props.vehicle, files],
   );
 
   const button = useMemo(() => {
@@ -222,14 +215,15 @@ export function VehicleForm(props: {
           disabled={formData.zevType !== "EREV"}
           onChange={(e) => {
             handleChange(e.target.name, e.target.checked ? "true" : "false");
-            setUpload(e.target.checked);
           }}
         />
         <span>(requires certificate upload)</span>
       </div>
-      {(formData.us06 || upload) && (
+      {formData.us06 === "true" && (
         <Dropzone
-          handleDrop={handleDrop}
+          files={files}
+          setFiles={setFiles}
+          disabled={isPending}
           maxNumberOfFiles={20}
           allowedFileTypes={allowedFileTypes}
         />
