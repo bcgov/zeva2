@@ -63,12 +63,6 @@ export const AgreementEditForm = (props: {
     });
   };
 
-  const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    handleSave();
-    // ...
-  };
-
   if (processingMsg) {
     return <p className="p-4 text-primaryBlue">{processingMsg}</p>;
   }
@@ -242,7 +236,7 @@ export const AgreementEditForm = (props: {
           className="bg-white text-primaryBlue px-4 py-2 rounded ml-2
             border border-primaryBlue"
           onClick={() => {
-            setProcessingMsg("Loading...");
+            setProcessingMsg("Cancel...");
             handleCancel();
           }}
         >
