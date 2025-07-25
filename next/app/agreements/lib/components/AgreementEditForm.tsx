@@ -6,7 +6,7 @@ import {
   ModelYear,
   ZevClass
 } from "@/prisma/generated/client";
-import { FormEvent, useState } from "react";
+import { useState } from "react";
 import { AgreementContentPayload, AgreementPayload } from "../action";
 import { cleanupStringData } from "@/lib/utils/dataCleanup";
 
