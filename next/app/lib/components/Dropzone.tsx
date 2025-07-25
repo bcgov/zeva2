@@ -7,20 +7,29 @@ import { Button } from "./inputs";
 export const Dropzone = (props: {
   files: FileWithPath[];
   setFiles: Dispatch<SetStateAction<FileWithPath[]>>;
+  maxNumberOfFiles: number;
   disabled: boolean;
+  allowedFileTypes?: Record<string, string[]>;
   handleDrop?: (acceptedFiles: FileWithPath[]) => Promise<void>;
   handleRemove?: (file: FileWithPath) => void;
-  maxNumberOfFiles?: number;
-  allowedFileTypes?: { [key: string]: string[] };
 }) => {
   const onDrop = useCallback(
     (acceptedFiles: FileWithPath[]) => {
-      props.setFiles(acceptedFiles);
+      props.setFiles((prev) => {
+        const oldLength = prev.length;
+        const newLength = oldLength + acceptedFiles.length;
+        if (newLength <= props.maxNumberOfFiles) {
+          return [...prev, ...acceptedFiles];
+        }
+        return [...acceptedFiles.toReversed(), ...prev.toReversed()]
+          .slice(0, props.maxNumberOfFiles)
+          .toReversed();
+      });
       if (props.handleDrop) {
         props.handleDrop(acceptedFiles);
       }
     },
-    [props.setFiles, props.handleDrop],
+    [props.setFiles, props.maxNumberOfFiles, props.handleDrop],
   );
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
@@ -46,7 +55,7 @@ export const Dropzone = (props: {
     const result: JSX.Element[] = [];
     for (const file of props.files) {
       result.push(
-        <li key={file.path}>
+        <li key={crypto.randomUUID()}>
           <div className="flex flex-row">
             <p className="mr-2 truncate">{file.name}</p>
             <Button
