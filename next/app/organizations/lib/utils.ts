@@ -1,5 +1,6 @@
 import { Prisma } from "@/prisma/generated/client";
 import { OrganizationSparse, OrganizationAddressSparse } from "./data";
+import { cleanupStringData } from "@/lib/utils/dataCleanup";
 
 const YEARS_OF_AVG_SUPPLIED_VOL_USED = 3; // Number of years to average the supplied volume for LDVs
 
@@ -131,16 +132,6 @@ export const sortOrganzations = (
         break;
     }
   }
-};
-
-// If this cleanup function is useful in other places,
-//   consider moving it to a shared utility file.
-export const cleanupStringData = (str: string | null) => {
-  if (!str) {
-    return null;
-  }
-  const trimmed = str.trim();
-  return trimmed.length > 0 ? trimmed : null;
 };
 
 export const cleanupAddressData = (address?: OrganizationAddressSparse) => {

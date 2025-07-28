@@ -4,11 +4,11 @@ import {
   getSupplierClass,
   filterOrganizations,
   sortOrganzations,
-  cleanupStringData,
   cleanupAddressData,
   isEmptyAddress,
 } from "../utils";
 import { testOrganizations } from "./__test-utilities__/utils-test-data";
+import { cleanupStringData } from "@/lib/utils/dataCleanup";
 
 describe("Organization utils: getSupplierClass", () => {
   // The pre-condition of this function assumes the model years are
