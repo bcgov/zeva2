@@ -57,23 +57,70 @@ export function VehicleForm(props: { vehicle?: SerializedVehicleWithOrg }) {
       startTransition(async () => {
         try {
           const vehiclePayload = getVehiclePayload(formData, status);
-          if (props.vehicle) {
-            vehiclePayload.id = props.vehicle.id;
+  
+          const my = parseInt(formData.modelYear || "", 10);
+          const rangeKm = parseFloat(formData.range || "0");
+          const us06 = formData.us06 === "true";
+          const zev = formData.zevType as VehicleZevType;
+  
+          // 2) Pre Oct.1 2026 Rules
+          let zevClass: "A" | "B" | "C" = "C";
+          if (my <= 2025) {
+            // 80.47km = 50 miles
+            if ((zev === VehicleZevType.BEV || zev === VehicleZevType.FCEV) && rangeKm >= 80.47) {
+              zevClass = "A";
+              // 121km = 75 miles
+            } else if (zev === VehicleZevType.EREV && rangeKm >= 121) {
+              zevClass = "A";
+            } else if (zev === VehicleZevType.EREV && rangeKm >= 16) {
+              zevClass = "B";
+            } else if (zev === VehicleZevType.PHEV && rangeKm >= 16) {
+              zevClass = "B";
+            }
+          } else {
+            // 241km = 150 miles
+            if ((zev === VehicleZevType.BEV || zev === VehicleZevType.FCEV) && rangeKm >= 241) {
+              zevClass = "A";
+            } else if (zev === VehicleZevType.EREV && rangeKm >= 80) {
+              zevClass = "B";
+            } else if (zev === VehicleZevType.PHEV) {
+              if ((my === 2026 && rangeKm >= 55)
+               || (my === 2027 && rangeKm >= 65)
+               || (my >= 2028 && rangeKm >= 80)) {
+                zevClass = "B";
+              }
+            }
           }
-          const response = await createOrUpdateVehicle(vehiclePayload);
-          if (response.responseType === "error") {
-            throw new Error(response.message);
+  
+          const cutoff = new Date("2026-10-01T00:00:00-07:00");
+          let creditValue: number;
+  
+          if (new Date() >= cutoff && (zevClass === "A" || zevClass === "B")) {
+            // Post Oct 1 2026 => 1 credit for A/B
+            creditValue = 1.00;
+          } else if (zevClass === "A") {
+            const raw = (rangeKm * 0.006214) + 0.5;
+            creditValue = Number(Math.min(4, raw).toFixed(2));
+          } else if (zevClass === "B") {
+            const raw = (rangeKm * 0.006214) + 0.3 + (us06 ? 0.2 : 0);
+            const cap = us06 ? 1.3 : 1.1;
+            creditValue = Number(Math.min(raw, cap).toFixed(2));
+          } else {
+            // Class C
+            creditValue = 0.00;
           }
-          const vehicleId = response.data;
-          router.push(`${Routes.Vehicle}/${vehicleId}`);
+          vehiclePayload.creditValue = creditValue;
+          if (props.vehicle) vehiclePayload.id = props.vehicle.id;
+  
+          const res = await createOrUpdateVehicle(vehiclePayload);
+          if (res.responseType === "error") throw new Error(res.message);
+          router.push(`${Routes.Vehicle}/${res.data}`);
         } catch (e) {
-          if (e instanceof Error) {
-            setError(e.message);
-          }
+          if (e instanceof Error) setError(e.message);
         }
       });
     },
-    [formData, props.vehicle, router],
+    [formData, props.vehicle, router]
   );
 
   const button = useMemo(() => {
