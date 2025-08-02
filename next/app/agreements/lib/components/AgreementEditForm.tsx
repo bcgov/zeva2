@@ -9,6 +9,7 @@ import {
 import { useState } from "react";
 import { AgreementContentPayload, AgreementPayload } from "../action";
 import { cleanupStringData } from "@/lib/utils/dataCleanup";
+import { AgreementDetailsType } from "../services";
 
 const mainDivClass = "grid grid-cols-[220px_1fr]";
 const fieldLabelClass = "py-1 font-semibold text-primaryBlue";
@@ -18,6 +19,7 @@ export const AgreementEditForm = (props: {
   supplierSelections: { id: number; name: string }[];
   modelYearSelections: ModelYear[];
   zevClassSelections: ZevClass[];
+  agreementDetails?: AgreementDetailsType;
   upsertAgreement: (data: AgreementPayload) => Promise<void>;
   handleCancel: () => void;
 }) => {
@@ -25,6 +27,7 @@ export const AgreementEditForm = (props: {
     supplierSelections,
     modelYearSelections,
     zevClassSelections,
+    agreementDetails,
     upsertAgreement,
     handleCancel,
   } = props;
@@ -35,14 +38,24 @@ export const AgreementEditForm = (props: {
     numberOfUnits: 0,
   }
 
-  const [agreementType, setAgreementType] = useState<AgreementType | undefined>(undefined);
-  const [supplier, setSupplier] = useState<number | undefined>(undefined);
-  const [referenceId, setReferenceId] = useState<string>("");
-  const [effectiveDate, setEffectiveDate] = useState<Date | undefined>(undefined);
-  const [msgToSupplier, setMsgToSupplier] = useState<string>("");
-  const [agreementContent, setAgreementContent] = useState<AgreementContentPayload[]>([
-    { ...newContent }
-  ]);
+  const [agreementType, setAgreementType] = useState<AgreementType | undefined>(
+    agreementDetails?.agreementType
+  );
+  const [supplier, setSupplier] = useState<number | undefined>(
+    agreementDetails?.organization.id
+  );
+  const [referenceId, setReferenceId] = useState<string>(
+    agreementDetails?.referenceId ?? ""
+  );
+  const [effectiveDate, setEffectiveDate] = useState<Date | undefined>(
+    agreementDetails?.effectiveDate ?? undefined
+  );
+  const [msgToSupplier, setMsgToSupplier] = useState<string>(
+    agreementDetails?.comment ?? ""
+  );
+  const [agreementContent, setAgreementContent] = useState<AgreementContentPayload[]>(
+    agreementDetails?.agreementContent ?? [{ ...newContent }]
+  );
   const [errorMsg, setErrorMsg] = useState<string | undefined>(undefined);
   const [processingMsg, setProcessingMsg] = useState<string | undefined>(undefined);
 
@@ -76,6 +89,8 @@ export const AgreementEditForm = (props: {
         <select
           name="agreementType"
           className={fieldContentClass + " w-60"}
+          value={agreementType}
+          required
           onChange={(e) => {
             setAgreementType(e.target.value as AgreementType | undefined);
             setErrorMsg(undefined); // Clear error message when agreement type changes
@@ -95,6 +110,7 @@ export const AgreementEditForm = (props: {
         <select
           name="supplier"
           className={fieldContentClass + " w-60"}
+          value={supplier}
           onChange={(e) => {
             setSupplier(e.target.value ? parseInt(e.target.value, 10) : undefined);
             setErrorMsg(undefined); // Clear error message when supplier changes
@@ -114,6 +130,8 @@ export const AgreementEditForm = (props: {
         <input
           className={fieldContentClass + " w-60"}
           type="text"
+          value={referenceId}
+          placeholder="Optional reference ID"
           onChange={(e) => setReferenceId(e.target.value)}
         />
       </div>
@@ -123,6 +141,8 @@ export const AgreementEditForm = (props: {
         <input
           className={fieldContentClass + " w-60"}
           type="date"
+          value={effectiveDate ? effectiveDate.toISOString().split("T")[0] : ""}
+          placeholder="YYYY-MM-DD"
           onChange={(e) => {
             const date = e.target.value ? new Date(e.target.value) : undefined;
             setEffectiveDate(date);
@@ -203,6 +223,7 @@ export const AgreementEditForm = (props: {
             </button>
           </div>
         ))}
+
         <button
           type="button"
           className="mt-2 bg-transparent text-primaryBlue
@@ -218,8 +239,9 @@ export const AgreementEditForm = (props: {
         <textarea
           className={fieldContentClass + " w-full"}
           rows={4}
-          onChange={(e) => setMsgToSupplier(e.target.value)}
+          value={msgToSupplier}
           placeholder="Optional message to the supplier regarding this agreement."
+          onChange={(e) => setMsgToSupplier(e.target.value)}
         />
       </div>
 

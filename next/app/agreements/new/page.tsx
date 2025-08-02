@@ -1,11 +1,10 @@
 import { getUserInfo } from "@/auth";
 import { redirect } from "next/navigation";
 import { Routes } from "@/app/lib/constants";
-import { ModelYear, Role, ZevClass } from "@/prisma/generated/client";
+import { Role, ZevClass } from "@/prisma/generated/client";
 import { AgreementEditForm } from "../lib/components/AgreementEditForm";
-import { prisma } from "@/lib/prisma";
-import { getCurrentComplianceYear } from "@/app/lib/utils/complianceYear";
 import { AgreementPayload, saveAgreement } from "../lib/action";
+import { getModelYearSelections, getSupplierSelections } from "../lib/services";
 
 const Page = async () => {
   const { userRoles } = await getUserInfo();
@@ -17,24 +16,8 @@ const Page = async () => {
     );
   }
 
-  const supplierSelections = await prisma.organization.findMany({
-    select: {
-      id: true,
-      name: true,
-    },
-    where: {
-      isGovernment: false,
-      isActive: true,
-    },
-    orderBy: {
-      name: "asc",
-    },
-  });
-
-  const currentComplianceYear = getCurrentComplianceYear().toString();
-  const modelYearSelections = Object.values(ModelYear).filter(
-    year => year.substring(3) <= currentComplianceYear
-  );
+  const supplierSelectionsPromise = getSupplierSelections();
+  const modelYearSelections = getModelYearSelections();
 
   const createAgreement = async (data: AgreementPayload) => {
     "use server";
@@ -57,7 +40,7 @@ const Page = async () => {
         New Agreement
       </h2>
       <AgreementEditForm
-        supplierSelections={supplierSelections}
+        supplierSelections={await supplierSelectionsPromise}
         modelYearSelections={modelYearSelections}
         zevClassSelections={[ZevClass.A, ZevClass.B]}
         upsertAgreement={createAgreement}

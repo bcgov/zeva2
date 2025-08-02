@@ -6,6 +6,7 @@ import { Table } from "@/app/lib/components";
 import { AgreementSparse } from "../data";
 import { getIsoYmdStringInUtc } from "@/app/lib/utils/date";
 import { enumToTitleString } from "@/lib/utils/convertEnums";
+import { getAgreementId } from "../utils";
 
 export const AgreementTable = (props: {
   agreements: AgreementSparse[];
@@ -16,7 +17,7 @@ export const AgreementTable = (props: {
 
   const columns = useMemo(() => {
     const result: ColumnDef<AgreementSparse, any>[] = [
-      columnHelper.accessor((row) => row.agreementType[0] + "A-" + row.id, {
+      columnHelper.accessor((row) => getAgreementId(row), {
         id: "agreementId",
         enableSorting: true,
         enableColumnFilter: true,
