@@ -1,6 +1,7 @@
 import {
   ModelYear,
   Notification,
+  TransactionType,
   VehicleClass,
   VehicleClassCode,
   VehicleStatus,
@@ -8,6 +9,12 @@ import {
   ZevClass,
   ZevUnitTransferStatuses,
 } from "@/prisma/generated/client";
+
+export const isTransactionType = (s: string): s is TransactionType => {
+  return Object.keys(TransactionType).some((transactionType) => {
+    return transactionType === s;
+  });
+};
 
 export const isVehicleClass = (s: string): s is VehicleClass => {
   return Object.keys(VehicleClass).some((vehicleClass) => {

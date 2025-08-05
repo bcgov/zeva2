@@ -7,7 +7,7 @@ import { ModelYear } from "@/prisma/generated/client";
  */
 export const modelYearEnumToInt = (yearEnum: ModelYear) => {
   const year = yearEnum.toString().substring(3);
-  return parseInt(year);
+  return parseInt(year, 10);
 };
 
 /**

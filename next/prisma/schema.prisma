@@ -49,6 +49,9 @@ model Organization {
   CreditApplication     CreditApplication[]
   PenaltyCredit         PenaltyCredit[]
   agreements            Agreement[]
+  LegacySalesVolume     LegacySalesVolume[]
+  SupplyVolume          SupplyVolume[]
+  ModelYearReport       ModelYearReport[]
 
   @@map("organization")
 }
@@ -146,6 +149,8 @@ model User {
   CreditApplicationHistory CreditApplicationHistory[]
   PenaltyCreditHistory     PenaltyCreditHistory[]
   AgreementHistory         AgreementHistory[]
+  ModelYearReportHistory   ModelYearReportHistory[]
+  ReassessmentHistory      ReassessmentHistory[]
 
   @@unique([idp, idpUsername])
   @@map("user")
@@ -582,4 +587,119 @@ model AgreementHistory {
   comment     String?
 
   @@map("agreement_history")
+}
+
+model LegacySalesVolume {
+  id             Int          @id @default(autoincrement())
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  organizationId Int          @map("organization_id")
+  modelYear      ModelYear    @map("model_year")
+  volume         Int
+
+  @@unique([organizationId, modelYear])
+  @@map("legacy_sales_volume")
+}
+
+model SupplyVolume {
+  id             Int          @id @default(autoincrement())
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  organizationId Int          @map("organization_id")
+  modelYear      ModelYear    @map("model_year")
+  vehicleClass   VehicleClass @map("vehicle_class")
+  volume         Int
+
+  @@unique([organizationId, modelYear, vehicleClass])
+  @@map("supply_volume")
+}
+
+enum ModelYearReportStatus {
+  ASSESSED
+  RETURNED_TO_ANALYST
+  RETURNED_TO_SUPPLIER
+  SUBMITTED_TO_DIRECTOR
+  SUBMITTED_TO_GOVERNMENT
+}
+
+enum ModelYearReportSupplierStatus {
+  ASSESSED
+  RETURNED_TO_SUPPLIER
+  SUBMITTED_TO_GOVERNMENT
+}
+
+model ModelYearReport {
+  id                       Int                           @id @default(autoincrement())
+  organization             Organization                  @relation(fields: [organizationId], references: [id])
+  organizationId           Int                           @map("organization_id")
+  modelYear                ModelYear                     @map("model_year")
+  status                   ModelYearReportStatus
+  supplierStatus           ModelYearReportSupplierStatus @map("supplier_status")
+  fileName                 String                        @map("file_name")
+  objectName               String                        @map("object_name")
+  forecastReportFileName   String                        @map("forecast_report_file_name")
+  forecastReportObjectName String                        @map("forecast_report_object_name")
+  assessmentFileName       String?                       @map("assessment_file_name")
+  assessmentObjectName     String?                       @map("assessment_object_name")
+  ModelYearReportHistory   ModelYearReportHistory[]
+  SupplementaryReport      SupplementaryReport[]
+  Reassessment             Reassessment[]
+
+  @@unique([organizationId, modelYear])
+  @@map("model_year_report")
+}
+
+model ModelYearReportHistory {
+  id                Int                   @id @default(autoincrement())
+  modelYearReportId Int                   @map("model_year_report_id")
+  modelYearReport   ModelYearReport       @relation(fields: [modelYearReportId], references: [id])
+  userId            Int                   @map("user_id")
+  user              User                  @relation(fields: [userId], references: [id])
+  timestamp         DateTime              @default(now()) @db.Timestamptz(6)
+  userAction        ModelYearReportStatus @map("user_action")
+  comment           String?
+
+  @@map("model_year_report_history")
+}
+
+model SupplementaryReport {
+  id                Int             @id @default(autoincrement())
+  modelYearReport   ModelYearReport @relation(fields: [modelYearReportId], references: [id])
+  modelYearReportId Int             @map("model_year_report_id")
+  timestamp         DateTime        @default(now()) @db.Timestamptz(6)
+  comment           String
+  fileName          String          @map("file_name")
+  objectName        String          @unique @map("object_name")
+
+  @@map("supplementary_report")
+}
+
+enum ReassessmentStatus {
+  ISSUED
+  RETURNED_TO_ANALYST
+  SUBMITTED_TO_DIRECTOR
+}
+
+model Reassessment {
+  id                  Int                   @id @default(autoincrement())
+  modelYearReport     ModelYearReport       @relation(fields: [modelYearReportId], references: [id])
+  modelYearReportId   Int                   @map("model_year_report_id")
+  status              ReassessmentStatus
+  issuedTimestamp     DateTime?             @map("issued_timestamp") @db.Timestamptz(6)
+  fileName            String                @map("file_name")
+  objectName          String                @unique @map("object_name")
+  ReassessmentHistory ReassessmentHistory[]
+
+  @@map("reassessment")
+}
+
+model ReassessmentHistory {
+  id             Int                @id @default(autoincrement())
+  reassessmentId Int                @map("reassessment_id")
+  reassessment   Reassessment       @relation(fields: [reassessmentId], references: [id])
+  userId         Int                @map("user_id")
+  user           User               @relation(fields: [userId], references: [id])
+  timestamp      DateTime           @default(now()) @db.Timestamptz(6)
+  userAction     ReassessmentStatus @map("user_action")
+  comment        String?
+
+  @@map("reassessment_history")
 }
