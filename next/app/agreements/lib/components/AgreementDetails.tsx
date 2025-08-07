@@ -6,18 +6,34 @@ import { enumToTitleString } from "@/lib/utils/convertEnums";
 import { getAgreementId } from "../utils";
 import { Routes } from "@/app/lib/constants";
 import { AgreementDetailsType } from "../services";
+import { useState } from "react";
 
 const mainDivClass = "grid grid-cols-[220px_1fr]";
 const fieldLabelClass = "py-1 font-semibold text-primaryBlue";
 const fieldWithBoarderClass = "p-2 border border-gray-300 rounded";
-const buttonStyle = "py-1 w-16 self-center text-center";
+const buttonStyle = "px-2 py-1 min-w-16 self-center text-center";
 const secondaryButtonClass = "bg-white border border-primaryBlue text-primaryBlue";
+const warningButtonClass = "bg-white border border-red-500 text-red-500";
 
 export const AgreementDetails = (props: {
   agreement: AgreementDetailsType;
   userIsGov: boolean;
+  editButton?: boolean;
+  handleRecommendApproval?: () => void;
+  handleReturnToAnalyst?: () => void;
+  handleDeleteAgreement?: () => void;
+  handleIssueAgreement?: () => void;
 }) => {
-  const { agreement, userIsGov } = props;
+  const {
+    agreement,
+    userIsGov,
+    editButton,
+    handleRecommendApproval,
+    handleReturnToAnalyst,
+    handleDeleteAgreement,
+    handleIssueAgreement,
+  } = props;
+
   const {
     id,
     agreementType,
@@ -30,6 +46,9 @@ export const AgreementDetails = (props: {
     agreementHistory
   } = agreement;
 
+  const [isProcessing, setIsProcessing] = useState(false);
+  const ready = agreementContent.length > 0 && effectiveDate;
+  
   const contentsByModelYear = agreementContent.reduce(
     (groupByMY, content) => {
       if (!groupByMY[content.modelYear]) {
@@ -40,6 +59,10 @@ export const AgreementDetails = (props: {
     },
     {} as Record<string, { zevClass: ZevClass; numberOfUnits: number }[]>
   );
+
+  if (isProcessing) {
+    return <div className="p-6 font-semibold">Processing...</div>;
+  }
 
   return (
     <>
@@ -64,18 +87,20 @@ export const AgreementDetails = (props: {
         </div>
 
         <div className={mainDivClass}>
-          <span className={fieldLabelClass}>Status:</span> {enumToTitleString(status)}
-        </div>
-
-        <div className={mainDivClass}>
           <span className={fieldLabelClass}>Effective Date:</span> {effectiveDate?.toLocaleDateString()}
+          {!effectiveDate &&
+            <span className="text-red-500">Must be entered before submitting.</span>
+          }
         </div>
 
         <div>
           <p className={fieldLabelClass}>ZEV Units</p>
           <div className={fieldWithBoarderClass}>
             {agreementContent.length === 0
-              ? "No entries"
+              ? <>
+                No Entry
+                <p className="text-red-500">At least one ZEV unit entry is required before submitting.</p>
+              </>
               : Object.entries(contentsByModelYear).map(([modelYear, contents]) => (
                 <div key={modelYear} className="mb-2">
                   <p className="font-semibold">
@@ -124,18 +149,58 @@ export const AgreementDetails = (props: {
           >
             Back
           </a>
-          <a
-            className={`${buttonStyle} ${secondaryButtonClass}`}
-            href={`${Routes.CreditAgreements}/${id}/edit`}
-          >
-            Edit
-          </a>
-          <Button
-            className={buttonStyle}
-            onClick={() => alert("Submit Agreement")}
-          >
-            Submit
-          </Button>
+          {editButton && (
+            <a
+              className={`${buttonStyle} ${secondaryButtonClass}`}
+              href={`${Routes.CreditAgreements}/${id}/edit`}
+            >
+              Edit
+            </a>
+          )}
+          {handleRecommendApproval && ready && (
+            <Button
+              className={buttonStyle}
+              onClick={() => {
+                setIsProcessing(true);
+                handleRecommendApproval();
+              }}
+            >
+              Submit to Director
+            </Button>
+          )}
+          {handleReturnToAnalyst && (
+            <Button
+              className={`${buttonStyle} ${warningButtonClass}`}
+              onClick={() => {
+                setIsProcessing(true);
+                handleReturnToAnalyst();
+              }}
+            >
+              Return to Analyst
+            </Button>
+          )}
+          {handleDeleteAgreement && (
+            <Button
+              className={`${buttonStyle} ${warningButtonClass}`}
+              onClick={() => {
+                setIsProcessing(true);
+                handleDeleteAgreement();
+              }}
+            >
+              Delete
+            </Button>
+          )}
+          {handleIssueAgreement && (
+            <Button
+              className={buttonStyle}
+              onClick={() => {
+                setIsProcessing(true);
+                handleIssueAgreement();
+              }}
+            >
+              Issue Agreement
+            </Button>
+          )}
         </div>
       </div>
     </>
