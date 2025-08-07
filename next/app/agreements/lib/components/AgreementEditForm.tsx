@@ -69,7 +69,7 @@ export const AgreementEditForm = (props: {
       referenceId: cleanupStringData(referenceId),
       organizationId: supplier,
       agreementType: agreementType,
-      status: AgreementStatus.DRAFT,
+      status: agreementDetails?.status ?? AgreementStatus.DRAFT,
       effectiveDate: effectiveDate ?? null,
       comment: cleanupStringData(msgToSupplier),
       agreementContent: agreementContent,

@@ -23,15 +23,29 @@ const Page = async (props: { params: Promise<{ id: string }> }) => {
     );
   }
 
-  const status = agreement.status;
+  const forAnalyst = userRoles.includes(Role.ENGINEER_ANALYST) && (
+    agreement.status === AgreementStatus.DRAFT ||
+    agreement.status === AgreementStatus.RETURNED_TO_ANALYST
+  );
+
+  const forDirector = userRoles.includes(Role.DIRECTOR) &&
+    agreement.status === AgreementStatus.RECOMMEND_APPROVAL;
   
-  const handleStatusChange = async (newStatus: AgreementStatus) => {
-    "use server";
-    if (await updateStatus(agreementId, newStatus)) {
-      redirect(Routes.CreditAgreements);
-    } else {
-      redirect(`${Routes.CreditAgreements}/error`);
+  const handleStatusChange = (
+    newStatus: AgreementStatus,
+    enabled: boolean,
+  ) => {
+    if (enabled) {
+      return async () => {
+        "use server";
+        if (await updateStatus(agreementId, newStatus)) {
+          redirect(Routes.CreditAgreements);
+        } else {
+          redirect(`${Routes.CreditAgreements}/error`);
+        }
+      };
     }
+    return undefined;
   }
 
   return (
@@ -39,47 +53,23 @@ const Page = async (props: { params: Promise<{ id: string }> }) => {
       <AgreementDetails
         agreement={agreement}
         userIsGov={userIsGov}
-        editButton={
-          userRoles.includes(Role.ENGINEER_ANALYST) && (
-            status === AgreementStatus.DRAFT ||
-            status === AgreementStatus.RETURNED_TO_ANALYST
-          )
-        }
-        handleRecommendApproval={
-          userRoles.includes(Role.ENGINEER_ANALYST) && (
-            status === AgreementStatus.DRAFT ||
-            status === AgreementStatus.RETURNED_TO_ANALYST
-          )
-            ? async () => {
-              "use server";
-              await handleStatusChange(AgreementStatus.RECOMMEND_APPROVAL);
-            }
-            : undefined
-        }
-        handleReturnToAnalyst={
-          userRoles.includes(Role.DIRECTOR) && status === AgreementStatus.RECOMMEND_APPROVAL
-            ? async () => {
-              "use server";
-              await handleStatusChange(AgreementStatus.RETURNED_TO_ANALYST);
-            }
-            : undefined
-        }
-        handleDeleteAgreement={
-          userRoles.includes(Role.ENGINEER_ANALYST)
-            ? async () => {
-              "use server";
-              await handleStatusChange(AgreementStatus.DELETED);
-            }
-            : undefined
-        }
-        handleIssueAgreement={
-          userRoles.includes(Role.DIRECTOR) && status === AgreementStatus.RECOMMEND_APPROVAL
-            ? async () => {
-              "use server";
-              await handleStatusChange(AgreementStatus.ISSUED);
-            }
-            : undefined
-        }
+        editButton={forAnalyst}
+        handleRecommendApproval={handleStatusChange(
+          AgreementStatus.RECOMMEND_APPROVAL,
+          forAnalyst,
+        )}
+        handleReturnToAnalyst={handleStatusChange(
+          AgreementStatus.RETURNED_TO_ANALYST,
+          forDirector,
+        )}
+        handleIssueAgreement={handleStatusChange(
+          AgreementStatus.ISSUED,
+          forDirector,
+        )}
+        handleDeleteAgreement={handleStatusChange(
+          AgreementStatus.DELETED,
+          forAnalyst,
+        )}
       />
     </div>
   );

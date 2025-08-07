@@ -124,24 +124,6 @@ export const AgreementDetails = (props: {
           </div>
         </div>
 
-        {userIsGov && false && ( // TODO: Enable this by removing the "false" when the feature is ready
-          <div>
-            <p className={fieldLabelClass}>Government Internal Comments</p>
-            <div className={`${fieldWithBoarderClass} min-h-[100px]`}>
-              {agreementHistory.map((history, index) => (
-                <div key={index} className="mb-2">
-                  <p className="font-semibold">
-                    {history.user.firstName} {history.user.lastName} -{" "}
-                    {new Date(history.timestamp).toLocaleString()}
-                  </p>
-                  <p>{history.userAction}</p>
-                  {history.comment && <p className="ml-4">{history.comment}</p>}
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
         <div className="flex flex-row gap-12 my-2">
           <a
             className={`${buttonStyle} ${secondaryButtonClass}`}
