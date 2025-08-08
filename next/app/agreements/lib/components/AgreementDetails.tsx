@@ -4,7 +4,6 @@ import { ZevClass } from "@/prisma/generated/client";
 import { Button } from "@/app/lib/components";
 import { enumToTitleString } from "@/lib/utils/convertEnums";
 import { getAgreementId } from "../utils";
-import { Routes } from "@/app/lib/constants";
 import { AgreementDetailsType } from "../services";
 import { useState } from "react";
 
@@ -18,7 +17,8 @@ const warningButtonClass = "bg-white border border-red-500 text-red-500";
 export const AgreementDetails = (props: {
   agreement: AgreementDetailsType;
   userIsGov: boolean;
-  editButton?: boolean;
+  backLink: string;
+  editLink?: string;
   handleRecommendApproval?: () => void;
   handleReturnToAnalyst?: () => void;
   handleDeleteAgreement?: () => void;
@@ -27,7 +27,8 @@ export const AgreementDetails = (props: {
   const {
     agreement,
     userIsGov,
-    editButton,
+    backLink,
+    editLink,
     handleRecommendApproval,
     handleReturnToAnalyst,
     handleDeleteAgreement,
@@ -43,7 +44,6 @@ export const AgreementDetails = (props: {
     comment,
     organization,
     agreementContent,
-    agreementHistory
   } = agreement;
 
   const [isProcessing, setIsProcessing] = useState(false);
@@ -124,17 +124,26 @@ export const AgreementDetails = (props: {
           </div>
         </div>
 
+        {userIsGov && (
+          <div>
+            <p className={fieldLabelClass}>Government Internal Comments</p>
+            <div className={`${fieldWithBoarderClass} min-h-[100px]`}>
+              Place holder for internal comments.
+            </div>
+          </div>
+        )}
+
         <div className="flex flex-row gap-12 my-2">
           <a
             className={`${buttonStyle} ${secondaryButtonClass}`}
-            href={Routes.CreditAgreements}
+            href={backLink}
           >
             Back
           </a>
-          {editButton && (
+          {editLink && (
             <a
               className={`${buttonStyle} ${secondaryButtonClass}`}
-              href={`${Routes.CreditAgreements}/${id}/edit`}
+              href={editLink}
             >
               Edit
             </a>

@@ -53,7 +53,8 @@ const Page = async (props: { params: Promise<{ id: string }> }) => {
       <AgreementDetails
         agreement={agreement}
         userIsGov={userIsGov}
-        editButton={forAnalyst}
+        backLink={Routes.CreditAgreements}
+        editLink={forAnalyst ? `${Routes.CreditAgreements}/${id}/edit` : undefined}
         handleRecommendApproval={handleStatusChange(
           AgreementStatus.RECOMMEND_APPROVAL,
           forAnalyst,
