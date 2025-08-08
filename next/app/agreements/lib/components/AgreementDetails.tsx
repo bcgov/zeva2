@@ -36,7 +36,6 @@ export const AgreementDetails = (props: {
   } = props;
 
   const {
-    id,
     agreementType,
     referenceId,
     status,
