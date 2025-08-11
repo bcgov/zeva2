@@ -2,6 +2,7 @@ import { getUserInfo } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import {
   Agreement,
+  AgreementStatus,
   AgreementUserAction,
   ModelYear,
   Role,
@@ -34,7 +35,6 @@ export const saveAgreement = async (
     return undefined; // Only government users with ENGINEER_ANALYST role can update agreements
   }
 
-  await new Promise((resolve) => setTimeout(resolve, 5000));
   try {
     return await prisma.$transaction(async (tx) => {
       const { agreementContent, ...mainData } = data;
@@ -54,10 +54,13 @@ export const saveAgreement = async (
       });
 
       await tx.agreementContent.createMany({
-        data: agreementContent.map((content) => ({
-          ...content,
-          agreementId,
-        })),
+        data: agreementContent
+          .filter((content) =>
+            content.numberOfUnits > 0
+          ).map((content) => ({
+            ...content,
+            agreementId,
+          })),
       });
 
       await tx.agreementHistory.create({
@@ -76,3 +79,40 @@ export const saveAgreement = async (
     return undefined;
   }
 };
+
+/**
+ * Change the status of an existing agreement and insert a history record in the database.
+ * @param id - The ID of the agreement to update.
+ * @param status - The new status to set.
+ * @returns true if the update was successful, false otherwise.
+ */
+export const updateStatus = async (
+  id: number,
+  status: AgreementStatus,
+) => {
+  const { userId, userIsGov } = await getUserInfo();
+  if (!userIsGov || status === AgreementStatus.DRAFT) {
+    return false;
+  }
+
+  try {
+    await prisma.$transaction(async (tx) => {
+      await tx.agreement.update({
+        where: { id },
+        data: { status },
+      });
+      await tx.agreementHistory.create({
+        data: {
+          agreementId: id,
+          userId,
+          timestamp: new Date(),
+          userAction: status,
+        },
+      });
+    });
+    return true;
+  } catch (error) {
+    console.error("Error updating agreement status:", (error as Error).message);
+    return false;
+  }
+}
