@@ -9,7 +9,11 @@ export type MenuItem = {
 
 export type NavbarSubItems = Record<string, MenuItem[]>;
 
-const govRoles = [Role.ADMINISTRATOR, Role.ENGINEER_ANALYST, Role.DIRECTOR];
+const govRoles = [
+  Role.ADMINISTRATOR,
+  Role.ENGINEER_ANALYST,
+  Role.DIRECTOR
+];
 
 const supplierRoles = [
   Role.ORGANIZATION_ADMINISTRATOR,

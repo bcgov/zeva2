@@ -6,9 +6,11 @@ import {
   isVehicleClassCode,
   isVehicleZevType,
 } from "@/app/lib/utils/typeGuards";
+import { FileWithPath } from "react-dropzone";
 
 export const getVehiclePayload = (
   data: Partial<Record<string, string>>,
+  files: FileWithPath[],
   status: VehicleStatus,
 ): VehiclePayload => {
   if (
@@ -41,6 +43,9 @@ export const getVehiclePayload = (
     new Decimal(data.gvwr);
   } catch (e) {
     throw new Error("Invalid GVWR!");
+  }
+  if (data.us06 === "true" && files.length === 0) {
+    throw new Error("At least one file is required!");
   }
   return {
     modelYear: modelYearEnum,

@@ -1,60 +1,65 @@
 "use client";
 
-import { JSX, useState, useCallback, useMemo, useTransition } from "react";
+import { JSX, useCallback, useMemo, Dispatch, SetStateAction } from "react";
 import { useDropzone, FileWithPath } from "react-dropzone";
 import { Button } from "./inputs";
 
 export const Dropzone = (props: {
-  handleSubmit?: (files: File[]) => Promise<void>;
+  files: FileWithPath[];
+  setFiles: Dispatch<SetStateAction<FileWithPath[]>>;
+  maxNumberOfFiles: number;
+  disabled: boolean;
+  allowedFileTypes?: Record<string, string[]>;
   handleDrop?: (acceptedFiles: FileWithPath[]) => Promise<void>;
-  maxNumberOfFiles?: number;
-  allowedFileTypes?: { [key: string]: string[] };
+  handleRemove?: (file: FileWithPath) => void;
 }) => {
-  const [isPending, startTransition] = useTransition();
-  const [files, setFiles] = useState<FileWithPath[]>([]);
-  const onDrop = useCallback((acceptedFiles: FileWithPath[]) => {
-    setFiles(acceptedFiles);
-    if (props.handleDrop) {
-      props.handleDrop(acceptedFiles);
-    }
-  }, []);
+  const onDrop = useCallback(
+    (acceptedFiles: FileWithPath[]) => {
+      props.setFiles((prev) => {
+        const oldLength = prev.length;
+        const newLength = oldLength + acceptedFiles.length;
+        if (newLength <= props.maxNumberOfFiles) {
+          return [...prev, ...acceptedFiles];
+        }
+        return [...acceptedFiles.toReversed(), ...prev.toReversed()]
+          .slice(0, props.maxNumberOfFiles)
+          .toReversed();
+      });
+      if (props.handleDrop) {
+        props.handleDrop(acceptedFiles);
+      }
+    },
+    [props.setFiles, props.maxNumberOfFiles, props.handleDrop],
+  );
+
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
     maxFiles: props.maxNumberOfFiles,
     accept: props.allowedFileTypes,
-    disabled: isPending,
+    disabled: props.disabled,
   });
-
-  const handleSubmit = useCallback(() => {
-    startTransition(async () => {
-      if (props.handleSubmit) {
-        try {
-          await props.handleSubmit(files);
-        } catch (e) {
-          console.error(e);
-        }
-      }
-    });
-  }, [props.handleSubmit, files]);
 
   const removeFile = useCallback(
     (fileToRemove: FileWithPath) => {
-      setFiles((prev) => {
+      props.setFiles((prev) => {
         return prev.filter((file) => file !== fileToRemove);
       });
+      if (props.handleRemove) {
+        props.handleRemove(fileToRemove);
+      }
     },
-    [setFiles],
+    [props.handleRemove, props.setFiles],
   );
 
   const filesJSX = useMemo(() => {
     const result: JSX.Element[] = [];
-    for (const file of files) {
+    for (const file of props.files) {
       result.push(
-        <li key={file.path}>
+        <li key={crypto.randomUUID()}>
           <div className="flex flex-row">
             <p className="mr-2 truncate">{file.name}</p>
             <Button
-              disabled={isPending}
+              disabled={props.disabled}
               onClick={() => {
                 removeFile(file);
               }}
@@ -66,7 +71,7 @@ export const Dropzone = (props: {
       );
     }
     return result;
-  }, [files, isPending]);
+  }, [props.files, props.disabled, removeFile]);
 
   return (
     <div className="w-full">
@@ -80,13 +85,6 @@ export const Dropzone = (props: {
           )}
         </div>
         <ul>{filesJSX}</ul>
-      </div>
-      <div className="py-4 my-4">
-        {props.handleSubmit && (
-          <Button disabled={isPending} onClick={handleSubmit}>
-            {isPending ? "..." : "Submit"}
-          </Button>
-        )}
       </div>
     </div>
   );

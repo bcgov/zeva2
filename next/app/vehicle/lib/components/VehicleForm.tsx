@@ -7,6 +7,14 @@ import {
   useMemo,
   useEffect,
 } from "react";
+import { useRouter } from "next/navigation";
+import {
+  createOrUpdateVehicle,
+  getPutObjectData,
+  VehicleFile,
+  VehiclePutObjectData,
+} from "../actions";
+import { Routes } from "@/app/lib/constants";
 import {
   VehicleClassCode,
   VehicleStatus,
@@ -16,19 +24,26 @@ import { Decimal } from "@/prisma/generated/client/runtime/index-browser";
 import { getVehiclePayload } from "../utilsClient";
 import { SerializedVehicleWithOrg } from "../data";
 import { getModelYearEnumsToStringsMap } from "@/app/lib/utils/enumMaps";
-import { createOrUpdateVehicle } from "../actions";
-import { useRouter } from "next/navigation";
-import { Routes } from "@/app/lib/constants";
+import { Dropzone } from "@/app/lib/components/Dropzone";
+import axios from "axios";
+import { FileWithPath } from "react-dropzone";
 
 export function VehicleForm(props: { vehicle?: SerializedVehicleWithOrg }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string>("");
   const [formData, setFormData] = useState<Partial<Record<string, string>>>({});
-
+  const [files, setFiles] = useState<FileWithPath[]>([]);
   const modelYearsMap = useMemo(() => {
     return getModelYearEnumsToStringsMap();
   }, []);
+  const allowedFileTypes = {
+    "application/msword": [".doc", ".docx"],
+    "application/vnd.ms-excel": [".xls", ".xlsx"],
+    "application/pdf": [".pdf"],
+    "image/jpeg": [".jpg"],
+    "image/png": [".png"],
+  };
 
   useEffect(() => {
     const vehicle = props.vehicle;
@@ -48,16 +63,27 @@ export function VehicleForm(props: { vehicle?: SerializedVehicleWithOrg }) {
   }, [props.vehicle]);
 
   const handleChange = useCallback((key: string, value: string) => {
-    setFormData((prev) => {
-      return { ...prev, [key]: value };
-    });
+    if (
+      (key === "zevType" && value !== "EREV") ||
+      (key === "us06" && value === "false")
+    ) {
+      setFiles([]);
+      setFormData((prev) => {
+        return { ...prev, [key]: value, us06: "false" };
+      });
+    } else {
+      setFormData((prev) => {
+        return { ...prev, [key]: value };
+      });
+    }
   }, []);
 
   const handleSubmit = useCallback(
     (status: VehicleStatus) => {
+      setError("");
       startTransition(async () => {
         try {
-          const vehiclePayload = getVehiclePayload(formData, status);
+          const vehiclePayload = getVehiclePayload(formData, files, status);
           const my = parseInt(formData.modelYear || "", 10);
           const rangeKm = new Decimal(formData.range || "0");
           const us06 = formData.us06 === "true";
@@ -115,7 +141,7 @@ export function VehicleForm(props: { vehicle?: SerializedVehicleWithOrg }) {
               .add(0.3)
               .add(us06 ? 0.2 : 0);
             const cap = us06 ? 1.3 : 1.1;
-            creditValue = raw.min(cap).toDecimalPlaces(2).toNumber();
+            creditValue = Decimal.min(raw, cap).toDecimalPlaces(2).toNumber();
           } else {
             // Class C
             creditValue = 0.0;
@@ -123,15 +149,40 @@ export function VehicleForm(props: { vehicle?: SerializedVehicleWithOrg }) {
           vehiclePayload.creditValue = creditValue;
           if (props.vehicle) vehiclePayload.id = props.vehicle.id;
 
-          const res = await createOrUpdateVehicle(vehiclePayload);
-          if (res.responseType === "error") throw new Error(res.message);
-          router.push(`${Routes.Vehicle}/${res.data}`);
+          const vehicleFiles: VehicleFile[] = [];
+          if (files.length > 0) {
+            const putData = await getPutObjectData(files.length);
+            const filesAndPutData: [FileWithPath, VehiclePutObjectData][] =
+              files.map((file, index) => [file, putData[index]]);
+            for (const tuple of filesAndPutData) {
+              const file = tuple[0];
+              const putData = tuple[1];
+              await axios.put(putData.url, file);
+              vehicleFiles.push({
+                filename: file.name,
+                objectName: putData.objectName,
+                size: file.size,
+                mimeType: file.type,
+              });
+            }
+          }
+          const response = await createOrUpdateVehicle(
+            vehiclePayload,
+            vehicleFiles,
+          );
+          if (response.responseType === "error") {
+            throw new Error(response.message);
+          }
+          const vehicleId = response.data;
+          router.push(
+            `${Routes.Vehicle}/${vehicleId ? vehicleId : vehiclePayload.id}`,
+          );
         } catch (e) {
           if (e instanceof Error) setError(e.message);
         }
       });
     },
-    [formData, props.vehicle, router]
+    [formData, props.vehicle, files, router],
   );
 
   const button = useMemo(() => {
@@ -238,6 +289,15 @@ export function VehicleForm(props: { vehicle?: SerializedVehicleWithOrg }) {
         />
         <span>(requires certificate upload)</span>
       </div>
+      {formData.us06 === "true" && formData.zevType === "EREV" && (
+        <Dropzone
+          files={files}
+          setFiles={setFiles}
+          disabled={isPending}
+          maxNumberOfFiles={20}
+          allowedFileTypes={allowedFileTypes}
+        />
+      )}
 
       <div className="flex items-center py-2 my-2">
         <label className="w-72">Electric EPA Range (km)</label>

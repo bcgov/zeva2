@@ -7,7 +7,9 @@ import {
 export const getWhereClause = (
   filters: Record<string, string>,
 ): Prisma.AgreementWhereInput => {
-  const result: Prisma.AgreementWhereInput = {};
+  const result: Prisma.AgreementWhereInput = {
+    status: { not: AgreementStatus.DELETED },
+  };
   let filteredTypes = Object.values(AgreementType);
   Object.entries(filters).forEach(([key, value]) => {
     const val = value.trim().toUpperCase();
@@ -89,6 +91,7 @@ export const getWhereClause = (
           in: Object.values(AgreementStatus).filter((s) =>
             s.includes(statusVal),
           ),
+          not: AgreementStatus.DELETED,
         };
         break;
       }
@@ -132,3 +135,7 @@ export const getOrderByClause = (
   }
   return result;
 };
+
+export const getAgreementId = (agreement: { id: number; agreementType: AgreementType }) => {
+  return agreement.agreementType[0] + "A-" + agreement.id;
+}

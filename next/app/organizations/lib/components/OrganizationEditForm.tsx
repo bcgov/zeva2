@@ -4,7 +4,8 @@ import { Button } from "@/app/lib/components";
 import { OrganizationPayload } from "../action";
 import AddressEditForm from "./AddressEditForm";
 import { OrganizationAddressSparse } from "../data";
-import { cleanupAddressData, cleanupStringData } from "../utils";
+import { cleanupAddressData } from "../utils";
+import { cleanupStringData } from "@/lib/utils/dataCleanup";
 
 const mainFieldClass = "grid grid-cols-[220px_1fr]";
 const addressFrameClass = "w-1/2 border border-borderGrey p-2";

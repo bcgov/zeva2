@@ -392,8 +392,8 @@ model VehicleAttachment {
   size            BigInt    @default(0)
   mimeType        String?   @map("mime_type")
   isRemoved       Boolean   @default(false) @map("is_removed")
-  createUser      String    @map("create_user") @db.VarChar(130)
-  updateUser      String?   @map("update_user") @db.VarChar(130)
+  createUser      Int       @map("create_user_id")
+  updateUser      Int?      @map("update_user_id")
 
   @@map("vehicle_file_attachment")
 }
@@ -600,13 +600,13 @@ model AgreementContent {
 }
 
 model AgreementHistory {
-  id          Int             @id @default(autoincrement())
-  agreementId Int             @map("agreement_id")
-  agreement   Agreement       @relation(fields: [agreementId], references: [id])
-  userId      Int             @map("user_id")
-  user        User            @relation(fields: [userId], references: [id])
-  timestamp   DateTime        @default(now()) @db.Timestamptz(6)
-  userAction  AgreementStatus @map("user_action")
+  id          Int                 @id @default(autoincrement())
+  agreementId Int                 @map("agreement_id")
+  agreement   Agreement           @relation(fields: [agreementId], references: [id])
+  userId      Int                 @map("user_id")
+  user        User                @relation(fields: [userId], references: [id])
+  timestamp   DateTime            @default(now()) @db.Timestamptz(6)
+  userAction  AgreementUserAction @map("user_action")
   comment     String?
 
   @@map("agreement_history")
