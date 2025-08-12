@@ -20,6 +20,7 @@ import {
 import { Decimal } from "@/prisma/generated/client/runtime/index-browser";
 import {
   AssessmentTemplate,
+  divisors,
   MyrTemplate,
   SupplierZevClassChoice,
 } from "./constants";
@@ -40,6 +41,7 @@ import {
 } from "@/app/lib/utils/typeGuards";
 import { SupplierClass } from "@/app/lib/constants/complianceRatio";
 import { ComplianceInfo } from "./utils";
+import { AssessmentResultData } from "./components/AssessmentResult";
 
 export const getZevClassOrdering = (
   priorityZevClass: SupplierZevClassChoice,
@@ -423,4 +425,86 @@ const writePenalty = (
       `Section 10 (3) of the Zero-Emission Vehicles Act applies to ${orgName} and they are required to pay a penalty amount of $${penalty.toString()}.`,
     ]);
   }
+};
+
+export const parseAssessment = async (
+  file: ArrayBuffer,
+  modelYear: ModelYear,
+): Promise<AssessmentResultData> => {
+  let nv: string | undefined;
+  const transactions: Partial<Record<string, string>>[] = [];
+  const endingBalance: Partial<Record<string, string>>[] = [];
+  const workbook = new Excel.Workbook();
+  await workbook.xlsx.load(file);
+  const reductionsSheet = workbook.getWorksheet(
+    AssessmentTemplate.ComplianceReductionsSheetName,
+  );
+  const adjustmentsSheet = workbook.getWorksheet(
+    AssessmentTemplate.AdjustmentsSheetName,
+  );
+  const endingBalanceSheet = workbook.getWorksheet(
+    AssessmentTemplate.EndingBalanceSheetName,
+  );
+  const penaltySheet = workbook.getWorksheet(
+    AssessmentTemplate.PenaltySheetName,
+  );
+  if (
+    !reductionsSheet ||
+    !adjustmentsSheet ||
+    !endingBalanceSheet ||
+    !penaltySheet
+  ) {
+    throw new Error();
+  }
+  const transactionTypesMap = getTransactionTypeEnumsToStringMap();
+  reductionsSheet.eachRow((row, rowNumber) => {
+    if (rowNumber > 1) {
+      nv = row.getCell(2).toString();
+      transactions.push({
+        type: transactionTypesMap[TransactionType.DEBIT],
+        vehicleClass: row.getCell(3).toString(),
+        zevClass: row.getCell(4).toString(),
+        modelYear: row.getCell(5).toString(),
+        numberOfUnits: row.getCell(6).toString(),
+      });
+    }
+  });
+  adjustmentsSheet.eachRow((row, rowNumber) => {
+    if (rowNumber > 1) {
+      transactions.push({
+        type: row.getCell(1).toString(),
+        vehicleClass: row.getCell(2).toString(),
+        zevClass: row.getCell(3).toString(),
+        modelYear: row.getCell(4).toString(),
+        numberOfUnits: row.getCell(5).toString(),
+      });
+    }
+  });
+  const hasPenalty = penaltySheet.actualRowCount > 0;
+  endingBalanceSheet.eachRow((row, rowNumber) => {
+    if (rowNumber > 1) {
+      const record: Record<string, string> = {
+        type: row.getCell(1).toString(),
+        vehicleClass: row.getCell(2).toString(),
+        zevClass: row.getCell(3).toString(),
+        modelYear: row.getCell(4).toString(),
+        numberOfUnits: row.getCell(5).toString(),
+      };
+      if (hasPenalty) {
+        record.divisor = "1";
+        record.finalNumberOfUnits = record.numberOfUnits;
+      } else {
+        record.divisor = divisors[modelYear] ?? "1";
+        record.finalNumberOfUnits = new Decimal(record.numberOfUnits)
+          .div(new Decimal(record.divisor))
+          .toFixed(2);
+      }
+      endingBalance.push(record);
+    }
+  });
+  return {
+    nv,
+    transactions,
+    endingBalance,
+  };
 };

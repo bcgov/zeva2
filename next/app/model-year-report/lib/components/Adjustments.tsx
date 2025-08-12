@@ -9,6 +9,7 @@ import {
   ZevClass,
 } from "@/prisma/generated/client";
 import { Button } from "@/app/lib/components";
+import { LoadingSkeleton } from "@/app/lib/components/skeletons";
 
 export type Adjustment = { id: string } & Partial<Record<string, string>>;
 
@@ -17,11 +18,15 @@ export const Adjustments = (props: {
   addAdjustment: () => void;
   removeAdjustment: (id: string) => void;
   handleAdjustmentChange: (id: string, key: string, value: string) => void;
+  disabled: boolean;
 }) => {
   const helpingMaps = useMemo(() => {
     return getHelpingMaps();
   }, []);
 
+  if (props.disabled) {
+    return <LoadingSkeleton />;
+  }
   return (
     <div>
       {props.adjustments.map((adjustment) => {

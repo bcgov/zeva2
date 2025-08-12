@@ -1,4 +1,4 @@
-import { ZevClass } from "@/prisma/generated/client";
+import { ModelYear, ZevClass } from "@/prisma/generated/client";
 
 export enum MyrTemplate {
   Name = "model_year_report_template.xlsx",
@@ -31,6 +31,7 @@ export enum AssessmentTemplate {
 export enum ReportSubDirectory {
   ModelYearReport = "modelYearReport",
   Forecast = "forecast",
+  Assessment = "assessment",
 }
 
 export const supplierZevClassChoice = {
@@ -40,3 +41,7 @@ export const supplierZevClassChoice = {
 
 export type SupplierZevClassChoice =
   (typeof supplierZevClassChoice)[keyof typeof supplierZevClassChoice];
+
+export const divisors: Readonly<Partial<Record<ModelYear, string>>> = {
+  [ModelYear.MY_2025]: "3.5",
+};

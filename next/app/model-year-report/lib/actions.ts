@@ -13,6 +13,7 @@ import {
   ModelYearReportStatus,
   ModelYearReportSupplierStatus,
   Prisma,
+  Role,
   VehicleClass,
   ZevClass,
 } from "@/prisma/generated/client";
@@ -25,8 +26,10 @@ import {
 } from "./services";
 import {
   DataOrErrorActionResponse,
+  ErrorOrSuccessActionResponse,
   getDataActionResponse,
   getErrorActionResponse,
+  getSuccessActionResponse,
 } from "@/app/lib/utils/actionResponse";
 import { ZevUnitRecord } from "@/lib/utils/zevUnit";
 import {
@@ -306,4 +309,102 @@ export const getAssessmentData = async (
     }
     throw e;
   }
+};
+
+export const getPutAssessmentData = async (
+  orgId: number,
+): Promise<
+  DataOrErrorActionResponse<{
+    objectName: string;
+    url: string;
+  }>
+> => {
+  const { userIsGov } = await getUserInfo();
+  if (!userIsGov) {
+    return getErrorActionResponse("Unauthorized");
+  }
+  const assessmentObjectName = randomUUID();
+  const assessmentPutUrl = await getPresignedPutObjectUrl(
+    getReportFullObjectName(orgId, "assessment", assessmentObjectName),
+  );
+  return getDataActionResponse({
+    objectName: assessmentObjectName,
+    url: assessmentPutUrl,
+  });
+};
+
+export const submitToDirector = async (
+  id: number,
+  organizationId: number,
+  assessmentObjectName: string,
+  assessmentFileName: string,
+  comment?: string,
+): Promise<ErrorOrSuccessActionResponse> => {
+  const { userIsGov, userId, userRoles } = await getUserInfo();
+  const assessmentFullObjectName = getReportFullObjectName(
+    organizationId,
+    "assessment",
+    assessmentObjectName,
+  );
+  try {
+    if (!userIsGov || !userRoles.includes(Role.ENGINEER_ANALYST)) {
+      throw new Error("Unauthorized!");
+    }
+    const myr = await prisma.modelYearReport.findUnique({
+      where: {
+        id,
+        organizationId,
+      },
+      select: {
+        status: true,
+        assessmentObjectName: true,
+      },
+    });
+    if (!myr) {
+      throw new Error("Model Year Report does not exist!");
+    }
+    const status = myr.status;
+    const prevAssessmentObjectName = myr.assessmentObjectName;
+    if (
+      status !== ModelYearReportStatus.SUBMITTED_TO_GOVERNMENT &&
+      status !== ModelYearReportStatus.RETURNED_TO_ANALYST
+    ) {
+      throw new Error("Invalid action!");
+    }
+    await prisma.$transaction(async (tx) => {
+      await tx.modelYearReport.update({
+        where: {
+          id,
+        },
+        data: {
+          status: ModelYearReportStatus.SUBMITTED_TO_DIRECTOR,
+          assessmentObjectName,
+          assessmentFileName,
+        },
+      });
+      await createHistory(
+        id,
+        userId,
+        ModelYearReportStatus.SUBMITTED_TO_DIRECTOR,
+        comment,
+        tx,
+      );
+      if (prevAssessmentObjectName) {
+        await removeObject(
+          getReportFullObjectName(
+            organizationId,
+            "assessment",
+            prevAssessmentObjectName,
+          ),
+        );
+      }
+    });
+  } catch (e) {
+    await removeObject(assessmentFullObjectName);
+    if (e instanceof Error) {
+      return getErrorActionResponse(e.message);
+    }
+    throw e;
+  }
+  return getSuccessActionResponse();
 };

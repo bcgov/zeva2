@@ -193,7 +193,7 @@ export const getZevUnitRecordsOrderByClause = (): [
 
 export const getReportFullObjectName = (
   orgId: number,
-  myrOrForecast: "myr" | "forecast",
+  myrOrForecast: "myr" | "forecast" | "assessment",
   objectName: string,
 ): string => {
   switch (myrOrForecast) {
@@ -201,6 +201,8 @@ export const getReportFullObjectName = (
       return `${orgId}/${ReportSubDirectory.ModelYearReport}/${objectName}`;
     case "forecast":
       return `${orgId}/${ReportSubDirectory.Forecast}/${objectName}`;
+    case "assessment":
+      return `${orgId}/${ReportSubDirectory.Assessment}/${objectName}`;
   }
 };
 
