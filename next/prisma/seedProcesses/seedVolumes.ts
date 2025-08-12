@@ -29,6 +29,7 @@ export const seedVolumes = async (
         data: {
           organizationId: newOrgId,
           modelYear: modelYearEnum,
+          vehicleClass: VehicleClass.REPORTABLE,
           volume,
         },
       });

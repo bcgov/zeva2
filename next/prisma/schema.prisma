@@ -594,6 +594,7 @@ model LegacySalesVolume {
   organization   Organization @relation(fields: [organizationId], references: [id])
   organizationId Int          @map("organization_id")
   modelYear      ModelYear    @map("model_year")
+  vehicleClass   VehicleClass @map("vehicle_class")
   volume         Int
 
   @@unique([organizationId, modelYear])

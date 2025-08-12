@@ -1,0 +1,263 @@
+"use client";
+
+import axios from "axios";
+import {
+  ModelYear,
+  ModelYearReportStatus,
+  TransactionType,
+  VehicleClass,
+  ZevClass,
+} from "@/prisma/generated/client";
+import { useRouter } from "next/navigation";
+import { useCallback, useMemo, useState, useTransition } from "react";
+import { SupplierZevClassChoice } from "../constants";
+import { FileWithPath } from "react-dropzone";
+import {
+  getAssessmentData,
+  getAssessmentTemplateUrl,
+  getReportDownloadUrls,
+  NvValues,
+} from "../actions";
+import { getModelYearEnumsToStringsMap } from "@/app/lib/utils/enumMaps";
+import { MyrNvValues } from "./MyrNvValues";
+import { ZevClassSelect } from "./ZevClassSelect";
+import { Button } from "@/app/lib/components";
+import { Dropzone } from "@/app/lib/components/Dropzone";
+import { downloadZip } from "@/app/lib/utils/download";
+import {
+  downloadAssessment,
+  getAdjustmentsPayload,
+  getZevClassOrdering,
+  validateNvValues,
+} from "../utilsClient";
+import { Adjustment, Adjustments } from "./Adjustments";
+
+// can also be used for reassessments
+export const AssessmentForm = (props: {
+  id: number;
+  orgId: number;
+  orgName: string;
+  status: ModelYearReportStatus;
+  modelYear: ModelYear;
+}) => {
+  const router = useRouter();
+  const [isPending, startTransition] = useTransition();
+  const [error, setError] = useState<string>("");
+  const [nvValues, setNvValues] = useState<NvValues>({});
+  const [zevClassSelection, setZevClassSelection] =
+    useState<SupplierZevClassChoice>(ZevClass.B);
+  const [adjustments, setAdjustments] = useState<Adjustment[]>([]);
+  const [assessments, setAssessments] = useState<FileWithPath[]>([]);
+
+  const modelYearsMap = useMemo(() => {
+    return getModelYearEnumsToStringsMap();
+  }, []);
+
+  const addAdjustment = useCallback(() => {
+    setAdjustments((prev) => {
+      return [
+        ...prev,
+        {
+          id: crypto.randomUUID(),
+          type: TransactionType.CREDIT,
+          vehicleClass: VehicleClass.REPORTABLE,
+          zevClass: ZevClass.A,
+          modelYear: props.modelYear,
+          numberOfUnits: "0",
+        },
+      ];
+    });
+  }, [props.modelYear]);
+
+  const removeAdjustment = useCallback((id: string) => {
+    setAdjustments((prev) => {
+      return prev.filter((adjustment) => adjustment.id !== id);
+    });
+  }, []);
+
+  const handleAdjustmentChange = useCallback(
+    (id: string, key: string, value: string) => {
+      setAdjustments((prev) => {
+        return prev.map((adjustment) => {
+          if (adjustment.id === id) {
+            return { ...adjustment, [key]: value };
+          }
+          return adjustment;
+        });
+      });
+    },
+    [],
+  );
+
+  const handleNvValuesChange = useCallback(
+    (key: VehicleClass, value: string) => {
+      setNvValues((prev) => {
+        return { ...prev, [key]: value };
+      });
+    },
+    [],
+  );
+
+  const handleZevClassSelect = useCallback(
+    (zevClass: SupplierZevClassChoice) => {
+      setZevClassSelection(zevClass);
+    },
+    [],
+  );
+
+  const handleDownloadReports = useCallback(() => {
+    setError("");
+    startTransition(async () => {
+      try {
+        const response = await getReportDownloadUrls(props.id);
+        if (response.responseType === "error") {
+          throw new Error(response.message);
+        }
+        const [myr, forecast] = await Promise.all([
+          axios.get(response.data.myrUrl, {
+            responseType: "arraybuffer",
+          }),
+          axios.get(response.data.forecastUrl, {
+            responseType: "arraybuffer",
+          }),
+        ]);
+        await downloadZip(
+          `${props.orgName.replaceAll(" ", "-")}-${modelYearsMap[props.modelYear]}-reports.zip`,
+          [
+            {
+              fileName: response.data.myrFileName,
+              data: myr.data,
+            },
+            {
+              fileName: response.data.forecastFileName,
+              data: forecast.data,
+            },
+          ],
+        );
+      } catch (e) {
+        if (e instanceof Error) {
+          setError(e.message);
+        }
+      }
+    });
+  }, [props.id, props.orgName, props.modelYear, modelYearsMap]);
+
+  const handleGenerateAssessment = useCallback(() => {
+    setError("");
+    startTransition(async () => {
+      try {
+        validateNvValues(nvValues);
+        const zevClassOrdering = getZevClassOrdering(zevClassSelection);
+        const adjustmentsPayload = getAdjustmentsPayload(adjustments);
+        const [templateUrl, assessmentResponse] = await Promise.all([
+          getAssessmentTemplateUrl(),
+          getAssessmentData(
+            props.orgId,
+            props.modelYear,
+            nvValues,
+            zevClassOrdering,
+            adjustmentsPayload,
+          ),
+        ]);
+        if (assessmentResponse.responseType === "error") {
+          throw new Error(assessmentResponse.message);
+        }
+        const templateResponse = await axios.get(templateUrl, {
+          responseType: "arraybuffer",
+        });
+        const template = templateResponse.data;
+        await downloadAssessment(
+          template,
+          assessmentResponse.data,
+          zevClassSelection,
+          adjustmentsPayload,
+          props.orgName,
+          props.modelYear,
+        );
+      } catch (e) {
+        if (e instanceof Error) {
+          setError(e.message);
+        }
+      }
+    });
+  }, [
+    props.orgId,
+    props.orgName,
+    props.modelYear,
+    nvValues,
+    zevClassSelection,
+    adjustments,
+  ]);
+
+  const handleSubmit = useCallback(() => {}, []);
+
+  return (
+    <div>
+      {error && <p className="text-red-600">{error}</p>}
+      <div className="flex items-center py-2 my-2">
+        <label className="w-72" htmlFor="modelYear">
+          Model Year
+        </label>
+        <input
+          disabled={true}
+          name="modelYear"
+          type="text"
+          value={modelYearsMap[props.modelYear]}
+          className="border p-2 w-full"
+        />
+      </div>
+      <div className="flex space-x-2">
+        <Button onClick={handleDownloadReports} disabled={isPending}>
+          {isPending ? "..." : "Download Model Year Report and Forecast Report"}
+        </Button>
+      </div>
+      <MyrNvValues
+        nvValues={nvValues}
+        handleChange={handleNvValuesChange}
+        disabled={isPending}
+      />
+      <div className="flex items-center py-2 my-2">
+        <p>
+          Select the ZEV class of credits that should be used first when
+          offsetting debits of the unspecified ZEV class:
+        </p>
+      </div>
+      <div className="flex items-center py-2 my-2 space-x-4">
+        <ZevClassSelect
+          zevClassSelection={zevClassSelection}
+          handleChange={handleZevClassSelect}
+          disabled={isPending}
+        />
+      </div>
+      <Adjustments
+        adjustments={adjustments}
+        addAdjustment={addAdjustment}
+        removeAdjustment={removeAdjustment}
+        handleAdjustmentChange={handleAdjustmentChange}
+      />
+      <div className="flex space-x-2">
+        <Button onClick={handleGenerateAssessment} disabled={isPending}>
+          {isPending ? "..." : "Generate and Download Assessment"}
+        </Button>
+      </div>
+      <div className="flex items-center space-x-4">
+        <span>Upload the Assessment here:</span>
+        <Dropzone
+          files={assessments}
+          setFiles={setAssessments}
+          disabled={isPending}
+          maxNumberOfFiles={1}
+          allowedFileTypes={{
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet":
+              [".xlsx"],
+          }}
+        />
+      </div>
+      <div className="flex space-x-2">
+        <Button onClick={handleSubmit} disabled={isPending}>
+          {isPending ? "..." : "Submit to Director"}
+        </Button>
+      </div>
+    </div>
+  );
+};

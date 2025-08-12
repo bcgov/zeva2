@@ -2,19 +2,26 @@ import { SupplierClass } from "@/app/lib/constants/complianceRatio";
 import { getCompliancePeriod } from "@/app/lib/utils/complianceYear";
 import { prisma } from "@/lib/prisma";
 import { modelYearEnumToInt } from "@/lib/utils/convertEnums";
-import { ZevUnitRecord } from "@/lib/utils/zevUnit";
+import { calculateBalance, ZevUnitRecord } from "@/lib/utils/zevUnit";
 import {
   AddressType,
   ModelYear,
+  ModelYearReportStatus,
   OrganizationAddress,
+  SupplyVolume,
   VehicleClass,
+  ZevClass,
   ZevUnitTransaction,
 } from "@/prisma/generated/client";
 import { Decimal } from "@/prisma/generated/client/runtime/library";
 import {
   validatePrevBalanceTransactions,
   getZevUnitRecordsOrderByClause,
+  getComplianceRatioReductions,
+  getTransformedAdjustments,
 } from "./utils";
+import { TransactionClient } from "@/types/prisma";
+import { AdjustmentPayload, NvValues } from "./actions";
 
 export type OrgNameAndAddresses = {
   name: string;
@@ -71,9 +78,6 @@ export const getSupplierClass = async (
   modelYear: ModelYear,
   reportableNvValue: string,
 ): Promise<SupplierClass> => {
-  if (modelYear < ModelYear.MY_2024) {
-    throw new Error("Model year must be at least 2024!");
-  }
   const modelYearsArray = Object.values(ModelYear);
   const myIndex = modelYearsArray.findIndex((my) => my === modelYear);
   const precedingMys: ModelYear[] = [];
@@ -81,17 +85,25 @@ export const getSupplierClass = async (
     const precedingMy = modelYearsArray[myIndex - i];
     precedingMys.push(precedingMy);
   }
-  const volumes = await prisma.supplyVolume.findMany({
-    where: {
-      OR: [
-        { modelYear: precedingMys[0] },
-        { modelYear: precedingMys[1] },
-        { modelYear: precedingMys[2] },
-      ],
-      organizationId,
-      vehicleClass: VehicleClass.REPORTABLE,
-    },
-  });
+  const whereClause = {
+    OR: [
+      { modelYear: precedingMys[0] },
+      { modelYear: precedingMys[1] },
+      { modelYear: precedingMys[2] },
+    ],
+    organizationId,
+    vehicleClass: VehicleClass.REPORTABLE,
+  };
+  let volumes: SupplyVolume[] = [];
+  if (modelYear < ModelYear.MY_2024) {
+    volumes = await prisma.legacySalesVolume.findMany({
+      where: whereClause,
+    });
+  } else {
+    volumes = await prisma.supplyVolume.findMany({
+      where: whereClause,
+    });
+  }
   let average = new Decimal(0);
   if (volumes.length === 3) {
     let total = 0;
@@ -218,5 +230,69 @@ export const getTransactionsForModelYear = async (
       timestamp: true,
     },
     orderBy: getZevUnitRecordsOrderByClause(),
+  });
+};
+
+export const getZevUnitData = async (
+  orgId: number,
+  modelYear: ModelYear,
+  nvValues: NvValues,
+  zevClassOrdering: ZevClass[],
+  adjustments: AdjustmentPayload[],
+) => {
+  const reportableNvValue = nvValues[VehicleClass.REPORTABLE];
+  if (!reportableNvValue) {
+    throw new Error("No Reportable NV Value!");
+  }
+  const supplierClass = await getSupplierClass(
+    orgId,
+    modelYear,
+    reportableNvValue,
+  );
+  const prevEndingBalance = await getPrevEndingBalance(orgId, modelYear);
+  const complianceReductions = getComplianceRatioReductions(
+    nvValues,
+    modelYear,
+    supplierClass,
+  );
+  const currentTransactions = await getTransactionsForModelYear(
+    orgId,
+    modelYear,
+  );
+  const transformedAdjustments = getTransformedAdjustments(adjustments);
+  const [endingBalance, offsettedCredits] = calculateBalance(
+    [
+      ...prevEndingBalance,
+      ...currentTransactions,
+      ...complianceReductions,
+      ...transformedAdjustments,
+    ],
+    zevClassOrdering,
+  );
+  return {
+    supplierClass,
+    prevEndingBalance,
+    complianceReductions,
+    currentTransactions,
+    endingBalance,
+    offsettedCredits,
+  };
+};
+
+export const createHistory = async (
+  modelYearReportId: number,
+  userId: number,
+  userAction: ModelYearReportStatus,
+  comment?: string,
+  transactionClient?: TransactionClient,
+) => {
+  const client = transactionClient ?? prisma;
+  await client.modelYearReportHistory.create({
+    data: {
+      modelYearReportId,
+      userId,
+      userAction,
+      comment,
+    },
   });
 };

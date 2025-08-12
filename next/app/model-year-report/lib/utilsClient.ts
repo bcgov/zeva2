@@ -11,12 +11,18 @@ import {
   MyrCurrentTransactions,
   MyrData,
   MyrOffsets,
-  MyrPrevEndingBalance,
+  MyrEndingBalance,
   NvValues,
   SupplierData,
+  AdjustmentPayload,
+  AssessmentData,
 } from "./actions";
 import { Decimal } from "@/prisma/generated/client/runtime/index-browser";
-import { MyrTemplate } from "./constants";
+import {
+  AssessmentTemplate,
+  MyrTemplate,
+  SupplierZevClassChoice,
+} from "./constants";
 import {
   getModelYearEnumsToStringsMap,
   getReferenceTypeEnumsToStringsMap,
@@ -25,14 +31,15 @@ import {
   getZevClassEnumsToStringsMap,
 } from "@/app/lib/utils/enumMaps";
 import { downloadBuffer } from "@/app/lib/utils/download";
-
-export type SupplierZevClassChoice = {
-  [ZevClass.A]: typeof ZevClass.A;
-  [ZevClass.B]: typeof ZevClass.B;
-}[keyof {
-  [ZevClass.A]: typeof ZevClass.A;
-  [ZevClass.B]: typeof ZevClass.B;
-}];
+import { Adjustment } from "./components/Adjustments";
+import {
+  isModelYear,
+  isTransactionType,
+  isVehicleClass,
+  isZevClass,
+} from "@/app/lib/utils/typeGuards";
+import { SupplierClass } from "@/app/lib/constants/complianceRatio";
+import { ComplianceInfo } from "./utils";
 
 export const getZevClassOrdering = (
   priorityZevClass: SupplierZevClassChoice,
@@ -65,6 +72,16 @@ export type MyrHelpingMaps = {
   modelYearsMap: Partial<Record<ModelYear, string>>;
 };
 
+export const getHelpingMaps = (): MyrHelpingMaps => {
+  return {
+    transactionTypesMap: getTransactionTypeEnumsToStringMap(),
+    referenceTypesMap: getReferenceTypeEnumsToStringsMap(),
+    vehicleClassesMap: getVehicleClassEnumsToStringsMap(),
+    zevClassesMap: getZevClassEnumsToStringsMap(),
+    modelYearsMap: getModelYearEnumsToStringsMap(),
+  };
+};
+
 export const downloadMyr = async (
   template: Excel.Buffer,
   myrData: MyrData,
@@ -74,6 +91,7 @@ export const downloadMyr = async (
 ) => {
   const workbook = new Excel.Workbook();
   await workbook.xlsx.load(template);
+  const modelYearSheet = workbook.getWorksheet(MyrTemplate.ModelYearSheetName);
   const supplierDetailsSheet = workbook.getWorksheet(
     MyrTemplate.SupplierDetailsSheetName,
   );
@@ -91,6 +109,7 @@ export const downloadMyr = async (
   );
   const creditsSheet = workbook.getWorksheet(MyrTemplate.CreditsSheetName);
   if (
+    !modelYearSheet ||
     !supplierDetailsSheet ||
     !prevBalanceSheet ||
     !complianceReductionsSheet ||
@@ -100,15 +119,10 @@ export const downloadMyr = async (
   ) {
     throw new Error("Invalid Template!");
   }
-  const helpingMaps: MyrHelpingMaps = {
-    transactionTypesMap: getTransactionTypeEnumsToStringMap(),
-    referenceTypesMap: getReferenceTypeEnumsToStringsMap(),
-    vehicleClassesMap: getVehicleClassEnumsToStringsMap(),
-    zevClassesMap: getZevClassEnumsToStringsMap(),
-    modelYearsMap: getModelYearEnumsToStringsMap(),
-  };
+  const helpingMaps = getHelpingMaps();
+  writeModelYear(modelYearSheet, modelYear, helpingMaps);
   writeSupplierDetails(supplierDetailsSheet, myrData.supplierData);
-  writePrevBalance(prevBalanceSheet, myrData.prevEndingBalance, helpingMaps);
+  writeBalance(prevBalanceSheet, myrData.prevEndingBalance, helpingMaps);
   writeComplianceReductions(
     complianceReductionsSheet,
     myrData.complianceReductions,
@@ -125,6 +139,14 @@ export const downloadMyr = async (
   const fileName = `myr-${orgName.replaceAll(" ", "-")}-${helpingMaps.modelYearsMap[modelYear]}.xlsx`;
   const buffer = await workbook.xlsx.writeBuffer();
   downloadBuffer(fileName, buffer);
+};
+
+const writeModelYear = (
+  sheet: Excel.Worksheet,
+  modelYear: ModelYear,
+  helpingMaps: MyrHelpingMaps,
+) => {
+  sheet.addRow([helpingMaps.modelYearsMap[modelYear]]);
 };
 
 const writeSupplierDetails = (
@@ -146,9 +168,9 @@ const writeSupplierDetails = (
   ]);
 };
 
-const writePrevBalance = (
+const writeBalance = (
   sheet: Excel.Worksheet,
-  records: MyrPrevEndingBalance,
+  records: MyrEndingBalance,
   helpingMaps: MyrHelpingMaps,
 ) => {
   records.forEach((record) => {
@@ -236,4 +258,169 @@ const writeCredits = (
       ]);
     }
   });
+};
+
+export const getAdjustmentsPayload = (
+  adjustments: Adjustment[],
+): AdjustmentPayload[] => {
+  const result: AdjustmentPayload[] = [];
+  adjustments.forEach((adjustment) => {
+    const type = adjustment.type;
+    const vehicleClass = adjustment.vehicleClass;
+    const zevClass = adjustment.zevClass;
+    const modelYear = adjustment.modelYear;
+    const numberOfUnits = adjustment.numberOfUnits;
+    if (
+      !type ||
+      !vehicleClass ||
+      !zevClass ||
+      !modelYear ||
+      !numberOfUnits ||
+      !isTransactionType(type) ||
+      !isVehicleClass(vehicleClass) ||
+      !isZevClass(zevClass) ||
+      !isModelYear(modelYear)
+    ) {
+      throw new Error("Invalid adjustment detected!");
+    }
+    const numberOfUnitsDec = new Decimal(numberOfUnits);
+    if (numberOfUnitsDec.lte(0) || numberOfUnitsDec.decimalPlaces() > 2) {
+      throw new Error(
+        "An adjustment's Number of Units must be greater than zero and must be rounded to no more than the second decimal place!",
+      );
+    }
+    result.push({
+      type,
+      vehicleClass,
+      zevClass,
+      modelYear,
+      numberOfUnits,
+    });
+  });
+  return result;
+};
+
+export const downloadAssessment = async (
+  template: Excel.Buffer,
+  assessmentData: AssessmentData,
+  priorityZevClass: SupplierZevClassChoice,
+  adjustments: AdjustmentPayload[],
+  orgName: string,
+  modelYear: ModelYear,
+) => {
+  const workbook = new Excel.Workbook();
+  await workbook.xlsx.load(template);
+  const detailsSheet = workbook.getWorksheet(
+    AssessmentTemplate.DetailsSheetName,
+  );
+  const reductionsSheet = workbook.getWorksheet(
+    AssessmentTemplate.ComplianceReductionsSheetName,
+  );
+  const complianceStatementSheet = workbook.getWorksheet(
+    AssessmentTemplate.ComplianceStatementSheetName,
+  );
+  const endingBalanceSheet = workbook.getWorksheet(
+    AssessmentTemplate.EndingBalanceSheetName,
+  );
+  const offsetsAndTransfersAwaySheet = workbook.getWorksheet(
+    AssessmentTemplate.OffsetsAndTransfersAwaySheetName,
+  );
+  const creditsSheet = workbook.getWorksheet(
+    AssessmentTemplate.CreditsSheetName,
+  );
+  const adjustmentsSheet = workbook.getWorksheet(
+    AssessmentTemplate.AdjustmentsSheetName,
+  );
+  const penaltySheet = workbook.getWorksheet(
+    AssessmentTemplate.PenaltySheetName,
+  );
+  if (
+    !detailsSheet ||
+    !reductionsSheet ||
+    !complianceStatementSheet ||
+    !endingBalanceSheet ||
+    !offsetsAndTransfersAwaySheet ||
+    !creditsSheet ||
+    !adjustmentsSheet ||
+    !penaltySheet
+  ) {
+    throw new Error("Invalid Template!");
+  }
+  const helpingMaps = getHelpingMaps();
+  writeAssessmentDetails(
+    detailsSheet,
+    orgName,
+    modelYear,
+    assessmentData.supplierClass,
+    priorityZevClass,
+    helpingMaps,
+  );
+  writeComplianceReductions(
+    reductionsSheet,
+    assessmentData.complianceReductions,
+    helpingMaps,
+  );
+  writeComplianceStatement(
+    complianceStatementSheet,
+    orgName,
+    assessmentData.complianceInfo,
+  );
+  writeBalance(endingBalanceSheet, assessmentData.endingBalance, helpingMaps);
+  writeOffsetsAndTransfersAway(
+    offsetsAndTransfersAwaySheet,
+    assessmentData.offsets,
+    assessmentData.currentTransactions,
+    helpingMaps,
+  );
+  writeCredits(creditsSheet, assessmentData.currentTransactions, helpingMaps);
+  writeBalance(adjustmentsSheet, adjustments, helpingMaps);
+  writePenalty(penaltySheet, assessmentData.complianceInfo, orgName);
+  const fileName = `assessment-${orgName.replaceAll(" ", "-")}-${helpingMaps.modelYearsMap[modelYear]}.xlsx`;
+  const buffer = await workbook.xlsx.writeBuffer();
+  downloadBuffer(fileName, buffer);
+};
+
+const writeAssessmentDetails = (
+  sheet: Excel.Worksheet,
+  supplierName: string,
+  modelYear: ModelYear,
+  classification: SupplierClass,
+  priorityZevClass: SupplierZevClassChoice,
+  helpingMaps: MyrHelpingMaps,
+) => {
+  sheet.addRow([
+    supplierName,
+    helpingMaps.modelYearsMap[modelYear],
+    classification,
+    priorityZevClass,
+  ]);
+};
+
+const writeComplianceStatement = (
+  sheet: Excel.Worksheet,
+  orgName: string,
+  complianceInfo: ComplianceInfo,
+) => {
+  if (complianceInfo.isCompliant) {
+    sheet.addRow([
+      `${orgName} has complied with section 10 (2) of the Zero-Emission Vehicles Act.`,
+    ]);
+  } else {
+    sheet.addRow([
+      `${orgName} has not complied with section 10 (2) of the Zero-Emission Vehicles Act.`,
+    ]);
+  }
+};
+
+const writePenalty = (
+  sheet: Excel.Worksheet,
+  complianceInfo: ComplianceInfo,
+  orgName: string,
+) => {
+  const penalty = new Decimal(complianceInfo.penalty);
+  if (!complianceInfo.isCompliant && penalty.gt(0)) {
+    sheet.addRow([
+      `Section 10 (3) of the Zero-Emission Vehicles Act applies to ${orgName} and they are required to pay a penalty amount of $${penalty.toString()}.`,
+    ]);
+  }
 };
