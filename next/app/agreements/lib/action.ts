@@ -13,7 +13,7 @@ export type AgreementContentPayload = {
   zevClass: ZevClass;
   modelYear: ModelYear;
   numberOfUnits: number;
-}
+};
 
 export type AgreementPayload = Omit<Agreement, "id"> & {
   agreementContent: AgreementContentPayload[];
@@ -21,15 +21,12 @@ export type AgreementPayload = Omit<Agreement, "id"> & {
 
 /**
  * Upsert changes to an existing agreement in the database.
- * @param data - The agreement data to save. 
+ * @param data - The agreement data to save.
  * @param id - The ID of the agreement to update. If not provided,
  *    a new agreement will be created.
  * @returns the upserted agreement, or undefined if the process failed.
  */
-export const saveAgreement = async (
-  data: AgreementPayload,
-  id?: number,
-) => {
+export const saveAgreement = async (data: AgreementPayload, id?: number) => {
   const { userId, userIsGov, userRoles } = await getUserInfo();
   if (!userIsGov || !userRoles.includes(Role.ENGINEER_ANALYST)) {
     return undefined; // Only government users with ENGINEER_ANALYST role can update agreements
@@ -39,14 +36,14 @@ export const saveAgreement = async (
     return await prisma.$transaction(async (tx) => {
       const { agreementContent, ...mainData } = data;
 
-      const savedAgreement = id ?
-        await tx.agreement.update({
-          where: { id },
-          data: mainData,
-        }) :
-        await tx.agreement.create({
-          data: mainData,
-        });
+      const savedAgreement = id
+        ? await tx.agreement.update({
+            where: { id },
+            data: mainData,
+          })
+        : await tx.agreement.create({
+            data: mainData,
+          });
       const agreementId = savedAgreement.id;
 
       await tx.agreementContent.deleteMany({
@@ -55,9 +52,8 @@ export const saveAgreement = async (
 
       await tx.agreementContent.createMany({
         data: agreementContent
-          .filter((content) =>
-            content.numberOfUnits > 0
-          ).map((content) => ({
+          .filter((content) => content.numberOfUnits > 0)
+          .map((content) => ({
             ...content,
             agreementId,
           })),
@@ -86,10 +82,7 @@ export const saveAgreement = async (
  * @param status - The new status to set.
  * @returns true if the update was successful, false otherwise.
  */
-export const updateStatus = async (
-  id: number,
-  status: AgreementStatus,
-) => {
+export const updateStatus = async (id: number, status: AgreementStatus) => {
   const { userId, userIsGov } = await getUserInfo();
   if (!userIsGov || status === AgreementStatus.DRAFT) {
     return false;
@@ -115,4 +108,4 @@ export const updateStatus = async (
     console.error("Error updating agreement status:", (error as Error).message);
     return false;
   }
-}
+};

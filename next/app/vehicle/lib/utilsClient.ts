@@ -1,4 +1,3 @@
-import { VehicleStatus } from "@/prisma/generated/client";
 import { VehiclePayload } from "./actions";
 import { Decimal } from "@prisma/client/runtime/index-browser.js";
 import { getStringsToModelYearsEnumsMap } from "@/app/lib/utils/enumMaps";
@@ -11,7 +10,6 @@ import { FileWithPath } from "react-dropzone";
 export const getVehiclePayload = (
   data: Partial<Record<string, string>>,
   files: FileWithPath[],
-  status: VehicleStatus,
 ): VehiclePayload => {
   if (
     !data.modelYear ||
@@ -35,14 +33,24 @@ export const getVehiclePayload = (
   if (!isVehicleClassCode(data.bodyType)) {
     throw new Error("Invalid Body type!");
   }
-  const range = parseInt(data.range, 10);
-  if (Number.isNaN(range)) {
-    throw new Error("Invalid range!");
-  }
   try {
-    new Decimal(data.gvwr);
+    const rangeDec = new Decimal(data.range);
+    if (!rangeDec.isInteger()) {
+      throw new Error();
+    }
   } catch (e) {
-    throw new Error("Invalid GVWR!");
+    throw new Error("Range must be an integer!");
+  }
+  const range = new Decimal(data.range).toNumber();
+  try {
+    const gvwr = new Decimal(data.gvwr);
+    if (gvwr.decimalPlaces() > 2) {
+      throw new Error();
+    }
+  } catch (e) {
+    throw new Error(
+      "GVWR must be a number rounded to no more than 2 decimal places!",
+    );
   }
   if (data.us06 === "true" && files.length === 0) {
     throw new Error("At least one file is required!");
@@ -56,9 +64,5 @@ export const getVehiclePayload = (
     vehicleClassCode: data.bodyType,
     vehicleZevType: data.zevType,
     weightKg: data.gvwr,
-    status,
-    creditValue: null,
-    zevClass: null,
-    vehicleClass: null,
   };
 };

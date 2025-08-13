@@ -43,7 +43,7 @@ model Organization {
   zevUnitTransferTo     ZevUnitTransfer[]         @relation("zevUnitTransferTo")
   zevUnitTransferFrom   ZevUnitTransfer[]         @relation("zevUnitTransferFrom")
   Vehicle               Vehicle[]
-  VehicleChangeHistory  VehicleChangeHistory[]
+  VehicleHistory        VehicleHistory[]
   organizationAddress   OrganizationAddress[]
   ldvSupplied           OrganizationLDVSupplied[]
   CreditApplication     CreditApplication[]
@@ -128,27 +128,24 @@ enum Notification {
 }
 
 model User {
-  id                     Int                      @id @default(autoincrement())
-  contactEmail           String?                  @map("contact_email")
-  idpSub                 String?                  @map("idp_sub")
-  idp                    Idp                      @map("idp")
-  idpUsername            String                   @map("idp_username")
-  isActive               Boolean                  @default(true) @map("is_active")
-  organization           Organization             @relation(fields: [organizationId], references: [id])
-  organizationId         Int                      @map("organization_id")
-  roles                  Role[]
-  zevUnitTransferHistory ZevUnitTransferHistory[]
-  notifications          Notification[]
-  firstName              String                   @map("first_name")
-  lastName               String                   @map("last_name")
-  wasUpdated             Boolean                  @default(false) @map("was_updated")
-
-  vehicleCommentsCreated   VehicleComment[]           @relation("user that created comment")
-  vehicleCommentsUpdated   VehicleComment[]           @relation("user that updated comment")
-  vehicleStatusChanged     VehicleChangeHistory[]     @relation("user that changed the status")
+  id                       Int                        @id @default(autoincrement())
+  contactEmail             String?                    @map("contact_email")
+  idpSub                   String?                    @map("idp_sub")
+  idp                      Idp                        @map("idp")
+  idpUsername              String                     @map("idp_username")
+  isActive                 Boolean                    @default(true) @map("is_active")
+  organization             Organization               @relation(fields: [organizationId], references: [id])
+  organizationId           Int                        @map("organization_id")
+  roles                    Role[]
+  zevUnitTransferHistory   ZevUnitTransferHistory[]
+  notifications            Notification[]
+  firstName                String                     @map("first_name")
+  lastName                 String                     @map("last_name")
+  wasUpdated               Boolean                    @default(false) @map("was_updated")
+  VehicleHistory           VehicleHistory[]
   CreditApplicationHistory CreditApplicationHistory[]
   PenaltyCreditHistory     PenaltyCreditHistory[]
-  agreementHistory         AgreementHistory[]
+  AgreementHistory         AgreementHistory[]
 
   @@unique([idp, idpUsername])
   @@map("user")
@@ -311,9 +308,7 @@ enum VehicleClassCode {
 }
 
 enum VehicleStatus {
-  CHANGES_REQUESTED
   DELETED
-  DRAFT
   REJECTED
   SUBMITTED
   VALIDATED
@@ -321,64 +316,41 @@ enum VehicleStatus {
 
 model Vehicle {
   id                   Int                    @id @default(autoincrement())
-  range                Int
-  make                 String
-  modelYear            ModelYear              @map("model_year")
-  status               VehicleStatus
-  modelName            String                 @map("model_name")
-  creditValue          Decimal?               @map("credit_value") @db.Decimal(65, 2)
-  vehicleZevType       VehicleZevType         @map("vehicle_zev_type")
-  vehicleClassCode     VehicleClassCode       @map("vehicle_class_code")
-  weightKg             Decimal                @map("weight_kg") @db.Decimal(6, 0)
   organization         Organization           @relation(fields: [organizationId], references: [id])
   organizationId       Int                    @map("organization_id")
-  vehicleClass         VehicleClass?          @map("vehicle_class")
-  zevClass             ZevClass?              @map("credit_class")
+  status               VehicleStatus
+  make                 String
+  modelName            String                 @map("model_name")
+  modelYear            ModelYear              @map("model_year")
+  vehicleZevType       VehicleZevType         @map("vehicle_zev_type")
+  range                Int
+  vehicleClass         VehicleClass           @map("vehicle_class")
+  zevClass             ZevClass               @map("zev_class")
+  numberOfUnits        Decimal                @map("numberOfUnits") @db.Decimal(65, 2)
+  vehicleClassCode     VehicleClassCode       @map("vehicle_class_code")
+  weightKg             Decimal                @map("weight_kg") @db.Decimal(6, 0)
   hasPassedUs06Test    Boolean                @map("has_passed_us_06_test")
   isActive             Boolean                @map("is_active")
-  VehicleChangeHistory VehicleChangeHistory[]
-  VehicleComment       VehicleComment[]
+  VehicleHistory       VehicleHistory[]
   VehicleAttachment    VehicleAttachment[]
   CreditApplicationVin CreditApplicationVin[]
 
   @@map("vehicle")
 }
 
-model VehicleChangeHistory {
-  id               Int              @id @default(autoincrement())
-  createTimestamp  DateTime?        @default(now()) @map("create_timestamp") @db.Timestamptz(6)
-  vehicleClassCode VehicleClassCode @map("vehicle_class_code")
-  createUserId     Int              @map("create_user_id")
-  createUser       User             @relation("user that changed the status", fields: [createUserId], references: [id])
-  vehicleZevType   VehicleZevType   @map("vehicle_zev_type")
-  range            Int
-  make             String?          @map("make")
-  weightKg         Decimal          @map("weight_kg")
-  modelName        String?          @map("model_name")
-  modelYear        ModelYear        @map("model_year")
-  organization     Organization     @relation(fields: [organizationId], references: [id])
-  organizationId   Int              @map("organization_id")
-  validationStatus String?          @map("validation_status")
-  vehicle          Vehicle          @relation(fields: [vehicleId], references: [id])
-  vehicleId        Int              @map("vehicle_id")
-  userRole         String[]         @map("user_role")
+model VehicleHistory {
+  id             Int           @id @default(autoincrement())
+  vehicleId      Int           @map("vehicle_id")
+  vehicle        Vehicle       @relation(fields: [vehicleId], references: [id])
+  userId         Int           @map("user_id")
+  user           User          @relation(fields: [userId], references: [id])
+  timestamp      DateTime      @default(now()) @db.Timestamptz(6)
+  userAction     VehicleStatus @map("user_action")
+  comment        String?
+  Organization   Organization? @relation(fields: [organizationId], references: [id])
+  organizationId Int?
 
-  @@map("vehicle_change_history")
-}
-
-model VehicleComment {
-  id              Int       @id @default(autoincrement())
-  createTimestamp DateTime? @default(now()) @map("create_timestamp") @db.Timestamptz(6)
-  createUserId    Int       @map("create_user_id")
-  createUser      User      @relation("user that created comment", fields: [createUserId], references: [id])
-  updateTimestamp DateTime? @updatedAt @map("update_timestamp") @db.Timestamptz(6)
-  updateUserId    Int?      @map("update_user_id")
-  updateUser      User?     @relation("user that updated comment", fields: [updateUserId], references: [id])
-  vehicleId       Int       @map("vehicle_id")
-  vehicle         Vehicle   @relation(fields: [vehicleId], references: [id], onDelete: Restrict)
-  comment         String    @map("vehicle_comment")
-
-  @@map("vehicle_comment")
+  @@map("vehicle_history")
 }
 
 model VehicleAttachment {

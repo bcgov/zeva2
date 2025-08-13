@@ -136,6 +136,9 @@ export const getOrderByClause = (
   return result;
 };
 
-export const getAgreementId = (agreement: { id: number; agreementType: AgreementType }) => {
+export const getAgreementId = (agreement: {
+  id: number;
+  agreementType: AgreementType;
+}) => {
   return agreement.agreementType[0] + "A-" + agreement.id;
-}
+};

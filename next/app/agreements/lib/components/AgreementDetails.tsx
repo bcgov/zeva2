@@ -11,7 +11,8 @@ const mainDivClass = "grid grid-cols-[220px_1fr]";
 const fieldLabelClass = "py-1 font-semibold text-primaryBlue";
 const fieldWithBoarderClass = "p-2 border border-gray-300 rounded";
 const buttonStyle = "px-2 py-1 min-w-16 self-center text-center";
-const secondaryButtonClass = "bg-white border border-primaryBlue text-primaryBlue";
+const secondaryButtonClass =
+  "bg-white border border-primaryBlue text-primaryBlue";
 const warningButtonClass = "bg-white border border-red-500 text-red-500";
 
 export const AgreementDetails = (props: {
@@ -47,7 +48,7 @@ export const AgreementDetails = (props: {
 
   const [isProcessing, setIsProcessing] = useState(false);
   const ready = agreementContent.length > 0 && effectiveDate;
-  
+
   const contentsByModelYear = agreementContent.reduce(
     (groupByMY, content) => {
       if (!groupByMY[content.modelYear]) {
@@ -56,7 +57,7 @@ export const AgreementDetails = (props: {
       groupByMY[content.modelYear].push(content);
       return groupByMY;
     },
-    {} as Record<string, { zevClass: ZevClass; numberOfUnits: number }[]>
+    {} as Record<string, { zevClass: ZevClass; numberOfUnits: number }[]>,
   );
 
   if (isProcessing) {
@@ -70,11 +71,13 @@ export const AgreementDetails = (props: {
       </h2>
       <div>
         <div className={mainDivClass}>
-          <span className={fieldLabelClass}>Status:</span> {enumToTitleString(status)}
+          <span className={fieldLabelClass}>Status:</span>{" "}
+          {enumToTitleString(status)}
         </div>
 
         <div className={mainDivClass}>
-          <span className={fieldLabelClass}>ID:</span> {getAgreementId(agreement)}
+          <span className={fieldLabelClass}>ID:</span>{" "}
+          {getAgreementId(agreement)}
         </div>
 
         <div className={mainDivClass}>
@@ -86,33 +89,41 @@ export const AgreementDetails = (props: {
         </div>
 
         <div className={mainDivClass}>
-          <span className={fieldLabelClass}>Effective Date:</span> {effectiveDate?.toLocaleDateString()}
-          {!effectiveDate &&
-            <span className="text-red-500">Must be entered before submitting.</span>
-          }
+          <span className={fieldLabelClass}>Effective Date:</span>{" "}
+          {effectiveDate?.toLocaleDateString()}
+          {!effectiveDate && (
+            <span className="text-red-500">
+              Must be entered before submitting.
+            </span>
+          )}
         </div>
 
         <div>
           <p className={fieldLabelClass}>ZEV Units</p>
           <div className={fieldWithBoarderClass}>
-            {agreementContent.length === 0
-              ? <>
+            {agreementContent.length === 0 ? (
+              <>
                 No Entry
-                <p className="text-red-500">At least one ZEV unit entry is required before submitting.</p>
+                <p className="text-red-500">
+                  At least one ZEV unit entry is required before submitting.
+                </p>
               </>
-              : Object.entries(contentsByModelYear).map(([modelYear, contents]) => (
-                <div key={modelYear} className="mb-2">
-                  <p className="font-semibold">
-                    Model Year {modelYear.substring(3)}
-                  </p>
-                  {contents.map((content, index) => (
-                    <p key={index} className="ml-4">
-                      Class {content.zevClass}: {content.numberOfUnits}
+            ) : (
+              Object.entries(contentsByModelYear).map(
+                ([modelYear, contents]) => (
+                  <div key={modelYear} className="mb-2">
+                    <p className="font-semibold">
+                      Model Year {modelYear.substring(3)}
                     </p>
-                  ))}
-                </div>
-              ))
-            }
+                    {contents.map((content, index) => (
+                      <p key={index} className="ml-4">
+                        Class {content.zevClass}: {content.numberOfUnits}
+                      </p>
+                    ))}
+                  </div>
+                ),
+              )
+            )}
           </div>
         </div>
 
@@ -195,4 +206,4 @@ export const AgreementDetails = (props: {
       </div>
     </>
   );
-}
+};

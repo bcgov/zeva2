@@ -8,11 +8,12 @@ import { getEnumOr } from "@/lib/utils/getEnums";
 import {
   ModelYear,
   Prisma,
+  VehicleClass,
   VehicleStatus,
   VehicleZevType,
   ZevClass,
 } from "@/prisma/generated/client";
-import { Decimal } from "@prisma/client/runtime/library";
+import { Decimal } from "@/prisma/generated/client/runtime/library";
 
 export const getWhereClause = (filters: {
   [key: string]: string;
@@ -37,7 +38,7 @@ export const getWhereClause = (filters: {
         contains: value,
         mode: "insensitive",
       };
-    } else if (key === "creditValue" || key === "range") {
+    } else if (key === "numberOfUnits" || key === "range") {
       const decValue = new Decimal(value);
       result[key] = {
         equals: decValue.toNumber(),
@@ -97,7 +98,7 @@ export const getOrderByClause = (
         key === "modelName" ||
         key === "make" ||
         key === "validationStatus" ||
-        key === "creditValue" ||
+        key === "numberOfUnits" ||
         key === "range" ||
         key === "zevClass" ||
         key === "modelYear" ||
@@ -114,4 +115,96 @@ export const getOrderByClause = (
     result.push({ id: "desc" });
   }
   return result;
+};
+
+export const getVehicleClass = (
+  modelYear: ModelYear,
+  weight: string,
+): VehicleClass => {
+  const weightDec = new Decimal(weight);
+  if (
+    (modelYear <= ModelYear.MY_2023 && weightDec.lte(3856)) ||
+    (modelYear >= ModelYear.MY_2024 && weightDec.lte(4536))
+  ) {
+    return VehicleClass.REPORTABLE;
+  }
+  throw new Error("Cannot associate a vehicle class to this vehicle!");
+};
+
+export const getZevClass = (
+  modelYear: ModelYear,
+  zevType: VehicleZevType,
+  range: number,
+): ZevClass => {
+  const rangeDec = new Decimal(range);
+  if (
+    modelYear <= ModelYear.MY_2025 &&
+    ((zevType === VehicleZevType.BEV && rangeDec.gte("80.47")) ||
+      (zevType === VehicleZevType.EREV && rangeDec.gte(121)) ||
+      (zevType === VehicleZevType.FCEV && rangeDec.gte("80.47")))
+  ) {
+    return ZevClass.A;
+  }
+  if (
+    modelYear >= ModelYear.MY_2026 &&
+    ((zevType === VehicleZevType.BEV && rangeDec.gte(241)) ||
+      (zevType === VehicleZevType.FCEV && rangeDec.gte(241)))
+  ) {
+    return ZevClass.A;
+  }
+  if (
+    modelYear <= ModelYear.MY_2025 &&
+    ((zevType === VehicleZevType.EREV &&
+      rangeDec.gte(16) &&
+      rangeDec.lt(121)) ||
+      (zevType === VehicleZevType.PHEV && rangeDec.gte(16)))
+  ) {
+    return ZevClass.B;
+  }
+  if (
+    modelYear >= ModelYear.MY_2026 &&
+    ((zevType === VehicleZevType.EREV && rangeDec.gte(80)) ||
+      (zevType === VehicleZevType.PHEV &&
+        modelYear === ModelYear.MY_2026 &&
+        rangeDec.gte(55)) ||
+      (zevType === VehicleZevType.PHEV &&
+        modelYear === ModelYear.MY_2027 &&
+        rangeDec.gte(65)) ||
+      (zevType === VehicleZevType.PHEV &&
+        modelYear >= ModelYear.MY_2028 &&
+        rangeDec.gte(80)))
+  ) {
+    return ZevClass.B;
+  }
+  throw new Error("Cannot associate a zev class to this vehicle!");
+};
+
+export const getNumberOfUnits = (
+  zevClass: ZevClass,
+  range: number,
+  hasPassedUs06Test: boolean,
+): Decimal => {
+  const currentTs = new Date();
+  const threshold = new Date("2026-10-01T00:00:00");
+  const rangeDec = new Decimal(range);
+  if (currentTs < threshold) {
+    if (zevClass === ZevClass.A) {
+      const numberOfUnits = Decimal.min(
+        4,
+        rangeDec.times("0.006214").plus("0.5"),
+      );
+      return numberOfUnits.toDecimalPlaces(2);
+    }
+    if (zevClass === ZevClass.B) {
+      let numberOfUnits = rangeDec.times("0.006214").plus("0.3");
+      if (hasPassedUs06Test && rangeDec.gte(16)) {
+        return Decimal.min(numberOfUnits.plus("0.2"), "1.30");
+      }
+      return Decimal.min(numberOfUnits, "1.10");
+    }
+  }
+  if (zevClass === ZevClass.A || zevClass === ZevClass.B) {
+    return new Decimal(1);
+  }
+  throw new Error("Cannot calculate the credit value for this vehicle!");
 };
