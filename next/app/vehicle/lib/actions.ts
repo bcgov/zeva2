@@ -20,7 +20,12 @@ import {
   getPresignedPutObjectUrl,
 } from "@/app/lib/minio";
 import { randomUUID } from "crypto";
-import { getNumberOfUnits, getVehicleClass, getZevClass } from "./utils";
+import {
+  getAttachmentFullObjectName,
+  getNumberOfUnits,
+  getVehicleClass,
+  getZevClass,
+} from "./utils";
 
 export type VehiclePutObjectData = {
   objectName: string;
@@ -30,10 +35,13 @@ export type VehiclePutObjectData = {
 export const getPutObjectData = async (
   numberOfFiles: number,
 ): Promise<VehiclePutObjectData[]> => {
+  const { userOrgId } = await getUserInfo();
   const result: VehiclePutObjectData[] = [];
   for (let i = 0; i < numberOfFiles; i++) {
     const objectName = randomUUID();
-    const url = await getPresignedPutObjectUrl(objectName);
+    const url = await getPresignedPutObjectUrl(
+      getAttachmentFullObjectName(userOrgId, objectName),
+    );
     result.push({
       objectName,
       url,
@@ -96,7 +104,7 @@ export async function submitVehicle(
         },
       });
       vehicleId = newVehicle.id;
-      await createAttachments(vehicleId, userId, files, tx);
+      await createAttachments(vehicleId, files, tx);
       await createHistory(
         vehicleId,
         userId,
@@ -106,7 +114,7 @@ export async function submitVehicle(
       );
     });
   } catch (e) {
-    await deleteAttachments(files);
+    await deleteAttachments(userOrgId, files);
     if (e instanceof Error) {
       return getErrorActionResponse(e.message);
     }
@@ -180,6 +188,11 @@ export const getAttachmentDownloadUrls = async (
     select: {
       filename: true,
       minioObjectName: true,
+      vehicle: {
+        select: {
+          organizationId: true,
+        },
+      },
     },
   });
   if (attachments.length === 0) {
@@ -189,7 +202,12 @@ export const getAttachmentDownloadUrls = async (
   for (const attachment of attachments) {
     result.push({
       fileName: attachment.filename,
-      url: await getPresignedGetObjectUrl(attachment.minioObjectName),
+      url: await getPresignedGetObjectUrl(
+        getAttachmentFullObjectName(
+          attachment.vehicle.organizationId,
+          attachment.minioObjectName,
+        ),
+      ),
     });
   }
   return getDataActionResponse(result);

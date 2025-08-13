@@ -2,7 +2,7 @@
 
 import axios from "axios";
 import { Button } from "@/app/lib/components";
-import { downloadZip } from "@/app/lib/utils/download";
+import { downloadBuffer, downloadZip } from "@/app/lib/utils/download";
 import { useCallback, useState, useTransition } from "react";
 import { getAttachmentDownloadUrls } from "../actions";
 
@@ -38,7 +38,11 @@ export const VehicleAttachmentsClient = (props: { id: number }) => {
             data: file.data,
           });
         });
-        await downloadZip(`zev-model-attachments-${props.id}.zip`, payload);
+        if (payload.length > 1) {
+          await downloadZip(`zev-model-attachments-${props.id}.zip`, payload);
+        } else {
+          downloadBuffer(payload[0].fileName, payload[0].data);
+        }
       } catch (e) {
         if (e instanceof Error) {
           setError(e.message);

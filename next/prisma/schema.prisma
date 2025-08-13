@@ -359,18 +359,11 @@ model VehicleHistory {
 }
 
 model VehicleAttachment {
-  id              Int       @id @default(autoincrement())
-  createTimestamp DateTime? @default(now()) @map("create_timestamp") @db.Timestamptz(6)
-  updateTimestamp DateTime? @updatedAt @map("update_timestamp") @db.Timestamptz(6)
-  vehicleId       Int       @map("vehicle_id")
-  vehicle         Vehicle   @relation(fields: [vehicleId], references: [id], onDelete: Restrict)
-  filename        String    @db.VarChar(260)
-  minioObjectName String    @map("minio_object_name")
-  size            BigInt    @default(0)
-  mimeType        String?   @map("mime_type")
-  isRemoved       Boolean   @default(false) @map("is_removed")
-  createUser      Int       @map("create_user_id")
-  updateUser      Int?      @map("update_user_id")
+  id              Int     @id @default(autoincrement())
+  vehicleId       Int     @map("vehicle_id")
+  vehicle         Vehicle @relation(fields: [vehicleId], references: [id])
+  filename        String
+  minioObjectName String  @map("minio_object_name")
 
   @@map("vehicle_file_attachment")
 }
