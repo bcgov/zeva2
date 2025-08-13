@@ -2,6 +2,7 @@ import { getUserInfo } from "@/auth";
 import { getVehicleHistories } from "../data";
 import { getIsoYmdString, getTimeWithTz } from "@/app/lib/utils/date";
 import { JSX } from "react";
+import { getVehicleStatusEnumsToStringsMap } from "@/app/lib/utils/enumMaps";
 
 export const VehicleHistories = async (props: { id: number }) => {
   const histories = await getVehicleHistories(props.id);
@@ -9,6 +10,7 @@ export const VehicleHistories = async (props: { id: number }) => {
     return null;
   }
   const { userIsGov } = await getUserInfo();
+  const statusMap = getVehicleStatusEnumsToStringsMap();
   const entries: JSX.Element[] = [];
   histories.forEach((history) => {
     let name = `${history.user.firstName} ${history.user.lastName}`;
@@ -18,7 +20,7 @@ export const VehicleHistories = async (props: { id: number }) => {
     entries.push(
       <li key={history.id}>
         <p key="content">
-          {`[${name}] made the application "${history.userAction}" on 
+          {`[${name}] made the application "${statusMap[history.userAction]}" on 
           ${getIsoYmdString(history.timestamp)}, at ${getTimeWithTz(history.timestamp)}.`}
         </p>
         {history.comment && (

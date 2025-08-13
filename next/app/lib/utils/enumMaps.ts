@@ -12,6 +12,7 @@ import {
   Role,
   TransactionType,
   VehicleClass,
+  VehicleStatus,
   ZevClass,
 } from "@/prisma/generated/client";
 
@@ -148,4 +149,12 @@ export const getStringsToTransactionTypeEnumsMap = () => {
     TransactionType,
     statusTransformer,
   );
+};
+
+export const getVehicleStatusEnumsToStringsMap = () => {
+  return getEnumsToStringsMap<VehicleStatus>(VehicleStatus, statusTransformer);
+};
+
+export const getStringsToVehicleStatusEnumsMap = () => {
+  return getStringsToEnumsMap<VehicleStatus>(VehicleStatus, statusTransformer);
 };

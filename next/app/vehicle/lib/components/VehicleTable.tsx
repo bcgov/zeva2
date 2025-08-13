@@ -4,7 +4,10 @@ import React, { useMemo } from "react";
 import { ColumnDef, createColumnHelper } from "@tanstack/react-table";
 import { Table } from "@/app/lib/components";
 import { VehicleSparseSerialized } from "./VehicleList";
-import { getModelYearEnumsToStringsMap } from "@/app/lib/utils/enumMaps";
+import {
+  getModelYearEnumsToStringsMap,
+  getVehicleStatusEnumsToStringsMap,
+} from "@/app/lib/utils/enumMaps";
 
 export const VehicleTable = (props: {
   vehicles: VehicleSparseSerialized[];
@@ -12,14 +15,19 @@ export const VehicleTable = (props: {
   navigationAction: (id: number) => Promise<void>;
 }) => {
   const columnHelper = createColumnHelper<VehicleSparseSerialized>();
-  const modelYearEnumMap = getModelYearEnumsToStringsMap();
+  const modelYearEnumMap = useMemo(() => {
+    return getModelYearEnumsToStringsMap();
+  }, []);
+  const statusMap = useMemo(() => {
+    return getVehicleStatusEnumsToStringsMap();
+  }, []);
   const columns = useMemo(() => {
     const result: ColumnDef<VehicleSparseSerialized, any>[] = [
       columnHelper.accessor((row) => row.status, {
         id: "status",
         enableSorting: true,
         enableColumnFilter: true,
-        cell: (info) => info.getValue(),
+        cell: (info) => statusMap[info.row.original.status],
         header: () => <span>Status</span>,
       }),
       columnHelper.accessor((row) => row.numberOfUnits, {
