@@ -4,7 +4,7 @@ import {
   AgreementStatus,
   AgreementType,
   ModelYear,
-  ZevClass
+  ZevClass,
 } from "@/prisma/generated/client";
 import { useState } from "react";
 import { AgreementContentPayload, AgreementPayload } from "../action";
@@ -36,32 +36,36 @@ export const AgreementEditForm = (props: {
     zevClass: zevClassSelections[0],
     modelYear: modelYearSelections[modelYearSelections.length - 1],
     numberOfUnits: 0,
-  }
+  };
 
   const [agreementType, setAgreementType] = useState<AgreementType | undefined>(
-    agreementDetails?.agreementType
+    agreementDetails?.agreementType,
   );
   const [supplier, setSupplier] = useState<number | undefined>(
-    agreementDetails?.organization.id
+    agreementDetails?.organization.id,
   );
   const [referenceId, setReferenceId] = useState<string>(
-    agreementDetails?.referenceId ?? ""
+    agreementDetails?.referenceId ?? "",
   );
   const [effectiveDate, setEffectiveDate] = useState<Date | undefined>(
-    agreementDetails?.effectiveDate ?? undefined
+    agreementDetails?.effectiveDate ?? undefined,
   );
   const [msgToSupplier, setMsgToSupplier] = useState<string>(
-    agreementDetails?.comment ?? ""
+    agreementDetails?.comment ?? "",
   );
-  const [agreementContent, setAgreementContent] = useState<AgreementContentPayload[]>(
-    agreementDetails?.agreementContent ?? [{ ...newContent }]
-  );
+  const [agreementContent, setAgreementContent] = useState<
+    AgreementContentPayload[]
+  >(agreementDetails?.agreementContent ?? [{ ...newContent }]);
   const [errorMsg, setErrorMsg] = useState<string | undefined>(undefined);
-  const [processingMsg, setProcessingMsg] = useState<string | undefined>(undefined);
+  const [processingMsg, setProcessingMsg] = useState<string | undefined>(
+    undefined,
+  );
 
   const handleSave = async () => {
     if (!supplier || !agreementType) {
-      setErrorMsg("Both the Agreement Type and the Vehicle Supplier are required.");
+      setErrorMsg(
+        "Both the Agreement Type and the Vehicle Supplier are required.",
+      );
       return;
     }
     setProcessingMsg("Saving...");
@@ -112,7 +116,9 @@ export const AgreementEditForm = (props: {
           className={fieldContentClass + " w-60"}
           value={supplier}
           onChange={(e) => {
-            setSupplier(e.target.value ? parseInt(e.target.value, 10) : undefined);
+            setSupplier(
+              e.target.value ? parseInt(e.target.value, 10) : undefined,
+            );
             setErrorMsg(undefined); // Clear error message when supplier changes
           }}
         >
@@ -203,7 +209,10 @@ export const AgreementEditForm = (props: {
                 value={content.numberOfUnits.toString()}
                 onChange={(e) => {
                   const newZevValues = [...agreementContent];
-                  newZevValues[index].numberOfUnits = parseInt(e.target.value, 10);
+                  newZevValues[index].numberOfUnits = parseInt(
+                    e.target.value,
+                    10,
+                  );
                   setAgreementContent(newZevValues);
                 }}
               />
@@ -228,7 +237,9 @@ export const AgreementEditForm = (props: {
           type="button"
           className="mt-2 bg-transparent text-primaryBlue
             px-4 py-2 border border-gray-300 rounded"
-          onClick={() => setAgreementContent([...agreementContent, { ...newContent }])}
+          onClick={() =>
+            setAgreementContent([...agreementContent, { ...newContent }])
+          }
         >
           + Add Additional Line
         </button>
@@ -267,4 +278,4 @@ export const AgreementEditForm = (props: {
       </div>
     </form>
   );
-}
+};

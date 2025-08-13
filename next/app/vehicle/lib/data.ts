@@ -27,7 +27,7 @@ export const getVehicles = async (
   let select: Prisma.VehicleSelect = {
     id: true,
     status: true,
-    creditValue: true,
+    numberOfUnits: true,
     zevClass: true,
     modelYear: true,
     modelName: true,
@@ -37,12 +37,12 @@ export const getVehicles = async (
     isActive: true,
   };
   const where = getWhereClause(filters);
+  where.NOT = {
+    status: VehicleStatus.DELETED,
+  };
   const orderBy = getOrderByClause(sorts, true);
   if (userIsGov) {
     select = { ...select, organization: { select: { name: true } } };
-    where.NOT = {
-      status: { in: [VehicleStatus.DRAFT, VehicleStatus.DELETED] },
-    };
   } else {
     where.organizationId = userOrgId;
   }
@@ -58,31 +58,6 @@ export const getVehicles = async (
       where,
     }),
   ]);
-};
-
-export const getVehicleComments = async (vehicleId: number) => {
-  const { userIsGov, userOrgId } = await getUserInfo();
-  let whereClause: Prisma.VehicleCommentWhereInput = {
-    vehicleId: vehicleId,
-  };
-  if (!userIsGov) {
-    whereClause = { ...whereClause, vehicle: { organizationId: userOrgId } };
-  }
-  return await prisma.vehicleComment.findMany({
-    where: whereClause,
-    include: {
-      vehicle: {
-        include: {
-          organization: true,
-        },
-      },
-      createUser: {
-        include: {
-          organization: true,
-        },
-      },
-    },
-  });
 };
 
 export type VehicleWithOrg = Vehicle & { organization: Organization };
@@ -107,8 +82,8 @@ export const getVehicle = async (
 
 export type SerializedVehicleWithOrg = Omit<
   Vehicle,
-  "weightKg" | "creditValue"
-> & { weightKg: string; creditValue: string | undefined } & {
+  "weightKg" | "numberOfUnits"
+> & { weightKg: string; numberOfUnits: string } & {
   organization: Organization;
 };
 
@@ -120,7 +95,7 @@ export const getSerializedVehicle = async (
     return {
       ...vehicle,
       weightKg: vehicle.weightKg.toString(),
-      creditValue: vehicle.creditValue?.toString(),
+      numberOfUnits: vehicle.numberOfUnits.toString(),
     };
   }
   return null;
@@ -128,13 +103,13 @@ export const getSerializedVehicle = async (
 
 export const getVehicleHistories = async (vehicleId: number) => {
   const { userIsGov, userOrgId } = await getUserInfo();
-  let whereClause: Prisma.VehicleChangeHistoryWhereInput = {
+  let whereClause: Prisma.VehicleHistoryWhereInput = {
     vehicleId: vehicleId,
   };
   if (!userIsGov) {
     whereClause = { ...whereClause, vehicle: { organizationId: userOrgId } };
   }
-  return await prisma.vehicleChangeHistory.findMany({
+  return await prisma.vehicleHistory.findMany({
     where: whereClause,
     include: {
       vehicle: {
@@ -142,11 +117,14 @@ export const getVehicleHistories = async (vehicleId: number) => {
           organization: true,
         },
       },
-      createUser: {
+      user: {
         include: {
           organization: true,
         },
       },
+    },
+    orderBy: {
+      timestamp: "asc",
     },
   });
 };

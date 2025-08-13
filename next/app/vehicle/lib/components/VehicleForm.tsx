@@ -9,26 +9,22 @@ import {
 } from "react";
 import { useRouter } from "next/navigation";
 import {
-  createOrUpdateVehicle,
+  submitVehicle,
   getPutObjectData,
   VehicleFile,
   VehiclePutObjectData,
 } from "../actions";
 import { Routes } from "@/app/lib/constants";
-import {
-  VehicleClassCode,
-  VehicleStatus,
-  VehicleZevType,
-} from "@/prisma/generated/client";
-import { Decimal } from "@/prisma/generated/client/runtime/index-browser";
+import { VehicleClassCode, VehicleZevType } from "@/prisma/generated/client";
 import { getVehiclePayload } from "../utilsClient";
 import { SerializedVehicleWithOrg } from "../data";
 import { getModelYearEnumsToStringsMap } from "@/app/lib/utils/enumMaps";
 import { Dropzone } from "@/app/lib/components/Dropzone";
 import axios from "axios";
 import { FileWithPath } from "react-dropzone";
+import { Button } from "@/app/lib/components";
 
-export function VehicleForm(props: { vehicle?: SerializedVehicleWithOrg }) {
+export const VehicleForm = () => {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string>("");
@@ -44,23 +40,6 @@ export function VehicleForm(props: { vehicle?: SerializedVehicleWithOrg }) {
     "image/jpeg": [".jpg"],
     "image/png": [".png"],
   };
-
-  useEffect(() => {
-    const vehicle = props.vehicle;
-    if (vehicle) {
-      // read vehicle data into formData
-      setFormData({
-        modelYear: modelYearsMap[vehicle.modelYear],
-        make: vehicle.make,
-        modelName: vehicle.modelName,
-        zevType: vehicle.vehicleZevType,
-        us06: vehicle.hasPassedUs06Test.toString(),
-        range: vehicle.range.toString(),
-        bodyType: vehicle.vehicleClassCode,
-        gvwr: vehicle.weightKg,
-      });
-    }
-  }, [props.vehicle]);
 
   const handleChange = useCallback((key: string, value: string) => {
     if (
@@ -78,151 +57,53 @@ export function VehicleForm(props: { vehicle?: SerializedVehicleWithOrg }) {
     }
   }, []);
 
-  const handleSubmit = useCallback(
-    (status: VehicleStatus) => {
-      setError("");
-      startTransition(async () => {
-        try {
-          const vehiclePayload = getVehiclePayload(formData, files, status);
-          const my = parseInt(formData.modelYear || "", 10);
-          const rangeKm = new Decimal(formData.range || "0");
-          const us06 = formData.us06 === "true";
-          const zev = formData.zevType as VehicleZevType;
-
-          // Pre Oct.1 2026 Rules
-          let zevClass: "A" | "B" | "C" = "C";
-          if (my <= 2025) {
-            // 80.47km = 50 miles
-            if (
-              (zev === VehicleZevType.BEV || zev === VehicleZevType.FCEV) &&
-              rangeKm.gte(80.47)
-            ) {
-              zevClass = "A";
-              // 121km = 75 miles
-            } else if (zev === VehicleZevType.EREV && rangeKm.gte(121)) {
-              zevClass = "A";
-            } else if (zev === VehicleZevType.EREV && rangeKm.gte(16)) {
-              zevClass = "B";
-            } else if (zev === VehicleZevType.PHEV && rangeKm.gte(16)) {
-              zevClass = "B";
-            }
-          } else {
-            // 241km = 150 miles
-            if (
-              (zev === VehicleZevType.BEV || zev === VehicleZevType.FCEV) &&
-              rangeKm.gte(241)
-            ) {
-              zevClass = "A";
-            } else if (zev === VehicleZevType.EREV && rangeKm.gte(80)) {
-              zevClass = "B";
-            } else if (zev === VehicleZevType.PHEV) {
-              if (
-                (my === 2026 && rangeKm.gte(55)) ||
-                (my === 2027 && rangeKm.gte(65)) ||
-                (my >= 2028 && rangeKm.gte(80))
-              ) {
-                zevClass = "B";
-              }
-            }
+  const handleSubmit = useCallback(() => {
+    setError("");
+    startTransition(async () => {
+      try {
+        const vehiclePayload = getVehiclePayload(formData, files);
+        const vehicleFiles: VehicleFile[] = [];
+        if (files.length > 0) {
+          const putData = await getPutObjectData(files.length);
+          const filesAndPutData: [FileWithPath, VehiclePutObjectData][] =
+            files.map((file, index) => [file, putData[index]]);
+          for (const tuple of filesAndPutData) {
+            const file = tuple[0];
+            const putData = tuple[1];
+            await axios.put(putData.url, file);
+            vehicleFiles.push({
+              filename: file.name,
+              objectName: putData.objectName,
+              size: file.size,
+              mimeType: file.type,
+            });
           }
-
-          const cutoff = new Date("2026-10-01T00:00:00-07:00");
-          let creditValue: number;
-
-          if (new Date() >= cutoff && (zevClass === "A" || zevClass === "B")) {
-            // Post Oct 1 2026 => 1 credit for A/B
-            creditValue = 1.0;
-          } else if (zevClass === "A") {
-            const raw = rangeKm.mul(0.006214).add(0.5).min(4);
-            creditValue = raw.toDecimalPlaces(2).toNumber();
-          } else if (zevClass === "B") {
-            const raw = rangeKm
-              .mul(0.006214)
-              .add(0.3)
-              .add(us06 ? 0.2 : 0);
-            const cap = us06 ? 1.3 : 1.1;
-            creditValue = Decimal.min(raw, cap).toDecimalPlaces(2).toNumber();
-          } else {
-            // Class C
-            creditValue = 0.0;
-          }
-          vehiclePayload.creditValue = creditValue;
-          if (props.vehicle) vehiclePayload.id = props.vehicle.id;
-
-          const vehicleFiles: VehicleFile[] = [];
-          if (files.length > 0) {
-            const putData = await getPutObjectData(files.length);
-            const filesAndPutData: [FileWithPath, VehiclePutObjectData][] =
-              files.map((file, index) => [file, putData[index]]);
-            for (const tuple of filesAndPutData) {
-              const file = tuple[0];
-              const putData = tuple[1];
-              await axios.put(putData.url, file);
-              vehicleFiles.push({
-                filename: file.name,
-                objectName: putData.objectName,
-                size: file.size,
-                mimeType: file.type,
-              });
-            }
-          }
-          const response = await createOrUpdateVehicle(
-            vehiclePayload,
-            vehicleFiles,
-          );
-          if (response.responseType === "error") {
-            throw new Error(response.message);
-          }
-          const vehicleId = response.data;
-          router.push(
-            `${Routes.Vehicle}/${vehicleId ? vehicleId : vehiclePayload.id}`,
-          );
-        } catch (e) {
-          if (e instanceof Error) setError(e.message);
         }
-      });
-    },
-    [formData, props.vehicle, files, router],
-  );
+        const response = await submitVehicle(vehiclePayload, vehicleFiles);
+        if (response.responseType === "error") {
+          throw new Error(response.message);
+        }
+        const vehicleId = response.data;
+        router.push(`${Routes.Vehicle}/${vehicleId}`);
+      } catch (e) {
+        if (e instanceof Error) setError(e.message);
+      }
+    });
+  }, [formData, files, router]);
 
-  const button = useMemo(() => {
-    let status: VehicleStatus = VehicleStatus.DRAFT;
-    let label = "Save Draft";
-    if (props.vehicle) {
-      status = props.vehicle.status;
-      label = "Save";
-    }
-    return (
-      <button
-        type="button"
-        disabled={isPending}
-        onClick={() => handleSubmit(status)}
-      >
-        {isPending ? "..." : label}
-      </button>
-    );
-  }, [props.vehicle, isPending, handleSubmit]);
-
-  if (
-    props.vehicle &&
-    props.vehicle.status !== VehicleStatus.DRAFT &&
-    props.vehicle.status !== VehicleStatus.CHANGES_REQUESTED
-  ) {
-    return (
-      <div className="p-6 font-semibold">This vehicle cannot be modified.</div>
-    );
-  }
   return (
     <div>
       {error && <p className="text-red-600">{error}</p>}
       <div className="flex items-center py-2 my-2">
-        <label className="w-72">Model Year</label>
+        <label htmlFor="modelYear" className="w-72">
+          Model Year
+        </label>
         <select
-          name="modelYear"
+          id="modelYear"
           className="border p-2 w-full"
           value={formData.modelYear}
           onChange={(e) => {
-            handleChange(e.target.name, e.target.value);
+            handleChange(e.target.id, e.target.value);
           }}
         >
           <option value="">--</option>
@@ -234,37 +115,43 @@ export function VehicleForm(props: { vehicle?: SerializedVehicleWithOrg }) {
         </select>
       </div>
       <div className="flex items-center py-2 my-2">
-        <label className="w-72">Make</label>
+        <label htmlFor="make" className="w-72">
+          Make
+        </label>
         <input
-          name="make"
+          id="make"
           type="text"
           onChange={(e) => {
-            handleChange(e.target.name, e.target.value);
+            handleChange(e.target.id, e.target.value);
           }}
           value={formData.make ?? ""}
           className="border p-2 w-full"
         />
       </div>
       <div className="flex items-center py-2 my-2">
-        <label className="w-72">Model Name</label>
+        <label htmlFor="modelName" className="w-72">
+          Model Name
+        </label>
         <input
-          name="modelName"
+          id="modelName"
           type="text"
           value={formData.modelName ?? ""}
           onChange={(e) => {
-            handleChange(e.target.name, e.target.value);
+            handleChange(e.target.id, e.target.value);
           }}
           className="border p-2 w-full"
         />
       </div>
       <div className="flex items-center py-2 my-2">
-        <label className="w-72">ZEV Type</label>
+        <label htmlFor="zevType" className="w-72">
+          ZEV Type
+        </label>
         <select
-          name="zevType"
+          id="zevType"
           value={formData.zevType}
           className="border p-2 w-full"
           onChange={(e) => {
-            handleChange(e.target.name, e.target.value);
+            handleChange(e.target.id, e.target.value);
           }}
         >
           <option value="">--</option>
@@ -280,11 +167,11 @@ export function VehicleForm(props: { vehicle?: SerializedVehicleWithOrg }) {
         <span>Claim Additional US06 0.2 credit</span>
         <input
           type="checkbox"
-          name="us06"
+          id="us06"
           checked={formData.us06 === "true"}
           disabled={formData.zevType !== "EREV"}
           onChange={(e) => {
-            handleChange(e.target.name, e.target.checked ? "true" : "false");
+            handleChange(e.target.id, e.target.checked ? "true" : "false");
           }}
         />
         <span>(requires certificate upload)</span>
@@ -300,25 +187,29 @@ export function VehicleForm(props: { vehicle?: SerializedVehicleWithOrg }) {
       )}
 
       <div className="flex items-center py-2 my-2">
-        <label className="w-72">Electric EPA Range (km)</label>
+        <label htmlFor="range" className="w-72">
+          Electric EPA Range (km)
+        </label>
         <input
-          name="range"
+          id="range"
           type="text"
           value={formData.range ?? ""}
           className="border p-2 w-full"
           onChange={(e) => {
-            handleChange(e.target.name, e.target.value);
+            handleChange(e.target.id, e.target.value);
           }}
         />
       </div>
       <div className="flex items-center py-2 my-2">
-        <label className="w-72">Body Type</label>
+        <label htmlFor="bodyType" className="w-72">
+          Body Type
+        </label>
         <select
-          name="bodyType"
+          id="bodyType"
           value={formData.bodyType}
           className="border p-2 w-full"
           onChange={(e) => {
-            handleChange(e.target.name, e.target.value);
+            handleChange(e.target.id, e.target.value);
           }}
         >
           <option value="">--</option>
@@ -330,18 +221,24 @@ export function VehicleForm(props: { vehicle?: SerializedVehicleWithOrg }) {
         </select>
       </div>
       <div className="flex items-center py-2 my-2">
-        <label className="w-72">GVWR (kg)</label>
+        <label htmlFor="gvwr" className="w-72">
+          GVWR (kg)
+        </label>
         <input
-          name="gvwr"
+          id="gvwr"
           type="text"
           value={formData.gvwr ?? ""}
           className="border p-2 w-full"
           onChange={(e) => {
-            handleChange(e.target.name, e.target.value);
+            handleChange(e.target.id, e.target.value);
           }}
         />
       </div>
-      <div className="flex space-x-2">{button}</div>
+      <div className="flex space-x-2">
+        <Button onClick={handleSubmit} disabled={isPending}>
+          {isPending ? "..." : "Submit"}
+        </Button>
+      </div>
     </div>
   );
-}
+};

@@ -27,7 +27,7 @@ const Page = async () => {
     } else {
       redirect(`${Routes.CreditAgreements}/error`);
     }
-  }
+  };
 
   const handleCancel = async () => {
     "use server";

@@ -7,10 +7,10 @@ import { redirect } from "next/navigation";
 import { Routes } from "@/app/lib/constants/Routes";
 
 const Page = async (props: { params: Promise<{ id: string }> }) => {
-  const [
-    { id },
-    { userIsGov, userRoles }
-  ] = await Promise.all([props.params, getUserInfo()]);
+  const [{ id }, { userIsGov, userRoles }] = await Promise.all([
+    props.params,
+    getUserInfo(),
+  ]);
   const agreementId = parseInt(id);
   const agreement = isNaN(agreementId)
     ? null
@@ -23,18 +23,16 @@ const Page = async (props: { params: Promise<{ id: string }> }) => {
     );
   }
 
-  const forAnalyst = userRoles.includes(Role.ENGINEER_ANALYST) && (
-    agreement.status === AgreementStatus.DRAFT ||
-    agreement.status === AgreementStatus.RETURNED_TO_ANALYST
-  );
+  const forAnalyst =
+    userRoles.includes(Role.ENGINEER_ANALYST) &&
+    (agreement.status === AgreementStatus.DRAFT ||
+      agreement.status === AgreementStatus.RETURNED_TO_ANALYST);
 
-  const forDirector = userRoles.includes(Role.DIRECTOR) &&
+  const forDirector =
+    userRoles.includes(Role.DIRECTOR) &&
     agreement.status === AgreementStatus.RECOMMEND_APPROVAL;
-  
-  const handleStatusChange = (
-    newStatus: AgreementStatus,
-    enabled: boolean,
-  ) => {
+
+  const handleStatusChange = (newStatus: AgreementStatus, enabled: boolean) => {
     if (enabled) {
       return async () => {
         "use server";
@@ -46,7 +44,7 @@ const Page = async (props: { params: Promise<{ id: string }> }) => {
       };
     }
     return undefined;
-  }
+  };
 
   return (
     <div className="p-6">
@@ -54,7 +52,9 @@ const Page = async (props: { params: Promise<{ id: string }> }) => {
         agreement={agreement}
         userIsGov={userIsGov}
         backLink={Routes.CreditAgreements}
-        editLink={forAnalyst ? `${Routes.CreditAgreements}/${id}/edit` : undefined}
+        editLink={
+          forAnalyst ? `${Routes.CreditAgreements}/${id}/edit` : undefined
+        }
         handleRecommendApproval={handleStatusChange(
           AgreementStatus.RECOMMEND_APPROVAL,
           forAnalyst,

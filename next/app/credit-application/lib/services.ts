@@ -44,15 +44,6 @@ export const getEligibleVehicles = async (
     where: {
       organizationId: orgId,
       status: VehicleStatus.VALIDATED,
-      vehicleClass: {
-        not: null,
-      },
-      zevClass: {
-        not: null,
-      },
-      creditValue: {
-        not: null,
-      },
       isActive: true,
     },
     select: {
@@ -71,7 +62,7 @@ export type CreditApplicationVehicle = Pick<
   | "vehicleClass"
   | "zevClass"
   | "modelYear"
-  | "creditValue"
+  | "numberOfUnits"
   | "make"
   | "modelName"
 >;
@@ -102,7 +93,7 @@ export const getVinRecordsMap = async (
           vehicleClass: true,
           zevClass: true,
           modelYear: true,
-          creditValue: true,
+          numberOfUnits: true,
           make: true,
           modelName: true,
         },

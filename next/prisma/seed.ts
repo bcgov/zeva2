@@ -308,6 +308,12 @@ const main = () => {
         const modelYearEnum =
           mapOfModelYearIdsToModelYearEnum[vehicleOld.model_year_id];
         const orgNewId = mapOfOldOrgIdsToNewOrgIds[vehicleOld.organization_id];
+        const zevEnum = vZevIdToEnum[vehicleOld.vehicle_zev_type_id];
+        const classEnum = vClassIdToEnum[vehicleOld.vehicle_class_code_id];
+        const zevClassEnum = vehicleOld.credit_class_id
+          ? mapOfOldCreditClassIdsToZevClasses[vehicleOld.credit_class_id]
+          : undefined;
+        const numberOfUnits = vehicleOld.credit_value;
         if (!modelYearEnum) {
           throw new Error(
             "vehicle with id " + vehicleOld.id + " has unknown model year!",
@@ -318,11 +324,16 @@ const main = () => {
             "vehicle with id " + vehicleOld.id + " has unknown orgId",
           );
         }
-        const zevEnum = vZevIdToEnum[vehicleOld.vehicle_zev_type_id];
-        const classEnum = vClassIdToEnum[vehicleOld.vehicle_class_code_id];
-        const zevClassEnum = vehicleOld.credit_class_id
-          ? mapOfOldCreditClassIdsToZevClasses[vehicleOld.credit_class_id]
-          : undefined;
+        if (!zevClassEnum) {
+          throw new Error(
+            "vehicle with id " + vehicleOld.id + " has no zev class!",
+          );
+        }
+        if (!numberOfUnits) {
+          throw new Error(
+            "vehicle with id " + vehicleOld.id + " has no credit value!",
+          );
+        }
 
         await tx.vehicle.create({
           select: { id: true },
@@ -332,10 +343,10 @@ const main = () => {
             modelYear: modelYearEnum,
             status: VehicleStatus.VALIDATED,
             modelName: vehicleOld.model_name,
-            creditValue: vehicleOld.credit_value,
+            numberOfUnits,
             vehicleZevType: zevEnum,
             vehicleClassCode: classEnum,
-            weightKg: Number(vehicleOld.weight_kg),
+            weightKg: vehicleOld.weight_kg,
             organizationId: orgNewId,
             zevClass: zevClassEnum,
             hasPassedUs06Test: vehicleOld.has_passed_us_06_test,

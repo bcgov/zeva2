@@ -1,29 +1,31 @@
+import { getUserInfo } from "@/auth";
 import { getVehicleHistories } from "../data";
+import { getIsoYmdString, getTimeWithTz } from "@/app/lib/utils/date";
+import { JSX } from "react";
 
-const VehicleHistories = async (props: { id: number }) => {
+export const VehicleHistories = async (props: { id: number }) => {
   const histories = await getVehicleHistories(props.id);
-  if (histories && histories.length > 0) {
-    const entries = [];
-    for (const each of histories) {
-      entries.push(
-        <div key={each.id}>
-          <div>
-            <b>
-              {each.validationStatus} {each.createUser.firstName}{" "}
-              {each.createUser.lastName} - {each.createUser.organization.name}
-            </b>
-          </div>
-          {each.createTimestamp &&
-            each.createTimestamp.toLocaleString("en-US", {
-              timeZone: "America/Los_Angeles",
-            })}{" "}
-          <br />
-        </div>,
-      );
-    }
-    return <div>{entries.reverse()}</div>;
+  if (histories.length === 0) {
+    return null;
   }
-  return null;
+  const { userIsGov } = await getUserInfo();
+  const entries: JSX.Element[] = [];
+  histories.forEach((history) => {
+    let name = `${history.user.firstName} ${history.user.lastName}`;
+    if (!userIsGov && history.user.organization.isGovernment) {
+      name = "Government of BC";
+    }
+    entries.push(
+      <li key={history.id}>
+        <p key="content">
+          {`[${name}] made the application "${history.userAction}" on 
+          ${getIsoYmdString(history.timestamp)}, at ${getTimeWithTz(history.timestamp)}.`}
+        </p>
+        {history.comment && (
+          <p key="comment">{`Comment associated with this history entry, written by [${name}]: "${history.comment}"`}</p>
+        )}
+      </li>,
+    );
+  });
+  return <ul className="space-y-3">{entries}</ul>;
 };
-
-export default VehicleHistories;

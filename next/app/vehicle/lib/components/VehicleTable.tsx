@@ -22,12 +22,12 @@ export const VehicleTable = (props: {
         cell: (info) => info.getValue(),
         header: () => <span>Status</span>,
       }),
-      columnHelper.accessor((row) => row.creditValue, {
-        id: "creditValue",
+      columnHelper.accessor((row) => row.numberOfUnits, {
+        id: "numberOfUnits",
         enableSorting: true,
         enableColumnFilter: true,
         cell: (info) => info.getValue(),
-        header: () => <span>Credit Entitlement</span>,
+        header: () => <span>Number of Credits</span>,
       }),
       columnHelper.accessor((row) => row.zevClass, {
         id: "zevClass",

@@ -239,7 +239,7 @@ export const validateCreditApplication = async (
       modelYear: data.vehicle.modelYear,
       vehicleClass: data.vehicle.vehicleClass,
       zevClass: data.vehicle.zevClass,
-      numberOfUnits: data.vehicle.creditValue,
+      numberOfUnits: data.vehicle.numberOfUnits,
       icbcMake: icbcMap[vin]?.make,
       icbcModelName: icbcMap[vin]?.modelName,
       icbcModelYear: icbcMap[vin]?.modelYear,
