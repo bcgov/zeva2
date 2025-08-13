@@ -128,3 +128,16 @@ export const getVehicleHistories = async (vehicleId: number) => {
     },
   });
 };
+
+export const getAttachmentsCount = async (id: number): Promise<number> => {
+  const { userIsGov, userOrgId } = await getUserInfo();
+  const whereClause: Prisma.VehicleAttachmentWhereInput = { vehicleId: id };
+  if (!userIsGov) {
+    whereClause.vehicle = {
+      organizationId: userOrgId,
+    };
+  }
+  return await prisma.vehicleAttachment.count({
+    where: whereClause,
+  });
+};

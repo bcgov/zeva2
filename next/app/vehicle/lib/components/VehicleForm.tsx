@@ -1,12 +1,6 @@
 "use client";
 
-import {
-  useState,
-  useCallback,
-  useTransition,
-  useMemo,
-  useEffect,
-} from "react";
+import { useState, useCallback, useTransition, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import {
   submitVehicle,
@@ -17,7 +11,6 @@ import {
 import { Routes } from "@/app/lib/constants";
 import { VehicleClassCode, VehicleZevType } from "@/prisma/generated/client";
 import { getVehiclePayload } from "../utilsClient";
-import { SerializedVehicleWithOrg } from "../data";
 import { getModelYearEnumsToStringsMap } from "@/app/lib/utils/enumMaps";
 import { Dropzone } from "@/app/lib/components/Dropzone";
 import axios from "axios";

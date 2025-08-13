@@ -19,6 +19,7 @@ import { seedTransactions } from "./seedProcesses/seedTransactions";
 import { seedIcbc } from "./seedProcesses/seedIcbc";
 import { seedUsers } from "./seedProcesses/seedUsers";
 import { seedAgreements } from "./seedProcesses/seedAgreements";
+import { seedVolumes } from "./seedProcesses/seedVolumes";
 
 // prismaOld to interact with old zeva db; prisma to interact with new zeva db
 const main = () => {
@@ -380,6 +381,12 @@ const main = () => {
       });
 
       await seedIcbc(tx, mapOfModelYearIdsToModelYearEnum);
+
+      await seedVolumes(
+        tx,
+        mapOfModelYearIdsToModelYearEnum,
+        mapOfOldOrgIdsToNewOrgIds,
+      );
     },
     {
       timeout: 10000,

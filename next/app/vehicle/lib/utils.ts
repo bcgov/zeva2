@@ -14,6 +14,7 @@ import {
   ZevClass,
 } from "@/prisma/generated/client";
 import { Decimal } from "@/prisma/generated/client/runtime/library";
+import { AttachmentsSubDirectory } from "./constants";
 
 export const getWhereClause = (filters: {
   [key: string]: string;
@@ -207,4 +208,11 @@ export const getNumberOfUnits = (
     return new Decimal(1);
   }
   throw new Error("Cannot calculate the credit value for this vehicle!");
+};
+
+export const getAttachmentFullObjectName = (
+  orgId: number,
+  objectName: string,
+) => {
+  return `${orgId}/${AttachmentsSubDirectory.VehicleAttachments}/${objectName}`;
 };

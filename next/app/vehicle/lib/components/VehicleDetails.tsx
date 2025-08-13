@@ -6,17 +6,21 @@ type VehicleProps = {
 import {
   getModelYearEnumsToStringsMap,
   getVehicleClassEnumsToStringsMap,
+  getVehicleStatusEnumsToStringsMap,
   getZevClassEnumsToStringsMap,
 } from "@/app/lib/utils/enumMaps";
 export const VehicleDetails = async ({ vehicle }: VehicleProps) => {
   const vehicleClassesMap = getVehicleClassEnumsToStringsMap();
   const zevClassesMap = getZevClassEnumsToStringsMap();
   const modelYearsMap = getModelYearEnumsToStringsMap();
+  const statusMap = getVehicleStatusEnumsToStringsMap();
   if (vehicle) {
     return (
       <div key={vehicle.id}>
         <ul>
-          <li key="validationStatus">Validation Status: {vehicle.status}</li>
+          <li key="validationStatus">
+            Validation Status: {statusMap[vehicle.status]}
+          </li>
           <li key="supplier">Supplier: {vehicle.organization.name} </li>
           <li key="modelYear">
             Model Year: {modelYearsMap[vehicle.modelYear]}
