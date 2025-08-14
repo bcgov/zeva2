@@ -321,6 +321,7 @@ enum VehicleStatus {
 
 model Vehicle {
   id                   Int                    @id @default(autoincrement())
+  legacyId             Int?
   organization         Organization           @relation(fields: [organizationId], references: [id])
   organizationId       Int                    @map("organization_id")
   status               VehicleStatus
@@ -333,8 +334,8 @@ model Vehicle {
   zevClass             ZevClass               @map("zev_class")
   numberOfUnits        Decimal                @map("numberOfUnits") @db.Decimal(65, 2)
   vehicleClassCode     VehicleClassCode       @map("vehicle_class_code")
-  weightKg             Decimal                @map("weight_kg") @db.Decimal(6, 0)
-  hasPassedUs06Test    Boolean                @map("has_passed_us_06_test")
+  weight               Int
+  us06RangeGte16       Boolean                @map("us06_range_gte_16")
   isActive             Boolean                @map("is_active")
   VehicleHistory       VehicleHistory[]
   VehicleAttachment    VehicleAttachment[]

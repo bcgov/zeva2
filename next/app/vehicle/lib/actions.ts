@@ -20,12 +20,8 @@ import {
   getPresignedPutObjectUrl,
 } from "@/app/lib/minio";
 import { randomUUID } from "crypto";
-import {
-  getAttachmentFullObjectName,
-  getNumberOfUnits,
-  getVehicleClass,
-  getZevClass,
-} from "./utils";
+import { getAttachmentFullObjectName, getNumberOfUnits } from "./utils";
+import { getVehicleClass, getZevClass } from "./utilsClient";
 
 export type VehiclePutObjectData = {
   objectName: string;
@@ -53,22 +49,18 @@ export const getPutObjectData = async (
 export type VehiclePayload = Omit<
   Vehicle,
   | "id"
+  | "legacyId"
   | "organizationId"
   | "status"
-  | "weightKg"
   | "isActive"
   | "vehicleClass"
   | "zevClass"
   | "numberOfUnits"
-> & {
-  weightKg: string;
-};
+>;
 
 export type VehicleFile = {
   filename: string;
   objectName: string;
-  size: number;
-  mimeType?: string;
 };
 
 export async function submitVehicle(
@@ -84,12 +76,12 @@ export async function submitVehicle(
   const modelYear = data.modelYear;
   const range = data.range;
   try {
-    const vehicleClass = getVehicleClass(modelYear, data.weightKg);
+    const vehicleClass = getVehicleClass(modelYear, data.weight);
     const zevClass = getZevClass(modelYear, data.vehicleZevType, range);
     const numberOfUnits = getNumberOfUnits(
       zevClass,
       range,
-      data.hasPassedUs06Test,
+      data.us06RangeGte16,
     );
     await prisma.$transaction(async (tx) => {
       const newVehicle = await tx.vehicle.create({

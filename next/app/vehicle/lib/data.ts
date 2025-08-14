@@ -10,7 +10,7 @@ import {
 
 export type VehicleSparse = Omit<
   Vehicle,
-  "vehicleClassCode" | "weightKg" | "organizationId" | "hasPassedUs06Test"
+  "vehicleClassCode" | "weight" | "organizationId" | "us06RangeGte16"
 > & { organization?: { name: string } };
 
 // page is 1-based
@@ -26,6 +26,7 @@ export const getVehicles = async (
   const take = pageSize;
   let select: Prisma.VehicleSelect = {
     id: true,
+    legacyId: true,
     status: true,
     numberOfUnits: true,
     zevClass: true,
@@ -80,10 +81,9 @@ export const getVehicle = async (
   });
 };
 
-export type SerializedVehicleWithOrg = Omit<
-  Vehicle,
-  "weightKg" | "numberOfUnits"
-> & { weightKg: string; numberOfUnits: string } & {
+export type SerializedVehicleWithOrg = Omit<Vehicle, "numberOfUnits"> & {
+  numberOfUnits: string;
+} & {
   organization: Organization;
 };
 
@@ -94,7 +94,7 @@ export const getSerializedVehicle = async (
   if (vehicle) {
     return {
       ...vehicle,
-      weightKg: vehicle.weightKg.toString(),
+      weight: vehicle.weight,
       numberOfUnits: vehicle.numberOfUnits.toString(),
     };
   }

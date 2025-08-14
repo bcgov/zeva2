@@ -62,3 +62,12 @@ export const removeObject = async (objectName: string) => {
   const bucketName = process.env.MINIO_BUCKET_NAME ?? "";
   await client.removeObject(bucketName, getPrefixedObjectName(objectName));
 };
+
+export const removeObjects = async (objectNames: string[]) => {
+  const client = getClient();
+  const bucketName = process.env.MINIO_BUCKET_NAME ?? "";
+  const finalObjectNames = objectNames.map((name) => {
+    return getPrefixedObjectName(name);
+  });
+  await client.removeObjects(bucketName, finalObjectNames);
+};
