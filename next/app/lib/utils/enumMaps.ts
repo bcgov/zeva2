@@ -16,6 +16,23 @@ import {
   ZevClass,
 } from "@/prisma/generated/client";
 
+export const getMatchingTerms = <Term>(
+  map: Partial<Record<string, Term>>,
+  searchTerm: string,
+): Term[] => {
+  const result: Term[] = [];
+  Object.entries(map).forEach(([s, t]) => {
+    if (t) {
+      const term = searchTerm.toLowerCase().replaceAll(" ", "");
+      const candidate = s.toLowerCase().replaceAll(" ", "");
+      if (candidate.includes(term)) {
+        result.push(t);
+      }
+    }
+  });
+  return result;
+};
+
 export const lowerCaseAndCapitalize = (s: string) => {
   const firstLetter = s.charAt(0);
   const lowerCasedTail = s.toLowerCase().slice(1);

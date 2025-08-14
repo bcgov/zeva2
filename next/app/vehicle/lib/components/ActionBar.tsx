@@ -6,6 +6,7 @@ import { VehicleStatus } from "@/prisma/generated/client";
 import { updateStatus } from "../actions";
 import { Button } from "@/app/lib/components";
 import { Routes } from "@/app/lib/constants";
+import { getNormalizedComment } from "@/app/credit-application/lib/utils";
 
 export const ActionBar = (props: {
   userIsGov: boolean;
@@ -23,7 +24,7 @@ export const ActionBar = (props: {
         const response = await updateStatus(
           props.vehicleId,
           status,
-          comment === "" ? undefined : comment,
+          getNormalizedComment(comment),
         );
         if (response.responseType === "error") {
           setError(response.message);
@@ -52,6 +53,7 @@ export const ActionBar = (props: {
             value={comment}
             onChange={(e) => setComment(e.target.value)}
             placeholder="Optional Comment"
+            disabled={isPending}
           />
           <Button
             onClick={() => handleSubmit(VehicleStatus.REJECTED)}

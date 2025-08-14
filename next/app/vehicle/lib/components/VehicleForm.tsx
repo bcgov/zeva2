@@ -16,6 +16,7 @@ import { Dropzone } from "@/app/lib/components/Dropzone";
 import axios from "axios";
 import { FileWithPath } from "react-dropzone";
 import { Button } from "@/app/lib/components";
+import { getNormalizedComment } from "@/app/credit-application/lib/utils";
 
 export const VehicleForm = () => {
   const router = useRouter();
@@ -23,31 +24,27 @@ export const VehicleForm = () => {
   const [error, setError] = useState<string>("");
   const [formData, setFormData] = useState<Partial<Record<string, string>>>({});
   const [files, setFiles] = useState<FileWithPath[]>([]);
+  const [comment, setComment] = useState<string>("");
   const modelYearsMap = useMemo(() => {
     return getModelYearEnumsToStringsMap();
   }, []);
-  const allowedFileTypes = {
-    "application/msword": [".doc", ".docx"],
-    "application/vnd.ms-excel": [".xls", ".xlsx"],
-    "application/pdf": [".pdf"],
-    "image/jpeg": [".jpg"],
-    "image/png": [".png"],
-  };
+  const allowedFileTypes = useMemo(() => {
+    return {
+      "application/msword": [".doc", ".docx"],
+      "application/vnd.ms-excel": [".xls", ".xlsx"],
+      "application/pdf": [".pdf"],
+      "image/jpeg": [".jpg"],
+      "image/png": [".png"],
+    };
+  }, []);
 
   const handleChange = useCallback((key: string, value: string) => {
-    if (
-      (key === "zevType" && value !== "EREV") ||
-      (key === "us06" && value === "false")
-    ) {
+    if (key === "us06" && value === "false") {
       setFiles([]);
-      setFormData((prev) => {
-        return { ...prev, [key]: value, us06: "false" };
-      });
-    } else {
-      setFormData((prev) => {
-        return { ...prev, [key]: value };
-      });
     }
+    setFormData((prev) => {
+      return { ...prev, [key]: value };
+    });
   }, []);
 
   const handleSubmit = useCallback(() => {
@@ -67,12 +64,14 @@ export const VehicleForm = () => {
             vehicleFiles.push({
               filename: file.name,
               objectName: putData.objectName,
-              size: file.size,
-              mimeType: file.type,
             });
           }
         }
-        const response = await submitVehicle(vehiclePayload, vehicleFiles);
+        const response = await submitVehicle(
+          vehiclePayload,
+          vehicleFiles,
+          getNormalizedComment(comment),
+        );
         if (response.responseType === "error") {
           throw new Error(response.message);
         }
@@ -82,7 +81,7 @@ export const VehicleForm = () => {
         if (e instanceof Error) setError(e.message);
       }
     });
-  }, [formData, files, router]);
+  }, [formData, files, comment, router]);
 
   return (
     <div>
@@ -155,30 +154,6 @@ export const VehicleForm = () => {
           ))}
         </select>
       </div>
-
-      <div className="flex items-center space-x-4">
-        <span>Claim Additional US06 0.2 credit</span>
-        <input
-          type="checkbox"
-          id="us06"
-          checked={formData.us06 === "true"}
-          disabled={formData.zevType !== "EREV"}
-          onChange={(e) => {
-            handleChange(e.target.id, e.target.checked ? "true" : "false");
-          }}
-        />
-        <span>(requires certificate upload)</span>
-      </div>
-      {formData.us06 === "true" && formData.zevType === "EREV" && (
-        <Dropzone
-          files={files}
-          setFiles={setFiles}
-          disabled={isPending}
-          maxNumberOfFiles={20}
-          allowedFileTypes={allowedFileTypes}
-        />
-      )}
-
       <div className="flex items-center py-2 my-2">
         <label htmlFor="range" className="w-72">
           Electric EPA Range (km)
@@ -227,6 +202,35 @@ export const VehicleForm = () => {
           }}
         />
       </div>
+      <div className="flex items-center space-x-4">
+        <span>Claim Additional US06 0.2 credit</span>
+        <input
+          type="checkbox"
+          id="us06"
+          checked={formData.us06 === "true"}
+          onChange={(e) => {
+            handleChange(e.target.id, e.target.checked ? "true" : "false");
+          }}
+        />
+        <span>(requires certificate upload)</span>
+      </div>
+      {formData.us06 === "true" && (
+        <Dropzone
+          files={files}
+          setFiles={setFiles}
+          disabled={isPending}
+          maxNumberOfFiles={10}
+          allowedFileTypes={allowedFileTypes}
+        />
+      )}
+      <textarea
+        className="w-full border  p-2"
+        rows={3}
+        value={comment}
+        onChange={(e) => setComment(e.target.value)}
+        placeholder="Optional Comment"
+        disabled={isPending}
+      />
       <div className="flex space-x-2">
         <Button onClick={handleSubmit} disabled={isPending}>
           {isPending ? "..." : "Submit"}

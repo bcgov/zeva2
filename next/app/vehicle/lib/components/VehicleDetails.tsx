@@ -18,6 +18,9 @@ export const VehicleDetails = async ({ vehicle }: VehicleProps) => {
     return (
       <div key={vehicle.id}>
         <ul>
+          {vehicle.legacyId && (
+            <li key="legacyId">Legacy ID: {vehicle.legacyId}</li>
+          )}
           <li key="validationStatus">
             Validation Status: {statusMap[vehicle.status]}
           </li>
@@ -29,11 +32,12 @@ export const VehicleDetails = async ({ vehicle }: VehicleProps) => {
           <li key="vehicleModel">Model: {vehicle.modelName}</li>
           <li key="zevType">ZEV Type: {vehicle.vehicleZevType}</li>
           <li key="passedTest">
-            Has passed US06 Test: {vehicle?.hasPassedUs06Test ? "Yes" : "No"}
+            US06 Range at least 16 km:{" "}
+            {vehicle?.us06RangeGte16 ? "Yes" : "No or Unknown"}
           </li>
           <li key="bodyType">Body Type: {vehicle.vehicleClassCode}</li>
           <li key="range">Electric EPA Range (km): {vehicle.range}</li>
-          <li key="weigt=ht"> Weight (kg): {vehicle.weightKg}</li>
+          <li key="weigt=ht"> Weight (kg): {vehicle.weight}</li>
           <li key="vehicleClass">
             Vehicle Class: {vehicleClassesMap[vehicle.vehicleClass]}
           </li>

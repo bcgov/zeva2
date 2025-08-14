@@ -2,7 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { TransactionClient } from "@/types/prisma";
 import { Prisma, VehicleStatus } from "@/prisma/generated/client";
 import { VehicleFile } from "./actions";
-import { removeObject } from "@/app/lib/minio";
+import { removeObjects } from "@/app/lib/minio";
 import { getAttachmentFullObjectName } from "./utils";
 
 export const createHistory = async (
@@ -46,7 +46,8 @@ export const deleteAttachments = async (
   orgId: number,
   files: VehicleFile[],
 ) => {
-  for (const file of files) {
-    await removeObject(getAttachmentFullObjectName(orgId, file.objectName));
-  }
+  const objectNames = files.map((file) => {
+    return getAttachmentFullObjectName(orgId, file.objectName);
+  });
+  await removeObjects(objectNames);
 };

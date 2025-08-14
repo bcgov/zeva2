@@ -4,6 +4,7 @@ import Image from "next/image";
 export default function Home() {
   const bceidSignin = keycloakSignIn.bind(null, "bceidbusiness");
   const idirSignin = keycloakSignIn.bind(null, "azureidir");
+  const buttonStyles = "text-2xl p-4 rounded-lg w-full";
   return (
     <main
       id="login-page"
@@ -29,7 +30,7 @@ export default function Home() {
           />
           <div className="text-center p-[2.5rem]">
             <div className="section-title">Vehicle Suppliers</div>
-            <Button onClick={bceidSignin} className="blue-button">
+            <Button onClick={bceidSignin} className={buttonStyles}>
               <div className="flex items-center gap-2 justify-center">
                 <span>Login with </span>
                 <img
@@ -42,7 +43,10 @@ export default function Home() {
             </Button>
             <br />
             <div className="section-title">Government</div>
-            <Button onClick={idirSignin} className="white-button">
+            <Button
+              onClick={idirSignin}
+              className={`${buttonStyles} white-button`}
+            >
               <span>Login with </span>
               <span className="font-bold">IDIR</span>
             </Button>
