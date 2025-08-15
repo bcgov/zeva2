@@ -3,8 +3,10 @@ import { getUserInfo } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import {
   AgreementStatus,
+  AgreementUserAction,
   ModelYear
 } from "@/prisma/generated/client";
+import { historySelectClause } from "./utils";
 
 export const getSupplierSelections = async () => {
   return await prisma.organization.findMany({
@@ -33,47 +35,50 @@ export const getModelYearSelections = () => {
 export const getAgreementDetails = async (id: number) => {
   const { userIsGov, userOrgId } = await getUserInfo();
 
-  const agreement = await prisma.agreement.findUnique({
-    where: {
-      id,
-      organizationId: userIsGov ? undefined : userOrgId,
-      status: userIsGov ? undefined : AgreementStatus.ISSUED,
-    },
-    include: {
-      organization: true,
-      agreementContent: {
-        select: {
-          zevClass: true,
-          modelYear: true,
-          numberOfUnits: true,
-        },
+  const [
+    basicInfo,
+    agreementHistory
+  ] = await prisma.$transaction(async (tx) => {
+    const basicInfo = tx.agreement.findUnique({
+      where: {
+        id,
+        organizationId: userIsGov ? undefined : userOrgId,
+        status: userIsGov ? undefined : AgreementStatus.ISSUED,
       },
-      agreementHistory: {
-        select: {
-          user: {
-            select: {
-              firstName: true,
-              lastName: true,
-            },
+      include: {
+        organization: true,
+        agreementContent: {
+          select: {
+            zevClass: true,
+            modelYear: true,
+            numberOfUnits: true,
           },
-          timestamp: true,
-          userAction: true,
-          comment: true,
         },
       },
-    },
+    });
+
+    const history = userIsGov ? tx.agreementHistory.findMany({
+      where: {
+        agreementId: id,
+        userAction: { not: AgreementUserAction.SAVED },
+      },
+      select: historySelectClause
+    }): undefined;
+
+    return await Promise.all([basicInfo, history]);
   });
 
-  if (!agreement) {
-    return null; // Agreement not found or access denied
+  if (!basicInfo) {
+    return null; // Agreement not found
   }
 
   return {
-    ...agreement,
-    agreementContent: agreement.agreementContent.map((content) => ({
+    ...basicInfo,
+    agreementContent: basicInfo.agreementContent.map((content) => ({
       ...content,
       numberOfUnits: content.numberOfUnits.toNumber()
     })),
+    agreementHistory
   };
 };
 
@@ -81,3 +86,8 @@ export type AgreementDetailsType = Exclude<
   Awaited<ReturnType<typeof getAgreementDetails>>,
   null
 >;
+
+export type AgreementHistoryType = Exclude<
+  AgreementDetailsType["agreementHistory"],
+  undefined
+>[number];
