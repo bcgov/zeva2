@@ -5,8 +5,11 @@
 // so hopefully prisma addresses this soon!
 
 import {
+  BalanceType,
   Idp,
   ModelYear,
+  ModelYearReportStatus,
+  ModelYearReportSupplierStatus,
   PenaltyCreditStatus,
   ReferenceType,
   Role,
@@ -174,4 +177,40 @@ export const getVehicleStatusEnumsToStringsMap = () => {
 
 export const getStringsToVehicleStatusEnumsMap = () => {
   return getStringsToEnumsMap<VehicleStatus>(VehicleStatus, statusTransformer);
+};
+
+export const getMyrStatusEnumsToStringsMap = () => {
+  return getEnumsToStringsMap<ModelYearReportStatus>(
+    ModelYearReportStatus,
+    statusTransformer,
+  );
+};
+
+export const getStringsToMyrStatusEnumsMap = () => {
+  return getStringsToEnumsMap<ModelYearReportStatus>(
+    ModelYearReportStatus,
+    statusTransformer,
+  );
+};
+
+export const getMyrSupplierStatusEnumsToStringsMap = () => {
+  return getEnumsToStringsMap<ModelYearReportSupplierStatus>(
+    ModelYearReportSupplierStatus,
+    statusTransformer,
+  );
+};
+
+export const getStringsToMyrSupplierStatusEnumsMap = () => {
+  return getStringsToEnumsMap<ModelYearReportSupplierStatus>(
+    ModelYearReportSupplierStatus,
+    statusTransformer,
+  );
+};
+
+export const getBalanceTypeEnumsToStringsMap = () => {
+  return getEnumsToStringsMap<BalanceType>(BalanceType, statusTransformer);
+};
+
+export const getStringsToBalanceTypeEnumsMap = () => {
+  return getStringsToEnumsMap<BalanceType>(BalanceType, statusTransformer);
 };

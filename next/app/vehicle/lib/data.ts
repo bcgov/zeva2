@@ -69,6 +69,9 @@ export const getVehicle = async (
   const { userIsGov, userOrgId } = await getUserInfo();
   let whereClause: Prisma.VehicleWhereUniqueInput = {
     id: vehicleId,
+    status: {
+      not: VehicleStatus.DELETED,
+    },
   };
   if (!userIsGov) {
     whereClause = { ...whereClause, organizationId: userOrgId };
@@ -105,6 +108,11 @@ export const getVehicleHistories = async (vehicleId: number) => {
   const { userIsGov, userOrgId } = await getUserInfo();
   let whereClause: Prisma.VehicleHistoryWhereInput = {
     vehicleId: vehicleId,
+    vehicle: {
+      status: {
+        not: VehicleStatus.DELETED,
+      },
+    },
   };
   if (!userIsGov) {
     whereClause = { ...whereClause, vehicle: { organizationId: userOrgId } };

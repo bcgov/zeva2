@@ -16,6 +16,7 @@ import {
   isZevClass,
 } from "@/app/lib/utils/typeGuards";
 import { specialComplianceRatios } from "@/app/lib/constants/complianceRatio";
+import { supplierZevClasses } from "@/app/model-year-report/lib/constants";
 
 // both ZevUnitTransactions and ZevUnitEndingBalances can be of type ZevUnitRecord;
 // a ZevUnitEndingBalance will need to be modified slightly
@@ -46,16 +47,18 @@ export class UnexpectedDebit extends Error {}
 export class UncoveredTransfer extends Error {}
 export class IncompleteOrdering extends Error {}
 
-// to satisfy section 17(5)(c)(i) and section 19(1)(b) and 19(1)(c)
+// to satisfy reporting requirements (sections 17(5)(c)(i), 19(1)(b), 19(1)(c))
 // inputed zevUnitRecords should consist of:
 // (1) the supplier's ending balance records with compliance year N (if any exist), and
 // (2) the supplier's transactions with a timestamp associated with year N+1, and
 // (3) the supplier's obligation reductions/adjustments associated with year N+1;
-// also, zevClassesOrdered should be a total ordering of zevClasses derived from the supplier's recorded preference
+// zevClassesOrdered should be a total ordering of zevClasses derived from the supplier's recorded preference
+// model year should be the reported model year
 // returns [balance, creditsThatWereOffset]
 export const calculateBalance = (
   zevUnitRecords: ZevUnitRecord[],
   zevClassesOrdered: ZevClass[],
+  modelYear: ModelYear,
 ): [ZevUnitRecord[], ZevUnitRecord[]] => {
   let refinedRecords = applyTransfersAway(zevUnitRecords);
   let creditsThatWereOffsetBySpecialDebits: ZevUnitRecord[] = [];
@@ -70,8 +73,22 @@ export const calculateBalance = (
     offsetOtherDebitsWithUnspecifiedCredits(refinedRecords);
   [refinedRecords, matchingCreditsThatWereOffsetByOtherDebits] =
     offsetOtherDebitsWithMatchingCredits(refinedRecords);
+  let balance = flattenZevUnitRecords(refinedRecords);
+  if (balance.length === 0) {
+    Object.values(VehicleClass).forEach((vehicleClass) => {
+      Object.values(supplierZevClasses).forEach((zevClass) => {
+        balance.push({
+          type: TransactionType.CREDIT,
+          vehicleClass,
+          zevClass,
+          modelYear,
+          numberOfUnits: new Decimal(0),
+        });
+      });
+    });
+  }
   return [
-    flattenZevUnitRecords(refinedRecords),
+    balance,
     flattenZevUnitRecords([
       ...creditsThatWereOffsetBySpecialDebits,
       ...creditsThatWereOffsetByUnspecifiedDebits,

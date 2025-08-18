@@ -34,13 +34,13 @@ export enum ReportSubDirectory {
   Assessment = "assessment",
 }
 
-export const supplierZevClassChoice = {
+export const supplierZevClasses = {
   [ZevClass.A]: ZevClass.A,
   [ZevClass.B]: ZevClass.B,
 };
 
 export type SupplierZevClassChoice =
-  (typeof supplierZevClassChoice)[keyof typeof supplierZevClassChoice];
+  (typeof supplierZevClasses)[keyof typeof supplierZevClasses];
 
 export const divisors: Readonly<Partial<Record<ModelYear, string>>> = {
   [ModelYear.MY_2025]: "3.5",

@@ -27,6 +27,7 @@ export const AssessmentResult = (props: {
       return (
         <tr key={crypto.randomUUID()}>
           <td key="type">{transaction.type}</td>
+          <td key="referenceType">{transaction.referenceType}</td>
           <td key="vehicleClass">{transaction.vehicleClass}</td>
           <td key="zevClass">{transaction.zevClass}</td>
           <td key="modelYear">{transaction.modelYear}</td>
@@ -44,7 +45,7 @@ export const AssessmentResult = (props: {
           <td key="vehicleClass">{record.vehicleClass}</td>
           <td key="zevClass">{record.zevClass}</td>
           <td key="modelYear">{record.modelYear}</td>
-          <td key="numberOfUnits">{record.numberOfUnits}</td>
+          <td key="initialNumberOfUnits">{record.initialNumberOfUnits}</td>
           <td key="divisor">{record.divisor}</td>
           <td key="finalNumberOfUnits">{record.finalNumberOfUnits}</td>
         </tr>
@@ -79,7 +80,8 @@ export const AssessmentResult = (props: {
         <thead>
           <tr>
             <th key="type">Type</th>
-            <th key="vehicleClass"> Vehicle Class</th>
+            <th key="referenceType">Reference Type</th>
+            <th key="vehicleClass">Vehicle Class</th>
             <th key="zevClass">ZEV Class</th>
             <th key="modelYear">Model Year</th>
             <th key="numberOfUnits">Number of Units</th>
@@ -97,7 +99,7 @@ export const AssessmentResult = (props: {
             <th key="vehicleClass"> Vehicle Class</th>
             <th key="zevClass">ZEV Class</th>
             <th key="modelYear">Model Year</th>
-            <th key="numberOfUnits">Preliminary Number of Units</th>
+            <th key="initialNumberOfUnits">Initial Number of Units</th>
             <th key="divisor">Divisor</th>
             <th key="finalNumberOfUnits">Final Number of Units</th>
           </tr>

@@ -1,7 +1,6 @@
 import { SupplierClass } from "@/app/lib/constants/complianceRatio";
-import { getCompliancePeriod } from "@/app/lib/utils/complianceYear";
+import { getComplianceInterval } from "@/app/lib/utils/complianceYear";
 import { prisma } from "@/lib/prisma";
-import { modelYearEnumToInt } from "@/lib/utils/convertEnums";
 import { calculateBalance, ZevUnitRecord } from "@/lib/utils/zevUnit";
 import {
   AddressType,
@@ -80,7 +79,7 @@ export const getSupplierClass = async (
 ): Promise<SupplierClass> => {
   const modelYearsArray = Object.values(ModelYear);
   const myIndex = modelYearsArray.findIndex((my) => my === modelYear);
-  const precedingMys: ModelYear[] = [];
+  const precedingMys: (ModelYear | undefined)[] = [];
   for (let i = 1; i <= 3; i++) {
     const precedingMy = modelYearsArray[myIndex - i];
     precedingMys.push(precedingMy);
@@ -92,7 +91,6 @@ export const getSupplierClass = async (
       { modelYear: precedingMys[2] },
     ],
     organizationId,
-    vehicleClass: VehicleClass.REPORTABLE,
   };
   let volumes: SupplyVolume[] = [];
   if (modelYear < ModelYear.MY_2024) {
@@ -139,9 +137,8 @@ export const getPrevEndingBalance = async (
       complianceYear: "desc",
     },
   });
-  const { closedLowerBound: currentCyLb } = getCompliancePeriod(
-    modelYearEnumToInt(complianceYear),
-  );
+  const { closedLowerBound: currentCyLb } =
+    getComplianceInterval(complianceYear);
   if (!prevEndingBalance) {
     const transactions = await prisma.zevUnitTransaction.findMany({
       where: {
@@ -180,9 +177,7 @@ export const getPrevEndingBalance = async (
     const { finalNumberOfUnits, ...rest } = record;
     result.push({ ...rest, numberOfUnits: finalNumberOfUnits });
   });
-  const { openUpperBound: prevCyUb } = getCompliancePeriod(
-    modelYearEnumToInt(prevCy),
-  );
+  const { openUpperBound: prevCyUb } = getComplianceInterval(prevCy);
   const transactions = await prisma.zevUnitTransaction.findMany({
     where: {
       organizationId,
@@ -213,9 +208,7 @@ export const getTransactionsForModelYear = async (
   organizationId: number,
   modelYear: ModelYear,
 ): Promise<MyrZevUnitTransaction[]> => {
-  const modelYearInt = modelYearEnumToInt(modelYear);
-  const { closedLowerBound, openUpperBound } =
-    getCompliancePeriod(modelYearInt);
+  const { closedLowerBound, openUpperBound } = getComplianceInterval(modelYear);
   return await prisma.zevUnitTransaction.findMany({
     where: {
       organizationId,
@@ -268,6 +261,7 @@ export const getZevUnitData = async (
       ...transformedAdjustments,
     ],
     zevClassOrdering,
+    modelYear,
   );
   return {
     supplierClass,

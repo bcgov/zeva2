@@ -1,5 +1,6 @@
 import Excel from "exceljs";
 import {
+  BalanceType,
   ModelYear,
   ReferenceType,
   TransactionType,
@@ -16,6 +17,7 @@ import {
   SupplierData,
   AdjustmentPayload,
   AssessmentData,
+  AssessmentPayload,
 } from "./actions";
 import { Decimal } from "@/prisma/generated/client/runtime/index-browser";
 import {
@@ -25,8 +27,15 @@ import {
   SupplierZevClassChoice,
 } from "./constants";
 import {
+  getBalanceTypeEnumsToStringsMap,
   getModelYearEnumsToStringsMap,
   getReferenceTypeEnumsToStringsMap,
+  getStringsToBalanceTypeEnumsMap,
+  getStringsToModelYearsEnumsMap,
+  getStringsToReferenceTypeEnumsMap,
+  getStringsToTransactionTypeEnumsMap,
+  getStringsToVehicleClassEnumsMap,
+  getStringsToZevClassEnumsMap,
   getTransactionTypeEnumsToStringMap,
   getVehicleClassEnumsToStringsMap,
   getZevClassEnumsToStringsMap,
@@ -68,19 +77,41 @@ export const validateNvValues = (nvValues: NvValues) => {
 
 export type MyrHelpingMaps = {
   transactionTypesMap: Partial<Record<TransactionType, string>>;
+  balanceTypesMap: Partial<Record<TransactionType, string>>;
   referenceTypesMap: Partial<Record<ReferenceType, string>>;
   vehicleClassesMap: Partial<Record<VehicleClass, string>>;
   zevClassesMap: Partial<Record<ZevClass, string>>;
   modelYearsMap: Partial<Record<ModelYear, string>>;
 };
 
+export type InverseHelpingMaps = {
+  transactionTypesMap: Partial<Record<string, TransactionType>>;
+  balanceTypesMap: Partial<Record<string, BalanceType>>;
+  referenceTypesMap: Partial<Record<string, ReferenceType>>;
+  vehicleClassesMap: Partial<Record<string, VehicleClass>>;
+  zevClassesMap: Partial<Record<string, ZevClass>>;
+  modelYearsMap: Partial<Record<string, ModelYear>>;
+};
+
 export const getHelpingMaps = (): MyrHelpingMaps => {
   return {
     transactionTypesMap: getTransactionTypeEnumsToStringMap(),
+    balanceTypesMap: getBalanceTypeEnumsToStringsMap(),
     referenceTypesMap: getReferenceTypeEnumsToStringsMap(),
     vehicleClassesMap: getVehicleClassEnumsToStringsMap(),
     zevClassesMap: getZevClassEnumsToStringsMap(),
     modelYearsMap: getModelYearEnumsToStringsMap(),
+  };
+};
+
+export const getInverseHelpingMaps = (): InverseHelpingMaps => {
+  return {
+    transactionTypesMap: getStringsToTransactionTypeEnumsMap(),
+    balanceTypesMap: getStringsToBalanceTypeEnumsMap(),
+    referenceTypesMap: getStringsToReferenceTypeEnumsMap(),
+    vehicleClassesMap: getStringsToVehicleClassEnumsMap(),
+    zevClassesMap: getStringsToZevClassEnumsMap(),
+    modelYearsMap: getStringsToModelYearsEnumsMap(),
   };
 };
 
@@ -454,15 +485,21 @@ export const parseAssessment = async (
     !endingBalanceSheet ||
     !penaltySheet
   ) {
-    throw new Error();
+    throw new Error("Invalid assessment file!");
   }
   const transactionTypesMap = getTransactionTypeEnumsToStringMap();
+  const referenceTypesMap = getReferenceTypeEnumsToStringsMap();
+  const vehicleClassesMap = getVehicleClassEnumsToStringsMap();
   reductionsSheet.eachRow((row, rowNumber) => {
     if (rowNumber > 1) {
-      nv = row.getCell(2).toString();
+      const vehicleClass = row.getCell(3).toString();
+      if (vehicleClass === vehicleClassesMap[VehicleClass.REPORTABLE]) {
+        nv = row.getCell(2).toString();
+      }
       transactions.push({
         type: transactionTypesMap[TransactionType.DEBIT],
-        vehicleClass: row.getCell(3).toString(),
+        referenceType: referenceTypesMap[ReferenceType.OBLIGATION_REDUCTION],
+        vehicleClass,
         zevClass: row.getCell(4).toString(),
         modelYear: row.getCell(5).toString(),
         numberOfUnits: row.getCell(6).toString(),
@@ -473,6 +510,7 @@ export const parseAssessment = async (
     if (rowNumber > 1) {
       transactions.push({
         type: row.getCell(1).toString(),
+        referenceType: referenceTypesMap[ReferenceType.ASSESSMENT_ADJUSTMENT],
         vehicleClass: row.getCell(2).toString(),
         zevClass: row.getCell(3).toString(),
         modelYear: row.getCell(4).toString(),
@@ -488,14 +526,14 @@ export const parseAssessment = async (
         vehicleClass: row.getCell(2).toString(),
         zevClass: row.getCell(3).toString(),
         modelYear: row.getCell(4).toString(),
-        numberOfUnits: row.getCell(5).toString(),
+        initialNumberOfUnits: row.getCell(5).toString(),
       };
       if (hasPenalty) {
         record.divisor = "1";
-        record.finalNumberOfUnits = record.numberOfUnits;
+        record.finalNumberOfUnits = record.initialNumberOfUnits;
       } else {
         record.divisor = divisors[modelYear] ?? "1";
-        record.finalNumberOfUnits = new Decimal(record.numberOfUnits)
+        record.finalNumberOfUnits = new Decimal(record.initialNumberOfUnits)
           .div(new Decimal(record.divisor))
           .toFixed(2);
       }
@@ -507,4 +545,124 @@ export const parseAssessment = async (
     transactions,
     endingBalance,
   };
+};
+
+export const getAssessmentPayload = (
+  data: AssessmentResultData,
+): AssessmentPayload => {
+  if (!data.nv) {
+    throw new Error("NV not found!");
+  }
+  if (data.endingBalance.length === 0) {
+    throw new Error("Ending balance not found!");
+  }
+  try {
+    const nvDec = new Decimal(data.nv);
+    if (!nvDec.isInteger()) {
+      throw new Error();
+    }
+  } catch (e) {
+    throw new Error("NV must be an integer!");
+  }
+  const helpingMaps = getInverseHelpingMaps();
+  const transactions: AssessmentPayload["transactions"] = data.transactions.map(
+    (transaction) => {
+      return getTransactionPayload(transaction, helpingMaps);
+    },
+  );
+  const endingBalance: AssessmentPayload["endingBalance"] =
+    data.endingBalance.map((record) => {
+      return getBalanceRecordPayload(record, helpingMaps);
+    });
+  return {
+    nv: new Decimal(data.nv).toNumber(),
+    transactions,
+    endingBalance,
+  };
+};
+
+export const getTransactionPayload = (
+  transaction: Partial<Record<string, string>>,
+  helpingMaps: InverseHelpingMaps,
+) => {
+  const error = new Error("Error getting transaction payload!");
+  if (
+    !transaction.type ||
+    !transaction.referenceType ||
+    !transaction.vehicleClass ||
+    !transaction.zevClass ||
+    !transaction.modelYear ||
+    !transaction.numberOfUnits
+  ) {
+    throw error;
+  }
+  const type = helpingMaps.transactionTypesMap[transaction.type];
+  const referenceType =
+    helpingMaps.referenceTypesMap[transaction.referenceType];
+  const vehicleClass = helpingMaps.vehicleClassesMap[transaction.vehicleClass];
+  const zevClass = helpingMaps.zevClassesMap[transaction.zevClass];
+  const modelYear = helpingMaps.modelYearsMap[transaction.modelYear];
+  if (!type || !referenceType || !vehicleClass || !zevClass || !modelYear) {
+    throw error;
+  }
+  try {
+    const unitsDec = new Decimal(transaction.numberOfUnits);
+    if (unitsDec.decimalPlaces() > 2) {
+      throw new Error();
+    }
+    return {
+      type,
+      referenceType,
+      vehicleClass,
+      zevClass,
+      modelYear,
+      numberOfUnits: unitsDec.toString(),
+    };
+  } catch (e) {
+    throw error;
+  }
+};
+
+export const getBalanceRecordPayload = (
+  record: Partial<Record<string, string>>,
+  helpingMaps: InverseHelpingMaps,
+) => {
+  const error = new Error("Error getting balance payload!");
+  if (
+    !record.type ||
+    !record.vehicleClass ||
+    !record.zevClass ||
+    !record.modelYear ||
+    !record.initialNumberOfUnits ||
+    !record.finalNumberOfUnits
+  ) {
+    throw error;
+  }
+  const type = helpingMaps.balanceTypesMap[record.type];
+  const vehicleClass = helpingMaps.vehicleClassesMap[record.vehicleClass];
+  const zevClass = helpingMaps.zevClassesMap[record.zevClass];
+  const modelYear = helpingMaps.modelYearsMap[record.modelYear];
+  if (!type || !vehicleClass || !zevClass || !modelYear) {
+    throw error;
+  }
+  try {
+    const initialUnitsDec = new Decimal(record.initialNumberOfUnits);
+    const finalUnitsDec = new Decimal(record.finalNumberOfUnits);
+    if (
+      initialUnitsDec.decimalPlaces() > 2 ||
+      finalUnitsDec.decimalPlaces() > 2
+    ) {
+      throw new Error();
+    }
+    return {
+      type,
+      vehicleClass,
+      zevClass,
+      modelYear,
+      initialNumberOfUnits: initialUnitsDec.toString(),
+      finalNumberOfUnits: finalUnitsDec.toString(),
+    };
+  } catch (e) {
+    throw error;
+  }
 };

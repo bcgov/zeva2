@@ -52,6 +52,12 @@ export default function TransactionAccordion({
       if (userIsGov && referenceType === ReferenceType.PENALTY_CREDITS) {
         return `${Routes.PenaltyCredit}/${referenceId}`;
       }
+      if (
+        referenceType === ReferenceType.OBLIGATION_REDUCTION ||
+        referenceType === ReferenceType.ASSESSMENT_ADJUSTMENT
+      ) {
+        return `${Routes.ComplianceReporting}/${referenceId}`;
+      }
     },
     [userIsGov],
   );
