@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useMemo } from "react";
+import React, { useCallback, useMemo } from "react";
 import { ColumnDef, createColumnHelper } from "@tanstack/react-table";
 import { Table } from "@/app/lib/components";
 import {
@@ -8,12 +8,18 @@ import {
   getMyrStatusEnumsToStringsMap,
 } from "@/app/lib/utils/enumMaps";
 import { MyrSparseSerialized } from "../utils";
+import { useRouter } from "next/navigation";
+import { Routes } from "@/app/lib/constants";
 
 export const ReportsTable = (props: {
   myrs: MyrSparseSerialized[];
   totalNumbeOfMyrs: number;
-  navigationAction: (id: number) => Promise<void>;
+  userIsGov: boolean;
 }) => {
+  const router = useRouter();
+  const navigationAction = useCallback(async (id: number) => {
+    router.push(`${Routes.ComplianceReporting}/${id}`);
+  }, []);
   const columnHelper = createColumnHelper<MyrSparseSerialized>();
   const modelYearEnumMap = useMemo(() => {
     return getModelYearEnumsToStringsMap();
@@ -36,11 +42,7 @@ export const ReportsTable = (props: {
         header: () => <span>Status</span>,
       }),
     ];
-    if (
-      props.myrs.some((myr) => {
-        return myr.organization ? true : false;
-      })
-    ) {
+    if (props.userIsGov) {
       result.unshift(
         columnHelper.accessor((row) => row.organization?.name, {
           id: "organization",
@@ -59,14 +61,14 @@ export const ReportsTable = (props: {
       }),
     );
     return result;
-  }, [columnHelper, props.myrs]);
+  }, [columnHelper, props.myrs, props.userIsGov]);
 
   return (
     <Table<MyrSparseSerialized>
       columns={columns}
       data={props.myrs}
       totalNumberOfRecords={props.totalNumbeOfMyrs}
-      navigationAction={props.navigationAction}
+      navigationAction={navigationAction}
     />
   );
 };

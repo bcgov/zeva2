@@ -34,11 +34,11 @@ export const AnalystActions = (props: {
         }
       }
     });
-  }, [props.id, comment, router]);
+  }, [props.id, comment]);
 
   const handleGoToConductAssessment = useCallback(() => {
     router.push(`${Routes.ComplianceReporting}/${props.id}/assessment`);
-  }, [props.id, router]);
+  }, [props.id]);
 
   if (
     props.status !== ModelYearReportStatus.SUBMITTED_TO_GOVERNMENT &&

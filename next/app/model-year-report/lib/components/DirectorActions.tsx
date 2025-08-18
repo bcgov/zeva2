@@ -65,7 +65,7 @@ export const DirectorActions = (props: {
         }
       }
     });
-  }, [props.id, comment, router]);
+  }, [props.id, comment]);
 
   const handleIssueAssessment = useCallback(() => {
     setError("");
@@ -84,7 +84,7 @@ export const DirectorActions = (props: {
         }
       }
     });
-  }, [props.id, assessmentResult, comment, router]);
+  }, [props.id, assessmentResult, comment]);
 
   if (props.status !== ModelYearReportStatus.SUBMITTED_TO_DIRECTOR) {
     return null;

@@ -14,7 +14,7 @@ export const SupplierActions = (props: {
 
   const handleGoToResubmit = useCallback(() => {
     router.push(`${Routes.ComplianceReporting}/${props.id}/resubmit`);
-  }, [props.id, router]);
+  }, [props.id]);
 
   if (props.status !== ModelYearReportStatus.RETURNED_TO_SUPPLIER) {
     return null;
