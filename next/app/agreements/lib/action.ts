@@ -125,7 +125,7 @@ export const addComment = async (
   if (!userIsGov) {
     return null;
   }
-  await new Promise((resolve) => setTimeout(resolve, 5000));
+  
   try {
     return await prisma.agreementHistory.create({
       data: {
