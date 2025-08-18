@@ -1,4 +1,5 @@
 import type { Config } from "tailwindcss";
+import { PluginAPI } from "tailwindcss/types/config";
 
 export default {
   content: [
@@ -27,8 +28,27 @@ export default {
         formBackgroundGrey: "#fcfcfc",
         navBorder: "#dee2e6",
         primaryYellow: "#fcba19",
+        textShadow: {
+          sm: "1px 1px 2px rgba(0,0,0,0.5)",
+          DEFAULT: "2px 2px 4px rgba(0,0,0,0.5)",
+          lg: "3px 3px 6px rgba(0,0,0,0.5)",
+        },
       },
     },
   },
-  plugins: [],
+  plugins: [
+    function (helpers: PluginAPI) {
+      helpers.addUtilities({
+        ".text-shadow": {
+          textShadow: "1px 1px 2px rgba(0,0,0,0.7)",
+        },
+        ".text-shadow-sm": {
+          textShadow: "1px 1px 2px rgba(0,0,0,0.5)",
+        },
+        ".text-shadow-lg": {
+          textShadow: "3px 3px 6px rgba(0,0,0,0.5)",
+        },
+      });
+    },
+  ],
 } satisfies Config;

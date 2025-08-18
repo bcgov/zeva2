@@ -1,72 +1,66 @@
+import { Prisma, VehicleZevType, ZevClass } from "@/prisma/generated/client";
+import { Decimal } from "@/prisma/generated/client/runtime/library";
+import { AttachmentsSubDirectory } from "./constants";
 import {
-  isModelYear,
-  isVehicleStatus,
-  isVehicleZevType,
-  isZevClass,
-} from "@/app/lib/utils/typeGuards";
-import { getEnumOr } from "@/lib/utils/getEnums";
-import {
-  ModelYear,
-  Prisma,
-  VehicleStatus,
-  VehicleZevType,
-  ZevClass,
-} from "@/prisma/generated/client";
-import { Decimal } from "@prisma/client/runtime/library";
+  getMatchingTerms,
+  getStringsToModelYearsEnumsMap,
+  getStringsToVehicleStatusEnumsMap,
+  getStringsToZevClassEnumsMap,
+} from "@/app/lib/utils/enumMaps";
+
+export const getOrConditions = <T>(
+  terms: T[],
+  key: keyof Prisma.VehicleWhereInput,
+) => {
+  if (terms.length === 0) {
+    return [{ id: -1 }];
+  }
+  return terms.map((t) => {
+    return { [key]: t };
+  });
+};
 
 export const getWhereClause = (filters: {
   [key: string]: string;
 }): Prisma.VehicleWhereInput => {
   const result: Prisma.VehicleWhereInput = {};
   result.AND = [];
+  const statusMap = getStringsToVehicleStatusEnumsMap();
+  const zevClassMap = getStringsToZevClassEnumsMap();
+  const modelYearsMap = getStringsToModelYearsEnumsMap();
   for (const [key, rawValue] of Object.entries(filters)) {
     const value = rawValue.trim();
-    if (key === "organization") {
+    if (key === "id" || key === "legacyId") {
+      result[key] = parseInt(value, 10);
+    } else if (key === "organization") {
       result[key] = {
         is: { name: { contains: value, mode: "insensitive" } },
       };
     } else if (key === "status") {
-      const upperCaseValue = value.toUpperCase();
-      const statuses = Object.keys(VehicleStatus);
-      const matches = statuses.filter((s) => {
-        return s.replaceAll("_", "").includes(upperCaseValue);
+      result.AND.push({
+        OR: getOrConditions(getMatchingTerms(statusMap, value), key),
       });
-      result.AND.push({ OR: getEnumOr("status", matches, isVehicleStatus) });
     } else if (key === "modelName" || key === "make") {
       result[key] = {
         contains: value,
         mode: "insensitive",
       };
-    } else if (key === "creditValue" || key === "range") {
+    } else if (key === "numberOfUnits" || key === "range") {
       const decValue = new Decimal(value);
       result[key] = {
         equals: decValue.toNumber(),
       };
     } else if (key === "zevClass") {
-      const upperCaseValue = value.toUpperCase();
-      const zevClasses = Object.keys(ZevClass);
-      const matches = zevClasses.filter((zc) => {
-        return zc.includes(upperCaseValue);
-      });
-      result.AND.push({ OR: getEnumOr("zevClass", matches, isZevClass) });
-    } else if (key === "modelYear") {
-      const modelYears = Object.keys(ModelYear);
-      const matches = modelYears.filter((my) => {
-        const year = my.split("_")[1];
-        if (year) {
-          return year.includes(value);
-        }
-        return false;
-      });
-      result.AND.push({ OR: getEnumOr("modelYear", matches, isModelYear) });
-    } else if (key === "vehicleZevType") {
-      const lowerCaseValue = value.toLowerCase();
-      const zevTypes = Object.keys(VehicleZevType);
-      const matches = zevTypes.filter((zt) => {
-        return zt.toLowerCase().includes(lowerCaseValue);
-      });
       result.AND.push({
-        OR: getEnumOr("vehicleZevType", matches, isVehicleZevType),
+        OR: getOrConditions(getMatchingTerms(zevClassMap, value), key),
+      });
+    } else if (key === "modelYear") {
+      result.AND.push({
+        OR: getOrConditions(getMatchingTerms(modelYearsMap, value), key),
+      });
+    } else if (key === "vehicleZevType") {
+      result.AND.push({
+        OR: getOrConditions(getMatchingTerms(VehicleZevType, value), key),
       });
     } else if (key === "isActive") {
       const lowerCaseValue = value.toLowerCase();
@@ -93,11 +87,13 @@ export const getOrderByClause = (
   for (const [key, value] of Object.entries(sorts)) {
     if (value === "asc" || value === "desc") {
       if (
+        key === "id" ||
+        key === "legacyId" ||
         key === "status" ||
         key === "modelName" ||
         key === "make" ||
         key === "validationStatus" ||
-        key === "creditValue" ||
+        key === "numberOfUnits" ||
         key === "range" ||
         key === "zevClass" ||
         key === "modelYear" ||
@@ -114,4 +110,41 @@ export const getOrderByClause = (
     result.push({ id: "desc" });
   }
   return result;
+};
+
+export const getNumberOfUnits = (
+  zevClass: ZevClass,
+  range: number,
+  us06RangeGte16: boolean,
+): Decimal => {
+  const currentTs = new Date();
+  const threshold = new Date("2026-10-01T00:00:00");
+  const rangeDec = new Decimal(range);
+  if (currentTs < threshold) {
+    if (zevClass === ZevClass.A) {
+      const numberOfUnits = Decimal.min(
+        4,
+        rangeDec.times("0.006214").plus("0.5"),
+      );
+      return numberOfUnits.toDecimalPlaces(2);
+    }
+    if (zevClass === ZevClass.B) {
+      let numberOfUnits = rangeDec.times("0.006214").plus("0.3");
+      if (us06RangeGte16) {
+        return Decimal.min(numberOfUnits.plus("0.2"), "1.30");
+      }
+      return Decimal.min(numberOfUnits, "1.10");
+    }
+  }
+  if (zevClass === ZevClass.A || zevClass === ZevClass.B) {
+    return new Decimal(1);
+  }
+  throw new Error("Cannot calculate the credit value for this vehicle!");
+};
+
+export const getAttachmentFullObjectName = (
+  orgId: number,
+  objectName: string,
+) => {
+  return `${orgId}/${AttachmentsSubDirectory.VehicleAttachments}/${objectName}`;
 };

@@ -6,9 +6,9 @@ import { VehicleTable } from "./VehicleTable";
 
 export type VehicleSparseSerialized = Omit<
   VehicleSparse,
-  "creditValue" | "isActive"
+  "numberOfUnits" | "isActive"
 > & {
-  creditValue: string | undefined;
+  numberOfUnits: string | undefined;
   isActive: string;
 };
 
@@ -33,7 +33,7 @@ export const VehicleList = async (props: {
     (vehicle) => {
       return {
         ...vehicle,
-        creditValue: vehicle.creditValue?.toString(),
+        numberOfUnits: vehicle.numberOfUnits.toString(),
         isActive: vehicle.isActive ? "Yes" : "No",
       };
     },

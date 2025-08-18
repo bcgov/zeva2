@@ -1,0 +1,27 @@
+import { getUserInfo } from "@/auth";
+import { AssessmentForm } from "../../lib/components/AssessmentForm";
+import { getModelYearReport } from "../../lib/data";
+
+const Page = async (props: { params: Promise<{ id: string }> }) => {
+  const args = await props.params;
+  const id = parseInt(args.id, 10);
+  const { userIsGov } = await getUserInfo();
+  const report = await getModelYearReport(id);
+  if (!userIsGov || !report) {
+    return null;
+  }
+  return (
+    <div className="max-w-xl mx-auto p-4">
+      <h1 className="text-xl font-bold mb-4">Assess a Model Year Report</h1>
+      <AssessmentForm
+        id={report.id}
+        orgId={report.organizationId}
+        orgName={report.organization.name}
+        status={report.status}
+        modelYear={report.modelYear}
+      />
+    </div>
+  );
+};
+
+export default Page;

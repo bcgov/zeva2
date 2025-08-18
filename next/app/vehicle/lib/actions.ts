@@ -2,7 +2,7 @@
 
 import { getUserInfo } from "@/auth";
 import { prisma } from "@/lib/prisma";
-import { VehicleStatus, Vehicle } from "@/prisma/generated/client";
+import { VehicleStatus, Vehicle, Prisma } from "@/prisma/generated/client";
 import {
   createAttachments,
   createHistory,
@@ -15,95 +15,13 @@ import {
   getErrorActionResponse,
   getSuccessActionResponse,
 } from "@/app/lib/utils/actionResponse";
-import { getPresignedPutObjectUrl } from "@/app/lib/minio";
+import {
+  getPresignedGetObjectUrl,
+  getPresignedPutObjectUrl,
+} from "@/app/lib/minio";
 import { randomUUID } from "crypto";
-
-export async function createVehicleComment(vehicleId: number, comment: string) {
-  const { userIsGov, userId, userOrgId } = await getUserInfo();
-  const createComment = async () => {
-    return await prisma.vehicleComment.create({
-      data: {
-        comment,
-        vehicleId,
-        createUserId: userId,
-      },
-    });
-  };
-  // not sure about this logic; may need to change it later;
-  // maybe adding vehicle comments is just for gov users?
-  if (comment) {
-    if (userIsGov) {
-      createComment();
-    } else {
-      const vehicle = await prisma.vehicle.findUnique({
-        where: { id: vehicleId },
-      });
-      if (vehicle && vehicle.organizationId === userOrgId) {
-        createComment();
-      }
-    }
-  }
-}
-
-export async function updateStatus(
-  vehicleId: number,
-  newStatus: VehicleStatus,
-): Promise<ErrorOrSuccessActionResponse> {
-  const { userId, userIsGov, userOrgId } = await getUserInfo();
-
-  if (!userIsGov) {
-    const { organizationId: vehicleOrgId, status } =
-      await prisma.vehicle.findUniqueOrThrow({
-        where: {
-          id: vehicleId,
-        },
-      });
-    if (userOrgId !== vehicleOrgId) {
-      return getErrorActionResponse("Permission Denied!");
-    }
-    if (
-      newStatus !== VehicleStatus.SUBMITTED &&
-      newStatus !== VehicleStatus.DELETED
-    ) {
-      return getErrorActionResponse(
-        "Only government users can complete this status change!",
-      );
-    }
-    if (
-      (status !== VehicleStatus.DRAFT &&
-        newStatus == VehicleStatus.SUBMITTED) ||
-      newStatus == VehicleStatus.DELETED
-    ) {
-      return getErrorActionResponse("That status change cannot be performed!");
-    }
-  }
-  await prisma.$transaction(async (tx) => {
-    await tx.vehicle.update({
-      where: { id: vehicleId },
-      data: { status: newStatus },
-    });
-    const mostRecentHistory = await tx.vehicleChangeHistory.findFirst({
-      where: { vehicleId: vehicleId },
-      omit: {
-        id: true,
-        createTimestamp: true,
-      },
-      orderBy: { createTimestamp: "desc" },
-    });
-    if (mostRecentHistory) {
-      await tx.vehicleChangeHistory.create({
-        data: {
-          ...mostRecentHistory,
-          createUserId: userId,
-          validationStatus: newStatus,
-        },
-      });
-    } else {
-      // do something here? Or will there always be a mostRecentHistory (one is created when a vehicle is created)?
-    }
-  });
-  return getSuccessActionResponse();
-}
+import { getAttachmentFullObjectName, getNumberOfUnits } from "./utils";
+import { getVehicleClass, getZevClass } from "./utilsClient";
 
 export type VehiclePutObjectData = {
   objectName: string;
@@ -113,10 +31,13 @@ export type VehiclePutObjectData = {
 export const getPutObjectData = async (
   numberOfFiles: number,
 ): Promise<VehiclePutObjectData[]> => {
+  const { userOrgId } = await getUserInfo();
   const result: VehiclePutObjectData[] = [];
   for (let i = 0; i < numberOfFiles; i++) {
     const objectName = randomUUID();
-    const url = await getPresignedPutObjectUrl(objectName);
+    const url = await getPresignedPutObjectUrl(
+      getAttachmentFullObjectName(userOrgId, objectName),
+    );
     result.push({
       objectName,
       url,
@@ -127,72 +48,159 @@ export const getPutObjectData = async (
 
 export type VehiclePayload = Omit<
   Vehicle,
-  "id" | "organizationId" | "weightKg" | "isActive"
-> & {
-  id?: number;
-  weightKg: string;
-};
+  | "id"
+  | "legacyId"
+  | "organizationId"
+  | "status"
+  | "isActive"
+  | "vehicleClass"
+  | "zevClass"
+  | "numberOfUnits"
+>;
 
 export type VehicleFile = {
   filename: string;
   objectName: string;
-  size: number;
-  mimeType?: string;
 };
 
-export async function createOrUpdateVehicle(
+export async function submitVehicle(
   data: VehiclePayload,
   files: VehicleFile[],
+  comment?: string,
 ): Promise<DataOrErrorActionResponse<number>> {
   const { userIsGov, userId, userOrgId } = await getUserInfo();
-  const vehicleId = data.id;
+  if (userIsGov) {
+    return getErrorActionResponse("Government users cannot submit vehicles!");
+  }
+  let vehicleId = NaN;
+  const modelYear = data.modelYear;
+  const range = data.range;
   try {
-    if (!vehicleId) {
-      // create new vehicle:
-      if (userIsGov) {
-        return getErrorActionResponse(
-          "Government users cannot create vehicles!",
-        );
-      }
-      let newVehicleId = NaN;
-      await prisma.$transaction(async (tx) => {
-        const newVehicle = await tx.vehicle.create({
-          data: { ...data, organizationId: userOrgId, isActive: true },
-        });
-        newVehicleId = newVehicle.id;
-        await createAttachments(newVehicleId, userId, files, tx);
-        await createHistory(newVehicle, userId, tx);
-      });
-      return getDataActionResponse<number>(newVehicleId);
-    }
-    // update vehicle:
-    const vehicleToUpdate = await prisma.vehicle.findUnique({
-      where: {
-        id: vehicleId,
-      },
-    });
-    if (
-      !vehicleToUpdate ||
-      (!userIsGov && userOrgId !== vehicleToUpdate.organizationId)
-    ) {
-      return getErrorActionResponse("Unauthorized!");
-    }
+    const vehicleClass = getVehicleClass(modelYear, data.weight);
+    const zevClass = getZevClass(modelYear, data.vehicleZevType, range);
+    const numberOfUnits = getNumberOfUnits(
+      zevClass,
+      range,
+      data.us06RangeGte16,
+    );
     await prisma.$transaction(async (tx) => {
-      const updatedVehicle = await tx.vehicle.update({
-        where: {
-          id: vehicleId,
+      const newVehicle = await tx.vehicle.create({
+        data: {
+          ...data,
+          organizationId: userOrgId,
+          status: VehicleStatus.SUBMITTED,
+          isActive: true,
+          vehicleClass,
+          zevClass,
+          numberOfUnits,
         },
-        data: { ...data, organizationId: userOrgId },
       });
-      await createAttachments(vehicleId, userId, files, tx);
-      await createHistory(updatedVehicle, userId, tx);
+      vehicleId = newVehicle.id;
+      await createAttachments(vehicleId, files, tx);
+      await createHistory(
+        vehicleId,
+        userId,
+        VehicleStatus.SUBMITTED,
+        comment,
+        tx,
+      );
     });
-    return getDataActionResponse<number>(vehicleId);
   } catch (e) {
-    await deleteAttachments(files);
+    await deleteAttachments(userOrgId, files);
     if (e instanceof Error) {
       return getErrorActionResponse(e.message);
     }
     throw e;
   }
+  return getDataActionResponse<number>(vehicleId);
 }
+
+export const updateStatus = async (
+  id: number,
+  status: VehicleStatus,
+  comment?: string,
+): Promise<ErrorOrSuccessActionResponse> => {
+  const { userIsGov, userId, userOrgId } = await getUserInfo();
+  const whereClause: Prisma.VehicleWhereUniqueInput = { id };
+  if (!userIsGov) {
+    whereClause.organizationId = userOrgId;
+  }
+  const vehicle = await prisma.vehicle.findUnique({
+    where: whereClause,
+    select: {
+      status: true,
+    },
+  });
+  if (!vehicle) {
+    return getErrorActionResponse("Vehicle not found!");
+  }
+  const currentStatus = vehicle.status;
+  if (
+    (userIsGov &&
+      currentStatus === VehicleStatus.SUBMITTED &&
+      (status === VehicleStatus.REJECTED ||
+        status === VehicleStatus.VALIDATED)) ||
+    (!userIsGov &&
+      currentStatus === VehicleStatus.REJECTED &&
+      status === VehicleStatus.DELETED)
+  ) {
+    await prisma.$transaction(async (tx) => {
+      await tx.vehicle.update({
+        where: {
+          id,
+        },
+        data: {
+          status,
+        },
+      });
+      await createHistory(id, userId, status, comment, tx);
+    });
+    return getSuccessActionResponse();
+  }
+  return getErrorActionResponse("Invalid Action!");
+};
+
+export type AttachmentPayload = {
+  fileName: string;
+  url: string;
+};
+
+export const getAttachmentDownloadUrls = async (
+  id: number,
+): Promise<DataOrErrorActionResponse<AttachmentPayload[]>> => {
+  const { userIsGov, userOrgId } = await getUserInfo();
+  const whereClause: Prisma.VehicleAttachmentWhereInput = { vehicleId: id };
+  if (!userIsGov) {
+    whereClause.vehicle = {
+      organizationId: userOrgId,
+    };
+  }
+  const attachments = await prisma.vehicleAttachment.findMany({
+    where: whereClause,
+    select: {
+      filename: true,
+      minioObjectName: true,
+      vehicle: {
+        select: {
+          organizationId: true,
+        },
+      },
+    },
+  });
+  if (attachments.length === 0) {
+    return getErrorActionResponse("No attachments found!");
+  }
+  const result: AttachmentPayload[] = [];
+  for (const attachment of attachments) {
+    result.push({
+      fileName: attachment.filename,
+      url: await getPresignedGetObjectUrl(
+        getAttachmentFullObjectName(
+          attachment.vehicle.organizationId,
+          attachment.minioObjectName,
+        ),
+      ),
+    });
+  }
+  return getDataActionResponse(result);
+};

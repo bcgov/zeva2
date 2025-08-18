@@ -421,13 +421,7 @@ export const getWarningsMap = (
     result[vin] = [];
     const vehicle = data.vehicle;
     const icbcRecord = icbcMap[vin];
-    if (
-      vehicle.status !== VehicleStatus.VALIDATED ||
-      !vehicle.isActive ||
-      !vehicle.creditValue ||
-      !vehicle.zevClass ||
-      !vehicle.vehicleClass
-    ) {
+    if (vehicle.status !== VehicleStatus.VALIDATED || !vehicle.isActive) {
       result[vin].push("1");
     }
     if (!icbcRecord) {

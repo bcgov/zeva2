@@ -7,38 +7,27 @@ import {
   ZevUnitTransaction,
 } from "@/prisma/generated/client";
 import { Decimal } from "@/prisma/generated/client/runtime/library";
-import {
-  vehicleClasses,
-  zevClasses,
-  modelYears,
-  specialZevClasses,
-  otherZevClasses,
-} from "@/lib/constants/zevUnit";
 import { getCompliancePeriod } from "../../app/lib/utils/complianceYear";
 import { modelYearEnumToInt } from "./convertEnums";
+import {
+  isModelYear,
+  isTransactionType,
+  isVehicleClass,
+  isZevClass,
+} from "@/app/lib/utils/typeGuards";
+import { specialComplianceRatios } from "@/app/lib/constants/complianceRatio";
+import { supplierZevClasses } from "@/app/model-year-report/lib/constants";
 
-interface ZevUnitRecordBase {
+// both ZevUnitTransactions and ZevUnitEndingBalances can be of type ZevUnitRecord;
+// a ZevUnitEndingBalance will need to be modified slightly
+// (its finalNumberOfUnits value will need to be copied over to a numberOfUnits field)
+export type ZevUnitRecord = {
   numberOfUnits: Decimal;
   vehicleClass: VehicleClass;
   zevClass: ZevClass;
   modelYear: ModelYear;
   type: TransactionType;
-}
-
-type ZevUnitTransactionSparse = Partial<
-  Omit<ZevUnitTransaction, keyof ZevUnitRecordBase>
->;
-type ZevUnitEndingBalanceSparse = Partial<
-  Omit<ZevUnitEndingBalance, keyof ZevUnitRecordBase>
->;
-
-// both ZevUnitTransactions and ZevUnitEndingBalances can be of type ZevUnitRecord;
-// a ZevUnitEndingBalance will need to be modified slightly
-// (its finalNumberOfUnits value will need to be copied over to a numberOfUnits field)
-export interface ZevUnitRecord
-  extends ZevUnitTransactionSparse,
-    ZevUnitEndingBalanceSparse,
-    ZevUnitRecordBase {}
+};
 
 // a structure of ZevUnitRecords that may prove useful for rendering purposes
 export type ZevUnitRecordsObj = Partial<
@@ -58,26 +47,55 @@ export class UnexpectedDebit extends Error {}
 export class UncoveredTransfer extends Error {}
 export class IncompleteOrdering extends Error {}
 
-// to be used when generating a supplier's MYR/Supplementary/Assessment/Reassessment;
+// to satisfy reporting requirements (sections 17(5)(c)(i), 19(1)(b), 19(1)(c))
 // inputed zevUnitRecords should consist of:
 // (1) the supplier's ending balance records with compliance year N (if any exist), and
 // (2) the supplier's transactions with a timestamp associated with year N+1, and
 // (3) the supplier's obligation reductions/adjustments associated with year N+1;
-// also, zevClassesOrdered should be a total ordering of zevClasses derived from the supplier's recorded preference
+// zevClassesOrdered should be a total ordering of zevClasses derived from the supplier's recorded preference
+// model year should be the reported model year
+// returns [balance, creditsThatWereOffset]
 export const calculateBalance = (
   zevUnitRecords: ZevUnitRecord[],
   zevClassesOrdered: ZevClass[],
-) => {
+  modelYear: ModelYear,
+): [ZevUnitRecord[], ZevUnitRecord[]] => {
   let refinedRecords = applyTransfersAway(zevUnitRecords);
-  const balanceBeforeOffsets = getSummedZevUnitRecordsObj(refinedRecords);
-  refinedRecords = offsetSpecialDebits(refinedRecords);
-  refinedRecords = offsetUnspecifiedDebits(refinedRecords, zevClassesOrdered);
-  refinedRecords = offsetOtherDebitsWithUnspecifiedCredits(refinedRecords);
-  refinedRecords = offsetOtherDebitsWithMatchingCredits(refinedRecords);
-  return {
-    balanceBeforeOffsets: balanceBeforeOffsets,
-    finalBalance: getSummedZevUnitRecordsObj(refinedRecords),
-  };
+  let creditsThatWereOffsetBySpecialDebits: ZevUnitRecord[] = [];
+  let creditsThatWereOffsetByUnspecifiedDebits: ZevUnitRecord[] = [];
+  let unspecifiedCreditsThatWereOffsetByOtherDebits: ZevUnitRecord[] = [];
+  let matchingCreditsThatWereOffsetByOtherDebits: ZevUnitRecord[] = [];
+  [refinedRecords, creditsThatWereOffsetBySpecialDebits] =
+    offsetSpecialDebits(refinedRecords);
+  [refinedRecords, creditsThatWereOffsetByUnspecifiedDebits] =
+    offsetUnspecifiedDebits(refinedRecords, zevClassesOrdered);
+  [refinedRecords, unspecifiedCreditsThatWereOffsetByOtherDebits] =
+    offsetOtherDebitsWithUnspecifiedCredits(refinedRecords);
+  [refinedRecords, matchingCreditsThatWereOffsetByOtherDebits] =
+    offsetOtherDebitsWithMatchingCredits(refinedRecords);
+  let balance = flattenZevUnitRecords(refinedRecords);
+  if (balance.length === 0) {
+    Object.values(VehicleClass).forEach((vehicleClass) => {
+      Object.values(supplierZevClasses).forEach((zevClass) => {
+        balance.push({
+          type: TransactionType.CREDIT,
+          vehicleClass,
+          zevClass,
+          modelYear,
+          numberOfUnits: new Decimal(0),
+        });
+      });
+    });
+  }
+  return [
+    balance,
+    flattenZevUnitRecords([
+      ...creditsThatWereOffsetBySpecialDebits,
+      ...creditsThatWereOffsetByUnspecifiedDebits,
+      ...unspecifiedCreditsThatWereOffsetByOtherDebits,
+      ...matchingCreditsThatWereOffsetByOtherDebits,
+    ]),
+  ];
 };
 
 // for use when not generating a MYR/Supplementary/Assessment/Reassessment
@@ -209,6 +227,39 @@ export const getSummedZevUnitRecordsObj = (
   return result;
 };
 
+export const flattenZevUnitRecords = (
+  records: ZevUnitRecord[],
+): ZevUnitRecord[] => {
+  const result: ZevUnitRecord[] = [];
+  const zevUnitsMap = getSummedZevUnitRecordsObj(records);
+  Object.entries(zevUnitsMap).forEach(([type, vehicleClassMap]) => {
+    if (isTransactionType(type)) {
+      Object.entries(vehicleClassMap).forEach(([vehicleClass, zevClassMap]) => {
+        if (isVehicleClass(vehicleClass)) {
+          Object.entries(zevClassMap).forEach(([zevClass, modelYearsMap]) => {
+            if (isZevClass(zevClass)) {
+              Object.entries(modelYearsMap).forEach(
+                ([modelYear, numberOfUnits]) => {
+                  if (isModelYear(modelYear)) {
+                    result.push({
+                      type,
+                      vehicleClass,
+                      zevClass,
+                      modelYear,
+                      numberOfUnits,
+                    });
+                  }
+                },
+              );
+            }
+          });
+        }
+      });
+    }
+  });
+  return result.filter((record) => !record.numberOfUnits.equals(0));
+};
+
 // a transfer away is not a debit subject to section 12 offsetting rules;
 // e.g. if a supplier has 1 (REPORTABLE, A, 2020) credit and 1 (REPORTABLE, A, 2021) credit,
 // and they transfer away the latter, their final balance is 1 (REPORTABLE, A, 2020) credit,
@@ -253,13 +304,13 @@ export const applyTransfersAway = (zevUnitRecords: ZevUnitRecord[]) => {
     }
   }
 
-  for (const vehicleClass of vehicleClasses) {
-    for (const zevClass of zevClasses) {
-      for (const modelYear of modelYears) {
+  for (const vehicleClass of Object.values(VehicleClass)) {
+    for (const zevClass of Object.values(ZevClass)) {
+      for (const modelYear of Object.values(ModelYear)) {
         const credits = creditsMap[vehicleClass]?.[zevClass]?.[modelYear] ?? [];
         const transfersAway =
           transfersAwayMap[vehicleClass]?.[zevClass]?.[modelYear] ?? [];
-        const offsettedRecords = offset(credits, transfersAway);
+        const [offsettedRecords] = offset(credits, transfersAway);
         result.push(...offsettedRecords);
       }
     }
@@ -275,22 +326,26 @@ export const applyTransfersAway = (zevUnitRecords: ZevUnitRecord[]) => {
 
 // section 12(2)(a)
 export const offsetSpecialDebits = (zevUnitRecords: ZevUnitRecord[]) => {
-  return offsetCertainDebitsBySameZevClass(zevUnitRecords, specialZevClasses);
+  return offsetCertainDebitsBySameZevClass(
+    zevUnitRecords,
+    getSpecialZevClassPairs(),
+  );
 };
 
 // section 12(2)(b)
 export const offsetUnspecifiedDebits = (
   zevUnitRecords: ZevUnitRecord[],
   zevClassesOrdered: ZevClass[],
-) => {
+): [ZevUnitRecord[], ZevUnitRecord[]] => {
   const zevClassesSet = new Set(zevClassesOrdered);
-  const isTotallyOrdered = zevClasses.every((zevClass) =>
+  const isTotallyOrdered = Object.values(ZevClass).every((zevClass) =>
     zevClassesSet.has(zevClass),
   );
   if (!isTotallyOrdered) {
     throw new IncompleteOrdering();
   }
   const result = [];
+  const offsettedCreditsResult = [];
   type ZevUnitsMap = Partial<
     Record<VehicleClass, Partial<Record<ZevClass, ZevUnitRecord[]>>>
   >;
@@ -331,27 +386,33 @@ export const offsetUnspecifiedDebits = (
   for (const debits of Object.values(debitsMap)) {
     sortByModelYear(debits);
   }
-  for (const vehicleClass of vehicleClasses) {
+  for (const vehicleClass of Object.values(VehicleClass)) {
     const creditsByVehicleClass = [];
     const debits = debitsMap[vehicleClass] ?? [];
     for (const zevClass of zevClassesOrdered) {
       const credits = creditsMap[vehicleClass]?.[zevClass] ?? [];
       creditsByVehicleClass.push(...credits);
     }
-    const offsettedRecords = offset(creditsByVehicleClass, debits);
-    result.push(...offsettedRecords);
+    const [resultOfOffset, offsettedCredits] = offset(
+      creditsByVehicleClass,
+      debits,
+    );
+    result.push(...resultOfOffset);
+    offsettedCreditsResult.push(...offsettedCredits);
   }
-  return result;
+  return [result, offsettedCreditsResult];
 };
 
 // section 12(2)(c)(i)
 export const offsetOtherDebitsWithUnspecifiedCredits = (
   zevUnitRecords: ZevUnitRecord[],
-) => {
+): [ZevUnitRecord[], ZevUnitRecord[]] => {
   const result = [];
+  const offsettedCreditsResult = [];
   type ZevUnitsMap = Partial<Record<VehicleClass, ZevUnitRecord[]>>;
   const creditsMap: ZevUnitsMap = {};
   const debitsMap: ZevUnitsMap = {};
+  const otherZevClassPairs = getOtherZevClassPairs();
 
   for (const record of zevUnitRecords) {
     let map = null;
@@ -360,12 +421,18 @@ export const offsetOtherDebitsWithUnspecifiedCredits = (
     const zevClass = record.zevClass;
     if (
       recordType === TransactionType.CREDIT &&
-      zevClass === ZevClass.UNSPECIFIED
+      zevClass === ZevClass.UNSPECIFIED &&
+      otherZevClassPairs.some(
+        ([otherVehicleClass]) => vehicleClass === otherVehicleClass,
+      )
     ) {
       map = creditsMap;
     } else if (
       recordType === TransactionType.DEBIT &&
-      otherZevClasses.some((otherClass) => zevClass === otherClass)
+      otherZevClassPairs.some(
+        ([otherVehicleClass, otherZevClass]) =>
+          vehicleClass === otherVehicleClass && zevClass === otherZevClass,
+      )
     ) {
       map = debitsMap;
     }
@@ -384,27 +451,32 @@ export const offsetOtherDebitsWithUnspecifiedCredits = (
       sortByModelYear(records);
     }
   }
-  for (const vehicleClass of vehicleClasses) {
+  for (const vehicleClass of Object.values(VehicleClass)) {
     const credits = creditsMap[vehicleClass] ?? [];
     const debits = debitsMap[vehicleClass] ?? [];
-    const offsettedRecords = offset(credits, debits);
-    result.push(...offsettedRecords);
+    const [resultOfOffset, offsettedCredits] = offset(credits, debits);
+    result.push(...resultOfOffset);
+    offsettedCreditsResult.push(...offsettedCredits);
   }
-  return result;
+  return [result, offsettedCreditsResult];
 };
 
 // section 12(2)(c)(ii)
 export const offsetOtherDebitsWithMatchingCredits = (
   zevUnitRecords: ZevUnitRecord[],
 ) => {
-  return offsetCertainDebitsBySameZevClass(zevUnitRecords, otherZevClasses);
+  return offsetCertainDebitsBySameZevClass(
+    zevUnitRecords,
+    getOtherZevClassPairs(),
+  );
 };
 
 const offsetCertainDebitsBySameZevClass = (
   zevUnitRecords: ZevUnitRecord[],
-  debitZevClasses: ZevClass[],
-) => {
+  zevClassPairs: [VehicleClass, ZevClass][],
+): [ZevUnitRecord[], ZevUnitRecord[]] => {
   const result = [];
+  const offsettedCreditsResult = [];
   type ZevUnitsMap = Partial<
     Record<VehicleClass, Partial<Record<ZevClass, ZevUnitRecord[]>>>
   >;
@@ -421,7 +493,13 @@ const offsetCertainDebitsBySameZevClass = (
     } else if (recordType === TransactionType.DEBIT) {
       map = debitsMap;
     }
-    if (map && debitZevClasses.some((zevClass) => zevClass === zevClass)) {
+    if (
+      map &&
+      zevClassPairs.some(
+        ([pairVehicleClass, pairZevClass]) =>
+          vehicleClass === pairVehicleClass && zevClass === pairZevClass,
+      )
+    ) {
       if (!map[vehicleClass]) {
         map[vehicleClass] = {};
       }
@@ -441,30 +519,32 @@ const offsetCertainDebitsBySameZevClass = (
       }
     }
   }
-  for (const vehicleClass of vehicleClasses) {
-    for (const zevClass of debitZevClasses) {
+  for (const vehicleClass of Object.values(VehicleClass)) {
+    for (const zevClass of Object.values(ZevClass)) {
       const credits = creditsMap[vehicleClass]?.[zevClass] ?? [];
       const debits = debitsMap[vehicleClass]?.[zevClass] ?? [];
-      const offsettedRecords = offset(credits, debits);
-      result.push(...offsettedRecords);
+      const [resultOfOffset, offsettedCredits] = offset(credits, debits);
+      result.push(...resultOfOffset);
+      offsettedCreditsResult.push(...offsettedCredits);
     }
   }
-  return result;
+  return [result, offsettedCreditsResult];
 };
 
+// returns [resultOfOffset, creditsThatWereOffset]
 const offset = (
   credits: ZevUnitRecord[],
   debits: ZevUnitRecord[],
-): ZevUnitRecord[] => {
+): [ZevUnitRecord[], ZevUnitRecord[]] => {
   const creditSeries = getSeries(credits);
   const debitSeries = getSeries(debits);
   const creditSeriesLength = creditSeries.length;
   const debitSeriesLength = debitSeries.length;
   if (creditSeriesLength === 0) {
-    return debits;
+    return [debits, []];
   }
   if (debitSeriesLength === 0) {
-    return credits;
+    return [credits, []];
   }
   const creditSeriesLastElement = creditSeries[creditSeriesLength - 1];
   const debitSeriesLastElement = debitSeries[debitSeriesLength - 1];
@@ -482,13 +562,34 @@ const offset = (
     const series = greaterSeqAndSeries[1];
     for (const [index, term] of series.entries()) {
       if (lesserElement.lessThan(term)) {
-        const diff = term.minus(lesserElement);
-        const remainsOfRecord = { ...sequence[index], numberOfUnits: diff };
-        return [remainsOfRecord].concat(sequence.slice(index + 1));
+        const remainder = term.minus(lesserElement);
+        const recordInQuestion = sequence[index];
+        const remainsOfRecord = {
+          ...recordInQuestion,
+          numberOfUnits: remainder,
+        };
+        const result = [remainsOfRecord].concat(sequence.slice(index + 1));
+        if (recordInQuestion.type === TransactionType.CREDIT) {
+          const offsettedCredits: ZevUnitRecord[] = [];
+          const headOffsettedCredits = sequence.slice(0, index);
+          const takenAway = recordInQuestion.numberOfUnits.minus(remainder);
+          const takenAwayRecord = {
+            ...recordInQuestion,
+            numberOfUnits: takenAway,
+          };
+          const allOffsettedCredits = headOffsettedCredits.concat([
+            takenAwayRecord,
+          ]);
+          offsettedCredits.push(...allOffsettedCredits);
+          return [result, offsettedCredits];
+        }
+        // debits strictly dominated, credits all offset
+        return [result, credits];
       }
     }
   }
-  return [];
+  // credits = debits
+  return [[], credits];
 };
 
 const getSeries = (records: ZevUnitRecord[]): Decimal[] => {
@@ -514,4 +615,37 @@ const sortByModelYear = (zevUnitRecords: ZevUnitRecord[]) => {
     }
     return 0;
   });
+};
+
+export const getSpecialZevClassPairs = (): [VehicleClass, ZevClass][] => {
+  const result: [VehicleClass, ZevClass][] = [];
+  Object.entries(specialComplianceRatios).forEach(([vehicleClass, subMap]) => {
+    if (isVehicleClass(vehicleClass)) {
+      Object.keys(subMap).forEach((zevClass) => {
+        if (isZevClass(zevClass)) {
+          result.push([vehicleClass, zevClass]);
+        }
+      });
+    }
+  });
+  return result;
+};
+
+export const getOtherZevClassPairs = (): [VehicleClass, ZevClass][] => {
+  const result: [VehicleClass, ZevClass][] = [];
+  const specialZevClassPairs = getSpecialZevClassPairs();
+  Object.values(VehicleClass).forEach((vehicleClass) => {
+    Object.values(ZevClass).forEach((zevClass) => {
+      if (
+        !specialZevClassPairs.some(
+          ([specialVehicleClass, specialZevClass]) =>
+            specialVehicleClass === vehicleClass &&
+            specialZevClass === zevClass,
+        )
+      ) {
+        result.push([vehicleClass, zevClass]);
+      }
+    });
+  });
+  return result;
 };

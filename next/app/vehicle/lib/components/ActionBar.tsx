@@ -1,79 +1,85 @@
 "use client";
 
-import { useCallback, useTransition } from "react";
+import { useCallback, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { updateStatus } from "../actions";
 import { VehicleStatus } from "@/prisma/generated/client";
-import { SerializedVehicleWithOrg } from "../data";
+import { updateStatus } from "../actions";
+import { Button } from "@/app/lib/components";
+import { Routes } from "@/app/lib/constants";
+import { getNormalizedComment } from "@/app/credit-application/lib/utils";
 
-type Props = {
-  userIsGov: Boolean;
-  vehicle: SerializedVehicleWithOrg;
-};
-
-export const ActionBar = ({ userIsGov, vehicle }: Props) => {
+export const ActionBar = (props: {
+  userIsGov: boolean;
+  vehicleId: number;
+  vehicleStatus: VehicleStatus;
+}) => {
   const [isPending, startTransition] = useTransition();
   const router = useRouter();
+  const [error, setError] = useState("");
+  const [comment, setComment] = useState("");
 
   const handleSubmit = useCallback(
-    (choice: VehicleStatus) => {
+    (status: VehicleStatus) => {
       startTransition(async () => {
-        const response = await updateStatus(vehicle.id, choice);
+        const response = await updateStatus(
+          props.vehicleId,
+          status,
+          getNormalizedComment(comment),
+        );
         if (response.responseType === "error") {
-          console.error(response.message);
+          setError(response.message);
+        } else if (status === VehicleStatus.DELETED) {
+          router.push(Routes.Vehicle);
         } else {
           router.refresh();
         }
       });
     },
-    [vehicle.id, router],
+    [props.vehicleId, comment, router],
   );
+
+  const handleGoToNewVehicleForm = useCallback(() => {
+    router.push(`${Routes.Vehicle}/new`);
+  }, []);
 
   return (
     <div className="space-y-2">
-      {userIsGov && (
+      {error && <p className="text-red-600">{error}</p>}
+      {props.userIsGov && props.vehicleStatus === VehicleStatus.SUBMITTED && (
         <>
-          <button
+          <textarea
+            className="w-full border  p-2"
+            rows={3}
+            value={comment}
+            onChange={(e) => setComment(e.target.value)}
+            placeholder="Optional Comment"
+            disabled={isPending}
+          />
+          <Button
             onClick={() => handleSubmit(VehicleStatus.REJECTED)}
-            disabled={isPending || vehicle.status !== VehicleStatus.SUBMITTED}
+            disabled={isPending}
           >
             {isPending ? "..." : "Reject"}
-          </button>
-          <button
+          </Button>
+          <Button
             onClick={() => handleSubmit(VehicleStatus.VALIDATED)}
-            disabled={isPending || vehicle.status !== VehicleStatus.SUBMITTED}
+            disabled={isPending}
           >
             {isPending ? "..." : "Validate"}
-          </button>
-
-          <button
+          </Button>
+        </>
+      )}
+      {!props.userIsGov && props.vehicleStatus === VehicleStatus.REJECTED && (
+        <>
+          <Button
             onClick={() => handleSubmit(VehicleStatus.DELETED)}
             disabled={isPending}
           >
             {isPending ? "..." : "Delete"}
-          </button>
-          <button
-            onClick={() => handleSubmit(VehicleStatus.CHANGES_REQUESTED)}
-            disabled={isPending || vehicle.status !== VehicleStatus.SUBMITTED}
-          >
-            {isPending ? "..." : "Request Changes"}
-          </button>
-        </>
-      )}
-      {!userIsGov && (
-        <>
-          <button
-            onClick={() => handleSubmit(VehicleStatus.SUBMITTED)}
-            disabled={isPending || vehicle.status !== VehicleStatus.DRAFT}
-          >
-            {isPending ? "..." : "Submit"}
-          </button>
-          <button
-            onClick={() => handleSubmit(VehicleStatus.DELETED)}
-            disabled={isPending || vehicle.status !== VehicleStatus.DRAFT}
-          >
-            {isPending ? "..." : "Delete"}
-          </button>
+          </Button>
+          <Button onClick={handleGoToNewVehicleForm} disabled={isPending}>
+            {isPending ? "..." : "Submit a new Vehicle"}
+          </Button>
         </>
       )}
     </div>

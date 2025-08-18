@@ -1,35 +1,30 @@
 import { prisma } from "@/lib/prisma";
 import { TransactionClient } from "@/types/prisma";
-import { Prisma, Vehicle } from "@/prisma/generated/client";
+import { Prisma, VehicleStatus } from "@/prisma/generated/client";
 import { VehicleFile } from "./actions";
-import { removeObject } from "@/app/lib/minio";
+import { removeObjects } from "@/app/lib/minio";
+import { getAttachmentFullObjectName } from "./utils";
 
 export const createHistory = async (
-  vehicle: Vehicle,
+  vehicleId: number,
   userId: number,
+  userAction: VehicleStatus,
+  comment?: string,
   transactionClient?: TransactionClient,
 ) => {
   const client = transactionClient ?? prisma;
-  await client.vehicleChangeHistory.create({
+  await client.vehicleHistory.create({
     data: {
-      vehicleId: vehicle.id,
-      vehicleClassCode: vehicle.vehicleClassCode,
-      vehicleZevType: vehicle.vehicleZevType,
-      range: vehicle.range,
-      make: vehicle.make,
-      weightKg: vehicle.weightKg,
-      modelName: vehicle.modelName,
-      modelYear: vehicle.modelYear,
-      validationStatus: vehicle.status,
-      organizationId: vehicle.organizationId,
-      createUserId: userId,
+      vehicleId,
+      userId,
+      userAction,
+      comment,
     },
   });
 };
 
 export const createAttachments = async (
   vehicleId: number,
-  userId: number,
   files: VehicleFile[],
   transactionClient?: TransactionClient,
 ) => {
@@ -40,9 +35,6 @@ export const createAttachments = async (
       vehicleId,
       filename: file.filename,
       minioObjectName: file.objectName,
-      size: file.size,
-      mimeType: file.mimeType,
-      createUser: userId,
     });
   });
   await client.vehicleAttachment.createMany({
@@ -50,8 +42,12 @@ export const createAttachments = async (
   });
 };
 
-export const deleteAttachments = async (files: VehicleFile[]) => {
-  for (const file of files) {
-    await removeObject(file.objectName);
-  }
+export const deleteAttachments = async (
+  orgId: number,
+  files: VehicleFile[],
+) => {
+  const objectNames = files.map((file) => {
+    return getAttachmentFullObjectName(orgId, file.objectName);
+  });
+  await removeObjects(objectNames);
 };

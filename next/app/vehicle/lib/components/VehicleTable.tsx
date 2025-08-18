@@ -4,7 +4,10 @@ import React, { useMemo } from "react";
 import { ColumnDef, createColumnHelper } from "@tanstack/react-table";
 import { Table } from "@/app/lib/components";
 import { VehicleSparseSerialized } from "./VehicleList";
-import { getModelYearEnumsToStringsMap } from "@/app/lib/utils/enumMaps";
+import {
+  getModelYearEnumsToStringsMap,
+  getVehicleStatusEnumsToStringsMap,
+} from "@/app/lib/utils/enumMaps";
 
 export const VehicleTable = (props: {
   vehicles: VehicleSparseSerialized[];
@@ -12,70 +15,66 @@ export const VehicleTable = (props: {
   navigationAction: (id: number) => Promise<void>;
 }) => {
   const columnHelper = createColumnHelper<VehicleSparseSerialized>();
-  const modelYearEnumMap = getModelYearEnumsToStringsMap();
+  const modelYearEnumMap = useMemo(() => {
+    return getModelYearEnumsToStringsMap();
+  }, []);
+  const statusMap = useMemo(() => {
+    return getVehicleStatusEnumsToStringsMap();
+  }, []);
   const columns = useMemo(() => {
     const result: ColumnDef<VehicleSparseSerialized, any>[] = [
-      columnHelper.accessor((row) => row.status, {
+      columnHelper.accessor((row) => statusMap[row.status], {
         id: "status",
         enableSorting: true,
         enableColumnFilter: true,
-        cell: (info) => info.getValue(),
         header: () => <span>Status</span>,
       }),
-      columnHelper.accessor((row) => row.creditValue, {
-        id: "creditValue",
+      columnHelper.accessor((row) => row.numberOfUnits, {
+        id: "numberOfUnits",
         enableSorting: true,
         enableColumnFilter: true,
-        cell: (info) => info.getValue(),
-        header: () => <span>Credit Entitlement</span>,
+        header: () => <span>Number of Credits</span>,
       }),
       columnHelper.accessor((row) => row.zevClass, {
         id: "zevClass",
         enableSorting: true,
         enableColumnFilter: true,
-        cell: (info) => info.getValue(),
         header: () => <span>ZEV Class</span>,
       }),
-      columnHelper.accessor((row) => row.modelYear, {
+      columnHelper.accessor((row) => modelYearEnumMap[row.modelYear], {
         id: "modelYear",
         enableSorting: true,
         enableColumnFilter: true,
-        cell: (info) => modelYearEnumMap[info.row.original.modelYear],
         header: () => <span>Model Year</span>,
       }),
       columnHelper.accessor((row) => row.modelName, {
         id: "modelName",
         enableSorting: true,
         enableColumnFilter: true,
-        cell: (info) => info.getValue(),
         header: () => <span>Model</span>,
       }),
       columnHelper.accessor((row) => row.make, {
         id: "make",
         enableSorting: true,
         enableColumnFilter: true,
-        cell: (info) => info.getValue(),
         header: () => <span>Make</span>,
       }),
       columnHelper.accessor((row) => row.range, {
         id: "range",
         enableSorting: true,
         enableColumnFilter: true,
-        cell: (info) => info.getValue(),
         header: () => <span>Range (km)</span>,
       }),
       columnHelper.accessor((row) => row.vehicleZevType, {
         id: "vehicleZevType",
         enableSorting: true,
         enableColumnFilter: true,
-        cell: (info) => info.getValue(),
         header: () => <span>ZEV Type</span>,
       }),
       columnHelper.accessor((row) => row.isActive, {
         id: "isActive",
         enableSorting: true,
         enableColumnFilter: true,
-        cell: (info) => info.getValue(),
         header: () => <span>Active</span>,
       }),
     ];
@@ -89,11 +88,24 @@ export const VehicleTable = (props: {
           id: "organization",
           enableSorting: true,
           enableColumnFilter: true,
-          cell: (info) => info.getValue(),
           header: () => <span>Supplier</span>,
         }),
       );
     }
+    result.unshift(
+      columnHelper.accessor((row) => row.id, {
+        id: "id",
+        enableSorting: true,
+        enableColumnFilter: true,
+        header: () => <span>ID</span>,
+      }),
+      columnHelper.accessor((row) => row.legacyId, {
+        id: "legacyId",
+        enableSorting: true,
+        enableColumnFilter: true,
+        header: () => <span>Legacy ID</span>,
+      }),
+    );
     return result;
   }, [columnHelper, props.vehicles]);
 

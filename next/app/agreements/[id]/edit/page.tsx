@@ -3,16 +3,27 @@ import { redirect } from "next/navigation";
 import { Routes } from "@/app/lib/constants";
 import { ZevClass } from "@/prisma/generated/client";
 import { AgreementPayload, saveAgreement } from "../../lib/action";
-import { getAgreementDetails, getModelYearSelections, getSupplierSelections } from "../../lib/services";
+import {
+  getAgreementDetails,
+  getModelYearSelections,
+  getSupplierSelections,
+} from "../../lib/services";
 import { AgreementEditForm } from "../../lib/components/AgreementEditForm";
 
 const Page = async (props: { params: Promise<{ id: string }> }) => {
-  const [{ id }, { userIsGov }] = await Promise.all([props.params, getUserInfo()]);
+  const [{ id }, { userIsGov }] = await Promise.all([
+    props.params,
+    getUserInfo(),
+  ]);
   const agreementId = parseInt(id);
 
-  const [agreementDetails, supplierSelections] = isNaN(agreementId) || !userIsGov
-    ? [null, []]
-    : await Promise.all([getAgreementDetails(agreementId), getSupplierSelections()]);
+  const [agreementDetails, supplierSelections] =
+    isNaN(agreementId) || !userIsGov
+      ? [null, []]
+      : await Promise.all([
+          getAgreementDetails(agreementId),
+          getSupplierSelections(),
+        ]);
   if (!agreementDetails) {
     return (
       <div className="p-6 font-semibold">
@@ -31,7 +42,7 @@ const Page = async (props: { params: Promise<{ id: string }> }) => {
     } else {
       redirect(`${Routes.CreditAgreements}/error`);
     }
-  }
+  };
 
   const handleCancel = async () => {
     "use server";
@@ -41,7 +52,7 @@ const Page = async (props: { params: Promise<{ id: string }> }) => {
   return (
     <div className="p-6">
       <h2 className="text-xl font-semibold text-primaryBlue pb-4">
-          Edit Agreement
+        Edit Agreement
       </h2>
       <AgreementEditForm
         supplierSelections={supplierSelections}

@@ -27,7 +27,7 @@ export const getSupplierSelections = async () => {
 export const getModelYearSelections = () => {
   const currentComplianceYear = getCurrentComplianceYear().toString();
   const modelYearSelections = Object.values(ModelYear).filter(
-    year => year.substring(3) <= currentComplianceYear
+    (year) => year.substring(3) <= currentComplianceYear,
   );
   return modelYearSelections;
 };
@@ -76,7 +76,7 @@ export const getAgreementDetails = async (id: number) => {
     ...basicInfo,
     agreementContent: basicInfo.agreementContent.map((content) => ({
       ...content,
-      numberOfUnits: content.numberOfUnits.toNumber()
+      numberOfUnits: content.numberOfUnits.toNumber(),
     })),
     agreementHistory
   };

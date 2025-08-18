@@ -10,7 +10,7 @@ import {
 
 export type VehicleSparse = Omit<
   Vehicle,
-  "vehicleClassCode" | "weightKg" | "organizationId" | "hasPassedUs06Test"
+  "vehicleClassCode" | "weight" | "organizationId" | "us06RangeGte16"
 > & { organization?: { name: string } };
 
 // page is 1-based
@@ -26,8 +26,9 @@ export const getVehicles = async (
   const take = pageSize;
   let select: Prisma.VehicleSelect = {
     id: true,
+    legacyId: true,
     status: true,
-    creditValue: true,
+    numberOfUnits: true,
     zevClass: true,
     modelYear: true,
     modelName: true,
@@ -37,12 +38,12 @@ export const getVehicles = async (
     isActive: true,
   };
   const where = getWhereClause(filters);
+  where.NOT = {
+    status: VehicleStatus.DELETED,
+  };
   const orderBy = getOrderByClause(sorts, true);
   if (userIsGov) {
     select = { ...select, organization: { select: { name: true } } };
-    where.NOT = {
-      status: { in: [VehicleStatus.DRAFT, VehicleStatus.DELETED] },
-    };
   } else {
     where.organizationId = userOrgId;
   }
@@ -60,31 +61,6 @@ export const getVehicles = async (
   ]);
 };
 
-export const getVehicleComments = async (vehicleId: number) => {
-  const { userIsGov, userOrgId } = await getUserInfo();
-  let whereClause: Prisma.VehicleCommentWhereInput = {
-    vehicleId: vehicleId,
-  };
-  if (!userIsGov) {
-    whereClause = { ...whereClause, vehicle: { organizationId: userOrgId } };
-  }
-  return await prisma.vehicleComment.findMany({
-    where: whereClause,
-    include: {
-      vehicle: {
-        include: {
-          organization: true,
-        },
-      },
-      createUser: {
-        include: {
-          organization: true,
-        },
-      },
-    },
-  });
-};
-
 export type VehicleWithOrg = Vehicle & { organization: Organization };
 
 export const getVehicle = async (
@@ -93,6 +69,9 @@ export const getVehicle = async (
   const { userIsGov, userOrgId } = await getUserInfo();
   let whereClause: Prisma.VehicleWhereUniqueInput = {
     id: vehicleId,
+    status: {
+      not: VehicleStatus.DELETED,
+    },
   };
   if (!userIsGov) {
     whereClause = { ...whereClause, organizationId: userOrgId };
@@ -105,10 +84,9 @@ export const getVehicle = async (
   });
 };
 
-export type SerializedVehicleWithOrg = Omit<
-  Vehicle,
-  "weightKg" | "creditValue"
-> & { weightKg: string; creditValue: string | undefined } & {
+export type SerializedVehicleWithOrg = Omit<Vehicle, "numberOfUnits"> & {
+  numberOfUnits: string;
+} & {
   organization: Organization;
 };
 
@@ -119,8 +97,8 @@ export const getSerializedVehicle = async (
   if (vehicle) {
     return {
       ...vehicle,
-      weightKg: vehicle.weightKg.toString(),
-      creditValue: vehicle.creditValue?.toString(),
+      weight: vehicle.weight,
+      numberOfUnits: vehicle.numberOfUnits.toString(),
     };
   }
   return null;
@@ -128,13 +106,18 @@ export const getSerializedVehicle = async (
 
 export const getVehicleHistories = async (vehicleId: number) => {
   const { userIsGov, userOrgId } = await getUserInfo();
-  let whereClause: Prisma.VehicleChangeHistoryWhereInput = {
+  let whereClause: Prisma.VehicleHistoryWhereInput = {
     vehicleId: vehicleId,
+    vehicle: {
+      status: {
+        not: VehicleStatus.DELETED,
+      },
+    },
   };
   if (!userIsGov) {
     whereClause = { ...whereClause, vehicle: { organizationId: userOrgId } };
   }
-  return await prisma.vehicleChangeHistory.findMany({
+  return await prisma.vehicleHistory.findMany({
     where: whereClause,
     include: {
       vehicle: {
@@ -142,11 +125,27 @@ export const getVehicleHistories = async (vehicleId: number) => {
           organization: true,
         },
       },
-      createUser: {
+      user: {
         include: {
           organization: true,
         },
       },
     },
+    orderBy: {
+      timestamp: "asc",
+    },
+  });
+};
+
+export const getAttachmentsCount = async (id: number): Promise<number> => {
+  const { userIsGov, userOrgId } = await getUserInfo();
+  const whereClause: Prisma.VehicleAttachmentWhereInput = { vehicleId: id };
+  if (!userIsGov) {
+    whereClause.vehicle = {
+      organizationId: userOrgId,
+    };
+  }
+  return await prisma.vehicleAttachment.count({
+    where: whereClause,
   });
 };

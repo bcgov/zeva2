@@ -10,7 +10,7 @@ export const seedIcbc = async (
 ) => {
   const mapOfOldFileIdsToNewFileIds: Partial<Record<number, number>> = {};
   const icbcFilesOld = await prismaOld.icbc_upload_date.findMany();
-  icbcFilesOld.forEach(async (fileOld) => {
+  for (const fileOld of icbcFilesOld) {
     let name = fileOld.filename;
     if (!name) {
       name = `seedGen-${randomUUID()}`;
@@ -33,7 +33,7 @@ export const seedIcbc = async (
       },
     });
     mapOfOldFileIdsToNewFileIds[fileOld.id] = newFile.id;
-  });
+  }
 
   const take = 100000;
   const numberOfRecords = await prismaOld.icbc_registration_data.count();

@@ -5,12 +5,9 @@ import {
   ZevClass,
   VehicleClass,
   BalanceType,
-  VehicleClassCode,
-  VehicleZevType,
-  VehicleStatus,
   CreditApplicationVinLegacy,
 } from "./generated/client";
-import { getModelYearEnum } from "@/lib/utils/getEnums";
+import { getStringsToModelYearsEnumsMap } from "@/app/lib/utils/enumMaps";
 import { Decimal } from "./generated/client/runtime/library";
 import { Notification } from "./generated/client";
 import { isNotification } from "@/app/lib/utils/typeGuards";
@@ -19,9 +16,12 @@ import { seedTransactions } from "./seedProcesses/seedTransactions";
 import { seedIcbc } from "./seedProcesses/seedIcbc";
 import { seedUsers } from "./seedProcesses/seedUsers";
 import { seedAgreements } from "./seedProcesses/seedAgreements";
+import { seedVolumes } from "./seedProcesses/seedVolumes";
+import { seedVehicles } from "./seedProcesses/seedVehicles";
 
 // prismaOld to interact with old zeva db; prisma to interact with new zeva db
 const main = () => {
+  const modelYearsMap = getStringsToModelYearsEnumsMap();
   return prisma.$transaction(
     async (tx) => {
       const decimalZero = new Decimal(0);
@@ -34,9 +34,8 @@ const main = () => {
 
       const modelYearsOld = await prismaOld.model_year.findMany();
       for (const modelYearOld of modelYearsOld) {
-        mapOfModelYearIdsToModelYearEnum[modelYearOld.id] = getModelYearEnum(
-          modelYearOld.description,
-        );
+        mapOfModelYearIdsToModelYearEnum[modelYearOld.id] =
+          modelYearsMap[modelYearOld.description];
       }
 
       // seed organization tables
@@ -291,59 +290,12 @@ const main = () => {
         }
       }
 
-      const vClassIdToEnum: Record<number, VehicleClassCode> = {};
-      for (const r of await prismaOld.vehicle_class_code.findMany()) {
-        vClassIdToEnum[r.id] = r.vehicle_class_code as VehicleClassCode;
-      }
-      const vZevIdToEnum: Record<number, VehicleZevType> = {};
-      for (const r of await prismaOld.vehicle_zev_type.findMany()) {
-        vZevIdToEnum[r.id] = r.vehicle_zev_code as VehicleZevType;
-      }
-      const vehiclesOld = await prismaOld.vehicle.findMany({
-        where: {
-          validation_status: "VALIDATED",
-        },
-      });
-      for (const vehicleOld of vehiclesOld) {
-        const modelYearEnum =
-          mapOfModelYearIdsToModelYearEnum[vehicleOld.model_year_id];
-        const orgNewId = mapOfOldOrgIdsToNewOrgIds[vehicleOld.organization_id];
-        if (!modelYearEnum) {
-          throw new Error(
-            "vehicle with id " + vehicleOld.id + " has unknown model year!",
-          );
-        }
-        if (orgNewId === undefined) {
-          throw new Error(
-            "vehicle with id " + vehicleOld.id + " has unknown orgId",
-          );
-        }
-        const zevEnum = vZevIdToEnum[vehicleOld.vehicle_zev_type_id];
-        const classEnum = vClassIdToEnum[vehicleOld.vehicle_class_code_id];
-        const zevClassEnum = vehicleOld.credit_class_id
-          ? mapOfOldCreditClassIdsToZevClasses[vehicleOld.credit_class_id]
-          : undefined;
-
-        await tx.vehicle.create({
-          select: { id: true },
-          data: {
-            range: vehicleOld.range,
-            make: vehicleOld.make,
-            modelYear: modelYearEnum,
-            status: VehicleStatus.VALIDATED,
-            modelName: vehicleOld.model_name,
-            creditValue: vehicleOld.credit_value,
-            vehicleZevType: zevEnum,
-            vehicleClassCode: classEnum,
-            weightKg: Number(vehicleOld.weight_kg),
-            organizationId: orgNewId,
-            zevClass: zevClassEnum,
-            hasPassedUs06Test: vehicleOld.has_passed_us_06_test,
-            isActive: vehicleOld.is_active,
-            vehicleClass: VehicleClass.REPORTABLE,
-          },
-        });
-      }
+      await seedVehicles(
+        tx,
+        mapOfModelYearIdsToModelYearEnum,
+        mapOfOldOrgIdsToNewOrgIds,
+        mapOfOldCreditClassIdsToZevClasses,
+      );
 
       const issuedVinRecords = await prismaOld.record_of_sale.findMany({
         where: {
@@ -369,6 +321,12 @@ const main = () => {
       });
 
       await seedIcbc(tx, mapOfModelYearIdsToModelYearEnum);
+
+      await seedVolumes(
+        tx,
+        mapOfModelYearIdsToModelYearEnum,
+        mapOfOldOrgIdsToNewOrgIds,
+      );
     },
     {
       timeout: 10000,
