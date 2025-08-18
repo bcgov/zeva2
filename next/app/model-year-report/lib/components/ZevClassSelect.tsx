@@ -1,14 +1,14 @@
 "use client";
 
 import { Fragment } from "react";
-import { SupplierZevClassChoice, supplierZevClassChoice } from "../constants";
+import { SupplierZevClassChoice, supplierZevClasses } from "../constants";
 
 export const ZevClassSelect = (props: {
   zevClassSelection: SupplierZevClassChoice;
   handleChange: (zevClass: SupplierZevClassChoice) => void;
   disabled: boolean;
 }) => {
-  return Object.values(supplierZevClassChoice).map((zevClass) => {
+  return Object.values(supplierZevClasses).map((zevClass) => {
     return (
       <Fragment key={zevClass}>
         <input

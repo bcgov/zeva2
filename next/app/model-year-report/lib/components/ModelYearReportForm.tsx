@@ -12,6 +12,7 @@ import {
   getMyrTemplateUrl,
   getPutReportData,
   NvValues,
+  resubmitReports,
   submitReports,
 } from "../actions";
 import {
@@ -25,16 +26,14 @@ import { FileWithPath } from "react-dropzone";
 import { SupplierZevClassChoice } from "../constants";
 import { MyrNvValues } from "./MyrNvValues";
 import { ZevClassSelect } from "./ZevClassSelect";
+import { Routes } from "@/app/lib/constants";
+import { CommentBox } from "@/app/lib/components/inputs/CommentBox";
+import { getNormalizedComment } from "@/app/credit-application/lib/utils";
 
-// used for both creating new reports and resubmitting one that was sent back
 export const ModelYearReportForm = (props: {
   orgName: string;
   modelYear: ModelYear;
   modelYearReportId?: number;
-  submittedMyrObjectName?: string;
-  submittedMyrFileName?: string;
-  submittedForecastObjectName?: string;
-  submittedForecastFileName?: string;
 }) => {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -44,6 +43,7 @@ export const ModelYearReportForm = (props: {
     useState<SupplierZevClassChoice>(ZevClass.B);
   const [myrs, setMyrs] = useState<FileWithPath[]>([]);
   const [forecasts, setForecasts] = useState<FileWithPath[]>([]);
+  const [comment, setComment] = useState<string>("");
 
   const modelYearsMap = useMemo(() => {
     return getModelYearEnumsToStringsMap();
@@ -131,15 +131,27 @@ export const ModelYearReportForm = (props: {
           axios.put(putData.myr.url, myr),
           axios.put(putData.forecast.url, forecast),
         ]);
-        const submitResponse = await submitReports(
-          props.modelYear,
+        const payload: [string, string, string, string, string | undefined] = [
           putData.myr.objectName,
           myr.name,
           putData.forecast.objectName,
           forecast.name,
-        );
-        if (submitResponse.responseType === "error") {
-          throw new Error(submitResponse.message);
+          getNormalizedComment(comment),
+        ];
+        let response;
+        if (props.modelYearReportId) {
+          response = await resubmitReports(props.modelYearReportId, ...payload);
+        } else {
+          response = await submitReports(props.modelYear, ...payload);
+        }
+        if (response.responseType === "error") {
+          throw new Error(response.message);
+        } else if (response.responseType === "data") {
+          router.push(`${Routes.ComplianceReporting}/${response.data}`);
+        } else {
+          router.push(
+            `${Routes.ComplianceReporting}/${props.modelYearReportId}`,
+          );
         }
       } catch (e) {
         if (e instanceof Error) {
@@ -147,12 +159,14 @@ export const ModelYearReportForm = (props: {
         }
       }
     });
-  }, [props.modelYear, myrs, forecasts, router]);
-
-  const handleResubmit = useCallback(() => {
-    setError("");
-    startTransition(async () => {});
-  }, []);
+  }, [
+    props.modelYear,
+    props.modelYearReportId,
+    myrs,
+    forecasts,
+    comment,
+    router,
+  ]);
 
   return (
     <div>
@@ -223,6 +237,11 @@ export const ModelYearReportForm = (props: {
           }}
         />
       </div>
+      <CommentBox
+        comment={comment}
+        setComment={setComment}
+        disabled={isPending}
+      />
       <div className="flex space-x-2">
         <Button onClick={handleSubmit} disabled={isPending}>
           {isPending ? "..." : "Submit"}

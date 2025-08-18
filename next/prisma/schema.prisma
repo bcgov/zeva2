@@ -10,7 +10,9 @@ datasource db {
 }
 
 // prisma doesn't allow enum values to start with a number
+// this enum must be in ascending lexicographical order, as well as ascending logical order
 enum ModelYear {
+  MY_2018 @map("2018")
   MY_2019 @map("2019")
   MY_2020 @map("2020")
   MY_2021 @map("2021")
@@ -28,6 +30,7 @@ enum ModelYear {
   MY_2033 @map("2033")
   MY_2034 @map("2034")
   MY_2035 @map("2035")
+  MY_2036 @map("2036")
 }
 
 model Organization {
@@ -588,7 +591,6 @@ model LegacySalesVolume {
   organization   Organization @relation(fields: [organizationId], references: [id])
   organizationId Int          @map("organization_id")
   modelYear      ModelYear    @map("model_year")
-  vehicleClass   VehicleClass @map("vehicle_class")
   volume         Int
 
   @@unique([organizationId, modelYear])
@@ -600,10 +602,9 @@ model SupplyVolume {
   organization   Organization @relation(fields: [organizationId], references: [id])
   organizationId Int          @map("organization_id")
   modelYear      ModelYear    @map("model_year")
-  vehicleClass   VehicleClass @map("vehicle_class")
   volume         Int
 
-  @@unique([organizationId, modelYear, vehicleClass])
+  @@unique([organizationId, modelYear])
   @@map("supply_volume")
 }
 

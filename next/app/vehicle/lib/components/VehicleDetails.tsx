@@ -1,3 +1,4 @@
+import { getUserInfo } from "@/auth";
 import { SerializedVehicleWithOrg } from "../data";
 
 type VehicleProps = {
@@ -15,6 +16,7 @@ export const VehicleDetails = async ({ vehicle }: VehicleProps) => {
   const modelYearsMap = getModelYearEnumsToStringsMap();
   const statusMap = getVehicleStatusEnumsToStringsMap();
   if (vehicle) {
+    const { userIsGov } = await getUserInfo();
     return (
       <div key={vehicle.id}>
         <ul>
@@ -24,7 +26,9 @@ export const VehicleDetails = async ({ vehicle }: VehicleProps) => {
           <li key="validationStatus">
             Validation Status: {statusMap[vehicle.status]}
           </li>
-          <li key="supplier">Supplier: {vehicle.organization.name} </li>
+          {userIsGov && (
+            <li key="supplier">Supplier: {vehicle.organization.name} </li>
+          )}
           <li key="modelYear">
             Model Year: {modelYearsMap[vehicle.modelYear]}
           </li>

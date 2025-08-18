@@ -16,7 +16,6 @@ import {
   getAssessmentData,
   getAssessmentTemplateUrl,
   getPutAssessmentData,
-  getReportDownloadUrls,
   NvValues,
   submitToDirector,
 } from "../actions";
@@ -25,7 +24,6 @@ import { MyrNvValues } from "./MyrNvValues";
 import { ZevClassSelect } from "./ZevClassSelect";
 import { Button } from "@/app/lib/components";
 import { Dropzone } from "@/app/lib/components/Dropzone";
-import { downloadZip } from "@/app/lib/utils/download";
 import {
   downloadAssessment,
   getAdjustmentsPayload,
@@ -35,8 +33,9 @@ import {
 } from "../utilsClient";
 import { Adjustment, Adjustments } from "./Adjustments";
 import { AssessmentResult, AssessmentResultData } from "./AssessmentResult";
+import { CommentBox } from "@/app/lib/components/inputs/CommentBox";
+import { Routes } from "@/app/lib/constants";
 
-// can also be used for reassessments
 export const AssessmentForm = (props: {
   id: number;
   orgId: number;
@@ -55,6 +54,7 @@ export const AssessmentForm = (props: {
   const [assessmentResult, setAssessmentResult] = useState<
     AssessmentResultData | undefined
   >();
+  const [comment, setComment] = useState<string>("");
 
   const modelYearsMap = useMemo(() => {
     return getModelYearEnumsToStringsMap();
@@ -111,43 +111,6 @@ export const AssessmentForm = (props: {
     },
     [],
   );
-
-  const handleDownloadReports = useCallback(() => {
-    setError("");
-    startTransition(async () => {
-      try {
-        const response = await getReportDownloadUrls(props.id);
-        if (response.responseType === "error") {
-          throw new Error(response.message);
-        }
-        const [myr, forecast] = await Promise.all([
-          axios.get(response.data.myrUrl, {
-            responseType: "arraybuffer",
-          }),
-          axios.get(response.data.forecastUrl, {
-            responseType: "arraybuffer",
-          }),
-        ]);
-        await downloadZip(
-          `${props.orgName.replaceAll(" ", "-")}-${modelYearsMap[props.modelYear]}-reports.zip`,
-          [
-            {
-              fileName: response.data.myrFileName,
-              data: myr.data,
-            },
-            {
-              fileName: response.data.forecastFileName,
-              data: forecast.data,
-            },
-          ],
-        );
-      } catch (e) {
-        if (e instanceof Error) {
-          setError(e.message);
-        }
-      }
-    });
-  }, [props.id, props.orgName, props.modelYear, modelYearsMap]);
 
   const handleGenerateAssessment = useCallback(() => {
     setError("");
@@ -232,17 +195,19 @@ export const AssessmentForm = (props: {
           props.orgId,
           putDataResponse.data.objectName,
           assessment.name,
+          comment,
         );
         if (submitResponse.responseType === "error") {
           throw new Error(submitResponse.message);
         }
+        router.push(`${Routes.ComplianceReporting}/${props.id}`);
       } catch (e) {
         if (e instanceof Error) {
           setError(e.message);
         }
       }
     });
-  }, [assessments, assessmentResult, props.id, props.orgId]);
+  }, [assessments, assessmentResult, props.id, props.orgId, comment]);
 
   return (
     <div>
@@ -258,11 +223,6 @@ export const AssessmentForm = (props: {
           value={modelYearsMap[props.modelYear]}
           className="border p-2 w-full"
         />
-      </div>
-      <div className="flex space-x-2">
-        <Button onClick={handleDownloadReports} disabled={isPending}>
-          {isPending ? "..." : "Download Model Year Report and Forecast Report"}
-        </Button>
       </div>
       <MyrNvValues
         nvValues={nvValues}
@@ -315,6 +275,11 @@ export const AssessmentForm = (props: {
           complianceYear={props.modelYear}
         />
       </div>
+      <CommentBox
+        comment={comment}
+        setComment={setComment}
+        disabled={isPending}
+      />
       <div className="flex space-x-2">
         <Button onClick={handleSubmit} disabled={isPending}>
           {isPending ? "..." : "Submit to Director"}

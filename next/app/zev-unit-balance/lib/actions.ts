@@ -15,8 +15,8 @@ export async function getComplianceYears(orgId: number): Promise<number[]> {
     });
     const years = new Set<number>();
     for (const { timestamp } of rows) {
-      const y = timestamp.getUTCFullYear();
-      const m = timestamp.getUTCMonth();
+      const y = timestamp.getFullYear();
+      const m = timestamp.getMonth();
       const complianceYear = m >= 9 ? y : y - 1;
       years.add(complianceYear);
     }
