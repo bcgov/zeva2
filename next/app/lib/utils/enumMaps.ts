@@ -9,6 +9,7 @@ import {
   Idp,
   ModelYear,
   ModelYearReportStatus,
+  ModelYearReportSupplierStatus,
   PenaltyCreditStatus,
   ReferenceType,
   Role,
@@ -188,6 +189,20 @@ export const getMyrStatusEnumsToStringsMap = () => {
 export const getStringsToMyrStatusEnumsMap = () => {
   return getStringsToEnumsMap<ModelYearReportStatus>(
     ModelYearReportStatus,
+    statusTransformer,
+  );
+};
+
+export const getMyrSupplierStatusEnumsToStringsMap = () => {
+  return getEnumsToStringsMap<ModelYearReportSupplierStatus>(
+    ModelYearReportSupplierStatus,
+    statusTransformer,
+  );
+};
+
+export const getStringsToMyrSupplierStatusEnumsMap = () => {
+  return getStringsToEnumsMap<ModelYearReportSupplierStatus>(
+    ModelYearReportSupplierStatus,
     statusTransformer,
   );
 };

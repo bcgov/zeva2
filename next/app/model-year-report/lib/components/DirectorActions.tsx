@@ -2,7 +2,6 @@
 
 import axios from "axios";
 import { Button } from "@/app/lib/components";
-import { Routes } from "@/app/lib/constants";
 import { ModelYear, ModelYearReportStatus } from "@/prisma/generated/client";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState, useTransition } from "react";
@@ -59,13 +58,14 @@ export const DirectorActions = (props: {
           ModelYearReportStatus.RETURNED_TO_ANALYST,
           getNormalizedComment(comment),
         );
+        router.refresh();
       } catch (e) {
         if (e instanceof Error) {
           setError(e.message);
         }
       }
     });
-  }, [props.id, comment]);
+  }, [props.id, comment, router]);
 
   const handleIssueAssessment = useCallback(() => {
     setError("");
@@ -74,7 +74,7 @@ export const DirectorActions = (props: {
         if (assessmentResult) {
           const payload = getAssessmentPayload(assessmentResult);
           await directorAssess(props.id, payload, comment);
-          router.push(`${Routes.ComplianceReporting}/${props.id}`);
+          router.refresh();
         } else {
           throw new Error("No assessment result!");
         }

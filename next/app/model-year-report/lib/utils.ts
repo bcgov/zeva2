@@ -21,6 +21,13 @@ import { Decimal } from "@/prisma/generated/client/runtime/library";
 import { ReportSubDirectory } from "./constants";
 import { penaltyRates } from "@/app/lib/constants/penaltyRate";
 import { isVehicleClass, isZevClass } from "@/app/lib/utils/typeGuards";
+import {
+  getMatchingTerms,
+  getStringsToModelYearsEnumsMap,
+  getStringsToMyrStatusEnumsMap,
+  getStringsToMyrSupplierStatusEnumsMap,
+} from "@/app/lib/utils/enumMaps";
+import { MyrSparse } from "./data";
 
 export const validatePrevBalanceTransactions = (
   transactions: ZevUnitRecord[],
@@ -300,4 +307,84 @@ export const getPenalty = (
     }
   });
   return penalty.toFixed(2);
+};
+
+export const getWhereClause = (
+  filters: Record<string, string>,
+  userIsGov: boolean,
+): Omit<Prisma.ModelYearReportWhereInput, "OR"> => {
+  const result: Omit<Prisma.ModelYearReportWhereInput, "OR"> = {};
+  const modelYearsMap = getStringsToModelYearsEnumsMap();
+  const statusMap = getStringsToMyrStatusEnumsMap();
+  const supplierStatusMap = getStringsToMyrSupplierStatusEnumsMap();
+  for (const [key, rawValue] of Object.entries(filters)) {
+    const value = rawValue.trim();
+    if (key === "id") {
+      result[key] = parseInt(value, 10);
+    } else if (key === "modelYear") {
+      result[key] = {
+        in: getMatchingTerms(modelYearsMap, value),
+      };
+    } else if (key === "organization" && userIsGov) {
+      result[key] = {
+        is: { name: { contains: value, mode: "insensitive" } },
+      };
+    } else if (key === "status") {
+      if (userIsGov) {
+        result[key] = {
+          in: getMatchingTerms(statusMap, value),
+        };
+      } else {
+        result["supplierStatus"] = {
+          in: getMatchingTerms(supplierStatusMap, value),
+        };
+      }
+    }
+  }
+  return result;
+};
+
+export const getOrderByClause = (
+  sorts: Record<string, string>,
+  defaultSortById: boolean,
+  userIsGov: boolean,
+): Prisma.ModelYearReportOrderByWithRelationInput[] => {
+  const result: Prisma.ModelYearReportOrderByWithRelationInput[] = [];
+  Object.entries(sorts).forEach(([key, value]) => {
+    const orderBy: Prisma.ModelYearReportOrderByWithRelationInput = {};
+    if (value === "asc" || value === "desc") {
+      if (key === "id" || key === "modelYear") {
+        orderBy[key] = value;
+      } else if (key === "organization" && userIsGov) {
+        orderBy[key] = {
+          name: value,
+        };
+      } else if (key === "status") {
+        if (userIsGov) {
+          orderBy[key] = value;
+        } else {
+          orderBy["supplierStatus"] = value;
+        }
+      }
+    }
+  });
+  if (defaultSortById && result.length === 0) {
+    result.push({ id: "desc" });
+  }
+  return result;
+};
+
+export type MyrSparseSerialized = Omit<MyrSparse, "supplierStatus">;
+
+export const getSerializedMyrs = (
+  myrs: MyrSparse[],
+  userIsGov: boolean,
+): MyrSparseSerialized[] => {
+  return myrs.map((myr) => {
+    const { supplierStatus, ...result } = myr;
+    if (!userIsGov) {
+      result.status = myr.supplierStatus;
+    }
+    return result;
+  });
 };

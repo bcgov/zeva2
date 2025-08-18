@@ -2,9 +2,12 @@ import { getUserInfo } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import {
   ModelYear,
+  ModelYearReportStatus,
   ModelYearReportSupplierStatus,
   Prisma,
+  Role,
 } from "@/prisma/generated/client";
+import { getOrderByClause, getWhereClause } from "./utils";
 
 export const modelYearReportExists = async (modelYear: ModelYear) => {
   const { userOrgId } = await getUserInfo();
@@ -96,4 +99,65 @@ export const getModelYearReportDetails = async (id: number) => {
       modelYear: true,
     },
   });
+};
+
+export type MyrSparse = {
+  id: number;
+  modelYear: ModelYear;
+  status: ModelYearReportStatus;
+  supplierStatus: ModelYearReportSupplierStatus;
+  organization?: {
+    name: string;
+  };
+};
+
+export const getModelYearReports = async (
+  page: number,
+  pageSize: number,
+  filters: Record<string, string>,
+  sorts: Record<string, string>,
+): Promise<[MyrSparse[], number]> => {
+  const { userIsGov, userOrgId, userRoles } = await getUserInfo();
+  const skip = (page - 1) * pageSize;
+  const take = pageSize;
+
+  const where: Prisma.ModelYearReportWhereInput = getWhereClause(
+    filters,
+    userIsGov,
+  );
+  const orderBy = getOrderByClause(sorts, true, userIsGov);
+  const select: Prisma.ModelYearReportSelect = {
+    id: true,
+    modelYear: true,
+    status: true,
+    supplierStatus: true,
+  };
+  if (userIsGov) {
+    select.organization = {
+      select: {
+        name: true,
+      },
+    };
+    if (userRoles.includes(Role.DIRECTOR)) {
+      where.OR = [
+        { status: ModelYearReportStatus.SUBMITTED_TO_DIRECTOR },
+        { status: ModelYearReportStatus.RETURNED_TO_ANALYST },
+        { status: ModelYearReportStatus.ASSESSED },
+      ];
+    }
+  } else {
+    where.organizationId = userOrgId;
+  }
+  return await prisma.$transaction([
+    prisma.modelYearReport.findMany({
+      skip,
+      take,
+      select,
+      where,
+      orderBy,
+    }),
+    prisma.modelYearReport.count({
+      where,
+    }),
+  ]);
 };

@@ -27,13 +27,14 @@ export const AnalystActions = (props: {
           ModelYearReportStatus.RETURNED_TO_SUPPLIER,
           getNormalizedComment(comment),
         );
+        router.refresh();
       } catch (e) {
         if (e instanceof Error) {
           setError(e.message);
         }
       }
     });
-  }, [props.id, comment]);
+  }, [props.id, comment, router]);
 
   const handleGoToConductAssessment = useCallback(() => {
     router.push(`${Routes.ComplianceReporting}/${props.id}/assessment`);

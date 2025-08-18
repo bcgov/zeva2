@@ -485,7 +485,7 @@ export const parseAssessment = async (
     !endingBalanceSheet ||
     !penaltySheet
   ) {
-    throw new Error();
+    throw new Error("Invalid assessment file!");
   }
   const transactionTypesMap = getTransactionTypeEnumsToStringMap();
   const referenceTypesMap = getReferenceTypeEnumsToStringsMap();
@@ -627,7 +627,7 @@ export const getBalanceRecordPayload = (
   record: Partial<Record<string, string>>,
   helpingMaps: InverseHelpingMaps,
 ) => {
-  const error = new Error("Error getting transaction payload!");
+  const error = new Error("Error getting balance payload!");
   if (
     !record.type ||
     !record.vehicleClass ||
