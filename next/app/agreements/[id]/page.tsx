@@ -2,15 +2,15 @@ import { getUserInfo } from "@/auth";
 import { AgreementDetails } from "../lib/components/AgreementDetails";
 import { getAgreementDetails } from "../lib/services";
 import { AgreementStatus, Role } from "@/prisma/generated/client";
-import { updateStatus } from "../lib/action";
+import { addComment, updateStatus } from "../lib/action";
 import { redirect } from "next/navigation";
 import { Routes } from "@/app/lib/constants/Routes";
 
 const Page = async (props: { params: Promise<{ id: string }> }) => {
-  const [{ id }, { userIsGov, userRoles }] = await Promise.all([
-    props.params,
-    getUserInfo(),
-  ]);
+  const [
+    { id },
+    { userRoles }
+  ] = await Promise.all([props.params, getUserInfo()]);
   const agreementId = parseInt(id);
   const agreement = isNaN(agreementId)
     ? null
@@ -46,11 +46,15 @@ const Page = async (props: { params: Promise<{ id: string }> }) => {
     return undefined;
   };
 
+  const handleAddComment = async (comment: string) => {
+    "use server";
+    return await addComment(agreementId, comment)
+  };
+
   return (
     <div className="p-6">
       <AgreementDetails
         agreement={agreement}
-        userIsGov={userIsGov}
         backLink={Routes.CreditAgreements}
         editLink={
           forAnalyst ? `${Routes.CreditAgreements}/${id}/edit` : undefined
@@ -71,6 +75,7 @@ const Page = async (props: { params: Promise<{ id: string }> }) => {
           AgreementStatus.DELETED,
           forAnalyst,
         )}
+        handleAddComment={handleAddComment}
       />
     </div>
   );

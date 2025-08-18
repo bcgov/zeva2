@@ -12,6 +12,7 @@ datasource db {
 // prisma doesn't allow enum values to start with a number
 // this enum must be in ascending lexicographical order, as well as ascending logical order
 enum ModelYear {
+  MY_2017 @map("2017")
   MY_2018 @map("2018")
   MY_2019 @map("2019")
   MY_2020 @map("2020")
@@ -574,16 +575,25 @@ model AgreementContent {
 }
 
 model AgreementHistory {
-  id          Int                 @id @default(autoincrement())
-  agreementId Int                 @map("agreement_id")
-  agreement   Agreement           @relation(fields: [agreementId], references: [id])
-  userId      Int                 @map("user_id")
-  user        User                @relation(fields: [userId], references: [id])
-  timestamp   DateTime            @default(now()) @db.Timestamptz(6)
-  userAction  AgreementUserAction @map("user_action")
-  comment     String?
+  id               Int                 @id @default(autoincrement())
+  agreementId      Int                 @map("agreement_id")
+  agreement        Agreement           @relation(fields: [agreementId], references: [id])
+  userId           Int                 @map("user_id")
+  user             User                @relation(fields: [userId], references: [id])
+  timestamp        DateTime            @default(now()) @db.Timestamptz(6)
+  userAction       AgreementUserAction @map("user_action")
+  agreementComment AgreementComment?
 
   @@map("agreement_history")
+}
+
+model AgreementComment {
+  id                 Int              @id @default(autoincrement())
+  agreementHistoryId Int              @unique @map("agreement_history_id")
+  agreementHistory   AgreementHistory @relation(fields: [agreementHistoryId], references: [id])
+  comment            String
+
+  @@map("agreement_comment")
 }
 
 model LegacySalesVolume {

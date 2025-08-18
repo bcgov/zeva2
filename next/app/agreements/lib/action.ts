@@ -8,6 +8,7 @@ import {
   Role,
   ZevClass,
 } from "@/prisma/generated/client";
+import { historySelectClause } from "./utils";
 
 export type AgreementContentPayload = {
   zevClass: ZevClass;
@@ -107,5 +108,37 @@ export const updateStatus = async (id: number, status: AgreementStatus) => {
   } catch (error) {
     console.error("Error updating agreement status:", (error as Error).message);
     return false;
+  }
+}
+
+/**
+ * Adds a comment and the associated history to an agreement.
+ * @param agreementId - The ID of the agreement to comment on.
+ * @param comment - The comment text to add.
+ * @returns The created comment history record, or null if the process failed.
+ */
+export const addComment = async (
+  agreementId: number,
+  comment: string
+) => {
+  const { userId, userIsGov } = await getUserInfo();
+  if (!userIsGov) {
+    return null;
+  }
+  
+  try {
+    return await prisma.agreementHistory.create({
+      data: {
+        agreementId,
+        userId,
+        timestamp: new Date(),
+        userAction: AgreementUserAction.ADDED_COMMENT_GOV_INTERNAL,
+        agreementComment: { create: { comment } },
+      },
+      select: historySelectClause
+    });
+  } catch (error) {
+    console.error("Error adding comment:", (error as Error).message);
+    return null;
   }
 };

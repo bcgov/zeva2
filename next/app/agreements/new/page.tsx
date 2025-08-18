@@ -23,7 +23,7 @@ const Page = async () => {
     "use server";
     const savedAgreement = await saveAgreement(data);
     if (savedAgreement) {
-      redirect(Routes.CreditAgreements);
+      redirect(`${Routes.CreditAgreements}/${savedAgreement.id}`);
     } else {
       redirect(`${Routes.CreditAgreements}/error`);
     }
