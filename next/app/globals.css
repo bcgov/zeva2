@@ -40,3 +40,21 @@ body {
   background: var(--background);
   font-family: BCSans, Helvetica, sans-serif;
 }
+
+button {
+  @apply m-1;
+  @apply bg-primaryBlue;
+  @apply text-white;
+}
+
+.white-button {
+  background-color: #f2f2f2;
+  color: theme("colors.primaryBlue");
+  outline: 1px solid theme("colors.primaryBlue");
+}
+
+.section-title {
+  font-size: 1.2rem;
+  font-weight: bold;
+  color: theme("colors.defaultTextBlue");
+}

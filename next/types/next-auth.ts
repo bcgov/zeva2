@@ -2,10 +2,12 @@ import { Role } from "@/prisma/generated/client";
 
 declare module "@auth/core/types" {
   interface User {
+    internalId?: number;
     idToken?: string;
     roles?: Role[];
-    isGovernment?: Boolean;
+    isGovernment?: boolean;
     organizationId?: number;
+    organizationName?: string;
   }
 }
 
@@ -20,8 +22,10 @@ declare module "@auth/core/types" {
 declare module "@auth/core/jwt" {
   interface JWT {
     idToken?: string;
+    internalId?: number;
     roles?: Role[];
-    isGovernment?: Boolean;
+    isGovernment?: boolean;
     organizationId?: number;
+    organizationName?: string;
   }
 }

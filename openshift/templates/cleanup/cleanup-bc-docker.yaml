@@ -1,0 +1,40 @@
+apiVersion: template.openshift.io/v1
+kind: Template
+metadata:
+  creationTimestamp: null
+  name: zeva2-cleanup-template
+objects:
+  - apiVersion: image.openshift.io/v1
+    kind: ImageStream
+    metadata:
+      annotations:
+        description: cleanup
+      creationTimestamp: null
+      name: zeva2-cleanup
+    spec:
+      lookupPolicy:
+        local: false
+  - apiVersion: build.openshift.io/v1
+    kind: BuildConfig
+    metadata:
+      name: zeva2-cleanup
+      creationTimestamp:
+    spec:
+      output:
+        to:
+          kind: ImageStreamTag
+          name: zeva2-cleanup:prod
+      resources:
+        requests:
+          cpu: 10m
+          memory: 650Mi
+      source:
+        contextDir: openshift/templates/cleanup
+        git:
+          uri: https://github.com/bcgov/zeva2.git
+          ref: cleanup-images
+        type: Git
+      strategy:
+        type: Docker
+        dockerStrategy:
+          dockerfilePath: Dockerfile

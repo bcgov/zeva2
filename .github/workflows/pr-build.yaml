@@ -1,0 +1,233 @@
+# this workflow builds and deploys pull requests to the development environment in OpenShift.
+
+name: PR Build on Dev
+
+on:
+  # have to use pull_request_target otherwise the workflow will not have access to the secrets
+  pull_request_target:
+    types: [labeled, synchronize]
+    branches:
+      - develop
+      - release/*
+
+env:
+  GIT_URL: https://github.com/bcgov/zeva2.git
+  TOOLS_NAMESPACE: ${{ secrets.OPENSHIFT_NAMESPACE_PLATE }}-tools
+  DEV_NAMESPACE: ${{ secrets.OPENSHIFT_NAMESPACE_PLATE }}-dev
+  PR_NUMBER: ${{ github.event.pull_request.number }}
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # install oc command line tool
+  install-oc:
+    if: >
+      (github.event.action == 'labeled' && github.event.label.name == 'build' && ( github.event.pull_request.base.ref == 'develop' || startsWith( github.event.pull_request.base.ref, 'release' ) ) ) ||
+      (github.event.action == 'synchronize' && contains(github.event.pull_request.labels.*.name, 'build') && ( github.event.pull_request.base.ref == 'develop' || startsWith( github.event.pull_request.base.ref, 'release' ) ) )
+
+    runs-on: ubuntu-latest
+    outputs:
+      cache-hit: ${{ steps.cache.outputs.cache-hit }}
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4.1.1
+
+      - name: Set up cache for OpenShift CLI
+        id: cache
+        uses: actions/cache@v4.2.0
+        with:
+          path: /usr/local/bin/oc # Path where the `oc` binary will be installed
+          key: oc-cli-${{ runner.os }}
+
+      - name: Install OpenShift CLI (if not cached)
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: |
+          curl -LO https://mirror.openshift.com/pub/openshift-v4/clients/ocp/stable/openshift-client-linux.tar.gz
+          tar -xvf openshift-client-linux.tar.gz
+          sudo mv oc /usr/local/bin/
+          oc version --client
+
+      - name: Confirm OpenShift CLI is Available
+        run: oc version --client
+
+  # determine the version of the application
+  # A sample version 0.1.0-pr66.91
+  versioning:
+    if: >
+      (github.event.action == 'labeled' && github.event.label.name == 'build' && ( github.event.pull_request.base.ref == 'develop' || startsWith( github.event.pull_request.base.ref, 'release' ) ) ) ||
+      (github.event.action == 'synchronize' && contains(github.event.pull_request.labels.*.name, 'build') && ( github.event.pull_request.base.ref == 'develop' || startsWith( github.event.pull_request.base.ref, 'release' ) ) )
+
+    runs-on: ubuntu-latest
+
+    outputs:
+      VERSION: ${{ steps.export-version.outputs.VERSION }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: refs/pull/${{ github.event.pull_request.number }}/head
+
+      - name: verify files changed
+        run: |
+          pwd
+          ls -l
+          git status
+
+      - name: Install GitVersion
+        uses: gittools/actions/gitversion/setup@v3.1.11
+        with:
+          versionSpec: "6.0.x"
+
+      - name: Determine Version
+        id: version-step # step id used as reference for output values
+        uses: gittools/actions/gitversion/execute@v3.1.11
+        with:
+          useConfigFile: true
+
+      - name: Show GitVersion Config
+        run: |
+          pwd
+          ls -l /opt/hostedtoolcache/GitVersion.Tool
+          /opt/hostedtoolcache/GitVersion.Tool/6.0.5/dotnet-gitversion /showconfig
+
+      # The original version fron gitversion is in the format 0.1.0-alpha.91
+      # We need to change the alpha to pr<pr_number> so that we can deploy to dev
+      # The version will be in the format 0.1.0-pr<pr_number>.91
+      # The reason gitversion used the lable alpha is we use the pull_request_target event
+      - name: Export Version
+        id: export-version
+        run: |
+          VERSION="${{ steps.version-step.outputs.SemVer }}"
+          echo "ORIGINAL_VERSION=${VERSION}"
+          PR_NUMBER="${{ env.PR_NUMBER }}"
+          UPDATED_VERSION="${VERSION/alpha/pr${PR_NUMBER}}"
+          echo "VERSION=${UPDATED_VERSION}"
+          echo "VERSION=${UPDATED_VERSION}" >> $GITHUB_OUTPUT
+
+  # verify PR author
+  # only allow certain users to trigger the build
+  # this is to prevent malicious users from triggering builds
+  verify-pr-author:
+    name: Verify PR Author
+    needs: [install-oc, versioning]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Verify PR author
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const allowedAuthors = ['kuanfandevops', 'emi-hi', 'JulianForeman', 'rogerlcleung', 'tim738745', 'dependabot[bot]'];
+            const prAuthor = context.payload.pull_request.user.login;
+            if (!allowedAuthors.includes(prAuthor)) {
+              throw new Error(`PR author ${prAuthor} is not allowed.`);
+            }
+
+  # build zeva2 from pull request
+  build:
+    name: Build Zeva2 Pull Request
+    needs: [install-oc, versioning, verify-pr-author]
+    uses: ./.github/workflows/build-template.yaml
+    with:
+      git_ref: refs/pull/${{ github.event.pull_request.number }}/head
+      version: ${{ needs.versioning.outputs.VERSION }}
+    secrets:
+      tools-namespace: ${{ secrets.OPENSHIFT_NAMESPACE_PLATE }}-tools
+      openshift-server: ${{ secrets.OPENSHIFT_SERVER }}
+      openshift-token: ${{ secrets.OPENSHIFT_TOKEN }}
+
+  # tag the built images to dev
+  tag-images:
+    name: Tag Zeva2 images to Dev
+    needs: [versioning, build]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Restore oc command from Cache
+        uses: actions/cache@v4.2.0
+        with:
+          path: /usr/local/bin/oc
+          key: oc-cli-${{ runner.os }}
+
+      - name: Log in to Openshift
+        uses: redhat-actions/oc-login@v1.3
+        with:
+          openshift_server_url: ${{ secrets.OPENSHIFT_SERVER }}
+          openshift_token: ${{ secrets.OPENSHIFT_TOKEN }}
+          insecure_skip_tls_verify: true
+          namespace: ${{ env.TOOLS_NAMESPACE }}
+
+      - name: Tag images to target namespace
+        run: |
+          echo "VERSION=${{ needs.versioning.outputs.VERSION }}"
+          oc tag ${{ env.TOOLS_NAMESPACE }}/zeva2-next:${{ needs.versioning.outputs.VERSION}} ${{ env.DEV_NAMESPACE}}/zeva2-next:${{ needs.versioning.outputs.VERSION}}
+          oc tag ${{  env.TOOLS_NAMESPACE }}/zeva2-bullmq:${{ needs.versioning.outputs.VERSION}} ${{ env.DEV_NAMESPACE }}/zeva2-bullmq:${{ needs.versioning.outputs.VERSION}}
+
+  # Kick off the redis and postgresql for the pull request
+  # Deploys the pull request to development environment
+  deploy:
+    name: Deploy pull request
+    needs: [versioning, tag-images]
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+
+    steps:
+      - name: Checkout Manifest repository
+        uses: actions/checkout@v4.1.1
+        with:
+          repository: bcgov-c/tenant-gitops-ea8eab
+          ref: main
+          ssh-key: ${{ secrets.MANIFEST_REPO_DEPLOY_KEY }}
+
+      - name: Update values in next values-dev-pr.yaml
+        uses: mikefarah/yq@v4.40.5
+        with:
+          cmd: |
+            yq -i '.image.tag = "${{ needs.versioning.outputs.VERSION }}"' zeva2/zeva2-next/values-dev-pr.yaml
+            yq -i '.route.host = "zeva2-dev-${{ env.PR_NUMBER}}.apps.silver.devops.gov.bc.ca"' zeva2/zeva2-next/values-dev-pr.yaml
+            yq -i '(.env[] | select(.name=="AUTH_URL").value) = "https://zeva2-dev-${{ env.PR_NUMBER}}.apps.silver.devops.gov.bc.ca/api/auth"' zeva2/zeva2-next/values-dev-pr.yaml
+            yq -i '(.env[] | select(.name=="REDIS_HOST").value) = "zeva2-redis-dev-${{ env.PR_NUMBER}}-master.${{ env.DEV_NAMESPACE }}.svc.cluster.local"' zeva2/zeva2-next/values-dev-pr.yaml 
+            yq -i '(.env[] | select(.name=="DATABASE_URL").value) = "postgresql://test:test@zeva2-postgresql-dev-${{ env.PR_NUMBER}}.${{ env.DEV_NAMESPACE }}.svc.cluster.local:5432/zeva?schema=public"' zeva2/zeva2-next/values-dev-pr.yaml
+            yq -i eval '(.env[] | select(.name == "MINIO_ACCESS_KEY") | .valueFrom.secretKeyRef.name) = "zeva2-minio-dev-${{ env.PR_NUMBER }}"' zeva2/zeva2-next/values-dev-pr.yaml 
+            yq -i '(.env[] | select(.name=="MINIO_ENDPOINT").value) = "zeva2-minio-dev-${{ env.PR_NUMBER}}.ea8eab-dev.svc.cluster.local"' zeva2/zeva2-next/values-dev-pr.yaml
+            yq -i eval '(.env[] | select(.name == "MINIO_SECRET_KEY") | .valueFrom.secretKeyRef.name) = "zeva2-minio-dev-${{ env.PR_NUMBER }}"' zeva2/zeva2-next/values-dev-pr.yaml
+
+      - name: Update values in bullmq values-dev-pr.yaml
+        uses: mikefarah/yq@v4.40.5
+        with:
+          cmd: |
+            yq -i '.image.tag = "${{ needs.versioning.outputs.VERSION }}"' zeva2/zeva2-bullmq/values-dev-pr.yaml
+            yq -i '(.env[] | select(.name=="REDIS_HOST").value) = "zeva2-redis-dev-${{ env.PR_NUMBER}}-master.ea8eab-dev.svc.cluster.local"' zeva2/zeva2-bullmq/values-dev-pr.yaml
+            yq -i '(.env[] | select(.name=="DATABASE_URL").value) = "postgresql://test:test@zeva2-postgresql-dev-${{ env.PR_NUMBER}}.${{ env.DEV_NAMESPACE }}.svc.cluster.local:5432/zeva?schema=public"' zeva2/zeva2-bullmq/values-dev-pr.yaml
+            yq -i eval '(.env[] | select(.name == "MINIO_ACCESS_KEY") | .valueFrom.secretKeyRef.name) = "zeva2-minio-dev-${{ env.PR_NUMBER }}"' zeva2/zeva2-bullmq/values-dev-pr.yaml 
+            yq -i '(.env[] | select(.name=="MINIO_ENDPOINT").value) = "zeva2-minio-dev-${{ env.PR_NUMBER}}.ea8eab-dev.svc.cluster.local"' zeva2/zeva2-bullmq/values-dev-pr.yaml
+            yq -i eval '(.env[] | select(.name == "MINIO_SECRET_KEY") | .valueFrom.secretKeyRef.name) = "zeva2-minio-dev-${{ env.PR_NUMBER }}"' zeva2/zeva2-bullmq/values-dev-pr.yaml
+
+      - name: Restore oc command from Cache
+        uses: actions/cache@v4.2.0
+        with:
+          path: /usr/local/bin/oc
+          key: oc-cli-${{ runner.os }}
+
+      - name: Log in to Openshift
+        uses: redhat-actions/oc-login@v1.3
+        with:
+          openshift_server_url: ${{ secrets.OPENSHIFT_SERVER }}
+          openshift_token: ${{ secrets.OPENSHIFT_TOKEN }}
+          insecure_skip_tls_verify: true
+          namespace: ${{ env.DEV_NAMESPACE }}
+
+      - name: deploy zeva2 apps
+        run: |
+          cd services/postgres-pr
+          helm -n ${{ env.DEV_NAMESPACE }} -f ./values-dev-pr.yaml upgrade --install zeva2-postgresql-dev-${{ env.PR_NUMBER }} oci://registry-1.docker.io/bitnamicharts/postgresql --version 15.5.17
+          cd ../redis
+          helm -n ${{ env.DEV_NAMESPACE }} -f ./values-dev-pr.yaml upgrade --install zeva2-redis-dev-${{ env.PR_NUMBER }} oci://registry-1.docker.io/bitnamicharts/redis --version 21.2.9
+          cd ../minio-pr
+          helm -n ${{ env.DEV_NAMESPACE }} -f ./values-dev-pr.yaml upgrade --install zeva2-minio-dev-${{ env.PR_NUMBER }} oci://registry-1.docker.io/bitnamicharts/minio --version 14.8.0
+          cd ../../zeva2/zeva2-next
+          helm -n ${{ env.DEV_NAMESPACE }} -f ./values-dev-pr.yaml upgrade --install zeva2-next-dev-${{ env.PR_NUMBER }} .
+          cd ../zeva2-bullmq
+          helm -n ${{ env.DEV_NAMESPACE }} -f ./values-dev-pr.yaml upgrade --install zeva2-bullmq-dev-${{ env.PR_NUMBER }} .

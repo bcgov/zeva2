@@ -1,0 +1,57 @@
+1. Ask platform team to create the namespaces on Openshift
+https://registry.developer.gov.bc.ca
+
+2. Grant access to developers for all Openshift namespaces
+create rolebindings for all developers as edit
+create rolebinding for devops specialist
+
+3. create github-cicd service account in tools namespace
+
+4. create ArgoCD access
+
+4.1 follow the instruction
+https://developer.gov.bc.ca/docs/default/component/platform-developer-docs/docs/automation-and-resiliency/argo-cd-usage/
+
+5. verify the argocd access
+https://argocd-shared.apps.silver.devops.gov.bc.ca/
+
+6. verify the CD repo created
+https://github.com/bcgov-c/tenant-gitops-<licenseplate>
+
+7. create code repo secretes
+MANIFEST_REPO_DEPLOY_KEY
+OPENSHIFT_NAMESPACE_PLATE
+OPENSHIFT_SERVER
+OPENSHIFT_TOKEN
+
+7.1 create github-cicd service account in tools project
+
+7.2 create the token secret bounded with the service account
+
+file: cicd-token.yaml
+
+apiVersion: v1
+kind: Secret
+metadata:
+  name: github-cicd-token
+  namespace: licenseplate-tools
+  annotations:
+    kubernetes.io/service-account.name: github-cicd
+type: kubernetes.io/service-account-token
+
+command:
+
+oc -n licenseplate-tools apply -f ./cicd-token.yaml
+
+8. create rolebinding to bind the github-cicd service account in tools to edit cluster role in tools, dev,test and prod namspaces.
+
+9. Creat allow-all-internal network policy on dev
+
+10. create secret 
+zeva2-database
+zeva2-keycloak
+zeva2-redis-dev-connection
+
+10. Deploy Redis by using helm
+
+11. Deploy Crunchy by using ArgoCD

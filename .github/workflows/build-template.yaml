@@ -1,0 +1,78 @@
+
+# This workfile is a template for building the Zeva2 application in OpenShift.
+# It uses the OpenShift CLI (oc) to process and apply build configurations for the Next.js and BullMQ components of the application.
+# The workflow is triggered by a call from another workflow and requires certain inputs and secrets to be provided.
+name: Build Template
+
+on:
+  workflow_call:
+    inputs:
+      # The git reference to check out the repository
+      git_ref:
+        required: true
+        type: string
+      # The version of the application to build
+      # This is typically set by the GitVersion action in the calling workflow
+      version:
+        required: true
+        type: string
+    secrets:
+      tools-namespace:
+        required: true
+      openshift-server:
+        required: true
+      openshift-token:
+        required: true
+
+jobs:
+  build:
+    name: Build Zeva2
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4.1.1
+        with:
+          ref: ${{ inputs.git_ref }}
+  
+      - name: Restore oc command from Cache
+        uses: actions/cache@v4.2.0
+        with:
+          path: /usr/local/bin/oc
+          key: oc-cli-${{ runner.os }}
+
+      - name: Log in to Openshift
+        uses: redhat-actions/oc-login@v1.3
+        with:
+          openshift_server_url: ${{ secrets.openshift-server }}
+          openshift_token: ${{ secrets.openshift-token }}
+          insecure_skip_tls_verify: true
+          namespace: ${{ secrets.tools-namespace }}
+
+      - name: Build Next
+        run: |
+          echo "VERSION=${{ inputs.version }}"
+          oc projects
+          cd openshift/templates
+          oc process -f ./next-bc.yaml VERSION=${{ inputs.version }} GIT_REF=${{ inputs.git_ref }} | oc apply --wait=true -f - -n ${{ secrets.tools-namespace }}
+          # cancel existing builds if there are any
+          for build in $(oc -n ${{ secrets.tools-namespace }} get builds -l buildconfig=zeva2-next-${{ inputs.version }} -o jsonpath='{.items[?(@.status.phase=="Running")].metadata.name}'); do
+            echo "canceling $build"
+            oc -n ${{ secrets.tools-namespace }} cancel-build $build
+          done          
+          oc -n ${{ secrets.tools-namespace }} start-build zeva2-next-${{ inputs.version }} --wait=true
+
+      - name: Build Bullmq
+        run: |
+          echo "VERSION=${{ inputs.version }}"
+          oc projects
+          cd openshift/templates
+          oc process -f ./bullmq-bc.yaml VERSION=${{ inputs.version }} GIT_REF=${{ inputs.git_ref }} | oc apply --wait=true -f - -n ${{ secrets.tools-namespace }}
+          # cancel existing builds if there are any
+          for build in $(oc -n ${{ secrets.tools-namespace }} get builds -l buildconfig=zeva2-bullmq-${{ inputs.version }} -o jsonpath='{.items[?(@.status.phase=="Running")].metadata.name}'); do
+            echo "canceling $build"
+            oc -n ${{ secrets.tools-namespace }} cancel-build $build
+          done               
+          oc -n ${{ secrets.tools-namespace }} start-build zeva2-bullmq-${{ inputs.version }} --wait=true
+

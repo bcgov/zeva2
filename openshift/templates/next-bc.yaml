@@ -1,0 +1,62 @@
+apiVersion: template.openshift.io/v1
+kind: Template
+metadata:
+  creationTimestamp: null
+  name: zeva2-next-bc
+parameters:
+  - name: VERSION
+    displayName:
+    description: image tag name for output
+    required: true
+  - name: GIT_REF
+    displayName:
+    description: zeva branch name of the pr
+    required: true
+objects:
+  - apiVersion: image.openshift.io/v1
+    kind: ImageStream
+    metadata:
+      annotations:
+        description: Keeps track of changes in the client / backend image
+      labels:
+        shared: "true"
+      creationTimestamp: null
+      name: zeva2-next
+    spec:
+      lookupPolicy:
+        local: false
+    status:
+      dockerImageRepository: ""
+  - apiVersion: build.openshift.io/v1
+    kind: BuildConfig
+    metadata:
+      annotations:
+        description: Defines how to build the application
+      creationTimestamp: null
+      name: zeva2-next-${VERSION}
+      labels:
+        shared: "true"
+    spec:
+      nodeSelector: null
+      output:
+        to:
+          kind: ImageStreamTag
+          name: zeva2-next:${VERSION}
+      resources:
+        requests:
+          cpu: 50m
+          memory: 800Mi
+      runPolicy: SerialLatestOnly
+      source:
+        contextDir: next
+        git:
+          ref: ${GIT_REF}
+          uri: https://github.com/bcgov/zeva2.git
+        type: Git
+      strategy:
+        dockerStrategy:
+          dockerfilePath: ./Dockerfile-Openshift
+          pullSecret:
+            name: artifacts-pull-zeva2-artifactory-service-account-zbazfi
+        type: Docker
+      triggers: []

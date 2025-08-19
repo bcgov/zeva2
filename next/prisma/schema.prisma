@@ -10,7 +10,10 @@ datasource db {
 }
 
 // prisma doesn't allow enum values to start with a number
+// this enum must be in ascending lexicographical order, as well as ascending logical order
 enum ModelYear {
+  MY_2017 @map("2017")
+  MY_2018 @map("2018")
   MY_2019 @map("2019")
   MY_2020 @map("2020")
   MY_2021 @map("2021")
@@ -28,20 +31,67 @@ enum ModelYear {
   MY_2033 @map("2033")
   MY_2034 @map("2034")
   MY_2035 @map("2035")
+  MY_2036 @map("2036")
 }
 
 model Organization {
-  id                    Int                    @id @default(autoincrement())
+  id                    Int                       @id @default(autoincrement())
   name                  String
-  isGovernment          Boolean                @default(false) @map("is_government")
-  firstModelYear        ModelYear              @map("first_model_year")
+  isGovernment          Boolean                   @default(false) @map("is_government")
+  isActive              Boolean                   @default(true) @map("is_active")
+  shortName             String                    @map("short_name")
+  firstModelYear        ModelYear?                @map("first_model_year")
   users                 User[]
   zevUnitTransactions   ZevUnitTransaction[]
   zevUnitEndingBalances ZevUnitEndingBalance[]
-  zevUnitTransferTo     ZevUnitTransfer[]      @relation("zevUnitTransferTo")
-  zevUnitTransferFrom   ZevUnitTransfer[]      @relation("zevUnitTransferFrom")
+  zevUnitTransferTo     ZevUnitTransfer[]         @relation("zevUnitTransferTo")
+  zevUnitTransferFrom   ZevUnitTransfer[]         @relation("zevUnitTransferFrom")
+  Vehicle               Vehicle[]
+  VehicleHistory        VehicleHistory[]
+  organizationAddress   OrganizationAddress[]
+  ldvSupplied           OrganizationLDVSupplied[]
+  CreditApplication     CreditApplication[]
+  PenaltyCredit         PenaltyCredit[]
+  agreements            Agreement[]
+  LegacySalesVolume     LegacySalesVolume[]
+  SupplyVolume          SupplyVolume[]
+  ModelYearReport       ModelYearReport[]
 
   @@map("organization")
+}
+
+model OrganizationAddress {
+  id             Int          @id @default(autoincrement())
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  organizationId Int          @map("organization_id")
+  addressType    AddressType  @map("address_type")
+  expirationDate DateTime?    @map("expiration_date") @db.Date
+  addressLines   String?      @map("address_lines")
+  city           String?
+  postalCode     String?      @map("postal_code")
+  state          String?
+  county         String?
+  country        String?
+  representative String?
+
+  @@index([organizationId, addressType, expirationDate], map: "organization_address_organization_type_expiration")
+  @@map("organization_address")
+}
+
+model OrganizationLDVSupplied {
+  id             Int          @id @default(autoincrement())
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  organizationId Int          @map("organization_id")
+  volume         Int
+  modelYear      ModelYear    @map("model_year")
+
+  @@index([organizationId, modelYear], map: "organization_id_model_year")
+  @@map("organization_ldv_supplied")
+}
+
+enum AddressType {
+  RECORDS
+  SERVICE
 }
 
 enum Role {
@@ -54,24 +104,59 @@ enum Role {
 }
 
 enum Idp {
+  AZURE_IDIR     @map("azureidir")
   BCEID_BUSINESS @map("bceidbusiness")
-  IDIR           @map("idir")
+}
+
+enum Notification {
+  MODEL_YEAR_REPORT_RETURNED_TO_SUPPLIER
+  ZEV_MODEL_SUBMITTED
+  ZEV_MODEL_RANGE_REPORT_SUBMITTED
+  CREDIT_TRANSFER_APPROVED
+  CREDIT_APPLICATION_SUBMITTED
+  CREDIT_APPLICATION_CHECKED
+  CREDIT_APPLICATION_ISSUED_GOVT
+  CREDIT_TRANSFER_RECORDED_GOVT
+  CREDIT_TRANSFER_REJECTED_GOVT
+  CREDIT_TRANSFER_RECOMMEND_APPROVAL
+  CREDIT_TRANSFER_RECOMMEND_REJECT
+  CREDIT_APPLICATION_RECOMMEND_APPROVAL
+  CREDIT_TRANSFER_APPROVED_PARTNER
+  ZEV_MODEL_VALIDATED
+  ZEV_MODEL_REJECTED
+  CREDIT_TRANSFER_RECORDED
+  CREDIT_TRANSFER_REJECTED
+  CREDIT_APPLICATION_ISSUED
+  CREDIT_TRANSFER_SUBMITTED
+  CREDIT_TRANSFER_RESCINDED_PARTNER
+  CREDIT_TRANSFER_REJECTED_PARTNER
+  ZEV_MODEL_RANGE_REPORT_TEST_RESULT_REQUESTED
+  CREDIT_TRANSFER_RESCINDED
 }
 
 model User {
-  id                     Int                      @id @default(autoincrement())
-  contactEmail           String?                  @map("contact_email")
-  idpEmail               String                   @map("idp_email")
-  idpSub                 String?                  @map("idp_sub")
-  idp                    Idp                      @map("idp")
-  idpUsername            String                   @map("idp_username")
-  isActive               Boolean                  @default(true) @map("is_active")
-  organization           Organization             @relation(fields: [organizationId], references: [id])
-  organizationId         Int                      @map("organization_id")
-  roles                  Role[]
-  zevUnitTransferHistory ZevUnitTransferHistory[]
+  id                       Int                        @id @default(autoincrement())
+  contactEmail             String?                    @map("contact_email")
+  idpSub                   String?                    @map("idp_sub")
+  idp                      Idp                        @map("idp")
+  idpUsername              String                     @map("idp_username")
+  isActive                 Boolean                    @default(true) @map("is_active")
+  organization             Organization               @relation(fields: [organizationId], references: [id])
+  organizationId           Int                        @map("organization_id")
+  roles                    Role[]
+  zevUnitTransferHistory   ZevUnitTransferHistory[]
+  notifications            Notification[]
+  firstName                String                     @map("first_name")
+  lastName                 String                     @map("last_name")
+  wasUpdated               Boolean                    @default(false) @map("was_updated")
+  VehicleHistory           VehicleHistory[]
+  CreditApplicationHistory CreditApplicationHistory[]
+  PenaltyCreditHistory     PenaltyCreditHistory[]
+  AgreementHistory         AgreementHistory[]
+  ModelYearReportHistory   ModelYearReportHistory[]
+  ReassessmentHistory      ReassessmentHistory[]
 
-  @@unique([idp, idpUsername, idpEmail])
+  @@unique([idp, idpUsername])
   @@map("user")
 }
 
@@ -87,7 +172,7 @@ enum ReferenceType {
   OBLIGATION_REDUCTION
   ASSESSMENT_ADJUSTMENT
   SUPPLY_CREDITS
-  AGREEMENT_CREDITS
+  AGREEMENT
 }
 
 enum ZevClass {
@@ -102,19 +187,18 @@ enum VehicleClass {
 }
 
 model ZevUnitTransaction {
-  id             Int             @id @default(autoincrement())
-  organization   Organization    @relation(fields: [organizationId], references: [id])
-  organizationId Int             @map("organization_id")
-  type           TransactionType
-  // referenceType and referenceId nullable for now; make non-nullable later when
-  // associated models (e.g. agreements, transfers, etc.) created
-  referenceType  ReferenceType?  @map("reference_type")
-  referenceId    Int?            @map("reference_id")
-  numberOfUnits  Decimal         @map("number_of_units") @db.Decimal(65, 2)
-  zevClass       ZevClass        @map("zev_class")
-  vehicleClass   VehicleClass    @map("vehicle_class")
-  modelYear      ModelYear       @map("model_year")
-  timestamp      DateTime        @db.Timestamptz(6)
+  id                Int             @id @default(autoincrement())
+  organization      Organization    @relation(fields: [organizationId], references: [id])
+  organizationId    Int             @map("organization_id")
+  type              TransactionType
+  referenceType     ReferenceType   @map("reference_type")
+  referenceId       Int?            @map("reference_id")
+  legacyReferenceId Int?            @map("legacy_reference_id")
+  numberOfUnits     Decimal         @map("number_of_units") @db.Decimal(65, 2)
+  zevClass          ZevClass        @map("zev_class")
+  vehicleClass      VehicleClass    @map("vehicle_class")
+  modelYear         ModelYear       @map("model_year")
+  timestamp         DateTime        @default(now()) @db.Timestamptz(6)
 
   @@map("zev_unit_transaction")
 }
@@ -142,15 +226,15 @@ model ZevUnitEndingBalance {
 
 enum ZevUnitTransferStatuses {
   DRAFT
-  SUBMITTED
-  APPROVED
-  DISAPPROVED
-  RECOMMEND_APPROVAL
-  RECOMMEND_REJECTION
-  VALIDATED
-  RESCIND_PRE_APPROVAL
-  RESCINDED
-  REJECTED
+  SUBMITTED_TO_TRANSFER_TO
+  RESCINDED_BY_TRANSFER_FROM
+  APPROVED_BY_TRANSFER_TO
+  REJECTED_BY_TRANSFER_TO
+  RECOMMEND_APPROVAL_GOV
+  RECOMMEND_REJECTION_GOV
+  RETURNED_TO_ANALYST
+  APPROVED_BY_GOV
+  REJECTED_BY_GOV
   DELETED
 }
 
@@ -162,33 +246,466 @@ model ZevUnitTransfer {
   transferFrom           Organization             @relation("zevUnitTransferFrom", fields: [transferFromId], references: [id])
   status                 ZevUnitTransferStatuses
   zevUnitTransferContent ZevUnitTransferContent[]
-  ZevUnitTransferHistory ZevUnitTransferHistory[]
+  zevUnitTransferHistory ZevUnitTransferHistory[]
 
   @@map("zev_unit_transfer")
 }
 
 model ZevUnitTransferContent {
-  id                Int             @id @default(autoincrement())
-  zevUnitTransferId Int             @map("zev_unit_transfer_id")
-  zevUnitTransfer   ZevUnitTransfer @relation(fields: [zevUnitTransferId], references: [id])
-  zevUnitValue      Decimal         @map("zev_unit_value") @db.Decimal(65, 2)
-  dollarValue       Decimal         @map("dollar_value") @db.Decimal(20, 2)
-  zevClass          ZevClass        @map("zev_class")
-  vehicleClass      VehicleClass    @map("vehicle_class")
-  modelYear         ModelYear       @map("model_year")
+  id                 Int             @id @default(autoincrement())
+  zevUnitTransferId  Int             @map("zev_unit_transfer_id")
+  zevUnitTransfer    ZevUnitTransfer @relation(fields: [zevUnitTransferId], references: [id])
+  numberOfUnits      Decimal         @map("number_of_units") @db.Decimal(65, 2)
+  zevClass           ZevClass        @map("zev_class")
+  vehicleClass       VehicleClass    @map("vehicle_class")
+  modelYear          ModelYear       @map("model_year")
+  dollarValuePerUnit Decimal         @map("dollar_value_per_unit") @db.Decimal(65, 2)
 
   @@map("zev_unit_transfer_content")
 }
 
+enum ZevUnitTransferHistoryUserActions {
+  SUBMITTED_TO_TRANSFER_TO
+  RESCINDED_BY_TRANSFER_FROM
+  APPROVED_BY_TRANSFER_TO
+  REJECTED_BY_TRANSFER_TO
+  RECOMMEND_APPROVAL_GOV
+  RECOMMEND_REJECTION_GOV
+  RETURNED_TO_ANALYST
+  APPROVED_BY_GOV
+  REJECTED_BY_GOV
+  ADDED_COMMENT_GOV_INTERNAL
+}
+
 model ZevUnitTransferHistory {
-  id                Int                     @id @default(autoincrement())
-  zevUnitTransferId Int                     @map("zev_unit_transfer_id")
-  zevUnitTransfer   ZevUnitTransfer         @relation(fields: [zevUnitTransferId], references: [id])
-  updateUserId      Int?                    @map("update_user_id")
-  updateUser        User?                   @relation(fields: [updateUserId], references: [id])
-  updateTimestamp   DateTime?               @map("update_timestamp") @db.Timestamptz(6)
-  status            ZevUnitTransferStatuses
+  id                Int                               @id @default(autoincrement())
+  zevUnitTransferId Int                               @map("zev_unit_transfer_id")
+  zevUnitTransfer   ZevUnitTransfer                   @relation(fields: [zevUnitTransferId], references: [id])
+  userId            Int                               @map("user_id")
+  user              User                              @relation(fields: [userId], references: [id])
+  timestamp         DateTime                          @default(now()) @db.Timestamptz(6)
+  userAction        ZevUnitTransferHistoryUserActions @map("user_action")
   comment           String?
 
   @@map("zev_unit_transfer_history")
+}
+
+enum VehicleZevType {
+  BEV
+  PHEV
+  EREV
+  FCEV
+}
+
+enum VehicleClassCode {
+  T
+  I
+  S
+  C
+  M
+  L
+  WS
+  WM
+  PS
+  PL
+  US
+  UL
+  V
+  VC
+  VP
+  SP
+}
+
+enum VehicleStatus {
+  DELETED
+  REJECTED
+  SUBMITTED
+  VALIDATED
+}
+
+model Vehicle {
+  id                   Int                    @id @default(autoincrement())
+  legacyId             Int?
+  organization         Organization           @relation(fields: [organizationId], references: [id])
+  organizationId       Int                    @map("organization_id")
+  status               VehicleStatus
+  make                 String
+  modelName            String                 @map("model_name")
+  modelYear            ModelYear              @map("model_year")
+  vehicleZevType       VehicleZevType         @map("vehicle_zev_type")
+  range                Int
+  vehicleClass         VehicleClass           @map("vehicle_class")
+  zevClass             ZevClass               @map("zev_class")
+  numberOfUnits        Decimal                @map("numberOfUnits") @db.Decimal(65, 2)
+  vehicleClassCode     VehicleClassCode       @map("vehicle_class_code")
+  weight               Int
+  us06RangeGte16       Boolean                @map("us06_range_gte_16")
+  isActive             Boolean                @map("is_active")
+  VehicleHistory       VehicleHistory[]
+  VehicleAttachment    VehicleAttachment[]
+  CreditApplicationVin CreditApplicationVin[]
+
+  @@map("vehicle")
+}
+
+model VehicleHistory {
+  id             Int           @id @default(autoincrement())
+  vehicleId      Int           @map("vehicle_id")
+  vehicle        Vehicle       @relation(fields: [vehicleId], references: [id])
+  userId         Int           @map("user_id")
+  user           User          @relation(fields: [userId], references: [id])
+  timestamp      DateTime      @default(now()) @db.Timestamptz(6)
+  userAction     VehicleStatus @map("user_action")
+  comment        String?
+  Organization   Organization? @relation(fields: [organizationId], references: [id])
+  organizationId Int?
+
+  @@map("vehicle_history")
+}
+
+model VehicleAttachment {
+  id              Int     @id @default(autoincrement())
+  vehicleId       Int     @map("vehicle_id")
+  vehicle         Vehicle @relation(fields: [vehicleId], references: [id])
+  filename        String
+  minioObjectName String  @map("minio_object_name")
+
+  @@map("vehicle_file_attachment")
+}
+
+enum IcbcFileStatus {
+  FAILURE
+  PROCESSING
+  SUCCESS
+}
+
+model IcbcFile {
+  id                            Int            @id @default(autoincrement())
+  isLegacy                      Boolean        @default(false) @map("is_legacy")
+  name                          String         @unique
+  status                        IcbcFileStatus
+  timestamp                     DateTime       @db.Timestamptz(6)
+  numberOfRecordsPreProcessing  Int?           @map("number_of_records_pre_processing")
+  numberOfRecordsPostProcessing Int?           @map("number_of_records_post_processing")
+  icbcRecords                   IcbcRecord[]
+
+  @@map("icbc_file")
+}
+
+model IcbcRecord {
+  id         Int       @id @default(autoincrement())
+  icbcFileId Int       @map("icbc_file_id")
+  icbcFile   IcbcFile  @relation(fields: [icbcFileId], references: [id])
+  vin        String    @unique @db.VarChar(17)
+  make       String
+  model      String
+  year       ModelYear
+
+  @@map("icbc_record")
+}
+
+enum CreditApplicationStatus {
+  APPROVED
+  RECOMMEND_APPROVAL
+  RECOMMEND_REJECTION
+  REJECTED
+  RETURNED_TO_ANALYST
+  RETURNED_TO_SUPPLIER
+  SUBMITTED
+}
+
+enum CreditApplicationSupplierStatus {
+  APPROVED
+  REJECTED
+  RETURNED_TO_SUPPLIER
+  SUBMITTED
+}
+
+model CreditApplication {
+  id                       Int                             @id @default(autoincrement())
+  organization             Organization                    @relation(fields: [organizationId], references: [id])
+  organizationId           Int                             @map("organization_id")
+  submissionTimestamp      DateTime                        @default(now()) @map("submission_timestamp") @db.Timestamptz(6)
+  status                   CreditApplicationStatus         @map("status")
+  supplierStatus           CreditApplicationSupplierStatus @map("supplier_status")
+  supplierFileId           String                          @map("supplier_file_id")
+  supplierFileName         String                          @map("supplier_file_name")
+  CreditApplicationHistory CreditApplicationHistory[]
+  CreditApplicationRecord  CreditApplicationRecord[]
+  CreditApplicationVin     CreditApplicationVin[]
+
+  @@map("credit_application")
+}
+
+model CreditApplicationHistory {
+  id                  Int                     @id @default(autoincrement())
+  creditApplicationId Int                     @map("credit_application_id")
+  creditApplication   CreditApplication       @relation(fields: [creditApplicationId], references: [id])
+  userId              Int                     @map("user_id")
+  user                User                    @relation(fields: [userId], references: [id])
+  timestamp           DateTime                @default(now()) @db.Timestamptz(6)
+  userAction          CreditApplicationStatus @map("user_action")
+  comment             String?
+
+  @@map("credit_application_history")
+}
+
+model CreditApplicationRecord {
+  id                  Int               @id @default(autoincrement())
+  creditApplicationId Int               @map("credit_application_id")
+  creditApplication   CreditApplication @relation(fields: [creditApplicationId], references: [id])
+  vin                 String            @db.VarChar(17)
+  timestamp           DateTime          @db.Timestamptz(6)
+  vehicleClass        VehicleClass?     @map("vehicle_class")
+  zevClass            ZevClass?         @map("zev_class")
+  modelYear           ModelYear         @map("model_year")
+  numberOfUnits       Decimal?          @map("number_of_units") @db.Decimal(65, 2)
+  make                String
+  modelName           String            @map("model_name")
+  icbcMake            String?           @map("icbc_make")
+  icbcModelName       String?           @map("icbc_model_name")
+  icbcModelYear       ModelYear?        @map("icbc_model_year")
+  icbcTimestamp       DateTime?         @map("icbc_timestamp") @db.Timestamptz(6)
+  validated           Boolean
+  reason              String?
+  warnings            String[]
+
+  @@map("credit_application_record")
+}
+
+model CreditApplicationVin {
+  id                  Int               @id @default(autoincrement())
+  creditApplicationId Int               @map("credit_application_id")
+  creditApplication   CreditApplication @relation(fields: [creditApplicationId], references: [id])
+  vin                 String            @unique @db.VarChar(17)
+  vehicleId           Int               @map("vehicle_id")
+  vehicle             Vehicle           @relation(fields: [vehicleId], references: [id])
+  timestamp           DateTime          @db.Timestamptz(6)
+
+  @@map("credit_application_vin")
+}
+
+model CreditApplicationVinLegacy {
+  id  Int    @id @default(autoincrement())
+  vin String @unique @db.VarChar(17)
+
+  @@map("credit_application_vin_legacy")
+}
+
+enum PenaltyCreditStatus {
+  APPROVED
+  REJECTED
+  SUBMITTED_TO_DIRECTOR
+}
+
+model PenaltyCredit {
+  id                   Int                    @id @default(autoincrement())
+  organization         Organization           @relation(fields: [organizationId], references: [id])
+  organizationId       Int                    @map("organization_id")
+  complianceYear       ModelYear              @map("compliance_year")
+  status               PenaltyCreditStatus
+  vehicleClass         VehicleClass           @map("vehicle_class")
+  zevClass             ZevClass               @map("zev_class")
+  modelYear            ModelYear              @map("model_year")
+  numberOfUnits        Decimal                @map("number_of_units") @db.Decimal(65, 2)
+  PenaltyCreditHistory PenaltyCreditHistory[]
+
+  @@map("penalty_credit")
+}
+
+model PenaltyCreditHistory {
+  id              Int                 @id @default(autoincrement())
+  penaltyCredit   PenaltyCredit       @relation(fields: [penaltyCreditId], references: [id])
+  penaltyCreditId Int                 @map("penalty_credit_id")
+  userId          Int                 @map("user_id")
+  user            User                @relation(fields: [userId], references: [id])
+  timestamp       DateTime            @default(now()) @db.Timestamptz(6)
+  userAction      PenaltyCreditStatus @map("user_action")
+  comment         String?
+
+  @@map("penalty_credit_history")
+}
+
+enum AgreementType {
+  INITIATIVE
+  PURCHASE
+}
+
+enum AgreementStatus {
+  DRAFT
+  RECOMMEND_APPROVAL
+  RETURNED_TO_ANALYST
+  ISSUED
+  DELETED
+}
+
+enum AgreementUserAction {
+  SAVED
+  RECOMMEND_APPROVAL
+  RETURNED_TO_ANALYST
+  ISSUED
+  DELETED
+  ADDED_COMMENT_GOV_INTERNAL
+}
+
+model Agreement {
+  id               Int                @id @default(autoincrement())
+  referenceId      String?            @map("reference_id")
+  organization     Organization       @relation(fields: [organizationId], references: [id])
+  organizationId   Int                @map("organization_id")
+  agreementType    AgreementType      @map("agreement_type")
+  status           AgreementStatus
+  effectiveDate    DateTime?          @map("effective_date") @db.Date
+  comment          String?
+  agreementContent AgreementContent[]
+  agreementHistory AgreementHistory[]
+
+  @@map("agreement")
+}
+
+model AgreementContent {
+  id            Int       @id @default(autoincrement())
+  agreement     Agreement @relation(fields: [agreementId], references: [id])
+  agreementId   Int       @map("agreement_id")
+  zevClass      ZevClass  @map("zev_class")
+  modelYear     ModelYear @map("model_year")
+  numberOfUnits Decimal   @map("number_of_units") @db.Decimal(65, 2)
+
+  @@map("agreement_content")
+}
+
+model AgreementHistory {
+  id               Int                 @id @default(autoincrement())
+  agreementId      Int                 @map("agreement_id")
+  agreement        Agreement           @relation(fields: [agreementId], references: [id])
+  userId           Int                 @map("user_id")
+  user             User                @relation(fields: [userId], references: [id])
+  timestamp        DateTime            @default(now()) @db.Timestamptz(6)
+  userAction       AgreementUserAction @map("user_action")
+  agreementComment AgreementComment?
+
+  @@map("agreement_history")
+}
+
+model AgreementComment {
+  id                 Int              @id @default(autoincrement())
+  agreementHistoryId Int              @unique @map("agreement_history_id")
+  agreementHistory   AgreementHistory @relation(fields: [agreementHistoryId], references: [id])
+  comment            String
+
+  @@map("agreement_comment")
+}
+
+model LegacySalesVolume {
+  id             Int          @id @default(autoincrement())
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  organizationId Int          @map("organization_id")
+  modelYear      ModelYear    @map("model_year")
+  volume         Int
+
+  @@unique([organizationId, modelYear])
+  @@map("legacy_sales_volume")
+}
+
+model SupplyVolume {
+  id             Int          @id @default(autoincrement())
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  organizationId Int          @map("organization_id")
+  modelYear      ModelYear    @map("model_year")
+  volume         Int
+
+  @@unique([organizationId, modelYear])
+  @@map("supply_volume")
+}
+
+enum ModelYearReportStatus {
+  ASSESSED
+  RETURNED_TO_ANALYST
+  RETURNED_TO_SUPPLIER
+  SUBMITTED_TO_DIRECTOR
+  SUBMITTED_TO_GOVERNMENT
+}
+
+enum ModelYearReportSupplierStatus {
+  ASSESSED
+  RETURNED_TO_SUPPLIER
+  SUBMITTED_TO_GOVERNMENT
+}
+
+model ModelYearReport {
+  id                       Int                           @id @default(autoincrement())
+  organization             Organization                  @relation(fields: [organizationId], references: [id])
+  organizationId           Int                           @map("organization_id")
+  modelYear                ModelYear                     @map("model_year")
+  status                   ModelYearReportStatus
+  supplierStatus           ModelYearReportSupplierStatus @map("supplier_status")
+  fileName                 String                        @map("file_name")
+  objectName               String                        @map("object_name")
+  forecastReportFileName   String                        @map("forecast_report_file_name")
+  forecastReportObjectName String                        @map("forecast_report_object_name")
+  assessmentFileName       String?                       @map("assessment_file_name")
+  assessmentObjectName     String?                       @map("assessment_object_name")
+  ModelYearReportHistory   ModelYearReportHistory[]
+  SupplementaryReport      SupplementaryReport[]
+  Reassessment             Reassessment[]
+
+  @@unique([organizationId, modelYear])
+  @@map("model_year_report")
+}
+
+model ModelYearReportHistory {
+  id                Int                   @id @default(autoincrement())
+  modelYearReportId Int                   @map("model_year_report_id")
+  modelYearReport   ModelYearReport       @relation(fields: [modelYearReportId], references: [id])
+  userId            Int                   @map("user_id")
+  user              User                  @relation(fields: [userId], references: [id])
+  timestamp         DateTime              @default(now()) @db.Timestamptz(6)
+  userAction        ModelYearReportStatus @map("user_action")
+  comment           String?
+
+  @@map("model_year_report_history")
+}
+
+model SupplementaryReport {
+  id                Int             @id @default(autoincrement())
+  modelYearReport   ModelYearReport @relation(fields: [modelYearReportId], references: [id])
+  modelYearReportId Int             @map("model_year_report_id")
+  timestamp         DateTime        @default(now()) @db.Timestamptz(6)
+  comment           String
+  fileName          String          @map("file_name")
+  objectName        String          @unique @map("object_name")
+
+  @@map("supplementary_report")
+}
+
+enum ReassessmentStatus {
+  ISSUED
+  RETURNED_TO_ANALYST
+  SUBMITTED_TO_DIRECTOR
+}
+
+model Reassessment {
+  id                  Int                   @id @default(autoincrement())
+  modelYearReport     ModelYearReport       @relation(fields: [modelYearReportId], references: [id])
+  modelYearReportId   Int                   @map("model_year_report_id")
+  status              ReassessmentStatus
+  issuedTimestamp     DateTime?             @map("issued_timestamp") @db.Timestamptz(6)
+  fileName            String                @map("file_name")
+  objectName          String                @unique @map("object_name")
+  ReassessmentHistory ReassessmentHistory[]
+
+  @@map("reassessment")
+}
+
+model ReassessmentHistory {
+  id             Int                @id @default(autoincrement())
+  reassessmentId Int                @map("reassessment_id")
+  reassessment   Reassessment       @relation(fields: [reassessmentId], references: [id])
+  userId         Int                @map("user_id")
+  user           User               @relation(fields: [userId], references: [id])
+  timestamp      DateTime           @default(now()) @db.Timestamptz(6)
+  userAction     ReassessmentStatus @map("user_action")
+  comment        String?
+
+  @@map("reassessment_history")
 }

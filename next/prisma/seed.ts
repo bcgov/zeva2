@@ -2,311 +2,336 @@ import { prisma } from "@/lib/prisma";
 import { prismaOld } from "@/lib/prismaOld";
 import {
   ModelYear,
-  Role,
-  Idp,
   ZevClass,
-  TransactionType,
   VehicleClass,
   BalanceType,
+  CreditApplicationVinLegacy,
 } from "./generated/client";
-import { getModelYearEnum, getRoleEnum } from "@/lib/utils/getEnums";
+import { getStringsToModelYearsEnumsMap } from "@/app/lib/utils/enumMaps";
 import { Decimal } from "./generated/client/runtime/library";
+import { Notification } from "./generated/client";
+import { isNotification } from "@/app/lib/utils/typeGuards";
+import { seedOrganizations } from "./seedProcesses/seedOrganizations";
+import { seedTransactions } from "./seedProcesses/seedTransactions";
+import { seedIcbc } from "./seedProcesses/seedIcbc";
+import { seedUsers } from "./seedProcesses/seedUsers";
+import { seedAgreements } from "./seedProcesses/seedAgreements";
+import { seedVolumes } from "./seedProcesses/seedVolumes";
+import { seedVehicles } from "./seedProcesses/seedVehicles";
 
 // prismaOld to interact with old zeva db; prisma to interact with new zeva db
 const main = () => {
-  return prisma.$transaction(async (tx) => {
-    const decimalZero = new Decimal(0);
-    const mapOfModelYearIdsToModelYearEnum: {
-      [id: number]: ModelYear | undefined;
-    } = {};
-    const mapOfRoleIdsToRoleEnum: { [id: number]: Role | undefined } = {};
-    const mapOfOldOrgIdsToNewOrgIds: { [id: number]: number } = {};
-    const mapOfOldUserIdsToNewUserIds: { [id: number]: number } = {};
-    const mapOfOldUsernamesToNewUserIds: { [username: string]: number } = {};
-    const mapOfOldCreditTransferIdsToNewZevUnitTransferIds: { [id: number]: number } = {};
+  const modelYearsMap = getStringsToModelYearsEnumsMap();
+  return prisma.$transaction(
+    async (tx) => {
+      const decimalZero = new Decimal(0);
+      const mapOfModelYearIdsToModelYearEnum: {
+        [id: number]: ModelYear | undefined;
+      } = {};
+      const mapOfOldCreditClassIdsToZevClasses: {
+        [id: number]: ZevClass | undefined;
+      } = {};
 
-    const modelYearsOld = await prismaOld.model_year.findMany();
-    for (const modelYearOld of modelYearsOld) {
-      mapOfModelYearIdsToModelYearEnum[modelYearOld.id] = getModelYearEnum(
-        modelYearOld.description,
+      const modelYearsOld = await prismaOld.model_year.findMany();
+      for (const modelYearOld of modelYearsOld) {
+        mapOfModelYearIdsToModelYearEnum[modelYearOld.id] =
+          modelYearsMap[modelYearOld.description];
+      }
+
+      // seed organization tables
+      const { mapOfOldOrgIdsToNewOrgIds } = await seedOrganizations(
+        tx,
+        mapOfModelYearIdsToModelYearEnum,
       );
-    }
 
-    const rolesOld = await prismaOld.role.findMany();
-    for (const roleOld of rolesOld) {
-      mapOfRoleIdsToRoleEnum[roleOld.id] = getRoleEnum(roleOld.role_code);
-    }
+      // seed user tables
+      const mapOfOldUserIdsToNewUserIds = await seedUsers(
+        tx,
+        mapOfOldOrgIdsToNewOrgIds,
+      );
 
-    // add orgs:
-    const orgsOld = await prismaOld.organization.findMany();
-    for (const orgOld of orgsOld) {
-      const orgNew = await tx.organization.create({
-        data: {
-          name: orgOld.organization_name,
-          firstModelYear:
-            mapOfModelYearIdsToModelYearEnum[
-              orgOld.first_model_year_id ?? -1
-            ] ?? ModelYear.MY_2019,
-          isGovernment: orgOld.is_government,
-        },
-      });
-      mapOfOldOrgIdsToNewOrgIds[orgOld.id] = orgNew.id;
-    }
-
-    // add users:
-    const usersOld = await prismaOld.user_profile.findMany({
-      include: {
-        organization: true,
-      },
-    });
-    for (const [index, userOld] of usersOld.entries()) {
-      const userNew = await tx.user.create({
-        data: {
-          contactEmail: userOld.email,
-          idpEmail:
-            userOld.keycloak_email ?? "noSuchEmail" + index + "@email.com",
-          idpSub: userOld.keycloak_user_id,
-          idp: userOld.organization?.is_government
-            ? Idp.IDIR
-            : Idp.BCEID_BUSINESS,
-          idpUsername: userOld.username,
-          isActive: userOld.is_active,
-          organizationId: mapOfOldOrgIdsToNewOrgIds[userOld.organization_id!],
-        },
-      });
-      mapOfOldUserIdsToNewUserIds[userOld.id] = userNew.id;
-      mapOfOldUsernamesToNewUserIds[userOld.username] = userNew.id;
-    }
-
-    // update each user with their roles:
-    const usersRolesOld = await prismaOld.user_role.findMany();
-    for (const userRoleOld of usersRolesOld) {
-      await tx.user.update({
-        where: {
-          id: mapOfOldUserIdsToNewUserIds[userRoleOld.user_profile_id],
-        },
-        data: {
-          roles: {
-            push: mapOfRoleIdsToRoleEnum[userRoleOld.role_id],
-          },
-        },
-      });
-    }
-
-    // add ZevUnitTransactions (in old db, these are called credit transactions)
-    const mapOfOldCreditClassIdsToZevClasses: {
-      [id: number]: ZevClass | undefined;
-    } = {};
-    const creditClassesOld = await prismaOld.credit_class_code.findMany();
-    for (const creditClass of creditClassesOld) {
-      mapOfOldCreditClassIdsToZevClasses[creditClass.id] =
-        ZevClass[creditClass.credit_class as keyof typeof ZevClass];
-    }
-
-    const creditTransactionsOld = await prismaOld.credit_transaction.findMany();
-    for (const transaction of creditTransactionsOld) {
-      let transactionType;
-      let organizationId;
-      const zevClass =
-        mapOfOldCreditClassIdsToZevClasses[transaction.credit_class_id];
-      const modelYear =
-        mapOfModelYearIdsToModelYearEnum[transaction.model_year_id];
-      if (!zevClass) {
-        throw new Error(
-          "unknown credit class when seeding ZevUnitTransactions",
-        );
-      }
-      if (!modelYear) {
-        throw new Error("unknown model year when seeding ZevUnitTransactions");
-      }
-      const totalValueOld = transaction.total_value;
-      const numberOfUnits = totalValueOld.lessThan(decimalZero)
-        ? totalValueOld.times(new Decimal(-1))
-        : totalValueOld;
-      if (transaction.credit_to_id && !transaction.debit_from_id) {
-        transactionType = TransactionType.CREDIT;
-        organizationId = transaction.credit_to_id;
-      } else if (!transaction.credit_to_id && transaction.debit_from_id) {
-        transactionType = TransactionType.DEBIT;
-        organizationId = transaction.debit_from_id;
+      const creditClassesOld = await prismaOld.credit_class_code.findMany();
+      for (const creditClass of creditClassesOld) {
+        mapOfOldCreditClassIdsToZevClasses[creditClass.id] =
+          ZevClass[creditClass.credit_class as keyof typeof ZevClass];
       }
 
-      if (transactionType && organizationId) {
-        await tx.zevUnitTransaction.create({
-          data: {
-            type: transactionType,
-            organizationId: mapOfOldOrgIdsToNewOrgIds[organizationId],
-            numberOfUnits: numberOfUnits,
-            zevClass: zevClass,
-            vehicleClass: VehicleClass.REPORTABLE,
-            modelYear: modelYear,
-            timestamp: transaction.transaction_timestamp,
-          },
-        });
-      } else if (transaction.credit_to_id && transaction.debit_from_id) {
-        await tx.zevUnitTransaction.create({
-          data: {
-            type: TransactionType.CREDIT,
-            organizationId: mapOfOldOrgIdsToNewOrgIds[transaction.credit_to_id],
-            numberOfUnits: numberOfUnits,
-            zevClass: zevClass,
-            vehicleClass: VehicleClass.REPORTABLE,
-            modelYear: modelYear,
-            timestamp: transaction.transaction_timestamp,
-          },
-        });
-        await tx.zevUnitTransaction.create({
-          data: {
-            type: TransactionType.TRANSFER_AWAY,
-            organizationId:
-              mapOfOldOrgIdsToNewOrgIds[transaction.debit_from_id],
-            numberOfUnits: numberOfUnits,
-            zevClass: zevClass,
-            vehicleClass: VehicleClass.REPORTABLE,
-            modelYear: modelYear,
-            timestamp: transaction.transaction_timestamp,
-          },
+      // add notifications from old subscription table
+      const notificationsOld = await prismaOld.notification.findMany({
+        select: { id: true, notification_code: true },
+      });
+
+      const notifCodeById = notificationsOld.reduce<Record<number, string>>(
+        (acc, n) => {
+          acc[n.id] = n.notification_code;
+          return acc;
+        },
+        {},
+      );
+
+      const subsOld = await prismaOld.notification_subscription.findMany({
+        select: { user_profile_id: true, notification_id: true },
+      });
+
+      const grouped = subsOld.reduce<Record<number, string[]>>((acc, sub) => {
+        const code = notifCodeById[sub.notification_id];
+        if (!code) return acc;
+        acc[sub.user_profile_id] ??= [];
+        acc[sub.user_profile_id].push(code);
+        return acc;
+      }, {});
+
+      for (const [oldUserId, codes] of Object.entries(grouped)) {
+        const newUserId = mapOfOldUserIdsToNewUserIds[Number(oldUserId)];
+        if (!newUserId) continue;
+
+        const validNotifications = codes
+          .map((code) => code as Notification)
+          .filter((n) => isNotification(n));
+
+        await tx.user.update({
+          where: { id: newUserId },
+          data: { notifications: { set: validNotifications } },
         });
       }
-    }
 
-    // add ending balances;
-    // for now, just look at model_year_report_compliance_obligation and get records that belong to
-    // the ProvisionalBalanceAfterCreditReduction category and is fromGov;
-    // there are cases where this will be the wrong ending balance because we also need to take
-    // into account records that belong in the CreditDeficit category,
-    // and also at records in the supplemental_report_credit_activity table
-    const endingBalancesOld =
-      await prismaOld.model_year_report_compliance_obligation.findMany({
-        include: {
-          model_year_report: true,
-        },
-      });
-    for (const balance of endingBalancesOld) {
-      const modelYear = mapOfModelYearIdsToModelYearEnum[balance.model_year_id];
-      if (!modelYear) {
-        throw new Error("unknown model year when seeding ending balances");
-      }
-      const complianceYear =
-        mapOfModelYearIdsToModelYearEnum[
-          balance.model_year_report.model_year_id
-        ];
-      if (!complianceYear) {
-        throw new Error(
-          "unknown compliance year year when seeding ending balances",
-        );
-      }
-      const category = balance.category;
-      const fromGov = balance.from_gov;
-      if (category === "ProvisionalBalanceAfterCreditReduction" && fromGov) {
-        const orgId =
-          mapOfOldOrgIdsToNewOrgIds[balance.model_year_report.organization_id];
-        const creditAValue = balance.credit_a_value;
-        const creditBValue = balance.credit_b_value;
-        if (!creditAValue.equals(decimalZero)) {
-          await tx.zevUnitEndingBalance.create({
-            data: {
-              organizationId: orgId,
-              complianceYear: complianceYear,
-              type: BalanceType.CREDIT,
-              initialNumberOfUnits: creditAValue,
-              finalNumberOfUnits: creditAValue,
-              zevClass: ZevClass.A,
-              vehicleClass: VehicleClass.REPORTABLE,
-              modelYear: modelYear,
+      await seedTransactions(
+        tx,
+        mapOfOldCreditClassIdsToZevClasses,
+        mapOfModelYearIdsToModelYearEnum,
+        mapOfOldOrgIdsToNewOrgIds,
+      );
+
+      /** Uncomment the following code to seed Agreement tables for local testing **/
+      // await seedAgreements(
+      //   tx,
+      //   mapOfOldCreditClassIdsToZevClasses,
+      //   mapOfModelYearIdsToModelYearEnum,
+      //   mapOfOldOrgIdsToNewOrgIds,
+      // );
+
+      // add ending balances
+      type OldBalance = {
+        idOld: number;
+        orgIdOld: number;
+        balanceType: BalanceType;
+        complianceYearIdOld: number;
+        creditAValue: Decimal | null;
+        creditBValue: Decimal | null;
+        modelYearIdOld: number;
+        fromReassessment: boolean;
+      };
+      const creditCategory = "ProvisionalBalanceAfterCreditReduction";
+      const debitCategory = "CreditDeficit";
+      const endingBalancesOld =
+        await prismaOld.model_year_report_compliance_obligation.findMany({
+          include: {
+            model_year_report: true,
+          },
+        });
+      const reassessmentEndingBalancesOld =
+        await prismaOld.supplemental_report_credit_activity.findMany({
+          include: {
+            supplemental_report: {
+              include: {
+                model_year_report: true,
+              },
             },
-          });
-        }
-        if (!creditBValue.equals(decimalZero)) {
-          await tx.zevUnitEndingBalance.create({
-            data: {
-              organizationId: orgId,
-              complianceYear: complianceYear,
-              type: BalanceType.CREDIT,
-              initialNumberOfUnits: creditBValue,
-              finalNumberOfUnits: creditBValue,
-              zevClass: ZevClass.B,
-              vehicleClass: VehicleClass.REPORTABLE,
-              modelYear: modelYear,
-            },
+          },
+        });
+      const balancesOld: OldBalance[] = [];
+      for (const balance of endingBalancesOld) {
+        const category = balance.category;
+        if (
+          (category === creditCategory || category === debitCategory) &&
+          balance.from_gov
+        ) {
+          balancesOld.push({
+            idOld: balance.id,
+            orgIdOld: balance.model_year_report.organization_id,
+            balanceType:
+              category === creditCategory
+                ? BalanceType.CREDIT
+                : BalanceType.DEBIT,
+            complianceYearIdOld: balance.model_year_report.model_year_id,
+            modelYearIdOld: balance.model_year_id,
+            creditAValue: balance.credit_a_value,
+            creditBValue: balance.credit_b_value,
+            fromReassessment: false,
           });
         }
       }
-    }
-
-    // add ZEV Unit Transfer (formerly Credit Transfer in old DB) records
-    const creditTransfersOld = await prismaOld.credit_transfer.findMany();
-    for (const creditTransferOld of creditTransfersOld) {
-      const zevUnitTransfer = await tx.zevUnitTransfer.create({
-        data: {
-          transferToId: creditTransferOld.credit_to_id,
-          transferFromId: creditTransferOld.debit_from_id,
-          status: creditTransferOld.status as any,
-        },
-      });
-      mapOfOldCreditTransferIdsToNewZevUnitTransferIds[creditTransferOld.id] = zevUnitTransfer.id;
-    }
-
-    // add ZEV Unit Transfer Content (formerly Credit Transfer Content in old DB) records
-    const creditTransferContentsOld = await prismaOld.credit_transfer_content.findMany();
-    for (const creditTransferContentOld of creditTransferContentsOld) {
-      const zevClass = mapOfOldCreditClassIdsToZevClasses[creditTransferContentOld.credit_class_id];
-      if (!zevClass) {
-        throw new Error("Unknown credit class in credit_transfer_content. Old record id: " + creditTransferContentOld.id);
+      for (const balance of reassessmentEndingBalancesOld) {
+        const status = balance.supplemental_report.status;
+        const category = balance.category;
+        if (
+          balance.model_year_id &&
+          (category === creditCategory || category === debitCategory) &&
+          status === "ASSESSED"
+        ) {
+          balancesOld.push({
+            idOld: balance.id,
+            orgIdOld:
+              balance.supplemental_report.model_year_report.organization_id,
+            balanceType:
+              category === creditCategory
+                ? BalanceType.CREDIT
+                : BalanceType.DEBIT,
+            complianceYearIdOld:
+              balance.supplemental_report.model_year_report.model_year_id,
+            modelYearIdOld: balance.model_year_id,
+            creditAValue: balance.credit_a_value,
+            creditBValue: balance.credit_b_value,
+            fromReassessment: true,
+          });
+        }
       }
-      const modelYear = mapOfModelYearIdsToModelYearEnum[creditTransferContentOld.model_year_id];
-      if (!modelYear) {
-        throw new Error("Unknown model year in credit_transfer_content. Old record id: " + creditTransferContentOld.id);
-      }
+      for (const balance of balancesOld) {
+        const fromReassessment = balance.fromReassessment;
+        const errorMessagePrefix = `${fromReassessment ? "SRCA " : "MYRCO "} ${balance.idOld} with unknown `;
+        const modelYear =
+          mapOfModelYearIdsToModelYearEnum[balance.modelYearIdOld];
+        if (!modelYear) {
+          throw new Error(errorMessagePrefix + "model year!");
+        }
+        const complianceYear =
+          mapOfModelYearIdsToModelYearEnum[balance.complianceYearIdOld];
+        if (!complianceYear) {
+          throw new Error(errorMessagePrefix + "compliance year!");
+        }
+        const orgId = mapOfOldOrgIdsToNewOrgIds[balance.orgIdOld];
+        if (!orgId) {
+          throw new Error(errorMessagePrefix + "org id!");
+        }
 
-      await tx.zevUnitTransferContent.create({
-        data: {
-          zevUnitTransferId: mapOfOldCreditTransferIdsToNewZevUnitTransferIds[creditTransferContentOld.credit_transfer_id],
-          zevUnitValue: creditTransferContentOld.credit_value,
-          dollarValue: creditTransferContentOld.dollar_value,
-          zevClass,
-          modelYear,
+        const creditAValue = balance.creditAValue;
+        const creditBValue = balance.creditBValue;
+        const uniqueDataBase = {
+          organizationId: orgId,
+          complianceYear: complianceYear,
           vehicleClass: VehicleClass.REPORTABLE,
+          modelYear: modelYear,
+        };
+        const data = {
+          ...uniqueDataBase,
+          type: balance.balanceType,
+        };
+        if (fromReassessment) {
+          if (creditAValue && !creditAValue.equals(decimalZero)) {
+            await tx.zevUnitEndingBalance.upsert({
+              where: {
+                organizationId_complianceYear_zevClass_vehicleClass_modelYear: {
+                  ...uniqueDataBase,
+                  zevClass: ZevClass.A,
+                },
+              },
+              create: {
+                ...data,
+                zevClass: ZevClass.A,
+                initialNumberOfUnits: creditAValue,
+                finalNumberOfUnits: creditAValue,
+              },
+              update: {
+                initialNumberOfUnits: creditAValue,
+                finalNumberOfUnits: creditAValue,
+              },
+            });
+          }
+          if (creditBValue && !creditBValue.equals(decimalZero)) {
+            await tx.zevUnitEndingBalance.upsert({
+              where: {
+                organizationId_complianceYear_zevClass_vehicleClass_modelYear: {
+                  ...uniqueDataBase,
+                  zevClass:
+                    data.type === BalanceType.DEBIT
+                      ? ZevClass.UNSPECIFIED
+                      : ZevClass.B,
+                },
+              },
+              create: {
+                ...data,
+                zevClass:
+                  data.type === BalanceType.DEBIT
+                    ? ZevClass.UNSPECIFIED
+                    : ZevClass.B,
+                initialNumberOfUnits: creditBValue,
+                finalNumberOfUnits: creditBValue,
+              },
+              update: {
+                initialNumberOfUnits: creditBValue,
+                finalNumberOfUnits: creditBValue,
+              },
+            });
+          }
+        } else {
+          if (creditAValue && !creditAValue.equals(decimalZero)) {
+            await tx.zevUnitEndingBalance.create({
+              data: {
+                ...data,
+                initialNumberOfUnits: creditAValue,
+                finalNumberOfUnits: creditAValue,
+                zevClass: ZevClass.A,
+              },
+            });
+          }
+          if (creditBValue && !creditBValue.equals(decimalZero)) {
+            await tx.zevUnitEndingBalance.create({
+              data: {
+                ...data,
+                initialNumberOfUnits: creditBValue,
+                finalNumberOfUnits: creditBValue,
+                zevClass:
+                  data.type === BalanceType.DEBIT
+                    ? ZevClass.UNSPECIFIED
+                    : ZevClass.B,
+              },
+            });
+          }
+        }
+      }
+
+      await seedVehicles(
+        tx,
+        mapOfModelYearIdsToModelYearEnum,
+        mapOfOldOrgIdsToNewOrgIds,
+        mapOfOldCreditClassIdsToZevClasses,
+      );
+
+      const issuedVinRecords = await prismaOld.record_of_sale.findMany({
+        where: {
+          sales_submission: {
+            is: {
+              validation_status: "VALIDATED",
+            },
+          },
+        },
+        select: {
+          vin: true,
         },
       });
-    }
+      const legacyVinsToCreate: Omit<CreditApplicationVinLegacy, "id">[] = [];
+      issuedVinRecords.forEach((record) => {
+        const vin = record.vin;
+        if (vin) {
+          legacyVinsToCreate.push({ vin });
+        }
+      });
+      await tx.creditApplicationVinLegacy.createMany({
+        data: legacyVinsToCreate,
+      });
 
-    // add ZEV Unit Transfer History (formerly Credit Transfer History in old DB) records
-    // Credit Transfer Comments are merged into ZEV Unit Transfer History.
-    // The old DB structure allows multiple comments per credit transfer history record,
-    // but the workflow and UI only allows one comment per credit transfer history record.
-    // Therefore, the new DB combines the comment table and the history table together and allows
-    // only one comment per history record.
-    // If multiple comments are attached to one credit transfer history record in the old DB,
-    // multiple history records will be created in the new DB.
-    const creditTransferHistoriesOld = await prismaOld.credit_transfer_history.findMany({
-      include: {
-        credit_transfer_comment: true,
-      },
-    });
-    for (const creditTransferHistoryOld of creditTransferHistoriesOld) {
-      const updateUsername = creditTransferHistoryOld.update_user;
-      const updateUserId = updateUsername === null ? undefined : mapOfOldUsernamesToNewUserIds[updateUsername];
+      await seedIcbc(tx, mapOfModelYearIdsToModelYearEnum);
 
-      const commentCount = creditTransferHistoryOld.credit_transfer_comment.length;
-      const withComment = commentCount > 0;
-
-      for (let commentIndex = withComment ? 0 : -1; commentIndex < commentCount; commentIndex++) {
-        await tx.zevUnitTransferHistory.create({
-          data: {
-            zevUnitTransferId: mapOfOldCreditTransferIdsToNewZevUnitTransferIds[creditTransferHistoryOld.transfer_id],
-            status: creditTransferHistoryOld.status as any,
-            comment: withComment ?
-              creditTransferHistoryOld.credit_transfer_comment[commentIndex].credit_transfer_comment :
-              undefined,
-            updateUserId,
-            updateTimestamp: creditTransferHistoryOld.update_timestamp,
-          },
-        });
-      }
-    }
-
-  });
+      await seedVolumes(
+        tx,
+        mapOfModelYearIdsToModelYearEnum,
+        mapOfOldOrgIdsToNewOrgIds,
+      );
+    },
+    {
+      timeout: 10000,
+    },
+  );
 };
 
 main()
