@@ -42,12 +42,17 @@ export const getCreditTransferPayload = (
     try {
       const unitsDec = new Decimal(numberOfUnits);
       const dollarValueDec = new Decimal(dollarValuePerUnit);
-      if (unitsDec.decimalPlaces() > 2 || dollarValueDec.decimalPlaces() > 2) {
+      if (
+        unitsDec.lte(0) ||
+        dollarValueDec.lte(0) ||
+        unitsDec.decimalPlaces() > 2 ||
+        dollarValueDec.decimalPlaces() > 2
+      ) {
         throw new Error();
       }
     } catch (e) {
       throw new Error(
-        "Number of Units and Dollar Value per Unit must be valid numbers rounded to 2 decimal places or less!",
+        "Number of Units and Dollar Value per Unit must be positive numbers rounded to 2 decimal places or less!",
       );
     }
     return {
