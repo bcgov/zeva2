@@ -28,7 +28,7 @@ export const getVehiclePayload = (
   ) {
     throw new Error("All fields are required!");
   }
-  if (!isModelYear(data.modelYear)) {
+  if (!isModelYear(data.modelYear) || data.modelYear < ModelYear.MY_2019) {
     throw new Error("Invalid Model Year!");
   }
   if (!isVehicleZevType(data.zevType)) {
