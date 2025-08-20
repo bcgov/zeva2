@@ -11,7 +11,7 @@ import {
 import { Routes } from "@/app/lib/constants";
 import { VehicleClassCode, VehicleZevType } from "@/prisma/generated/client";
 import { getVehiclePayload } from "../utilsClient";
-import { getModelYearEnumsToStringsMap } from "@/app/lib/utils/enumMaps";
+import { getStringsToModelYearsEnumsMap } from "@/app/lib/utils/enumMaps";
 import { Dropzone } from "@/app/lib/components/Dropzone";
 import axios from "axios";
 import { FileWithPath } from "react-dropzone";
@@ -26,7 +26,7 @@ export const VehicleForm = () => {
   const [files, setFiles] = useState<FileWithPath[]>([]);
   const [comment, setComment] = useState<string>("");
   const modelYearsMap = useMemo(() => {
-    return getModelYearEnumsToStringsMap();
+    return getStringsToModelYearsEnumsMap();
   }, []);
   const allowedFileTypes = useMemo(() => {
     return {

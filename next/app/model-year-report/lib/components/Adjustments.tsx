@@ -4,10 +4,10 @@ import { useMemo } from "react";
 import { Button } from "@/app/lib/components";
 import { LoadingSkeleton } from "@/app/lib/components/skeletons";
 import {
-  getBalanceTypeEnumsToStringsMap,
-  getModelYearEnumsToStringsMap,
-  getVehicleClassEnumsToStringsMap,
-  getZevClassEnumsToStringsMap,
+  getStringsToBalanceTypeEnumsMap,
+  getStringsToModelYearsEnumsMap,
+  getStringsToVehicleClassEnumsMap,
+  getStringsToZevClassEnumsMap,
 } from "@/app/lib/utils/enumMaps";
 
 export type Adjustment = { id: string } & Partial<Record<string, string>>;
@@ -20,19 +20,19 @@ export const Adjustments = (props: {
   disabled: boolean;
 }) => {
   const balanceTypesMap = useMemo(() => {
-    return getBalanceTypeEnumsToStringsMap();
+    return getStringsToBalanceTypeEnumsMap();
   }, []);
 
   const vehicleClassesMap = useMemo(() => {
-    return getVehicleClassEnumsToStringsMap();
+    return getStringsToVehicleClassEnumsMap();
   }, []);
 
   const zevClassesMap = useMemo(() => {
-    return getZevClassEnumsToStringsMap();
+    return getStringsToZevClassEnumsMap();
   }, []);
 
   const modelYearsMap = useMemo(() => {
-    return getModelYearEnumsToStringsMap();
+    return getStringsToModelYearsEnumsMap();
   }, []);
 
   if (props.disabled) {
