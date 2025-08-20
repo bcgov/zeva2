@@ -12,7 +12,6 @@ datasource db {
 // prisma doesn't allow enum values to start with a number
 // this enum must be in ascending lexicographical order, as well as ascending logical order
 enum ModelYear {
-  MY_2017 @map("2017")
   MY_2018 @map("2018")
   MY_2019 @map("2019")
   MY_2020 @map("2020")
@@ -44,8 +43,8 @@ model Organization {
   users                 User[]
   zevUnitTransactions   ZevUnitTransaction[]
   zevUnitEndingBalances ZevUnitEndingBalance[]
-  zevUnitTransferTo     ZevUnitTransfer[]         @relation("zevUnitTransferTo")
-  zevUnitTransferFrom   ZevUnitTransfer[]         @relation("zevUnitTransferFrom")
+  creditTransferTo      CreditTransfer[]          @relation("creditTransferTo")
+  creditTransferFrom    CreditTransfer[]          @relation("creditTransferFrom")
   Vehicle               Vehicle[]
   VehicleHistory        VehicleHistory[]
   organizationAddress   OrganizationAddress[]
@@ -144,7 +143,6 @@ model User {
   organization             Organization               @relation(fields: [organizationId], references: [id])
   organizationId           Int                        @map("organization_id")
   roles                    Role[]
-  zevUnitTransferHistory   ZevUnitTransferHistory[]
   notifications            Notification[]
   firstName                String                     @map("first_name")
   lastName                 String                     @map("last_name")
@@ -155,6 +153,7 @@ model User {
   AgreementHistory         AgreementHistory[]
   ModelYearReportHistory   ModelYearReportHistory[]
   ReassessmentHistory      ReassessmentHistory[]
+  CreditTransferHistory    CreditTransferHistory[]
 
   @@unique([idp, idpUsername])
   @@map("user")
@@ -224,8 +223,7 @@ model ZevUnitEndingBalance {
   @@map("zev_unit_ending_balance")
 }
 
-enum ZevUnitTransferStatuses {
-  DRAFT
+enum CreditTransferStatus {
   SUBMITTED_TO_TRANSFER_TO
   RESCINDED_BY_TRANSFER_FROM
   APPROVED_BY_TRANSFER_TO
@@ -235,59 +233,55 @@ enum ZevUnitTransferStatuses {
   RETURNED_TO_ANALYST
   APPROVED_BY_GOV
   REJECTED_BY_GOV
-  DELETED
 }
 
-model ZevUnitTransfer {
-  id                     Int                      @id @default(autoincrement())
-  transferToId           Int                      @map("transfer_to_id")
-  transferTo             Organization             @relation("zevUnitTransferTo", fields: [transferToId], references: [id])
-  transferFromId         Int                      @map("transfer_from_id")
-  transferFrom           Organization             @relation("zevUnitTransferFrom", fields: [transferFromId], references: [id])
-  status                 ZevUnitTransferStatuses
-  zevUnitTransferContent ZevUnitTransferContent[]
-  zevUnitTransferHistory ZevUnitTransferHistory[]
-
-  @@map("zev_unit_transfer")
-}
-
-model ZevUnitTransferContent {
-  id                 Int             @id @default(autoincrement())
-  zevUnitTransferId  Int             @map("zev_unit_transfer_id")
-  zevUnitTransfer    ZevUnitTransfer @relation(fields: [zevUnitTransferId], references: [id])
-  numberOfUnits      Decimal         @map("number_of_units") @db.Decimal(65, 2)
-  zevClass           ZevClass        @map("zev_class")
-  vehicleClass       VehicleClass    @map("vehicle_class")
-  modelYear          ModelYear       @map("model_year")
-  dollarValuePerUnit Decimal         @map("dollar_value_per_unit") @db.Decimal(65, 2)
-
-  @@map("zev_unit_transfer_content")
-}
-
-enum ZevUnitTransferHistoryUserActions {
+enum CreditTransferSupplierStatus {
   SUBMITTED_TO_TRANSFER_TO
   RESCINDED_BY_TRANSFER_FROM
   APPROVED_BY_TRANSFER_TO
   REJECTED_BY_TRANSFER_TO
-  RECOMMEND_APPROVAL_GOV
-  RECOMMEND_REJECTION_GOV
-  RETURNED_TO_ANALYST
   APPROVED_BY_GOV
   REJECTED_BY_GOV
-  ADDED_COMMENT_GOV_INTERNAL
 }
 
-model ZevUnitTransferHistory {
-  id                Int                               @id @default(autoincrement())
-  zevUnitTransferId Int                               @map("zev_unit_transfer_id")
-  zevUnitTransfer   ZevUnitTransfer                   @relation(fields: [zevUnitTransferId], references: [id])
-  userId            Int                               @map("user_id")
-  user              User                              @relation(fields: [userId], references: [id])
-  timestamp         DateTime                          @default(now()) @db.Timestamptz(6)
-  userAction        ZevUnitTransferHistoryUserActions @map("user_action")
-  comment           String?
+model CreditTransfer {
+  id                    Int                          @id @default(autoincrement())
+  transferToId          Int                          @map("transfer_to_id")
+  transferTo            Organization                 @relation("creditTransferTo", fields: [transferToId], references: [id])
+  transferFromId        Int                          @map("transfer_from_id")
+  transferFrom          Organization                 @relation("creditTransferFrom", fields: [transferFromId], references: [id])
+  status                CreditTransferStatus
+  supplierStatus        CreditTransferSupplierStatus
+  creditTransferContent CreditTransferContent[]
+  creditTransferHistory CreditTransferHistory[]
 
-  @@map("zev_unit_transfer_history")
+  @@map("credit_transfer")
+}
+
+model CreditTransferContent {
+  id                 Int            @id @default(autoincrement())
+  creditTransferId   Int            @map("credit_transfer_id")
+  creditTransfer     CreditTransfer @relation(fields: [creditTransferId], references: [id])
+  numberOfUnits      Decimal        @map("number_of_units") @db.Decimal(65, 2)
+  zevClass           ZevClass       @map("zev_class")
+  vehicleClass       VehicleClass   @map("vehicle_class")
+  modelYear          ModelYear      @map("model_year")
+  dollarValuePerUnit Decimal        @map("dollar_value_per_unit") @db.Decimal(65, 2)
+
+  @@map("credit_transfer_content")
+}
+
+model CreditTransferHistory {
+  id               Int                  @id @default(autoincrement())
+  creditTransferId Int                  @map("credit_transfer_id")
+  creditTransfer   CreditTransfer       @relation(fields: [creditTransferId], references: [id])
+  userId           Int                  @map("user_id")
+  user             User                 @relation(fields: [userId], references: [id])
+  timestamp        DateTime             @default(now()) @db.Timestamptz(6)
+  userAction       CreditTransferStatus @map("user_action")
+  comment          String?
+
+  @@map("credit_transfer_history")
 }
 
 enum VehicleZevType {

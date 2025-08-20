@@ -6,6 +6,8 @@
 
 import {
   BalanceType,
+  CreditTransferStatus,
+  CreditTransferSupplierStatus,
   Idp,
   ModelYear,
   ModelYearReportStatus,
@@ -213,4 +215,32 @@ export const getBalanceTypeEnumsToStringsMap = () => {
 
 export const getStringsToBalanceTypeEnumsMap = () => {
   return getStringsToEnumsMap<BalanceType>(BalanceType, statusTransformer);
+};
+
+export const getCreditTransferStatusEnumsToStringsMap = () => {
+  return getEnumsToStringsMap<CreditTransferStatus>(
+    CreditTransferStatus,
+    statusTransformer,
+  );
+};
+
+export const getStringsToCreditTransferStatusEnumsMap = () => {
+  return getStringsToEnumsMap<CreditTransferStatus>(
+    CreditTransferStatus,
+    statusTransformer,
+  );
+};
+
+export const getCreditTransferSupplierStatusEnumsToStringsMap = () => {
+  return getEnumsToStringsMap<CreditTransferSupplierStatus>(
+    CreditTransferSupplierStatus,
+    statusTransformer,
+  );
+};
+
+export const getStringsToCreditTransferSupplierStatusEnumsMap = () => {
+  return getStringsToEnumsMap<CreditTransferSupplierStatus>(
+    CreditTransferSupplierStatus,
+    statusTransformer,
+  );
 };

@@ -1,7 +1,7 @@
 import { VehiclePayload } from "./actions";
 import { Decimal } from "@prisma/client/runtime/index-browser.js";
-import { getStringsToModelYearsEnumsMap } from "@/app/lib/utils/enumMaps";
 import {
+  isModelYear,
   isVehicleClassCode,
   isVehicleZevType,
 } from "@/app/lib/utils/typeGuards";
@@ -28,9 +28,7 @@ export const getVehiclePayload = (
   ) {
     throw new Error("All fields are required!");
   }
-  const modelYearsMap = getStringsToModelYearsEnumsMap();
-  const modelYearEnum = modelYearsMap[data.modelYear];
-  if (!modelYearEnum) {
+  if (!isModelYear(data.modelYear)) {
     throw new Error("Invalid Model Year!");
   }
   if (!isVehicleZevType(data.zevType)) {
@@ -57,8 +55,8 @@ export const getVehiclePayload = (
     throw new Error("GVWR must be an integer!");
   }
   const weight = new Decimal(data.gvwr).toNumber();
-  getVehicleClass(modelYearEnum, weight);
-  const zevClass = getZevClass(modelYearEnum, data.zevType, range);
+  getVehicleClass(data.modelYear, weight);
+  const zevClass = getZevClass(data.modelYear, data.zevType, range);
   if (data.us06 === "true" && zevClass !== ZevClass.B) {
     throw new Error(
       "Additional 0.2 US06 credit applies only to ZEV Class B vehicles!",
@@ -68,7 +66,7 @@ export const getVehiclePayload = (
     throw new Error("At least one file is required!");
   }
   return {
-    modelYear: modelYearEnum,
+    modelYear: data.modelYear,
     make: data.make,
     modelName: data.modelName,
     us06RangeGte16: data.us06 === "true",

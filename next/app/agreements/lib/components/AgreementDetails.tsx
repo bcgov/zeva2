@@ -138,7 +138,9 @@ export const AgreementDetails = (props: {
 
         {agreementHistory && (
           <div className="mt-4">
-            <p className={fieldLabelClass}>Government Internal History and Comments</p>
+            <p className={fieldLabelClass}>
+              Government Internal History and Comments
+            </p>
             <AgreementHistories
               className={fieldWithBoarderClass}
               agreementHistory={agreementHistory}

@@ -47,7 +47,7 @@ export default function TransactionAccordion({
         return `${Routes.CreditApplication}/${referenceId}`;
       }
       if (referenceType === ReferenceType.TRANSFER) {
-        return `${Routes.CreditTransactions}/${referenceId}`;
+        return `${Routes.CreditTransfers}/${referenceId}`;
       }
       if (userIsGov && referenceType === ReferenceType.PENALTY_CREDITS) {
         return `${Routes.PenaltyCredit}/${referenceId}`;
