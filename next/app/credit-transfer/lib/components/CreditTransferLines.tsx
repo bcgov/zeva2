@@ -4,9 +4,9 @@ import { useMemo } from "react";
 import { Button } from "@/app/lib/components";
 import { LoadingSkeleton } from "@/app/lib/components/skeletons";
 import {
-  getModelYearEnumsToStringsMap,
-  getVehicleClassEnumsToStringsMap,
-  getZevClassEnumsToStringsMap,
+  getStringsToModelYearsEnumsMap,
+  getStringsToVehicleClassEnumsMap,
+  getStringsToZevClassEnumsMap,
 } from "@/app/lib/utils/enumMaps";
 
 export type CreditTransferLine = { id: string } & Partial<
@@ -21,15 +21,15 @@ export const CreditTransferLines = (props: {
   disabled: boolean;
 }) => {
   const vehicleClassesMap = useMemo(() => {
-    return getVehicleClassEnumsToStringsMap();
+    return getStringsToVehicleClassEnumsMap();
   }, []);
 
   const zevClassesMap = useMemo(() => {
-    return getZevClassEnumsToStringsMap();
+    return getStringsToZevClassEnumsMap();
   }, []);
 
   const modelYearsMap = useMemo(() => {
-    return getModelYearEnumsToStringsMap();
+    return getStringsToModelYearsEnumsMap();
   }, []);
 
   if (props.disabled) {
