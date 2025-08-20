@@ -99,9 +99,9 @@ export const VehicleForm = () => {
           }}
         >
           <option value="">--</option>
-          {Object.values(modelYearsMap).map((year) => (
-            <option key={year} value={year}>
-              {year}
+          {Object.entries(modelYearsMap).map(([key, value]) => (
+            <option key={value} value={value}>
+              {key}
             </option>
           ))}
         </select>

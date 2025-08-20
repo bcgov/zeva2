@@ -9,11 +9,16 @@ import {
 export const getCurrentComplianceYear = () => {
   const now = new Date();
   const month = now.getMonth();
-  const year = now.getFullYear();
-  if (month >= 9) {
-    return year;
+  let year = now.getFullYear();
+  if (month < 9) {
+    year = year - 1;
   }
-  return year - 1;
+  const modelYearsMap = getStringsToModelYearsEnumsMap();
+  const modelYear = modelYearsMap[year.toString()];
+  if (!modelYear) {
+    throw new Error("Error getting current compliance year!");
+  }
+  return modelYear;
 };
 
 export const getCompliancePeriod = (complianceYear: number) => {

@@ -4,25 +4,22 @@ import { useMemo } from "react";
 import { Button } from "@/app/lib/components";
 import { LoadingSkeleton } from "@/app/lib/components/skeletons";
 import {
-  getBalanceTypeEnumsToStringsMap,
   getModelYearEnumsToStringsMap,
   getVehicleClassEnumsToStringsMap,
   getZevClassEnumsToStringsMap,
 } from "@/app/lib/utils/enumMaps";
 
-export type Adjustment = { id: string } & Partial<Record<string, string>>;
+export type CreditTransferLine = { id: string } & Partial<
+  Record<string, string>
+>;
 
-export const Adjustments = (props: {
-  adjustments: Adjustment[];
-  addAdjustment: () => void;
-  removeAdjustment: (id: string) => void;
-  handleAdjustmentChange: (id: string, key: string, value: string) => void;
+export const CreditTransferLines = (props: {
+  lines: CreditTransferLine[];
+  addLine: () => void;
+  removeLine: (id: string) => void;
+  handleLineChange: (id: string, key: string, value: string) => void;
   disabled: boolean;
 }) => {
-  const balanceTypesMap = useMemo(() => {
-    return getBalanceTypeEnumsToStringsMap();
-  }, []);
-
   const vehicleClassesMap = useMemo(() => {
     return getVehicleClassEnumsToStringsMap();
   }, []);
@@ -39,38 +36,18 @@ export const Adjustments = (props: {
     return <LoadingSkeleton />;
   }
   return (
-    <div>
-      {props.adjustments.map((adjustment) => {
+    <div className="flex flex-col space-y-2">
+      {props.lines.map((line) => {
         return (
-          <div key={adjustment.id} className="flex flex-row">
-            <span key="type" className="flex flex-col">
-              <label htmlFor="type">Type</label>
-              <select
-                id="type"
-                value={adjustment.type}
-                onChange={(e) => {
-                  props.handleAdjustmentChange(
-                    adjustment.id,
-                    "type",
-                    e.target.value,
-                  );
-                }}
-              >
-                {Object.entries(balanceTypesMap).map(([key, value]) => (
-                  <option key={value} value={value}>
-                    {key}
-                  </option>
-                ))}
-              </select>
-            </span>
+          <div key={line.id} className="flex flex-row space-x-2">
             <span key="vehicleClass" className="flex flex-col">
               <label htmlFor="vehicleClass">Vehicle Class</label>
               <select
                 id="vehicleClass"
-                value={adjustment.vehicleClass}
+                value={line.vehicleClass}
                 onChange={(e) =>
-                  props.handleAdjustmentChange(
-                    adjustment.id,
+                  props.handleLineChange(
+                    line.id,
                     "vehicleClass",
                     e.target.value,
                   )
@@ -87,13 +64,9 @@ export const Adjustments = (props: {
               <label htmlFor="zevClass">ZEV Class</label>
               <select
                 id="zevClass"
-                value={adjustment.zevClass}
+                value={line.zevClass}
                 onChange={(e) =>
-                  props.handleAdjustmentChange(
-                    adjustment.id,
-                    "zevClass",
-                    e.target.value,
-                  )
+                  props.handleLineChange(line.id, "zevClass", e.target.value)
                 }
               >
                 {Object.entries(zevClassesMap).map(([key, value]) => (
@@ -107,13 +80,9 @@ export const Adjustments = (props: {
               <label htmlFor="modelYear">Model Year</label>
               <select
                 id="modelYear"
-                value={adjustment.modelYear}
+                value={line.modelYear}
                 onChange={(e) =>
-                  props.handleAdjustmentChange(
-                    adjustment.id,
-                    "modelYear",
-                    e.target.value,
-                  )
+                  props.handleLineChange(line.id, "modelYear", e.target.value)
                 }
               >
                 {Object.entries(modelYearsMap).map(([key, value]) => (
@@ -128,25 +97,40 @@ export const Adjustments = (props: {
               <input
                 type="text"
                 id="numberOfUnits"
-                value={adjustment.numberOfUnits}
+                value={line.numberOfUnits}
                 onChange={(e) =>
-                  props.handleAdjustmentChange(
-                    adjustment.id,
+                  props.handleLineChange(
+                    line.id,
                     "numberOfUnits",
                     e.target.value,
                   )
                 }
               />
             </span>
+            <span key="dollarValuePerUnit" className="flex flex-col">
+              <label htmlFor="dollarValuePerUnit">Dollar Value per Unit</label>
+              <input
+                type="text"
+                id="dollarValuePerUnit"
+                value={line.dollarValuePerUnit}
+                onChange={(e) =>
+                  props.handleLineChange(
+                    line.id,
+                    "dollarValuePerUnit",
+                    e.target.value,
+                  )
+                }
+              />
+            </span>
             <span>
-              <Button onClick={() => props.removeAdjustment(adjustment.id)}>
-                Remove Adjustment
+              <Button onClick={() => props.removeLine(line.id)}>
+                Remove Line
               </Button>
             </span>
           </div>
         );
       })}
-      <Button onClick={props.addAdjustment}>Add Adjustment</Button>
+      <Button onClick={props.addLine}>Add Line</Button>
     </div>
   );
 };

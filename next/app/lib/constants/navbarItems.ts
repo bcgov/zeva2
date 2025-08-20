@@ -70,7 +70,7 @@ export const navbarSubItems: NavbarSubItems = {
     },
     {
       label: "Credit Transfers",
-      route: Routes.CreditTransactions,
+      route: Routes.CreditTransfers,
     },
     {
       label: "Credit Agreements",
