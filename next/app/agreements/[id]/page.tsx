@@ -7,10 +7,10 @@ import { redirect } from "next/navigation";
 import { Routes } from "@/app/lib/constants/Routes";
 
 const Page = async (props: { params: Promise<{ id: string }> }) => {
-  const [
-    { id },
-    { userRoles }
-  ] = await Promise.all([props.params, getUserInfo()]);
+  const [{ id }, { userRoles }] = await Promise.all([
+    props.params,
+    getUserInfo(),
+  ]);
   const agreementId = parseInt(id);
   const agreement = isNaN(agreementId)
     ? null
@@ -48,7 +48,7 @@ const Page = async (props: { params: Promise<{ id: string }> }) => {
 
   const handleAddComment = async (comment: string) => {
     "use server";
-    return await addComment(agreementId, comment)
+    return await addComment(agreementId, comment);
   };
 
   return (

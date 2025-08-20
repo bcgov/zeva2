@@ -109,7 +109,7 @@ export const updateStatus = async (id: number, status: AgreementStatus) => {
     console.error("Error updating agreement status:", (error as Error).message);
     return false;
   }
-}
+};
 
 /**
  * Adds a comment and the associated history to an agreement.
@@ -117,15 +117,12 @@ export const updateStatus = async (id: number, status: AgreementStatus) => {
  * @param comment - The comment text to add.
  * @returns The created comment history record, or null if the process failed.
  */
-export const addComment = async (
-  agreementId: number,
-  comment: string
-) => {
+export const addComment = async (agreementId: number, comment: string) => {
   const { userId, userIsGov } = await getUserInfo();
   if (!userIsGov) {
     return null;
   }
-  
+
   try {
     return await prisma.agreementHistory.create({
       data: {
@@ -135,7 +132,7 @@ export const addComment = async (
         userAction: AgreementUserAction.ADDED_COMMENT_GOV_INTERNAL,
         agreementComment: { create: { comment } },
       },
-      select: historySelectClause
+      select: historySelectClause,
     });
   } catch (error) {
     console.error("Error adding comment:", (error as Error).message);

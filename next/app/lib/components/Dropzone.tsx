@@ -64,7 +64,7 @@ export const Dropzone = (props: {
                 removeFile(file);
               }}
             >
-              X
+              {props.disabled ? "..." : "X"}
             </Button>
           </div>
         </li>,
@@ -75,7 +75,7 @@ export const Dropzone = (props: {
 
   return (
     <div className="w-full">
-      <div className="bg-white py-2 my-2">
+      <div className={`${props.disabled ? "bg-gray" : "bg-white"} py-2 my-2`}>
         <div {...getRootProps()}>
           <input {...getInputProps()} />
           {isDragActive ? (
