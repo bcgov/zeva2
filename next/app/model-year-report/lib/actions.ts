@@ -377,12 +377,7 @@ export const submitToDirector = async (
 
 export const getDocumentDownloadUrls = async (
   id: number,
-): Promise<
-  DataOrErrorActionResponse<{
-    documents: AttachmentDownload[];
-    zipName: string;
-  }>
-> => {
+): Promise<DataOrErrorActionResponse<AttachmentDownload[]>> => {
   const { userIsGov, userOrgId } = await getUserInfo();
   const whereClause: Prisma.ModelYearReportWhereUniqueInput = { id };
   if (!userIsGov) {
@@ -391,13 +386,7 @@ export const getDocumentDownloadUrls = async (
   const myr = await prisma.modelYearReport.findUnique({
     where: whereClause,
     select: {
-      modelYear: true,
       organizationId: true,
-      organization: {
-        select: {
-          name: true,
-        },
-      },
       status: true,
       fileName: true,
       objectName: true,
@@ -411,7 +400,6 @@ export const getDocumentDownloadUrls = async (
     return getErrorActionResponse("Model Year Report not found!");
   }
   const orgId = myr.organizationId;
-  const modelYearsMap = getModelYearEnumsToStringsMap();
   const documents: AttachmentDownload[] = [
     {
       fileName: myr.fileName,
@@ -442,10 +430,7 @@ export const getDocumentDownloadUrls = async (
       ),
     });
   }
-  return getDataActionResponse({
-    zipName: `model-year-report-documents-${myr.organization.name.replaceAll(" ", "-")}-${modelYearsMap[myr.modelYear]}`,
-    documents,
-  });
+  return getDataActionResponse(documents);
 };
 
 export const handleReturns = async (
