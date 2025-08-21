@@ -20,6 +20,7 @@ import { downloadBuffer } from "@/app/lib/utils/download";
 import { Routes } from "@/app/lib/constants";
 import { getNormalizedComment } from "../utils";
 import { Attachment } from "@/app/lib/services/attachments";
+import { getDefaultAttchmentTypes } from "@/app/lib/utils/attachments";
 
 export const CreditApplicationForm = (props: { userOrgName: string }) => {
   const router = useRouter();
@@ -30,18 +31,7 @@ export const CreditApplicationForm = (props: { userOrgName: string }) => {
   const [comment, setComment] = useState<string>("");
 
   const allowedFileTypes = useMemo(() => {
-    return {
-      "application/msword": ["doc"],
-      "application/vnd.openxmlformats-officedocument.wordprocessingml.document":
-        [".docx"],
-      "application/vnd.ms-excel": [".xls"],
-      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": [
-        ".xlsx",
-      ],
-      "application/pdf": [".pdf"],
-      "image/jpeg": [".jpg", ".jpeg"],
-      "image/png": [".png"],
-    };
+    return getDefaultAttchmentTypes();
   }, []);
 
   const handleDownload = useCallback(() => {

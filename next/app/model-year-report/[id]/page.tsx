@@ -55,7 +55,7 @@ const Page = async (props: { params: Promise<{ id: string }> }) => {
         <Suspense fallback={<LoadingSkeleton />}>
           <AttachmentsDownload
             download={download}
-            zipName={`model-year-report-documents-${id}.zip`}
+            zipName={`model-year-report-documents-${id}`}
           />
         </Suspense>
       </ContentCard>

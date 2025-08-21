@@ -14,7 +14,7 @@ export const VehicleAttachments = async (props: { id: number }) => {
   return (
     <AttachmentsDownload
       download={download}
-      zipName={`zev-model-attachments-${props.id}.zip`}
+      zipName={`zev-model-attachments-${props.id}`}
     />
   );
 };

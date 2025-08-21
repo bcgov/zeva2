@@ -40,7 +40,7 @@ const Page = async (props: { params: Promise<{ id: string }> }) => {
       <ContentCard title="Credit Application Documents">
         <AttachmentsDownload
           download={download}
-          zipName={`credit-application-documents-${id}.zip`}
+          zipName={`credit-application-documents-${id}`}
         />
       </ContentCard>
     </>

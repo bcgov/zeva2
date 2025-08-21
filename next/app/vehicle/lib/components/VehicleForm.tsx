@@ -17,6 +17,7 @@ import { FileWithPath } from "react-dropzone";
 import { Button } from "@/app/lib/components";
 import { getNormalizedComment } from "@/app/credit-application/lib/utils";
 import { Attachment } from "@/app/lib/services/attachments";
+import { getDefaultAttchmentTypes } from "@/app/lib/utils/attachments";
 
 export const VehicleForm = () => {
   const router = useRouter();
@@ -29,18 +30,7 @@ export const VehicleForm = () => {
     return getStringsToModelYearsEnumsMap();
   }, []);
   const allowedFileTypes = useMemo(() => {
-    return {
-      "application/msword": ["doc"],
-      "application/vnd.openxmlformats-officedocument.wordprocessingml.document":
-        [".docx"],
-      "application/vnd.ms-excel": [".xls"],
-      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": [
-        ".xlsx",
-      ],
-      "application/pdf": [".pdf"],
-      "image/jpeg": [".jpg", ".jpeg"],
-      "image/png": [".png"],
-    };
+    return getDefaultAttchmentTypes();
   }, []);
 
   const handleChange = useCallback((key: string, value: string) => {
