@@ -1,9 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { TransactionClient } from "@/types/prisma";
 import { Prisma, VehicleStatus } from "@/prisma/generated/client";
-import { VehicleFile } from "./actions";
-import { removeObjects } from "@/app/lib/minio";
-import { getAttachmentFullObjectName } from "./utils";
+import { Attachment } from "@/app/lib/services/attachments";
 
 export const createHistory = async (
   vehicleId: number,
@@ -25,29 +23,19 @@ export const createHistory = async (
 
 export const createAttachments = async (
   vehicleId: number,
-  files: VehicleFile[],
+  attachments: Attachment[],
   transactionClient?: TransactionClient,
 ) => {
   const client = transactionClient ?? prisma;
   const toCreate: Prisma.VehicleAttachmentUncheckedCreateInput[] = [];
-  files.forEach((file) => {
+  attachments.forEach((attachment) => {
     toCreate.push({
       vehicleId,
-      filename: file.filename,
-      minioObjectName: file.objectName,
+      fileName: attachment.fileName,
+      objectName: attachment.objectName,
     });
   });
   await client.vehicleAttachment.createMany({
     data: toCreate,
   });
-};
-
-export const deleteAttachments = async (
-  orgId: number,
-  files: VehicleFile[],
-) => {
-  const objectNames = files.map((file) => {
-    return getAttachmentFullObjectName(orgId, file.objectName);
-  });
-  await removeObjects(objectNames);
 };

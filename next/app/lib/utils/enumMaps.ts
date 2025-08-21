@@ -6,6 +6,8 @@
 
 import {
   BalanceType,
+  CreditApplicationStatus,
+  CreditApplicationSupplierStatus,
   CreditTransferStatus,
   CreditTransferSupplierStatus,
   Idp,
@@ -241,6 +243,34 @@ export const getCreditTransferSupplierStatusEnumsToStringsMap = () => {
 export const getStringsToCreditTransferSupplierStatusEnumsMap = () => {
   return getStringsToEnumsMap<CreditTransferSupplierStatus>(
     CreditTransferSupplierStatus,
+    statusTransformer,
+  );
+};
+
+export const getCreditApplicationStatusEnumsToStringsMap = () => {
+  return getEnumsToStringsMap<CreditApplicationStatus>(
+    CreditApplicationStatus,
+    statusTransformer,
+  );
+};
+
+export const getStringsToCreditApplicationStatusEnumsMap = () => {
+  return getStringsToEnumsMap<CreditApplicationStatus>(
+    CreditApplicationStatus,
+    statusTransformer,
+  );
+};
+
+export const getCreditApplicationSupplierStatusEnumsToStringsMap = () => {
+  return getEnumsToStringsMap<CreditApplicationSupplierStatus>(
+    CreditApplicationSupplierStatus,
+    statusTransformer,
+  );
+};
+
+export const getStringsToCreditApplicationSupplierStatusEnumsMap = () => {
+  return getStringsToEnumsMap<CreditApplicationSupplierStatus>(
+    CreditApplicationSupplierStatus,
     statusTransformer,
   );
 };

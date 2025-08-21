@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import {
   submitVehicle,
   getPutObjectData,
-  VehicleFile,
   VehiclePutObjectData,
 } from "../actions";
 import { Routes } from "@/app/lib/constants";
@@ -17,6 +16,8 @@ import axios from "axios";
 import { FileWithPath } from "react-dropzone";
 import { Button } from "@/app/lib/components";
 import { getNormalizedComment } from "@/app/credit-application/lib/utils";
+import { Attachment } from "@/app/lib/services/attachments";
+import { getDefaultAttchmentTypes } from "@/app/lib/utils/attachments";
 
 export const VehicleForm = () => {
   const router = useRouter();
@@ -29,13 +30,7 @@ export const VehicleForm = () => {
     return getStringsToModelYearsEnumsMap();
   }, []);
   const allowedFileTypes = useMemo(() => {
-    return {
-      "application/msword": [".doc", ".docx"],
-      "application/vnd.ms-excel": [".xls", ".xlsx"],
-      "application/pdf": [".pdf"],
-      "image/jpeg": [".jpg"],
-      "image/png": [".png"],
-    };
+    return getDefaultAttchmentTypes();
   }, []);
 
   const handleChange = useCallback((key: string, value: string) => {
@@ -52,7 +47,7 @@ export const VehicleForm = () => {
     startTransition(async () => {
       try {
         const vehiclePayload = getVehiclePayload(formData, files);
-        const vehicleFiles: VehicleFile[] = [];
+        const vehicleFiles: Attachment[] = [];
         if (files.length > 0) {
           const putData = await getPutObjectData(files.length);
           const filesAndPutData: [FileWithPath, VehiclePutObjectData][] =
@@ -62,7 +57,7 @@ export const VehicleForm = () => {
             const putData = tuple[1];
             await axios.put(putData.url, file);
             vehicleFiles.push({
-              filename: file.name,
+              fileName: file.name,
               objectName: putData.objectName,
             });
           }

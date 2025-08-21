@@ -3,7 +3,7 @@ import {
   getStringsToCreditTransferStatusEnumsMap,
   getStringsToCreditTransferSupplierStatusEnumsMap,
 } from "@/app/lib/utils/enumMaps";
-import { CreditTransfer, Prisma } from "@/prisma/generated/client";
+import { Prisma } from "@/prisma/generated/client";
 import { CreditTransferSparse } from "./data";
 
 export const getWhereClause = (
@@ -13,7 +13,8 @@ export const getWhereClause = (
   const result: Prisma.CreditTransferWhereInput = {};
   const statusMap = getStringsToCreditTransferStatusEnumsMap();
   const supplierStatusMap = getStringsToCreditTransferSupplierStatusEnumsMap();
-  for (const [key, value] of Object.entries(filters)) {
+  for (const [key, rawValue] of Object.entries(filters)) {
+    const value = rawValue.trim();
     if (key === "id") {
       result[key] = parseInt(value, 10);
     } else if (key === "status") {
@@ -57,6 +58,9 @@ export const getOrderByClause = (
           orderBy["supplierStatus"] = value;
         }
       }
+    }
+    if (Object.keys(orderBy).length > 0) {
+      result.push(orderBy);
     }
   });
   if (defaultSortById && result.length === 0) {

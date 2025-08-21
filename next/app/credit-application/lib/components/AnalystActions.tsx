@@ -10,7 +10,7 @@ import {
   validateCreditApplication,
 } from "../actions";
 import { Routes } from "@/app/lib/constants";
-import { CommentBox } from "./CommentBox";
+import { CommentBox } from "@/app/lib/components/inputs/CommentBox";
 import { getNormalizedComment } from "../utils";
 
 export const AnalystActions = (props: {

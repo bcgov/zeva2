@@ -367,6 +367,9 @@ export const getOrderByClause = (
         }
       }
     }
+    if (Object.keys(orderBy).length > 0) {
+      result.push(orderBy);
+    }
   });
   if (defaultSortById && result.length === 0) {
     result.push({ id: "desc" });

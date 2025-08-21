@@ -24,7 +24,6 @@ export const getWhereClause = (filters: {
   [key: string]: string;
 }): Prisma.VehicleWhereInput => {
   const result: Prisma.VehicleWhereInput = {};
-  result.AND = [];
   const statusMap = getStringsToVehicleStatusEnumsMap();
   const zevClassMap = getStringsToZevClassEnumsMap();
   const modelYearsMap = getStringsToModelYearsEnumsMap();
@@ -37,9 +36,9 @@ export const getWhereClause = (filters: {
         is: { name: { contains: value, mode: "insensitive" } },
       };
     } else if (key === "status") {
-      result.AND.push({
-        OR: getOrConditions(getMatchingTerms(statusMap, value), key),
-      });
+      result[key] = {
+        in: getMatchingTerms(statusMap, value),
+      };
     } else if (key === "modelName" || key === "make") {
       result[key] = {
         contains: value,
@@ -51,17 +50,17 @@ export const getWhereClause = (filters: {
         equals: decValue.toNumber(),
       };
     } else if (key === "zevClass") {
-      result.AND.push({
-        OR: getOrConditions(getMatchingTerms(zevClassMap, value), key),
-      });
+      result[key] = {
+        in: getMatchingTerms(zevClassMap, value),
+      };
     } else if (key === "modelYear") {
-      result.AND.push({
-        OR: getOrConditions(getMatchingTerms(modelYearsMap, value), key),
-      });
+      result[key] = {
+        in: getMatchingTerms(modelYearsMap, value),
+      };
     } else if (key === "vehicleZevType") {
-      result.AND.push({
-        OR: getOrConditions(getMatchingTerms(VehicleZevType, value), key),
-      });
+      result[key] = {
+        in: getMatchingTerms(VehicleZevType, value),
+      };
     } else if (key === "isActive") {
       const lowerCaseValue = value.toLowerCase();
       if ("yes".includes(lowerCaseValue)) {
@@ -73,9 +72,6 @@ export const getWhereClause = (filters: {
       }
     }
   }
-  if (result.AND.length === 0) {
-    delete result.AND;
-  }
   return result;
 };
 
@@ -85,6 +81,7 @@ export const getOrderByClause = (
 ): Prisma.VehicleOrderByWithRelationInput[] => {
   const result: Prisma.VehicleOrderByWithRelationInput[] = [];
   for (const [key, value] of Object.entries(sorts)) {
+    const orderBy: Prisma.VehicleOrderByWithRelationInput = {};
     if (value === "asc" || value === "desc") {
       if (
         key === "id" ||
@@ -92,7 +89,7 @@ export const getOrderByClause = (
         key === "status" ||
         key === "modelName" ||
         key === "make" ||
-        key === "validationStatus" ||
+        key === "status" ||
         key === "numberOfUnits" ||
         key === "range" ||
         key === "zevClass" ||
@@ -100,10 +97,15 @@ export const getOrderByClause = (
         key === "vehicleZevType" ||
         key === "isActive"
       ) {
-        result.push({ [key]: value });
+        orderBy[key] = value;
       } else if (key === "organization") {
-        result.push({ [key]: { name: value } });
+        orderBy[key] = {
+          name: value,
+        };
       }
+    }
+    if (Object.keys(orderBy).length > 0) {
+      result.push(orderBy);
     }
   }
   if (defaultSortById && result.length === 0) {

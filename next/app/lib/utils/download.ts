@@ -1,6 +1,6 @@
 import axios from "axios";
 import JSZip from "jszip";
-import { AttachmentPayload } from "@/app/vehicle/lib/actions";
+import { AttachmentDownload } from "../services/attachments";
 
 const doDownload = (filename: string, data: ArrayBuffer) => {
   const objectURL = window.URL.createObjectURL(new Blob([data]));
@@ -50,7 +50,7 @@ export const downloadZip = async (
 };
 
 export const downloadMultiple = async (
-  data: AttachmentPayload[],
+  data: AttachmentDownload[],
   zipName: string,
 ) => {
   const fileNames: string[] = [];
