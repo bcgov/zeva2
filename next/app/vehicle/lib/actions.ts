@@ -3,11 +3,7 @@
 import { getUserInfo } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { VehicleStatus, Vehicle, Prisma } from "@/prisma/generated/client";
-import {
-  createAttachments,
-  createHistory,
-  deleteAttachments,
-} from "./services";
+import { createAttachments, createHistory } from "./services";
 import {
   DataOrErrorActionResponse,
   ErrorOrSuccessActionResponse,
@@ -22,6 +18,11 @@ import {
 import { randomUUID } from "crypto";
 import { getAttachmentFullObjectName, getNumberOfUnits } from "./utils";
 import { getVehicleClass, getZevClass } from "./utilsClient";
+import {
+  Attachment,
+  AttachmentDownload,
+  deleteAttachments,
+} from "@/app/lib/services/attachments";
 
 export type VehiclePutObjectData = {
   objectName: string;
@@ -58,14 +59,9 @@ export type VehiclePayload = Omit<
   | "numberOfUnits"
 >;
 
-export type VehicleFile = {
-  filename: string;
-  objectName: string;
-};
-
 export async function submitVehicle(
   data: VehiclePayload,
-  files: VehicleFile[],
+  files: Attachment[],
   comment?: string,
 ): Promise<DataOrErrorActionResponse<number>> {
   const { userIsGov, userId, userOrgId } = await getUserInfo();
@@ -106,7 +102,7 @@ export async function submitVehicle(
       );
     });
   } catch (e) {
-    await deleteAttachments(userOrgId, files);
+    await deleteAttachments(userOrgId, files, getAttachmentFullObjectName);
     if (e instanceof Error) {
       return getErrorActionResponse(e.message);
     }
@@ -160,14 +156,9 @@ export const updateStatus = async (
   return getErrorActionResponse("Invalid Action!");
 };
 
-export type AttachmentPayload = {
-  fileName: string;
-  url: string;
-};
-
 export const getAttachmentDownloadUrls = async (
   id: number,
-): Promise<DataOrErrorActionResponse<AttachmentPayload[]>> => {
+): Promise<DataOrErrorActionResponse<AttachmentDownload[]>> => {
   const { userIsGov, userOrgId } = await getUserInfo();
   const whereClause: Prisma.VehicleAttachmentWhereInput = { vehicleId: id };
   if (!userIsGov) {
@@ -178,8 +169,8 @@ export const getAttachmentDownloadUrls = async (
   const attachments = await prisma.vehicleAttachment.findMany({
     where: whereClause,
     select: {
-      filename: true,
-      minioObjectName: true,
+      fileName: true,
+      objectName: true,
       vehicle: {
         select: {
           organizationId: true,
@@ -190,14 +181,14 @@ export const getAttachmentDownloadUrls = async (
   if (attachments.length === 0) {
     return getErrorActionResponse("No attachments found!");
   }
-  const result: AttachmentPayload[] = [];
+  const result: AttachmentDownload[] = [];
   for (const attachment of attachments) {
     result.push({
-      fileName: attachment.filename,
+      fileName: attachment.fileName,
       url: await getPresignedGetObjectUrl(
         getAttachmentFullObjectName(
           attachment.vehicle.organizationId,
-          attachment.minioObjectName,
+          attachment.objectName,
         ),
       ),
     });

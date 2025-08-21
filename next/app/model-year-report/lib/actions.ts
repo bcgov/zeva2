@@ -47,9 +47,9 @@ import {
 import { SupplierClass } from "@/app/lib/constants/complianceRatio";
 import { randomUUID } from "crypto";
 import { prisma } from "@/lib/prisma";
-import { AttachmentPayload } from "@/app/vehicle/lib/actions";
 import { getComplianceDate } from "@/app/lib/utils/complianceYear";
 import { getModelYearEnumsToStringsMap } from "@/app/lib/utils/enumMaps";
+import { AttachmentDownload } from "@/app/lib/services/attachments";
 
 export const getMyrTemplateUrl = async () => {
   return await getPresignedGetObjectUrl(
@@ -378,7 +378,10 @@ export const submitToDirector = async (
 export const getDocumentDownloadUrls = async (
   id: number,
 ): Promise<
-  DataOrErrorActionResponse<{ documents: AttachmentPayload[]; zipName: string }>
+  DataOrErrorActionResponse<{
+    documents: AttachmentDownload[];
+    zipName: string;
+  }>
 > => {
   const { userIsGov, userOrgId } = await getUserInfo();
   const whereClause: Prisma.ModelYearReportWhereUniqueInput = { id };
@@ -409,7 +412,7 @@ export const getDocumentDownloadUrls = async (
   }
   const orgId = myr.organizationId;
   const modelYearsMap = getModelYearEnumsToStringsMap();
-  const documents: AttachmentPayload[] = [
+  const documents: AttachmentDownload[] = [
     {
       fileName: myr.fileName,
       url: await getPresignedGetObjectUrl(

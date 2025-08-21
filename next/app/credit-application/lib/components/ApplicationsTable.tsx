@@ -4,12 +4,16 @@ import { CreditApplicationSparseSerialized } from "../utils";
 import { ColumnDef, createColumnHelper } from "@tanstack/react-table";
 import { Table } from "@/app/lib/components";
 import { useMemo } from "react";
+import { getCreditApplicationStatusEnumsToStringsMap } from "@/app/lib/utils/enumMaps";
 
 export const ApplicationsTable = (props: {
   applications: CreditApplicationSparseSerialized[];
   totalNumberOfApplications: number;
   navigationAction: (id: number) => Promise<never>;
 }) => {
+  const statusMap = useMemo(() => {
+    return getCreditApplicationStatusEnumsToStringsMap();
+  }, []);
   const columnHelper = createColumnHelper<CreditApplicationSparseSerialized>();
   const columns = useMemo(() => {
     const result: ColumnDef<CreditApplicationSparseSerialized, any>[] = [
@@ -25,7 +29,7 @@ export const ApplicationsTable = (props: {
         enableColumnFilter: true,
         header: () => <span>Date</span>,
       }),
-      columnHelper.accessor((row) => row.status, {
+      columnHelper.accessor((row) => statusMap[row.status], {
         id: "status",
         enableSorting: true,
         enableColumnFilter: true,

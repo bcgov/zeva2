@@ -1,12 +1,11 @@
 import Excel from "exceljs";
+import { ModelYear, VehicleStatus, Prisma } from "@/prisma/generated/client";
 import {
-  CreditApplicationStatus,
-  CreditApplicationSupplierStatus,
-  ModelYear,
-  VehicleStatus,
-  Prisma,
-} from "@/prisma/generated/client";
-import { getStringsToModelYearsEnumsMap } from "@/app/lib/utils/enumMaps";
+  getMatchingTerms,
+  getStringsToCreditApplicationStatusEnumsMap,
+  getStringsToCreditApplicationSupplierStatusEnumsMap,
+  getStringsToModelYearsEnumsMap,
+} from "@/app/lib/utils/enumMaps";
 import {
   CreditApplicationSubDirectory,
   SupplierTemplateZEVsSuppliedSheetHeaderNames,
@@ -55,26 +54,21 @@ export const getWhereClause = (
   userIsGov: boolean,
 ): Prisma.CreditApplicationWhereInput => {
   const result: Prisma.CreditApplicationWhereInput = {};
-  Object.entries(filters).forEach(([key, value]) => {
+  const statusMap = getStringsToCreditApplicationStatusEnumsMap();
+  const supplierStatusMap =
+    getStringsToCreditApplicationSupplierStatusEnumsMap();
+  Object.entries(filters).forEach(([key, rawValue]) => {
+    const value = rawValue.trim();
     if (key === "id") {
       result[key] = parseInt(value, 10);
     } else if (key === "status") {
-      const newValue = value.replaceAll(" ", "").toLowerCase();
-      const statuses = Object.values(CreditApplicationStatus);
-      const matches = statuses.filter((status) => {
-        const newStatus = status.replaceAll("_", "").toLowerCase();
-        return newStatus.includes(newValue);
-      });
       if (userIsGov) {
         result[key] = {
-          in: matches,
+          in: getMatchingTerms(statusMap, value),
         };
       } else {
-        const supplierMatches = new Set(matches).intersection(
-          new Set(Object.values(CreditApplicationSupplierStatus)),
-        );
-        result.supplierStatus = {
-          in: Array.from(supplierMatches),
+        result["supplierStatus"] = {
+          in: getMatchingTerms(supplierStatusMap, value),
         };
       }
     } else if (key === "submissionTimestamp") {
@@ -90,11 +84,10 @@ export const getWhereClause = (
         result.id = -1;
       }
     } else if (key === "organization" && userIsGov) {
-      const newValue = value.trim();
       result[key] = {
         is: {
           name: {
-            contains: newValue,
+            contains: value,
             mode: "insensitive",
           },
         },
@@ -111,22 +104,24 @@ export const getOrderByClause = (
 ): Prisma.CreditApplicationOrderByWithRelationInput[] => {
   const result: Prisma.CreditApplicationOrderByWithRelationInput[] = [];
   Object.entries(sorts).forEach(([key, value]) => {
+    const orderBy: Prisma.CreditApplicationOrderByWithRelationInput = {};
     if (value === "asc" || value === "desc") {
       if (key === "id" || key === "submissionTimestamp") {
-        result.push({ [key]: value });
+        orderBy[key] = value;
       } else if (key === "status") {
         if (userIsGov) {
-          result.push({ status: value });
+          orderBy[key] = value;
         } else {
-          result.push({ supplierStatus: value });
+          orderBy["supplierStatus"] = value;
         }
       } else if (key === "organization" && userIsGov) {
-        result.push({
-          [key]: {
-            name: value,
-          },
-        });
+        orderBy[key] = {
+          name: value,
+        };
       }
+    }
+    if (Object.keys(orderBy).length > 0) {
+      result.push(orderBy);
     }
   });
   if (defaultSortById && result.length === 0) {
@@ -140,24 +135,18 @@ export const getRecordsWhereClause = (
 ): Prisma.CreditApplicationRecordWhereInput => {
   const result: Prisma.CreditApplicationRecordWhereInput = {};
   const modelYearsMap = getStringsToModelYearsEnumsMap();
-  Object.entries(filters).forEach(([key, value]) => {
+  Object.entries(filters).forEach(([key, rawValue]) => {
+    const value = rawValue.trim();
     if (key === "validated") {
-      const newValue = value.toLowerCase().trim();
+      const newValue = value.toLowerCase();
       if (newValue === "y") {
         result[key] = true;
       } else if (newValue === "n") {
         result[key] = false;
       }
     } else if (key === "modelYear" || key === "icbcModelYear") {
-      const modelYearEnums: ModelYear[] = [];
-      const modelYearStrings = Object.keys(modelYearsMap);
-      modelYearStrings.forEach((my) => {
-        if (my.includes(value) && modelYearsMap[my]) {
-          modelYearEnums.push(modelYearsMap[my]);
-        }
-      });
       result[key] = {
-        in: modelYearEnums,
+        in: getMatchingTerms(modelYearsMap, value),
       };
     } else if (key === "timestamp" || key === "icbcTimestamp") {
       const [isValidDate, date] = validateDate(value);
@@ -173,13 +162,13 @@ export const getRecordsWhereClause = (
       key === "icbcMake" ||
       key === "icbcModelName"
     ) {
-      const newValue = value.trim().toLowerCase();
+      const newValue = value.toLowerCase();
       result[key] = {
         contains: newValue,
         mode: "insensitive",
       };
     } else if (key === "warnings") {
-      let newValue: string | string[] = value.toLowerCase().trim();
+      let newValue: string | string[] = value.toLowerCase();
       if (newValue === "any") {
         result[key] = {
           isEmpty: false,
@@ -195,7 +184,7 @@ export const getRecordsWhereClause = (
         };
       }
     } else if (key === "reason") {
-      let newValue: string = value.toLowerCase().trim();
+      let newValue: string = value.toLowerCase();
       if (newValue === "any") {
         result[key] = {
           not: null,
@@ -219,6 +208,7 @@ export const getRecordsOrderByClause = (
 ): Prisma.CreditApplicationRecordOrderByWithRelationInput[] => {
   const result: Prisma.CreditApplicationRecordOrderByWithRelationInput[] = [];
   Object.entries(sorts).forEach(([key, value]) => {
+    const orderBy: Prisma.CreditApplicationRecordOrderByWithRelationInput = {};
     if (
       (value === "asc" || value === "desc") &&
       (key === "vin" ||
@@ -234,7 +224,10 @@ export const getRecordsOrderByClause = (
         key === "warnings" ||
         key === "reason")
     ) {
-      result.push({ [key]: value });
+      orderBy[key] = value;
+    }
+    if (Object.keys(orderBy).length > 0) {
+      result.push(orderBy);
     }
   });
   if (defaultSortById && result.length === 0) {

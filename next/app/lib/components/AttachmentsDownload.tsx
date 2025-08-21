@@ -3,9 +3,13 @@
 import { Button } from "@/app/lib/components";
 import { downloadMultiple } from "@/app/lib/utils/download";
 import { useCallback, useState, useTransition } from "react";
-import { getAttachmentDownloadUrls } from "../actions";
+import { DataOrErrorActionResponse } from "../utils/actionResponse";
+import { AttachmentDownload } from "../services/attachments";
 
-export const VehicleAttachmentsClient = (props: { id: number }) => {
+export const AttachmentsDownload = (props: {
+  download: () => Promise<DataOrErrorActionResponse<AttachmentDownload[]>>;
+  zipName: string;
+}) => {
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string>("");
 
@@ -13,25 +17,24 @@ export const VehicleAttachmentsClient = (props: { id: number }) => {
     setError("");
     startTransition(async () => {
       try {
-        const response = await getAttachmentDownloadUrls(props.id);
+        const response = await props.download();
         if (response.responseType === "error") {
           throw new Error(response.message);
         }
-        const zipName = `zev-model-attachments-${props.id}.zip`;
-        await downloadMultiple(response.data, zipName);
+        await downloadMultiple(response.data, props.zipName);
       } catch (e) {
         if (e instanceof Error) {
           setError(e.message);
         }
       }
     });
-  }, [props.id]);
+  }, [props.download, props.zipName]);
 
   return (
     <div>
       {error && <p className="text-red-600">{error}</p>}
       <Button onClick={handleDownload} disabled={isPending}>
-        {isPending ? "..." : "Download Attachments"}
+        {isPending ? "..." : "Download"}
       </Button>
     </div>
   );
