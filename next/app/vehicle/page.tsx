@@ -16,7 +16,7 @@ const Page = async (props: { searchParams?: Promise<pageStringParams> }) => {
     <Suspense key={Date.now()} fallback={<LoadingSkeleton />}>
       {!userIsGov && (
         <Link href={`${Routes.Vehicle}/new`}>
-          <Button>Create New Vehicle</Button>
+          <Button>Submit a Vehicle</Button>
         </Link>
       )}
       <VehicleList

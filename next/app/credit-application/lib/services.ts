@@ -7,6 +7,8 @@ import {
   VehicleStatus,
 } from "@/prisma/generated/client";
 import { mapOfStatusToSupplierStatus } from "./constants";
+import { Attachment } from "@/app/lib/services/attachments";
+import { TransactionClient } from "@/types/prisma";
 
 export const getReservedVins = async (vins: string[]) => {
   const where = {
@@ -191,5 +193,24 @@ export const unreserveVins = (creditApplicationId: number, vins?: string[]) => {
   }
   return prisma.creditApplicationVin.deleteMany({
     where,
+  });
+};
+
+export const createAttachments = async (
+  creditApplicationId: number,
+  attachments: Attachment[],
+  transactionClient?: TransactionClient,
+) => {
+  const client = transactionClient ?? prisma;
+  const toCreate: Prisma.CreditApplicationAttachmentUncheckedCreateInput[] = [];
+  attachments.forEach((attachment) => {
+    toCreate.push({
+      creditApplicationId,
+      fileName: attachment.fileName,
+      objectName: attachment.objectName,
+    });
+  });
+  await client.creditApplicationAttachment.createMany({
+    data: toCreate,
   });
 };

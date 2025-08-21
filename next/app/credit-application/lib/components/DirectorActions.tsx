@@ -10,7 +10,7 @@ import {
   getNormalizedComment,
 } from "../utils";
 import { Routes } from "@/app/lib/constants";
-import { CommentBox } from "./CommentBox";
+import { CommentBox } from "@/app/lib/components/inputs/CommentBox";
 
 export const DirectorActions = (props: {
   id: number;

@@ -358,11 +358,11 @@ model VehicleHistory {
 }
 
 model VehicleAttachment {
-  id              Int     @id @default(autoincrement())
-  vehicleId       Int     @map("vehicle_id")
-  vehicle         Vehicle @relation(fields: [vehicleId], references: [id])
-  filename        String
-  minioObjectName String  @map("minio_object_name")
+  id         Int     @id @default(autoincrement())
+  vehicleId  Int     @map("vehicle_id")
+  vehicle    Vehicle @relation(fields: [vehicleId], references: [id])
+  fileName   String  @map("file_name")
+  objectName String  @map("object_name")
 
   @@map("vehicle_file_attachment")
 }
@@ -416,17 +416,18 @@ enum CreditApplicationSupplierStatus {
 }
 
 model CreditApplication {
-  id                       Int                             @id @default(autoincrement())
-  organization             Organization                    @relation(fields: [organizationId], references: [id])
-  organizationId           Int                             @map("organization_id")
-  submissionTimestamp      DateTime                        @default(now()) @map("submission_timestamp") @db.Timestamptz(6)
-  status                   CreditApplicationStatus         @map("status")
-  supplierStatus           CreditApplicationSupplierStatus @map("supplier_status")
-  supplierFileId           String                          @map("supplier_file_id")
-  supplierFileName         String                          @map("supplier_file_name")
-  CreditApplicationHistory CreditApplicationHistory[]
-  CreditApplicationRecord  CreditApplicationRecord[]
-  CreditApplicationVin     CreditApplicationVin[]
+  id                          Int                             @id @default(autoincrement())
+  organization                Organization                    @relation(fields: [organizationId], references: [id])
+  organizationId              Int                             @map("organization_id")
+  submissionTimestamp         DateTime                        @default(now()) @map("submission_timestamp") @db.Timestamptz(6)
+  status                      CreditApplicationStatus         @map("status")
+  supplierStatus              CreditApplicationSupplierStatus @map("supplier_status")
+  supplierFileId              String                          @map("supplier_file_id")
+  supplierFileName            String                          @map("supplier_file_name")
+  CreditApplicationHistory    CreditApplicationHistory[]
+  CreditApplicationRecord     CreditApplicationRecord[]
+  CreditApplicationVin        CreditApplicationVin[]
+  CreditApplicationAttachment CreditApplicationAttachment[]
 
   @@map("credit_application")
 }
@@ -465,6 +466,16 @@ model CreditApplicationRecord {
   warnings            String[]
 
   @@map("credit_application_record")
+}
+
+model CreditApplicationAttachment {
+  id                  Int               @id @default(autoincrement())
+  creditApplicationId Int               @map("credit_application_id")
+  creditApplication   CreditApplication @relation(fields: [creditApplicationId], references: [id])
+  fileName            String            @map("file_name")
+  objectName          String            @map("object_name")
+
+  @@map("credit_application_attachment")
 }
 
 model CreditApplicationVin {

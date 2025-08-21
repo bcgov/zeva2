@@ -28,7 +28,7 @@ const Page = async (props: { params: Promise<{ id: string }> }) => {
           <VehicleDetails vehicle={vehicle} />
         </Suspense>
       </ContentCard>
-      <ContentCard title="Vehicle Attachments">
+      <ContentCard title="Download Additional Documents">
         <Suspense fallback={<LoadingSkeleton />}>
           <VehicleAttachments id={id} />
         </Suspense>

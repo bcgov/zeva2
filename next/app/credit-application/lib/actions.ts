@@ -4,7 +4,6 @@ import {
   getObject,
   getPresignedGetObjectUrl,
   getPresignedPutObjectUrl,
-  removeObject,
 } from "@/app/lib/minio";
 import { getUserInfo } from "@/auth";
 import { prisma } from "@/lib/prisma";
@@ -26,6 +25,7 @@ import {
   parseSupplierSubmission,
 } from "./utils";
 import {
+  createAttachments,
   createHistory,
   getEligibleVehicles,
   getIcbcRecordsMap,
@@ -43,6 +43,11 @@ import {
   getErrorActionResponse,
   getSuccessActionResponse,
 } from "@/app/lib/utils/actionResponse";
+import {
+  Attachment,
+  AttachmentDownload,
+  deleteAttachments,
+} from "@/app/lib/services/attachments";
 
 export const getSupplierTemplateDownloadUrl = async () => {
   return await getPresignedGetObjectUrl(
@@ -55,32 +60,42 @@ export const getSupplierEligibleVehicles = async () => {
   return await getEligibleVehicles(userOrgId);
 };
 
-export const getCreditApplicationPutData = async () => {
+export const getCreditApplicationPutData = async (
+  numberOfDocuments: number,
+) => {
+  const result: { objectName: string; url: string }[] = [];
   const { userOrgId } = await getUserInfo();
-  const objectName = randomUUID();
-  const fullObjectName = getCreditApplicationFullObjectName(
-    userOrgId,
-    objectName,
-  );
-  const url = await getPresignedPutObjectUrl(fullObjectName);
-  return {
-    objectName,
-    url,
-  };
+  for (let i = 0; i < numberOfDocuments; i++) {
+    const objectName = randomUUID();
+    const fullObjectName = getCreditApplicationFullObjectName(
+      userOrgId,
+      objectName,
+    );
+    result.push({
+      objectName,
+      url: await getPresignedPutObjectUrl(fullObjectName),
+    });
+  }
+  return result;
 };
 
+// first attachment expected to be the credit application file;
+// the rest are additional documents
 export const processSupplierFile = async (
-  objectName: string,
-  fileName: string,
+  attachments: Attachment[],
   comment?: string,
 ): Promise<DataOrErrorActionResponse<number>> => {
   const { userOrgId, userId } = await getUserInfo();
   let result = NaN;
-  const fullObjectName = getCreditApplicationFullObjectName(
-    userOrgId,
-    objectName,
-  );
   try {
+    const application = attachments.shift();
+    if (!application) {
+      throw new Error("Application not uploaded!");
+    }
+    const fullObjectName = getCreditApplicationFullObjectName(
+      userOrgId,
+      application.objectName,
+    );
     const file = await getObject(fullObjectName);
     const workbook = new Excel.Workbook();
     await workbook.xlsx.read(file);
@@ -130,8 +145,8 @@ export const processSupplierFile = async (
           organizationId: userOrgId,
           status: CreditApplicationStatus.SUBMITTED,
           supplierStatus: CreditApplicationSupplierStatus.SUBMITTED,
-          supplierFileId: objectName,
-          supplierFileName: fileName,
+          supplierFileId: application.objectName,
+          supplierFileName: application.fileName,
         },
         select: {
           id: true,
@@ -148,6 +163,7 @@ export const processSupplierFile = async (
       await tx.creditApplicationVin.createMany({
         data: toInsert,
       });
+      await createAttachments(id, attachments, tx);
       await tx.creditApplicationHistory.create({
         data: {
           userId,
@@ -158,7 +174,11 @@ export const processSupplierFile = async (
       });
     });
   } catch (e) {
-    await removeObject(fullObjectName);
+    await deleteAttachments(
+      userOrgId,
+      attachments,
+      getCreditApplicationFullObjectName,
+    );
     if (e instanceof Error) {
       return getErrorActionResponse(e.message);
     }
@@ -170,33 +190,6 @@ export const processSupplierFile = async (
 export type FileInfo = {
   fileName: string;
   url: string;
-};
-
-export const getSupplierFileInfo = async (
-  creditApplicationId: number,
-): Promise<DataOrErrorActionResponse<FileInfo>> => {
-  const { userIsGov, userOrgId } = await getUserInfo();
-  let whereClause: Prisma.CreditApplicationWhereUniqueInput = {
-    id: creditApplicationId,
-  };
-  if (!userIsGov) {
-    whereClause = { ...whereClause, organizationId: userOrgId };
-  }
-  const creditApplication = await prisma.creditApplication.findUnique({
-    where: whereClause,
-  });
-  if (!creditApplication) {
-    return getErrorActionResponse("Credit Application Not Found!");
-  }
-  const fullObjectName = getCreditApplicationFullObjectName(
-    creditApplication.organizationId,
-    creditApplication.supplierFileId,
-  );
-  const url = await getPresignedGetObjectUrl(fullObjectName);
-  return getDataActionResponse<FileInfo>({
-    fileName: creditApplication.supplierFileName,
-    url,
-  });
 };
 
 export const validateCreditApplication = async (
@@ -518,4 +511,53 @@ export const directorReject = async (
     ),
   ]);
   return getSuccessActionResponse();
+};
+
+export const getDownloadUrls = async (
+  id: number,
+): Promise<DataOrErrorActionResponse<AttachmentDownload[]>> => {
+  const { userIsGov, userOrgId } = await getUserInfo();
+  const whereClause: Prisma.CreditApplicationWhereUniqueInput = { id };
+  if (!userIsGov) {
+    whereClause.organizationId = userOrgId;
+  }
+  const application = await prisma.creditApplication.findUnique({
+    where: whereClause,
+    select: {
+      organizationId: true,
+      supplierFileId: true,
+      supplierFileName: true,
+      CreditApplicationAttachment: {
+        select: {
+          fileName: true,
+          objectName: true,
+        },
+      },
+    },
+  });
+  if (!application) {
+    return getErrorActionResponse("Credit Application not found!");
+  }
+  const result: AttachmentDownload[] = [];
+  result.push({
+    fileName: application.supplierFileName,
+    url: await getPresignedGetObjectUrl(
+      getCreditApplicationFullObjectName(
+        application.organizationId,
+        application.supplierFileId,
+      ),
+    ),
+  });
+  for (const attachment of application.CreditApplicationAttachment) {
+    result.push({
+      fileName: attachment.fileName,
+      url: await getPresignedGetObjectUrl(
+        getCreditApplicationFullObjectName(
+          application.organizationId,
+          attachment.objectName,
+        ),
+      ),
+    });
+  }
+  return getDataActionResponse(result);
 };

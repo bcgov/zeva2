@@ -142,19 +142,16 @@ export const getCreditApplications = async (
   const take = pageSize;
   const where = getWhereClause(filters, userIsGov);
   const orderBy = getOrderByClause(sorts, true, userIsGov);
-  if (userRoles.some((role) => role === Role.DIRECTOR)) {
-    const statusFilters = [
-      { status: { not: CreditApplicationStatus.SUBMITTED } },
-      { status: { not: CreditApplicationStatus.RETURNED_TO_ANALYST } },
-      { status: { not: CreditApplicationStatus.RETURNED_TO_SUPPLIER } },
-    ];
-    if (Array.isArray(where.AND)) {
-      where.AND.push(...statusFilters);
-    } else if (where.AND) {
-      where.AND = [where.AND, ...statusFilters];
-    } else {
-      where.AND = statusFilters;
-    }
+  if (userIsGov && userRoles.includes(Role.DIRECTOR)) {
+    where.NOT = {
+      status: {
+        in: [
+          CreditApplicationStatus.SUBMITTED,
+          CreditApplicationStatus.RETURNED_TO_ANALYST,
+          CreditApplicationStatus.RETURNED_TO_SUPPLIER,
+        ],
+      },
+    };
   }
   if (!userIsGov) {
     where.organizationId = userOrgId;

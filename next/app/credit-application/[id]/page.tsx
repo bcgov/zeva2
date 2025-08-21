@@ -2,13 +2,14 @@ import { getUserInfo } from "@/auth";
 import { Role } from "@/prisma/generated/client";
 import { getCreditApplication } from "../lib/data";
 import { ContentCard } from "@/app/lib/components";
-import { DownloadSupplierFile } from "../lib/components/DownloadSupplierFile";
 import { AnalystView } from "../lib/components/AnalystView";
 import { DirectorView } from "../lib/components/DirectorView";
 import { Suspense } from "react";
 import { LoadingSkeleton } from "@/app/lib/components/skeletons";
 import { ApplicationHistories } from "../lib/components/ApplicationHistories";
 import { ApplicationDetails } from "../lib/components/ApplicationDetails";
+import { getDownloadUrls } from "../lib/actions";
+import { AttachmentsDownload } from "@/app/lib/components/AttachmentsDownload";
 
 const Page = async (props: { params: Promise<{ id: string }> }) => {
   const args = await props.params;
@@ -18,6 +19,11 @@ const Page = async (props: { params: Promise<{ id: string }> }) => {
     return null;
   }
   const { userIsGov, userRoles } = await getUserInfo();
+  const download = async () => {
+    "use server";
+    return getDownloadUrls(id);
+  };
+
   const applicationData = (
     <>
       <ContentCard title="Application Details">
@@ -31,8 +37,11 @@ const Page = async (props: { params: Promise<{ id: string }> }) => {
           <ApplicationHistories id={id} />
         </Suspense>
       </ContentCard>
-      <ContentCard title="Download Submission">
-        <DownloadSupplierFile creditApplicationId={id} userIsGov={userIsGov} />
+      <ContentCard title="Credit Application Documents">
+        <AttachmentsDownload
+          download={download}
+          zipName={`credit-application-documents-${id}`}
+        />
       </ContentCard>
     </>
   );
@@ -41,7 +50,7 @@ const Page = async (props: { params: Promise<{ id: string }> }) => {
     const applicationStatus = creditApplication.status;
     if (userRoles.some((role) => role === Role.ENGINEER_ANALYST)) {
       return (
-        <div>
+        <div className="flex flex-col w-1/3">
           {applicationData}
           <ContentCard title="Actions">
             <AnalystView id={id} status={applicationStatus} />
@@ -50,7 +59,7 @@ const Page = async (props: { params: Promise<{ id: string }> }) => {
       );
     } else if (userRoles.some((role) => role === Role.DIRECTOR)) {
       return (
-        <div>
+        <div className="flex flex-col w-1/3">
           {applicationData}
           <ContentCard title="Actions">
             <DirectorView id={id} status={applicationStatus} />
@@ -59,7 +68,7 @@ const Page = async (props: { params: Promise<{ id: string }> }) => {
       );
     }
   }
-  return <div>{applicationData}</div>;
+  return <div className="flex flex-col w-1/3">{applicationData}</div>;
 };
 
 export default Page;
