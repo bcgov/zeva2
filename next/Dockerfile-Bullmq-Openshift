@@ -9,7 +9,7 @@ RUN npm install
 RUN npx prisma generate
 
 CMD ["/bin/sh", "-c", "\
-  for cfg in database minio redis; do \
+  for cfg in database minio redis email; do \
     if [ -f /vault/secrets/$cfg ]; then \
       . /vault/secrets/$cfg; \
     fi; \
