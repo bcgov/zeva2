@@ -12,10 +12,7 @@ import {
   getSuccessActionResponse,
 } from "@/app/lib/utils/actionResponse";
 
-export type UserPayload = Omit<
-  User,
-  "id" | "idp" | "idpSub" | "notifications" | "wasUpdated"
->;
+export type UserPayload = Omit<User, "id" | "idp" | "idpSub" | "wasUpdated">;
 
 export const updateUser = async (
   id: number,

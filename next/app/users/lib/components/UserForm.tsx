@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState, useTransition } from "react";
 import { Button } from "@/app/lib/components";
-import { Role, User } from "@/prisma/generated/client";
+import { Notification, Role, User } from "@/prisma/generated/client";
 import { createUser, updateUser } from "../actions";
 import { UserFormFields } from "./UserFormFields";
 import { getUserPayload } from "../utilsClient";
@@ -28,6 +28,7 @@ export const UserForm = ({
   const [error, setError] = useState<string>("");
   const [form, setForm] = useState<Partial<Record<string, string>>>({});
   const [roles, setRoles] = useState<Role[]>([]);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
   const [isPending, startTransition] = useTransition();
 
   useEffect(() => {
@@ -41,6 +42,7 @@ export const UserForm = ({
         organizationId: user.organizationId.toString(),
       });
       setRoles(user.roles);
+      setNotifications(user.notifications);
     } else {
       setForm({
         isActive: "true",
@@ -64,14 +66,22 @@ export const UserForm = ({
     });
   }, []);
 
+  const toggleNotification = useCallback((notification: Notification) => {
+    setNotifications((prev) => {
+      if (prev.includes(notification)) {
+        return prev.filter((element) => element !== notification);
+      }
+      return [...prev, notification];
+    });
+  }, []);
+
   const handleSubmit = useCallback(() => {
     startTransition(async () => {
       try {
-        const payload = getUserPayload(form, roles);
+        const payload = getUserPayload(form, roles, notifications);
         let response:
           | ErrorOrSuccessActionResponse
-          | DataOrErrorActionResponse<number>
-          | undefined;
+          | DataOrErrorActionResponse<number>;
         let userId: number | undefined;
         if (user) {
           userId = user.id;
@@ -82,7 +92,7 @@ export const UserForm = ({
             userId = response.data;
           }
         }
-        if (response && response.responseType === "error") {
+        if (response.responseType === "error") {
           throw new Error(response.message);
         }
         router.push(`${Routes.Users}/${userId}`);
@@ -122,8 +132,10 @@ export const UserForm = ({
         form={form}
         selectedRoles={roles}
         govRoles={form.organizationId === govOrgId}
+        notifications={notifications}
         onChange={handleChange}
         toggleRole={toggleRole}
+        toggleNotification={toggleNotification}
       />
 
       <div className="pt-4 flex gap-4">

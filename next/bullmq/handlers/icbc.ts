@@ -8,9 +8,8 @@ import { TransactionClient } from "@/types/prisma";
 
 type Row = { [key: string]: string };
 
-export const handleConsumeIcbcFileJob = async (job: Job) => {
-  const jobData = job.data;
-  const icbcFileId: number = jobData.icbcFileId;
+export const handleConsumeIcbcFileJob = async (job: Job<number>) => {
+  const icbcFileId: number = job.data;
   console.log(
     "starting ICBC file job with file ID %s at %s",
     icbcFileId,
