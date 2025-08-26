@@ -52,6 +52,9 @@ export const UserForm = ({
   }, [user, userOrgId]);
 
   const handleChange = useCallback((key: string, value: string) => {
+    if (key === "organizationId") {
+      setRoles([]);
+    }
     setForm((prev) => {
       return { ...prev, [key]: value };
     });
@@ -102,7 +105,7 @@ export const UserForm = ({
         }
       }
     });
-  }, [user, form, roles, router]);
+  }, [user, form, roles, notifications]);
 
   return (
     <div>
