@@ -6,7 +6,7 @@ import {
 } from "./handlers/icbc";
 import { handleCreateDefaultBucket } from "./handlers/runOnce";
 import { ConnectionOptions } from "bullmq";
-import { QueueNames } from "@/app/lib/services/queue";
+import { QueueNames } from "@/app/lib/constants/queue";
 
 const connection: ConnectionOptions = {
   host: process.env.REDIS_HOST ?? "redis",

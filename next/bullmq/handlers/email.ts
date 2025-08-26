@@ -225,7 +225,7 @@ export const sendZevModelEmails = async (historyId: number) => {
     includeAnalysts = true;
   }
   await sendNotificationEmails(
-    Notification.MODEL_YEAR_REPORT,
+    Notification.ZEV_MODEL,
     history.vehicle.id,
     history.userId,
     supplierOrgIds,

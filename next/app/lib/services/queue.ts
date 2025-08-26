@@ -1,11 +1,7 @@
 import { bullmqConfig } from "@/bullmq/config";
 import { EmailJobData } from "@/bullmq/handlers/email";
 import { JobsOptions, Queue } from "bullmq";
-
-export enum QueueNames {
-  Email = "email",
-  Icbc = "icbc",
-}
+import { QueueNames } from "../constants/queue";
 
 const queues: {
   [QueueNames.Email]: Readonly<Queue<EmailJobData>> | null;
