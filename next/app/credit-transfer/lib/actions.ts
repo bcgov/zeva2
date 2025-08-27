@@ -26,7 +26,7 @@ import {
   getSuccessActionResponse,
 } from "@/app/lib/utils/actionResponse";
 import { Decimal } from "@/prisma/generated/client/runtime/library";
-import { addJobToEmailQueue } from "@/lib/utils/queue";
+import { addJobToEmailQueue } from "@/app/lib/services/queue";
 
 export type CreditTransferPayload = {
   transferToId: number;
