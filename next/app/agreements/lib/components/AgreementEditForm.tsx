@@ -6,10 +6,13 @@ import {
   ModelYear,
   ZevClass,
 } from "@/prisma/generated/client";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { AgreementContentPayload, AgreementPayload } from "../action";
 import { cleanupStringData } from "@/lib/utils/dataCleanup";
 import { AgreementDetailsType } from "../services";
+import { Dropzone } from "@/app/lib/components/Dropzone";
+import { FileWithPath } from "react-dropzone";
+import { getDefaultAttchmentTypes } from "@/app/lib/utils/attachments";
 
 const mainDivClass = "grid grid-cols-[220px_1fr]";
 const fieldLabelClass = "py-1 font-semibold text-primaryBlue";
@@ -60,6 +63,10 @@ export const AgreementEditForm = (props: {
   const [processingMsg, setProcessingMsg] = useState<string | undefined>(
     undefined,
   );
+  const [files, setFiles] = useState<FileWithPath[]>([]);
+  const allowedFileTypes = useMemo(() => {
+    return getDefaultAttchmentTypes();
+  }, []);
 
   const handleSave = async () => {
     if (!supplier || !agreementType) {
@@ -253,6 +260,17 @@ export const AgreementEditForm = (props: {
           value={msgToSupplier}
           placeholder="Optional message to the supplier regarding this agreement."
           onChange={(e) => setMsgToSupplier(e.target.value)}
+        />
+      </div>
+
+      <div>
+        <p>Supporting Documents</p>
+        <Dropzone
+          files={files}
+          setFiles={setFiles}
+          disabled={false}
+          maxNumberOfFiles={10}
+          allowedFileTypes={allowedFileTypes}
         />
       </div>
 
