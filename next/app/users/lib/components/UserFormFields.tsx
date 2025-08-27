@@ -1,21 +1,28 @@
 "use client";
 
-import { getRoleEnumsToStringsMap } from "@/app/lib/utils/enumMaps";
-import { Role } from "@/prisma/generated/client";
+import {
+  getNotificationEnumsToStringsMap,
+  getRoleEnumsToStringsMap,
+} from "@/app/lib/utils/enumMaps";
+import { Notification, Role } from "@/prisma/generated/client";
 import { useMemo } from "react";
 
 export function UserFormFields({
   form,
   selectedRoles,
   govRoles,
+  notifications,
   onChange,
   toggleRole,
+  toggleNotification,
 }: {
   form: any;
   selectedRoles: Role[];
   govRoles: boolean;
+  notifications: Notification[];
   onChange: (field: string, value: any) => void;
   toggleRole: (role: Role) => void;
+  toggleNotification: (role: Notification) => void;
 }) {
   const rolesMap = useMemo(() => {
     return getRoleEnumsToStringsMap();
@@ -31,6 +38,10 @@ export function UserFormFields({
       Role.ZEVA_USER,
     ];
   }, [govRoles]);
+
+  const notificationsMap = useMemo(() => {
+    return getNotificationEnumsToStringsMap();
+  }, []);
 
   return (
     <>
@@ -94,6 +105,20 @@ export function UserFormFields({
               onChange={() => toggleRole(role)}
             />
             {rolesMap[role]}
+          </label>
+        ))}
+      </div>
+      <div className="flex items-center py-2 my-2">
+        <label className="w-72">Notifications</label>
+        {Object.values(Notification).map((value) => (
+          <label className="w-72" key={value}>
+            <input
+              className="border p-2 w-full"
+              type="checkbox"
+              checked={notifications.includes(value)}
+              onChange={() => toggleNotification(value)}
+            />
+            {notificationsMap[value]}
           </label>
         ))}
       </div>
