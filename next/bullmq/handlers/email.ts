@@ -1,6 +1,7 @@
 import { sendEmail } from "@/app/lib/services/email";
 import { getNotificationEnumsToStringsMap } from "@/app/lib/utils/enumMaps";
 import { prisma } from "@/lib/prisma";
+import validator from "validator";
 import {
   CreditApplicationStatus,
   CreditApplicationSupplierStatus,
@@ -283,17 +284,17 @@ export const sendNotificationEmails = async (
       contactEmail: true,
     },
   });
-  const emails: string[] = [];
+  const emails: Set<string> = new Set();
   users.forEach((user) => {
     const email = user.contactEmail;
-    if (email) {
-      emails.push(email);
+    if (email && email === email.trim() && validator.isEmail(email)) {
+      emails.add(email);
     }
   });
-  if (emails.length > 0) {
+  if (emails.size > 0) {
     const emailBody = getNotificationEmailBody(notificationType, objectId);
     const success = await sendEmail(
-      emails,
+      Array.from(emails),
       "BC ZEVA Notification",
       "html",
       emailBody,
