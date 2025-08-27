@@ -50,7 +50,7 @@ import { randomUUID } from "crypto";
 import { prisma } from "@/lib/prisma";
 import { getComplianceDate } from "@/app/lib/utils/complianceYear";
 import { AttachmentDownload } from "@/app/lib/services/attachments";
-import { addJobToEmailQueue } from "@/lib/utils/queue";
+import { addJobToEmailQueue } from "@/app/lib/services/queue";
 
 export const getMyrTemplateUrl = async () => {
   return await getPresignedGetObjectUrl(
