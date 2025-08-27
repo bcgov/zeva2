@@ -49,7 +49,7 @@ import {
   AttachmentDownload,
   deleteAttachments,
 } from "@/app/lib/services/attachments";
-import { addJobToEmailQueue } from "@/app/lib/services/queue";
+import { addJobToEmailQueue } from "@/lib/utils/queue";
 
 export const getSupplierTemplateDownloadUrl = async () => {
   return await getPresignedGetObjectUrl(
