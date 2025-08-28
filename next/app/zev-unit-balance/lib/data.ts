@@ -8,8 +8,8 @@ import {
 } from "@/prisma/generated/client";
 import { getBalance, ZevUnitRecordsObj } from "../../../lib/utils/zevUnit";
 import { getUserInfo } from "@/auth";
-import { getModelYearEnumsToStringsMap } from "@/app/lib/utils/enumMaps";
 import { getCompliancePeriod } from "@/app/lib/utils/complianceYear";
+import { getStringsToModelYearsEnumsMap } from "@/app/lib/utils/enumMaps";
 
 export async function fetchTransactions(
   orgId: number,
@@ -48,7 +48,6 @@ export async function fetchEndingBalances(
 
 export async function fetchBalance(
   orgId: number,
-  modelYear?: ModelYear,
 ): Promise<ZevUnitRecordsObj | "deficit" | undefined> {
   const { userIsGov, userOrgId } = await getUserInfo();
   if (userIsGov || userOrgId === orgId) {
@@ -64,15 +63,10 @@ export async function fetchBalance(
       },
     );
     if (mostRecentEndingBalance) {
-      const modelYearsMap = getModelYearEnumsToStringsMap();
       const complianceYear = mostRecentEndingBalance.complianceYear;
-      const intYear = parseInt(modelYearsMap[complianceYear] ?? "");
-      if (Number.isNaN(intYear)) {
-        return undefined;
-      }
-      const { closedLowerBound } = getCompliancePeriod(intYear + 1);
+      const { openUpperBound: gteDate } = getCompliancePeriod(complianceYear);
       const endingBalances = await fetchEndingBalances(orgId, complianceYear);
-      const transactions = await fetchTransactions(orgId, closedLowerBound);
+      const transactions = await fetchTransactions(orgId, gteDate);
       return getBalance(endingBalances, transactions);
     } else {
       const transactions = await fetchTransactions(orgId);
@@ -90,4 +84,35 @@ export async function getOrg(
       where: { id: orgId },
     });
   }
+}
+
+export async function getComplianceYears(orgId: number): Promise<ModelYear[]> {
+  const { userIsGov, userOrgId } = await getUserInfo();
+  if (userIsGov || userOrgId === orgId) {
+    const rows = await prisma.zevUnitTransaction.findMany({
+      where: { organizationId: orgId },
+      select: { timestamp: true },
+    });
+    const modelYearsMap = getStringsToModelYearsEnumsMap();
+    const years = new Set<ModelYear>();
+    for (const { timestamp } of rows) {
+      const y = timestamp.getFullYear();
+      const m = timestamp.getMonth();
+      const complianceYear = m >= 9 ? y : y - 1;
+      const modelYear = modelYearsMap[complianceYear.toString()];
+      if (modelYear) {
+        years.add(modelYear);
+      }
+    }
+    return Array.from(years).sort((a, b) => {
+      if (a < b) {
+        return 1;
+      }
+      if (a > b) {
+        return -1;
+      }
+      return 0;
+    });
+  }
+  return [];
 }

@@ -1,5 +1,4 @@
-import { emailQueueName, icbcQueueName } from "@/lib/constants/queue";
-import { handleEmailJob, handleEmailJobCompleted } from "./handlers/email";
+import { handleEmailJob } from "./handlers/email";
 import {
   handleConsumeIcbcFileJob,
   handleConsumeIcbcFileJobCompleted,
@@ -7,6 +6,7 @@ import {
 } from "./handlers/icbc";
 import { handleCreateDefaultBucket } from "./handlers/runOnce";
 import { ConnectionOptions } from "bullmq";
+import { QueueNames } from "@/app/lib/constants/queue";
 
 const connection: ConnectionOptions = {
   host: process.env.REDIS_HOST ?? "redis",
@@ -33,13 +33,12 @@ export const bullmqConfig = {
   queueConnection: { ...connection, enableOfflineQueue: false },
   workerSpecs: [
     {
-      queueName: emailQueueName,
+      queueName: QueueNames.Email,
       numberOfWorkers: 1,
       handler: handleEmailJob,
-      completedHandler: handleEmailJobCompleted,
     },
     {
-      queueName: icbcQueueName,
+      queueName: QueueNames.Icbc,
       numberOfWorkers: 1, // do not change this
       handler: handleConsumeIcbcFileJob,
       completedHandler: handleConsumeIcbcFileJobCompleted,

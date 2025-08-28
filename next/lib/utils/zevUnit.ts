@@ -8,7 +8,6 @@ import {
 } from "@/prisma/generated/client";
 import { Decimal } from "@/prisma/generated/client/runtime/library";
 import { getCompliancePeriod } from "../../app/lib/utils/complianceYear";
-import { modelYearEnumToInt } from "./convertEnums";
 import {
   isModelYear,
   isTransactionType,
@@ -151,9 +150,7 @@ export const getCurrentBalance = (
   const finalYearEndingBalances = endingBalances.filter(
     (balance) => balance.complianceYear === finalComplianceYear,
   );
-  const finalYearEnd = getCompliancePeriod(
-    modelYearEnumToInt(finalComplianceYear),
-  ).openUpperBound;
+  const finalYearEnd = getCompliancePeriod(finalComplianceYear).openUpperBound;
   const finalTransactions = transactions.filter(
     (transaction) => transaction.timestamp >= finalYearEnd,
   );
