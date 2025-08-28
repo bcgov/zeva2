@@ -153,7 +153,10 @@ export const AgreementDetails = (props: {
         <div className="mt-4">
           <p className={fieldLabelClass}>Supporting Documents</p>
           <div className={fieldWithBoarderClass}>
-            <AgreementAttachments id={agreement.id} />
+            <AgreementAttachments
+              id={agreement.id}
+              attachments={agreement.agreementAttachment || []}
+            />
           </div>
         </div>
 

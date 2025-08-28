@@ -14,6 +14,7 @@ import {
   AgreementPutObjectData,
 } from "../action";
 import { cleanupStringData } from "@/lib/utils/dataCleanup";
+import { Button } from "@/app/lib/components/inputs";
 import { AgreementDetailsType } from "../services";
 import { Dropzone } from "@/app/lib/components/Dropzone";
 import { FileWithPath } from "react-dropzone";
@@ -289,6 +290,17 @@ export const AgreementEditForm = (props: {
 
       <div>
         <p>Supporting Documents</p>
+        {agreementDetails?.agreementAttachment && agreementDetails.agreementAttachment.length > 0 && (
+          <div className="mb-3">
+            <ul className="list-disc list-inside text-sm text-gray-600">
+              {agreementDetails.agreementAttachment.map((attachment, index) => (
+                <li key={index}>
+                  {attachment.fileName} <Button className="ml-2 cursor-pointer bg-red-500 text-white">Delete</Button>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
         <Dropzone
           files={files}
           setFiles={setFiles}
@@ -299,14 +311,14 @@ export const AgreementEditForm = (props: {
       </div>
 
       <div>
-        <button
+        <Button
           type="button"
           className="bg-primaryBlue text-white px-4 py-2 rounded"
           onClick={handleSave}
         >
           Save
-        </button>
-        <button
+        </Button>
+        <Button
           type="button"
           className="bg-white text-primaryBlue px-4 py-2 rounded ml-2
             border border-primaryBlue"
@@ -316,7 +328,7 @@ export const AgreementEditForm = (props: {
           }}
         >
           Cancel
-        </button>
+        </Button>
       </div>
     </form>
   );
