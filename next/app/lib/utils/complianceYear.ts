@@ -21,15 +21,6 @@ export const getCurrentComplianceYear = () => {
   return modelYear;
 };
 
-export const getCompliancePeriod = (complianceYear: number) => {
-  const upperBoundYear = complianceYear + 1;
-  const isoStringSuffix = "-10-01T00:00:00.000";
-  return {
-    closedLowerBound: new Date(complianceYear + isoStringSuffix),
-    openUpperBound: new Date(upperBoundYear + isoStringSuffix),
-  };
-};
-
 export const getAdjacentYear = (
   type: "prev" | "next",
   modelYear: ModelYear,
@@ -48,7 +39,7 @@ export const getAdjacentYear = (
   throw new Error("Error getting adjacent year!");
 };
 
-export const getComplianceInterval = (complianceYear: ModelYear) => {
+export const getCompliancePeriod = (complianceYear: ModelYear) => {
   const modelYearsMap = getModelYearEnumsToStringsMap();
   const lowerYear = modelYearsMap[complianceYear];
   const upperYear = modelYearsMap[getAdjacentYear("next", complianceYear)];

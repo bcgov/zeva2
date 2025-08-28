@@ -1,45 +1,51 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import {
   getTransactionsByComplianceYear,
-  getComplianceYears,
   SerializedZevUnitTransaction,
 } from "../actions";
 import { useRouter } from "next/navigation";
-import { getReferenceTypeEnumsToStringsMap } from "@/app/lib/utils/enumMaps";
-import { ReferenceType } from "@/prisma/generated/client";
+import {
+  getModelYearEnumsToStringsMap,
+  getReferenceTypeEnumsToStringsMap,
+  getTransactionTypeEnumsToStringMap,
+  getVehicleClassEnumsToStringsMap,
+  getZevClassEnumsToStringsMap,
+} from "@/app/lib/utils/enumMaps";
+import { ModelYear, ReferenceType } from "@/prisma/generated/client";
 import { Routes } from "@/app/lib/constants";
 
-export default function TransactionAccordion({
+export const TransactionAccordion = ({
   orgId,
   userIsGov,
+  complianceYears,
 }: {
   orgId: number;
   userIsGov: boolean;
-}) {
-  const [years, setYears] = useState<number[] | null>(null);
-  const [openYear, setOpenYear] = useState<number | null>(null);
+  complianceYears: ModelYear[];
+}) => {
+  const [openYears, setOpenYears] = useState<ModelYear[]>([]);
   const [txCache, setTxCache] = useState<
-    Record<number, SerializedZevUnitTransaction[]>
+    Partial<Record<ModelYear, SerializedZevUnitTransaction[]>>
   >({});
   const router = useRouter();
 
-  useEffect(() => {
-    (async () => setYears(await getComplianceYears(orgId)))();
-  }, [orgId]);
-
-  const toggleYear = async (y: number) => {
-    setOpenYear((prev) => (prev === y ? null : y));
-    if (!txCache[y]) {
-      const tx = await getTransactionsByComplianceYear(orgId, y, "desc");
-      setTxCache((prev) => ({ ...prev, [y]: tx }));
-    }
-  };
-
-  const referenceTypesMap = useMemo(() => {
-    return getReferenceTypeEnumsToStringsMap();
-  }, []);
+  const toggleYear = useCallback(
+    async (year: ModelYear) => {
+      setOpenYears((prev) => {
+        if (prev.includes(year)) {
+          return prev.filter((y) => y !== year);
+        }
+        return [...prev, year];
+      });
+      if (!txCache[year]) {
+        const tx = await getTransactionsByComplianceYear(orgId, year, "desc");
+        setTxCache((prev) => ({ ...prev, [year]: tx }));
+      }
+    },
+    [txCache],
+  );
 
   const getLink = useCallback(
     (referenceType: ReferenceType, referenceId: number) => {
@@ -62,12 +68,32 @@ export default function TransactionAccordion({
     [userIsGov],
   );
 
-  if (!years) return <>Loading years…</>;
-  if (years.length === 0) return <>No transactions found.</>;
+  const transactionTypesMap = useMemo(() => {
+    return getTransactionTypeEnumsToStringMap();
+  }, []);
 
+  const referenceTypesMap = useMemo(() => {
+    return getReferenceTypeEnumsToStringsMap();
+  }, []);
+
+  const vehicleClassesMap = useMemo(() => {
+    return getVehicleClassEnumsToStringsMap();
+  }, []);
+
+  const zevClassesMap = useMemo(() => {
+    return getZevClassEnumsToStringsMap();
+  }, []);
+
+  const modelYearsMap = useMemo(() => {
+    return getModelYearEnumsToStringsMap();
+  }, []);
+
+  if (complianceYears.length === 0) {
+    return null;
+  }
   return (
     <div>
-      {years.map((y) => (
+      {complianceYears.map((y) => (
         <div
           key={y}
           style={{
@@ -87,10 +113,11 @@ export default function TransactionAccordion({
               fontWeight: 600,
             }}
           >
-            {openYear === y ? "▾" : "▸"} Compliance&nbsp;Year&nbsp;{y}
+            {openYears.includes(y) ? "▾" : "▸"} Compliance&nbsp;Year&nbsp;
+            {modelYearsMap[y]}
           </button>
 
-          {openYear === y && (
+          {openYears.includes(y) && (
             <div style={{ padding: 8 }}>
               {!txCache[y] ? (
                 "Loading…"
@@ -112,9 +139,10 @@ export default function TransactionAccordion({
                         "Reference Type",
                         "Reference ID",
                         "Legacy reference ID",
-                        "Units",
-                        "Class",
+                        "Vehicle Class",
+                        "ZEV Class",
                         "Model Year",
+                        "Number of Units",
                         "Date",
                       ].map((h) => (
                         <th
@@ -144,7 +172,9 @@ export default function TransactionAccordion({
                       return (
                         <tr key={t.id} className={className} onClick={onClick}>
                           <td style={{ padding: "4px" }}>{t.id}</td>
-                          <td style={{ padding: "4px" }}>{t.type}</td>
+                          <td style={{ padding: "4px" }}>
+                            {transactionTypesMap[t.type]}
+                          </td>
                           <td style={{ padding: "4px" }}>
                             {referenceTypesMap[t.referenceType]}
                           </td>
@@ -153,12 +183,15 @@ export default function TransactionAccordion({
                             {t.legacyReferenceId}
                           </td>
                           <td style={{ padding: "4px" }}>
-                            {t.numberOfUnits.toString()}
+                            {vehicleClassesMap[t.vehicleClass]}
                           </td>
-                          <td style={{ padding: "4px" }}>{t.zevClass}</td>
                           <td style={{ padding: "4px" }}>
-                            {t.modelYear.replace("MY_", "")}
+                            {zevClassesMap[t.zevClass]}
                           </td>
+                          <td style={{ padding: "4px" }}>
+                            {modelYearsMap[t.modelYear]}
+                          </td>
+                          <td style={{ padding: "4px" }}>{t.numberOfUnits}</td>
                           <td style={{ padding: "4px" }}>{t.timestamp}</td>
                         </tr>
                       );
@@ -172,4 +205,4 @@ export default function TransactionAccordion({
       ))}
     </div>
   );
-}
+};
