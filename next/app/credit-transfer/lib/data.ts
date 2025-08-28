@@ -4,7 +4,6 @@ import {
   CreditTransferStatus,
   CreditTransferSupplierStatus,
   Prisma,
-  Role,
 } from "@/prisma/generated/client";
 import { getOrderByClause, getWhereClause } from "./utils";
 
@@ -28,7 +27,7 @@ export const getCreditTransfers = async (
   filters: Record<string, string>,
   sorts: Record<string, string>,
 ): Promise<[CreditTransferSparse[], number]> => {
-  const { userIsGov, userOrgId, userRoles } = await getUserInfo();
+  const { userIsGov, userOrgId } = await getUserInfo();
   const skip = (page - 1) * pageSize;
   const take = pageSize;
   const select = {
@@ -48,24 +47,13 @@ export const getCreditTransfers = async (
   };
   const where = getWhereClause(filters, userIsGov);
   const orderBy = getOrderByClause(sorts, true, userIsGov);
-  if (userIsGov && userRoles.includes(Role.DIRECTOR)) {
-    where.creditTransferHistory = {
-      some: {
-        userAction: {
-          in: [
-            CreditTransferStatus.RECOMMEND_APPROVAL_GOV,
-            CreditTransferStatus.RECOMMEND_REJECTION_GOV,
-          ],
-        },
-      },
-    };
-  } else if (userIsGov && userRoles.includes(Role.ENGINEER_ANALYST)) {
+  if (userIsGov) {
     where.creditTransferHistory = {
       some: {
         userAction: CreditTransferStatus.APPROVED_BY_TRANSFER_TO,
       },
     };
-  } else if (!userIsGov) {
+  } else {
     where.OR = [{ transferFromId: userOrgId }, { transferToId: userOrgId }];
   }
   return await prisma.$transaction([

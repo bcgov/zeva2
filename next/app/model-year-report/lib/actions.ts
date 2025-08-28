@@ -14,7 +14,6 @@ import {
   ModelYear,
   ModelYearReportStatus,
   ModelYearReportSupplierStatus,
-  Notification,
   Prisma,
   ReferenceType,
   Role,
@@ -49,8 +48,8 @@ import { SupplierClass } from "@/app/lib/constants/complianceRatio";
 import { randomUUID } from "crypto";
 import { prisma } from "@/lib/prisma";
 import { getComplianceDate } from "@/app/lib/utils/complianceYear";
+import { getModelYearEnumsToStringsMap } from "@/app/lib/utils/enumMaps";
 import { AttachmentDownload } from "@/app/lib/services/attachments";
-import { addJobToEmailQueue } from "@/app/lib/services/queue";
 
 export const getMyrTemplateUrl = async () => {
   return await getPresignedGetObjectUrl(
@@ -183,17 +182,13 @@ export const submitReports = async (
         },
       });
       idOfCreatedReport = id;
-      const historyId = await createHistory(
+      await createHistory(
         id,
         userId,
         ModelYearReportStatus.SUBMITTED_TO_GOVERNMENT,
         comment,
         tx,
       );
-      await addJobToEmailQueue({
-        historyId,
-        notificationType: Notification.MODEL_YEAR_REPORT,
-      });
     });
   } catch (e) {
     await removeObjects([
@@ -353,7 +348,7 @@ export const submitToDirector = async (
           assessmentFileName,
         },
       });
-      const historyId = await createHistory(
+      await createHistory(
         id,
         userId,
         ModelYearReportStatus.SUBMITTED_TO_DIRECTOR,
@@ -369,10 +364,6 @@ export const submitToDirector = async (
           ),
         );
       }
-      await addJobToEmailQueue({
-        historyId,
-        notificationType: Notification.MODEL_YEAR_REPORT,
-      });
     });
   } catch (e) {
     await removeObject(assessmentFullObjectName);
@@ -482,17 +473,7 @@ export const handleReturns = async (
         },
         data: updateData,
       });
-      const historyId = await createHistory(
-        id,
-        userId,
-        returnType,
-        comment,
-        tx,
-      );
-      await addJobToEmailQueue({
-        historyId,
-        notificationType: Notification.MODEL_YEAR_REPORT,
-      });
+      await createHistory(id, userId, returnType, comment, tx);
     });
     return getSuccessActionResponse();
   }
@@ -536,7 +517,7 @@ export const resubmitReports = async (
           forecastReportObjectName: forecastObjectName,
         },
       });
-      const historyId = await createHistory(
+      await createHistory(
         id,
         userId,
         ModelYearReportStatus.SUBMITTED_TO_GOVERNMENT,
@@ -551,10 +532,6 @@ export const resubmitReports = async (
           myr.forecastReportObjectName,
         ),
       ]);
-      await addJobToEmailQueue({
-        historyId,
-        notificationType: Notification.MODEL_YEAR_REPORT,
-      });
     });
   } catch (e) {
     await removeObjects([
@@ -636,17 +613,13 @@ export const directorAssess = async (
           supplierStatus: ModelYearReportStatus.ASSESSED,
         },
       });
-      const historyId = await createHistory(
+      await createHistory(
         id,
         userId,
         ModelYearReportStatus.ASSESSED,
         comment,
         tx,
       );
-      await addJobToEmailQueue({
-        historyId,
-        notificationType: Notification.MODEL_YEAR_REPORT,
-      });
     });
   } catch (e) {
     if (e instanceof Error) {

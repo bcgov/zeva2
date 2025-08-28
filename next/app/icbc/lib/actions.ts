@@ -11,10 +11,9 @@ import {
 import { validateDate } from "@/app/lib/utils/date";
 import { getUserInfo } from "@/auth";
 import { prisma } from "@/lib/prisma";
-import { addJobToIcbcQueue } from "@/app/lib/services/queue";
+import { addJobToIcbcQueue } from "@/lib/utils/queue";
 import { IcbcFileStatus } from "@/prisma/generated/client";
 import { randomUUID } from "crypto";
-import { getIcbcFileFullObjectName } from "./utils";
 
 export type PutData = {
   objectName: string;
@@ -29,9 +28,7 @@ export const getPutObjectData = async (): Promise<
     return getErrorActionResponse("Unauthorized!");
   }
   const objectName = randomUUID();
-  const url = await getPresignedPutObjectUrl(
-    getIcbcFileFullObjectName(objectName),
-  );
+  const url = await getPresignedPutObjectUrl(objectName);
   return getDataActionResponse<PutData>({
     objectName,
     url,

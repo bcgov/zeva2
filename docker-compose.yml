@@ -57,6 +57,12 @@ services:
       - DATABASE_URL=postgresql://postgres:postgres@db:5432/zeva?schema=public
       - DATABASE_URL_OLD=postgresql://postgres:postgres@host.docker.internal:5432/zeva?schema=public
       - CHECKPOINT_DISABLE=1
+      - CHES_AUTH_URL
+      - CHES_EMAIL_URL
+      - EMAIL_SERVICE_CLIENT_ID
+      - EMAIL_SERVICE_CLIENT_SECRET
+      - SENDER_EMAIL
+      - SENDER_NAME
       - START_WORKERS=false
       - TZ=America/Vancouver
     depends_on:
@@ -85,14 +91,6 @@ services:
       - CHECKPOINT_DISABLE=1
       - START_WORKERS=true
       - TZ=America/Vancouver
-      - CHES_AUTH_URL
-      - CHES_EMAIL_URL
-      - EMAIL_SERVICE_CLIENT_ID
-      - EMAIL_SERVICE_CLIENT_SECRET
-      - SENDER_EMAIL
-      - SENDER_NAME
-      - SEND_NOTIFICATION_EMAILS=false
-      - ZEVA_URL=http://localhost:3000
     depends_on:
       next:
         condition: service_healthy

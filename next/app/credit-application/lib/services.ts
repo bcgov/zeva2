@@ -151,15 +151,13 @@ export const getIcbcRecordsMap = async (
   return icbcMap;
 };
 
-export const createHistory = async (
+export const createHistory = (
   userId: number,
   creditApplicationId: number,
   userAction: CreditApplicationStatus,
   comment?: string,
-  transactionClient?: TransactionClient,
-): Promise<number> => {
-  const prismaClient = transactionClient ?? prisma;
-  const { id } = await prismaClient.creditApplicationHistory.create({
+) => {
+  return prisma.creditApplicationHistory.create({
     data: {
       userId,
       creditApplicationId,
@@ -167,16 +165,13 @@ export const createHistory = async (
       comment,
     },
   });
-  return id;
 };
 
-export const updateStatus = async (
+export const updateStatus = (
   creditApplicationId: number,
   status: CreditApplicationStatus,
-  transactionClient?: TransactionClient,
 ) => {
-  const prismaClient = transactionClient ?? prisma;
-  await prismaClient.creditApplication.update({
+  return prisma.creditApplication.update({
     where: {
       id: creditApplicationId,
     },
@@ -187,12 +182,7 @@ export const updateStatus = async (
   });
 };
 
-export const unreserveVins = async (
-  creditApplicationId: number,
-  vins?: string[],
-  transactionClient?: TransactionClient,
-) => {
-  const prismaClient = transactionClient ?? prisma;
+export const unreserveVins = (creditApplicationId: number, vins?: string[]) => {
   const where: Prisma.CreditApplicationVinWhereInput = {
     creditApplicationId,
   };
@@ -201,7 +191,7 @@ export const unreserveVins = async (
       in: vins,
     };
   }
-  await prismaClient.creditApplicationVin.deleteMany({
+  return prisma.creditApplicationVin.deleteMany({
     where,
   });
 };

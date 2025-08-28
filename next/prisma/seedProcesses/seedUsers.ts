@@ -70,7 +70,6 @@ export const seedUsers = async (
         firstName: userOld.first_name ?? "",
         lastName: userOld.last_name ?? "",
         roles,
-        notifications: [],
       },
     });
     mapOfOldUserIdsToNewUserIds[userOld.id] = userNew.id;

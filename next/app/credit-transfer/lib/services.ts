@@ -13,7 +13,7 @@ import {
   UncoveredTransfer,
   ZevUnitRecord,
 } from "@/lib/utils/zevUnit";
-import { getCompliancePeriod } from "@/app/lib/utils/complianceYear";
+import { getComplianceInterval } from "@/app/lib/utils/complianceYear";
 import { TransactionClient } from "@/types/prisma";
 
 export const getTransfer = async (transferId: number) => {
@@ -32,12 +32,11 @@ export type CreditTransferHistoryCreateData = Omit<
 export const createTransferHistory = async (
   data: CreditTransferHistoryCreateData,
   transactionClient?: TransactionClient,
-): Promise<number> => {
+) => {
   const prismaClient = transactionClient ?? prisma;
-  const history = await prismaClient.creditTransferHistory.create({
+  await prismaClient.creditTransferHistory.create({
     data: data,
   });
-  return history.id;
 };
 
 export const updateTransferStatus = async (
@@ -65,10 +64,10 @@ export const updateTransferStatusAndCreateHistory = async (
   supplierStatus: CreditTransferSupplierStatus,
   comment?: string,
   transactionClient?: TransactionClient,
-): Promise<number> => {
+) => {
   const prismaClient = transactionClient ?? prisma;
   await updateTransferStatus(transferId, status, supplierStatus, prismaClient);
-  const historyId = await createTransferHistory(
+  await createTransferHistory(
     {
       creditTransferId: transferId,
       userId: userId,
@@ -77,7 +76,6 @@ export const updateTransferStatusAndCreateHistory = async (
     },
     prismaClient,
   );
-  return historyId;
 };
 
 export type CreditTransferWithContent = CreditTransfer & {
@@ -102,7 +100,7 @@ export const transferIsCovered = async (
   const zevUnitRecords: ZevUnitRecord[] = [];
   if (endingBalanceRecord) {
     const complianceYear = endingBalanceRecord.complianceYear;
-    const compliancePeriod = getCompliancePeriod(complianceYear);
+    const compliancePeriod = getComplianceInterval(complianceYear);
     const endingBalances = await prisma.zevUnitEndingBalance.findMany({
       where: {
         organizationId: transfer.transferFromId,
