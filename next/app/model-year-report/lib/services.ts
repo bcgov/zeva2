@@ -1,5 +1,5 @@
 import { SupplierClass } from "@/app/lib/constants/complianceRatio";
-import { getCompliancePeriod } from "@/app/lib/utils/complianceYear";
+import { getComplianceInterval } from "@/app/lib/utils/complianceYear";
 import { prisma } from "@/lib/prisma";
 import { calculateBalance, ZevUnitRecord } from "@/lib/utils/zevUnit";
 import {
@@ -137,7 +137,8 @@ export const getPrevEndingBalance = async (
       complianceYear: "desc",
     },
   });
-  const { closedLowerBound: currentCyLb } = getCompliancePeriod(complianceYear);
+  const { closedLowerBound: currentCyLb } =
+    getComplianceInterval(complianceYear);
   if (!prevEndingBalance) {
     const transactions = await prisma.zevUnitTransaction.findMany({
       where: {
@@ -176,7 +177,7 @@ export const getPrevEndingBalance = async (
     const { finalNumberOfUnits, ...rest } = record;
     result.push({ ...rest, numberOfUnits: finalNumberOfUnits });
   });
-  const { openUpperBound: prevCyUb } = getCompliancePeriod(prevCy);
+  const { openUpperBound: prevCyUb } = getComplianceInterval(prevCy);
   const transactions = await prisma.zevUnitTransaction.findMany({
     where: {
       organizationId,
@@ -207,7 +208,7 @@ export const getTransactionsForModelYear = async (
   organizationId: number,
   modelYear: ModelYear,
 ): Promise<MyrZevUnitTransaction[]> => {
-  const { closedLowerBound, openUpperBound } = getCompliancePeriod(modelYear);
+  const { closedLowerBound, openUpperBound } = getComplianceInterval(modelYear);
   return await prisma.zevUnitTransaction.findMany({
     where: {
       organizationId,
@@ -278,9 +279,9 @@ export const createHistory = async (
   userAction: ModelYearReportStatus,
   comment?: string,
   transactionClient?: TransactionClient,
-): Promise<number> => {
+) => {
   const client = transactionClient ?? prisma;
-  const { id } = await client.modelYearReportHistory.create({
+  await client.modelYearReportHistory.create({
     data: {
       modelYearReportId,
       userId,
@@ -288,5 +289,4 @@ export const createHistory = async (
       comment,
     },
   });
-  return id;
 };

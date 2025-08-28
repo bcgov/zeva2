@@ -139,11 +139,11 @@ export const getModelYearReports = async (
       },
     };
     if (userRoles.includes(Role.DIRECTOR)) {
-      where.ModelYearReportHistory = {
-        some: {
-          userAction: ModelYearReportStatus.SUBMITTED_TO_DIRECTOR,
-        },
-      };
+      where.OR = [
+        { status: ModelYearReportStatus.SUBMITTED_TO_DIRECTOR },
+        { status: ModelYearReportStatus.RETURNED_TO_ANALYST },
+        { status: ModelYearReportStatus.ASSESSED },
+      ];
     }
   } else {
     where.organizationId = userOrgId;

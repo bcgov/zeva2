@@ -14,7 +14,6 @@ import {
   TransactionType,
   Prisma,
   ReferenceType,
-  Notification,
 } from "@/prisma/generated/client";
 import { randomUUID } from "crypto";
 import Excel from "exceljs";
@@ -49,7 +48,6 @@ import {
   AttachmentDownload,
   deleteAttachments,
 } from "@/app/lib/services/attachments";
-import { addJobToEmailQueue } from "@/app/lib/services/queue";
 
 export const getSupplierTemplateDownloadUrl = async () => {
   return await getPresignedGetObjectUrl(
@@ -166,16 +164,13 @@ export const processSupplierFile = async (
         data: toInsert,
       });
       await createAttachments(id, attachments, tx);
-      const historyId = await createHistory(
-        userId,
-        id,
-        CreditApplicationStatus.SUBMITTED,
-        comment,
-        tx,
-      );
-      await addJobToEmailQueue({
-        historyId,
-        notificationType: Notification.CREDIT_APPLICATION,
+      await tx.creditApplicationHistory.create({
+        data: {
+          userId,
+          userAction: CreditApplicationStatus.SUBMITTED,
+          creditApplicationId: id,
+          comment,
+        },
       });
     });
   } catch (e) {
@@ -346,20 +341,10 @@ export const analystRecommend = async (
   ) {
     return getErrorActionResponse("Invalid Action!");
   }
-  await prisma.$transaction(async (tx) => {
-    await updateStatus(creditApplicationId, status, tx);
-    const historyId = await createHistory(
-      userId,
-      creditApplicationId,
-      status,
-      comment,
-      tx,
-    );
-    await addJobToEmailQueue({
-      historyId,
-      notificationType: Notification.CREDIT_APPLICATION,
-    });
-  });
+  await prisma.$transaction([
+    updateStatus(creditApplicationId, status),
+    createHistory(userId, creditApplicationId, status, comment),
+  ]);
   return getSuccessActionResponse();
 };
 
@@ -385,25 +370,19 @@ export const returnToSupplier = async (
   if (!creditApplication) {
     return getErrorActionResponse("Invalid Action!");
   }
-  await prisma.$transaction(async (tx) => {
-    await updateStatus(
+  await prisma.$transaction([
+    updateStatus(
       creditApplicationId,
       CreditApplicationStatus.RETURNED_TO_SUPPLIER,
-      tx,
-    );
-    await unreserveVins(creditApplicationId, undefined, tx);
-    const historyId = await createHistory(
+    ),
+    unreserveVins(creditApplicationId),
+    createHistory(
       userId,
       creditApplicationId,
       CreditApplicationStatus.RETURNED_TO_SUPPLIER,
       comment,
-      tx,
-    );
-    await addJobToEmailQueue({
-      historyId,
-      notificationType: Notification.CREDIT_APPLICATION,
-    });
-  });
+    ),
+  ]);
   return getSuccessActionResponse();
 };
 
@@ -429,24 +408,18 @@ export const returnToAnalyst = async (
   if (!creditApplication) {
     return getErrorActionResponse("Invalid Action!");
   }
-  await prisma.$transaction(async (tx) => {
-    await updateStatus(
+  await prisma.$transaction([
+    updateStatus(
       creditApplicationId,
       CreditApplicationStatus.RETURNED_TO_ANALYST,
-      tx,
-    );
-    const historyId = await createHistory(
+    ),
+    createHistory(
       userId,
       creditApplicationId,
       CreditApplicationStatus.RETURNED_TO_ANALYST,
       comment,
-      tx,
-    );
-    await addJobToEmailQueue({
-      historyId,
-      notificationType: Notification.CREDIT_APPLICATION,
-    });
-  });
+    ),
+  ]);
   return getSuccessActionResponse();
 };
 
@@ -494,28 +467,19 @@ export const directorApprove = async (
       numberOfUnits: credit.numberOfUnits,
     });
   });
-  await prisma.$transaction(async (tx) => {
-    await updateStatus(
-      creditApplicationId,
-      CreditApplicationStatus.APPROVED,
-      tx,
-    );
-    await unreserveVins(creditApplicationId, invalidVins, tx);
-    await tx.zevUnitTransaction.createMany({
+  await prisma.$transaction([
+    updateStatus(creditApplicationId, CreditApplicationStatus.APPROVED),
+    unreserveVins(creditApplicationId, invalidVins),
+    prisma.zevUnitTransaction.createMany({
       data: transactionsToCreate,
-    });
-    const historyId = await createHistory(
+    }),
+    createHistory(
       userId,
       creditApplicationId,
       CreditApplicationStatus.APPROVED,
       comment,
-      tx,
-    );
-    await addJobToEmailQueue({
-      historyId,
-      notificationType: Notification.CREDIT_APPLICATION,
-    });
-  });
+    ),
+  ]);
   return getSuccessActionResponse();
 };
 
@@ -536,25 +500,16 @@ export const directorReject = async (
   if (!creditApplication) {
     return getErrorActionResponse("Invalid Action!");
   }
-  await prisma.$transaction(async (tx) => {
-    await updateStatus(
-      creditApplicationId,
-      CreditApplicationStatus.REJECTED,
-      tx,
-    );
-    await unreserveVins(creditApplicationId, undefined, tx);
-    const historyId = await createHistory(
+  await prisma.$transaction([
+    updateStatus(creditApplicationId, CreditApplicationStatus.REJECTED),
+    unreserveVins(creditApplicationId),
+    createHistory(
       userId,
       creditApplicationId,
       CreditApplicationStatus.REJECTED,
       comment,
-      tx,
-    );
-    await addJobToEmailQueue({
-      historyId,
-      notificationType: Notification.CREDIT_APPLICATION,
-    });
-  });
+    ),
+  ]);
   return getSuccessActionResponse();
 };
 

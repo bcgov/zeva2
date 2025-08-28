@@ -143,17 +143,17 @@ export const getCreditApplications = async (
   const where = getWhereClause(filters, userIsGov);
   const orderBy = getOrderByClause(sorts, true, userIsGov);
   if (userIsGov && userRoles.includes(Role.DIRECTOR)) {
-    where.CreditApplicationHistory = {
-      some: {
-        userAction: {
-          in: [
-            CreditApplicationStatus.RECOMMEND_APPROVAL,
-            CreditApplicationStatus.RECOMMEND_REJECTION,
-          ],
-        },
+    where.NOT = {
+      status: {
+        in: [
+          CreditApplicationStatus.SUBMITTED,
+          CreditApplicationStatus.RETURNED_TO_ANALYST,
+          CreditApplicationStatus.RETURNED_TO_SUPPLIER,
+        ],
       },
     };
-  } else if (!userIsGov) {
+  }
+  if (!userIsGov) {
     where.organizationId = userOrgId;
   }
   return await prisma.$transaction([

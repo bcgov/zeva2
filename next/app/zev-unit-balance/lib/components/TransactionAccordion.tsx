@@ -1,51 +1,45 @@
 "use client";
 
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   getTransactionsByComplianceYear,
+  getComplianceYears,
   SerializedZevUnitTransaction,
 } from "../actions";
 import { useRouter } from "next/navigation";
-import {
-  getModelYearEnumsToStringsMap,
-  getReferenceTypeEnumsToStringsMap,
-  getTransactionTypeEnumsToStringMap,
-  getVehicleClassEnumsToStringsMap,
-  getZevClassEnumsToStringsMap,
-} from "@/app/lib/utils/enumMaps";
-import { ModelYear, ReferenceType } from "@/prisma/generated/client";
+import { getReferenceTypeEnumsToStringsMap } from "@/app/lib/utils/enumMaps";
+import { ReferenceType } from "@/prisma/generated/client";
 import { Routes } from "@/app/lib/constants";
 
-export const TransactionAccordion = ({
+export default function TransactionAccordion({
   orgId,
   userIsGov,
-  complianceYears,
 }: {
   orgId: number;
   userIsGov: boolean;
-  complianceYears: ModelYear[];
-}) => {
-  const [openYears, setOpenYears] = useState<ModelYear[]>([]);
+}) {
+  const [years, setYears] = useState<number[] | null>(null);
+  const [openYear, setOpenYear] = useState<number | null>(null);
   const [txCache, setTxCache] = useState<
-    Partial<Record<ModelYear, SerializedZevUnitTransaction[]>>
+    Record<number, SerializedZevUnitTransaction[]>
   >({});
   const router = useRouter();
 
-  const toggleYear = useCallback(
-    async (year: ModelYear) => {
-      setOpenYears((prev) => {
-        if (prev.includes(year)) {
-          return prev.filter((y) => y !== year);
-        }
-        return [...prev, year];
-      });
-      if (!txCache[year]) {
-        const tx = await getTransactionsByComplianceYear(orgId, year, "desc");
-        setTxCache((prev) => ({ ...prev, [year]: tx }));
-      }
-    },
-    [txCache],
-  );
+  useEffect(() => {
+    (async () => setYears(await getComplianceYears(orgId)))();
+  }, [orgId]);
+
+  const toggleYear = async (y: number) => {
+    setOpenYear((prev) => (prev === y ? null : y));
+    if (!txCache[y]) {
+      const tx = await getTransactionsByComplianceYear(orgId, y, "desc");
+      setTxCache((prev) => ({ ...prev, [y]: tx }));
+    }
+  };
+
+  const referenceTypesMap = useMemo(() => {
+    return getReferenceTypeEnumsToStringsMap();
+  }, []);
 
   const getLink = useCallback(
     (referenceType: ReferenceType, referenceId: number) => {
@@ -68,32 +62,12 @@ export const TransactionAccordion = ({
     [userIsGov],
   );
 
-  const transactionTypesMap = useMemo(() => {
-    return getTransactionTypeEnumsToStringMap();
-  }, []);
+  if (!years) return <>Loading years…</>;
+  if (years.length === 0) return <>No transactions found.</>;
 
-  const referenceTypesMap = useMemo(() => {
-    return getReferenceTypeEnumsToStringsMap();
-  }, []);
-
-  const vehicleClassesMap = useMemo(() => {
-    return getVehicleClassEnumsToStringsMap();
-  }, []);
-
-  const zevClassesMap = useMemo(() => {
-    return getZevClassEnumsToStringsMap();
-  }, []);
-
-  const modelYearsMap = useMemo(() => {
-    return getModelYearEnumsToStringsMap();
-  }, []);
-
-  if (complianceYears.length === 0) {
-    return null;
-  }
   return (
     <div>
-      {complianceYears.map((y) => (
+      {years.map((y) => (
         <div
           key={y}
           style={{
@@ -113,11 +87,10 @@ export const TransactionAccordion = ({
               fontWeight: 600,
             }}
           >
-            {openYears.includes(y) ? "▾" : "▸"} Compliance&nbsp;Year&nbsp;
-            {modelYearsMap[y]}
+            {openYear === y ? "▾" : "▸"} Compliance&nbsp;Year&nbsp;{y}
           </button>
 
-          {openYears.includes(y) && (
+          {openYear === y && (
             <div style={{ padding: 8 }}>
               {!txCache[y] ? (
                 "Loading…"
@@ -139,10 +112,9 @@ export const TransactionAccordion = ({
                         "Reference Type",
                         "Reference ID",
                         "Legacy reference ID",
-                        "Vehicle Class",
-                        "ZEV Class",
+                        "Units",
+                        "Class",
                         "Model Year",
-                        "Number of Units",
                         "Date",
                       ].map((h) => (
                         <th
@@ -172,9 +144,7 @@ export const TransactionAccordion = ({
                       return (
                         <tr key={t.id} className={className} onClick={onClick}>
                           <td style={{ padding: "4px" }}>{t.id}</td>
-                          <td style={{ padding: "4px" }}>
-                            {transactionTypesMap[t.type]}
-                          </td>
+                          <td style={{ padding: "4px" }}>{t.type}</td>
                           <td style={{ padding: "4px" }}>
                             {referenceTypesMap[t.referenceType]}
                           </td>
@@ -183,15 +153,12 @@ export const TransactionAccordion = ({
                             {t.legacyReferenceId}
                           </td>
                           <td style={{ padding: "4px" }}>
-                            {vehicleClassesMap[t.vehicleClass]}
+                            {t.numberOfUnits.toString()}
                           </td>
+                          <td style={{ padding: "4px" }}>{t.zevClass}</td>
                           <td style={{ padding: "4px" }}>
-                            {zevClassesMap[t.zevClass]}
+                            {t.modelYear.replace("MY_", "")}
                           </td>
-                          <td style={{ padding: "4px" }}>
-                            {modelYearsMap[t.modelYear]}
-                          </td>
-                          <td style={{ padding: "4px" }}>{t.numberOfUnits}</td>
                           <td style={{ padding: "4px" }}>{t.timestamp}</td>
                         </tr>
                       );
@@ -205,4 +172,4 @@ export const TransactionAccordion = ({
       ))}
     </div>
   );
-};
+}

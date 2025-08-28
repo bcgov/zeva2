@@ -73,12 +73,10 @@ export const VehicleForm = () => {
         const vehicleId = response.data;
         router.push(`${Routes.Vehicle}/${vehicleId}`);
       } catch (e) {
-        if (e instanceof Error) {
-          setError(e.message);
-        }
+        if (e instanceof Error) setError(e.message);
       }
     });
-  }, [formData, files, comment]);
+  }, [formData, files, comment, router]);
 
   return (
     <div>
