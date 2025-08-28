@@ -7,6 +7,7 @@ import { getAgreementId } from "../utils";
 import { AgreementDetailsType, AgreementHistoryType } from "../services";
 import { useState } from "react";
 import { AgreementHistories } from "./AgreementHistories";
+import { AgreementAttachments } from "./AgreementAttachments";
 
 const mainDivClass = "grid grid-cols-[220px_1fr]";
 const fieldLabelClass = "py-1 font-semibold text-primaryBlue";
@@ -148,6 +149,13 @@ export const AgreementDetails = (props: {
             />
           </div>
         )}
+
+        <div className="mt-4">
+          <p className={fieldLabelClass}>Supporting Documents</p>
+          <div className={fieldWithBoarderClass}>
+            <AgreementAttachments id={agreement.id} />
+          </div>
+        </div>
 
         <div className="flex flex-row gap-12 my-4">
           <a

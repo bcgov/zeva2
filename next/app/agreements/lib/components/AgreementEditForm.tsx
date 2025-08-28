@@ -7,12 +7,19 @@ import {
   ZevClass,
 } from "@/prisma/generated/client";
 import { useMemo, useState } from "react";
-import { AgreementContentPayload, AgreementPayload } from "../action";
+import {
+  AgreementContentPayload,
+  AgreementPayload,
+  getPutObjectData,
+  AgreementPutObjectData,
+} from "../action";
 import { cleanupStringData } from "@/lib/utils/dataCleanup";
 import { AgreementDetailsType } from "../services";
 import { Dropzone } from "@/app/lib/components/Dropzone";
 import { FileWithPath } from "react-dropzone";
 import { getDefaultAttchmentTypes } from "@/app/lib/utils/attachments";
+import axios from "axios";
+import { Attachment } from "@/app/lib/services/attachments";
 
 const mainDivClass = "grid grid-cols-[220px_1fr]";
 const fieldLabelClass = "py-1 font-semibold text-primaryBlue";
@@ -23,7 +30,7 @@ export const AgreementEditForm = (props: {
   modelYearSelections: ModelYear[];
   zevClassSelections: ZevClass[];
   agreementDetails?: AgreementDetailsType;
-  upsertAgreement: (data: AgreementPayload) => Promise<void>;
+  upsertAgreement: (data: AgreementPayload, files: Attachment[]) => Promise<void>;
   handleCancel: () => void;
 }) => {
   const {
@@ -76,6 +83,23 @@ export const AgreementEditForm = (props: {
       return;
     }
     setProcessingMsg("Saving...");
+
+    const agreementFiles: Attachment[] = [];
+    if (files.length > 0) {
+      const putData = await getPutObjectData(files.length, supplier);
+      const filesAndPutData: [FileWithPath, AgreementPutObjectData][] =
+        files.map((file, index) => [file, putData[index]]);
+      for (const tuple of filesAndPutData) {
+        const file = tuple[0];
+        const putData = tuple[1];
+        await axios.put(putData.url, file);
+        agreementFiles.push({
+          fileName: file.name,
+          objectName: putData.objectName,
+        });
+      }
+    }
+
     await upsertAgreement({
       referenceId: cleanupStringData(referenceId),
       organizationId: supplier,
@@ -84,7 +108,7 @@ export const AgreementEditForm = (props: {
       effectiveDate: effectiveDate ?? null,
       comment: cleanupStringData(msgToSupplier),
       agreementContent: agreementContent,
-    });
+    }, agreementFiles);
   };
 
   if (processingMsg) {
