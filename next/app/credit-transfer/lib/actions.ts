@@ -5,7 +5,6 @@ import { prisma } from "@/lib/prisma";
 import {
   CreditTransferStatus,
   ModelYear,
-  Notification,
   ReferenceType,
   Role,
   TransactionType,
@@ -26,7 +25,6 @@ import {
   getSuccessActionResponse,
 } from "@/app/lib/utils/actionResponse";
 import { Decimal } from "@/prisma/generated/client/runtime/library";
-import { addJobToEmailQueue } from "@/app/lib/services/queue";
 
 export type CreditTransferPayload = {
   transferToId: number;
@@ -72,7 +70,7 @@ export const submitTransfer = async (
     await tx.creditTransferContent.createMany({
       data: contentToCreate,
     });
-    const historyId = await createTransferHistory(
+    await createTransferHistory(
       {
         creditTransferId: id,
         userId,
@@ -81,10 +79,6 @@ export const submitTransfer = async (
       },
       tx,
     );
-    await addJobToEmailQueue({
-      historyId,
-      notificationType: Notification.CREDIT_TRANSFER,
-    });
   });
   return getDataActionResponse(result);
 };
@@ -107,7 +101,7 @@ export const rescindTransfer = async (
     return getErrorActionResponse("Transfer not found!");
   }
   await prisma.$transaction(async (tx) => {
-    const historyId = await updateTransferStatusAndCreateHistory(
+    await updateTransferStatusAndCreateHistory(
       transferId,
       userId,
       CreditTransferStatus.RESCINDED_BY_TRANSFER_FROM,
@@ -115,10 +109,6 @@ export const rescindTransfer = async (
       comment,
       tx,
     );
-    await addJobToEmailQueue({
-      historyId,
-      notificationType: Notification.CREDIT_TRANSFER,
-    });
   });
   return getSuccessActionResponse();
 };
@@ -146,7 +136,7 @@ export const transferToSupplierActionTransfer = async (
     return getErrorActionResponse("Transfer not found!");
   }
   await prisma.$transaction(async (tx) => {
-    const historyId = await updateTransferStatusAndCreateHistory(
+    await updateTransferStatusAndCreateHistory(
       transferId,
       userId,
       newStatus,
@@ -154,10 +144,6 @@ export const transferToSupplierActionTransfer = async (
       comment,
       tx,
     );
-    await addJobToEmailQueue({
-      historyId,
-      notificationType: Notification.CREDIT_TRANSFER,
-    });
   });
   return getSuccessActionResponse();
 };
@@ -192,7 +178,7 @@ export const govRecommendTransfer = async (
     return getErrorActionResponse("Transfer not found!");
   }
   await prisma.$transaction(async (tx) => {
-    const historyId = await updateTransferStatusAndCreateHistory(
+    await updateTransferStatusAndCreateHistory(
       transferId,
       userId,
       recommendation,
@@ -200,10 +186,6 @@ export const govRecommendTransfer = async (
       comment,
       tx,
     );
-    await addJobToEmailQueue({
-      historyId,
-      notificationType: Notification.CREDIT_TRANSFER,
-    });
   });
   return getSuccessActionResponse();
 };
@@ -231,7 +213,7 @@ export const directorReturnTransfer = async (
     return getErrorActionResponse("Transfer not found!");
   }
   await prisma.$transaction(async (tx) => {
-    const historyId = await updateTransferStatusAndCreateHistory(
+    await updateTransferStatusAndCreateHistory(
       transferId,
       userId,
       CreditTransferStatus.RETURNED_TO_ANALYST,
@@ -239,10 +221,6 @@ export const directorReturnTransfer = async (
       comment,
       tx,
     );
-    await addJobToEmailQueue({
-      historyId,
-      notificationType: Notification.CREDIT_TRANSFER,
-    });
   });
   return getSuccessActionResponse();
 };
@@ -272,7 +250,7 @@ export const directorIssueTransfer = async (
     return getErrorActionResponse("Transfer not covered!");
   }
   await prisma.$transaction(async (tx) => {
-    const historyId = await updateTransferStatusAndCreateHistory(
+    await updateTransferStatusAndCreateHistory(
       transferId,
       userId,
       CreditTransferStatus.APPROVED_BY_GOV,
@@ -304,10 +282,6 @@ export const directorIssueTransfer = async (
         },
       });
     }
-    await addJobToEmailQueue({
-      historyId,
-      notificationType: Notification.CREDIT_TRANSFER,
-    });
   });
   return getSuccessActionResponse();
 };
@@ -330,7 +304,7 @@ export const directorRejectTransfer = async (
     return getErrorActionResponse("Transfer not found!");
   }
   await prisma.$transaction(async (tx) => {
-    const historyId = await updateTransferStatusAndCreateHistory(
+    await updateTransferStatusAndCreateHistory(
       transferId,
       userId,
       CreditTransferStatus.REJECTED_BY_GOV,
@@ -338,10 +312,6 @@ export const directorRejectTransfer = async (
       comment,
       tx,
     );
-    await addJobToEmailQueue({
-      historyId,
-      notificationType: Notification.CREDIT_TRANSFER,
-    });
   });
   return getSuccessActionResponse();
 };

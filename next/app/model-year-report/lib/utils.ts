@@ -312,8 +312,8 @@ export const getPenalty = (
 export const getWhereClause = (
   filters: Record<string, string>,
   userIsGov: boolean,
-): Prisma.ModelYearReportWhereInput => {
-  const result: Prisma.ModelYearReportWhereInput = {};
+): Omit<Prisma.ModelYearReportWhereInput, "OR"> => {
+  const result: Omit<Prisma.ModelYearReportWhereInput, "OR"> = {};
   const modelYearsMap = getStringsToModelYearsEnumsMap();
   const statusMap = getStringsToMyrStatusEnumsMap();
   const supplierStatusMap = getStringsToMyrSupplierStatusEnumsMap();

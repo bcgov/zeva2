@@ -9,9 +9,9 @@ export const createHistory = async (
   userAction: VehicleStatus,
   comment?: string,
   transactionClient?: TransactionClient,
-): Promise<number> => {
+) => {
   const client = transactionClient ?? prisma;
-  const { id } = await client.vehicleHistory.create({
+  await client.vehicleHistory.create({
     data: {
       vehicleId,
       userId,
@@ -19,7 +19,6 @@ export const createHistory = async (
       comment,
     },
   });
-  return id;
 };
 
 export const createAttachments = async (

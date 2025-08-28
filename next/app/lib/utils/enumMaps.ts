@@ -14,7 +14,6 @@ import {
   ModelYear,
   ModelYearReportStatus,
   ModelYearReportSupplierStatus,
-  Notification,
   PenaltyCreditStatus,
   ReferenceType,
   Role,
@@ -274,8 +273,4 @@ export const getStringsToCreditApplicationSupplierStatusEnumsMap = () => {
     CreditApplicationSupplierStatus,
     statusTransformer,
   );
-};
-
-export const getNotificationEnumsToStringsMap = () => {
-  return getEnumsToStringsMap<Notification>(Notification, statusTransformer);
 };

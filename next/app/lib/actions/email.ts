@@ -1,3 +1,5 @@
+"use server";
+
 const getEmailServiceToken = async (): Promise<{
   isOk: boolean;
   message: string;
