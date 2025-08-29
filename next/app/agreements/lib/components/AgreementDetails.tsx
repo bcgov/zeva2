@@ -7,7 +7,9 @@ import { getAgreementId } from "../utils";
 import { AgreementDetailsType, AgreementHistoryType } from "../services";
 import { useState } from "react";
 import { AgreementHistories } from "./AgreementHistories";
-import { AgreementAttachments } from "./AgreementAttachments";
+import { AttachmentsList } from "@/app/lib/components/AttachmentsList";
+import { AttachmentsDownload } from "@/app/lib/components/AttachmentsDownload";
+import { getAgreementAttachmentDownloadUrls } from "../action";
 
 const mainDivClass = "grid grid-cols-[220px_1fr]";
 const fieldLabelClass = "py-1 font-semibold text-primaryBlue";
@@ -153,10 +155,14 @@ export const AgreementDetails = (props: {
         <div className="mt-4">
           <p className={fieldLabelClass}>Supporting Documents</p>
           <div className={fieldWithBoarderClass}>
-            <AgreementAttachments
-              id={agreement.id}
-              attachments={agreement.agreementAttachment || []}
+            <AttachmentsList
+              className="mb-3"
+              attachments={agreement.agreementAttachment}
             />
+            {agreement.agreementAttachment.length > 0 && <AttachmentsDownload 
+              download={() => getAgreementAttachmentDownloadUrls(agreement.id)} 
+              zipName={`agreement_${agreement.id}_attachments.zip`}
+            />}
           </div>
         </div>
 

@@ -610,6 +610,7 @@ model AgreementAttachment {
   fileName    String    @map("file_name")
   objectName  String    @map("object_name")
 
+  @@index([objectName], map: "object_name")
   @@map("agreement_attachment")
 }
 

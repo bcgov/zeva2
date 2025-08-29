@@ -55,6 +55,7 @@ export const getAgreementDetails = async (id: number) => {
           agreementAttachment: {
             select: {
               fileName: true,
+              objectName: true,
             },
           },
         },

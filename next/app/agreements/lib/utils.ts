@@ -162,8 +162,7 @@ export const historySelectClause = {
 };
 
 export const getAgreementAttachmentFullObjectName = (
-  orgId: number,
   objectName: string,
 ) => {
-  return `${orgId}/agreements/${objectName}`;
+  return `agreements/${objectName}`;
 };

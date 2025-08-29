@@ -14,19 +14,18 @@ import { historySelectClause, getAgreementAttachmentFullObjectName } from "./uti
 import {
   getPresignedGetObjectUrl,
   getPresignedPutObjectUrl,
+  removeObjects,
 } from "@/app/lib/minio";
 import { randomUUID } from "crypto";
 import {
   Attachment,
   AttachmentDownload,
-  deleteAttachments,
 } from "@/app/lib/services/attachments";
 import {
   DataOrErrorActionResponse,
   getDataActionResponse,
   getErrorActionResponse,
 } from "@/app/lib/utils/actionResponse";
-import { TransactionClient } from "@/types/prisma";
 
 export type AgreementContentPayload = {
   zevClass: ZevClass;
@@ -45,13 +44,12 @@ export type AgreementPutObjectData = {
 
 export const getPutObjectData = async (
   numberOfFiles: number,
-  orgId: number,
 ): Promise<AgreementPutObjectData[]> => {
   const result: AgreementPutObjectData[] = [];
   for (let i = 0; i < numberOfFiles; i++) {
     const objectName = randomUUID();
     const url = await getPresignedPutObjectUrl(
-      getAgreementAttachmentFullObjectName(orgId, objectName),
+      getAgreementAttachmentFullObjectName(objectName),
     );
     result.push({
       objectName,
@@ -59,22 +57,6 @@ export const getPutObjectData = async (
     });
   }
   return result;
-};
-
-const createAgreementAttachments = async (
-  agreementId: number,
-  files: Attachment[],
-  transactionClient?: TransactionClient,
-) => {
-  if (files.length === 0) return;
-  const tx = transactionClient ?? prisma;
-  await tx.agreementAttachment.createMany({
-    data: files.map((file) => ({
-      agreementId,
-      fileName: file.fileName,
-      objectName: file.objectName,
-    })),
-  });
 };
 
 /**
@@ -122,8 +104,13 @@ export const saveAgreement = async (
           })),
       });
 
-      // Handle file attachments
-      await createAgreementAttachments(agreementId, files, tx);
+      await tx.agreementAttachment.createMany({
+        data: files.map((file) => ({
+          agreementId,
+          fileName: file.fileName,
+          objectName: file.objectName,
+        })),
+      });
 
       await tx.agreementHistory.create({
         data: {
@@ -138,7 +125,9 @@ export const saveAgreement = async (
     });
   } catch (error) {
     // Clean up uploaded files if transaction fails
-    await deleteAttachments(userOrgId, files, getAgreementAttachmentFullObjectName);
+    await removeObjects(files.map(
+      file => getAgreementAttachmentFullObjectName(file.objectName)
+    ));
 
     console.error("Error saving agreement:", (error as Error).message);
     return undefined;
@@ -242,11 +231,41 @@ export const getAgreementAttachmentDownloadUrls = async (
       fileName: attachment.fileName,
       url: await getPresignedGetObjectUrl(
         getAgreementAttachmentFullObjectName(
-          attachment.agreement.organizationId,
           attachment.objectName,
         ),
       ),
     });
   }
   return getDataActionResponse(result);
+};
+
+/**
+ * Deletes an agreement attachment by its MinIO object name,
+ *   removing it from both the prisma database and MinIO bucket.
+ * @param objectName - The MinIO object name of the attachment to delete.
+ * @returns True if the deletion was successful, false otherwise.
+ */
+export const deleteAgreementAttachment = async (
+  objectName: string,
+) => {
+  const { userIsGov, userRoles } = await getUserInfo();
+  if (!userIsGov || !userRoles.includes(Role.ENGINEER_ANALYST)) {
+    return false;
+  }
+
+  try {
+    await prisma.$transaction(async (tx) => {
+      // Delete from database
+      await tx.agreementAttachment.deleteMany({
+        where: { objectName },
+      });
+
+      // Delete from MinIO
+      await removeObjects([getAgreementAttachmentFullObjectName(objectName)]);
+    });
+    return true;
+  } catch (error) {
+    console.error("Error deleting agreement attachment:", (error as Error).message);
+    return false;
+  }
 };

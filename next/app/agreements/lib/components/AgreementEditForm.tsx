@@ -6,12 +6,13 @@ import {
   ModelYear,
   ZevClass,
 } from "@/prisma/generated/client";
-import { useMemo, useState } from "react";
+import { useMemo, useState, useCallback } from "react";
 import {
   AgreementContentPayload,
   AgreementPayload,
   getPutObjectData,
   AgreementPutObjectData,
+  deleteAgreementAttachment,
 } from "../action";
 import { cleanupStringData } from "@/lib/utils/dataCleanup";
 import { Button } from "@/app/lib/components/inputs";
@@ -21,6 +22,7 @@ import { FileWithPath } from "react-dropzone";
 import { getDefaultAttchmentTypes } from "@/app/lib/utils/attachments";
 import axios from "axios";
 import { Attachment } from "@/app/lib/services/attachments";
+import { AttachmentsList } from "@/app/lib/components/AttachmentsList";
 
 const mainDivClass = "grid grid-cols-[220px_1fr]";
 const fieldLabelClass = "py-1 font-semibold text-primaryBlue";
@@ -71,12 +73,12 @@ export const AgreementEditForm = (props: {
   const [processingMsg, setProcessingMsg] = useState<string | undefined>(
     undefined,
   );
-  const [files, setFiles] = useState<FileWithPath[]>([]);
+  const [newFiles, setNewFiles] = useState<FileWithPath[]>([]);
   const allowedFileTypes = useMemo(() => {
     return getDefaultAttchmentTypes();
   }, []);
 
-  const handleSave = async () => {
+  const handleSave = useCallback(async () => {
     if (!supplier || !agreementType) {
       setErrorMsg(
         "Both the Agreement Type and the Vehicle Supplier are required.",
@@ -86,10 +88,10 @@ export const AgreementEditForm = (props: {
     setProcessingMsg("Saving...");
 
     const agreementFiles: Attachment[] = [];
-    if (files.length > 0) {
-      const putData = await getPutObjectData(files.length, supplier);
+    if (newFiles.length > 0) {
+      const putData = await getPutObjectData(newFiles.length);
       const filesAndPutData: [FileWithPath, AgreementPutObjectData][] =
-        files.map((file, index) => [file, putData[index]]);
+        newFiles.map((file, index) => [file, putData[index]]);
       for (const tuple of filesAndPutData) {
         const file = tuple[0];
         const putData = tuple[1];
@@ -110,7 +112,15 @@ export const AgreementEditForm = (props: {
       comment: cleanupStringData(msgToSupplier),
       agreementContent: agreementContent,
     }, agreementFiles);
-  };
+  }, [
+    supplier,
+    agreementType,
+    referenceId,
+    effectiveDate,
+    msgToSupplier,
+    agreementContent,
+    newFiles,
+  ]);
 
   if (processingMsg) {
     return <p className="p-4 text-primaryBlue">{processingMsg}</p>;
@@ -278,7 +288,7 @@ export const AgreementEditForm = (props: {
       </div>
 
       <div>
-        <p>Message to Supplier</p>
+        <p className={fieldLabelClass}>Message to Supplier</p>
         <textarea
           className={fieldContentClass + " w-full"}
           rows={4}
@@ -289,25 +299,21 @@ export const AgreementEditForm = (props: {
       </div>
 
       <div>
-        <p>Supporting Documents</p>
-        {agreementDetails?.agreementAttachment && agreementDetails.agreementAttachment.length > 0 && (
-          <div className="mb-3">
-            <ul className="list-disc list-inside text-sm text-gray-600">
-              {agreementDetails.agreementAttachment.map((attachment, index) => (
-                <li key={index}>
-                  {attachment.fileName} <Button className="ml-2 cursor-pointer bg-red-500 text-white">Delete</Button>
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
+        <p className={fieldLabelClass}>Supporting Documents</p>
         <Dropzone
-          files={files}
-          setFiles={setFiles}
+          files={newFiles}
+          setFiles={setNewFiles}
           disabled={false}
           maxNumberOfFiles={10}
           allowedFileTypes={allowedFileTypes}
         />
+        <div className="mb-3 p-2 bg-white">
+          <p>Uploaded Files</p>
+          <AttachmentsList
+            attachments={agreementDetails?.agreementAttachment ?? []}
+            deleteAttachment={deleteAgreementAttachment}
+          />
+        </div>
       </div>
 
       <div>
