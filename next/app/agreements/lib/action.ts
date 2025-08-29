@@ -42,6 +42,11 @@ export type AgreementPutObjectData = {
   url: string;
 };
 
+/**
+ * Get presigned URLs for uploading files.
+ * @param numberOfFiles - The number of files to upload.
+ * @returns A promise that resolves to an array of presigned URLs.
+ */
 export const getPutObjectData = async (
   numberOfFiles: number,
 ): Promise<AgreementPutObjectData[]> => {
@@ -197,6 +202,11 @@ export const addComment = async (agreementId: number, comment: string) => {
   }
 };
 
+/**
+ * Get download URLs for agreement attachments.
+ * @param attachments - The list of attachments to get download URLs for.
+ * @returns A promise that resolves to the download URLs or an error response.
+ */
 export const getAgreementAttachmentDownloadUrls = async (
   attachments: Attachment[]
 ): Promise<DataOrErrorActionResponse<AttachmentDownload[]>> => {
