@@ -77,7 +77,7 @@ export const saveAgreement = async (
   files: Attachment[] = [],
   id?: number,
 ) => {
-  const { userId, userIsGov, userRoles, userOrgId } = await getUserInfo();
+  const { userId, userIsGov, userRoles } = await getUserInfo();
   if (!userIsGov || !userRoles.includes(Role.ENGINEER_ANALYST)) {
     return undefined; // Only government users with ENGINEER_ANALYST role can update agreements
   }
