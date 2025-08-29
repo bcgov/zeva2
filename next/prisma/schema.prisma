@@ -12,6 +12,7 @@ datasource db {
 // prisma doesn't allow enum values to start with a number
 // this enum must be in ascending lexicographical order, as well as ascending logical order
 enum ModelYear {
+  MY_2017 @map("2017")
   MY_2018 @map("2018")
   MY_2019 @map("2019")
   MY_2020 @map("2020")
@@ -535,16 +536,17 @@ enum AgreementUserAction {
 }
 
 model Agreement {
-  id               Int                @id @default(autoincrement())
-  referenceId      String?            @map("reference_id")
-  organization     Organization       @relation(fields: [organizationId], references: [id])
-  organizationId   Int                @map("organization_id")
-  agreementType    AgreementType      @map("agreement_type")
-  status           AgreementStatus
-  effectiveDate    DateTime?          @map("effective_date") @db.Date
-  comment          String?
-  agreementContent AgreementContent[]
-  agreementHistory AgreementHistory[]
+  id                  Int                   @id @default(autoincrement())
+  referenceId         String?               @map("reference_id")
+  organization        Organization          @relation(fields: [organizationId], references: [id])
+  organizationId      Int                   @map("organization_id")
+  agreementType       AgreementType         @map("agreement_type")
+  status              AgreementStatus
+  effectiveDate       DateTime?             @map("effective_date") @db.Date
+  comment             String?
+  agreementContent    AgreementContent[]
+  agreementHistory    AgreementHistory[]
+  agreementAttachment AgreementAttachment[]
 
   @@map("agreement")
 }
@@ -580,6 +582,17 @@ model AgreementComment {
   comment            String
 
   @@map("agreement_comment")
+}
+
+model AgreementAttachment {
+  id          Int       @id @default(autoincrement())
+  agreementId Int       @map("agreement_id")
+  agreement   Agreement @relation(fields: [agreementId], references: [id])
+  fileName    String    @map("file_name")
+  objectName  String    @map("object_name")
+
+  @@index([objectName], map: "object_name")
+  @@map("agreement_attachment")
 }
 
 model LegacySalesVolume {
