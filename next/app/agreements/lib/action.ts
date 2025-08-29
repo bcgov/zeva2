@@ -198,44 +198,21 @@ export const addComment = async (agreementId: number, comment: string) => {
 };
 
 export const getAgreementAttachmentDownloadUrls = async (
-  id: number,
+  attachments: Attachment[]
 ): Promise<DataOrErrorActionResponse<AttachmentDownload[]>> => {
-  const { userIsGov, userOrgId } = await getUserInfo();
-  
-  const attachments = await prisma.agreementAttachment.findMany({
-    where: {
-      agreementId: id,
-      agreement: userIsGov ? undefined : {
-        organizationId: userOrgId,
-        status: AgreementStatus.ISSUED,
-      },
-    },
-    select: {
-      fileName: true,
-      objectName: true,
-      agreement: {
-        select: {
-          organizationId: true,
-        },
-      },
-    },
-  });
-
   if (attachments.length === 0) {
     return getErrorActionResponse("No attachments found!");
   }
-
-  const result: AttachmentDownload[] = [];
-  for (const attachment of attachments) {
-    result.push({
+  const result = await Promise.all(attachments.map(
+    async (attachment) => ({
       fileName: attachment.fileName,
       url: await getPresignedGetObjectUrl(
         getAgreementAttachmentFullObjectName(
           attachment.objectName,
         ),
       ),
-    });
-  }
+    }
+  )));
   return getDataActionResponse(result);
 };
 

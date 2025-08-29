@@ -49,6 +49,7 @@ export const AgreementDetails = (props: {
     organization,
     agreementContent,
     agreementHistory,
+    agreementAttachment,
   } = agreement;
 
   const [isProcessing, setIsProcessing] = useState(false);
@@ -157,10 +158,10 @@ export const AgreementDetails = (props: {
           <div className={fieldWithBoarderClass}>
             <AttachmentsList
               className="mb-3"
-              attachments={agreement.agreementAttachment}
+              attachments={agreementAttachment}
             />
-            {agreement.agreementAttachment.length > 0 && <AttachmentsDownload 
-              download={() => getAgreementAttachmentDownloadUrls(agreement.id)} 
+            {agreementAttachment.length > 0 && <AttachmentsDownload
+              download={() => getAgreementAttachmentDownloadUrls(agreementAttachment)}
               zipName={`agreement_${agreement.id}_attachments.zip`}
             />}
           </div>
