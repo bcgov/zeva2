@@ -33,7 +33,10 @@ export const AgreementEditForm = (props: {
   modelYearSelections: ModelYear[];
   zevClassSelections: ZevClass[];
   agreementDetails?: AgreementDetailsType;
-  upsertAgreement: (data: AgreementPayload, files: Attachment[]) => Promise<void>;
+  upsertAgreement: (
+    data: AgreementPayload,
+    files: Attachment[],
+  ) => Promise<void>;
   handleCancel: () => void;
 }) => {
   const {
@@ -103,15 +106,18 @@ export const AgreementEditForm = (props: {
       }
     }
 
-    await upsertAgreement({
-      referenceId: cleanupStringData(referenceId),
-      organizationId: supplier,
-      agreementType: agreementType,
-      status: agreementDetails?.status ?? AgreementStatus.DRAFT,
-      effectiveDate: effectiveDate ?? null,
-      comment: cleanupStringData(msgToSupplier),
-      agreementContent: agreementContent,
-    }, agreementFiles);
+    await upsertAgreement(
+      {
+        referenceId: cleanupStringData(referenceId),
+        organizationId: supplier,
+        agreementType: agreementType,
+        status: agreementDetails?.status ?? AgreementStatus.DRAFT,
+        effectiveDate: effectiveDate ?? null,
+        comment: cleanupStringData(msgToSupplier),
+        agreementContent: agreementContent,
+      },
+      agreementFiles,
+    );
   }, [
     supplier,
     agreementType,

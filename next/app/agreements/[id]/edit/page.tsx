@@ -35,7 +35,10 @@ const Page = async (props: { params: Promise<{ id: string }> }) => {
 
   const modelYearSelections = getModelYearSelections();
 
-  const updateAgreement = async (data: AgreementPayload, files: Attachment[]) => {
+  const updateAgreement = async (
+    data: AgreementPayload,
+    files: Attachment[],
+  ) => {
     "use server";
     const savedAgreement = await saveAgreement(data, files, agreementId);
     if (savedAgreement) {
