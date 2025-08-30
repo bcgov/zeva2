@@ -12,6 +12,9 @@ const nextConfig: NextConfig = {
     // your project has ESLint errors.
     ignoreDuringBuilds: true,
   },
+  experimental: {
+    workerThreads: false,
+  },
 };
 
 export default nextConfig;
