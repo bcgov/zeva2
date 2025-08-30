@@ -160,10 +160,14 @@ export const AgreementDetails = (props: {
               className="mb-3"
               attachments={agreementAttachment}
             />
-            {agreementAttachment.length > 0 && <AttachmentsDownload
-              download={() => getAgreementAttachmentDownloadUrls(agreementAttachment)}
-              zipName={`agreement_${agreement.id}_attachments.zip`}
-            />}
+            {agreementAttachment.length > 0 && (
+              <AttachmentsDownload
+                download={() =>
+                  getAgreementAttachmentDownloadUrls(agreementAttachment)
+                }
+                zipName={`agreement_${agreement.id}_attachments.zip`}
+              />
+            )}
           </div>
         </div>
 

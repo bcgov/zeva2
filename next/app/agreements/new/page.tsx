@@ -20,7 +20,10 @@ const Page = async () => {
   const supplierSelectionsPromise = getSupplierSelections();
   const modelYearSelections = getModelYearSelections();
 
-  const createAgreement = async (data: AgreementPayload, files: Attachment[]) => {
+  const createAgreement = async (
+    data: AgreementPayload,
+    files: Attachment[],
+  ) => {
     "use server";
     const savedAgreement = await saveAgreement(data, files);
     if (savedAgreement) {

@@ -12,7 +12,6 @@ datasource db {
 // prisma doesn't allow enum values to start with a number
 // this enum must be in ascending lexicographical order, as well as ascending logical order
 enum ModelYear {
-  MY_2017 @map("2017")
   MY_2018 @map("2018")
   MY_2019 @map("2019")
   MY_2020 @map("2020")

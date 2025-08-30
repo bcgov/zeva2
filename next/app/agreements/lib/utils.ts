@@ -161,8 +161,6 @@ export const historySelectClause = {
   },
 };
 
-export const getAgreementAttachmentFullObjectName = (
-  objectName: string,
-) => {
+export const getAgreementAttachmentFullObjectName = (objectName: string) => {
   return `agreements/${objectName}`;
 };
