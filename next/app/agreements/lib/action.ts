@@ -10,17 +10,17 @@ import {
   Role,
   ZevClass,
 } from "@/prisma/generated/client";
-import { historySelectClause, getAgreementAttachmentFullObjectName } from "./utils";
+import {
+  historySelectClause,
+  getAgreementAttachmentFullObjectName,
+} from "./utils";
 import {
   getPresignedGetObjectUrl,
   getPresignedPutObjectUrl,
   removeObjects,
 } from "@/app/lib/minio";
 import { randomUUID } from "crypto";
-import {
-  Attachment,
-  AttachmentDownload,
-} from "@/app/lib/services/attachments";
+import { Attachment, AttachmentDownload } from "@/app/lib/services/attachments";
 import {
   DataOrErrorActionResponse,
   getDataActionResponse,
@@ -130,9 +130,11 @@ export const saveAgreement = async (
     });
   } catch (error) {
     // Clean up uploaded files if transaction fails
-    await removeObjects(files.map(
-      file => getAgreementAttachmentFullObjectName(file.objectName)
-    ));
+    await removeObjects(
+      files.map((file) =>
+        getAgreementAttachmentFullObjectName(file.objectName),
+      ),
+    );
 
     console.error("Error saving agreement:", (error as Error).message);
     return undefined;
@@ -208,21 +210,19 @@ export const addComment = async (agreementId: number, comment: string) => {
  * @returns A promise that resolves to the download URLs or an error response.
  */
 export const getAgreementAttachmentDownloadUrls = async (
-  attachments: Attachment[]
+  attachments: Attachment[],
 ): Promise<DataOrErrorActionResponse<AttachmentDownload[]>> => {
   if (attachments.length === 0) {
     return getErrorActionResponse("No attachments found!");
   }
-  const result = await Promise.all(attachments.map(
-    async (attachment) => ({
+  const result = await Promise.all(
+    attachments.map(async (attachment) => ({
       fileName: attachment.fileName,
       url: await getPresignedGetObjectUrl(
-        getAgreementAttachmentFullObjectName(
-          attachment.objectName,
-        ),
+        getAgreementAttachmentFullObjectName(attachment.objectName),
       ),
-    }
-  )));
+    })),
+  );
   return getDataActionResponse(result);
 };
 
@@ -232,9 +232,7 @@ export const getAgreementAttachmentDownloadUrls = async (
  * @param objectName - The MinIO object name of the attachment to delete.
  * @returns True if the deletion was successful, false otherwise.
  */
-export const deleteAgreementAttachment = async (
-  objectName: string,
-) => {
+export const deleteAgreementAttachment = async (objectName: string) => {
   const { userIsGov, userRoles } = await getUserInfo();
   if (!userIsGov || !userRoles.includes(Role.ENGINEER_ANALYST)) {
     return false;
@@ -252,7 +250,10 @@ export const deleteAgreementAttachment = async (
     });
     return true;
   } catch (error) {
-    console.error("Error deleting agreement attachment:", (error as Error).message);
+    console.error(
+      "Error deleting agreement attachment:",
+      (error as Error).message,
+    );
     return false;
   }
 };
