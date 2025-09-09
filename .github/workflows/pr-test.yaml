@@ -22,6 +22,9 @@ jobs:
       NEXT_TELEMETRY_DISABLED: "1"
       CHECKPOINT_DISABLE: "1"
       NODE_ENV: test
+      # Dummy URLs so `prisma generate` does not fail when env vars are missing.
+      DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/zeva?schema=public
+      DATABASE_URL_OLD: postgresql://postgres:postgres@127.0.0.1:5432/zeva?schema=public
     steps:
       - name: Checkout
         uses: actions/checkout@v4
