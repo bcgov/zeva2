@@ -1,0 +1,58 @@
+name: Next PR Tests
+
+on:
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: next-tests-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    working-directory: next
+
+jobs:
+  test:
+    name: Run Jest with coverage
+    runs-on: ubuntu-latest
+    env:
+      NEXT_TELEMETRY_DISABLED: "1"
+      CHECKPOINT_DISABLE: "1"
+      NODE_ENV: test
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22.x'
+          cache: 'npm'
+          cache-dependency-path: next/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate Prisma clients
+        run: |
+          npx prisma generate --schema prisma/schema.prisma
+          # Generate legacy client as used in the app
+          npx prisma generate --schema prisma/schemaOld.prisma
+
+      - name: Run tests with coverage
+        run: |
+          npm test -- --ci --coverage \
+            --coverageReporters=text-summary \
+            --coverageReporters=lcov \
+            --coverageReporters=html
+
+      - name: Upload coverage artifact
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: next-coverage
+          path: next/coverage
+          if-no-files-found: warn
