@@ -24,7 +24,7 @@ describe("credit-transfer data", () => {
 
   test("getCreditTransfers applies gov where and returns tuple", async () => {
     const { getUserInfo } = await import("@/auth");
-    (getUserInfo as jest.Mock).mockResolvedValue({ userIsGov: true, userOrgId: 2 });
+    (getUserInfo as jest.Mock).mockResolvedValue({ userIsGov: true, userOrgId: 2, userRoles: [] });
     (prisma.$transaction as jest.Mock).mockResolvedValueOnce([[{ id: 1 }], 1]);
     const result = await getCreditTransfers(1, 10, {}, {});
     expect(result[1]).toBe(1);
@@ -33,7 +33,7 @@ describe("credit-transfer data", () => {
 
   test("getCreditTransfers applies non-gov OR filter", async () => {
     const { getUserInfo } = await import("@/auth");
-    (getUserInfo as jest.Mock).mockResolvedValue({ userIsGov: false, userOrgId: 5 });
+    (getUserInfo as jest.Mock).mockResolvedValue({ userIsGov: false, userOrgId: 5, userRoles: [] });
     (prisma.$transaction as jest.Mock).mockResolvedValueOnce([[{ id: 1 }], 1]);
     await getCreditTransfers(2, 5, {}, {});
     expect(prisma.$transaction).toHaveBeenCalled();

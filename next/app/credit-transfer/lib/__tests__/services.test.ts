@@ -45,9 +45,16 @@ describe("credit-transfer services", () => {
   test("updateTransferStatusAndCreateHistory chains both", async () => {
     const tx = {
       creditTransfer: { update: jest.fn() },
-      creditTransferHistory: { create: jest.fn() },
+      creditTransferHistory: { create: jest.fn().mockResolvedValue({ id: 1 }) },
     };
-    await updateTransferStatusAndCreateHistory(9, 3, CreditTransferStatus.RETURNED_TO_ANALYST, CreditTransferStatus.APPROVED_BY_TRANSFER_TO, "c", tx as any);
+    await updateTransferStatusAndCreateHistory(
+      9,
+      3,
+      CreditTransferStatus.RETURNED_TO_ANALYST,
+      CreditTransferStatus.APPROVED_BY_TRANSFER_TO,
+      "c",
+      tx as any,
+    );
     expect(tx.creditTransfer.update).toHaveBeenCalled();
     expect(tx.creditTransferHistory.create).toHaveBeenCalled();
   });

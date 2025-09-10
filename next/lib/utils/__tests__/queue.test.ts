@@ -1,4 +1,15 @@
-import { addJobToEmailQueue, addJobToIcbcQueue } from "@/lib/utils/queue";
+// Robust import for CI path resolution differences
+let queueMod: any;
+try {
+  // Prefer alias when available
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  queueMod = require("@/lib/utils/queue");
+} catch (e) {
+  // Fallback to relative path
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  queueMod = require("../queue");
+}
+const { addJobToEmailQueue, addJobToIcbcQueue } = queueMod;
 import { emailQueueName, icbcQueueName } from "@/lib/constants/queue";
 import { Queue as MockedQueue } from "bullmq";
 
