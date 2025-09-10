@@ -108,6 +108,13 @@ const config: Config = {
 
   // A preset that is used as a base for Jest's configuration
   preset: "ts-jest",
+  globals: {
+    'ts-jest': {
+      tsconfig: {
+        jsx: 'react-jsx',
+      },
+    },
+  },
 
   // Run tests from one or more projects
   // projects: undefined,
@@ -139,7 +146,11 @@ const config: Config = {
   // runner: "jest-runner",
 
   // The paths to modules that run some code to configure or set up the testing environment before each test
+  // setupFiles executes before the test framework is installed; we use setupFilesAfterEnv instead.
   // setupFiles: [],
+
+  // A list of paths to modules that run some code to configure or set up the testing framework before each test
+  setupFilesAfterEnv: ["<rootDir>/jest.setup.ts"],
 
   // A list of paths to modules that run some code to configure or set up the testing framework before each test
   // setupFilesAfterEnv: [],
