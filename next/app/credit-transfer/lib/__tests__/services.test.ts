@@ -32,7 +32,7 @@ describe("credit-transfer services", () => {
   beforeEach(() => jest.clearAllMocks());
 
   test("createTransferHistory uses prisma client passed", async () => {
-    const tx = { creditTransferHistory: { create: jest.fn() } };
+    const tx = { creditTransferHistory: { create: jest.fn().mockResolvedValue({ id: 1 }) } };
     await createTransferHistory({ creditTransferId: 1, userId: 2, userAction: CreditTransferStatus.RETURNED_TO_ANALYST }, tx as any);
     expect(tx.creditTransferHistory.create).toHaveBeenCalled();
   });
@@ -81,4 +81,3 @@ describe("credit-transfer services", () => {
     expect(result).toBe(false);
   });
 });
-

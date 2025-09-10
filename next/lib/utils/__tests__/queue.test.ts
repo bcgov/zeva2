@@ -1,4 +1,4 @@
-import { addJobToEmailQueue, addJobToIcbcQueue } from "../queue";
+import { addJobToEmailQueue, addJobToIcbcQueue } from "@/lib/utils/queue";
 import { emailQueueName, icbcQueueName } from "@/lib/constants/queue";
 import { Queue as MockedQueue } from "bullmq";
 
@@ -39,4 +39,3 @@ describe("queue utils", () => {
     );
   });
 });
-
