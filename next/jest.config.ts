@@ -108,12 +108,16 @@ const config: Config = {
 
   // A preset that is used as a base for Jest's configuration
   preset: "ts-jest",
-  globals: {
-    'ts-jest': {
-      tsconfig: {
-        jsx: 'react-jsx',
+  // Configure ts-jest via transform (preferred over deprecated globals)
+  transform: {
+    "^.+\\.(ts|tsx)$": [
+      "ts-jest",
+      {
+        tsconfig: {
+          jsx: "react-jsx",
+        },
       },
-    },
+    ],
   },
 
   // Run tests from one or more projects
