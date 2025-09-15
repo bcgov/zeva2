@@ -1,5 +1,5 @@
 "use client";
-import { FormEvent, useState } from "react";
+import { FormEvent, useCallback, useState } from "react";
 import { Button } from "@/app/lib/components";
 import { OrganizationPayload } from "../action";
 import AddressEditForm from "./AddressEditForm";
@@ -50,7 +50,7 @@ const OrganizationEditForm = (props: {
   );
   const [recordsAddress] = recordsAddressState;
 
-  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = useCallback(async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const orgName = cleanupStringData(organizationName);
     const shortOrgName = cleanupStringData(shortName);
@@ -70,7 +70,7 @@ const OrganizationEditForm = (props: {
     };
     await props.upsertData(data);
     window.location.reload(); // Reload to reflect changes if not redirected
-  };
+  }, [organizationName, shortName, isActive, serviceAddress, recordsAddress]);
 
   return (
     <>
