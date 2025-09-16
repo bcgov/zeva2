@@ -10,7 +10,7 @@ if (bullmqConfig.startWorkers) {
     const completedHandler = workerSpec.completedHandler;
     const failedHandler = workerSpec.failedHandler;
     for (let i = 0; i < numberOfWorkers; i++) {
-      const worker = new Worker(queueName, handler, {
+      const worker = new Worker<any>(queueName, handler, {
         connection: defaultConnection,
       });
       worker.on("ready", () => {

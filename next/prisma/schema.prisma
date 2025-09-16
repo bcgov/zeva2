@@ -108,29 +108,10 @@ enum Idp {
 }
 
 enum Notification {
-  MODEL_YEAR_REPORT_RETURNED_TO_SUPPLIER
-  ZEV_MODEL_SUBMITTED
-  ZEV_MODEL_RANGE_REPORT_SUBMITTED
-  CREDIT_TRANSFER_APPROVED
-  CREDIT_APPLICATION_SUBMITTED
-  CREDIT_APPLICATION_CHECKED
-  CREDIT_APPLICATION_ISSUED_GOVT
-  CREDIT_TRANSFER_RECORDED_GOVT
-  CREDIT_TRANSFER_REJECTED_GOVT
-  CREDIT_TRANSFER_RECOMMEND_APPROVAL
-  CREDIT_TRANSFER_RECOMMEND_REJECT
-  CREDIT_APPLICATION_RECOMMEND_APPROVAL
-  CREDIT_TRANSFER_APPROVED_PARTNER
-  ZEV_MODEL_VALIDATED
-  ZEV_MODEL_REJECTED
-  CREDIT_TRANSFER_RECORDED
-  CREDIT_TRANSFER_REJECTED
-  CREDIT_APPLICATION_ISSUED
-  CREDIT_TRANSFER_SUBMITTED
-  CREDIT_TRANSFER_RESCINDED_PARTNER
-  CREDIT_TRANSFER_REJECTED_PARTNER
-  ZEV_MODEL_RANGE_REPORT_TEST_RESULT_REQUESTED
-  CREDIT_TRANSFER_RESCINDED
+  CREDIT_APPLICATION
+  CREDIT_TRANSFER
+  MODEL_YEAR_REPORT
+  ZEV_MODEL
 }
 
 model User {
@@ -554,16 +535,17 @@ enum AgreementUserAction {
 }
 
 model Agreement {
-  id               Int                @id @default(autoincrement())
-  referenceId      String?            @map("reference_id")
-  organization     Organization       @relation(fields: [organizationId], references: [id])
-  organizationId   Int                @map("organization_id")
-  agreementType    AgreementType      @map("agreement_type")
-  status           AgreementStatus
-  effectiveDate    DateTime?          @map("effective_date") @db.Date
-  comment          String?
-  agreementContent AgreementContent[]
-  agreementHistory AgreementHistory[]
+  id                  Int                   @id @default(autoincrement())
+  referenceId         String?               @map("reference_id")
+  organization        Organization          @relation(fields: [organizationId], references: [id])
+  organizationId      Int                   @map("organization_id")
+  agreementType       AgreementType         @map("agreement_type")
+  status              AgreementStatus
+  effectiveDate       DateTime?             @map("effective_date") @db.Date
+  comment             String?
+  agreementContent    AgreementContent[]
+  agreementHistory    AgreementHistory[]
+  agreementAttachment AgreementAttachment[]
 
   @@map("agreement")
 }
@@ -599,6 +581,17 @@ model AgreementComment {
   comment            String
 
   @@map("agreement_comment")
+}
+
+model AgreementAttachment {
+  id          Int       @id @default(autoincrement())
+  agreementId Int       @map("agreement_id")
+  agreement   Agreement @relation(fields: [agreementId], references: [id])
+  fileName    String    @map("file_name")
+  objectName  String    @map("object_name")
+
+  @@index([objectName], map: "object_name")
+  @@map("agreement_attachment")
 }
 
 model LegacySalesVolume {

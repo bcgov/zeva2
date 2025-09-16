@@ -3,6 +3,7 @@ import { enumToTitleString } from "@/lib/utils/convertEnums";
 import { AgreementHistoryType } from "../services";
 import { Button } from "@/app/lib/components";
 import { useState } from "react";
+import { CommentBox } from "@/app/lib/components/inputs/CommentBox";
 
 export const AgreementHistories = (props: {
   className?: string;
@@ -48,12 +49,10 @@ export const AgreementHistories = (props: {
         );
       })}
 
-      <textarea
-        className="w-full h-24 mt-4 p-2 border border-gray-300 rounded"
-        placeholder="Add a comment..."
-        value={newComment}
+      <CommentBox
+        comment={newComment}
+        setComment={setNewComment}
         disabled={isProcessing}
-        onChange={(e) => setNewComment(e.target.value)}
       />
 
       {!isProcessing && (

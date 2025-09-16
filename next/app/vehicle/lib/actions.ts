@@ -2,7 +2,12 @@
 
 import { getUserInfo } from "@/auth";
 import { prisma } from "@/lib/prisma";
-import { VehicleStatus, Vehicle, Prisma } from "@/prisma/generated/client";
+import {
+  VehicleStatus,
+  Vehicle,
+  Prisma,
+  Notification,
+} from "@/prisma/generated/client";
 import { createAttachments, createHistory } from "./services";
 import {
   DataOrErrorActionResponse,
@@ -23,6 +28,7 @@ import {
   AttachmentDownload,
   deleteAttachments,
 } from "@/app/lib/services/attachments";
+import { addJobToEmailQueue } from "@/app/lib/services/queue";
 
 export type VehiclePutObjectData = {
   objectName: string;
@@ -93,13 +99,17 @@ export async function submitVehicle(
       });
       vehicleId = newVehicle.id;
       await createAttachments(vehicleId, files, tx);
-      await createHistory(
+      const historyId = await createHistory(
         vehicleId,
         userId,
         VehicleStatus.SUBMITTED,
         comment,
         tx,
       );
+      await addJobToEmailQueue({
+        historyId,
+        notificationType: Notification.ZEV_MODEL,
+      });
     });
   } catch (e) {
     await deleteAttachments(userOrgId, files, getAttachmentFullObjectName);
@@ -149,7 +159,11 @@ export const updateStatus = async (
           status,
         },
       });
-      await createHistory(id, userId, status, comment, tx);
+      const historyId = await createHistory(id, userId, status, comment, tx);
+      await addJobToEmailQueue({
+        historyId,
+        notificationType: Notification.ZEV_MODEL,
+      });
     });
     return getSuccessActionResponse();
   }
