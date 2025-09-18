@@ -161,3 +161,23 @@ export const getModelYearReports = async (
     }),
   ]);
 };
+
+export const getLatestReassessment = async (
+  organizationId: number,
+  modelYear: ModelYear,
+) => {
+  const { userIsGov, userOrgId } = await getUserInfo();
+  const whereClause: Prisma.ReassessmentWhereInput = {
+    organizationId,
+    modelYear,
+  };
+  if (!userIsGov) {
+    whereClause.organizationId = userOrgId;
+  }
+  return await prisma.reassessment.findFirst({
+    where: whereClause,
+    orderBy: {
+      sequenceNumber: "desc",
+    },
+  });
+};

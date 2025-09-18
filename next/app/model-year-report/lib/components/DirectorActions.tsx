@@ -7,8 +7,11 @@ import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState, useTransition } from "react";
 import {
   directorAssess,
+  directorReassess,
   getDownloadAssessmentUrl,
+  getDownloadLatestReassessmentUrl,
   handleReturns,
+  returnReassessment,
 } from "../actions";
 import { getNormalizedComment } from "@/app/credit-application/lib/utils";
 import { CommentBox } from "@/app/lib/components/inputs/CommentBox";
@@ -17,8 +20,10 @@ import { getAssessmentPayload, parseAssessment } from "../utilsClient";
 
 export const DirectorActions = (props: {
   id: number;
-  status: ModelYearReportStatus;
+  organizationId: number;
   modelYear: ModelYear;
+  status: ModelYearReportStatus;
+  assessableReassessmentId: number | null;
 }) => {
   const router = useRouter();
   const [assessmentResult, setAssessmentResult] = useState<
@@ -31,7 +36,15 @@ export const DirectorActions = (props: {
   useEffect(() => {
     startTransition(async () => {
       try {
-        const response = await getDownloadAssessmentUrl(props.id);
+        let response;
+        if (props.assessableReassessmentId === null) {
+          response = await getDownloadAssessmentUrl(props.id);
+        } else {
+          response = await getDownloadLatestReassessmentUrl(
+            props.organizationId,
+            props.modelYear,
+          );
+        }
         if (response.responseType === "error") {
           throw new Error(response.message);
         }
@@ -47,17 +60,30 @@ export const DirectorActions = (props: {
         }
       }
     });
-  }, [props.id, props.modelYear]);
+  }, [
+    props.id,
+    props.status,
+    props.organizationId,
+    props.assessableReassessmentId,
+    props.modelYear,
+  ]);
 
   const handleReturnToAnalyst = useCallback(() => {
     setError("");
     startTransition(async () => {
       try {
-        await handleReturns(
-          props.id,
-          ModelYearReportStatus.RETURNED_TO_ANALYST,
-          getNormalizedComment(comment),
-        );
+        if (props.assessableReassessmentId === null) {
+          await handleReturns(
+            props.id,
+            ModelYearReportStatus.RETURNED_TO_ANALYST,
+            getNormalizedComment(comment),
+          );
+        } else {
+          await returnReassessment(
+            props.assessableReassessmentId,
+            getNormalizedComment(comment),
+          );
+        }
         router.refresh();
       } catch (e) {
         if (e instanceof Error) {
@@ -65,7 +91,7 @@ export const DirectorActions = (props: {
         }
       }
     });
-  }, [props.id, comment]);
+  }, [props.id, props.status, props.assessableReassessmentId, comment]);
 
   const handleIssueAssessment = useCallback(() => {
     setError("");
@@ -73,7 +99,19 @@ export const DirectorActions = (props: {
       try {
         if (assessmentResult) {
           const payload = getAssessmentPayload(assessmentResult);
-          await directorAssess(props.id, payload, comment);
+          if (props.assessableReassessmentId === null) {
+            await directorAssess(
+              props.id,
+              payload,
+              getNormalizedComment(comment),
+            );
+          } else {
+            directorReassess(
+              props.assessableReassessmentId,
+              payload,
+              getNormalizedComment(comment),
+            );
+          }
           router.refresh();
         } else {
           throw new Error("No assessment result!");
@@ -86,7 +124,10 @@ export const DirectorActions = (props: {
     });
   }, [props.id, assessmentResult, comment]);
 
-  if (props.status !== ModelYearReportStatus.SUBMITTED_TO_DIRECTOR) {
+  if (
+    props.status !== ModelYearReportStatus.SUBMITTED_TO_DIRECTOR &&
+    props.assessableReassessmentId === null
+  ) {
     return null;
   }
   return (
@@ -105,7 +146,9 @@ export const DirectorActions = (props: {
         {isPending ? "..." : "Return To Analyst"}
       </Button>
       <Button onClick={handleIssueAssessment} disabled={isPending}>
-        {isPending ? "..." : "Issue Assessment"}
+        {isPending
+          ? "..."
+          : `Issue ${props.assessableReassessmentId === null ? "A" : "Rea"}ssessment`}
       </Button>
     </div>
   );
