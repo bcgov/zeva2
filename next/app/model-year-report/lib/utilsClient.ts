@@ -168,7 +168,12 @@ export const downloadMyr = async (
     myrData.currentTransactions,
     helpingMaps,
   );
-  writeCredits(creditsSheet, myrData.currentTransactions, helpingMaps);
+  writeCredits(
+    creditsSheet,
+    myrData.currentTransactions,
+    helpingMaps,
+    new Set(),
+  );
   const fileName = `myr-${orgName.replaceAll(" ", "-")}-${helpingMaps.modelYearsMap[modelYear]}.xlsx`;
   const buffer = await workbook.xlsx.writeBuffer();
   downloadBuffer(fileName, buffer);
@@ -277,9 +282,13 @@ const writeCredits = (
   sheet: Excel.Worksheet,
   records: MyrCurrentTransactions,
   helpingMaps: MyrHelpingMaps,
+  referenceTypesToExclude: Set<ReferenceType>,
 ) => {
   records.forEach((record) => {
-    if (record.type === TransactionType.CREDIT) {
+    if (
+      record.type === TransactionType.CREDIT &&
+      !referenceTypesToExclude.has(record.referenceType)
+    ) {
       sheet.addRow([
         helpingMaps.referenceTypesMap[record.referenceType],
         record.referenceId,
@@ -340,6 +349,7 @@ export const downloadAssessment = async (
   adjustments: AdjustmentPayload[],
   orgName: string,
   modelYear: ModelYear,
+  isReassessment: boolean,
 ) => {
   const workbook = new Excel.Workbook();
   await workbook.xlsx.load(template);
@@ -361,8 +371,11 @@ export const downloadAssessment = async (
   const creditsSheet = workbook.getWorksheet(
     AssessmentTemplate.CreditsSheetName,
   );
-  const adjustmentsSheet = workbook.getWorksheet(
-    AssessmentTemplate.AdjustmentsSheetName,
+  const previousAdjustmentsSheet = workbook.getWorksheet(
+    AssessmentTemplate.PreviousAdjustmentsSheetName,
+  );
+  const currentAdjustmentsSheet = workbook.getWorksheet(
+    AssessmentTemplate.CurrentAdjustmentsSheetName,
   );
   const penaltySheet = workbook.getWorksheet(
     AssessmentTemplate.PenaltySheetName,
@@ -374,7 +387,8 @@ export const downloadAssessment = async (
     !endingBalanceSheet ||
     !offsetsAndTransfersAwaySheet ||
     !creditsSheet ||
-    !adjustmentsSheet ||
+    !previousAdjustmentsSheet ||
+    !currentAdjustmentsSheet ||
     !penaltySheet
   ) {
     throw new Error("Invalid Template!");
@@ -405,10 +419,20 @@ export const downloadAssessment = async (
     assessmentData.currentTransactions,
     helpingMaps,
   );
-  writeCredits(creditsSheet, assessmentData.currentTransactions, helpingMaps);
-  writeBalance(adjustmentsSheet, adjustments, helpingMaps);
+  writeCredits(
+    creditsSheet,
+    assessmentData.currentTransactions,
+    helpingMaps,
+    new Set([ReferenceType.ASSESSMENT_ADJUSTMENT]),
+  );
+  writePreviousAdjustments(
+    previousAdjustmentsSheet,
+    assessmentData.currentTransactions,
+    helpingMaps,
+  );
+  writeAdjustments(currentAdjustmentsSheet, adjustments, helpingMaps);
   writePenalty(penaltySheet, assessmentData.complianceInfo, orgName);
-  const fileName = `assessment-${orgName.replaceAll(" ", "-")}-${helpingMaps.modelYearsMap[modelYear]}.xlsx`;
+  const fileName = `${isReassessment ? "re" : ""}assessment-${orgName.replaceAll(" ", "-")}-${helpingMaps.modelYearsMap[modelYear]}.xlsx`;
   const buffer = await workbook.xlsx.writeBuffer();
   downloadBuffer(fileName, buffer);
 };
@@ -445,6 +469,26 @@ const writeComplianceStatement = (
   }
 };
 
+const writePreviousAdjustments = (
+  sheet: Excel.Worksheet,
+  records: MyrCurrentTransactions,
+  helpingMaps: MyrHelpingMaps,
+) => {
+  records.forEach((record) => {
+    if (record.referenceType === ReferenceType.ASSESSMENT_ADJUSTMENT) {
+      sheet.addRow([
+        helpingMaps.transactionTypesMap[record.type],
+        helpingMaps.vehicleClassesMap[record.vehicleClass],
+        helpingMaps.zevClassesMap[record.zevClass],
+        helpingMaps.modelYearsMap[record.modelYear],
+        record.numberOfUnits,
+      ]);
+    }
+  });
+};
+
+const writeAdjustments = writeBalance;
+
 const writePenalty = (
   sheet: Excel.Worksheet,
   complianceInfo: ComplianceInfo,
@@ -470,8 +514,8 @@ export const parseAssessment = async (
   const reductionsSheet = workbook.getWorksheet(
     AssessmentTemplate.ComplianceReductionsSheetName,
   );
-  const adjustmentsSheet = workbook.getWorksheet(
-    AssessmentTemplate.AdjustmentsSheetName,
+  const currentAdjustmentsSheet = workbook.getWorksheet(
+    AssessmentTemplate.CurrentAdjustmentsSheetName,
   );
   const endingBalanceSheet = workbook.getWorksheet(
     AssessmentTemplate.EndingBalanceSheetName,
@@ -481,7 +525,7 @@ export const parseAssessment = async (
   );
   if (
     !reductionsSheet ||
-    !adjustmentsSheet ||
+    !currentAdjustmentsSheet ||
     !endingBalanceSheet ||
     !penaltySheet
   ) {
@@ -506,7 +550,7 @@ export const parseAssessment = async (
       });
     }
   });
-  adjustmentsSheet.eachRow((row, rowNumber) => {
+  currentAdjustmentsSheet.eachRow((row, rowNumber) => {
     if (rowNumber > 1) {
       transactions.push({
         type: row.getCell(1).toString(),

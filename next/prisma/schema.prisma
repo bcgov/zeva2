@@ -12,6 +12,7 @@ datasource db {
 // prisma doesn't allow enum values to start with a number
 // this enum must be in ascending lexicographical order, as well as ascending logical order
 enum ModelYear {
+  MY_2017 @map("2017")
   MY_2018 @map("2018")
   MY_2019 @map("2019")
   MY_2020 @map("2020")
@@ -34,27 +35,30 @@ enum ModelYear {
 }
 
 model Organization {
-  id                    Int                       @id @default(autoincrement())
-  name                  String
-  isGovernment          Boolean                   @default(false) @map("is_government")
-  isActive              Boolean                   @default(true) @map("is_active")
-  shortName             String                    @map("short_name")
-  firstModelYear        ModelYear?                @map("first_model_year")
-  users                 User[]
-  zevUnitTransactions   ZevUnitTransaction[]
-  zevUnitEndingBalances ZevUnitEndingBalance[]
-  creditTransferTo      CreditTransfer[]          @relation("creditTransferTo")
-  creditTransferFrom    CreditTransfer[]          @relation("creditTransferFrom")
-  Vehicle               Vehicle[]
-  VehicleHistory        VehicleHistory[]
-  organizationAddress   OrganizationAddress[]
-  ldvSupplied           OrganizationLDVSupplied[]
-  CreditApplication     CreditApplication[]
-  PenaltyCredit         PenaltyCredit[]
-  agreements            Agreement[]
-  LegacySalesVolume     LegacySalesVolume[]
-  SupplyVolume          SupplyVolume[]
-  ModelYearReport       ModelYearReport[]
+  id                            Int                             @id @default(autoincrement())
+  name                          String
+  isGovernment                  Boolean                         @default(false) @map("is_government")
+  isActive                      Boolean                         @default(true) @map("is_active")
+  shortName                     String                          @map("short_name")
+  firstModelYear                ModelYear?                      @map("first_model_year")
+  users                         User[]
+  zevUnitTransactions           ZevUnitTransaction[]
+  zevUnitEndingBalances         ZevUnitEndingBalance[]
+  creditTransferTo              CreditTransfer[]                @relation("creditTransferTo")
+  creditTransferFrom            CreditTransfer[]                @relation("creditTransferFrom")
+  Vehicle                       Vehicle[]
+  VehicleHistory                VehicleHistory[]
+  organizationAddress           OrganizationAddress[]
+  ldvSupplied                   OrganizationLDVSupplied[]
+  CreditApplication             CreditApplication[]
+  PenaltyCredit                 PenaltyCredit[]
+  agreements                    Agreement[]
+  LegacySalesVolume             LegacySalesVolume[]
+  SupplyVolume                  SupplyVolume[]
+  ModelYearReport               ModelYearReport[]
+  Reassessment                  Reassessment[]
+  SupplementaryReport           SupplementaryReport[]
+  LegacyAssessedModelYearReport LegacyAssessedModelYearReport[]
 
   @@map("organization")
 }
@@ -115,26 +119,27 @@ enum Notification {
 }
 
 model User {
-  id                       Int                        @id @default(autoincrement())
-  contactEmail             String?                    @map("contact_email")
-  idpSub                   String?                    @map("idp_sub")
-  idp                      Idp                        @map("idp")
-  idpUsername              String                     @map("idp_username")
-  isActive                 Boolean                    @default(true) @map("is_active")
-  organization             Organization               @relation(fields: [organizationId], references: [id])
-  organizationId           Int                        @map("organization_id")
-  roles                    Role[]
-  notifications            Notification[]
-  firstName                String                     @map("first_name")
-  lastName                 String                     @map("last_name")
-  wasUpdated               Boolean                    @default(false) @map("was_updated")
-  VehicleHistory           VehicleHistory[]
-  CreditApplicationHistory CreditApplicationHistory[]
-  PenaltyCreditHistory     PenaltyCreditHistory[]
-  AgreementHistory         AgreementHistory[]
-  ModelYearReportHistory   ModelYearReportHistory[]
-  ReassessmentHistory      ReassessmentHistory[]
-  CreditTransferHistory    CreditTransferHistory[]
+  id                         Int                          @id @default(autoincrement())
+  contactEmail               String?                      @map("contact_email")
+  idpSub                     String?                      @map("idp_sub")
+  idp                        Idp                          @map("idp")
+  idpUsername                String                       @map("idp_username")
+  isActive                   Boolean                      @default(true) @map("is_active")
+  organization               Organization                 @relation(fields: [organizationId], references: [id])
+  organizationId             Int                          @map("organization_id")
+  roles                      Role[]
+  notifications              Notification[]
+  firstName                  String                       @map("first_name")
+  lastName                   String                       @map("last_name")
+  wasUpdated                 Boolean                      @default(false) @map("was_updated")
+  VehicleHistory             VehicleHistory[]
+  CreditApplicationHistory   CreditApplicationHistory[]
+  PenaltyCreditHistory       PenaltyCreditHistory[]
+  AgreementHistory           AgreementHistory[]
+  ModelYearReportHistory     ModelYearReportHistory[]
+  ReassessmentHistory        ReassessmentHistory[]
+  CreditTransferHistory      CreditTransferHistory[]
+  SupplementaryReportHistory SupplementaryReportHistory[]
 
   @@unique([idp, idpUsername])
   @@map("user")
@@ -644,8 +649,6 @@ model ModelYearReport {
   assessmentFileName       String?                       @map("assessment_file_name")
   assessmentObjectName     String?                       @map("assessment_object_name")
   ModelYearReportHistory   ModelYearReportHistory[]
-  SupplementaryReport      SupplementaryReport[]
-  Reassessment             Reassessment[]
 
   @@unique([organizationId, modelYear])
   @@map("model_year_report")
@@ -664,16 +667,47 @@ model ModelYearReportHistory {
   @@map("model_year_report_history")
 }
 
-model SupplementaryReport {
-  id                Int             @id @default(autoincrement())
-  modelYearReport   ModelYearReport @relation(fields: [modelYearReportId], references: [id])
-  modelYearReportId Int             @map("model_year_report_id")
-  timestamp         DateTime        @default(now()) @db.Timestamptz(6)
-  comment           String
-  fileName          String          @map("file_name")
-  objectName        String          @unique @map("object_name")
+model LegacyAssessedModelYearReport {
+  id             Int          @id @default(autoincrement())
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  organizationId Int          @map("organization_id")
+  modelYear      ModelYear    @map("model_year")
 
+  @@unique([organizationId, modelYear])
+  @@map("legacy_assessed_model_year_report")
+}
+
+enum SupplementaryReportStatus {
+  ACKNOWLEDGED
+  SUBMITTED_TO_GOVERNMENT
+}
+
+model SupplementaryReport {
+  id                         Int                          @id @default(autoincrement())
+  status                     SupplementaryReportStatus
+  organization               Organization                 @relation(fields: [organizationId], references: [id])
+  organizationId             Int                          @map("organization_id")
+  modelYear                  ModelYear                    @map("model_year")
+  sequenceNumber             Int                          @map("sequence_number")
+  fileName                   String                       @map("file_name")
+  objectName                 String                       @unique @map("object_name")
+  SupplementaryReportHistory SupplementaryReportHistory[]
+
+  @@unique([organizationId, modelYear, sequenceNumber])
   @@map("supplementary_report")
+}
+
+model SupplementaryReportHistory {
+  id                    Int                       @id @default(autoincrement())
+  supplementaryReportId Int                       @map("supplementary_report_id")
+  supplementaryReport   SupplementaryReport       @relation(fields: [supplementaryReportId], references: [id])
+  userId                Int                       @map("user_id")
+  user                  User                      @relation(fields: [userId], references: [id])
+  timestamp             DateTime                  @default(now()) @db.Timestamptz(6)
+  userAction            SupplementaryReportStatus @map("user_action")
+  comment               String?
+
+  @@map("supplementary_report_history")
 }
 
 enum ReassessmentStatus {
@@ -684,14 +718,16 @@ enum ReassessmentStatus {
 
 model Reassessment {
   id                  Int                   @id @default(autoincrement())
-  modelYearReport     ModelYearReport       @relation(fields: [modelYearReportId], references: [id])
-  modelYearReportId   Int                   @map("model_year_report_id")
   status              ReassessmentStatus
-  issuedTimestamp     DateTime?             @map("issued_timestamp") @db.Timestamptz(6)
+  organization        Organization          @relation(fields: [organizationId], references: [id])
+  organizationId      Int                   @map("organization_id")
+  modelYear           ModelYear             @map("model_year")
+  sequenceNumber      Int                   @map("sequence_number")
   fileName            String                @map("file_name")
   objectName          String                @unique @map("object_name")
   ReassessmentHistory ReassessmentHistory[]
 
+  @@unique([organizationId, modelYear, sequenceNumber])
   @@map("reassessment")
 }
 

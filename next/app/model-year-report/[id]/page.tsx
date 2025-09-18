@@ -4,9 +4,13 @@ import { getUserInfo } from "@/auth";
 import { JSX, Suspense } from "react";
 import { ModelYearReportDetails } from "../lib/components/ModelYearReportDetails";
 import { ModelYearReportHistory } from "../lib/components/ModelYearReportHistory";
-import { getModelYearReport } from "../lib/data";
+import { getLatestReassessment, getModelYearReport } from "../lib/data";
 import { SupplierActions } from "../lib/components/SupplierActions";
-import { Role } from "@/prisma/generated/client";
+import {
+  ModelYearReportStatus,
+  ReassessmentStatus,
+  Role,
+} from "@/prisma/generated/client";
 import { DirectorActions } from "../lib/components/DirectorActions";
 import { AnalystActions } from "../lib/components/AnalystActions";
 import { AttachmentsDownload } from "@/app/lib/components/AttachmentsDownload";
@@ -19,8 +23,31 @@ const Page = async (props: { params: Promise<{ id: string }> }) => {
   if (!myr) {
     return null;
   }
+  const latestReassessment = await getLatestReassessment(
+    myr.organizationId,
+    myr.modelYear,
+  );
   const status = myr.status;
   const modelYear = myr.modelYear;
+  let assessableReassessmentId = null;
+  let canConductReassessment = false;
+  if (
+    status === ModelYearReportStatus.ASSESSED &&
+    latestReassessment &&
+    latestReassessment.status === ReassessmentStatus.SUBMITTED_TO_DIRECTOR
+  ) {
+    assessableReassessmentId = latestReassessment.id;
+  }
+  if (
+    status === ModelYearReportStatus.ASSESSED &&
+    (!latestReassessment ||
+      (latestReassessment &&
+        (latestReassessment.status === ReassessmentStatus.ISSUED ||
+          latestReassessment.status ===
+            ReassessmentStatus.RETURNED_TO_ANALYST)))
+  ) {
+    canConductReassessment = true;
+  }
 
   const { userIsGov, userRoles } = await getUserInfo();
   let actionComponent: JSX.Element | null = null;
@@ -28,10 +55,22 @@ const Page = async (props: { params: Promise<{ id: string }> }) => {
     actionComponent = <SupplierActions id={id} status={status} />;
   } else if (userIsGov && userRoles.includes(Role.DIRECTOR)) {
     actionComponent = (
-      <DirectorActions id={id} status={status} modelYear={modelYear} />
+      <DirectorActions
+        id={id}
+        organizationId={myr.organizationId}
+        modelYear={modelYear}
+        status={status}
+        assessableReassessmentId={assessableReassessmentId}
+      />
     );
   } else if (userIsGov && userRoles.includes(Role.ENGINEER_ANALYST)) {
-    actionComponent = <AnalystActions id={id} status={status} />;
+    actionComponent = (
+      <AnalystActions
+        id={id}
+        status={status}
+        canConductReassessment={canConductReassessment}
+      />
+    );
   }
 
   const download = async () => {

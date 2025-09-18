@@ -17,7 +17,8 @@ import {
   getAssessmentTemplateUrl,
   getPutAssessmentData,
   NvValues,
-  submitToDirector,
+  submitAssessmentToDirector,
+  submitReassessmentToDirector,
 } from "../actions";
 import { getModelYearEnumsToStringsMap } from "@/app/lib/utils/enumMaps";
 import { MyrNvValues } from "./MyrNvValues";
@@ -35,6 +36,7 @@ import { Adjustment, Adjustments } from "./Adjustments";
 import { AssessmentResult, AssessmentResultData } from "./AssessmentResult";
 import { CommentBox } from "@/app/lib/components/inputs/CommentBox";
 import { Routes } from "@/app/lib/constants";
+import { getNormalizedComment } from "@/app/credit-application/lib/utils";
 
 export const AssessmentForm = (props: {
   id: number;
@@ -42,6 +44,7 @@ export const AssessmentForm = (props: {
   orgName: string;
   status: ModelYearReportStatus;
   modelYear: ModelYear;
+  isReassessment: boolean;
 }) => {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -127,6 +130,7 @@ export const AssessmentForm = (props: {
             nvValues,
             zevClassOrdering,
             adjustmentsPayload,
+            props.isReassessment,
           ),
         ]);
         if (assessmentResponse.responseType === "error") {
@@ -143,6 +147,7 @@ export const AssessmentForm = (props: {
           adjustmentsPayload,
           props.orgName,
           props.modelYear,
+          props.isReassessment,
         );
       } catch (e) {
         if (e instanceof Error) {
@@ -154,6 +159,7 @@ export const AssessmentForm = (props: {
     props.orgId,
     props.orgName,
     props.modelYear,
+    props.isReassessment,
     nvValues,
     zevClassSelection,
     adjustments,
@@ -190,13 +196,24 @@ export const AssessmentForm = (props: {
           throw new Error(putDataResponse.message);
         }
         await axios.put(putDataResponse.data.url, assessment);
-        const submitResponse = await submitToDirector(
-          props.id,
-          props.orgId,
-          putDataResponse.data.objectName,
-          assessment.name,
-          comment,
-        );
+        let submitResponse;
+        if (props.isReassessment) {
+          submitResponse = await submitReassessmentToDirector(
+            props.orgId,
+            props.modelYear,
+            putDataResponse.data.objectName,
+            assessment.name,
+            getNormalizedComment(comment),
+          );
+        } else {
+          submitResponse = await submitAssessmentToDirector(
+            props.id,
+            props.orgId,
+            putDataResponse.data.objectName,
+            assessment.name,
+            getNormalizedComment(comment),
+          );
+        }
         if (submitResponse.responseType === "error") {
           throw new Error(submitResponse.message);
         }
@@ -207,7 +224,14 @@ export const AssessmentForm = (props: {
         }
       }
     });
-  }, [assessments, assessmentResult, props.id, props.orgId, comment]);
+  }, [
+    assessments,
+    assessmentResult,
+    props.id,
+    props.orgId,
+    props.modelYear,
+    comment,
+  ]);
 
   return (
     <div>
@@ -251,11 +275,13 @@ export const AssessmentForm = (props: {
       />
       <div className="flex space-x-2">
         <Button onClick={handleGenerateAssessment} disabled={isPending}>
-          {isPending ? "..." : "Generate and Download Assessment"}
+          {isPending
+            ? "..."
+            : `Generate and Download ${props.isReassessment ? "Rea" : "A"}ssessment`}
         </Button>
       </div>
       <div className="flex items-center space-x-4">
-        <span>Upload the Assessment here:</span>
+        <span>{`Upload the ${props.isReassessment ? "Rea" : "A"}ssessment here:`}</span>
         <Dropzone
           files={assessments}
           setFiles={setAssessments}
