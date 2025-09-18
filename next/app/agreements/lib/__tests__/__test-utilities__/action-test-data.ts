@@ -5,8 +5,6 @@ import {
   ZevClass,
   ModelYear,
   Role,
-  AgreementHistory,
-  Prisma,
 } from "@/prisma/generated/client";
 import { UserInfo } from "@/auth";
 import { jest } from "@jest/globals";
@@ -160,14 +158,6 @@ export const mockFunctionsWithError = (errorMessage: string) => {
     consoleSpy,
   };
 };
-
-// export const assertCalledOnceWith = (
-//   mockFn: jest.Mock,
-//   expected: any,
-// ) => {
-//   expect(mockFn).toHaveBeenCalledTimes(1);
-//   expect(mockFn).toHaveBeenCalledWith(expected);
-// };
 
 export const mockDate = (mockedDate: Date) => {
   global.Date = class extends Date {

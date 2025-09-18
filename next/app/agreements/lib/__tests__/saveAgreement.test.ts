@@ -157,7 +157,6 @@ describe("Agreement action: saveAgreement", () => {
     } = mockFunctions({
       agreementId,
       agreementData: baseAgreement,
-      //agreementWithId: { id: agreementId, ...baseAgreement },
     });
 
     const result = await saveAgreement(baseAgreement, baseAttachments, agreementId);
