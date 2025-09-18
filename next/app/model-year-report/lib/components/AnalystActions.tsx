@@ -12,6 +12,7 @@ import { CommentBox } from "@/app/lib/components/inputs/CommentBox";
 export const AnalystActions = (props: {
   id: number;
   status: ModelYearReportStatus;
+  canConductReassessment: boolean;
 }) => {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -40,26 +41,40 @@ export const AnalystActions = (props: {
     router.push(`${Routes.ComplianceReporting}/${props.id}/assessment`);
   }, [props.id]);
 
+  const handleGoToConductReassessment = useCallback(() => {
+    router.push(`${Routes.ComplianceReporting}/${props.id}/reassessment`);
+  }, [props.id]);
+
   if (
-    props.status !== ModelYearReportStatus.SUBMITTED_TO_GOVERNMENT &&
-    props.status !== ModelYearReportStatus.RETURNED_TO_ANALYST
+    props.status === ModelYearReportStatus.RETURNED_TO_SUPPLIER ||
+    props.status === ModelYearReportStatus.SUBMITTED_TO_DIRECTOR
   ) {
     return null;
   }
   return (
     <div className="space-y-2">
       {error && <p className="text-red-600">{error}</p>}
-      <CommentBox
-        comment={comment}
-        setComment={setComment}
-        disabled={isPending}
-      />
-      <Button onClick={handleReturnToSupplier} disabled={isPending}>
-        {isPending ? "..." : "Return To Supplier"}
-      </Button>
-      <Button onClick={handleGoToConductAssessment} disabled={isPending}>
-        {isPending ? "..." : "Conduct Assessment"}
-      </Button>
+      {!props.canConductReassessment &&
+        props.status !== ModelYearReportStatus.ASSESSED && (
+          <>
+            <CommentBox
+              comment={comment}
+              setComment={setComment}
+              disabled={isPending}
+            />
+            <Button onClick={handleReturnToSupplier} disabled={isPending}>
+              {isPending ? "..." : "Return To Supplier"}
+            </Button>
+            <Button onClick={handleGoToConductAssessment} disabled={isPending}>
+              {isPending ? "..." : "Conduct Assessment"}
+            </Button>
+          </>
+        )}
+      {props.canConductReassessment && (
+        <Button onClick={handleGoToConductReassessment} disabled={isPending}>
+          {isPending ? "..." : "Conduct Reassessment"}
+        </Button>
+      )}
     </div>
   );
 };

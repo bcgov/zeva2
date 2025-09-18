@@ -16,6 +16,7 @@ import {
   ModelYearReportSupplierStatus,
   Notification,
   Prisma,
+  ReassessmentStatus,
   ReferenceType,
   Role,
   VehicleClass,
@@ -23,7 +24,9 @@ import {
 } from "@/prisma/generated/client";
 import {
   createHistory,
+  createReassessmentHistory,
   getOrgDetails,
+  getReassessableMyr,
   getZevUnitData,
   MyrZevUnitTransaction,
   OrgNameAndAddresses,
@@ -103,6 +106,7 @@ export const getMyrData = async (
       nvValues,
       zevClassOrdering,
       [],
+      false,
     );
     return getDataActionResponse<MyrData>({
       supplierData: { ...orgData, supplierClass },
@@ -233,6 +237,7 @@ export const getAssessmentData = async (
   nvValues: NvValues,
   zevClassOrdering: ZevClass[],
   adjustments: AdjustmentPayload[],
+  forReassessment: boolean,
 ): Promise<DataOrErrorActionResponse<AssessmentData>> => {
   const { userIsGov } = await getUserInfo();
   if (!userIsGov) {
@@ -252,6 +257,7 @@ export const getAssessmentData = async (
       nvValues,
       zevClassOrdering,
       adjustments,
+      forReassessment,
     );
     const complianceInfo = getComplianceInfo(
       supplierClass,
@@ -304,7 +310,7 @@ export const getPutAssessmentData = async (
   });
 };
 
-export const submitToDirector = async (
+export const submitAssessmentToDirector = async (
   id: number,
   organizationId: number,
   assessmentObjectName: string,
@@ -384,6 +390,104 @@ export const submitToDirector = async (
   return getSuccessActionResponse();
 };
 
+export const submitReassessmentToDirector = async (
+  organizationId: number,
+  modelYear: ModelYear,
+  assessmentObjectName: string,
+  assessmentFileName: string,
+  comment?: string,
+): Promise<ErrorOrSuccessActionResponse> => {
+  const { userIsGov, userId, userRoles } = await getUserInfo();
+  const assessmentFullObjectName = getReportFullObjectName(
+    organizationId,
+    "assessment",
+    assessmentObjectName,
+  );
+  try {
+    if (!userIsGov || !userRoles.includes(Role.ENGINEER_ANALYST)) {
+      throw new Error("Unauthorized!");
+    }
+    const reassessableMyr = await getReassessableMyr(organizationId, modelYear);
+    if (reassessableMyr.myrId === null || reassessableMyr.isLegacy === null) {
+      throw new Error("A reassessable MYR does not exist!");
+    }
+    const latestReassessment = await prisma.reassessment.findFirst({
+      where: {
+        organizationId: organizationId,
+        modelYear: modelYear,
+      },
+      orderBy: {
+        sequenceNumber: "desc",
+      },
+    });
+    if (
+      latestReassessment &&
+      latestReassessment.status !== ReassessmentStatus.ISSUED &&
+      latestReassessment.status !== ReassessmentStatus.RETURNED_TO_ANALYST
+    ) {
+      throw new Error("Invalid Action!");
+    }
+    let sequenceNumber = 0;
+    if (latestReassessment) {
+      sequenceNumber = latestReassessment.sequenceNumber + 1;
+    }
+    await prisma.$transaction(async (tx) => {
+      if (latestReassessment) {
+        const reassessmentPrevObjectName = latestReassessment.objectName;
+        await tx.reassessment.update({
+          where: {
+            id: latestReassessment.id,
+          },
+          data: {
+            status: ReassessmentStatus.SUBMITTED_TO_DIRECTOR,
+            fileName: assessmentFileName,
+            objectName: assessmentObjectName,
+          },
+        });
+        await createReassessmentHistory(
+          latestReassessment.id,
+          userId,
+          ReassessmentStatus.SUBMITTED_TO_DIRECTOR,
+          comment,
+          tx,
+        );
+        await removeObject(
+          getReportFullObjectName(
+            organizationId,
+            "assessment",
+            reassessmentPrevObjectName,
+          ),
+        );
+      } else {
+        const { id: reassessmentId } = await tx.reassessment.create({
+          data: {
+            organizationId: organizationId,
+            modelYear: modelYear,
+            status: ReassessmentStatus.SUBMITTED_TO_DIRECTOR,
+            sequenceNumber,
+            fileName: assessmentFileName,
+            objectName: assessmentObjectName,
+          },
+        });
+        await createReassessmentHistory(
+          reassessmentId,
+          userId,
+          ReassessmentStatus.SUBMITTED_TO_DIRECTOR,
+          comment,
+          tx,
+        );
+      }
+    });
+  } catch (e) {
+    await removeObject(assessmentFullObjectName);
+    if (e instanceof Error) {
+      return getErrorActionResponse(e.message);
+    }
+    throw e;
+  }
+  return getSuccessActionResponse();
+};
+
 export const getDocumentDownloadUrls = async (
   id: number,
 ): Promise<DataOrErrorActionResponse<AttachmentDownload[]>> => {
@@ -394,16 +498,6 @@ export const getDocumentDownloadUrls = async (
   }
   const myr = await prisma.modelYearReport.findUnique({
     where: whereClause,
-    select: {
-      organizationId: true,
-      status: true,
-      fileName: true,
-      objectName: true,
-      forecastReportFileName: true,
-      forecastReportObjectName: true,
-      assessmentFileName: true,
-      assessmentObjectName: true,
-    },
   });
   if (!myr) {
     return getErrorActionResponse("Model Year Report not found!");
@@ -438,6 +532,25 @@ export const getDocumentDownloadUrls = async (
         getReportFullObjectName(orgId, "assessment", myr.assessmentObjectName),
       ),
     });
+  }
+  const reassessments = await prisma.reassessment.findMany({
+    where: {
+      organizationId: myr.organizationId,
+      modelYear: myr.modelYear,
+    },
+    orderBy: {
+      sequenceNumber: "asc",
+    },
+  });
+  for (const reassessment of reassessments) {
+    if (userIsGov || reassessment.status === ReassessmentStatus.ISSUED) {
+      documents.push({
+        fileName: reassessment.fileName,
+        url: await getPresignedGetObjectUrl(
+          getReportFullObjectName(orgId, "assessment", reassessment.objectName),
+        ),
+      });
+    }
   }
   return getDataActionResponse(documents);
 };
@@ -685,4 +798,168 @@ export const getDownloadAssessmentUrl = async (
     ),
   );
   return getDataActionResponse(url);
+};
+
+export const getDownloadLatestReassessmentUrl = async (
+  organizationId: number,
+  modelYear: ModelYear,
+): Promise<DataOrErrorActionResponse<string>> => {
+  const { userIsGov } = await getUserInfo();
+  if (!userIsGov) {
+    return getErrorActionResponse("Unauthorized!");
+  }
+  const reassessment = await prisma.reassessment.findFirst({
+    where: {
+      organizationId,
+      modelYear,
+    },
+    orderBy: {
+      sequenceNumber: "desc",
+    },
+  });
+  if (!reassessment) {
+    return getErrorActionResponse("Reassessment not found!");
+  }
+  const url = await getPresignedGetObjectUrl(
+    getReportFullObjectName(
+      reassessment.organizationId,
+      "assessment",
+      reassessment.objectName,
+    ),
+  );
+  return getDataActionResponse(url);
+};
+
+export const returnReassessment = async (
+  id: number,
+  comment?: string,
+): Promise<ErrorOrSuccessActionResponse> => {
+  const { userIsGov, userId, userRoles } = await getUserInfo();
+  if (!userIsGov || !userRoles.includes(Role.DIRECTOR)) {
+    return getErrorActionResponse("Unauthorized!");
+  }
+  const reassessment = await prisma.reassessment.findUnique({
+    where: {
+      id,
+      status: ReassessmentStatus.SUBMITTED_TO_DIRECTOR,
+    },
+  });
+  if (!reassessment) {
+    return getErrorActionResponse("Valid Reassessment not found!");
+  }
+  await prisma.$transaction(async (tx) => {
+    await tx.reassessment.update({
+      where: {
+        id: reassessment.id,
+      },
+      data: {
+        status: ReassessmentStatus.RETURNED_TO_ANALYST,
+      },
+    });
+    await createReassessmentHistory(
+      reassessment.id,
+      userId,
+      ReassessmentStatus.RETURNED_TO_ANALYST,
+      comment,
+      tx,
+    );
+  });
+  return getSuccessActionResponse();
+};
+
+export const directorReassess = async (
+  id: number,
+  assessmentPayload: AssessmentPayload,
+  comment?: string,
+): Promise<ErrorOrSuccessActionResponse> => {
+  const { userIsGov, userId, userRoles } = await getUserInfo();
+  if (!userIsGov || !userRoles.includes(Role.DIRECTOR)) {
+    return getErrorActionResponse("Unauthorized!");
+  }
+  const reassessment = await prisma.reassessment.findUnique({
+    where: {
+      id,
+      status: ReassessmentStatus.SUBMITTED_TO_DIRECTOR,
+    },
+  });
+  if (!reassessment) {
+    return getErrorActionResponse("Valid Reassessment not found!");
+  }
+  const organizationId = reassessment.organizationId;
+  const modelYear = reassessment.modelYear;
+  const reassessableMyr = await getReassessableMyr(organizationId, modelYear);
+  if (reassessableMyr.myrId === null || reassessableMyr.isLegacy === null) {
+    throw new Error("Associated MYR not found or is not reassessable!");
+  }
+  const myrId = reassessableMyr.myrId;
+  const isLegacy = reassessableMyr.isLegacy;
+  const complianceDate = getComplianceDate(modelYear);
+  await prisma.$transaction(async (tx) => {
+    const salesOrSupplyUpsertData = {
+      where: {
+        organizationId_modelYear: {
+          organizationId,
+          modelYear,
+        },
+      },
+      create: {
+        organizationId,
+        modelYear,
+        volume: assessmentPayload.nv,
+      },
+      update: {
+        volume: assessmentPayload.nv,
+      },
+    };
+    if (modelYear < ModelYear.MY_2024) {
+      await tx.legacySalesVolume.upsert(salesOrSupplyUpsertData);
+    } else {
+      await tx.supplyVolume.upsert(salesOrSupplyUpsertData);
+    }
+    await tx.zevUnitTransaction.deleteMany({
+      where: {
+        organizationId,
+        referenceType: ReferenceType.OBLIGATION_REDUCTION,
+        modelYear,
+      },
+    });
+    await tx.zevUnitTransaction.createMany({
+      data: assessmentPayload.transactions.map((transaction) => {
+        return {
+          ...transaction,
+          organizationId,
+          referenceId: isLegacy ? null : myrId,
+          legacyReferenceId: isLegacy ? myrId : null,
+          timestamp: complianceDate,
+        };
+      }),
+    });
+    await tx.zevUnitEndingBalance.deleteMany({
+      where: {
+        organizationId,
+        complianceYear: modelYear,
+      },
+    });
+    await tx.zevUnitEndingBalance.createMany({
+      data: assessmentPayload.endingBalance.map((record) => {
+        return { ...record, organizationId, complianceYear: modelYear };
+      }),
+    });
+    await tx.reassessment.update({
+      where: {
+        id: reassessment.id,
+      },
+      data: {
+        status: ReassessmentStatus.ISSUED,
+      },
+    });
+    await createReassessmentHistory(
+      reassessment.id,
+      userId,
+      ReassessmentStatus.ISSUED,
+      comment,
+      tx,
+    );
+  });
+  return getSuccessActionResponse();
 };

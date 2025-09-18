@@ -24,7 +24,8 @@ export enum AssessmentTemplate {
   EndingBalanceSheetName = "Section 19(1)(b)",
   OffsetsAndTransfersAwaySheetName = "Section 19(1)(c) - Part 1",
   CreditsSheetName = "Section 19(1)(c) - Part 2",
-  AdjustmentsSheetName = "Section 19(1)(e)",
+  PreviousAdjustmentsSheetName = "Section 19(1)(e) - Previous",
+  CurrentAdjustmentsSheetName = "Section 19(1)(e) - Current",
   PenaltySheetName = "Section 19(1)(f)",
 }
 

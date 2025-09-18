@@ -69,3 +69,7 @@ export const getComplianceDate = (modelYear: ModelYear): Date => {
   const year = getAdjacentYear("next", modelYear);
   return new Date(`${modelYearsMap[year]}-09-30T23:59:59`);
 };
+
+export const getDominatedComplianceYears = (complianceYear: ModelYear) => {
+  return Object.values(ModelYear).filter((cy) => cy < complianceYear);
+};
