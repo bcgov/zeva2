@@ -43,28 +43,6 @@ export type AgreementPutObjectData = {
 };
 
 /**
- * Get presigned URLs for uploading files.
- * @param numberOfFiles - The number of files to upload.
- * @returns A promise that resolves to an array of presigned URLs.
- */
-export const getPutObjectData = async (
-  numberOfFiles: number,
-): Promise<AgreementPutObjectData[]> => {
-  const result: AgreementPutObjectData[] = [];
-  for (let i = 0; i < numberOfFiles; i++) {
-    const objectName = randomUUID();
-    const url = await getPresignedPutObjectUrl(
-      getAgreementAttachmentFullObjectName(objectName),
-    );
-    result.push({
-      objectName,
-      url,
-    });
-  }
-  return result;
-};
-
-/**
  * Upsert changes to an existing agreement in the database.
  * @param data - The agreement data to save.
  * @param files - The file attachments to upload.
@@ -202,6 +180,28 @@ export const addComment = async (agreementId: number, comment: string) => {
     console.error("Error adding comment:", (error as Error).message);
     return null;
   }
+};
+
+/**
+ * Get presigned URLs for uploading files.
+ * @param numberOfFiles - The number of files to upload.
+ * @returns A promise that resolves to an array of presigned URLs.
+ */
+export const getPutObjectData = async (
+  numberOfFiles: number,
+): Promise<AgreementPutObjectData[]> => {
+  const result: AgreementPutObjectData[] = [];
+  for (let i = 0; i < numberOfFiles; i++) {
+    const objectName = randomUUID();
+    const url = await getPresignedPutObjectUrl(
+      getAgreementAttachmentFullObjectName(objectName),
+    );
+    result.push({
+      objectName,
+      url,
+    });
+  }
+  return result;
 };
 
 /**
