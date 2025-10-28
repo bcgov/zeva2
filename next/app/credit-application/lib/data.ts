@@ -221,3 +221,42 @@ export const getApplicationHistories = async (
     },
   });
 };
+
+export type ModelMismatchesMap = Partial<
+  Record<string, Partial<Record<string, number>>>
+>;
+
+export const getModelMismatchesMap = async (
+  creditApplicationId: number,
+): Promise<ModelMismatchesMap> => {
+  const result: ModelMismatchesMap = {};
+  const { userIsGov } = await getUserInfo();
+  if (!userIsGov) {
+    return {};
+  }
+  const records = await prisma.creditApplicationRecord.findMany({
+    where: {
+      creditApplicationId,
+    },
+    select: {
+      modelName: true,
+      icbcModelName: true,
+    },
+  });
+  records.forEach((record) => {
+    const modelName = record.modelName;
+    const icbcModelName = record.icbcModelName;
+    if (!icbcModelName) {
+      return;
+    }
+    if (!result[modelName]) {
+      result[modelName] = {};
+      result[modelName][icbcModelName] = 0;
+    }
+    if (!result[modelName][icbcModelName]) {
+      result[modelName][icbcModelName] = 0;
+    }
+    result[modelName][icbcModelName] = result[modelName][icbcModelName] + 1;
+  });
+  return result;
+};
