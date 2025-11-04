@@ -27,7 +27,7 @@ jobs:
         id: cache
         uses: actions/cache@v4.2.0
         with:
-          path: /usr/local/bin/oc  # Path where the `oc` binary will be installed
+          path: /usr/local/bin/oc # Path where the `oc` binary will be installed
           key: oc-cli-${{ runner.os }}
 
       - name: Install OpenShift CLI (if not cached)
@@ -57,7 +57,7 @@ jobs:
         with:
           path: /usr/local/bin/oc
           key: oc-cli-${{ runner.os }}
-          
+
       - name: Log in to Openshift
         uses: redhat-actions/oc-login@v1.3
         with:
@@ -72,5 +72,7 @@ jobs:
           helm -n ${{ env.DEV_NAMESPACE }} uninstall zeva2-bullmq-dev-${{ env.PR_NUMBER }} || true
           helm -n ${{ env.DEV_NAMESPACE }} uninstall zeva2-postgresql-dev-${{ env.PR_NUMBER }} || true
           helm -n ${{ env.DEV_NAMESPACE }} uninstall zeva2-redis-dev-${{ env.PR_NUMBER }} || true
+          helm -n ${{ env.DEV_NAMESPACE }} uninstall zeva2-minio-dev-${{ env.PR_NUMBER }} || true
           oc -n ${{ env.DEV_NAMESPACE }} delete pvc -l app.kubernetes.io/instance=zeva2-postgresql-dev-${{ env.PR_NUMBER }} || true
           oc -n ${{ env.DEV_NAMESPACE }} delete pvc -l app.kubernetes.io/instance=zeva2-redis-dev-${{ env.PR_NUMBER }} || true
+          oc -n ${{ env.DEV_NAMESPACE }} delete pvc -l app.kubernetes.io/instance=zeva2-minio-dev-${{ env.PR_NUMBER }} || true
