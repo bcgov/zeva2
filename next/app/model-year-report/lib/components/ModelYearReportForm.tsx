@@ -10,25 +10,26 @@ import {
   getForecastTemplateUrl,
   getMyrData,
   getMyrTemplateUrl,
-  getPutReportData,
   NvValues,
-  resubmitReports,
   submitReports,
 } from "../actions";
 import {
+  generateMyr,
   getZevClassOrdering,
   validateNvValues,
-  downloadMyr,
 } from "../utilsClient";
+import { bytesToBase64 } from "@/app/lib/utils/base64";
 import { downloadBuffer } from "@/app/lib/utils/download";
 import { Dropzone } from "@/app/lib/components/Dropzone";
-import { FileWithPath } from "react-dropzone";
 import { SupplierZevClassChoice } from "../constants";
 import { MyrNvValues } from "./MyrNvValues";
 import { ZevClassSelect } from "./ZevClassSelect";
 import { Routes } from "@/app/lib/constants";
 import { CommentBox } from "@/app/lib/components/inputs/CommentBox";
 import { getNormalizedComment } from "@/app/credit-application/lib/utils";
+import { Workbook } from "exceljs";
+import { ParsedMyr, parseMyr } from "../utils";
+import { ParsedModelYearReport } from "./ParsedModelYearReport";
 
 export const ModelYearReportForm = (props: {
   orgName: string;
@@ -41,8 +42,8 @@ export const ModelYearReportForm = (props: {
   const [nvValues, setNvValues] = useState<NvValues>({});
   const [zevClassSelection, setZevClassSelection] =
     useState<SupplierZevClassChoice>(ZevClass.B);
-  const [myrs, setMyrs] = useState<FileWithPath[]>([]);
-  const [forecasts, setForecasts] = useState<FileWithPath[]>([]);
+  const [myr, setMyr] = useState<[Workbook, ParsedMyr] | null>(null);
+  const [forecasts, setForecasts] = useState<File[]>([]);
   const [comment, setComment] = useState<string>("");
 
   const modelYearsMap = useMemo(() => {
@@ -82,13 +83,14 @@ export const ModelYearReportForm = (props: {
           responseType: "arraybuffer",
         });
         const template = templateResponse.data;
-        await downloadMyr(
+        const workbook = await generateMyr(
           template,
           myrDataResponse.data,
           zevClassSelection,
-          props.orgName,
           props.modelYear,
         );
+        const parsedMyr = parseMyr(workbook);
+        setMyr([workbook, parsedMyr]);
       } catch (e) {
         if (e instanceof Error) {
           setError(e.message);
@@ -96,6 +98,13 @@ export const ModelYearReportForm = (props: {
       }
     });
   }, [props.modelYear, nvValues, zevClassSelection, props.orgName]);
+
+  const handleClearMyr = useCallback(() => {
+    setError("");
+    startTransition(() => {
+      setMyr(null);
+    });
+  }, []);
 
   const handleDownloadForecastTemplate = useCallback(() => {
     setError("");
@@ -119,31 +128,18 @@ export const ModelYearReportForm = (props: {
     setError("");
     startTransition(async () => {
       try {
-        if (myrs.length !== 1 || forecasts.length !== 1) {
-          throw new Error(
-            "Exactly 1 Model Year Report and exactly 1 Forecast Report expected!",
-          );
+        if (!myr) {
+          throw new Error("You must generate a Model Year Report!");
         }
-        const myr = myrs[0];
-        const forecast = forecasts[0];
-        const putData = await getPutReportData();
-        await Promise.all([
-          axios.put(putData.myr.url, myr),
-          axios.put(putData.forecast.url, forecast),
-        ]);
-        const payload: [string, string, string, string, string | undefined] = [
-          putData.myr.objectName,
-          myr.name,
-          putData.forecast.objectName,
-          forecast.name,
+        if (forecasts.length !== 1) {
+          throw new Error("Exactly 1 Forecast Report expected!");
+        }
+        const response = await submitReports(
+          props.modelYear,
+          bytesToBase64(await myr[0].xlsx.writeBuffer()),
+          bytesToBase64(await forecasts[0].arrayBuffer()),
           getNormalizedComment(comment),
-        ];
-        let response;
-        if (props.modelYearReportId) {
-          response = await resubmitReports(props.modelYearReportId, ...payload);
-        } else {
-          response = await submitReports(props.modelYear, ...payload);
-        }
+        );
         if (response.responseType === "error") {
           throw new Error(response.message);
         } else if (response.responseType === "data") {
@@ -159,11 +155,10 @@ export const ModelYearReportForm = (props: {
         }
       }
     });
-  }, [props.modelYear, props.modelYearReportId, myrs, forecasts, comment]);
+  }, [props.modelYear, props.modelYearReportId, myr, forecasts, comment]);
 
   return (
     <div>
-      {error && <p className="text-red-600">{error}</p>}
       <div className="flex items-center py-2 my-2">
         <label className="w-72" htmlFor="modelYear">
           Model Year
@@ -179,7 +174,7 @@ export const ModelYearReportForm = (props: {
       <MyrNvValues
         nvValues={nvValues}
         handleChange={handleNvValuesChange}
-        disabled={isPending}
+        disabled={isPending || myr !== null}
       />
       <div className="flex items-center py-2 my-2">
         <p>
@@ -191,31 +186,25 @@ export const ModelYearReportForm = (props: {
         <ZevClassSelect
           zevClassSelection={zevClassSelection}
           handleChange={handleZevClassSelect}
-          disabled={isPending}
+          disabled={isPending || myr !== null}
         />
       </div>
       <div className="flex space-x-2">
-        <Button onClick={handleGenerateReport} disabled={isPending}>
-          {isPending ? "..." : "Generate and Download Model Year Report"}
-        </Button>
+        {myr ? (
+          <Button onClick={handleClearMyr} disabled={isPending}>
+            {isPending ? "..." : "Clear Generated Report"}
+          </Button>
+        ) : (
+          <Button onClick={handleGenerateReport} disabled={isPending}>
+            {isPending ? "..." : "Generate your Model Year Report"}
+          </Button>
+        )}
       </div>
+      {myr && <ParsedModelYearReport myr={myr[1]} />}
       <div className="flex space-x-2">
         <Button onClick={handleDownloadForecastTemplate} disabled={isPending}>
           {isPending ? "..." : "Download Forecast Report Template"}
         </Button>
-      </div>
-      <div className="flex items-center space-x-4">
-        <span>Upload your Model Year Report here:</span>
-        <Dropzone
-          files={myrs}
-          setFiles={setMyrs}
-          disabled={isPending}
-          maxNumberOfFiles={1}
-          allowedFileTypes={{
-            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet":
-              [".xlsx"],
-          }}
-        />
       </div>
       <div className="flex items-center space-x-4">
         <span>Upload your Forecast Report here:</span>
@@ -235,6 +224,7 @@ export const ModelYearReportForm = (props: {
         setComment={setComment}
         disabled={isPending}
       />
+      {error && <p className="text-red-600">{error}</p>}
       <div className="flex space-x-2">
         <Button onClick={handleSubmit} disabled={isPending}>
           {isPending ? "..." : "Submit"}

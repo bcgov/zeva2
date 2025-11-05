@@ -1,4 +1,8 @@
-import Excel from "exceljs";
+// Do not import, directly or indirectly, Prisma's node version of Decimal here;
+// use its browser version instead!
+
+import { Decimal } from "@/prisma/generated/client/runtime/index-browser";
+import Excel, { Workbook } from "exceljs";
 import {
   BalanceType,
   ModelYear,
@@ -19,7 +23,6 @@ import {
   AssessmentData,
   AssessmentPayload,
 } from "./actions";
-import { Decimal } from "@/prisma/generated/client/runtime/index-browser";
 import {
   AssessmentTemplate,
   divisors,
@@ -40,7 +43,6 @@ import {
   getVehicleClassEnumsToStringsMap,
   getZevClassEnumsToStringsMap,
 } from "@/app/lib/utils/enumMaps";
-import { downloadBuffer } from "@/app/lib/utils/download";
 import { Adjustment } from "./components/Adjustments";
 import {
   isModelYear,
@@ -49,7 +51,7 @@ import {
   isZevClass,
 } from "@/app/lib/utils/typeGuards";
 import { SupplierClass } from "@/app/lib/constants/complianceRatio";
-import { ComplianceInfo } from "./utils";
+import { ComplianceInfo } from "./utilsServer";
 import { AssessmentResultData } from "./components/AssessmentResult";
 
 export const getZevClassOrdering = (
@@ -68,8 +70,12 @@ export const validateNvValues = (nvValues: NvValues) => {
     throw new Error("NV value for Reportable vehicles not found!");
   }
   Object.values(nvValues).forEach((value) => {
-    const valueDecimal = new Decimal(value);
-    if (!valueDecimal.isInteger()) {
+    try {
+      const valueDecimal = new Decimal(value);
+      if (!valueDecimal.isInteger()) {
+        throw new Error();
+      }
+    } catch (e) {
       throw new Error("Invalid NV value!");
     }
   });
@@ -115,68 +121,74 @@ export const getInverseHelpingMaps = (): InverseHelpingMaps => {
   };
 };
 
-export const downloadMyr = async (
+export const generateMyr = async (
   template: Excel.Buffer,
   myrData: MyrData,
   priorityZevClass: SupplierZevClassChoice,
-  orgName: string,
   modelYear: ModelYear,
 ) => {
   const workbook = new Excel.Workbook();
   await workbook.xlsx.load(template);
   const modelYearSheet = workbook.getWorksheet(MyrTemplate.ModelYearSheetName);
+  const zevClassOrderingSheet = workbook.getWorksheet(
+    MyrTemplate.ZevClassOrderingSheetName,
+  );
   const supplierDetailsSheet = workbook.getWorksheet(
     MyrTemplate.SupplierDetailsSheetName,
-  );
-  const prevBalanceSheet = workbook.getWorksheet(
-    MyrTemplate.PrevBalanceSheetName,
   );
   const complianceReductionsSheet = workbook.getWorksheet(
     MyrTemplate.ComplianceReductionsSheetName,
   );
-  const priorityZevClassSheet = workbook.getWorksheet(
-    MyrTemplate.PriorityZevClassSheetName,
+  const prevBalanceSheet = workbook.getWorksheet(
+    MyrTemplate.PrevBalanceSheetName,
   );
+  const creditsSheet = workbook.getWorksheet(MyrTemplate.CreditsSheetName);
   const offsetsAndTransfersAwaySheet = workbook.getWorksheet(
     MyrTemplate.OffsetsAndTransfersAwaySheetName,
   );
-  const creditsSheet = workbook.getWorksheet(MyrTemplate.CreditsSheetName);
+  const prelimEndingBalanceSheet = workbook.getWorksheet(
+    MyrTemplate.PreliminaryEndingBalance,
+  );
   if (
     !modelYearSheet ||
+    !zevClassOrderingSheet ||
     !supplierDetailsSheet ||
-    !prevBalanceSheet ||
     !complianceReductionsSheet ||
-    !priorityZevClassSheet ||
+    !prevBalanceSheet ||
+    !creditsSheet ||
     !offsetsAndTransfersAwaySheet ||
-    !creditsSheet
+    !prelimEndingBalanceSheet
   ) {
     throw new Error("Invalid Template!");
   }
   const helpingMaps = getHelpingMaps();
   writeModelYear(modelYearSheet, modelYear, helpingMaps);
+  writeZevClassOrdering(zevClassOrderingSheet, priorityZevClass, helpingMaps);
   writeSupplierDetails(supplierDetailsSheet, myrData.supplierData);
-  writeBalance(prevBalanceSheet, myrData.prevEndingBalance, helpingMaps);
   writeComplianceReductions(
     complianceReductionsSheet,
     myrData.complianceReductions,
     helpingMaps,
   );
-  writePriorityZevClass(priorityZevClassSheet, priorityZevClass);
-  writeOffsetsAndTransfersAway(
-    offsetsAndTransfersAwaySheet,
-    myrData.offsets,
-    myrData.currentTransactions,
-    helpingMaps,
-  );
+  writeBalance(prevBalanceSheet, myrData.prevEndingBalance, helpingMaps);
   writeCredits(
     creditsSheet,
     myrData.currentTransactions,
     helpingMaps,
     new Set(),
   );
-  const fileName = `myr-${orgName.replaceAll(" ", "-")}-${helpingMaps.modelYearsMap[modelYear]}.xlsx`;
-  const buffer = await workbook.xlsx.writeBuffer();
-  downloadBuffer(fileName, buffer);
+  writeOffsetsAndTransfersAway(
+    offsetsAndTransfersAwaySheet,
+    myrData.offsets,
+    myrData.currentTransactions,
+    helpingMaps,
+  );
+  writeBalance(
+    prelimEndingBalanceSheet,
+    myrData.prelimEndingBalance,
+    helpingMaps,
+  );
+  return workbook;
 };
 
 const writeModelYear = (
@@ -239,11 +251,16 @@ const writeComplianceReductions = (
   });
 };
 
-const writePriorityZevClass = (
+const writeZevClassOrdering = (
   sheet: Excel.Worksheet,
   priorityZevClass: SupplierZevClassChoice,
+  helpingMaps: MyrHelpingMaps,
 ) => {
-  sheet.addRow([priorityZevClass]);
+  const zevClassOrdering = getZevClassOrdering(priorityZevClass);
+  const finalOrdering = zevClassOrdering.map(
+    (zevClass) => helpingMaps.zevClassesMap[zevClass],
+  );
+  sheet.addRow([finalOrdering.join(", ")]);
 };
 
 const writeOffsetsAndTransfersAway = (
@@ -256,8 +273,6 @@ const writeOffsetsAndTransfersAway = (
     if (record.type === TransactionType.TRANSFER_AWAY) {
       sheet.addRow([
         "Transfer Away",
-        record.referenceId,
-        record.legacyReferenceId,
         helpingMaps.vehicleClassesMap[record.vehicleClass],
         helpingMaps.zevClassesMap[record.zevClass],
         helpingMaps.modelYearsMap[record.modelYear],
@@ -268,8 +283,6 @@ const writeOffsetsAndTransfersAway = (
   offsets.forEach((record) => {
     sheet.addRow([
       "Offset",
-      "",
-      "",
       helpingMaps.vehicleClassesMap[record.vehicleClass],
       helpingMaps.zevClassesMap[record.zevClass],
       helpingMaps.modelYearsMap[record.modelYear],
@@ -291,8 +304,6 @@ const writeCredits = (
     ) {
       sheet.addRow([
         helpingMaps.referenceTypesMap[record.referenceType],
-        record.referenceId,
-        record.legacyReferenceId,
         helpingMaps.vehicleClassesMap[record.vehicleClass],
         helpingMaps.zevClassesMap[record.zevClass],
         helpingMaps.modelYearsMap[record.modelYear],
@@ -342,14 +353,13 @@ export const getAdjustmentsPayload = (
   return result;
 };
 
-export const downloadAssessment = async (
+export const generateAssessment = async (
   template: Excel.Buffer,
   assessmentData: AssessmentData,
   priorityZevClass: SupplierZevClassChoice,
   adjustments: AdjustmentPayload[],
   orgName: string,
   modelYear: ModelYear,
-  isReassessment: boolean,
 ) => {
   const workbook = new Excel.Workbook();
   await workbook.xlsx.load(template);
@@ -432,9 +442,7 @@ export const downloadAssessment = async (
   );
   writeAdjustments(currentAdjustmentsSheet, adjustments, helpingMaps);
   writePenalty(penaltySheet, assessmentData.complianceInfo, orgName);
-  const fileName = `${isReassessment ? "re" : ""}assessment-${orgName.replaceAll(" ", "-")}-${helpingMaps.modelYearsMap[modelYear]}.xlsx`;
-  const buffer = await workbook.xlsx.writeBuffer();
-  downloadBuffer(fileName, buffer);
+  return workbook;
 };
 
 const writeAssessmentDetails = (
@@ -502,15 +510,13 @@ const writePenalty = (
   }
 };
 
-export const parseAssessment = async (
-  file: ArrayBuffer,
+export const parseAssessment = (
+  workbook: Workbook,
   modelYear: ModelYear,
-): Promise<AssessmentResultData> => {
+): AssessmentResultData => {
   let nv: string | undefined;
   const transactions: Partial<Record<string, string>>[] = [];
   const endingBalance: Partial<Record<string, string>>[] = [];
-  const workbook = new Excel.Workbook();
-  await workbook.xlsx.load(file);
   const reductionsSheet = workbook.getWorksheet(
     AssessmentTemplate.ComplianceReductionsSheetName,
   );

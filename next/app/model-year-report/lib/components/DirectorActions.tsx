@@ -6,11 +6,11 @@ import { ModelYear, ModelYearReportStatus } from "@/prisma/generated/client";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState, useTransition } from "react";
 import {
-  directorAssess,
-  directorReassess,
+  assessModelYearReport,
+  issueReassessment,
   getDownloadAssessmentUrl,
   getDownloadLatestReassessmentUrl,
-  handleReturns,
+  returnModelYearReport,
   returnReassessment,
 } from "../actions";
 import { getNormalizedComment } from "@/app/credit-application/lib/utils";
@@ -73,7 +73,7 @@ export const DirectorActions = (props: {
     startTransition(async () => {
       try {
         if (props.assessableReassessmentId === null) {
-          await handleReturns(
+          await returnModelYearReport(
             props.id,
             ModelYearReportStatus.RETURNED_TO_ANALYST,
             getNormalizedComment(comment),
@@ -100,13 +100,13 @@ export const DirectorActions = (props: {
         if (assessmentResult) {
           const payload = getAssessmentPayload(assessmentResult);
           if (props.assessableReassessmentId === null) {
-            await directorAssess(
+            await assessModelYearReport(
               props.id,
               payload,
               getNormalizedComment(comment),
             );
           } else {
-            directorReassess(
+            issueReassessment(
               props.assessableReassessmentId,
               payload,
               getNormalizedComment(comment),

@@ -11,32 +11,31 @@ import {
 import { useRouter } from "next/navigation";
 import { useCallback, useMemo, useState, useTransition } from "react";
 import { SupplierZevClassChoice } from "../constants";
-import { FileWithPath } from "react-dropzone";
 import {
   getAssessmentData,
   getAssessmentTemplateUrl,
-  getPutAssessmentData,
   NvValues,
-  submitAssessmentToDirector,
-  submitReassessmentToDirector,
+  submitAssessment,
+  submitReassessment,
 } from "../actions";
 import { getModelYearEnumsToStringsMap } from "@/app/lib/utils/enumMaps";
 import { MyrNvValues } from "./MyrNvValues";
 import { ZevClassSelect } from "./ZevClassSelect";
 import { Button } from "@/app/lib/components";
-import { Dropzone } from "@/app/lib/components/Dropzone";
 import {
-  downloadAssessment,
+  generateAssessment,
   getAdjustmentsPayload,
   getZevClassOrdering,
   parseAssessment,
   validateNvValues,
 } from "../utilsClient";
+import { bytesToBase64 } from "@/app/lib/utils/base64";
 import { Adjustment, Adjustments } from "./Adjustments";
 import { AssessmentResult, AssessmentResultData } from "./AssessmentResult";
 import { CommentBox } from "@/app/lib/components/inputs/CommentBox";
 import { Routes } from "@/app/lib/constants";
 import { getNormalizedComment } from "@/app/credit-application/lib/utils";
+import { Workbook } from "exceljs";
 
 export const AssessmentForm = (props: {
   id: number;
@@ -53,7 +52,7 @@ export const AssessmentForm = (props: {
   const [zevClassSelection, setZevClassSelection] =
     useState<SupplierZevClassChoice>(ZevClass.B);
   const [adjustments, setAdjustments] = useState<Adjustment[]>([]);
-  const [assessments, setAssessments] = useState<FileWithPath[]>([]);
+  const [assessment, setAssessment] = useState<Workbook | null>(null);
   const [assessmentResult, setAssessmentResult] = useState<
     AssessmentResultData | undefined
   >();
@@ -140,15 +139,17 @@ export const AssessmentForm = (props: {
           responseType: "arraybuffer",
         });
         const template = templateResponse.data;
-        await downloadAssessment(
+        const assessment = await generateAssessment(
           template,
           assessmentResponse.data,
           zevClassSelection,
           adjustmentsPayload,
           props.orgName,
           props.modelYear,
-          props.isReassessment,
         );
+        const assessmentResult = parseAssessment(assessment, props.modelYear);
+        setAssessment(assessment);
+        setAssessmentResult(assessmentResult);
       } catch (e) {
         if (e instanceof Error) {
           setError(e.message);
@@ -165,52 +166,28 @@ export const AssessmentForm = (props: {
     adjustments,
   ]);
 
-  const handleAssessmentDrop = useCallback(
-    async (files: File[]) => {
-      setError("");
-      try {
-        const file = await files[0].arrayBuffer();
-        const data = await parseAssessment(file, props.modelYear);
-        setAssessmentResult(data);
-      } catch (e) {
-        setError("Error parsing uploaded assessment!");
-      }
-    },
-    [props.modelYear],
-  );
-
-  const handleAssessmentRemove = useCallback(() => {
-    setAssessmentResult(undefined);
-  }, []);
-
   const handleSubmit = useCallback(() => {
     setError("");
     startTransition(async () => {
       try {
-        if (assessments.length !== 1 || !assessmentResult) {
+        if (assessment === null) {
           throw new Error("Exactly 1 valid Assessment expected!");
         }
-        const assessment = assessments[0];
-        const putDataResponse = await getPutAssessmentData(props.orgId);
-        if (putDataResponse.responseType === "error") {
-          throw new Error(putDataResponse.message);
-        }
-        await axios.put(putDataResponse.data.url, assessment);
         let submitResponse;
+        const assessmentBase64 = bytesToBase64(
+          await assessment.xlsx.writeBuffer(),
+        );
         if (props.isReassessment) {
-          submitResponse = await submitReassessmentToDirector(
+          submitResponse = await submitReassessment(
             props.orgId,
             props.modelYear,
-            putDataResponse.data.objectName,
-            assessment.name,
+            assessmentBase64,
             getNormalizedComment(comment),
           );
         } else {
-          submitResponse = await submitAssessmentToDirector(
+          submitResponse = await submitAssessment(
             props.id,
-            props.orgId,
-            putDataResponse.data.objectName,
-            assessment.name,
+            assessmentBase64,
             getNormalizedComment(comment),
           );
         }
@@ -225,7 +202,7 @@ export const AssessmentForm = (props: {
       }
     });
   }, [
-    assessments,
+    assessment,
     assessmentResult,
     props.id,
     props.orgId,
@@ -279,21 +256,6 @@ export const AssessmentForm = (props: {
             ? "..."
             : `Generate and Download ${props.isReassessment ? "Rea" : "A"}ssessment`}
         </Button>
-      </div>
-      <div className="flex items-center space-x-4">
-        <span>{`Upload the ${props.isReassessment ? "Rea" : "A"}ssessment here:`}</span>
-        <Dropzone
-          files={assessments}
-          setFiles={setAssessments}
-          handleDrop={handleAssessmentDrop}
-          handleRemove={handleAssessmentRemove}
-          disabled={isPending}
-          maxNumberOfFiles={1}
-          allowedFileTypes={{
-            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet":
-              [".xlsx"],
-          }}
-        />
       </div>
       <div className="flex flex-col items-center space-x-4">
         <AssessmentResult

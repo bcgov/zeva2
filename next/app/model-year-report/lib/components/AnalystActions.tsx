@@ -5,7 +5,7 @@ import { Routes } from "@/app/lib/constants";
 import { ModelYearReportStatus } from "@/prisma/generated/client";
 import { useRouter } from "next/navigation";
 import { useCallback, useState, useTransition } from "react";
-import { handleReturns } from "../actions";
+import { returnModelYearReport } from "../actions";
 import { getNormalizedComment } from "@/app/credit-application/lib/utils";
 import { CommentBox } from "@/app/lib/components/inputs/CommentBox";
 
@@ -23,7 +23,7 @@ export const AnalystActions = (props: {
     setError("");
     startTransition(async () => {
       try {
-        await handleReturns(
+        await returnModelYearReport(
           props.id,
           ModelYearReportStatus.RETURNED_TO_SUPPLIER,
           getNormalizedComment(comment),

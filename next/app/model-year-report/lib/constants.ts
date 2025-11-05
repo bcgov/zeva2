@@ -3,13 +3,14 @@ import { ModelYear, ZevClass } from "@/prisma/generated/client";
 export enum MyrTemplate {
   Name = "model_year_report_template.xlsx",
   ModelYearSheetName = "Model Year",
-  SupplierDetailsSheetName = "Section 17(3)",
+  ZevClassOrderingSheetName = "ZEV Class Ordering",
+  SupplierDetailsSheetName = "Supplier Details",
   VehiclesSuppliedSheetName = "Section 17(4)",
-  PrevBalanceSheetName = "Section 17(5)(a)",
-  ComplianceReductionsSheetName = "Section 17(5)(b)",
-  PriorityZevClassSheetName = "Priority ZEV Class",
-  OffsetsAndTransfersAwaySheetName = "Section 17(5)(c)",
-  CreditsSheetName = "Section 17(5)(d)",
+  ComplianceReductionsSheetName = "Compliance Ratio Reductions",
+  PrevBalanceSheetName = "Previous Balance",
+  CreditsSheetName = "Credits",
+  OffsetsAndTransfersAwaySheetName = "Offsets and Transfers Away",
+  PreliminaryEndingBalance = "Preliminary Ending Balance",
 }
 
 export enum ForecastTemplate {
@@ -33,6 +34,7 @@ export enum ReportSubDirectory {
   ModelYearReport = "modelYearReport",
   Forecast = "forecast",
   Assessment = "assessment",
+  Reassessment = "reassessment",
 }
 
 export const supplierZevClasses = {

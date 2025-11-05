@@ -642,16 +642,22 @@ model ModelYearReport {
   modelYear                ModelYear                     @map("model_year")
   status                   ModelYearReportStatus
   supplierStatus           ModelYearReportSupplierStatus @map("supplier_status")
-  fileName                 String                        @map("file_name")
-  objectName               String                        @map("object_name")
-  forecastReportFileName   String                        @map("forecast_report_file_name")
-  forecastReportObjectName String                        @map("forecast_report_object_name")
-  assessmentFileName       String?                       @map("assessment_file_name")
-  assessmentObjectName     String?                       @map("assessment_object_name")
+  objectName               String                        @unique @map("object_name")
+  forecastReportObjectName String                        @unique @map("forecast_report_object_name")
   ModelYearReportHistory   ModelYearReportHistory[]
+  Assessment               Assessment?
 
   @@unique([organizationId, modelYear])
   @@map("model_year_report")
+}
+
+model Assessment {
+  id                Int             @id @default(autoincrement())
+  modelYearReport   ModelYearReport @relation(fields: [modelYearReportId], references: [id])
+  modelYearReportId Int             @unique @map("model_year_report_id")
+  objectName        String          @unique @map("object_name")
+
+  @@map("assessment")
 }
 
 model ModelYearReportHistory {
@@ -723,7 +729,6 @@ model Reassessment {
   organizationId      Int                   @map("organization_id")
   modelYear           ModelYear             @map("model_year")
   sequenceNumber      Int                   @map("sequence_number")
-  fileName            String                @map("file_name")
   objectName          String                @unique @map("object_name")
   ReassessmentHistory ReassessmentHistory[]
 

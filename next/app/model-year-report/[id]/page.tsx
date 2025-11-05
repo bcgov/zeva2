@@ -13,8 +13,6 @@ import {
 } from "@/prisma/generated/client";
 import { DirectorActions } from "../lib/components/DirectorActions";
 import { AnalystActions } from "../lib/components/AnalystActions";
-import { AttachmentsDownload } from "@/app/lib/components/AttachmentsDownload";
-import { getDocumentDownloadUrls } from "../lib/actions";
 
 const Page = async (props: { params: Promise<{ id: string }> }) => {
   const args = await props.params;
@@ -73,11 +71,6 @@ const Page = async (props: { params: Promise<{ id: string }> }) => {
     );
   }
 
-  const download = async () => {
-    "use server";
-    return getDocumentDownloadUrls(id);
-  };
-
   return (
     <div className="flex flex-col w-1/3">
       <ContentCard title="Model Year Report History">
@@ -88,14 +81,6 @@ const Page = async (props: { params: Promise<{ id: string }> }) => {
       <ContentCard title="Model Year Report Details">
         <Suspense fallback={<LoadingSkeleton />}>
           <ModelYearReportDetails id={id} />
-        </Suspense>
-      </ContentCard>
-      <ContentCard title="Model Year Report Documents">
-        <Suspense fallback={<LoadingSkeleton />}>
-          <AttachmentsDownload
-            download={download}
-            zipName={`model-year-report-documents-${id}`}
-          />
         </Suspense>
       </ContentCard>
       <ContentCard title="Actions">

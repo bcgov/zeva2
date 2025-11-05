@@ -7,7 +7,9 @@ import {
   Prisma,
   Role,
 } from "@/prisma/generated/client";
-import { getOrderByClause, getWhereClause } from "./utils";
+import { getOrderByClause, getWhereClause } from "./utilsServer";
+import { getObject } from "@/app/lib/minio";
+import { supplierRoles } from "@/app/users/lib/constants";
 
 export const modelYearReportExists = async (modelYear: ModelYear) => {
   const { userOrgId } = await getUserInfo();
@@ -86,7 +88,7 @@ export const getModelYearReportDetails = async (id: number) => {
   if (!userIsGov) {
     whereClause.organizationId = userOrgId;
   }
-  return await prisma.modelYearReport.findUnique({
+  const myr = await prisma.modelYearReport.findUnique({
     where: whereClause,
     select: {
       organization: {
@@ -96,9 +98,21 @@ export const getModelYearReportDetails = async (id: number) => {
       },
       status: true,
       supplierStatus: true,
-      modelYear: true,
+      objectName: true,
+      forecastReportObjectName: true,
     },
   });
+  if (!myr) {
+    return null;
+  }
+  const myrFile = await getObject(myr.objectName);
+  const forecastFile = await getObject(myr.forecastReportObjectName);
+  return {
+    status: myr.status,
+    supplierStatus: myr.supplierStatus,
+    myrFile,
+    forecastFile,
+  };
 };
 
 export type MyrSparse = {
