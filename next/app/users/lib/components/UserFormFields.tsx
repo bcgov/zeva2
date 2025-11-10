@@ -5,7 +5,8 @@ import {
   getRoleEnumsToStringsMap,
 } from "@/app/lib/utils/enumMaps";
 import { Notification, Role } from "@/prisma/generated/client";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
+import Modal from "../../../lib/components/Modal";
 
 export function UserFormFields({
   form,
@@ -42,6 +43,31 @@ export function UserFormFields({
   const notificationsMap = useMemo(() => {
     return getNotificationEnumsToStringsMap();
   }, []);
+
+  const isActive = form.isActive === "true";
+  const [showStatusModal, setShowStatusModal] = useState(false);
+  const [pendingActive, setPendingActive] = useState<boolean | null>(null);
+
+  const handleActiveIntent = (nextChecked: boolean) => {
+    setPendingActive(nextChecked);
+    setShowStatusModal(true);
+  };
+
+  const cancelStatusChange = () => {
+    setShowStatusModal(false);
+    setPendingActive(null);
+  };
+
+  const confirmStatusChange = () => {
+    if (pendingActive === null) return;
+    onChange("isActive", pendingActive ? "true" : "false");
+    setShowStatusModal(false);
+    setPendingActive(null);
+  };
+
+  const modalTitle = pendingActive ? "Confirm: Activate User" : "Confirm: Deactivate User";
+  const modalConfirmLabel = pendingActive ? "Activate" : "Deactivate";
+  const modalConfirmClass = pendingActive ? "btn-primary" : "btn-danger";
 
   return (
     <>
@@ -88,12 +114,19 @@ export function UserFormFields({
           type="checkbox"
           name="isActive"
           value="true"
-          checked={form.isActive === "true"}
-          onChange={(e) =>
-            onChange(e.target.name, e.target.checked ? "true" : "false")
-          }
+          checked={isActive}
+          onChange={(e) => handleActiveIntent(e.target.checked)}
         />
       </div>
+      <Modal
+        showModal={showStatusModal}
+        handleCancel={cancelStatusChange}
+        handleSubmit={confirmStatusChange}
+        title={modalTitle}
+        confirmLabel={modalConfirmLabel}
+        confirmClass={modalConfirmClass}
+        content={"Are you sure you want to update this user?"}
+      />
       <div className="flex items-center py-2 my-2">
         <label className="w-72">Roles</label>
         {availableRoles.map((role) => (
