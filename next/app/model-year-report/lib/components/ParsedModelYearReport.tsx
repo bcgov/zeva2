@@ -1,202 +1,97 @@
 import { ParsedMyr } from "../utils";
+import { ParsedComplianceReductions } from "./ParsedComplianceReductions";
+import { ParsedZevUnitRecords } from "./ParsedZevUnitRecords";
 
 export const ParsedModelYearReport = (props: { myr: ParsedMyr }) => {
-  const tableClasses = {
-    table: "w-full text-left",
-    caption: "text-left",
-    th: "border border-gray-300",
-    td: "border border-gray-300",
-  };
-
-  const getRecordsTable = (
-    key: string,
-    caption: string,
-    zevUnits: Partial<Record<string, string>>[],
-  ) => {
-    const recordsJSX = zevUnits.map((record) => {
-      return (
-        <tr key={crypto.randomUUID()}>
-          <td key="type" className={tableClasses.td}>
-            {record.type}
-          </td>
-          <td key="vehicleClass" className={tableClasses.td}>
-            {record.vehicleClass}
-          </td>
-          <td key="zevClass" className={tableClasses.td}>
-            {record.zevClass}
-          </td>
-          <td key="modelYear" className={tableClasses.td}>
-            {record.modelYear}
-          </td>
-          <td key="numberOfUnits" className={tableClasses.td}>
-            {record.numberOfUnits}
-          </td>
-        </tr>
-      );
-    });
-    return (
-      <table key={key} className={tableClasses.table}>
-        <caption className={tableClasses.caption}>{caption}</caption>
-        <thead>
-          <tr>
-            <th key="type" className={tableClasses.th}>
-              Type
-            </th>
-            <th key="vehicleClass" className={tableClasses.th}>
-              Vehicle Class
-            </th>
-            <th key="zevClass" className={tableClasses.th}>
-              ZEV Class
-            </th>
-            <th key="modelYear" className={tableClasses.th}>
-              Model Year
-            </th>
-            <th key="numberOfUnits" className={tableClasses.th}>
-              Number of Units
-            </th>
-          </tr>
-        </thead>
-        <tbody>{recordsJSX}</tbody>
-      </table>
-    );
-  };
-
   return (
     <div className="flex-col space-y-2">
-      <table key="base" className={tableClasses.table}>
+      <table key="details" className="w-full text-left">
         <thead>
           <tr>
-            <th key="modelYear" className={tableClasses.th}>
+            <th key="modelYear" className="border border-gray-300">
               Model Year
             </th>
-            <th key="zevClassOrdering" className={tableClasses.th}>
+            <th key="zevClassOrdering" className="border border-gray-300">
               ZEV Class Ordering
             </th>
           </tr>
         </thead>
         <tbody>
           <tr>
-            <td key="modelYear" className={tableClasses.td}>
-              {props.myr.modelYear}
+            <td key="modelYear" className="border border-gray-300">
+              {props.myr.details.modelYear}
             </td>
-            <td key="zevClassOrdering" className={tableClasses.td}>
-              {props.myr.zevClassOrdering}
+            <td key="zevClassOrdering" className="border border-gray-300">
+              {props.myr.details.zevClassOrdering}
             </td>
           </tr>
         </tbody>
       </table>
-      <table key="supplierDetails" className={tableClasses.table}>
-        <caption className={tableClasses.caption}>Supplier Details</caption>
+      <table key="supplierDetails" className="w-full text-left">
+        <caption className="text-left">Supplier Details</caption>
         <thead>
           <tr>
-            <th key="legalName" className={tableClasses.th}>
+            <th key="legalName" className="border border-gray-300">
               Legal Name
             </th>
-            <th key="makes" className={tableClasses.th}>
+            <th key="makes" className="border border-gray-300">
               Makes
             </th>
-            <th key="classification" className={tableClasses.th}>
+            <th key="classification" className="border border-gray-300">
               Classification
             </th>
-            <th key="serviceAddress" className={tableClasses.th}>
+            <th key="serviceAddress" className="border border-gray-300">
               Service Address
             </th>
-            <th key="recordsAddress" className={tableClasses.th}>
+            <th key="recordsAddress" className="border border-gray-300">
               Records Address
             </th>
           </tr>
         </thead>
         <tbody>
           <tr>
-            <td key="legalName" className={tableClasses.td}>
+            <td key="legalName" className="border border-gray-300">
               {props.myr.supplierDetails.legalName}
             </td>
-            <td key="makes" className={tableClasses.td}>
+            <td key="makes" className="border border-gray-300">
               {props.myr.supplierDetails.makes}
             </td>
-            <td key="classification" className={tableClasses.td}>
+            <td key="classification" className="border border-gray-300">
               {props.myr.supplierDetails.classification}
             </td>
-            <td key="serviceAddress" className={tableClasses.td}>
+            <td key="serviceAddress" className="border border-gray-300">
               {props.myr.supplierDetails.serviceAddress}
             </td>
-            <td key="recordsAddress" className={tableClasses.td}>
+            <td key="recordsAddress" className="border border-gray-300">
               {props.myr.supplierDetails.recordsAddress}
             </td>
           </tr>
         </tbody>
       </table>
-      <table key="complianceReductions" className={tableClasses.table}>
-        <caption className={tableClasses.caption}>
-          Compliance Reductions
-        </caption>
-        <thead>
-          <tr>
-            <th key="complianceRatio" className={tableClasses.th}>
-              Compliance Ratio
-            </th>
-            <th key="nv" className={tableClasses.th}>
-              NV
-            </th>
-            <th key="vehicleClass" className={tableClasses.th}>
-              Vehicle Class
-            </th>
-            <th key="zevClass" className={tableClasses.th}>
-              ZEV Class
-            </th>
-            <th key="modelYear" className={tableClasses.th}>
-              Model Year
-            </th>
-            <th key="numberOfUnits" className={tableClasses.th}>
-              Number of Units
-            </th>
-          </tr>
-        </thead>
-        <tbody>
-          {props.myr.complianceReductions.map((reduction) => (
-            <tr key={crypto.randomUUID()}>
-              <td key="complianceRatio" className={tableClasses.td}>
-                {reduction.complianceRatio}
-              </td>
-              <td key="nv" className={tableClasses.td}>
-                {reduction.nv}
-              </td>
-              <td key="vehicleClass" className={tableClasses.td}>
-                {reduction.vehicleClass}
-              </td>
-              <td key="zevClass" className={tableClasses.td}>
-                {reduction.zevClass}
-              </td>
-              <td key="modelYear" className={tableClasses.td}>
-                {reduction.modelYear}
-              </td>
-              <td key="numberOfUnits" className={tableClasses.td}>
-                {reduction.numberOfUnits}
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-      {getRecordsTable(
-        "prevBalance",
-        "Previous Balance",
-        props.myr.prevBalance,
-      )}
-      {getRecordsTable(
-        "credits",
-        "Credits Earned during Compliance Period",
-        props.myr.credits,
-      )}
-      {getRecordsTable(
-        "offsetsAndTransfersAway",
-        "Offsets and Transfers Away",
-        props.myr.offsetsAndTransfersAway,
-      )}
-      {getRecordsTable(
-        "prelimEndingBalance",
-        "Preliminary Ending Balance",
-        props.myr.prelimEndingBalance,
-      )}
+      <ParsedComplianceReductions
+        key="complianceReductions"
+        reductions={props.myr.complianceReductions}
+      />
+      <ParsedZevUnitRecords
+        key="beginningBalance"
+        caption="Beginning Balance"
+        records={props.myr.beginningBalance}
+      />
+      <ParsedZevUnitRecords
+        key="credits"
+        caption="Credits Earned during Compliance Period"
+        records={props.myr.credits}
+      />
+      <ParsedZevUnitRecords
+        key="offsetsAndTransfersAway"
+        caption="Offsets and Transfers Away"
+        records={props.myr.offsetsAndTransfersAway}
+      />
+      <ParsedZevUnitRecords
+        key="prelimEndingBalance"
+        caption="Preliminary Ending Balance"
+        records={props.myr.prelimEndingBalance}
+      />
     </div>
   );
 };

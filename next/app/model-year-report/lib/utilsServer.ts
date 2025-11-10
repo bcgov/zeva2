@@ -4,8 +4,10 @@
 
 import { Decimal } from "@/prisma/generated/client/runtime/library";
 import {
+  BalanceType,
   ModelYear,
   Prisma,
+  ReferenceType,
   TransactionType,
   VehicleClass,
   ZevClass,
@@ -27,12 +29,23 @@ import { penaltyRates } from "@/app/lib/constants/penaltyRate";
 import { isVehicleClass, isZevClass } from "@/app/lib/utils/typeGuards";
 import {
   getMatchingTerms,
+  getStringsToBalanceTypeEnumsMap,
   getStringsToModelYearsEnumsMap,
   getStringsToMyrStatusEnumsMap,
   getStringsToMyrSupplierStatusEnumsMap,
+  getStringsToVehicleClassEnumsMap,
+  getStringsToZevClassEnumsMap,
 } from "@/app/lib/utils/enumMaps";
 import { MyrSparse } from "./data";
 import { randomUUID } from "crypto";
+import { Workbook } from "exceljs";
+import {
+  FileFinalEndingBalanceRecord,
+  FileReductionRecord,
+  FileZevUnitRecord,
+  parseAssessment,
+  parseMyr,
+} from "./utils";
 
 export const validatePrevBalanceTransactions = (
   transactions: ZevUnitRecord[],
@@ -219,10 +232,16 @@ export const getReportFullObjectName = (
   }
 };
 
-export type ComplianceInfo = {
-  isCompliant: boolean;
-  penalty: string;
-};
+export type ComplianceInfo = Record<
+  VehicleClass,
+  [
+    VehicleClass,
+    {
+      isCompliant: boolean;
+      penalty: string;
+    },
+  ]
+>;
 
 export const getComplianceInfo = (
   supplierClass: SupplierClass,
@@ -231,19 +250,42 @@ export const getComplianceInfo = (
   endingBalance: ZevUnitRecord[],
 ): ComplianceInfo => {
   const result: ComplianceInfo = {
-    isCompliant: true,
-    penalty: "0",
+    [VehicleClass.REPORTABLE]: [
+      VehicleClass.REPORTABLE,
+      {
+        isCompliant: true,
+        penalty: "0",
+      },
+    ],
   };
   const specialZevClassPairs = getSpecialZevClassPairs();
-  let hasCredit = false;
-  let hasDebit = false;
-  let hasSpecialDebit = false;
+  const complianceMap: Record<
+    VehicleClass,
+    [
+      VehicleClass,
+      {
+        hasCredit: boolean;
+        hasDebit: boolean;
+        hasSpecialDebit: boolean;
+      },
+    ]
+  > = {
+    [VehicleClass.REPORTABLE]: [
+      VehicleClass.REPORTABLE,
+      {
+        hasCredit: false,
+        hasDebit: false,
+        hasSpecialDebit: false,
+      },
+    ],
+  };
   for (const record of endingBalance) {
+    const vehicleClass = record.vehicleClass;
     if (
       record.type === TransactionType.DEBIT &&
       !record.numberOfUnits.equals(0)
     ) {
-      hasDebit = true;
+      complianceMap[vehicleClass][1].hasDebit = true;
       if (
         record.vehicleClass === VehicleClass.REPORTABLE &&
         specialZevClassPairs.some(
@@ -252,31 +294,44 @@ export const getComplianceInfo = (
             record.zevClass === pairZevClass,
         )
       ) {
-        hasSpecialDebit = true;
+        complianceMap[vehicleClass][1].hasSpecialDebit = true;
       }
     } else if (
       record.type === TransactionType.CREDIT &&
       !record.numberOfUnits.equals(0)
     ) {
-      hasCredit = true;
+      complianceMap[vehicleClass][1].hasCredit = true;
     }
   }
-  if (
-    hasSpecialDebit &&
-    (supplierClass === "large volume supplier" ||
-      (supplierClass === "medium volume supplier" &&
-        modelYear >= ModelYear.MY_2026))
-  ) {
-    result.isCompliant = false;
-    result.penalty = getPenalty(modelYear, prevEndingBalance, endingBalance);
-  } else if (supplierClass !== "small volume supplier") {
-    if (hasDebit && !hasCredit) {
-      result.isCompliant = false;
-      result.penalty = getPenalty(modelYear, prevEndingBalance, endingBalance);
-    } else if (hasDebit && hasCredit) {
-      throw new Error("Cannot determine compliance with section 10(2)!");
+  Object.values(complianceMap).forEach(([vehicleClass, complianceData]) => {
+    const hasSpecialDebit = complianceData.hasSpecialDebit;
+    const hasDebit = complianceData.hasDebit;
+    const hasCredit = complianceData.hasCredit;
+    if (
+      hasSpecialDebit &&
+      (supplierClass === "large volume supplier" ||
+        (supplierClass === "medium volume supplier" &&
+          modelYear >= ModelYear.MY_2026))
+    ) {
+      result[vehicleClass][1].isCompliant = false;
+      result[vehicleClass][1].penalty = getPenalty(
+        modelYear,
+        prevEndingBalance,
+        endingBalance,
+      );
+    } else if (supplierClass !== "small volume supplier") {
+      if (hasDebit && !hasCredit) {
+        result[vehicleClass][1].isCompliant = false;
+        result[vehicleClass][1].penalty = getPenalty(
+          modelYear,
+          prevEndingBalance,
+          endingBalance,
+        );
+      } else if (hasDebit && hasCredit) {
+        throw new Error("Cannot determine compliance with section 10(2)!");
+      }
     }
-  }
+  });
   return result;
 };
 
@@ -396,4 +451,193 @@ export const getSerializedMyrs = (
     }
     return result;
   });
+};
+
+type DataFromParsedReduction = {
+  nvValues: [VehicleClass, Decimal][];
+  reductions: ZevUnitRecord[];
+};
+
+const parseReductionsForData = (
+  complianceReductions: FileReductionRecord[],
+): DataFromParsedReduction => {
+  const result: DataFromParsedReduction = {
+    nvValues: [],
+    reductions: [],
+  };
+  const vehicleClassesMap = getStringsToVehicleClassEnumsMap();
+  const zevClassesMap = getStringsToZevClassEnumsMap();
+  const modelYearsMap = getStringsToModelYearsEnumsMap();
+  const error = new Error("Error parsing reductions!");
+  complianceReductions.forEach((cr) => {
+    const nv = cr.nv;
+    const vehicleClass = vehicleClassesMap[cr.vehicleClass];
+    const zevClass = zevClassesMap[cr.zevClass];
+    const modelYear = modelYearsMap[cr.modelYear];
+    if (!nv || !vehicleClass || !zevClass || !modelYear) {
+      throw error;
+    }
+    try {
+      const nvDec = new Decimal(nv);
+      if (!nvDec.isInteger()) {
+        throw new Error();
+      }
+      const pair = result.nvValues.find(
+        ([elementVehicleClass]) => elementVehicleClass === vehicleClass,
+      );
+      if (pair && !pair[1].equals(nvDec)) {
+        throw new Error();
+      }
+      if (!pair) {
+        result.nvValues.push([vehicleClass, nvDec]);
+      }
+      result.reductions.push({
+        type: TransactionType.DEBIT,
+        vehicleClass,
+        zevClass,
+        modelYear,
+        numberOfUnits: new Decimal(cr.numberOfUnits),
+      });
+    } catch (e) {
+      throw error;
+    }
+  });
+  return result;
+};
+
+export const parseMyrForAssessmentData = (workbook: Workbook) => {
+  const result: { zevClassOrdering: ZevClass[]; nvValues: NvValues } = {
+    zevClassOrdering: [],
+    nvValues: {},
+  };
+  const zevClassMap = getStringsToZevClassEnumsMap();
+  const parsedMyr = parseMyr(workbook);
+  const zevClassOrdering = parsedMyr.details.zevClassOrdering;
+  const complianceReductions = parsedMyr.complianceReductions;
+  const zevClassOrderingSplit = zevClassOrdering.replaceAll(" ", "").split(",");
+  zevClassOrderingSplit.forEach((s) => {
+    const zevClass = zevClassMap[s];
+    if (!zevClass) {
+      throw new Error("Invalid value in ZEV Class Ordering!");
+    }
+    result.zevClassOrdering.push(zevClass);
+  });
+  const reductionsData = parseReductionsForData(complianceReductions);
+  reductionsData.nvValues.forEach(([vehicleClass, nv]) => {
+    result.nvValues[vehicleClass] = nv.toFixed();
+  });
+  return result;
+};
+
+const parseFileZevUnitRecordsForData = (
+  record: Omit<FileZevUnitRecord, "numberOfUnits">,
+): Omit<ZevUnitRecord, "numberOfUnits"> => {
+  const typesMap = getStringsToBalanceTypeEnumsMap();
+  const vehicleClassesMap = getStringsToVehicleClassEnumsMap();
+  const zevClassesMap = getStringsToZevClassEnumsMap();
+  const modelYearsMap = getStringsToModelYearsEnumsMap();
+  const type = typesMap[record.type];
+  const vehicleClass = vehicleClassesMap[record.vehicleClass];
+  const zevClass = zevClassesMap[record.zevClass];
+  const modelYear = modelYearsMap[record.modelYear];
+  if (!type || !vehicleClass || !zevClass || !modelYear) {
+    throw new Error("Error parsing ZEV unit record!");
+  }
+  return {
+    type,
+    vehicleClass,
+    zevClass,
+    modelYear,
+  };
+};
+
+const parseAdjustmentForData = (records: FileZevUnitRecord[]) => {
+  const result: ZevUnitRecord[] = [];
+  records.forEach((record) => {
+    const parsedRecord = parseFileZevUnitRecordsForData(record);
+    try {
+      const numberOfUnits = new Decimal(record.numberOfUnits);
+      result.push({ ...parsedRecord, numberOfUnits });
+    } catch (e) {
+      throw new Error("Error parsing adjustment!");
+    }
+  });
+  return result;
+};
+
+const parseFinalEndingBalanceForData = (
+  records: FileFinalEndingBalanceRecord[],
+) => {
+  const result: (Omit<ZevUnitRecord, "numberOfUnits"> & {
+    initialNumberOfUnits: Decimal;
+    finalNumberOfUnits: Decimal;
+  })[] = [];
+  records.forEach((record) => {
+    const parsedRecord = parseFileZevUnitRecordsForData(record);
+    try {
+      const initialNumberOfUnits = new Decimal(record.initialNumberOfUnits);
+      const finalNumberOfUnits = new Decimal(record.finalNumberOfUnits);
+      result.push({
+        ...parsedRecord,
+        initialNumberOfUnits,
+        finalNumberOfUnits,
+      });
+    } catch (e) {
+      throw new Error("Error parsing final ending balance record!");
+    }
+  });
+  return result;
+};
+
+export const parseAssesmentForData = (
+  workbook: Workbook,
+): {
+  nvValues: [VehicleClass, number][];
+  transactions: (ZevUnitRecord & { referenceType: ReferenceType })[];
+  endingBalance: (Omit<ZevUnitRecord, "type" | "numberOfUnits"> & {
+    type: BalanceType;
+    initialNumberOfUnits: Decimal;
+    finalNumberOfUnits: Decimal;
+  })[];
+} => {
+  const parsedAssessment = parseAssessment(workbook);
+  const reductions = parsedAssessment.complianceReductions;
+  const currentAdjustments = parsedAssessment.currentAdjustments;
+  const finalEndingBalance = parsedAssessment.finalEndingBalance;
+  const reductionsData = parseReductionsForData(reductions);
+  const reductionTransactions = reductionsData.reductions.map((reduction) => {
+    return { ...reduction, referenceType: ReferenceType.OBLIGATION_REDUCTION };
+  });
+  const adjustmentsData = parseAdjustmentForData(currentAdjustments);
+  const adjustmentTransactions = adjustmentsData.map((adjustment) => {
+    return {
+      ...adjustment,
+      referenceType: ReferenceType.ASSESSMENT_ADJUSTMENT,
+    };
+  });
+  const nvValues: [VehicleClass, number][] = reductionsData.nvValues.map(
+    ([vehicleClass, nv]) => [vehicleClass, nv.toNumber()],
+  );
+  const transactions = [...reductionTransactions, ...adjustmentTransactions];
+  const finalEndingBalanceData =
+    parseFinalEndingBalanceForData(finalEndingBalance);
+  const endingBalance = finalEndingBalanceData.map((record) => {
+    const type = record.type;
+    if (type !== BalanceType.CREDIT && type !== BalanceType.DEBIT) {
+      throw new Error("Error parsing assessment data!");
+    }
+    return {
+      type,
+      vehicleClass: record.vehicleClass,
+      zevClass: record.zevClass,
+      modelYear: record.modelYear,
+      initialNumberOfUnits: record.initialNumberOfUnits,
+      finalNumberOfUnits: record.finalNumberOfUnits,
+    };
+  });
+  return {
+    nvValues,
+    transactions,
+    endingBalance,
+  };
 };

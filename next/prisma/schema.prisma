@@ -603,10 +603,11 @@ model LegacySalesVolume {
   id             Int          @id @default(autoincrement())
   organization   Organization @relation(fields: [organizationId], references: [id])
   organizationId Int          @map("organization_id")
+  vehicleClass   VehicleClass @map("vehicle_class")
   modelYear      ModelYear    @map("model_year")
   volume         Int
 
-  @@unique([organizationId, modelYear])
+  @@unique([organizationId, vehicleClass, modelYear])
   @@map("legacy_sales_volume")
 }
 
@@ -614,10 +615,11 @@ model SupplyVolume {
   id             Int          @id @default(autoincrement())
   organization   Organization @relation(fields: [organizationId], references: [id])
   organizationId Int          @map("organization_id")
+  vehicleClass   VehicleClass @map("vehicle_class")
   modelYear      ModelYear    @map("model_year")
   volume         Int
 
-  @@unique([organizationId, modelYear])
+  @@unique([organizationId, vehicleClass, modelYear])
   @@map("supply_volume")
 }
 
@@ -644,8 +646,8 @@ model ModelYearReport {
   supplierStatus           ModelYearReportSupplierStatus @map("supplier_status")
   objectName               String                        @unique @map("object_name")
   forecastReportObjectName String                        @unique @map("forecast_report_object_name")
-  ModelYearReportHistory   ModelYearReportHistory[]
-  Assessment               Assessment?
+  modelYearReportHistory   ModelYearReportHistory[]
+  assessment               Assessment?
 
   @@unique([organizationId, modelYear])
   @@map("model_year_report")

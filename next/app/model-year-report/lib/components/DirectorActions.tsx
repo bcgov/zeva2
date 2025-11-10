@@ -1,72 +1,27 @@
 "use client";
 
-import axios from "axios";
 import { Button } from "@/app/lib/components";
 import { ModelYear, ModelYearReportStatus } from "@/prisma/generated/client";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useState, useTransition } from "react";
+import { useCallback, useState, useTransition } from "react";
 import {
   assessModelYearReport,
   issueReassessment,
-  getDownloadAssessmentUrl,
-  getDownloadLatestReassessmentUrl,
   returnModelYearReport,
   returnReassessment,
 } from "../actions";
 import { getNormalizedComment } from "@/app/credit-application/lib/utils";
 import { CommentBox } from "@/app/lib/components/inputs/CommentBox";
-import { AssessmentResult, AssessmentResultData } from "./AssessmentResult";
-import { getAssessmentPayload, parseAssessment } from "../utilsClient";
 
 export const DirectorActions = (props: {
-  id: number;
-  organizationId: number;
-  modelYear: ModelYear;
-  status: ModelYearReportStatus;
+  myrId: number;
   assessableReassessmentId: number | null;
+  status: ModelYearReportStatus;
 }) => {
   const router = useRouter();
-  const [assessmentResult, setAssessmentResult] = useState<
-    AssessmentResultData | undefined
-  >();
   const [isPending, startTransition] = useTransition();
   const [comment, setComment] = useState<string>("");
   const [error, setError] = useState<string>("");
-
-  useEffect(() => {
-    startTransition(async () => {
-      try {
-        let response;
-        if (props.assessableReassessmentId === null) {
-          response = await getDownloadAssessmentUrl(props.id);
-        } else {
-          response = await getDownloadLatestReassessmentUrl(
-            props.organizationId,
-            props.modelYear,
-          );
-        }
-        if (response.responseType === "error") {
-          throw new Error(response.message);
-        }
-        const url = response.data;
-        const assessment = await axios.get(url, {
-          responseType: "arraybuffer",
-        });
-        const result = await parseAssessment(assessment.data, props.modelYear);
-        setAssessmentResult(result);
-      } catch (e) {
-        if (e instanceof Error) {
-          setError(e.message);
-        }
-      }
-    });
-  }, [
-    props.id,
-    props.status,
-    props.organizationId,
-    props.assessableReassessmentId,
-    props.modelYear,
-  ]);
 
   const handleReturnToAnalyst = useCallback(() => {
     setError("");
@@ -74,7 +29,7 @@ export const DirectorActions = (props: {
       try {
         if (props.assessableReassessmentId === null) {
           await returnModelYearReport(
-            props.id,
+            props.myrId,
             ModelYearReportStatus.RETURNED_TO_ANALYST,
             getNormalizedComment(comment),
           );
@@ -91,38 +46,31 @@ export const DirectorActions = (props: {
         }
       }
     });
-  }, [props.id, props.status, props.assessableReassessmentId, comment]);
+  }, [props.myrId, props.status, props.assessableReassessmentId, comment]);
 
   const handleIssueAssessment = useCallback(() => {
     setError("");
     startTransition(async () => {
       try {
-        if (assessmentResult) {
-          const payload = getAssessmentPayload(assessmentResult);
-          if (props.assessableReassessmentId === null) {
-            await assessModelYearReport(
-              props.id,
-              payload,
-              getNormalizedComment(comment),
-            );
-          } else {
-            issueReassessment(
-              props.assessableReassessmentId,
-              payload,
-              getNormalizedComment(comment),
-            );
-          }
-          router.refresh();
+        if (props.assessableReassessmentId === null) {
+          await assessModelYearReport(
+            props.myrId,
+            getNormalizedComment(comment),
+          );
         } else {
-          throw new Error("No assessment result!");
+          issueReassessment(
+            props.assessableReassessmentId,
+            getNormalizedComment(comment),
+          );
         }
+        router.refresh();
       } catch (e) {
         if (e instanceof Error) {
           setError(e.message);
         }
       }
     });
-  }, [props.id, assessmentResult, comment]);
+  }, [props.myrId, comment]);
 
   if (
     props.status !== ModelYearReportStatus.SUBMITTED_TO_DIRECTOR &&
@@ -132,16 +80,12 @@ export const DirectorActions = (props: {
   }
   return (
     <div className="space-y-2">
-      {error && <p className="text-red-600">{error}</p>}
-      <AssessmentResult
-        data={assessmentResult}
-        complianceYear={props.modelYear}
-      />
       <CommentBox
         comment={comment}
         setComment={setComment}
         disabled={isPending}
       />
+      {error && <p className="text-red-600">{error}</p>}
       <Button onClick={handleReturnToAnalyst} disabled={isPending}>
         {isPending ? "..." : "Return To Analyst"}
       </Button>

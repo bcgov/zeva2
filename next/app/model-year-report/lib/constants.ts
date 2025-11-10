@@ -2,12 +2,11 @@ import { ModelYear, ZevClass } from "@/prisma/generated/client";
 
 export enum MyrTemplate {
   Name = "model_year_report_template.xlsx",
-  ModelYearSheetName = "Model Year",
-  ZevClassOrderingSheetName = "ZEV Class Ordering",
+  DetailsSheetName = "Details",
   SupplierDetailsSheetName = "Supplier Details",
   VehiclesSuppliedSheetName = "Section 17(4)",
   ComplianceReductionsSheetName = "Compliance Ratio Reductions",
-  PrevBalanceSheetName = "Previous Balance",
+  BeginningBalanceSheetName = "Beginning Balance",
   CreditsSheetName = "Credits",
   OffsetsAndTransfersAwaySheetName = "Offsets and Transfers Away",
   PreliminaryEndingBalance = "Preliminary Ending Balance",
@@ -20,14 +19,14 @@ export enum ForecastTemplate {
 export enum AssessmentTemplate {
   Name = "assessment_template.xlsx",
   DetailsSheetName = "Details",
-  ComplianceReductionsSheetName = "Compliance Reductions",
-  ComplianceStatementSheetName = "Section 19(1)(a)",
-  EndingBalanceSheetName = "Section 19(1)(b)",
-  OffsetsAndTransfersAwaySheetName = "Section 19(1)(c) - Part 1",
-  CreditsSheetName = "Section 19(1)(c) - Part 2",
-  PreviousAdjustmentsSheetName = "Section 19(1)(e) - Previous",
-  CurrentAdjustmentsSheetName = "Section 19(1)(e) - Current",
-  PenaltySheetName = "Section 19(1)(f)",
+  ComplianceReductionsSheetName = "Compliance Ratio Reductions",
+  BeginningBalanceSheetName = "Beginning Balance",
+  CreditsSheetName = "Credits",
+  PreviousAdjustmentsSheetName = "Previous Adjustments",
+  CurrentAdjustmentsSheetName = "Current Adjustments",
+  OffsetsAndTransfersAwaySheetName = "Offsets and Transfers Away",
+  FinalEndingBalanceSheetName = "Final Ending Balance",
+  StatementsSheetName = "Statement(s)",
 }
 
 export enum ReportSubDirectory {

@@ -1,32 +1,18 @@
 // do not import, directly or indirectly, any Prisma versions of Decimal here!
 
 import Excel, { Workbook } from "exceljs";
-import { MyrTemplate } from "./constants";
+import { AssessmentTemplate, MyrTemplate } from "./constants";
 
-export type ParsedMyr = {
-  modelYear: string;
-  zevClassOrdering: string;
-  supplierDetails: Partial<Record<string, string>>;
-  complianceReductions: Partial<Record<string, string>>[];
-  prevBalance: Partial<Record<string, string>>[];
-  credits: Partial<Record<string, string>>[];
-  offsetsAndTransfersAway: Partial<Record<string, string>>[];
-  prelimEndingBalance: Partial<Record<string, string>>[];
-};
-
-export const parseMyr = (workbook: Workbook): ParsedMyr => {
-  const modelYearSheet = workbook.getWorksheet(MyrTemplate.ModelYearSheetName);
-  const zevClassOrderingSheet = workbook.getWorksheet(
-    MyrTemplate.ZevClassOrderingSheetName,
-  );
+export const getMyrSheets = (workbook: Workbook) => {
+  const detailsSheet = workbook.getWorksheet(MyrTemplate.DetailsSheetName);
   const supplierDetailsSheet = workbook.getWorksheet(
     MyrTemplate.SupplierDetailsSheetName,
   );
   const complianceReductionsSheet = workbook.getWorksheet(
     MyrTemplate.ComplianceReductionsSheetName,
   );
-  const prevBalanceSheet = workbook.getWorksheet(
-    MyrTemplate.PrevBalanceSheetName,
+  const beginningBalanceSheet = workbook.getWorksheet(
+    MyrTemplate.BeginningBalanceSheetName,
   );
   const creditsSheet = workbook.getWorksheet(MyrTemplate.CreditsSheetName);
   const offsetsAndTransfersAwaySheet = workbook.getWorksheet(
@@ -36,40 +22,101 @@ export const parseMyr = (workbook: Workbook): ParsedMyr => {
     MyrTemplate.PreliminaryEndingBalance,
   );
   if (
-    !modelYearSheet ||
-    !zevClassOrderingSheet ||
+    !detailsSheet ||
     !supplierDetailsSheet ||
     !complianceReductionsSheet ||
-    !prevBalanceSheet ||
+    !beginningBalanceSheet ||
     !creditsSheet ||
     !offsetsAndTransfersAwaySheet ||
     !prelimEndingBalanceSheet
   ) {
-    throw new Error("Invalid model year report!");
+    throw new Error("Missing sheet in Model Year Report!");
   }
   return {
-    modelYear: parseModelYear(modelYearSheet),
-    zevClassOrdering: parseZevClassOrdering(zevClassOrderingSheet),
-    supplierDetails: parseSupplierDetails(supplierDetailsSheet),
-    complianceReductions: parseComplianceReductions(complianceReductionsSheet),
-    prevBalance: parseZevUnitRecords(prevBalanceSheet),
-    credits: parseZevUnitRecords(creditsSheet),
-    offsetsAndTransfersAway: parseZevUnitRecords(offsetsAndTransfersAwaySheet),
-    prelimEndingBalance: parseZevUnitRecords(prelimEndingBalanceSheet),
+    detailsSheet,
+    supplierDetailsSheet,
+    complianceReductionsSheet,
+    beginningBalanceSheet,
+    creditsSheet,
+    offsetsAndTransfersAwaySheet,
+    prelimEndingBalanceSheet,
   };
 };
 
-const parseModelYear = (sheet: Excel.Worksheet): string => {
-  return sheet.getRow(1).getCell(1).toString();
+export type FileZevUnitRecord = {
+  type: string;
+  vehicleClass: string;
+  zevClass: string;
+  modelYear: string;
+  numberOfUnits: string;
 };
 
-const parseZevClassOrdering = (sheet: Excel.Worksheet): string => {
-  return sheet.getRow(1).getCell(1).toString();
+export type FileFinalEndingBalanceRecord = {
+  type: string;
+  vehicleClass: string;
+  zevClass: string;
+  modelYear: string;
+  initialNumberOfUnits: string;
+  divisor: string;
+  finalNumberOfUnits: string;
+};
+
+export type FileReductionRecord = {
+  ratio: string;
+  nv: string;
+} & Omit<FileZevUnitRecord, "type">;
+
+export type ParsedMyr = {
+  details: FileMyrDetails;
+  supplierDetails: FileMyrSupplierDetails;
+  complianceReductions: FileReductionRecord[];
+  beginningBalance: FileZevUnitRecord[];
+  credits: FileZevUnitRecord[];
+  offsetsAndTransfersAway: FileZevUnitRecord[];
+  prelimEndingBalance: FileZevUnitRecord[];
+};
+
+export const parseMyr = (workbook: Workbook): ParsedMyr => {
+  const sheets = getMyrSheets(workbook);
+  return {
+    details: parseMyrDetails(sheets.detailsSheet),
+    supplierDetails: parseSupplierDetails(sheets.supplierDetailsSheet),
+    complianceReductions: parseComplianceReductions(
+      sheets.complianceReductionsSheet,
+    ),
+    beginningBalance: parseZevUnitRecords(sheets.beginningBalanceSheet),
+    credits: parseZevUnitRecords(sheets.creditsSheet),
+    offsetsAndTransfersAway: parseZevUnitRecords(
+      sheets.offsetsAndTransfersAwaySheet,
+    ),
+    prelimEndingBalance: parseZevUnitRecords(sheets.prelimEndingBalanceSheet),
+  };
+};
+
+type FileMyrDetails = {
+  modelYear: string;
+  zevClassOrdering: string;
+};
+
+const parseMyrDetails = (sheet: Excel.Worksheet): FileMyrDetails => {
+  const row = sheet.getRow(2);
+  return {
+    modelYear: row.getCell(1).toString(),
+    zevClassOrdering: row.getCell(2).toString(),
+  };
+};
+
+type FileMyrSupplierDetails = {
+  legalName: string;
+  makes: string;
+  classification: string;
+  serviceAddress: string;
+  recordsAddress: string;
 };
 
 const parseSupplierDetails = (
   sheet: Excel.Worksheet,
-): Partial<Record<string, string>> => {
+): FileMyrSupplierDetails => {
   const supplierDetailsRow = sheet.getRow(2);
   return {
     legalName: supplierDetailsRow.getCell(1).toString(),
@@ -82,12 +129,12 @@ const parseSupplierDetails = (
 
 const parseComplianceReductions = (
   sheet: Excel.Worksheet,
-): Partial<Record<string, string>>[] => {
-  const result: Partial<Record<string, string>>[] = [];
+): FileReductionRecord[] => {
+  const result: FileReductionRecord[] = [];
   sheet.eachRow((row, rowNumber) => {
     if (rowNumber > 1) {
       result.push({
-        complianceRatio: row.getCell(1).toString(),
+        ratio: row.getCell(1).toString(),
         nv: row.getCell(2).toString(),
         vehicleClass: row.getCell(3).toString(),
         zevClass: row.getCell(4).toString(),
@@ -99,10 +146,8 @@ const parseComplianceReductions = (
   return result;
 };
 
-const parseZevUnitRecords = (
-  sheet: Excel.Worksheet,
-): Partial<Record<string, string>>[] => {
-  const result: Partial<Record<string, string>>[] = [];
+const parseZevUnitRecords = (sheet: Excel.Worksheet): FileZevUnitRecord[] => {
+  const result: FileZevUnitRecord[] = [];
   sheet.eachRow((row, rowNumber) => {
     if (rowNumber > 1) {
       result.push({
@@ -113,6 +158,138 @@ const parseZevUnitRecords = (
         numberOfUnits: row.getCell(5).toString(),
       });
     }
+  });
+  return result;
+};
+
+export const getAssessmentSheets = (workbook: Workbook) => {
+  const detailsSheet = workbook.getWorksheet(
+    AssessmentTemplate.DetailsSheetName,
+  );
+  const complianceReductionsSheet = workbook.getWorksheet(
+    AssessmentTemplate.ComplianceReductionsSheetName,
+  );
+  const beginningBalanceSheet = workbook.getWorksheet(
+    AssessmentTemplate.BeginningBalanceSheetName,
+  );
+  const creditsSheet = workbook.getWorksheet(
+    AssessmentTemplate.CreditsSheetName,
+  );
+  const previousAdjustmentsSheet = workbook.getWorksheet(
+    AssessmentTemplate.PreviousAdjustmentsSheetName,
+  );
+  const currentAdjustmentsSheet = workbook.getWorksheet(
+    AssessmentTemplate.CurrentAdjustmentsSheetName,
+  );
+  const offsetsAndTransfersAwaySheet = workbook.getWorksheet(
+    AssessmentTemplate.OffsetsAndTransfersAwaySheetName,
+  );
+  const finalEndingBalanceSheet = workbook.getWorksheet(
+    AssessmentTemplate.FinalEndingBalanceSheetName,
+  );
+  const statementsSheet = workbook.getWorksheet(
+    AssessmentTemplate.StatementsSheetName,
+  );
+  if (
+    !detailsSheet ||
+    !complianceReductionsSheet ||
+    !beginningBalanceSheet ||
+    !creditsSheet ||
+    !previousAdjustmentsSheet ||
+    !currentAdjustmentsSheet ||
+    !offsetsAndTransfersAwaySheet ||
+    !finalEndingBalanceSheet ||
+    !statementsSheet
+  ) {
+    throw new Error("Missing sheet in Assessment!");
+  }
+  return {
+    detailsSheet,
+    complianceReductionsSheet,
+    beginningBalanceSheet,
+    creditsSheet,
+    previousAdjustmentsSheet,
+    currentAdjustmentsSheet,
+    offsetsAndTransfersAwaySheet,
+    finalEndingBalanceSheet,
+    statementsSheet,
+  };
+};
+
+export type ParsedAssmnt = {
+  details: FileAssessmentDetails;
+  complianceReductions: FileReductionRecord[];
+  beginningBalance: FileZevUnitRecord[];
+  credits: FileZevUnitRecord[];
+  previousAdjustments: FileZevUnitRecord[];
+  currentAdjustments: FileZevUnitRecord[];
+  offsetsAndTransfersAway: FileZevUnitRecord[];
+  finalEndingBalance: FileFinalEndingBalanceRecord[];
+  statements: string[];
+};
+
+export type FileAssessmentDetails = {
+  supplierName: string;
+  modelYear: string;
+  classification: string;
+  zevClassOrdering: string;
+};
+
+export const parseAssessment = (workbook: Workbook): ParsedAssmnt => {
+  const sheets = getAssessmentSheets(workbook);
+  return {
+    details: parseAssessmentDetails(sheets.detailsSheet),
+    complianceReductions: parseComplianceReductions(
+      sheets.complianceReductionsSheet,
+    ),
+    beginningBalance: parseZevUnitRecords(sheets.beginningBalanceSheet),
+    credits: parseZevUnitRecords(sheets.creditsSheet),
+    previousAdjustments: parseZevUnitRecords(sheets.previousAdjustmentsSheet),
+    currentAdjustments: parseZevUnitRecords(sheets.currentAdjustmentsSheet),
+    offsetsAndTransfersAway: parseZevUnitRecords(
+      sheets.offsetsAndTransfersAwaySheet,
+    ),
+    finalEndingBalance: parseFinalEndingBalance(sheets.finalEndingBalanceSheet),
+    statements: parseStatements(sheets.statementsSheet),
+  };
+};
+
+const parseAssessmentDetails = (
+  sheet: Excel.Worksheet,
+): FileAssessmentDetails => {
+  const row = sheet.getRow(2);
+  return {
+    supplierName: row.getCell(1).toString(),
+    modelYear: row.getCell(2).toString(),
+    classification: row.getCell(3).toString(),
+    zevClassOrdering: row.getCell(4).toString(),
+  };
+};
+
+const parseFinalEndingBalance = (
+  sheet: Excel.Worksheet,
+): FileFinalEndingBalanceRecord[] => {
+  const result: FileFinalEndingBalanceRecord[] = [];
+  sheet.eachRow((row, rowNumber) => {
+    if (rowNumber > 1) {
+      result.push({
+        type: row.getCell(1).toString(),
+        vehicleClass: row.getCell(2).toString(),
+        zevClass: row.getCell(3).toString(),
+        modelYear: row.getCell(4).toString(),
+        initialNumberOfUnits: row.getCell(5).toString(),
+        divisor: row.getCell(6).toString(),
+        finalNumberOfUnits: row.getCell(7).toString(),
+      });
+    }
+  });
+  return result;
+};
+
+const parseStatements = (sheet: Excel.Worksheet): string[] => {
+  const result: string[] = [];
+  sheet.eachRow((row) => {
+    result.push(row.getCell(1).toString());
   });
   return result;
 };

@@ -10,7 +10,6 @@ import {
 } from "@/prisma/generated/client";
 import { useRouter } from "next/navigation";
 import { useCallback, useMemo, useState, useTransition } from "react";
-import { SupplierZevClassChoice } from "../constants";
 import {
   getAssessmentData,
   getAssessmentTemplateUrl,
@@ -20,25 +19,23 @@ import {
 } from "../actions";
 import { getModelYearEnumsToStringsMap } from "@/app/lib/utils/enumMaps";
 import { MyrNvValues } from "./MyrNvValues";
-import { ZevClassSelect } from "./ZevClassSelect";
 import { Button } from "@/app/lib/components";
 import {
   generateAssessment,
   getAdjustmentsPayload,
-  getZevClassOrdering,
-  parseAssessment,
   validateNvValues,
 } from "../utilsClient";
 import { bytesToBase64 } from "@/app/lib/utils/base64";
 import { Adjustment, Adjustments } from "./Adjustments";
-import { AssessmentResult, AssessmentResultData } from "./AssessmentResult";
 import { CommentBox } from "@/app/lib/components/inputs/CommentBox";
 import { Routes } from "@/app/lib/constants";
 import { getNormalizedComment } from "@/app/credit-application/lib/utils";
 import { Workbook } from "exceljs";
+import { parseAssessment, ParsedAssmnt } from "../utils";
+import { ParsedAssessment } from "./ParsedAssessment";
 
 export const AssessmentForm = (props: {
-  id: number;
+  myrId: number;
   orgId: number;
   orgName: string;
   status: ModelYearReportStatus;
@@ -49,13 +46,10 @@ export const AssessmentForm = (props: {
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string>("");
   const [nvValues, setNvValues] = useState<NvValues>({});
-  const [zevClassSelection, setZevClassSelection] =
-    useState<SupplierZevClassChoice>(ZevClass.B);
   const [adjustments, setAdjustments] = useState<Adjustment[]>([]);
-  const [assessment, setAssessment] = useState<Workbook | null>(null);
-  const [assessmentResult, setAssessmentResult] = useState<
-    AssessmentResultData | undefined
-  >();
+  const [assessment, setAssessment] = useState<[Workbook, ParsedAssmnt] | null>(
+    null,
+  );
   const [comment, setComment] = useState<string>("");
 
   const modelYearsMap = useMemo(() => {
@@ -107,29 +101,21 @@ export const AssessmentForm = (props: {
     [],
   );
 
-  const handleZevClassSelect = useCallback(
-    (zevClass: SupplierZevClassChoice) => {
-      setZevClassSelection(zevClass);
-    },
-    [],
-  );
-
   const handleGenerateAssessment = useCallback(() => {
     setError("");
     startTransition(async () => {
       try {
-        validateNvValues(nvValues);
-        const zevClassOrdering = getZevClassOrdering(zevClassSelection);
+        if (props.isReassessment) {
+          validateNvValues(nvValues);
+        }
         const adjustmentsPayload = getAdjustmentsPayload(adjustments);
         const [templateUrl, assessmentResponse] = await Promise.all([
           getAssessmentTemplateUrl(),
           getAssessmentData(
-            props.orgId,
-            props.modelYear,
-            nvValues,
-            zevClassOrdering,
+            props.myrId,
             adjustmentsPayload,
             props.isReassessment,
+            props.isReassessment ? nvValues : undefined,
           ),
         ]);
         if (assessmentResponse.responseType === "error") {
@@ -142,29 +128,22 @@ export const AssessmentForm = (props: {
         const assessment = await generateAssessment(
           template,
           assessmentResponse.data,
-          zevClassSelection,
           adjustmentsPayload,
-          props.orgName,
-          props.modelYear,
         );
-        const assessmentResult = parseAssessment(assessment, props.modelYear);
-        setAssessment(assessment);
-        setAssessmentResult(assessmentResult);
+        const parsedAssessment = parseAssessment(assessment);
+        setAssessment([assessment, parsedAssessment]);
       } catch (e) {
         if (e instanceof Error) {
           setError(e.message);
         }
       }
     });
-  }, [
-    props.orgId,
-    props.orgName,
-    props.modelYear,
-    props.isReassessment,
-    nvValues,
-    zevClassSelection,
-    adjustments,
-  ]);
+  }, [props.myrId, props.isReassessment, nvValues, adjustments]);
+
+  const handleClearAssessment = useCallback(() => {
+    setError("");
+    setAssessment(null);
+  }, []);
 
   const handleSubmit = useCallback(() => {
     setError("");
@@ -175,7 +154,7 @@ export const AssessmentForm = (props: {
         }
         let submitResponse;
         const assessmentBase64 = bytesToBase64(
-          await assessment.xlsx.writeBuffer(),
+          await assessment[0].xlsx.writeBuffer(),
         );
         if (props.isReassessment) {
           submitResponse = await submitReassessment(
@@ -186,7 +165,7 @@ export const AssessmentForm = (props: {
           );
         } else {
           submitResponse = await submitAssessment(
-            props.id,
+            props.myrId,
             assessmentBase64,
             getNormalizedComment(comment),
           );
@@ -194,25 +173,17 @@ export const AssessmentForm = (props: {
         if (submitResponse.responseType === "error") {
           throw new Error(submitResponse.message);
         }
-        router.push(`${Routes.ComplianceReporting}/${props.id}`);
+        router.push(`${Routes.ComplianceReporting}/${props.myrId}`);
       } catch (e) {
         if (e instanceof Error) {
           setError(e.message);
         }
       }
     });
-  }, [
-    assessment,
-    assessmentResult,
-    props.id,
-    props.orgId,
-    props.modelYear,
-    comment,
-  ]);
+  }, [assessment, props.myrId, props.orgId, props.modelYear, comment]);
 
   return (
     <div>
-      {error && <p className="text-red-600">{error}</p>}
       <div className="flex items-center py-2 my-2">
         <label className="w-72" htmlFor="modelYear">
           Model Year
@@ -225,49 +196,44 @@ export const AssessmentForm = (props: {
           className="border p-2 w-full"
         />
       </div>
-      <MyrNvValues
-        nvValues={nvValues}
-        handleChange={handleNvValuesChange}
-        disabled={isPending}
-      />
-      <div className="flex items-center py-2 my-2">
-        <p>
-          Select the ZEV class of credits that should be used first when
-          offsetting debits of the unspecified ZEV class:
-        </p>
-      </div>
-      <div className="flex items-center py-2 my-2 space-x-4">
-        <ZevClassSelect
-          zevClassSelection={zevClassSelection}
-          handleChange={handleZevClassSelect}
+      {props.isReassessment && !assessment && (
+        <MyrNvValues
+          nvValues={nvValues}
+          handleChange={handleNvValuesChange}
           disabled={isPending}
         />
-      </div>
-      <Adjustments
-        adjustments={adjustments}
-        addAdjustment={addAdjustment}
-        removeAdjustment={removeAdjustment}
-        handleAdjustmentChange={handleAdjustmentChange}
-        disabled={isPending}
-      />
-      <div className="flex space-x-2">
-        <Button onClick={handleGenerateAssessment} disabled={isPending}>
-          {isPending
-            ? "..."
-            : `Generate and Download ${props.isReassessment ? "Rea" : "A"}ssessment`}
-        </Button>
-      </div>
-      <div className="flex flex-col items-center space-x-4">
-        <AssessmentResult
-          data={assessmentResult}
-          complianceYear={props.modelYear}
+      )}
+      {!assessment && (
+        <Adjustments
+          adjustments={adjustments}
+          addAdjustment={addAdjustment}
+          removeAdjustment={removeAdjustment}
+          handleAdjustmentChange={handleAdjustmentChange}
+          disabled={isPending}
         />
+      )}
+      <div className="flex space-x-2">
+        {assessment ? (
+          <Button onClick={handleClearAssessment} disabled={isPending}>
+            {isPending
+              ? "..."
+              : `Clear ${props.isReassessment ? "Rea" : "A"}ssessment`}
+          </Button>
+        ) : (
+          <Button onClick={handleGenerateAssessment} disabled={isPending}>
+            {isPending
+              ? "..."
+              : `Generate ${props.isReassessment ? "Rea" : "A"}ssessment`}
+          </Button>
+        )}
       </div>
+      {assessment && <ParsedAssessment assessment={assessment[1]} />}
       <CommentBox
         comment={comment}
         setComment={setComment}
         disabled={isPending}
       />
+      {error && <p className="text-red-600">{error}</p>}
       <div className="flex space-x-2">
         <Button onClick={handleSubmit} disabled={isPending}>
           {isPending ? "..." : "Submit to Director"}

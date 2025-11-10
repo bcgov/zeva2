@@ -5,7 +5,6 @@ import { getPresignedGetObjectUrl, putObject } from "@/app/lib/minio";
 import { AssessmentTemplate, ForecastTemplate, MyrTemplate } from "./constants";
 import { getUserInfo } from "@/auth";
 import {
-  BalanceType,
   ModelYear,
   ModelYearReportStatus,
   ModelYearReportSupplierStatus,
@@ -20,6 +19,8 @@ import {
 import {
   createHistory,
   createReassessmentHistory,
+  getAssessmentSystemData,
+  getMyrDataForAssessment,
   getOrgDetails,
   getReassessableMyrData,
   getZevUnitData,
@@ -48,12 +49,7 @@ import { prisma } from "@/lib/prisma";
 import { getComplianceDate } from "@/app/lib/utils/complianceYear";
 import { addJobToEmailQueue } from "@/app/lib/services/queue";
 import { Buffer } from "node:buffer";
-
-export const getMyrTemplateUrl = async () => {
-  return await getPresignedGetObjectUrl(
-    `${Directory.Templates}/${MyrTemplate.Name}`,
-  );
-};
+import { isVehicleClass } from "@/app/lib/utils/typeGuards";
 
 export type NvValues = Partial<Record<VehicleClass, string>>;
 
@@ -73,12 +69,20 @@ export type MyrOffsets = Omit<UnitsAsString<ZevUnitRecord>, "type">[];
 export type MyrCurrentTransactions = UnitsAsString<MyrZevUnitTransaction>[];
 
 export type MyrData = {
+  modelYear: ModelYear;
+  zevClassOrdering: ZevClass[];
   supplierData: SupplierData;
   prevEndingBalance: MyrEndingBalance;
   complianceReductions: MyrComplianceReductions;
   offsets: MyrOffsets;
   currentTransactions: MyrCurrentTransactions;
   prelimEndingBalance: MyrEndingBalance;
+};
+
+export const getMyrTemplateUrl = async () => {
+  return await getPresignedGetObjectUrl(
+    `${Directory.Templates}/${MyrTemplate.Name}`,
+  );
 };
 
 export const getMyrData = async (
@@ -105,6 +109,8 @@ export const getMyrData = async (
       false,
     );
     return getDataActionResponse<MyrData>({
+      modelYear,
+      zevClassOrdering,
       supplierData: { ...orgData, supplierClass },
       prevEndingBalance:
         getSerializedMyrRecords<ZevUnitRecord>(prevEndingBalance),
@@ -221,27 +227,37 @@ export type AdjustmentPayload = Omit<ZevUnitRecord, "numberOfUnits"> & {
 };
 
 export type AssessmentData = {
+  orgName: string;
+  modelYear: ModelYear;
+  zevClassOrdering: ZevClass[];
   supplierClass: SupplierClass;
-  complianceInfo: ComplianceInfo;
   complianceReductions: MyrComplianceReductions;
-  endingBalance: MyrEndingBalance;
-  offsets: MyrOffsets;
+  beginningBalance: MyrEndingBalance;
   currentTransactions: MyrCurrentTransactions;
+  offsets: MyrOffsets;
+  endingBalance: MyrEndingBalance;
+  complianceInfo: ComplianceInfo;
 };
 
 export const getAssessmentData = async (
-  organizationId: number,
-  modelYear: ModelYear,
-  nvValues: NvValues,
-  zevClassOrdering: ZevClass[],
+  myrId: number,
   adjustments: AdjustmentPayload[],
   forReassessment: boolean,
+  nvValues?: NvValues,
 ): Promise<DataOrErrorActionResponse<AssessmentData>> => {
   const { userIsGov } = await getUserInfo();
   if (!userIsGov) {
     return getErrorActionResponse("Unauthorized!");
   }
   try {
+    const {
+      orgName,
+      organizationId,
+      modelYear,
+      nvValues: myrNvValues,
+      zevClassOrdering,
+    } = await getMyrDataForAssessment(myrId);
+    const nvValuesToUse = nvValues ? nvValues : myrNvValues;
     const {
       supplierClass,
       prevEndingBalance,
@@ -252,7 +268,7 @@ export const getAssessmentData = async (
     } = await getZevUnitData(
       organizationId,
       modelYear,
-      nvValues,
+      nvValuesToUse,
       zevClassOrdering,
       adjustments,
       forReassessment,
@@ -264,8 +280,13 @@ export const getAssessmentData = async (
       endingBalance,
     );
     return getDataActionResponse<AssessmentData>({
+      orgName,
+      modelYear,
+      zevClassOrdering,
       supplierClass,
       complianceInfo,
+      beginningBalance:
+        getSerializedMyrRecords<ZevUnitRecord>(prevEndingBalance),
       complianceReductions: getSerializedMyrRecordsExcludeKey<
         ComplianceReduction,
         "type"
@@ -489,22 +510,8 @@ export const returnModelYearReport = async (
   return getErrorActionResponse("Invalid Action!");
 };
 
-export type AssessmentPayload = {
-  nv: number;
-  transactions: (Omit<ZevUnitRecord, "numberOfUnits"> & {
-    numberOfUnits: string;
-    referenceType: ReferenceType;
-  })[];
-  endingBalance: (Omit<ZevUnitRecord, "type" | "numberOfUnits"> & {
-    type: BalanceType;
-    initialNumberOfUnits: string;
-    finalNumberOfUnits: string;
-  })[];
-};
-
 export const assessModelYearReport = async (
   myrId: number,
-  assessmentPayload: AssessmentPayload,
   comment?: string,
 ): Promise<ErrorOrSuccessActionResponse> => {
   const { userIsGov, userId, userRoles } = await getUserInfo();
@@ -516,24 +523,35 @@ export const assessModelYearReport = async (
       id: myrId,
       status: ModelYearReportStatus.SUBMITTED_TO_DIRECTOR,
     },
+    include: {
+      assessment: true,
+    },
   });
-  if (!myr) {
-    return getErrorActionResponse("Model Year Report not found!");
+  if (!myr || !myr.assessment) {
+    return getErrorActionResponse("Assessable Model Year Report not found!");
   }
   const modelYear = myr.modelYear;
   const organizationId = myr.organizationId;
   try {
     const complianceDate = getComplianceDate(modelYear);
+    const assessmentData = await getAssessmentSystemData(
+      myr.assessment.objectName,
+    );
+    const nvData: Prisma.SupplyVolumeCreateManyInput[] = [];
+    assessmentData.nvValues.forEach(([vehicleClass, volume]) => {
+      nvData.push({
+        organizationId,
+        modelYear,
+        vehicleClass,
+        volume,
+      });
+    });
     await prisma.$transaction(async (tx) => {
-      await tx.supplyVolume.create({
-        data: {
-          organizationId,
-          modelYear,
-          volume: assessmentPayload.nv,
-        },
+      await tx.supplyVolume.createMany({
+        data: nvData,
       });
       await tx.zevUnitTransaction.createMany({
-        data: assessmentPayload.transactions.map((transaction) => {
+        data: assessmentData.transactions.map((transaction) => {
           return {
             ...transaction,
             organizationId,
@@ -543,7 +561,7 @@ export const assessModelYearReport = async (
         }),
       });
       await tx.zevUnitEndingBalance.createMany({
-        data: assessmentPayload.endingBalance.map((record) => {
+        data: assessmentData.endingBalance.map((record) => {
           return { ...record, organizationId, complianceYear: modelYear };
         }),
       });
@@ -575,53 +593,6 @@ export const assessModelYearReport = async (
     throw e;
   }
   return getSuccessActionResponse();
-};
-
-export const getDownloadAssessmentUrl = async (
-  myrId: number,
-): Promise<DataOrErrorActionResponse<string>> => {
-  const { userIsGov, userOrgId } = await getUserInfo();
-  const whereClause: Prisma.AssessmentWhereUniqueInput = {
-    modelYearReportId: myrId,
-  };
-  if (!userIsGov) {
-    whereClause.modelYearReport = {
-      organizationId: userOrgId,
-      status: ModelYearReportStatus.ASSESSED,
-    };
-  }
-  const assessment = await prisma.assessment.findUnique({
-    where: whereClause,
-  });
-  if (!assessment) {
-    return getErrorActionResponse("Assessment not found!");
-  }
-  const url = await getPresignedGetObjectUrl(assessment.objectName);
-  return getDataActionResponse(url);
-};
-
-export const getDownloadLatestReassessmentUrl = async (
-  organizationId: number,
-  modelYear: ModelYear,
-): Promise<DataOrErrorActionResponse<string>> => {
-  const { userIsGov } = await getUserInfo();
-  if (!userIsGov) {
-    return getErrorActionResponse("Unauthorized!");
-  }
-  const reassessment = await prisma.reassessment.findFirst({
-    where: {
-      organizationId,
-      modelYear,
-    },
-    orderBy: {
-      sequenceNumber: "desc",
-    },
-  });
-  if (!reassessment) {
-    return getErrorActionResponse("Reassessment not found!");
-  }
-  const url = await getPresignedGetObjectUrl(reassessment.objectName);
-  return getDataActionResponse(url);
 };
 
 export const returnReassessment = async (
@@ -663,7 +634,6 @@ export const returnReassessment = async (
 
 export const issueReassessment = async (
   reassessmentId: number,
-  assessmentPayload: AssessmentPayload,
   comment?: string,
 ): Promise<ErrorOrSuccessActionResponse> => {
   const { userIsGov, userId, userRoles } = await getUserInfo();
@@ -693,27 +663,38 @@ export const issueReassessment = async (
   const myrId = reassessableMyr.myrId;
   const isLegacy = reassessableMyr.isLegacy;
   const complianceDate = getComplianceDate(modelYear);
-  await prisma.$transaction(async (tx) => {
-    const salesOrSupplyUpsertData = {
+  const reassessmentData = await getAssessmentSystemData(
+    reassessment.objectName,
+  );
+  const volumeUpsertClauses = reassessmentData.nvValues.map(
+    ([vehicleClass, volume]) => ({
       where: {
-        organizationId_modelYear: {
+        organizationId_vehicleClass_modelYear: {
           organizationId,
+          vehicleClass,
           modelYear,
         },
       },
       create: {
         organizationId,
         modelYear,
-        volume: assessmentPayload.nv,
+        vehicleClass,
+        volume,
       },
       update: {
-        volume: assessmentPayload.nv,
+        volume,
       },
-    };
+    }),
+  );
+  await prisma.$transaction(async (tx) => {
     if (modelYear < ModelYear.MY_2024) {
-      await tx.legacySalesVolume.upsert(salesOrSupplyUpsertData);
+      for (const clause of volumeUpsertClauses) {
+        await tx.legacySalesVolume.upsert(clause);
+      }
     } else {
-      await tx.supplyVolume.upsert(salesOrSupplyUpsertData);
+      for (const clause of volumeUpsertClauses) {
+        await tx.supplyVolume.upsert(clause);
+      }
     }
     await tx.zevUnitTransaction.deleteMany({
       where: {
@@ -723,7 +704,7 @@ export const issueReassessment = async (
       },
     });
     await tx.zevUnitTransaction.createMany({
-      data: assessmentPayload.transactions.map((transaction) => {
+      data: reassessmentData.transactions.map((transaction) => {
         return {
           ...transaction,
           organizationId,
@@ -740,7 +721,7 @@ export const issueReassessment = async (
       },
     });
     await tx.zevUnitEndingBalance.createMany({
-      data: assessmentPayload.endingBalance.map((record) => {
+      data: reassessmentData.endingBalance.map((record) => {
         return { ...record, organizationId, complianceYear: modelYear };
       }),
     });

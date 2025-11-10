@@ -1,3 +1,4 @@
+import Excel from "exceljs";
 import { SupplierClass } from "@/app/lib/constants/complianceRatio";
 import {
   getCompliancePeriod,
@@ -20,7 +21,6 @@ import {
   SupplyVolume,
   VehicleClass,
   ZevClass,
-  ZevUnitTransaction,
 } from "@/prisma/generated/client";
 import { Decimal } from "@/prisma/generated/client/runtime/library";
 import {
@@ -28,9 +28,13 @@ import {
   getZevUnitRecordsOrderByClause,
   getComplianceRatioReductions,
   getTransformedAdjustments,
+  parseMyrForAssessmentData,
+  parseAssesmentForData,
 } from "./utilsServer";
 import { TransactionClient } from "@/types/prisma";
 import { AdjustmentPayload, NvValues } from "./actions";
+import { getObject } from "@/app/lib/minio";
+import { getArrayBuffer } from "@/app/lib/utils/readableToBuffer";
 
 export type OrgNameAndAddresses = {
   name: string;
@@ -101,6 +105,7 @@ export const getSupplierClass = async (
       { modelYear: precedingMys[2] },
     ],
     organizationId,
+    vehicleClass: VehicleClass.REPORTABLE,
   };
   let volumes: SupplyVolume[] = [];
   if (modelYear < ModelYear.MY_2024) {
@@ -410,4 +415,44 @@ export const getReassessableMyrData = async (
     }
   });
   return result;
+};
+
+export const getMyrDataForAssessment = async (myrId: number) => {
+  const myr = await prisma.modelYearReport.findUnique({
+    where: {
+      id: myrId,
+    },
+    select: {
+      organization: {
+        select: {
+          id: true,
+          name: true,
+        },
+      },
+      modelYear: true,
+      objectName: true,
+    },
+  });
+  if (!myr) {
+    throw new Error("Model Year Report not found!");
+  }
+  const myrFile = await getObject(myr.objectName);
+  const myrBuf = await getArrayBuffer(myrFile);
+  const myrWorkbook = new Excel.Workbook();
+  await myrWorkbook.xlsx.load(myrBuf);
+  const data = parseMyrForAssessmentData(myrWorkbook);
+  return {
+    orgName: myr.organization.name,
+    organizationId: myr.organization.id,
+    modelYear: myr.modelYear,
+    ...data,
+  };
+};
+
+export const getAssessmentSystemData = async (objectName: string) => {
+  const assessmentFile = await getObject(objectName);
+  const assessmentBuf = await getArrayBuffer(assessmentFile);
+  const assessmentWorkbook = new Excel.Workbook();
+  await assessmentWorkbook.xlsx.load(assessmentBuf);
+  return parseAssesmentForData(assessmentWorkbook);
 };

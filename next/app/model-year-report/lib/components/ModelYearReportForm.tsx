@@ -83,12 +83,7 @@ export const ModelYearReportForm = (props: {
           responseType: "arraybuffer",
         });
         const template = templateResponse.data;
-        const workbook = await generateMyr(
-          template,
-          myrDataResponse.data,
-          zevClassSelection,
-          props.modelYear,
-        );
+        const workbook = await generateMyr(template, myrDataResponse.data);
         const parsedMyr = parseMyr(workbook);
         setMyr([workbook, parsedMyr]);
       } catch (e) {
@@ -101,9 +96,7 @@ export const ModelYearReportForm = (props: {
 
   const handleClearMyr = useCallback(() => {
     setError("");
-    startTransition(() => {
-      setMyr(null);
-    });
+    setMyr(null);
   }, []);
 
   const handleDownloadForecastTemplate = useCallback(() => {
@@ -171,24 +164,30 @@ export const ModelYearReportForm = (props: {
           className="border p-2 w-full"
         />
       </div>
-      <MyrNvValues
-        nvValues={nvValues}
-        handleChange={handleNvValuesChange}
-        disabled={isPending || myr !== null}
-      />
-      <div className="flex items-center py-2 my-2">
-        <p>
-          Select the ZEV class of credits that should be used first when
-          offsetting debits of the unspecified ZEV class:
-        </p>
-      </div>
-      <div className="flex items-center py-2 my-2 space-x-4">
-        <ZevClassSelect
-          zevClassSelection={zevClassSelection}
-          handleChange={handleZevClassSelect}
-          disabled={isPending || myr !== null}
+      {!myr && (
+        <MyrNvValues
+          nvValues={nvValues}
+          handleChange={handleNvValuesChange}
+          disabled={isPending}
         />
-      </div>
+      )}
+      {!myr && (
+        <>
+          <div className="flex items-center py-2 my-2">
+            <p>
+              Select the ZEV class of credits that should be used first when
+              offsetting debits of the unspecified ZEV class:
+            </p>
+          </div>
+          <div className="flex items-center py-2 my-2 space-x-4">
+            <ZevClassSelect
+              zevClassSelection={zevClassSelection}
+              handleChange={handleZevClassSelect}
+              disabled={isPending}
+            />
+          </div>
+        </>
+      )}
       <div className="flex space-x-2">
         {myr ? (
           <Button onClick={handleClearMyr} disabled={isPending}>
