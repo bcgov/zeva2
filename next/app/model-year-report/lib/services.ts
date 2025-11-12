@@ -34,7 +34,7 @@ import {
 import { TransactionClient } from "@/types/prisma";
 import { AdjustmentPayload, NvValues } from "./actions";
 import { getObject } from "@/app/lib/minio";
-import { getArrayBuffer } from "@/app/lib/utils/readableToBuffer";
+import { getArrayBuffer } from "@/app/lib/utils/parseReadable";
 
 export type OrgNameAndAddresses = {
   name: string;

@@ -1,7 +1,7 @@
 // do not import, directly or indirectly, any Prisma versions of Decimal here!
 
 import Excel, { Workbook } from "exceljs";
-import { AssessmentTemplate, MyrTemplate } from "./constants";
+import { AssessmentTemplate, ForecastTemplate, MyrTemplate } from "./constants";
 
 export const getMyrSheets = (workbook: Workbook) => {
   const detailsSheet = workbook.getWorksheet(MyrTemplate.DetailsSheetName);
@@ -292,4 +292,71 @@ const parseStatements = (sheet: Excel.Worksheet): string[] => {
     result.push(row.getCell(1).toString());
   });
   return result;
+};
+
+export const getForecastSheets = (workbook: Workbook) => {
+  const zevSheet = workbook.getWorksheet(ForecastTemplate.ZevForecastSheetName);
+  const nonZevSheet = workbook.getWorksheet(
+    ForecastTemplate.NonZevForecastSheetName,
+  );
+  if (!zevSheet || !nonZevSheet) {
+    throw new Error("Missing sheet in Forecast Report!");
+  }
+  return {
+    zevSheet,
+    nonZevSheet,
+  };
+};
+
+type ZevForecastRecord = {
+  modelYear: string;
+  make: string;
+  model: string;
+  type: string;
+  range: string;
+  zevClass: string;
+  interiorVolume: string;
+  supplyForecast: string;
+};
+
+type NonZevForecastRecord = {
+  modelYear: string;
+  supplyForecast: string;
+};
+
+export type ParsedForecast = {
+  zevRecords: ZevForecastRecord[];
+  nonZevRecords: NonZevForecastRecord[];
+};
+
+export const parseForecast = (workbook: Workbook): ParsedForecast => {
+  const sheets = getForecastSheets(workbook);
+  const zevRecords: ZevForecastRecord[] = [];
+  const nonZevRecords: NonZevForecastRecord[] = [];
+  sheets.zevSheet.eachRow((row, rowNumber) => {
+    if (rowNumber > 1) {
+      zevRecords.push({
+        modelYear: row.getCell(1).toString(),
+        make: row.getCell(2).toString(),
+        model: row.getCell(3).toString(),
+        type: row.getCell(4).toString(),
+        range: row.getCell(5).toString(),
+        zevClass: row.getCell(6).toString(),
+        interiorVolume: row.getCell(7).toString(),
+        supplyForecast: row.getCell(8).toString(),
+      });
+    }
+  });
+  sheets.nonZevSheet.eachRow((row, rowNumber) => {
+    if (rowNumber > 1) {
+      nonZevRecords.push({
+        modelYear: row.getCell(1).toString(),
+        supplyForecast: row.getCell(2).toString(),
+      });
+    }
+  });
+  return {
+    zevRecords,
+    nonZevRecords,
+  };
 };

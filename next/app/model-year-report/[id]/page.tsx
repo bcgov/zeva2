@@ -14,6 +14,7 @@ import {
 import { DirectorActions } from "../lib/components/DirectorActions";
 import { AnalystActions } from "../lib/components/AnalystActions";
 import { AssessmentDetails } from "../lib/components/AssessmentDetails";
+import { ForecastReportDetails } from "../lib/components/ForecastReportDetails";
 
 const Page = async (props: { params: Promise<{ id: string }> }) => {
   const args = await props.params;
@@ -79,6 +80,11 @@ const Page = async (props: { params: Promise<{ id: string }> }) => {
       <ContentCard title="Model Year Report Details">
         <Suspense fallback={<LoadingSkeleton />}>
           <ModelYearReportDetails id={myrId} />
+        </Suspense>
+      </ContentCard>
+      <ContentCard title="Forecast Report Details">
+        <Suspense fallback={<LoadingSkeleton />}>
+          <ForecastReportDetails myrId={myrId} />
         </Suspense>
       </ContentCard>
       <ContentCard title="Assessment Details">

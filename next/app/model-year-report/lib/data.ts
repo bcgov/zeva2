@@ -90,7 +90,7 @@ export const getModelYearReportDetails = async (id: number) => {
     whereClause = {
       ...whereClause,
       NOT: {
-        status: ModelYearReportStatus.RETURNED_TO_ANALYST,
+        status: ModelYearReportStatus.RETURNED_TO_SUPPLIER,
       },
     };
   } else if (userIsGov && userRoles.includes(Role.DIRECTOR)) {

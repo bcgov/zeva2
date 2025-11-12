@@ -5,7 +5,13 @@ import { Button } from "@/app/lib/components";
 import { getModelYearEnumsToStringsMap } from "@/app/lib/utils/enumMaps";
 import { ModelYear, VehicleClass, ZevClass } from "@/prisma/generated/client";
 import { useRouter } from "next/navigation";
-import { useCallback, useMemo, useState, useTransition } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+  useTransition,
+} from "react";
 import {
   getForecastTemplateUrl,
   getMyrData,
@@ -15,7 +21,9 @@ import {
 } from "../actions";
 import {
   generateMyr,
+  getWorkbook,
   getZevClassOrdering,
+  validateForecastReport,
   validateNvValues,
 } from "../utilsClient";
 import { bytesToBase64 } from "@/app/lib/utils/base64";
@@ -28,8 +36,9 @@ import { Routes } from "@/app/lib/constants";
 import { CommentBox } from "@/app/lib/components/inputs/CommentBox";
 import { getNormalizedComment } from "@/app/credit-application/lib/utils";
 import { Workbook } from "exceljs";
-import { ParsedMyr, parseMyr } from "../utils";
+import { ParsedForecast, ParsedMyr, parseForecast, parseMyr } from "../utils";
 import { ParsedModelYearReport } from "./ParsedModelYearReport";
+import { ParsedForecastTables } from "./ParsedForecastReport";
 
 export const ModelYearReportForm = (props: {
   orgName: string;
@@ -44,7 +53,31 @@ export const ModelYearReportForm = (props: {
     useState<SupplierZevClassChoice>(ZevClass.B);
   const [myr, setMyr] = useState<[Workbook, ParsedMyr] | null>(null);
   const [forecasts, setForecasts] = useState<File[]>([]);
+  const [parsedForecast, setParsedForecast] = useState<ParsedForecast | null>(
+    null,
+  );
   const [comment, setComment] = useState<string>("");
+
+  useEffect(() => {
+    const onForecastChange = async () => {
+      if (forecasts.length === 0) {
+        setParsedForecast(null);
+      } else {
+        const buf = await forecasts[0].arrayBuffer();
+        const workbook = await getWorkbook(buf);
+        try {
+          validateForecastReport(workbook);
+        } catch (e) {
+          if (e instanceof Error) {
+            setError(e.message);
+          }
+          throw e;
+        }
+        setParsedForecast(parseForecast(workbook));
+      }
+    };
+    onForecastChange();
+  }, [forecasts]);
 
   const modelYearsMap = useMemo(() => {
     return getModelYearEnumsToStringsMap();
@@ -124,7 +157,7 @@ export const ModelYearReportForm = (props: {
         if (!myr) {
           throw new Error("You must generate a Model Year Report!");
         }
-        if (forecasts.length !== 1) {
+        if (forecasts.length !== 1 || !parsedForecast) {
           throw new Error("Exactly 1 Forecast Report expected!");
         }
         const response = await submitReports(
@@ -218,6 +251,9 @@ export const ModelYearReportForm = (props: {
           }}
         />
       </div>
+      {forecasts.length === 1 && parsedForecast && (
+        <ParsedForecastTables forecast={parsedForecast} />
+      )}
       <CommentBox
         comment={comment}
         setComment={setComment}

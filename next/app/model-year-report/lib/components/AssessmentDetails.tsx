@@ -1,5 +1,5 @@
 import Excel from "exceljs";
-import { getArrayBuffer } from "@/app/lib/utils/readableToBuffer";
+import { getArrayBuffer } from "@/app/lib/utils/parseReadable";
 import { parseAssessment } from "../utils";
 import { ParsedAssessment } from "./ParsedAssessment";
 import { getAssessmentObject } from "../data";

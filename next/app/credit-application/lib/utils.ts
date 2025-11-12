@@ -390,7 +390,7 @@ export const parseSupplierSubmission = (sheet: Excel.Worksheet) => {
   }
   if (invalidRows.length > 0) {
     throw new Error(
-      `Rows with missing or invalid data: ${invalidRows.join(", ")}. Please refer to the instructions sheet for guidance.`,
+      `Rows with missing or invalid data: ${invalidRows.join(", ")}. Please refer to the instructions sheet for guidance. In particular, please note that all dates must be of type Text!`,
     );
   }
   const numberOfVins = Object.keys(data).length;

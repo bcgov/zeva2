@@ -2,7 +2,7 @@ import Excel from "exceljs";
 import { getUserInfo } from "@/auth";
 import { getModelYearReportDetails } from "../data";
 import { getMyrStatusEnumsToStringsMap } from "@/app/lib/utils/enumMaps";
-import { getArrayBuffer } from "@/app/lib/utils/readableToBuffer";
+import { getArrayBuffer } from "@/app/lib/utils/parseReadable";
 import { parseMyr } from "../utils";
 import { ParsedModelYearReport } from "./ParsedModelYearReport";
 

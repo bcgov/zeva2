@@ -49,7 +49,6 @@ import { prisma } from "@/lib/prisma";
 import { getComplianceDate } from "@/app/lib/utils/complianceYear";
 import { addJobToEmailQueue } from "@/app/lib/services/queue";
 import { Buffer } from "node:buffer";
-import { isVehicleClass } from "@/app/lib/utils/typeGuards";
 
 export type NvValues = Partial<Record<VehicleClass, string>>;
 

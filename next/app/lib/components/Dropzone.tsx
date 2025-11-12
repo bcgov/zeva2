@@ -10,7 +10,7 @@ export const Dropzone = (props: {
   maxNumberOfFiles: number;
   disabled: boolean;
   allowedFileTypes?: Record<string, string[]>;
-  handleDrop?: (acceptedFiles: FileWithPath[]) => Promise<void>;
+  handleDrop?: (acceptedFiles: FileWithPath[]) => void;
   handleRemove?: (file: FileWithPath) => void;
 }) => {
   const onDrop = useCallback(

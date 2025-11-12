@@ -14,6 +14,8 @@ export enum MyrTemplate {
 
 export enum ForecastTemplate {
   Name = "forecast_report_template.xlsx",
+  ZevForecastSheetName = "ZEV Forecast",
+  NonZevForecastSheetName = "Non-ZEV Forecast",
 }
 
 export enum AssessmentTemplate {

@@ -2,7 +2,7 @@
 // use its browser version instead!
 
 import { Decimal } from "@/prisma/generated/client/runtime/index-browser";
-import Excel from "exceljs";
+import Excel, { Workbook } from "exceljs";
 import {
   ModelYear,
   ReferenceType,
@@ -448,4 +448,14 @@ const writeFinalEndingBalance = (
         : numberOfUnits,
     ]);
   });
+};
+
+export const getWorkbook = async (buffer: Excel.Buffer) => {
+  const workbook = new Excel.Workbook();
+  await workbook.xlsx.load(buffer);
+  return workbook;
+};
+
+export const validateForecastReport = (workbook: Workbook) => {
+  //todo
 };
