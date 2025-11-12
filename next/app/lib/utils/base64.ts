@@ -10,7 +10,6 @@ export const bytesToBase64 = (buffer: ArrayBuffer): string => {
 
 export const base64ToBytes = (base64: string): Uint8Array<ArrayBuffer> => {
   const binString = atob(base64);
-  Uint8Array.from;
   return Uint8Array.from<string>(binString, (m) => {
     const codePoint = m.codePointAt(0);
     if (!codePoint) {
