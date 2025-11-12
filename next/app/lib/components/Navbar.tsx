@@ -93,7 +93,7 @@ export const Navbar: React.FC<{
 
   return (
     <>
-      <Row className="w-full bg-defaultBackgroundBlue border-t-2 border-primaryYellow mr-[16rem] px-1 mb-3 text-white">
+      <Row className="w-full bg-primaryBlueHover border-t-2 border-primaryGold mr-[16rem] px-1 mb-3 text-white">
         {mainItems.map((item) => (
           <Link
             key={item.label}
@@ -124,7 +124,7 @@ export const Navbar: React.FC<{
           {showUserDropDown && (
             <div
               onClick={keycloakSignOut}
-              className="absolute right-0 bg-defaultBackgroundBlue border mt-[0.5px] p-2 shadow-lg cursor-pointer"
+              className="absolute right-0 bg-primaryBlue hover:bg-primaryBlueHover border mt-[0.5px] p-2 shadow-lg cursor-pointer"
             >
               Sign Out
             </div>
@@ -133,14 +133,14 @@ export const Navbar: React.FC<{
       </Row>
 
       {activeSubMenu && (
-        <Row className="m-2 border-b border-gray-300">
+        <Row className="m-2 border-b border-dividerMedium">
           {activeSubMenu.map((item, index) => (
             <Link
               key={index}
               className={
-                "p-3 border border-gray-300" +
+                "p-3 border border-dividerMedium hover:bg-primaryBlueHover" +
                 (checkRoute(item.route)
-                  ? " bg-blue-50 font-semibold text-defaultTextBlue border-black"
+                  ? " bg-blue-50 font-semibold text-primaryText border-dividerDark hover:bg-primaryBlueHover"
                   : "")
               }
               href={item.route}
