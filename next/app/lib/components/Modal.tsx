@@ -53,8 +53,6 @@ export default function Modal({
 
   return (
     <>
-      {console.log(confirmBtnClasses)}
-
       <div
         className={`${showModal ? "fixed" : "hidden"} inset-0 z-[1000] bg-black/50`}
         aria-hidden="true"
