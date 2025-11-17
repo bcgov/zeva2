@@ -17,7 +17,7 @@ export default {
         disabledBG: "#EDEBE9",
         primaryGold: "#FCBA19",
         textOnPrimary: "#FFFFFF",
-        primaryRed: "#C#3E39",
+        primaryRed: "#CE3E39",
         primaryRedHover: "#A2312D",
         primaryRedPressed: "#721F1C",
 
@@ -46,7 +46,7 @@ export default {
 
         // Surface & background
         white: "#FFFFFF",
-        lightGray: "#FAF9F8",
+        lightGrey: "#FAF9F8",
         disabledSurface: "#EDEBE9",
 
         // Dividers/borders/overlays
