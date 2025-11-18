@@ -57,6 +57,7 @@ services:
       - DATABASE_URL=postgresql://postgres:postgres@db:5432/zeva?schema=public
       - DATABASE_URL_OLD=postgresql://postgres:postgres@host.docker.internal:5432/zeva?schema=public
       - CHECKPOINT_DISABLE=1
+      - LENIENT_REPORTING=true
       - START_WORKERS=false
       - TZ=America/Vancouver
     depends_on:

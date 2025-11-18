@@ -1,393 +1,362 @@
-import {
-  ModelYear,
-  Prisma,
-  TransactionType,
-  VehicleClass,
-  ZevClass,
-} from "@/prisma/generated/client";
-import { AdjustmentPayload, NvValues } from "./actions";
-import {
-  specialComplianceRatios,
-  SupplierClass,
-  unspecifiedComplianceRatios,
-} from "@/app/lib/constants/complianceRatio";
-import {
-  applyTransfersAway,
-  getSpecialZevClassPairs,
-  UnexpectedDebit,
-  ZevUnitRecord,
-} from "@/lib/utils/zevUnit";
-import { Decimal } from "@/prisma/generated/client/runtime/library";
-import { ReportSubDirectory } from "./constants";
-import { penaltyRates } from "@/app/lib/constants/penaltyRate";
-import { isVehicleClass, isZevClass } from "@/app/lib/utils/typeGuards";
-import {
-  getMatchingTerms,
-  getStringsToModelYearsEnumsMap,
-  getStringsToMyrStatusEnumsMap,
-  getStringsToMyrSupplierStatusEnumsMap,
-} from "@/app/lib/utils/enumMaps";
-import { MyrSparse } from "./data";
+// do not import, directly or indirectly, any Prisma versions of Decimal here!
 
-export const validatePrevBalanceTransactions = (
-  transactions: ZevUnitRecord[],
-) => {
-  transactions.forEach((transaction) => {
-    if (transaction.type === TransactionType.DEBIT) {
-      throw new UnexpectedDebit(
-        "Unexpected debit when collecting previous balance!",
-      );
-    }
-  });
-  return applyTransfersAway(transactions);
-};
+import Excel, { Workbook } from "exceljs";
+import { AssessmentTemplate, ForecastTemplate, MyrTemplate } from "./constants";
 
-export type ComplianceReduction = ZevUnitRecord & {
-  complianceRatio: string;
-  nv: string;
-};
-
-export const getReduction = (
-  complianceRatio: string,
-  nv: string,
-  vehicleClass: VehicleClass,
-  zevClass: ZevClass,
-  modelYear: ModelYear,
-): ComplianceReduction => {
-  const product = new Decimal(complianceRatio).times(new Decimal(nv));
-  const numberOfUnits = product.toDecimalPlaces(2);
-  return {
-    complianceRatio,
-    nv,
-    type: TransactionType.DEBIT,
-    vehicleClass,
-    zevClass,
-    modelYear,
-    numberOfUnits,
-  };
-};
-
-export const getComplianceRatioReductions = (
-  nvValues: NvValues,
-  modelYear: ModelYear,
-  supplierClass: SupplierClass,
-): ComplianceReduction[] => {
-  const result: ComplianceReduction[] = [];
-  if (supplierClass === "small volume supplier") {
-    Object.entries(nvValues).forEach(([vehicleClass, nv]) => {
-      if (isVehicleClass(vehicleClass)) {
-        result.push(
-          getReduction("0", nv, vehicleClass, ZevClass.UNSPECIFIED, modelYear),
-        );
-      }
-    });
-    return result;
-  }
-  Object.entries(nvValues).forEach(([vehicleClass, nv]) => {
-    if (isVehicleClass(vehicleClass)) {
-      const unspecifiedRatio =
-        unspecifiedComplianceRatios[vehicleClass]?.[modelYear];
-      if (!unspecifiedRatio) {
-        throw new Error("Unspecified Compliance Ratio not found!");
-      }
-      const unspecifiedReduction = getReduction(
-        unspecifiedRatio,
-        nv,
-        vehicleClass,
-        ZevClass.UNSPECIFIED,
-        modelYear,
-      );
-      if (
-        supplierClass === "large volume supplier" ||
-        (supplierClass === "medium volume supplier" &&
-          modelYear >= ModelYear.MY_2026)
-      ) {
-        const specialReductions: ComplianceReduction[] = [];
-        Object.entries(specialComplianceRatios).forEach(
-          ([specialVehicleClass, subMap]) => {
-            if (vehicleClass === specialVehicleClass) {
-              Object.entries(subMap).forEach(([specialZevClass, subSubMap]) => {
-                if (isZevClass(specialZevClass)) {
-                  const specialRatio = subSubMap[modelYear];
-                  if (specialRatio) {
-                    const specialReduction = getReduction(
-                      specialRatio,
-                      nv,
-                      specialVehicleClass,
-                      specialZevClass,
-                      modelYear,
-                    );
-                    unspecifiedReduction.numberOfUnits =
-                      unspecifiedReduction.numberOfUnits.minus(
-                        specialReduction.numberOfUnits,
-                      );
-                    specialReductions.push(specialReduction);
-                  }
-                }
-              });
-            }
-          },
-        );
-        result.push(...specialReductions, unspecifiedReduction);
-      } else {
-        result.push(unspecifiedReduction);
-      }
-    }
-  });
-  return result;
-};
-
-export const getTransformedAdjustments = (
-  adjustments: AdjustmentPayload[],
-): ZevUnitRecord[] => {
-  return adjustments.map((adjustment) => {
-    return {
-      ...adjustment,
-      numberOfUnits: new Decimal(adjustment.numberOfUnits),
-    };
-  });
-};
-
-export type UnitsAsString<T extends ZevUnitRecord> = Omit<
-  T,
-  "numberOfUnits"
-> & { numberOfUnits: string };
-
-export const getSerializedMyrRecords = <T extends ZevUnitRecord>(
-  records: T[],
-): UnitsAsString<T>[] => {
-  return records.map((record) => {
-    return {
-      ...record,
-      numberOfUnits: record.numberOfUnits.toString(),
-    };
-  });
-};
-
-export const getSerializedMyrRecordsExcludeKey = <
-  T extends ZevUnitRecord,
-  K extends keyof T,
->(
-  records: T[],
-  keyToExclude: K,
-): Omit<UnitsAsString<T>, K>[] => {
-  const serializedRecords = getSerializedMyrRecords<T>(records);
-  return serializedRecords.map((record) => {
-    const { [keyToExclude]: excludedKey, ...rest } = record;
-    return rest;
-  });
-};
-
-export const getZevUnitRecordsOrderByClause = (): [
-  { type: Prisma.SortOrder },
-  { vehicleClass: Prisma.SortOrder },
-  { zevClass: Prisma.SortOrder },
-  { modelYear: Prisma.SortOrder },
-] => {
-  return [
-    { type: "asc" },
-    {
-      vehicleClass: "asc",
-    },
-    {
-      zevClass: "asc",
-    },
-    {
-      modelYear: "asc",
-    },
-  ];
-};
-
-export const getReportFullObjectName = (
-  orgId: number,
-  myrOrForecast: "myr" | "forecast" | "assessment",
-  objectName: string,
-): string => {
-  switch (myrOrForecast) {
-    case "myr":
-      return `${orgId}/${ReportSubDirectory.ModelYearReport}/${objectName}`;
-    case "forecast":
-      return `${orgId}/${ReportSubDirectory.Forecast}/${objectName}`;
-    case "assessment":
-      return `${orgId}/${ReportSubDirectory.Assessment}/${objectName}`;
-  }
-};
-
-export type ComplianceInfo = {
-  isCompliant: boolean;
-  penalty: string;
-};
-
-export const getComplianceInfo = (
-  supplierClass: SupplierClass,
-  modelYear: ModelYear,
-  prevEndingBalance: ZevUnitRecord[],
-  endingBalance: ZevUnitRecord[],
-): ComplianceInfo => {
-  const result: ComplianceInfo = {
-    isCompliant: true,
-    penalty: "0",
-  };
-  const specialZevClassPairs = getSpecialZevClassPairs();
-  let hasCredit = false;
-  let hasDebit = false;
-  let hasSpecialDebit = false;
-  for (const record of endingBalance) {
-    if (
-      record.type === TransactionType.DEBIT &&
-      !record.numberOfUnits.equals(0)
-    ) {
-      hasDebit = true;
-      if (
-        record.vehicleClass === VehicleClass.REPORTABLE &&
-        specialZevClassPairs.some(
-          ([pairVehicleClass, pairZevClass]) =>
-            record.vehicleClass === pairVehicleClass &&
-            record.zevClass === pairZevClass,
-        )
-      ) {
-        hasSpecialDebit = true;
-      }
-    } else if (
-      record.type === TransactionType.CREDIT &&
-      !record.numberOfUnits.equals(0)
-    ) {
-      hasCredit = true;
-    }
-  }
+export const getMyrSheets = (workbook: Workbook) => {
+  const detailsSheet = workbook.getWorksheet(MyrTemplate.DetailsSheetName);
+  const supplierDetailsSheet = workbook.getWorksheet(
+    MyrTemplate.SupplierDetailsSheetName,
+  );
+  const complianceReductionsSheet = workbook.getWorksheet(
+    MyrTemplate.ComplianceReductionsSheetName,
+  );
+  const beginningBalanceSheet = workbook.getWorksheet(
+    MyrTemplate.BeginningBalanceSheetName,
+  );
+  const creditsSheet = workbook.getWorksheet(MyrTemplate.CreditsSheetName);
+  const offsetsAndTransfersAwaySheet = workbook.getWorksheet(
+    MyrTemplate.OffsetsAndTransfersAwaySheetName,
+  );
+  const prelimEndingBalanceSheet = workbook.getWorksheet(
+    MyrTemplate.PreliminaryEndingBalance,
+  );
   if (
-    hasSpecialDebit &&
-    (supplierClass === "large volume supplier" ||
-      (supplierClass === "medium volume supplier" &&
-        modelYear >= ModelYear.MY_2026))
+    !detailsSheet ||
+    !supplierDetailsSheet ||
+    !complianceReductionsSheet ||
+    !beginningBalanceSheet ||
+    !creditsSheet ||
+    !offsetsAndTransfersAwaySheet ||
+    !prelimEndingBalanceSheet
   ) {
-    result.isCompliant = false;
-    result.penalty = getPenalty(modelYear, prevEndingBalance, endingBalance);
-  } else if (supplierClass !== "small volume supplier") {
-    if (hasDebit && !hasCredit) {
-      result.isCompliant = false;
-      result.penalty = getPenalty(modelYear, prevEndingBalance, endingBalance);
-    } else if (hasDebit && hasCredit) {
-      throw new Error("Cannot determine compliance with section 10(2)!");
-    }
+    throw new Error("Missing sheet in Model Year Report!");
   }
+  return {
+    detailsSheet,
+    supplierDetailsSheet,
+    complianceReductionsSheet,
+    beginningBalanceSheet,
+    creditsSheet,
+    offsetsAndTransfersAwaySheet,
+    prelimEndingBalanceSheet,
+  };
+};
+
+export type FileZevUnitRecord = {
+  type: string;
+  vehicleClass: string;
+  zevClass: string;
+  modelYear: string;
+  numberOfUnits: string;
+};
+
+export type FileFinalEndingBalanceRecord = {
+  type: string;
+  vehicleClass: string;
+  zevClass: string;
+  modelYear: string;
+  initialNumberOfUnits: string;
+  divisor: string;
+  finalNumberOfUnits: string;
+};
+
+export type FileReductionRecord = {
+  ratio: string;
+  nv: string;
+} & Omit<FileZevUnitRecord, "type">;
+
+export type ParsedMyr = {
+  details: FileMyrDetails;
+  supplierDetails: FileMyrSupplierDetails;
+  complianceReductions: FileReductionRecord[];
+  beginningBalance: FileZevUnitRecord[];
+  credits: FileZevUnitRecord[];
+  offsetsAndTransfersAway: FileZevUnitRecord[];
+  prelimEndingBalance: FileZevUnitRecord[];
+};
+
+export const parseMyr = (workbook: Workbook): ParsedMyr => {
+  const sheets = getMyrSheets(workbook);
+  return {
+    details: parseMyrDetails(sheets.detailsSheet),
+    supplierDetails: parseSupplierDetails(sheets.supplierDetailsSheet),
+    complianceReductions: parseComplianceReductions(
+      sheets.complianceReductionsSheet,
+    ),
+    beginningBalance: parseZevUnitRecords(sheets.beginningBalanceSheet),
+    credits: parseZevUnitRecords(sheets.creditsSheet),
+    offsetsAndTransfersAway: parseZevUnitRecords(
+      sheets.offsetsAndTransfersAwaySheet,
+    ),
+    prelimEndingBalance: parseZevUnitRecords(sheets.prelimEndingBalanceSheet),
+  };
+};
+
+type FileMyrDetails = {
+  modelYear: string;
+  zevClassOrdering: string;
+};
+
+const parseMyrDetails = (sheet: Excel.Worksheet): FileMyrDetails => {
+  const row = sheet.getRow(2);
+  return {
+    modelYear: row.getCell(1).toString(),
+    zevClassOrdering: row.getCell(2).toString(),
+  };
+};
+
+type FileMyrSupplierDetails = {
+  legalName: string;
+  makes: string;
+  classification: string;
+  serviceAddress: string;
+  recordsAddress: string;
+};
+
+const parseSupplierDetails = (
+  sheet: Excel.Worksheet,
+): FileMyrSupplierDetails => {
+  const supplierDetailsRow = sheet.getRow(2);
+  return {
+    legalName: supplierDetailsRow.getCell(1).toString(),
+    makes: supplierDetailsRow.getCell(2).toString(),
+    classification: supplierDetailsRow.getCell(3).toString(),
+    serviceAddress: supplierDetailsRow.getCell(4).toString(),
+    recordsAddress: supplierDetailsRow.getCell(5).toString(),
+  };
+};
+
+const parseComplianceReductions = (
+  sheet: Excel.Worksheet,
+): FileReductionRecord[] => {
+  const result: FileReductionRecord[] = [];
+  sheet.eachRow((row, rowNumber) => {
+    if (rowNumber > 1) {
+      result.push({
+        ratio: row.getCell(1).toString(),
+        nv: row.getCell(2).toString(),
+        vehicleClass: row.getCell(3).toString(),
+        zevClass: row.getCell(4).toString(),
+        modelYear: row.getCell(5).toString(),
+        numberOfUnits: row.getCell(6).toString(),
+      });
+    }
+  });
   return result;
 };
 
-export const getPenalty = (
-  modelYear: ModelYear,
-  prevBalance: ZevUnitRecord[],
-  currentBalance: ZevUnitRecord[],
-): string => {
-  let penalty: Decimal = new Decimal(0);
-  const prevDebitVehicleClasses = new Set<VehicleClass>();
-  const penaltyRate = penaltyRates[modelYear];
-  prevBalance.forEach((record) => {
-    if (
-      record.type === TransactionType.DEBIT &&
-      !record.numberOfUnits.equals(0)
-    ) {
-      prevDebitVehicleClasses.add(record.vehicleClass);
+const parseZevUnitRecords = (sheet: Excel.Worksheet): FileZevUnitRecord[] => {
+  const result: FileZevUnitRecord[] = [];
+  sheet.eachRow((row, rowNumber) => {
+    if (rowNumber > 1) {
+      result.push({
+        type: row.getCell(1).toString(),
+        vehicleClass: row.getCell(2).toString(),
+        zevClass: row.getCell(3).toString(),
+        modelYear: row.getCell(4).toString(),
+        numberOfUnits: row.getCell(5).toString(),
+      });
     }
   });
-  if (prevDebitVehicleClasses.size === 0) {
-    return "0";
-  }
-  currentBalance.forEach((record) => {
-    if (
-      record.type === TransactionType.DEBIT &&
-      !record.numberOfUnits.equals(0) &&
-      prevDebitVehicleClasses.has(record.vehicleClass)
-    ) {
-      if (penaltyRate) {
-        penalty = penalty.plus(record.numberOfUnits.times(penaltyRate));
-      } else {
-        throw new Error("Penalty rate not found!");
-      }
-    }
-  });
-  return penalty.toFixed(2);
-};
-
-export const getWhereClause = (
-  filters: Record<string, string>,
-  userIsGov: boolean,
-): Prisma.ModelYearReportWhereInput => {
-  const result: Prisma.ModelYearReportWhereInput = {};
-  const modelYearsMap = getStringsToModelYearsEnumsMap();
-  const statusMap = getStringsToMyrStatusEnumsMap();
-  const supplierStatusMap = getStringsToMyrSupplierStatusEnumsMap();
-  for (const [key, rawValue] of Object.entries(filters)) {
-    const value = rawValue.trim();
-    if (key === "id") {
-      result[key] = parseInt(value, 10);
-    } else if (key === "modelYear") {
-      result[key] = {
-        in: getMatchingTerms(modelYearsMap, value),
-      };
-    } else if (key === "organization" && userIsGov) {
-      result[key] = {
-        is: { name: { contains: value, mode: "insensitive" } },
-      };
-    } else if (key === "status") {
-      if (userIsGov) {
-        result[key] = {
-          in: getMatchingTerms(statusMap, value),
-        };
-      } else {
-        result["supplierStatus"] = {
-          in: getMatchingTerms(supplierStatusMap, value),
-        };
-      }
-    }
-  }
   return result;
 };
 
-export const getOrderByClause = (
-  sorts: Record<string, string>,
-  defaultSortById: boolean,
-  userIsGov: boolean,
-): Prisma.ModelYearReportOrderByWithRelationInput[] => {
-  const result: Prisma.ModelYearReportOrderByWithRelationInput[] = [];
-  Object.entries(sorts).forEach(([key, value]) => {
-    const orderBy: Prisma.ModelYearReportOrderByWithRelationInput = {};
-    if (value === "asc" || value === "desc") {
-      if (key === "id" || key === "modelYear") {
-        orderBy[key] = value;
-      } else if (key === "organization" && userIsGov) {
-        orderBy[key] = {
-          name: value,
-        };
-      } else if (key === "status") {
-        if (userIsGov) {
-          orderBy[key] = value;
-        } else {
-          orderBy["supplierStatus"] = value;
-        }
-      }
-    }
-    if (Object.keys(orderBy).length > 0) {
-      result.push(orderBy);
+export const getAssessmentSheets = (workbook: Workbook) => {
+  const detailsSheet = workbook.getWorksheet(
+    AssessmentTemplate.DetailsSheetName,
+  );
+  const complianceReductionsSheet = workbook.getWorksheet(
+    AssessmentTemplate.ComplianceReductionsSheetName,
+  );
+  const beginningBalanceSheet = workbook.getWorksheet(
+    AssessmentTemplate.BeginningBalanceSheetName,
+  );
+  const creditsSheet = workbook.getWorksheet(
+    AssessmentTemplate.CreditsSheetName,
+  );
+  const previousAdjustmentsSheet = workbook.getWorksheet(
+    AssessmentTemplate.PreviousAdjustmentsSheetName,
+  );
+  const currentAdjustmentsSheet = workbook.getWorksheet(
+    AssessmentTemplate.CurrentAdjustmentsSheetName,
+  );
+  const offsetsAndTransfersAwaySheet = workbook.getWorksheet(
+    AssessmentTemplate.OffsetsAndTransfersAwaySheetName,
+  );
+  const finalEndingBalanceSheet = workbook.getWorksheet(
+    AssessmentTemplate.FinalEndingBalanceSheetName,
+  );
+  const statementsSheet = workbook.getWorksheet(
+    AssessmentTemplate.StatementsSheetName,
+  );
+  if (
+    !detailsSheet ||
+    !complianceReductionsSheet ||
+    !beginningBalanceSheet ||
+    !creditsSheet ||
+    !previousAdjustmentsSheet ||
+    !currentAdjustmentsSheet ||
+    !offsetsAndTransfersAwaySheet ||
+    !finalEndingBalanceSheet ||
+    !statementsSheet
+  ) {
+    throw new Error("Missing sheet in Assessment!");
+  }
+  return {
+    detailsSheet,
+    complianceReductionsSheet,
+    beginningBalanceSheet,
+    creditsSheet,
+    previousAdjustmentsSheet,
+    currentAdjustmentsSheet,
+    offsetsAndTransfersAwaySheet,
+    finalEndingBalanceSheet,
+    statementsSheet,
+  };
+};
+
+export type ParsedAssmnt = {
+  details: FileAssessmentDetails;
+  complianceReductions: FileReductionRecord[];
+  beginningBalance: FileZevUnitRecord[];
+  credits: FileZevUnitRecord[];
+  previousAdjustments: FileZevUnitRecord[];
+  currentAdjustments: FileZevUnitRecord[];
+  offsetsAndTransfersAway: FileZevUnitRecord[];
+  finalEndingBalance: FileFinalEndingBalanceRecord[];
+  statements: string[];
+};
+
+export type FileAssessmentDetails = {
+  supplierName: string;
+  modelYear: string;
+  classification: string;
+  zevClassOrdering: string;
+};
+
+export const parseAssessment = (workbook: Workbook): ParsedAssmnt => {
+  const sheets = getAssessmentSheets(workbook);
+  return {
+    details: parseAssessmentDetails(sheets.detailsSheet),
+    complianceReductions: parseComplianceReductions(
+      sheets.complianceReductionsSheet,
+    ),
+    beginningBalance: parseZevUnitRecords(sheets.beginningBalanceSheet),
+    credits: parseZevUnitRecords(sheets.creditsSheet),
+    previousAdjustments: parseZevUnitRecords(sheets.previousAdjustmentsSheet),
+    currentAdjustments: parseZevUnitRecords(sheets.currentAdjustmentsSheet),
+    offsetsAndTransfersAway: parseZevUnitRecords(
+      sheets.offsetsAndTransfersAwaySheet,
+    ),
+    finalEndingBalance: parseFinalEndingBalance(sheets.finalEndingBalanceSheet),
+    statements: parseStatements(sheets.statementsSheet),
+  };
+};
+
+const parseAssessmentDetails = (
+  sheet: Excel.Worksheet,
+): FileAssessmentDetails => {
+  const row = sheet.getRow(2);
+  return {
+    supplierName: row.getCell(1).toString(),
+    modelYear: row.getCell(2).toString(),
+    classification: row.getCell(3).toString(),
+    zevClassOrdering: row.getCell(4).toString(),
+  };
+};
+
+const parseFinalEndingBalance = (
+  sheet: Excel.Worksheet,
+): FileFinalEndingBalanceRecord[] => {
+  const result: FileFinalEndingBalanceRecord[] = [];
+  sheet.eachRow((row, rowNumber) => {
+    if (rowNumber > 1) {
+      result.push({
+        type: row.getCell(1).toString(),
+        vehicleClass: row.getCell(2).toString(),
+        zevClass: row.getCell(3).toString(),
+        modelYear: row.getCell(4).toString(),
+        initialNumberOfUnits: row.getCell(5).toString(),
+        divisor: row.getCell(6).toString(),
+        finalNumberOfUnits: row.getCell(7).toString(),
+      });
     }
   });
-  if (defaultSortById && result.length === 0) {
-    result.push({ id: "desc" });
-  }
   return result;
 };
 
-export type MyrSparseSerialized = Omit<MyrSparse, "supplierStatus">;
-
-export const getSerializedMyrs = (
-  myrs: MyrSparse[],
-  userIsGov: boolean,
-): MyrSparseSerialized[] => {
-  return myrs.map((myr) => {
-    const { supplierStatus, ...result } = myr;
-    if (!userIsGov) {
-      result.status = myr.supplierStatus;
-    }
-    return result;
+const parseStatements = (sheet: Excel.Worksheet): string[] => {
+  const result: string[] = [];
+  sheet.eachRow((row) => {
+    result.push(row.getCell(1).toString());
   });
+  return result;
+};
+
+export const getForecastSheets = (workbook: Workbook) => {
+  const zevSheet = workbook.getWorksheet(ForecastTemplate.ZevForecastSheetName);
+  const nonZevSheet = workbook.getWorksheet(
+    ForecastTemplate.NonZevForecastSheetName,
+  );
+  if (!zevSheet || !nonZevSheet) {
+    throw new Error("Missing sheet in Forecast Report!");
+  }
+  return {
+    zevSheet,
+    nonZevSheet,
+  };
+};
+
+type ZevForecastRecord = {
+  modelYear: string;
+  make: string;
+  model: string;
+  type: string;
+  range: string;
+  zevClass: string;
+  interiorVolume: string;
+  supplyForecast: string;
+};
+
+type NonZevForecastRecord = {
+  modelYear: string;
+  supplyForecast: string;
+};
+
+export type ParsedForecast = {
+  zevRecords: ZevForecastRecord[];
+  nonZevRecords: NonZevForecastRecord[];
+};
+
+export const parseForecast = (workbook: Workbook): ParsedForecast => {
+  const sheets = getForecastSheets(workbook);
+  const zevRecords: ZevForecastRecord[] = [];
+  const nonZevRecords: NonZevForecastRecord[] = [];
+  sheets.zevSheet.eachRow((row, rowNumber) => {
+    if (rowNumber > 1) {
+      zevRecords.push({
+        modelYear: row.getCell(1).toString(),
+        make: row.getCell(2).toString(),
+        model: row.getCell(3).toString(),
+        type: row.getCell(4).toString(),
+        range: row.getCell(5).toString(),
+        zevClass: row.getCell(6).toString(),
+        interiorVolume: row.getCell(7).toString(),
+        supplyForecast: row.getCell(8).toString(),
+      });
+    }
+  });
+  sheets.nonZevSheet.eachRow((row, rowNumber) => {
+    if (rowNumber > 1) {
+      nonZevRecords.push({
+        modelYear: row.getCell(1).toString(),
+        supplyForecast: row.getCell(2).toString(),
+      });
+    }
+  });
+  return {
+    zevRecords,
+    nonZevRecords,
+  };
 };

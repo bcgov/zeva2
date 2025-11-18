@@ -39,7 +39,7 @@ export const baseAgreementContent = [
     zevClass: ZevClass.B,
     modelYear: ModelYear.MY_2024,
     numberOfUnits: 50,
-  }
+  },
 ];
 
 export const baseAgreement: AgreementPayload = {
@@ -72,11 +72,7 @@ export const mockFunctions = (opt: {
   agreementId?: number;
   agreementData?: AgreementPayload;
 }) => {
-  const {
-    userInfo,
-    agreementId,
-    agreementData,
-  } = opt;
+  const { userInfo, agreementId, agreementData } = opt;
 
   // Mock the getUserInfo function.
   mockGetUserInfo(userInfo ?? baseGovUserInfo);
@@ -132,7 +128,7 @@ export const mockFunctionsWithError = (errorMessage: string) => {
   // Mock prisma.$transaction to simulate database operations with error.
   const err = new Error(errorMessage);
   jest.spyOn(prisma, "$transaction").mockImplementation(async (tx: any) =>
-  //(prisma.$transaction as jest.Mock).mockImplementation(async (tx: any) =>
+    //(prisma.$transaction as jest.Mock).mockImplementation(async (tx: any) =>
     tx({
       agreement: {
         create: jest.fn(() => Promise.reject(err)),

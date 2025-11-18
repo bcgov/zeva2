@@ -1,4 +1,11 @@
-import { jest, describe, it, expect, beforeEach, afterEach } from "@jest/globals";
+import {
+  jest,
+  describe,
+  it,
+  expect,
+  beforeEach,
+  afterEach,
+} from "@jest/globals";
 import { ModelYear, Role, ZevClass } from "@/prisma/generated/client";
 import { AgreementContentPayload, saveAgreement } from "../action";
 import { prisma } from "@/lib/prisma";
@@ -29,15 +36,15 @@ const mockedDate = new Date("2025-09-15T16:20:00.000Z");
 
 // Helper function to assert agreement-related calls
 const assertAgreement = (
-    agreementId: number,
-    userId: number,
-    deleteManyAgreementContentFn: jest.Mock,
-    createManyAgreementContentFn: jest.Mock,
-    createManyAgreementAttachmentFn: jest.Mock,
-    createAgreementHistoryFn: jest.Mock,
-    expectedAgreementContent: AgreementContentPayload[],
-    expectedAttachments: any[] = [],
-  ) => {
+  agreementId: number,
+  userId: number,
+  deleteManyAgreementContentFn: jest.Mock,
+  createManyAgreementContentFn: jest.Mock,
+  createManyAgreementAttachmentFn: jest.Mock,
+  createAgreementHistoryFn: jest.Mock,
+  expectedAgreementContent: AgreementContentPayload[],
+  expectedAttachments: any[] = [],
+) => {
   expect(deleteManyAgreementContentFn).toHaveBeenCalledTimes(1);
   expect(deleteManyAgreementContentFn).toHaveBeenCalledWith({
     where: { agreementId },
@@ -69,7 +76,6 @@ const assertAgreement = (
     },
   });
 };
-
 
 describe("Agreement action: saveAgreement", () => {
   beforeEach(() => {
@@ -125,7 +131,10 @@ describe("Agreement action: saveAgreement", () => {
       { zevClass: ZevClass.B, modelYear: ModelYear.MY_2022, numberOfUnits: 0 },
       { zevClass: ZevClass.A, modelYear: ModelYear.MY_2022, numberOfUnits: -5 },
     ];
-    const result = await saveAgreement({...baseAgreement, agreementContent }, []);
+    const result = await saveAgreement(
+      { ...baseAgreement, agreementContent },
+      [],
+    );
 
     expect(createAgreementFn).toHaveBeenCalledTimes(1);
     expect(createAgreementFn).toHaveBeenCalledWith({
@@ -159,7 +168,11 @@ describe("Agreement action: saveAgreement", () => {
       agreementData: baseAgreement,
     });
 
-    const result = await saveAgreement(baseAgreement, baseAttachments, agreementId);
+    const result = await saveAgreement(
+      baseAgreement,
+      baseAttachments,
+      agreementId,
+    );
 
     expect(updateAgreementFn).toHaveBeenCalledTimes(1);
     expect(updateAgreementFn).toHaveBeenCalledWith({
@@ -175,7 +188,7 @@ describe("Agreement action: saveAgreement", () => {
       createManyAgreementAttachmentFn,
       createAgreementHistoryFn,
       baseAgreementContent,
-      baseAttachments
+      baseAttachments,
     );
 
     expect(result).toEqual(createdAgreement);
@@ -186,10 +199,16 @@ describe("Agreement action: saveAgreement", () => {
 
     // Mock remoteObject to avoid actual remote calls
     const removeObjectFn = jest.fn(() => Promise.resolve());
-    jest.spyOn(require("@/app/lib/minio"), "removeObjects").mockImplementation(removeObjectFn);
+    jest
+      .spyOn(require("@/app/lib/minio"), "removeObjects")
+      .mockImplementation(removeObjectFn);
 
     const agreementId = 10;
-    const result = await saveAgreement(baseAgreement, baseAttachments, agreementId);
+    const result = await saveAgreement(
+      baseAgreement,
+      baseAttachments,
+      agreementId,
+    );
     expect(removeObjectFn).toHaveBeenCalledTimes(1);
     expect(result).toBeUndefined();
     expect(consoleSpy).toHaveBeenCalled();

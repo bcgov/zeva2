@@ -1,10 +1,15 @@
+import Excel from "exceljs";
 import { SupplierClass } from "@/app/lib/constants/complianceRatio";
 import {
   getCompliancePeriod,
   getDominatedComplianceYears,
 } from "@/app/lib/utils/complianceYear";
 import { prisma } from "@/lib/prisma";
-import { calculateBalance, ZevUnitRecord } from "@/lib/utils/zevUnit";
+import {
+  calculateBalance,
+  flattenZevUnitRecords,
+  ZevUnitRecord,
+} from "@/lib/utils/zevUnit";
 import {
   AddressType,
   ModelYear,
@@ -16,7 +21,6 @@ import {
   SupplyVolume,
   VehicleClass,
   ZevClass,
-  ZevUnitTransaction,
 } from "@/prisma/generated/client";
 import { Decimal } from "@/prisma/generated/client/runtime/library";
 import {
@@ -24,9 +28,13 @@ import {
   getZevUnitRecordsOrderByClause,
   getComplianceRatioReductions,
   getTransformedAdjustments,
-} from "./utils";
+  parseMyrForAssessmentData,
+  parseAssesmentForData,
+} from "./utilsServer";
 import { TransactionClient } from "@/types/prisma";
 import { AdjustmentPayload, NvValues } from "./actions";
+import { getObject } from "@/app/lib/minio";
+import { getArrayBuffer } from "@/app/lib/utils/parseReadable";
 
 export type OrgNameAndAddresses = {
   name: string;
@@ -97,6 +105,7 @@ export const getSupplierClass = async (
       { modelYear: precedingMys[2] },
     ],
     organizationId,
+    vehicleClass: VehicleClass.REPORTABLE,
   };
   let volumes: SupplyVolume[] = [];
   if (modelYear < ModelYear.MY_2024) {
@@ -165,7 +174,8 @@ export const getPrevEndingBalance = async (
       },
       orderBy: getZevUnitRecordsOrderByClause(),
     });
-    return validatePrevBalanceTransactions(transactions);
+    const validatedTransactions = validatePrevBalanceTransactions(transactions);
+    return flattenZevUnitRecords(validatedTransactions);
   }
   const result: ZevUnitRecord[] = [];
   const prevCy = prevEndingBalance.complianceYear;
@@ -204,20 +214,21 @@ export const getPrevEndingBalance = async (
     },
     orderBy: getZevUnitRecordsOrderByClause(),
   });
-  result.push(...validatePrevBalanceTransactions(transactions));
+  const validatedTransactions = validatePrevBalanceTransactions(transactions);
+  result.push(...flattenZevUnitRecords(validatedTransactions));
   return result;
 };
 
-export type MyrZevUnitTransaction = Omit<
-  ZevUnitTransaction,
-  "id" | "organizationId" | "timestamp"
->;
+export type MyrZevUnitTransaction = ZevUnitRecord & {
+  referenceType: ReferenceType;
+};
 
 export const getTransactionsForModelYear = async (
   organizationId: number,
   modelYear: ModelYear,
   excludeReductions: boolean,
 ): Promise<MyrZevUnitTransaction[]> => {
+  const result: MyrZevUnitTransaction[] = [];
   const { closedLowerBound, openUpperBound } = getCompliancePeriod(modelYear);
   const whereClause: Prisma.ZevUnitTransactionWhereInput = {
     organizationId,
@@ -231,15 +242,34 @@ export const getTransactionsForModelYear = async (
       referenceType: ReferenceType.OBLIGATION_REDUCTION,
     };
   }
-  return await prisma.zevUnitTransaction.findMany({
+  const transactions = await prisma.zevUnitTransaction.findMany({
     where: whereClause,
     omit: {
       id: true,
       organizationId: true,
       timestamp: true,
+      referenceId: true,
+      legacyReferenceId: true,
     },
     orderBy: getZevUnitRecordsOrderByClause(),
   });
+  const referenceTypeMap: Partial<
+    Record<ReferenceType, [ReferenceType, ZevUnitRecord[]]>
+  > = {};
+  transactions.forEach((transaction) => {
+    const referenceType = transaction.referenceType;
+    if (!referenceTypeMap[referenceType]) {
+      referenceTypeMap[referenceType] = [referenceType, []];
+    }
+    referenceTypeMap[referenceType][1].push(transaction);
+  });
+  Object.values(referenceTypeMap).forEach(([referenceType, records]) => {
+    const flattenedRecords = flattenZevUnitRecords(records);
+    result.push(
+      ...flattenedRecords.map((record) => ({ ...record, referenceType })),
+    );
+  });
+  return result;
 };
 
 export const getZevUnitData = async (
@@ -333,7 +363,7 @@ export type ReassessableMyr = {
   isLegacy: boolean | null;
 };
 
-export const getReassessableMyr = async (
+export const getReassessableMyrData = async (
   organizationId: number,
   modelYear: ModelYear,
 ): Promise<ReassessableMyr> => {
@@ -385,4 +415,44 @@ export const getReassessableMyr = async (
     }
   });
   return result;
+};
+
+export const getMyrDataForAssessment = async (myrId: number) => {
+  const myr = await prisma.modelYearReport.findUnique({
+    where: {
+      id: myrId,
+    },
+    select: {
+      organization: {
+        select: {
+          id: true,
+          name: true,
+        },
+      },
+      modelYear: true,
+      objectName: true,
+    },
+  });
+  if (!myr) {
+    throw new Error("Model Year Report not found!");
+  }
+  const myrFile = await getObject(myr.objectName);
+  const myrBuf = await getArrayBuffer(myrFile);
+  const myrWorkbook = new Excel.Workbook();
+  await myrWorkbook.xlsx.load(myrBuf);
+  const data = parseMyrForAssessmentData(myrWorkbook);
+  return {
+    orgName: myr.organization.name,
+    organizationId: myr.organization.id,
+    modelYear: myr.modelYear,
+    ...data,
+  };
+};
+
+export const getAssessmentSystemData = async (objectName: string) => {
+  const assessmentFile = await getObject(objectName);
+  const assessmentBuf = await getArrayBuffer(assessmentFile);
+  const assessmentWorkbook = new Excel.Workbook();
+  await assessmentWorkbook.xlsx.load(assessmentBuf);
+  return parseAssesmentForData(assessmentWorkbook);
 };

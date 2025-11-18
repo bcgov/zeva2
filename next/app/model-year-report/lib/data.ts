@@ -7,7 +7,8 @@ import {
   Prisma,
   Role,
 } from "@/prisma/generated/client";
-import { getOrderByClause, getWhereClause } from "./utils";
+import { getOrderByClause, getWhereClause } from "./utilsServer";
+import { getObject } from "@/app/lib/minio";
 
 export const modelYearReportExists = async (modelYear: ModelYear) => {
   const { userOrgId } = await getUserInfo();
@@ -79,14 +80,33 @@ export const getMyrHistory = async (myrId: number) => {
 };
 
 export const getModelYearReportDetails = async (id: number) => {
-  const { userIsGov, userOrgId } = await getUserInfo();
-  const whereClause: Prisma.ModelYearReportWhereUniqueInput = {
+  const { userIsGov, userOrgId, userRoles } = await getUserInfo();
+  let whereClause: Prisma.ModelYearReportWhereUniqueInput = {
     id,
   };
   if (!userIsGov) {
     whereClause.organizationId = userOrgId;
+  } else if (userIsGov && userRoles.includes(Role.ENGINEER_ANALYST)) {
+    whereClause = {
+      ...whereClause,
+      NOT: {
+        status: ModelYearReportStatus.RETURNED_TO_SUPPLIER,
+      },
+    };
+  } else if (userIsGov && userRoles.includes(Role.DIRECTOR)) {
+    whereClause = {
+      ...whereClause,
+      status: {
+        in: [
+          ModelYearReportStatus.SUBMITTED_TO_DIRECTOR,
+          ModelYearReportStatus.ASSESSED,
+        ],
+      },
+    };
+  } else {
+    return null;
   }
-  return await prisma.modelYearReport.findUnique({
+  const myr = await prisma.modelYearReport.findUnique({
     where: whereClause,
     select: {
       organization: {
@@ -96,9 +116,21 @@ export const getModelYearReportDetails = async (id: number) => {
       },
       status: true,
       supplierStatus: true,
-      modelYear: true,
+      objectName: true,
+      forecastReportObjectName: true,
     },
   });
+  if (!myr) {
+    return null;
+  }
+  const myrFile = await getObject(myr.objectName);
+  const forecastFile = await getObject(myr.forecastReportObjectName);
+  return {
+    status: myr.status,
+    supplierStatus: myr.supplierStatus,
+    myrFile,
+    forecastFile,
+  };
 };
 
 export type MyrSparse = {
@@ -139,7 +171,7 @@ export const getModelYearReports = async (
       },
     };
     if (userRoles.includes(Role.DIRECTOR)) {
-      where.ModelYearReportHistory = {
+      where.modelYearReportHistory = {
         some: {
           userAction: ModelYearReportStatus.SUBMITTED_TO_DIRECTOR,
         },
@@ -180,4 +212,58 @@ export const getLatestReassessment = async (
       sequenceNumber: "desc",
     },
   });
+};
+
+export const getAssessmentObject = async (myrId: number) => {
+  const { userIsGov, userOrgId, userRoles } = await getUserInfo();
+  let whereClause: Prisma.ModelYearReportWhereUniqueInput = {
+    id: myrId,
+  };
+  if (!userIsGov) {
+    whereClause = {
+      ...whereClause,
+      organizationId: userOrgId,
+      status: ModelYearReportStatus.ASSESSED,
+    };
+  } else if (userIsGov && userRoles.includes(Role.ENGINEER_ANALYST)) {
+    whereClause = {
+      ...whereClause,
+      NOT: {
+        status: {
+          in: [
+            ModelYearReportStatus.RETURNED_TO_SUPPLIER,
+            ModelYearReportStatus.SUBMITTED_TO_GOVERNMENT,
+          ],
+        },
+      },
+    };
+  } else if (userIsGov && userRoles.includes(Role.DIRECTOR)) {
+    whereClause = {
+      ...whereClause,
+      status: {
+        in: [
+          ModelYearReportStatus.SUBMITTED_TO_DIRECTOR,
+          ModelYearReportStatus.ASSESSED,
+        ],
+      },
+    };
+  } else {
+    return null;
+  }
+  const myr = await prisma.modelYearReport.findUnique({
+    where: whereClause,
+    select: {
+      id: true,
+      assessment: {
+        select: {
+          objectName: true,
+        },
+      },
+    },
+  });
+  if (!myr || !myr.assessment) {
+    return null;
+  }
+  const assessmentFile = await getObject(myr.assessment.objectName);
+  return assessmentFile;
 };

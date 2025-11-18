@@ -50,27 +50,30 @@ const OrganizationEditForm = (props: {
   );
   const [recordsAddress] = recordsAddressState;
 
-  const handleSubmit = useCallback(async (e: FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    const orgName = cleanupStringData(organizationName);
-    const shortOrgName = cleanupStringData(shortName);
-    if (!orgName || !shortOrgName) {
-      setErrorMsg(
-        "Both the organization name and the common name are required.",
-      );
-      return;
-    }
-    const data: OrganizationPayload = {
-      name: orgName,
-      shortName: shortOrgName,
-      isActive,
-      isGovernment: false,
-      serviceAddress: cleanupAddressData(serviceAddress),
-      recordsAddress: cleanupAddressData(recordsAddress),
-    };
-    await props.upsertData(data);
-    window.location.reload(); // Reload to reflect changes if not redirected
-  }, [organizationName, shortName, isActive, serviceAddress, recordsAddress]);
+  const handleSubmit = useCallback(
+    async (e: FormEvent<HTMLFormElement>) => {
+      e.preventDefault();
+      const orgName = cleanupStringData(organizationName);
+      const shortOrgName = cleanupStringData(shortName);
+      if (!orgName || !shortOrgName) {
+        setErrorMsg(
+          "Both the organization name and the common name are required.",
+        );
+        return;
+      }
+      const data: OrganizationPayload = {
+        name: orgName,
+        shortName: shortOrgName,
+        isActive,
+        isGovernment: false,
+        serviceAddress: cleanupAddressData(serviceAddress),
+        recordsAddress: cleanupAddressData(recordsAddress),
+      };
+      await props.upsertData(data);
+      window.location.reload(); // Reload to reflect changes if not redirected
+    },
+    [organizationName, shortName, isActive, serviceAddress, recordsAddress],
+  );
 
   return (
     <>

@@ -1,4 +1,11 @@
-import { jest, describe, it, expect, beforeEach, afterEach } from "@jest/globals";
+import {
+  jest,
+  describe,
+  it,
+  expect,
+  beforeEach,
+  afterEach,
+} from "@jest/globals";
 import { AgreementStatus } from "@/prisma/generated/client";
 import { updateStatus } from "../action";
 import { prisma } from "@/lib/prisma";
@@ -63,19 +70,16 @@ describe("Agreement action: updateStatus", () => {
   });
 
   it("updates the agreement status", async () => {
-    const {
-      updateAgreementFn,
-      createAgreementHistoryFn,
-    } = mockFunctions({
+    const { updateAgreementFn, createAgreementHistoryFn } = mockFunctions({
       agreementId,
     });
-    
+
     const result = await updateStatus(agreementId, newStatus);
 
     expect(updateAgreementFn).toHaveBeenCalledTimes(1);
     expect(updateAgreementFn).toHaveBeenCalledWith({
       where: { id: agreementId },
-      data: { status: newStatus},
+      data: { status: newStatus },
     });
 
     expect(createAgreementHistoryFn).toHaveBeenCalledTimes(1);
