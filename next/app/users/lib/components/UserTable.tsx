@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useMemo } from "react";
+import { useMemo } from "react";
 import { ColumnDef, createColumnHelper } from "@tanstack/react-table";
 import { Table } from "@/app/lib/components";
 import type { UserWithOrgName } from "../data";
@@ -48,12 +48,6 @@ export default function UserTable({
       columnHelper.accessor("idpUsername", {
         header: () => <span>IDP Username</span>,
         cell: (info) => info.getValue(),
-        enableSorting: true,
-        enableColumnFilter: true,
-      }),
-      columnHelper.accessor("isActive", {
-        header: () => <span>Status</span>,
-        cell: (info) => (info.getValue() ? "Active" : "Inactive"),
         enableSorting: true,
         enableColumnFilter: true,
       }),

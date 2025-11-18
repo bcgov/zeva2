@@ -11,3 +11,9 @@ export const supplierRoles: readonly Role[] = [
   Role.SIGNING_AUTHORITY,
   Role.ZEVA_USER,
 ];
+
+export enum ActiveFilter {
+  key = "isActive",
+  activeValue = "active",
+  inactiveValue = "inactive",
+}
