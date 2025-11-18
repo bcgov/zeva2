@@ -3,8 +3,8 @@
 @tailwind utilities;
 
 :root {
-  --background: #f2f2f2;
-  --foreground: #171717;
+  --background: theme("colors.white");
+  --foreground: theme("colors.primaryText");
 }
 
 /* BC Sans Regular */
@@ -42,9 +42,7 @@ body {
 }
 
 button {
-  @apply m-1;
-  @apply bg-primaryBlue;
-  @apply text-white;
+  @apply m-1 bg-primaryBlue text-white hover:bg-primaryBlueHover;
 }
 
 .white-button {
@@ -56,5 +54,5 @@ button {
 .section-title {
   font-size: 1.2rem;
   font-weight: bold;
-  color: theme("colors.defaultTextBlue");
+  color: theme("colors.primaryBlue");
 }
