@@ -13,13 +13,13 @@ import {
 } from "@/prisma/generated/client";
 import { DirectorActions } from "../lib/components/DirectorActions";
 import { AnalystActions } from "../lib/components/AnalystActions";
-import { AttachmentsDownload } from "@/app/lib/components/AttachmentsDownload";
-import { getDocumentDownloadUrls } from "../lib/actions";
+import { AssessmentDetails } from "../lib/components/AssessmentDetails";
+import { ForecastReportDetails } from "../lib/components/ForecastReportDetails";
 
 const Page = async (props: { params: Promise<{ id: string }> }) => {
   const args = await props.params;
-  const id = parseInt(args.id, 10);
-  const myr = await getModelYearReport(id);
+  const myrId = parseInt(args.id, 10);
+  const myr = await getModelYearReport(myrId);
   if (!myr) {
     return null;
   }
@@ -28,7 +28,6 @@ const Page = async (props: { params: Promise<{ id: string }> }) => {
     myr.modelYear,
   );
   const status = myr.status;
-  const modelYear = myr.modelYear;
   let assessableReassessmentId = null;
   let canConductReassessment = false;
   if (
@@ -52,50 +51,45 @@ const Page = async (props: { params: Promise<{ id: string }> }) => {
   const { userIsGov, userRoles } = await getUserInfo();
   let actionComponent: JSX.Element | null = null;
   if (!userIsGov) {
-    actionComponent = <SupplierActions id={id} status={status} />;
+    actionComponent = <SupplierActions id={myrId} status={status} />;
   } else if (userIsGov && userRoles.includes(Role.DIRECTOR)) {
     actionComponent = (
       <DirectorActions
-        id={id}
-        organizationId={myr.organizationId}
-        modelYear={modelYear}
-        status={status}
+        myrId={myrId}
         assessableReassessmentId={assessableReassessmentId}
+        status={status}
       />
     );
   } else if (userIsGov && userRoles.includes(Role.ENGINEER_ANALYST)) {
     actionComponent = (
       <AnalystActions
-        id={id}
+        id={myrId}
         status={status}
         canConductReassessment={canConductReassessment}
       />
     );
   }
 
-  const download = async () => {
-    "use server";
-    return getDocumentDownloadUrls(id);
-  };
-
   return (
     <div className="flex flex-col w-1/3">
       <ContentCard title="Model Year Report History">
         <Suspense fallback={<LoadingSkeleton />}>
-          <ModelYearReportHistory id={id} />
+          <ModelYearReportHistory id={myrId} />
         </Suspense>
       </ContentCard>
       <ContentCard title="Model Year Report Details">
         <Suspense fallback={<LoadingSkeleton />}>
-          <ModelYearReportDetails id={id} />
+          <ModelYearReportDetails id={myrId} />
         </Suspense>
       </ContentCard>
-      <ContentCard title="Model Year Report Documents">
+      <ContentCard title="Forecast Report Details">
         <Suspense fallback={<LoadingSkeleton />}>
-          <AttachmentsDownload
-            download={download}
-            zipName={`model-year-report-documents-${id}`}
-          />
+          <ForecastReportDetails myrId={myrId} />
+        </Suspense>
+      </ContentCard>
+      <ContentCard title="Assessment Details">
+        <Suspense fallback={<LoadingSkeleton />}>
+          <AssessmentDetails myrId={myrId} />
         </Suspense>
       </ContentCard>
       <ContentCard title="Actions">

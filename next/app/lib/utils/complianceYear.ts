@@ -57,10 +57,13 @@ export const getModelYearReportModelYear = () => {
   const date = now.getDate();
   if (month === 9 && date >= 1 && date <= 20) {
     return modelYearsMap[year - 1];
-  } else if (month >= 9) {
-    return modelYearsMap[year];
-  } else if (month < 9) {
-    return modelYearsMap[year - 1];
+  }
+  if (process.env.LENIENT_REPORTING === "true") {
+    if (month >= 9) {
+      return modelYearsMap[year];
+    } else if (month < 9) {
+      return modelYearsMap[year - 1];
+    }
   }
 };
 

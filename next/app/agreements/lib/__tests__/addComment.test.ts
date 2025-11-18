@@ -1,4 +1,11 @@
-import { jest, describe, it, expect, beforeEach, afterEach } from "@jest/globals";
+import {
+  jest,
+  describe,
+  it,
+  expect,
+  beforeEach,
+  afterEach,
+} from "@jest/globals";
 import { AgreementUserAction } from "@/prisma/generated/client";
 import { addComment } from "../action";
 import { prisma } from "@/lib/prisma";
@@ -16,7 +23,7 @@ jest.mock("@/auth", () => ({
 jest.mock("@/lib/prisma", () => ({
   prisma: {
     $transaction: jest.fn(),
-    agreementHistory: { create: jest.fn()},
+    agreementHistory: { create: jest.fn() },
   },
 }));
 
@@ -32,7 +39,7 @@ const createdHistoryComment = {
   agreementComment: {
     id: 99,
     comment: testComment,
-  }
+  },
 };
 
 describe("Agreement action: addComment", () => {
@@ -60,7 +67,8 @@ describe("Agreement action: addComment", () => {
     mockFunctions({
       userInfo: baseGovUserInfo,
     });
-    const mockedHistoryCreate = jest.spyOn(prisma.agreementHistory, "create")
+    const mockedHistoryCreate = jest
+      .spyOn(prisma.agreementHistory, "create")
       .mockResolvedValue(createdHistoryComment);
 
     const result = await addComment(agreementId, testComment);
@@ -71,7 +79,8 @@ describe("Agreement action: addComment", () => {
   it("returns null and logs error if transaction fails", async () => {
     const errorMessage = "Operation failed";
     const { consoleSpy } = mockFunctionsWithError(errorMessage);
-    const mockedHistoryCreate = jest.spyOn(prisma.agreementHistory, "create")
+    const mockedHistoryCreate = jest
+      .spyOn(prisma.agreementHistory, "create")
       .mockRejectedValue(new Error(errorMessage));
 
     const result = await addComment(agreementId, testComment);

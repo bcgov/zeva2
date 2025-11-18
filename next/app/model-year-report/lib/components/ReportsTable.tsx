@@ -7,7 +7,7 @@ import {
   getModelYearEnumsToStringsMap,
   getMyrStatusEnumsToStringsMap,
 } from "@/app/lib/utils/enumMaps";
-import { MyrSparseSerialized } from "../utils";
+import { MyrSparseSerialized } from "../utilsServer";
 import { useRouter } from "next/navigation";
 import { Routes } from "@/app/lib/constants";
 

@@ -42,7 +42,7 @@ export const getMatchingTerms = <Term>(
 };
 
 export const lowerCaseAndCapitalize = (s: string) => {
-  const firstLetter = s.charAt(0);
+  const firstLetter = s.charAt(0).toUpperCase();
   const lowerCasedTail = s.toLowerCase().slice(1);
   return firstLetter + lowerCasedTail;
 };

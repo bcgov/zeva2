@@ -1,5 +1,5 @@
 import { TransactionClient } from "@/types/prisma";
-import { ModelYear } from "../generated/client";
+import { ModelYear, VehicleClass } from "../generated/client";
 import { prismaOld } from "@/lib/prismaOld";
 
 export const seedVolumes = async (
@@ -28,6 +28,7 @@ export const seedVolumes = async (
       await tx.legacySalesVolume.create({
         data: {
           organizationId: newOrgId,
+          vehicleClass: VehicleClass.REPORTABLE,
           modelYear: modelYearEnum,
           volume,
         },
@@ -36,6 +37,7 @@ export const seedVolumes = async (
       await tx.supplyVolume.create({
         data: {
           organizationId: newOrgId,
+          vehicleClass: VehicleClass.REPORTABLE,
           modelYear: modelYearEnum,
           volume,
         },
