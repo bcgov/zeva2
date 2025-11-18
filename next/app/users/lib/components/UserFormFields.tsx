@@ -65,7 +65,9 @@ export function UserFormFields({
     setPendingActive(null);
   };
 
-  const modalTitle = pendingActive ? "Confirm: Activate User" : "Confirm: Deactivate User";
+  const modalTitle = pendingActive
+    ? "Confirm: Activate User"
+    : "Confirm: Deactivate User";
   const modalConfirmLabel = pendingActive ? "Activate" : "Deactivate";
   const modalConfirmClass = pendingActive ? "btn-primary" : "btn-danger";
 

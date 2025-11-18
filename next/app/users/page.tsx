@@ -43,6 +43,7 @@ export default async function Page(props: {
             pathname: "/users",
             query: {
               ...searchParams,
+              page: "1",
               filters: getFilterStringWithActiveFilter(filters, true),
             },
           }}
@@ -59,6 +60,7 @@ export default async function Page(props: {
             pathname: "/users",
             query: {
               ...searchParams,
+              page: "1",
               filters: getFilterStringWithActiveFilter(filters, false),
             },
           }}
