@@ -8,36 +8,11 @@ import { Button } from "../lib/components";
 import { getUserInfo } from "@/auth";
 import UserTable from "./lib/components/UserTable";
 import { redirect } from "next/navigation";
-import { userIsAdmin } from "./lib/utils";
-
-function normalizeStatus(sp?: Record<string, string | string[] | undefined>) {
-  const raw = (sp?.status ?? "active");
-  const status = Array.isArray(raw) ? raw[0] : raw;
-  return status === "inactive" ? "inactive" : "active";
-}
-
-function withIsActiveFilter<TFilters>(
-  filters: TFilters,
-  isActive: boolean
-): TFilters {
-  if (Array.isArray(filters)) {
-    const arr = filters as Array<{ id: string; value: unknown }>;
-    const without = arr.filter((f) => f.id !== "isActive");
-    return [...without, { id: "isActive", value: isActive }] as unknown as TFilters;
-  }
-  if (filters && typeof filters === "object") {
-    return { ...(filters as Record<string, unknown>), isActive } as TFilters;
-  }
-  return [{ id: "isActive", value: isActive }] as unknown as TFilters;
-}
-
-function toSearchString(params: Record<string, string | number | undefined>) {
-  const usp = new URLSearchParams();
-  Object.entries(params).forEach(([k, v]) => {
-    if (v !== undefined && v !== null) usp.set(k, String(v));
-  });
-  return `?${usp.toString()}`;
-}
+import {
+  getFilterStringWithActiveFilter,
+  getTransformedFilters,
+  userIsAdmin,
+} from "./lib/utils";
 
 export default async function Page(props: {
   searchParams?: Promise<pageStringParams>;
@@ -46,23 +21,14 @@ export default async function Page(props: {
   const isAdmin = await userIsAdmin();
   const searchParams = await props.searchParams;
   const { page, pageSize, filters, sorts } = getPageParams(searchParams, 1, 10);
-  const status = normalizeStatus(searchParams);
-  const isActive = status === "active";
-  const filtersWithStatus = withIsActiveFilter(filters, isActive ? "active" : "inactive");
+  const { filters: transformedFilters, isActive } =
+    getTransformedFilters(filters);
   const { users, totalCount } = await fetchUsers(
     page,
     pageSize,
-    filtersWithStatus,
+    transformedFilters,
     sorts,
   );
-
-  const baseParams = {
-    page: 1,
-    pageSize,
-  };
-
-  const activeHref = toSearchString({ ...baseParams, status: "active" });
-  const inactiveHref = toSearchString({ ...baseParams, status: "inactive" });
 
   return (
     <Suspense key={Date.now()} fallback={<LoadingSkeleton />}>
@@ -73,7 +39,13 @@ export default async function Page(props: {
       )}
       <div className="mb-4 flex gap-2 border-b">
         <Link
-          href={activeHref}
+          href={{
+            pathname: "/users",
+            query: {
+              ...searchParams,
+              filters: getFilterStringWithActiveFilter(filters, true),
+            },
+          }}
           className={`px-3 py-2 text-sm font-medium border-b-2 -mb-px ${
             isActive
               ? "border-blue-600 text-blue-700"
@@ -83,7 +55,13 @@ export default async function Page(props: {
           Active users
         </Link>
         <Link
-          href={inactiveHref}
+          href={{
+            pathname: "/users",
+            query: {
+              ...searchParams,
+              filters: getFilterStringWithActiveFilter(filters, false),
+            },
+          }}
           className={`px-3 py-2 text-sm font-medium border-b-2 -mb-px ${
             !isActive
               ? "border-blue-600 text-blue-700"

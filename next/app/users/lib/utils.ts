@@ -1,7 +1,9 @@
 import { getStringsToRoleEnumsMap } from "@/app/lib/utils/enumMaps";
 import { getUserInfo } from "@/auth";
 import { UserWithOrg } from "@/lib/data/user";
+import { getString } from "@/lib/utils/urlSearchParams";
 import { Prisma, Role } from "@/prisma/generated/client";
+import { ActiveFilter } from "./constants";
 
 export const userConfiguredCorrectly = (user: UserWithOrg) => {
   const govRoles: Role[] = [
@@ -49,11 +51,11 @@ export const getWhereClause = (
         contains: newValue,
         mode: "insensitive",
       };
-    } else if (key === "isActive") {
+    } else if (key === ActiveFilter.key) {
       const newValue = value.toLowerCase().trim();
-      if (newValue === "active") {
+      if (newValue === ActiveFilter.activeValue) {
         result[key] = true;
-      } else if (newValue === "inactive") {
+      } else if (newValue === ActiveFilter.inactiveValue) {
         result[key] = false;
       } else {
         result["id"] = -1;
@@ -98,8 +100,7 @@ export const getOrderByClause = (
         key === "firstName" ||
         key === "lastName" ||
         key === "contactEmail" ||
-        key === "idpUsername" ||
-        key === "isActive"
+        key === "idpUsername"
       ) {
         result.push({ [key]: value });
       } else if (key === "organization" && userIsGov) {
@@ -126,4 +127,35 @@ export const userIsAdmin = async () => {
     return true;
   }
   return false;
+};
+
+export const getTransformedFilters = (
+  filters: Record<string, string>,
+): { filters: Record<string, string>; isActive: boolean } => {
+  if (
+    filters[ActiveFilter.key]?.toLowerCase().trim() ===
+    ActiveFilter.inactiveValue
+  ) {
+    return {
+      filters,
+      isActive: false,
+    };
+  }
+  return {
+    filters: { ...filters, [ActiveFilter.key]: ActiveFilter.activeValue },
+    isActive: true,
+  };
+};
+
+export const getFilterStringWithActiveFilter = (
+  filters: Record<string, string>,
+  isActive: boolean,
+): string => {
+  const newFilters = {
+    ...filters,
+    [ActiveFilter.key]: isActive
+      ? ActiveFilter.activeValue
+      : ActiveFilter.inactiveValue,
+  };
+  return getString(newFilters);
 };
