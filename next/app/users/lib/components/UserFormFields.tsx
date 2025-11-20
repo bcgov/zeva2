@@ -69,7 +69,7 @@ export function UserFormFields({
     ? "Confirm: Activate User"
     : "Confirm: Deactivate User";
   const modalConfirmLabel = pendingActive ? "Activate" : "Deactivate";
-  const modalConfirmClass = pendingActive ? "btn-primary" : "btn-danger";
+  const modalConfirmClass = pendingActive ? "confirmation" : "error";
 
   return (
     <>
@@ -126,7 +126,7 @@ export function UserFormFields({
         handleSubmit={confirmStatusChange}
         title={modalTitle}
         confirmLabel={modalConfirmLabel}
-        confirmClass={modalConfirmClass}
+        modalType={modalConfirmClass}
         content={"Are you sure you want to update this user?"}
       />
       <div className="flex items-center py-2 my-2">
