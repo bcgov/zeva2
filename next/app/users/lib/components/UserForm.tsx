@@ -78,6 +78,34 @@ export const UserForm = ({
     });
   }, []);
 
+const roleUpdate = useCallback(
+    async (role: Role, willAdd: boolean) => {
+      const nextRoles = willAdd
+        ? (roles.includes(role) ? roles : [...roles, role])
+        : roles.filter((r) => r !== role);
+
+      const prevRoles = roles;
+      setRoles(nextRoles);
+
+      if (!user) return;
+
+      startTransition(async () => {
+        try {
+          const payload = getUserPayload(form, nextRoles, notifications);
+          const resp = await updateUser(user.id, payload);
+          if (resp.responseType === "error") {
+            throw new Error(resp.message);
+          }
+        } catch (e) {
+          setRoles(prevRoles);
+          if (e instanceof Error) setError(e.message);
+          else setError("Failed to update user roles.");
+        }
+      });
+    },
+    [roles, notifications, form, user]
+  );
+
   const handleSubmit = useCallback(() => {
     startTransition(async () => {
       try {
@@ -139,6 +167,7 @@ export const UserForm = ({
         onChange={handleChange}
         toggleRole={toggleRole}
         toggleNotification={toggleNotification}
+        roleUpdate={roleUpdate}
       />
 
       <div className="pt-4 flex gap-4">
