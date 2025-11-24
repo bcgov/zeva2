@@ -1,45 +1,63 @@
 "use client";
 
-import React from "react";
+import { JSX } from "react";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import {
+  faTriangleExclamation,
+  faXmark,
+  faSquareCheck,
+  faCircleExclamation,
+  faCircleInfo,
+} from "@fortawesome/free-solid-svg-icons";
+
+type ModalType = "confirmation" | "error" |  "info" | "warning";
 
 export type ModalProps = {
+  modalType: ModalType;
   cancelLabel?: string;
-  confirmClass?: string;
   confirmLabel?: string;
   handleCancel: () => void;
   handleSubmit: () => void;
   modalClass?: string;
   showModal: boolean;
   title?: string;
-  icon?: React.ReactNode;
   content?: string;
 };
 
-function mapBtnClasses(variant?: string) {
-  switch (variant) {
-    case "btn-primary":
-      return "inline-flex items-center rounded-lg bg-primaryBlue px-4 py-2 text-sm font-medium text-white hover:bg-primaryBlueHover focus:outline-none focus:ring-2 focus:ring-bluePressed";
-    case "btn-outline-primary":
-      return "inline-flex items-center rounded-lg border border-primaryBlue px-4 py-2 text-sm font-medium text-primaryBlue hover:bg-primaryBlueHover focus:outline-none focus:ring-2 focus:ring-bluePressed";
-    case "btn-danger":
-      return "inline-flex items-center rounded-lg bg-primaryRed px-4 py-2 text-sm font-medium text-white hover:bg-primaryRedHover focus:outline-none focus:ring-2 focus:ring-primaryRedPressed";
-    case "btn-outline-secondary":
-    case "btn-secondary":
-      return "inline-flex items-center rounded-lg border border-dividerDark bg-white px-4 py-2 text-sm font-medium text-primaryText hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-400";
-    default:
-      return (
-        variant ||
-        "inline-flex items-center rounded-lg bg-primaryBlue px-4 py-2 text-sm font-medium text-white hover:bg-primaryBlueHover focus:outline-none focus:ring-2 focus:ring-bluePressed"
-      );
-  }
-}
+const modalTypesMap: Readonly<
+  Record<ModalType, { classes: string; icon: JSX.Element }>
+> = {
+  confirmation: {
+    classes:
+      "rounded-lg bg-primaryBlue px-4 py-2 text-sm font-medium text-white hover:bg-primaryBlueHover focus:outline-none focus:ring-2 focus:ring-bluePressed",
+    icon: <FontAwesomeIcon icon={faSquareCheck} className="text-success" />,
+  },
+  error: {
+    classes:
+      "rounded-lg bg-primaryRed px-4 py-2 text-sm font-medium text-white hover:bg-primaryRedHover focus:outline-none focus:ring-2 focus:ring-primaryRedPressed",
+    icon: (
+      <FontAwesomeIcon icon={faTriangleExclamation} className="text-error" />
+    ),
+  },
+  info: {
+    classes: "",
+    icon: <FontAwesomeIcon icon={faCircleInfo} className="text-info" />,
+  },
+  warning: {
+    classes:
+      "rounded-lg bg-primaryBlue px-4 py-2 text-sm font-medium text-white hover:bg-primaryBlueHover focus:outline-none focus:ring-2 focus:ring-bluePressed",
+    icon: (
+      <FontAwesomeIcon icon={faCircleExclamation} className="text-warning" />
+    ),
+  },
+};
 
 const cancelBtnClasses =
   "inline-flex items-center rounded-lg border border-dividerDark bg-white px-4 py-2 text-sm font-medium text-secondaryText hover:bg-disabledSurface focus:outline-none focus:ring-2 focus:ring-gray-400";
 
 export default function Modal({
+  modalType,
   cancelLabel = "Cancel",
-  confirmClass = "btn-outline-primary",
   confirmLabel = "Confirm",
   handleCancel,
   handleSubmit,
@@ -47,17 +65,13 @@ export default function Modal({
   showModal,
   title = "Confirm",
   content = "Are you sure you want to do this action?",
-  icon = null,
 }: ModalProps) {
-  const confirmBtnClasses = mapBtnClasses(confirmClass);
-
   return (
     <>
       <div
         className={`${showModal ? "fixed" : "hidden"} inset-0 z-[1000] bg-black/50`}
         aria-hidden="true"
       />
-
       <div
         className={`${showModal ? "fixed" : "hidden"} inset-0 z-[1001] flex items-start justify-center p-4 sm:p-6`}
         role="dialog"
@@ -66,26 +80,16 @@ export default function Modal({
         aria-hidden={!showModal}
       >
         <div
-          className={`w-full max-w-lg rounded-2xl bg-white shadow-xl ring-1 ring-black/5 ${modalClass}`}
+          className={`w-full max-w-lg rounded-2xl bg-white shadow-xl ring-1 ring-black/5 p-6 ${modalClass}`}
           role="document"
         >
-          <div className="flex items-center justify-between border-b px-4 py-3">
-            <h3 className="text-lg font-semibold text-primaryText">{title}</h3>
-            <button
-              aria-label="Close"
-              className="inline-flex h-8 w-8 items-center justify-center rounded-md text-secondaryText bg-white hover:bg-gray-100 hover:text-primaryText focus:outline-none focus:ring-2 focus:ring-blue-500"
-              onClick={handleCancel}
-              type="button"
-            >
-              <span aria-hidden="true" className="text-xl leading-none">
-                &times;
-              </span>
-            </button>
+          <div className="flex justify-between items-center">
+            {modalTypesMap[modalType].icon}
+            <FontAwesomeIcon icon={faXmark} className="cursor-pointer" onClick={handleCancel} />
           </div>
-
-          <div className="">{content}</div>
-
-          <div className="flex items-center justify-end gap-2 border-t px-4 py-3">
+          <h3 className="text-xl font-bold text-primaryText py-4">{title}</h3>
+          <div className="text-base font-bold">{content}</div>
+          <div className="flex items-center justify-end gap-2 px-4 py-3">
             <button
               className={cancelBtnClasses}
               id="cancel"
@@ -94,19 +98,16 @@ export default function Modal({
             >
               {cancelLabel}
             </button>
-            <button
-              className={confirmBtnClasses}
-              id="confirm"
-              type="button"
-              onClick={handleSubmit}
-            >
-              {icon}
-              {icon ? (
-                <span className="ml-2">{confirmLabel}</span>
-              ) : (
-                confirmLabel
-              )}
-            </button>
+            {modalType !== "info" && (
+              <button
+                className={modalTypesMap[modalType].classes}
+                id="confirm"
+                type="button"
+                onClick={handleSubmit}
+              >
+                {confirmLabel}
+              </button>
+            )}
           </div>
         </div>
       </div>
