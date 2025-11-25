@@ -1,45 +1,21 @@
 "use client";
 
-import {
-  getNotificationEnumsToStringsMap,
-  getRoleEnumsToStringsMap,
-} from "@/app/lib/utils/enumMaps";
+import { getNotificationEnumsToStringsMap } from "@/app/lib/utils/enumMaps";
 import { Notification, Role } from "@/prisma/generated/client";
 import { useMemo, useState } from "react";
-import Modal from "../../../lib/components/Modal";
+import { Modal } from "@/app/lib/components/Modal";
 
 export function UserFormFields({
   form,
-  selectedRoles,
-  govRoles,
   notifications,
   onChange,
-  toggleRole,
   toggleNotification,
 }: {
-  form: any;
-  selectedRoles: Role[];
-  govRoles: boolean;
+  form: Partial<Record<string, string>>;
   notifications: Notification[];
   onChange: (field: string, value: any) => void;
-  toggleRole: (role: Role) => void;
   toggleNotification: (role: Notification) => void;
 }) {
-  const rolesMap = useMemo(() => {
-    return getRoleEnumsToStringsMap();
-  }, []);
-
-  const availableRoles = useMemo(() => {
-    if (govRoles) {
-      return [Role.ADMINISTRATOR, Role.DIRECTOR, Role.ENGINEER_ANALYST];
-    }
-    return [
-      Role.ORGANIZATION_ADMINISTRATOR,
-      Role.SIGNING_AUTHORITY,
-      Role.ZEVA_USER,
-    ];
-  }, [govRoles]);
-
   const notificationsMap = useMemo(() => {
     return getNotificationEnumsToStringsMap();
   }, []);
@@ -65,7 +41,7 @@ export function UserFormFields({
     setPendingActive(null);
   };
 
-  const modalTitle = pendingActive
+  const statusModalTitle = pendingActive
     ? "Confirm: Activate User"
     : "Confirm: Deactivate User";
   const modalConfirmLabel = pendingActive ? "Activate" : "Deactivate";
@@ -124,25 +100,13 @@ export function UserFormFields({
         showModal={showStatusModal}
         handleCancel={cancelStatusChange}
         handleSubmit={confirmStatusChange}
-        title={modalTitle}
+        title={statusModalTitle}
         confirmLabel={modalConfirmLabel}
         modalType={modalConfirmClass}
         content={"Are you sure you want to update this user?"}
+        disablePrimaryButton={false}
+        disableSecondaryButton={false}
       />
-      <div className="flex items-center py-2 my-2">
-        <label className="w-72">Roles</label>
-        {availableRoles.map((role) => (
-          <label className="w-72" key={role}>
-            <input
-              className="border p-2 w-full"
-              type="checkbox"
-              checked={selectedRoles.includes(role)}
-              onChange={() => toggleRole(role)}
-            />
-            {rolesMap[role]}
-          </label>
-        ))}
-      </div>
       <div className="flex items-center py-2 my-2">
         <label className="w-72">Notifications</label>
         {Object.values(Notification).map((value) => (

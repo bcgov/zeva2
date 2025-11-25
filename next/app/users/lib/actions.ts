@@ -2,7 +2,7 @@
 
 import { getUserInfo } from "@/auth";
 import { prisma } from "@/lib/prisma";
-import { Idp, User } from "@/prisma/generated/client";
+import { Idp, Role, User } from "@/prisma/generated/client";
 import { userIsAdmin } from "./utils";
 import {
   DataOrErrorActionResponse,
@@ -18,7 +18,7 @@ export type UserPayload = Omit<User, "id" | "idp" | "idpSub" | "wasUpdated">;
 
 export const updateUser = async (
   id: number,
-  data: UserPayload,
+  data: Omit<UserPayload, "role">,
 ): Promise<ErrorOrSuccessActionResponse> => {
   const isAdmin = await userIsAdmin();
   if (!isAdmin) {
@@ -33,7 +33,6 @@ export const updateUser = async (
       organization: {
         select: {
           id: true,
-          isGovernment: true,
         },
       },
     },
@@ -44,20 +43,13 @@ export const updateUser = async (
   if (!userIsGov && userOrgId !== user.organization.id) {
     return getErrorActionResponse("Unauthorized!");
   }
-  const userOrgIsGov = user.organization.isGovernment;
-  const roles = data.roles;
-  if (
-    (!userOrgIsGov && roles.some((role) => govRoles.includes(role))) ||
-    (userOrgIsGov && roles.some((role) => supplierRoles.includes(role)))
-  ) {
-    return getErrorActionResponse("Invalid Role detected!");
-  }
   await prisma.user.update({
     where: { id },
     data: {
       ...data,
       organizationId: user.organization.id,
       wasUpdated: true,
+      roles: undefined,
     },
   });
   return getSuccessActionResponse();
@@ -92,3 +84,51 @@ export async function createUser(
   });
   return getDataActionResponse<number>(createdUser.id);
 }
+
+export const updateRoles = async (
+  userId: number,
+  role: Role,
+  addOrRemove: "add" | "remove",
+): Promise<DataOrErrorActionResponse<Role[]>> => {
+  const isAdmin = await userIsAdmin();
+  if (!isAdmin) {
+    return getErrorActionResponse("Unauthorized!");
+  }
+  const { userIsGov, userOrgId } = await getUserInfo();
+  const user = await prisma.user.findUnique({
+    where: {
+      id: userId,
+    },
+    select: {
+      organizationId: true,
+      roles: true,
+    },
+  });
+  if (!user) {
+    return getErrorActionResponse("User not found!");
+  }
+  if (!userIsGov && user.organizationId !== userOrgId) {
+    return getErrorActionResponse("Unauthorized!");
+  }
+  const newRoles: Role[] = [];
+  if (addOrRemove === "add" && !user.roles.includes(role)) {
+    newRoles.push(...user.roles, role);
+  } else if (addOrRemove === "remove" && user.roles.includes(role)) {
+    for (const existingRole of user.roles) {
+      if (existingRole !== role) {
+        newRoles.push(existingRole);
+      }
+    }
+  } else {
+    return getDataActionResponse(user.roles);
+  }
+  const updatedUser = await prisma.user.update({
+    where: {
+      id: userId,
+    },
+    data: {
+      roles: newRoles,
+    },
+  });
+  return getDataActionResponse(updatedUser.roles);
+};

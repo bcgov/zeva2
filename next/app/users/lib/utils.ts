@@ -3,19 +3,9 @@ import { getUserInfo } from "@/auth";
 import { UserWithOrg } from "@/lib/data/user";
 import { getString } from "@/lib/utils/urlSearchParams";
 import { Prisma, Role } from "@/prisma/generated/client";
-import { ActiveFilter } from "./constants";
+import { ActiveFilter, govRoles, supplierRoles } from "./constants";
 
 export const userConfiguredCorrectly = (user: UserWithOrg) => {
-  const govRoles: Role[] = [
-    Role.ADMINISTRATOR,
-    Role.ENGINEER_ANALYST,
-    Role.DIRECTOR,
-  ];
-  const supplierRoles: Role[] = [
-    Role.ORGANIZATION_ADMINISTRATOR,
-    Role.SIGNING_AUTHORITY,
-    Role.ZEVA_USER,
-  ];
   const userIsGov = user.organization.isGovernment;
   const userRoles = user.roles;
   if (userIsGov && userRoles.some((role) => supplierRoles.includes(role))) {
