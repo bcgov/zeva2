@@ -20,11 +20,7 @@ export const getUserPayload = (
   if (Number.isNaN(orgId)) {
     throw new Error("Org ID is not a number!");
   }
-  if (roles.includes(Role.DIRECTOR) && roles.includes(Role.ENGINEER_ANALYST)) {
-    throw new Error(
-      "A user cannot have both the Director and Engineer/Analyst roles!",
-    );
-  }
+  validateRoles(roles);
   return {
     organizationId: orgId,
     firstName: data.firstName,
@@ -35,4 +31,12 @@ export const getUserPayload = (
     roles,
     notifications,
   };
+};
+
+export const validateRoles = (roles: Role[]) => {
+  if (roles.includes(Role.DIRECTOR) && roles.includes(Role.ENGINEER_ANALYST)) {
+    throw new Error(
+      "A user cannot have both the Director and Engineer/Analyst roles!",
+    );
+  }
 };

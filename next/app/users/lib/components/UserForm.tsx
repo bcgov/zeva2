@@ -12,6 +12,7 @@ import {
   DataOrErrorActionResponse,
   ErrorOrSuccessActionResponse,
 } from "@/app/lib/utils/actionResponse";
+import { RoleSelector } from "./RoleSelector";
 
 export const UserForm = ({
   user,
@@ -57,15 +58,6 @@ export const UserForm = ({
     }
     setForm((prev) => {
       return { ...prev, [key]: value };
-    });
-  }, []);
-
-  const toggleRole = useCallback((role: Role) => {
-    setRoles((prev) => {
-      if (prev.includes(role)) {
-        return prev.filter((element) => element !== role);
-      }
-      return [...prev, role];
     });
   }, []);
 
@@ -133,12 +125,17 @@ export const UserForm = ({
 
       <UserFormFields
         form={form}
-        selectedRoles={roles}
-        govRoles={form.organizationId === govOrgId}
         notifications={notifications}
         onChange={handleChange}
-        toggleRole={toggleRole}
         toggleNotification={toggleNotification}
+      />
+
+      <RoleSelector
+        userId={user ? user.id : undefined}
+        govOrSupplier={form.organizationId === govOrgId ? "gov" : "supplier"}
+        roles={roles}
+        setRoles={setRoles}
+        setError={setError}
       />
 
       <div className="pt-4 flex gap-4">
