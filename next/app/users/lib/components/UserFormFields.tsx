@@ -1,7 +1,7 @@
 "use client";
 
 import { getNotificationEnumsToStringsMap } from "@/app/lib/utils/enumMaps";
-import { Notification, Role } from "@/prisma/generated/client";
+import { Notification } from "@/prisma/generated/client";
 import { useMemo, useState } from "react";
 import { Modal } from "@/app/lib/components/Modal";
 

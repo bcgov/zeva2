@@ -338,6 +338,7 @@ export const generateAssessment = async (
   );
   writeFinalEndingBalance(
     sheets.finalEndingBalanceSheet,
+    assessmentData.modelYear,
     assessmentData.endingBalance,
     assessmentData.complianceInfo,
     helpingMaps,
@@ -420,6 +421,7 @@ const writeAdjustments = writeBalance;
 
 const writeFinalEndingBalance = (
   sheet: Excel.Worksheet,
+  modelYear: ModelYear,
   records: MyrEndingBalance,
   complianceInfo: ComplianceInfo,
   helpingMaps: MyrHelpingMaps,
@@ -433,14 +435,13 @@ const writeFinalEndingBalance = (
     }
   }
   records.forEach((record) => {
-    const modelYear = record.modelYear;
     const numberOfUnits = record.numberOfUnits;
     const divisor = divisors[modelYear];
     sheet.addRow([
       helpingMaps.transactionTypesMap[record.type],
       helpingMaps.vehicleClassesMap[record.vehicleClass],
       helpingMaps.zevClassesMap[record.zevClass],
-      helpingMaps.modelYearsMap[modelYear],
+      helpingMaps.modelYearsMap[record.modelYear],
       numberOfUnits,
       divisor && !hasPenalty ? divisor : "1",
       divisor && !hasPenalty
