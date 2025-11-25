@@ -10,7 +10,7 @@ on:
   workflow_dispatch:
     inputs:
       branch:
-        description: 'Please carefully choose the release branch merged into main, it impacts the versioning'
+        description: "Please carefully choose the release branch merged into main, it impacts the versioning"
         required: false
 
 env:
@@ -28,7 +28,7 @@ jobs:
     steps:
       - name: show pr
         run: |
-         echo "PR #${{ github.event.pull_request.number }} was merged from ${{ github.event.pull_request.head.ref }}"
+          echo "PR #${{ github.event.pull_request.number }} was merged from ${{ github.event.pull_request.head.ref }}"
 
   # install oc command line tool
   install-oc:
@@ -82,7 +82,7 @@ jobs:
           git config --global user.name "Kuan Fan"
           git tag -a "$version" -m "prod-ci tag $version"
           git push origin "$version"
-        
+
       - name: Install GitVersion
         uses: gittools/actions/gitversion/setup@v3.1.11
         with:
@@ -99,7 +99,7 @@ jobs:
         run: |
           echo "VERSION=${{ steps.version-step.outputs.SemVer }}"
           echo "VERSION=${{ steps.version-step.outputs.SemVer }}" >> $GITHUB_OUTPUT
-  
+
   # Build the application
   build:
     name: Build Zeva2 from release branch
@@ -126,7 +126,7 @@ jobs:
         uses: trstringer/manual-approval@v1.6.0
         with:
           secret: ${{ github.TOKEN }}
-          approvers: emi-hi,tim738745,kuanfandevops,JulianForeman,rogerlcleung
+          approvers: emi-hi,tim738745,kuanfandevops,JulianForeman,dallascrichmond
           minimum-approvals: 2
           issue-title: "ZEVA2 ${{ needs.versioning.outputs.VERSION  }} Prod Deployment"
 

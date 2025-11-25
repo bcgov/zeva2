@@ -4,7 +4,7 @@ name: Zeva2 Test CI
 on:
   push:
     branches:
-      - 'release/**'
+      - "release/**"
   workflow_dispatch:
 
 env:
@@ -99,7 +99,7 @@ jobs:
         uses: trstringer/manual-approval@v1.6.0
         with:
           secret: ${{ github.TOKEN }}
-          approvers: emi-hi,tim738745,kuanfandevops,JulianForeman,rogerlcleung
+          approvers: emi-hi,tim738745,kuanfandevops,JulianForeman,dallascrichmond
           minimum-approvals: 1
           issue-title: "ZEVA2 ${{ needs.versioning.outputs.VERSION  }} Test Deployment"
 
