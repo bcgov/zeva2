@@ -10,7 +10,7 @@ import {
   faCircleInfo,
 } from "@fortawesome/free-solid-svg-icons";
 
-type ModalType = "confirmation" | "error" |  "info" | "warning";
+type ModalType = "confirmation" | "error" | "info" | "warning";
 
 export type ModalProps = {
   modalType: ModalType;
@@ -22,6 +22,8 @@ export type ModalProps = {
   showModal: boolean;
   title?: string;
   content?: string;
+  disablePrimaryButton: boolean;
+  disableSecondaryButton: boolean;
 };
 
 const modalTypesMap: Readonly<
@@ -55,7 +57,7 @@ const modalTypesMap: Readonly<
 const cancelBtnClasses =
   "inline-flex items-center rounded-lg border border-dividerDark bg-white px-4 py-2 text-sm font-medium text-secondaryText hover:bg-disabledSurface focus:outline-none focus:ring-2 focus:ring-gray-400";
 
-export default function Modal({
+export function Modal({
   modalType,
   cancelLabel = "Cancel",
   confirmLabel = "Confirm",
@@ -65,6 +67,8 @@ export default function Modal({
   showModal,
   title = "Confirm",
   content = "Are you sure you want to do this action?",
+  disablePrimaryButton,
+  disableSecondaryButton,
 }: ModalProps) {
   return (
     <>
@@ -85,7 +89,11 @@ export default function Modal({
         >
           <div className="flex justify-between items-center">
             {modalTypesMap[modalType].icon}
-            <FontAwesomeIcon icon={faXmark} className="cursor-pointer" onClick={handleCancel} />
+            <FontAwesomeIcon
+              icon={faXmark}
+              className="cursor-pointer"
+              onClick={handleCancel}
+            />
           </div>
           <h3 className="text-xl font-bold text-primaryText py-4">{title}</h3>
           <div className="text-base font-bold">{content}</div>
@@ -95,8 +103,9 @@ export default function Modal({
               id="cancel"
               onClick={handleCancel}
               type="button"
+              disabled={disableSecondaryButton}
             >
-              {cancelLabel}
+              {disableSecondaryButton ? "..." : cancelLabel}
             </button>
             {modalType !== "info" && (
               <button
@@ -104,8 +113,9 @@ export default function Modal({
                 id="confirm"
                 type="button"
                 onClick={handleSubmit}
+                disabled={disablePrimaryButton}
               >
-                {confirmLabel}
+                {disablePrimaryButton ? "..." : confirmLabel}
               </button>
             )}
           </div>
