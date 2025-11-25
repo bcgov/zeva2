@@ -181,7 +181,14 @@ export const ModelYearReportForm = (props: {
         }
       }
     });
-  }, [props.modelYear, props.modelYearReportId, myr, forecasts, comment]);
+  }, [
+    props.modelYear,
+    props.modelYearReportId,
+    myr,
+    forecasts,
+    parsedForecast,
+    comment,
+  ]);
 
   return (
     <div>
