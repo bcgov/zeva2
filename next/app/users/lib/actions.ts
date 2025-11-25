@@ -128,6 +128,7 @@ export const updateRoles = async (
     },
     data: {
       roles: newRoles,
+      wasUpdated: true,
     },
   });
   return getDataActionResponse(updatedUser.roles);
