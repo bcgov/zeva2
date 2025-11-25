@@ -12,6 +12,7 @@ import {
   DataOrErrorActionResponse,
   ErrorOrSuccessActionResponse,
 } from "@/app/lib/utils/actionResponse";
+import { RoleSelector } from "./RoleSelector";
 
 export const UserForm = ({
   user,
@@ -60,15 +61,6 @@ export const UserForm = ({
     });
   }, []);
 
-  const toggleRole = useCallback((role: Role) => {
-    setRoles((prev) => {
-      if (prev.includes(role)) {
-        return prev.filter((element) => element !== role);
-      }
-      return [...prev, role];
-    });
-  }, []);
-
   const toggleNotification = useCallback((notification: Notification) => {
     setNotifications((prev) => {
       if (prev.includes(notification)) {
@@ -77,34 +69,6 @@ export const UserForm = ({
       return [...prev, notification];
     });
   }, []);
-
-const roleUpdate = useCallback(
-    async (role: Role, willAdd: boolean) => {
-      const nextRoles = willAdd
-        ? (roles.includes(role) ? roles : [...roles, role])
-        : roles.filter((r) => r !== role);
-
-      const prevRoles = roles;
-      setRoles(nextRoles);
-
-      if (!user) return;
-
-      startTransition(async () => {
-        try {
-          const payload = getUserPayload(form, nextRoles, notifications);
-          const resp = await updateUser(user.id, payload);
-          if (resp.responseType === "error") {
-            throw new Error(resp.message);
-          }
-        } catch (e) {
-          setRoles(prevRoles);
-          if (e instanceof Error) setError(e.message);
-          else setError("Failed to update user roles.");
-        }
-      });
-    },
-    [roles, notifications, form, user]
-  );
 
   const handleSubmit = useCallback(() => {
     startTransition(async () => {
@@ -161,13 +125,17 @@ const roleUpdate = useCallback(
 
       <UserFormFields
         form={form}
-        selectedRoles={roles}
-        govRoles={form.organizationId === govOrgId}
         notifications={notifications}
         onChange={handleChange}
-        toggleRole={toggleRole}
         toggleNotification={toggleNotification}
-        roleUpdate={roleUpdate}
+      />
+
+      <RoleSelector
+        userId={user ? user.id : undefined}
+        govOrSupplier={form.organizationId === govOrgId ? "gov" : "supplier"}
+        roles={roles}
+        setRoles={setRoles}
+        setError={setError}
       />
 
       <div className="pt-4 flex gap-4">
