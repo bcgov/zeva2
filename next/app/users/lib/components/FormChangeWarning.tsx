@@ -2,8 +2,6 @@
 
 import { Modal } from "@/app/lib/components/Modal";
 import {
-  Dispatch,
-  SetStateAction,
   useCallback,
 } from "react";
 

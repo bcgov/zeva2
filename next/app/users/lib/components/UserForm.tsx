@@ -90,7 +90,6 @@ export const UserForm = ({
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
       if (formChanged) {
         e.preventDefault();
-        e.returnValue = '';
       }
     };
 
