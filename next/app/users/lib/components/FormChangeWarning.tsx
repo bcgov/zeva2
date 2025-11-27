@@ -9,14 +9,14 @@ import {
 
 export const FormChangeWarning = (props: {
   showWarningModal: boolean;
-  setShowWarningModal: Dispatch<SetStateAction<boolean>>;
   handleSaveAndNavigate: () => void;
   handleNavigateWithoutSaving: () => void;
+  handleClose: () => void;
   isPending: boolean;
 }) => {
   // X button - just close the modal and stay on page
   const handleClose = useCallback(() => {
-    props.setShowWarningModal(false);
+    props.handleClose();
   }, [props]);
 
   // "Leave without saving" button - close and navigate away

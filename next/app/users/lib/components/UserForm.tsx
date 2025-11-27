@@ -14,7 +14,7 @@ import {
 } from "@/app/lib/utils/actionResponse";
 import { RoleSelector } from "./RoleSelector";
 import { FormChangeWarning } from "./FormChangeWarning";
-import { useNavigationWarning } from "@/app/lib/utils/useNavigationWarning";
+import { useNavigationGuard } from "next-navigation-guard";
 
 export const UserForm = ({
   user,
@@ -29,14 +29,14 @@ export const UserForm = ({
 }) => {
   const router = useRouter();
   const [formChanged, setFormChanged] = useState<boolean>(false);
-  const [showWarningModal, setShowWarningModal] = useState<boolean>(false);
   const [error, setError] = useState<string>("");
   const [form, setForm] = useState<Partial<Record<string, string>>>({});
   const [initialForm, setInitialForm] = useState<Partial<Record<string, string>>>({});
   const [roles, setRoles] = useState<Role[]>([]);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [isPending, startTransition] = useTransition();
-  const [pendingNavigation, setPendingNavigation] = useState<string | null>(null);
+  
+  const navGuard = useNavigationGuard({ enabled: formChanged });
 
   useEffect(() => {
     if (user) {
@@ -98,17 +98,6 @@ export const UserForm = ({
     return () => window.removeEventListener('beforeunload', handleBeforeUnload);
   }, [formChanged]);
 
-  const handleNavigationAttempt = useCallback(() => {
-    const pendingHref = sessionStorage.getItem('pendingNavigation');
-    if (pendingHref) {
-      setPendingNavigation(pendingHref);
-      sessionStorage.removeItem('pendingNavigation');
-    }
-    setShowWarningModal(true);
-  }, []);
-
-  useNavigationWarning(formChanged, handleNavigationAttempt);
-
   const toggleNotification = useCallback((notification: Notification) => {
     setNotifications((prev) => {
       if (prev.includes(notification)) {
@@ -117,15 +106,6 @@ export const UserForm = ({
       return [...prev, notification];
     });
   }, []);
-
-  const handleNavigateAway = useCallback(() => {
-    setFormChanged(false);
-    setShowWarningModal(false);
-    if (pendingNavigation) {
-      router.push(pendingNavigation);
-      setPendingNavigation(null);
-    }
-  }, [pendingNavigation, router]);
 
   const handleSubmit = useCallback(() => {
     startTransition(async () => {
@@ -157,34 +137,28 @@ export const UserForm = ({
     });
   }, [user, form, roles, notifications, router]);
 
-  const handleSaveAndNavigate = useCallback(() => {
-    startTransition(async () => {
-      try {
-        const payload = getUserPayload(form, roles, notifications);
-        let response:
-          | ErrorOrSuccessActionResponse
-          | DataOrErrorActionResponse<number>;
-        if (user) {
-          response = await updateUser(user.id, payload);
-        } else {
-          response = await createUser(payload);
-        }
-        if (response.responseType === "error") {
-          throw new Error(response.message);
-        }
-        setFormChanged(false);
-        setShowWarningModal(false);
-        if (pendingNavigation) {
-          router.push(pendingNavigation);
-          setPendingNavigation(null);
-        }
-      } catch (e) {
-        if (e instanceof Error) {
-          setError(e.message);
-        }
+  const handleSaveAndNavigate = useCallback(async () => {
+    try {
+      const payload = getUserPayload(form, roles, notifications);
+      let response:
+        | ErrorOrSuccessActionResponse
+        | DataOrErrorActionResponse<number>;
+      if (user) {
+        response = await updateUser(user.id, payload);
+      } else {
+        response = await createUser(payload);
       }
-    });
-  }, [user, form, roles, notifications, router, pendingNavigation]);
+      if (response.responseType === "error") {
+        throw new Error(response.message);
+      }
+      setFormChanged(false);
+      navGuard.accept();
+    } catch (e) {
+      if (e instanceof Error) {
+        setError(e.message);
+      }
+    }
+  }, [user, form, roles, notifications, navGuard]);
 
   return (
     <div>
@@ -218,10 +192,13 @@ export const UserForm = ({
       />
 
       <FormChangeWarning
-        showWarningModal={showWarningModal}
-        setShowWarningModal={setShowWarningModal}
+        showWarningModal={navGuard.active}
         handleSaveAndNavigate={handleSaveAndNavigate}
-        handleNavigateWithoutSaving={handleNavigateAway}
+        handleNavigateWithoutSaving={() => {
+          setFormChanged(false);
+          navGuard.accept();
+        }}
+        handleClose={navGuard.reject}
         isPending={isPending}
       />
 
