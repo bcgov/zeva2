@@ -13,6 +13,8 @@ import {
   ErrorOrSuccessActionResponse,
 } from "@/app/lib/utils/actionResponse";
 import { RoleSelector } from "./RoleSelector";
+import { FormChangeWarning } from "./FormChangeWarning";
+import { useNavigationWarning } from "@/app/lib/utils/useNavigationWarning";
 
 export const UserForm = ({
   user,
@@ -26,29 +28,37 @@ export const UserForm = ({
   govOrgId: string;
 }) => {
   const router = useRouter();
+  const [formChanged, setFormChanged] = useState<boolean>(false);
+  const [showWarningModal, setShowWarningModal] = useState<boolean>(false);
   const [error, setError] = useState<string>("");
   const [form, setForm] = useState<Partial<Record<string, string>>>({});
+  const [initialForm, setInitialForm] = useState<Partial<Record<string, string>>>({});
   const [roles, setRoles] = useState<Role[]>([]);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [isPending, startTransition] = useTransition();
+  const [pendingNavigation, setPendingNavigation] = useState<string | null>(null);
 
   useEffect(() => {
     if (user) {
-      setForm({
+      const initialFormData = {
         firstName: user.firstName,
         lastName: user.lastName,
         contactEmail: user.contactEmail ?? "",
         idpUsername: user.idpUsername,
         isActive: user.isActive.toString(),
         organizationId: user.organizationId.toString(),
-      });
+      };
+      setForm(initialFormData);
+      setInitialForm(initialFormData);
       setRoles(user.roles);
       setNotifications(user.notifications);
     } else {
-      setForm({
+      const initialFormData = {
         isActive: "true",
         organizationId: userOrgId,
-      });
+      };
+      setForm(initialFormData);
+      setInitialForm(initialFormData);
     }
   }, [user, userOrgId]);
 
@@ -61,6 +71,44 @@ export const UserForm = ({
     });
   }, []);
 
+  useEffect(() => {
+    if (Object.keys(initialForm).length === 0) {
+      return;
+    }
+    
+    const textFieldsChanged = 
+      form.firstName !== initialForm.firstName ||
+      form.lastName !== initialForm.lastName ||
+      form.contactEmail !== initialForm.contactEmail ||
+      form.idpUsername !== initialForm.idpUsername;
+    
+    setFormChanged(textFieldsChanged);
+  }, [form, initialForm]);
+
+  // Handle browser navigation (reload, close tab) - shows native browser warning
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (formChanged) {
+        e.preventDefault();
+        e.returnValue = '';
+      }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [formChanged]);
+
+  const handleNavigationAttempt = useCallback(() => {
+    const pendingHref = sessionStorage.getItem('pendingNavigation');
+    if (pendingHref) {
+      setPendingNavigation(pendingHref);
+      sessionStorage.removeItem('pendingNavigation');
+    }
+    setShowWarningModal(true);
+  }, []);
+
+  useNavigationWarning(formChanged, handleNavigationAttempt);
+
   const toggleNotification = useCallback((notification: Notification) => {
     setNotifications((prev) => {
       if (prev.includes(notification)) {
@@ -69,6 +117,15 @@ export const UserForm = ({
       return [...prev, notification];
     });
   }, []);
+
+  const handleNavigateAway = useCallback(() => {
+    setFormChanged(false);
+    setShowWarningModal(false);
+    if (pendingNavigation) {
+      router.push(pendingNavigation);
+      setPendingNavigation(null);
+    }
+  }, [pendingNavigation, router]);
 
   const handleSubmit = useCallback(() => {
     startTransition(async () => {
@@ -90,6 +147,7 @@ export const UserForm = ({
         if (response.responseType === "error") {
           throw new Error(response.message);
         }
+        setFormChanged(false);
         router.push(`${Routes.Users}/${userId}`);
       } catch (e) {
         if (e instanceof Error) {
@@ -97,7 +155,36 @@ export const UserForm = ({
         }
       }
     });
-  }, [user, form, roles, notifications]);
+  }, [user, form, roles, notifications, router]);
+
+  const handleSaveAndNavigate = useCallback(() => {
+    startTransition(async () => {
+      try {
+        const payload = getUserPayload(form, roles, notifications);
+        let response:
+          | ErrorOrSuccessActionResponse
+          | DataOrErrorActionResponse<number>;
+        if (user) {
+          response = await updateUser(user.id, payload);
+        } else {
+          response = await createUser(payload);
+        }
+        if (response.responseType === "error") {
+          throw new Error(response.message);
+        }
+        setFormChanged(false);
+        setShowWarningModal(false);
+        if (pendingNavigation) {
+          router.push(pendingNavigation);
+          setPendingNavigation(null);
+        }
+      } catch (e) {
+        if (e instanceof Error) {
+          setError(e.message);
+        }
+      }
+    });
+  }, [user, form, roles, notifications, router, pendingNavigation]);
 
   return (
     <div>
@@ -128,6 +215,14 @@ export const UserForm = ({
         notifications={notifications}
         onChange={handleChange}
         toggleNotification={toggleNotification}
+      />
+
+      <FormChangeWarning
+        showWarningModal={showWarningModal}
+        setShowWarningModal={setShowWarningModal}
+        handleSaveAndNavigate={handleSaveAndNavigate}
+        handleNavigateWithoutSaving={handleNavigateAway}
+        isPending={isPending}
       />
 
       <RoleSelector
