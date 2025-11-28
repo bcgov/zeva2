@@ -13,6 +13,8 @@ import {
   ErrorOrSuccessActionResponse,
 } from "@/app/lib/utils/actionResponse";
 import { RoleSelector } from "./RoleSelector";
+import { FormChangeWarning } from "./FormChangeWarning";
+import { useNavigationGuard } from "next-navigation-guard";
 
 export const UserForm = ({
   user,
@@ -26,29 +28,37 @@ export const UserForm = ({
   govOrgId: string;
 }) => {
   const router = useRouter();
+  const [formChanged, setFormChanged] = useState<boolean>(false);
   const [error, setError] = useState<string>("");
   const [form, setForm] = useState<Partial<Record<string, string>>>({});
+  const [initialForm, setInitialForm] = useState<Partial<Record<string, string>>>({});
   const [roles, setRoles] = useState<Role[]>([]);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [isPending, startTransition] = useTransition();
+  
+  const navGuard = useNavigationGuard({ enabled: formChanged });
 
   useEffect(() => {
     if (user) {
-      setForm({
+      const initialFormData = {
         firstName: user.firstName,
         lastName: user.lastName,
         contactEmail: user.contactEmail ?? "",
         idpUsername: user.idpUsername,
         isActive: user.isActive.toString(),
         organizationId: user.organizationId.toString(),
-      });
+      };
+      setForm(initialFormData);
+      setInitialForm(initialFormData);
       setRoles(user.roles);
       setNotifications(user.notifications);
     } else {
-      setForm({
+      const initialFormData = {
         isActive: "true",
         organizationId: userOrgId,
-      });
+      };
+      setForm(initialFormData);
+      setInitialForm(initialFormData);
     }
   }, [user, userOrgId]);
 
@@ -60,6 +70,32 @@ export const UserForm = ({
       return { ...prev, [key]: value };
     });
   }, []);
+
+  useEffect(() => {
+    if (Object.keys(initialForm).length === 0) {
+      return;
+    }
+    
+    const textFieldsChanged = 
+      form.firstName !== initialForm.firstName ||
+      form.lastName !== initialForm.lastName ||
+      form.contactEmail !== initialForm.contactEmail ||
+      form.idpUsername !== initialForm.idpUsername;
+    
+    setFormChanged(textFieldsChanged);
+  }, [form, initialForm]);
+
+  // Handle browser navigation (reload, close tab) - shows native browser warning
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (formChanged) {
+        e.preventDefault();
+      }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [formChanged]);
 
   const toggleNotification = useCallback((notification: Notification) => {
     setNotifications((prev) => {
@@ -90,6 +126,7 @@ export const UserForm = ({
         if (response.responseType === "error") {
           throw new Error(response.message);
         }
+        setFormChanged(false);
         router.push(`${Routes.Users}/${userId}`);
       } catch (e) {
         if (e instanceof Error) {
@@ -97,7 +134,30 @@ export const UserForm = ({
         }
       }
     });
-  }, [user, form, roles, notifications]);
+  }, [user, form, roles, notifications, router]);
+
+  const handleSaveAndNavigate = useCallback(async () => {
+    try {
+      const payload = getUserPayload(form, roles, notifications);
+      let response:
+        | ErrorOrSuccessActionResponse
+        | DataOrErrorActionResponse<number>;
+      if (user) {
+        response = await updateUser(user.id, payload);
+      } else {
+        response = await createUser(payload);
+      }
+      if (response.responseType === "error") {
+        throw new Error(response.message);
+      }
+      setFormChanged(false);
+      navGuard.accept();
+    } catch (e) {
+      if (e instanceof Error) {
+        setError(e.message);
+      }
+    }
+  }, [user, form, roles, notifications, navGuard]);
 
   return (
     <div>
@@ -128,6 +188,17 @@ export const UserForm = ({
         notifications={notifications}
         onChange={handleChange}
         toggleNotification={toggleNotification}
+      />
+
+      <FormChangeWarning
+        showWarningModal={navGuard.active}
+        handleSaveAndNavigate={handleSaveAndNavigate}
+        handleNavigateWithoutSaving={() => {
+          setFormChanged(false);
+          navGuard.accept();
+        }}
+        handleClose={navGuard.reject}
+        isPending={isPending}
       />
 
       <RoleSelector

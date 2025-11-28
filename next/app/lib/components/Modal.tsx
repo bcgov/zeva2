@@ -18,10 +18,11 @@ export type ModalProps = {
   confirmLabel?: string;
   handleCancel: () => void;
   handleSubmit: () => void;
+  handleClose?: () => void;
   modalClass?: string;
   showModal: boolean;
   title?: string;
-  content?: string;
+  content?: string | JSX.Element;
   disablePrimaryButton: boolean;
   disableSecondaryButton: boolean;
 };
@@ -63,6 +64,7 @@ export function Modal({
   confirmLabel = "Confirm",
   handleCancel,
   handleSubmit,
+  handleClose,
   modalClass = "",
   showModal,
   title = "Confirm",
@@ -92,11 +94,15 @@ export function Modal({
             <FontAwesomeIcon
               icon={faXmark}
               className="cursor-pointer"
-              onClick={handleCancel}
+              onClick={handleClose || handleCancel}
             />
           </div>
           <h3 className="text-xl font-bold text-primaryText py-4">{title}</h3>
-          <div className="text-base font-bold">{content}</div>
+          {typeof content === 'string' ? (
+            <div className="text-base font-bold">{content}</div>
+          ) : (
+            <div>{content}</div>
+          )}
           <div className="flex items-center justify-end gap-2 px-4 py-3">
             <button
               className={cancelBtnClasses}
