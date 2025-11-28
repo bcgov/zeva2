@@ -31,7 +31,7 @@
     "jszip": "^3.10.1",
     "minio": "^8.0.5",
     "next": "15.5.3",
-    "next-auth": "^5.0.0-beta.25",
+    "next-auth": "^5.0.0-beta.30",
     "next-navigation-guard": "^0.2.0",
     "prisma": "6.15.0",
     "react": "^19.0.0",
