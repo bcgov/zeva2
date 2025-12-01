@@ -58,14 +58,16 @@ const Page = async (props: { params: Promise<{ id: string }> }) => {
       <h2 className="text-xl font-semibold text-primaryBlue pb-4">
         Edit Agreement
       </h2>
-      <AgreementEditForm
-        supplierSelections={supplierSelections}
-        modelYearSelections={modelYearSelections}
-        zevClassSelections={[ZevClass.A, ZevClass.B]}
-        agreementDetails={agreementDetails}
-        upsertAgreement={updateAgreement}
-        handleCancel={handleCancel}
-      />
+      <div className="bg-white rounded-lg shadow-level-1 p-6">
+        <AgreementEditForm
+          supplierSelections={supplierSelections}
+          modelYearSelections={modelYearSelections}
+          zevClassSelections={[ZevClass.A, ZevClass.B]}
+          agreementDetails={agreementDetails}
+          upsertAgreement={updateAgreement}
+          handleCancel={handleCancel}
+        />
+      </div>
     </div>
   );
 };

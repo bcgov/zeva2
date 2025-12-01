@@ -86,7 +86,7 @@ export function Modal({
         aria-hidden={!showModal}
       >
         <div
-          className={`w-full max-w-lg rounded-2xl bg-white shadow-xl ring-1 ring-black/5 p-6 ${modalClass}`}
+          className={`w-full max-w-lg rounded-2xl bg-white shadow-level-3 ring-1 ring-black/5 p-6 ${modalClass}`}
           role="document"
         >
           <div className="flex justify-between items-center">

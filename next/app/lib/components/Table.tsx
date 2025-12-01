@@ -246,7 +246,7 @@ export const Table = <T extends ZevaObject>({
     return <LoadingSkeleton />;
   }
   return (
-    <div className="p-2">
+    <div className="bg-white rounded-lg shadow-level-1 p-4">
       <div className="flex flex-row-reverse">
         <Button className="mr-10 mb-3 px-3" onClick={handleReset}>
           Reset Table
@@ -300,7 +300,7 @@ export const Table = <T extends ZevaObject>({
                           {header.column.getCanFilter() ? (
                             <div>
                               <input
-                                className="w-36 border shadow rounded"
+                                className="w-36 border shadow-level-1 rounded"
                                 onChange={(event) => {
                                   handleFilterChange(
                                     header.id,
