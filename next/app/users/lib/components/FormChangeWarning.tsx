@@ -1,9 +1,7 @@
 "use client";
 
 import { Modal } from "@/app/lib/components/Modal";
-import {
-  useCallback,
-} from "react";
+import { useCallback } from "react";
 
 export const FormChangeWarning = (props: {
   showWarningModal: boolean;
@@ -42,7 +40,8 @@ export const FormChangeWarning = (props: {
             Do you want to save your changes before exiting?
           </div>
           <div className="text-sm text-gray-600">
-            You've made changes to the user's information, but haven't saved them yet. You can save now and safely exit, or leave without saving.
+            You've made changes to the user's information, but haven't saved
+            them yet. You can save now and safely exit, or leave without saving.
           </div>
         </>
       }

@@ -1,16 +1,24 @@
 "use client";
 
 import { Button } from "@/app/lib/components";
-import { ModelYearReportStatus } from "@/prisma/generated/client";
+import {
+  ModelYearReportStatus,
+  ReassessmentStatus,
+} from "@/prisma/generated/client";
 import { useRouter } from "next/navigation";
 import { useCallback, useState, useTransition } from "react";
-import { assessModelYearReport, returnModelYearReport } from "../actions";
+import {
+  assessModelYearReport,
+  issueReassessment,
+  returnModelYearReport,
+  returnReassessment,
+} from "../actions";
 import { getNormalizedComment } from "@/app/credit-application/lib/utils";
 import { CommentBox } from "@/app/lib/components/inputs/CommentBox";
 
-export const DirectorActions = (props: {
-  myrId: number;
-  status: ModelYearReportStatus;
+export const ReassessmentDirectorActions = (props: {
+  reassessmentId: number;
+  status: ReassessmentStatus;
 }) => {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -21,9 +29,8 @@ export const DirectorActions = (props: {
     setError("");
     startTransition(async () => {
       try {
-        await returnModelYearReport(
-          props.myrId,
-          ModelYearReportStatus.RETURNED_TO_ANALYST,
+        await returnReassessment(
+          props.reassessmentId,
           getNormalizedComment(comment),
         );
         router.refresh();
@@ -33,13 +40,16 @@ export const DirectorActions = (props: {
         }
       }
     });
-  }, [props.myrId, props.status, comment]);
+  }, [props.reassessmentId, comment]);
 
-  const handleIssueAssessment = useCallback(() => {
+  const handleIssueReassessment = useCallback(() => {
     setError("");
     startTransition(async () => {
       try {
-        await assessModelYearReport(props.myrId, getNormalizedComment(comment));
+        await issueReassessment(
+          props.reassessmentId,
+          getNormalizedComment(comment),
+        );
         router.refresh();
       } catch (e) {
         if (e instanceof Error) {
@@ -47,9 +57,9 @@ export const DirectorActions = (props: {
         }
       }
     });
-  }, [props.myrId, comment]);
+  }, [props.reassessmentId, comment]);
 
-  if (props.status !== ModelYearReportStatus.SUBMITTED_TO_DIRECTOR) {
+  if (props.status !== ReassessmentStatus.SUBMITTED_TO_DIRECTOR) {
     return null;
   }
   return (
@@ -63,8 +73,8 @@ export const DirectorActions = (props: {
       <Button onClick={handleReturnToAnalyst} disabled={isPending}>
         {isPending ? "..." : "Return To Analyst"}
       </Button>
-      <Button onClick={handleIssueAssessment} disabled={isPending}>
-        {isPending ? "..." : "Issue Assessment"}
+      <Button onClick={handleIssueReassessment} disabled={isPending}>
+        {isPending ? "..." : "Issue Reassessment"}
       </Button>
     </div>
   );

@@ -22,8 +22,6 @@ const Page = async (props: { params: Promise<{ id: string }> }) => {
       <AssessmentForm
         myrId={report.id}
         orgId={report.organizationId}
-        orgName={report.organization.name}
-        status={report.status}
         modelYear={report.modelYear}
         isReassessment={false}
       />

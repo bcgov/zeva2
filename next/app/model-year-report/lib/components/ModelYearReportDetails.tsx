@@ -11,22 +11,10 @@ export const ModelYearReportDetails = async (props: { id: number }) => {
   if (!report) {
     return null;
   }
-  const { userIsGov } = await getUserInfo();
-  const statusMap = getMyrStatusEnumsToStringsMap();
   const myrBuf = await getArrayBuffer(report.myrFile);
   const myrWorkbook = new Excel.Workbook();
   await myrWorkbook.xlsx.load(myrBuf);
   const parsedMyr = parseMyr(myrWorkbook);
 
-  return (
-    <>
-      <div>
-        Status:{" "}
-        {userIsGov
-          ? statusMap[report.status]
-          : statusMap[report.supplierStatus]}
-      </div>
-      <ParsedModelYearReport myr={parsedMyr} />
-    </>
-  );
+  return <ParsedModelYearReport myr={parsedMyr} />;
 };

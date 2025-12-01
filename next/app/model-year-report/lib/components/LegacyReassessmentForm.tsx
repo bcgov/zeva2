@@ -10,15 +10,11 @@ import {
 import { useRouter } from "next/navigation";
 import { useCallback, useMemo, useState, useTransition } from "react";
 import {
-  AssessmentArgs,
   getAssessmentData,
   getAssessmentTemplateUrl,
-  NonLegacyReassessmentArgs,
   NvValues,
-  submitAssessment,
   submitReassessment,
 } from "../actions";
-import { getModelYearEnumsToStringsMap } from "@/app/lib/utils/enumMaps";
 import { MyrNvValues } from "./MyrNvValues";
 import { Button } from "@/app/lib/components";
 import {
@@ -34,16 +30,16 @@ import { getNormalizedComment } from "@/app/credit-application/lib/utils";
 import { Workbook } from "exceljs";
 import { parseAssessment, ParsedAssmnt } from "../utils";
 import { ParsedAssessment } from "./ParsedAssessment";
+import { isModelYear } from "@/app/lib/utils/typeGuards";
 
-export const AssessmentForm = (props: {
-  myrId: number;
-  orgId: number;
-  modelYear: ModelYear;
-  isReassessment: boolean;
+export const LegacyReassessmentForm = (props: {
+  orgsMap: Partial<Record<number, string>>;
 }) => {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string>("");
+  const [orgId, setOrgId] = useState<number | undefined>();
+  const [modelYear, setModelYear] = useState<ModelYear | undefined>();
   const [nvValues, setNvValues] = useState<NvValues>({});
   const [adjustments, setAdjustments] = useState<Adjustment[]>([]);
   const [assessment, setAssessment] = useState<[Workbook, ParsedAssmnt] | null>(
@@ -51,8 +47,15 @@ export const AssessmentForm = (props: {
   );
   const [comment, setComment] = useState<string>("");
 
-  const modelYearsMap = useMemo(() => {
-    return getModelYearEnumsToStringsMap();
+  const modelYearsMap: Partial<Record<string, ModelYear>> = useMemo(() => {
+    return {
+      "2019": ModelYear.MY_2019,
+      "2020": ModelYear.MY_2020,
+      "2021": ModelYear.MY_2021,
+      "2022": ModelYear.MY_2022,
+      "2023": ModelYear.MY_2023,
+      "2024": ModelYear.MY_2024,
+    };
   }, []);
 
   const addAdjustment = useCallback(() => {
@@ -64,12 +67,12 @@ export const AssessmentForm = (props: {
           type: TransactionType.CREDIT,
           vehicleClass: VehicleClass.REPORTABLE,
           zevClass: ZevClass.A,
-          modelYear: props.modelYear,
+          modelYear: modelYear ? modelYear : ModelYear.MY_2024,
           numberOfUnits: "0",
         },
       ];
     });
-  }, [props.modelYear]);
+  }, [modelYear]);
 
   const removeAdjustment = useCallback((id: string) => {
     setAdjustments((prev) => {
@@ -104,26 +107,22 @@ export const AssessmentForm = (props: {
     setError("");
     startTransition(async () => {
       try {
-        if (props.isReassessment) {
-          validateNvValues(nvValues);
+        if (orgId === undefined || !modelYear) {
+          throw new Error("Invalid supplier or model year!");
         }
+        console.log(orgId);
+        console.log(modelYear);
+        validateNvValues(nvValues);
         const adjustmentsPayload = getAdjustmentsPayload(adjustments);
-        const getDataArgs: AssessmentArgs | NonLegacyReassessmentArgs =
-          props.isReassessment
-            ? {
-                assessmentType: "nonLegacyReassessment",
-                myrId: props.myrId,
-                adjustments: adjustmentsPayload,
-                nvValues,
-              }
-            : {
-                assessmentType: "assessment",
-                myrId: props.myrId,
-                adjustments: adjustmentsPayload,
-              };
         const [templateUrl, assessmentResponse] = await Promise.all([
           getAssessmentTemplateUrl(),
-          getAssessmentData(getDataArgs),
+          getAssessmentData({
+            assessmentType: "legacyReassessment",
+            orgId,
+            modelYear,
+            adjustments: adjustmentsPayload,
+            nvValues,
+          }),
         ]);
         if (assessmentResponse.responseType === "error") {
           throw new Error(assessmentResponse.message);
@@ -132,6 +131,7 @@ export const AssessmentForm = (props: {
           responseType: "arraybuffer",
         });
         const template = templateResponse.data;
+        console.log(assessmentResponse.data);
         const assessment = await generateAssessment(
           template,
           assessmentResponse.data,
@@ -145,7 +145,7 @@ export const AssessmentForm = (props: {
         }
       }
     });
-  }, [props.myrId, props.isReassessment, nvValues, adjustments]);
+  }, [orgId, modelYear, nvValues, adjustments]);
 
   const handleClearAssessment = useCallback(() => {
     setError("");
@@ -156,67 +156,90 @@ export const AssessmentForm = (props: {
     setError("");
     startTransition(async () => {
       try {
+        if (orgId === undefined || !modelYear) {
+          throw new Error("Invalid supplier or model year!");
+        }
         if (assessment === null) {
           throw new Error("Exactly 1 valid Assessment expected!");
         }
-        let submitResponse;
         const assessmentBase64 = bytesToBase64(
           await assessment[0].xlsx.writeBuffer(),
         );
-        if (props.isReassessment) {
-          submitResponse = await submitReassessment(
-            props.orgId,
-            props.modelYear,
-            assessmentBase64,
-            getNormalizedComment(comment),
-          );
-        } else {
-          submitResponse = await submitAssessment(
-            props.myrId,
-            assessmentBase64,
-            getNormalizedComment(comment),
-          );
+        const response = await submitReassessment(
+          orgId,
+          modelYear,
+          assessmentBase64,
+          getNormalizedComment(comment),
+        );
+        if (response.responseType === "error") {
+          throw new Error(response.message);
         }
-        if (submitResponse.responseType === "error") {
-          throw new Error(submitResponse.message);
-        }
-        if (submitResponse.responseType === "data") {
-          const reassessmentId = submitResponse.data;
-          router.push(
-            `${Routes.ComplianceReporting}/${props.myrId}/reassessment/${reassessmentId}`,
-          );
-        } else {
-          router.push(`${Routes.ComplianceReporting}/${props.myrId}`);
-        }
+        router.push(`${Routes.LegacyReassessments}/${response.data}`);
       } catch (e) {
         if (e instanceof Error) {
           setError(e.message);
         }
       }
     });
-  }, [assessment, props.myrId, props.orgId, props.modelYear, comment]);
+  }, [modelYear, assessment, comment]);
 
   return (
     <div>
-      <div className="flex items-center py-2 my-2">
-        <label className="w-72" htmlFor="modelYear">
-          Model Year
-        </label>
-        <input
-          disabled={true}
-          name="modelYear"
-          type="text"
-          value={modelYearsMap[props.modelYear]}
-          className="border p-2 w-full"
-        />
-      </div>
-      {props.isReassessment && !assessment && (
-        <MyrNvValues
-          nvValues={nvValues}
-          handleChange={handleNvValuesChange}
-          disabled={isPending}
-        />
+      {!assessment && (
+        <div className="flex items-center py-2 my-2">
+          <label className="w-72" htmlFor="orgs">
+            Supplier
+          </label>
+          <select
+            name="orgs"
+            value={orgId}
+            className="border p-2 w-full"
+            onChange={(e) => {
+              const orgIdNumber = parseInt(e.target.value, 10);
+              if (props.orgsMap[orgIdNumber]) {
+                setOrgId(orgIdNumber);
+              } else {
+                setOrgId(undefined);
+              }
+            }}
+          >
+            <option key={undefined}>--</option>
+            {Object.entries(props.orgsMap).map(([key, value]) => (
+              <option key={key} value={key}>
+                {value}
+              </option>
+            ))}
+          </select>
+        </div>
       )}
+      {!assessment && (
+        <div className="flex items-center py-2 my-2">
+          <label className="w-72" htmlFor="modelYear">
+            Model Year
+          </label>
+          <select
+            name="modelYear"
+            value={modelYear}
+            className="border p-2 w-full"
+            onChange={(e) => {
+              const value = e.target.value;
+              setModelYear(isModelYear(value) ? value : undefined);
+            }}
+          >
+            <option key={undefined}>--</option>
+            {Object.entries(modelYearsMap).map(([key, value]) => (
+              <option key={key} value={value}>
+                {key}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
+      <MyrNvValues
+        nvValues={nvValues}
+        handleChange={handleNvValuesChange}
+        disabled={isPending}
+      />
       {!assessment && (
         <Adjustments
           adjustments={adjustments}
@@ -229,15 +252,11 @@ export const AssessmentForm = (props: {
       <div className="flex space-x-2">
         {assessment ? (
           <Button onClick={handleClearAssessment} disabled={isPending}>
-            {isPending
-              ? "..."
-              : `Clear ${props.isReassessment ? "Rea" : "A"}ssessment`}
+            {isPending ? "..." : "Clear Reassessment"}
           </Button>
         ) : (
           <Button onClick={handleGenerateAssessment} disabled={isPending}>
-            {isPending
-              ? "..."
-              : `Generate ${props.isReassessment ? "Rea" : "A"}ssessment`}
+            {isPending ? "..." : "Generate Reassessment"}
           </Button>
         )}
       </div>
