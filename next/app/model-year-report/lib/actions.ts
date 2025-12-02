@@ -20,6 +20,7 @@ import {
   createHistory,
   createReassessmentHistory,
   getAssessmentSystemData,
+  getLegacyAssessedMyr,
   getMyrDataForAssessment,
   getMyrDataForLegacyReassessment,
   getOrgDetails,
@@ -27,6 +28,7 @@ import {
   getZevUnitData,
   MyrZevUnitTransaction,
   OrgNameAndAddresses,
+  updateMyrReassessmentStatus,
 } from "./services";
 import {
   DataOrErrorActionResponse,
@@ -274,7 +276,8 @@ export const getAssessmentData = async (
       modelYear,
       nvValues: myrNvValues,
       zevClassOrdering,
-    } = args.assessmentType !== "legacyReassessment"
+    } = args.assessmentType === "assessment" ||
+    args.assessmentType === "nonLegacyReassessment"
       ? await getMyrDataForAssessment(args.myrId)
       : await getMyrDataForLegacyReassessment(args.orgId, args.modelYear);
     const nvValuesToUse =
@@ -292,7 +295,7 @@ export const getAssessmentData = async (
       nvValuesToUse,
       zevClassOrdering,
       args.adjustments,
-      args.assessmentType === "assessment" ? false : true,
+      args.assessmentType === "assessment",
     );
     const complianceInfo = getComplianceInfo(
       supplierClass,
@@ -400,32 +403,12 @@ export const submitReassessment = async (
   if (!userIsGov || !userRoles.includes(Role.ENGINEER_ANALYST)) {
     return getErrorActionResponse("Unauthorized!");
   }
-  const reassessableMyrData = await getReassessableMyrData(
+  const { myrId, isLegacy } = await getReassessableMyrData(
     organizationId,
     modelYear,
   );
-  if (
-    reassessableMyrData.myrId === null ||
-    reassessableMyrData.isLegacy === null
-  ) {
+  if (myrId === null || isLegacy === null) {
     return getErrorActionResponse("A reassessable MYR does not exist!");
-  }
-  const otherReassessments = await prisma.reassessment.findMany({
-    where: {
-      organizationId,
-      modelYear: {
-        not: modelYear,
-      },
-      status: {
-        notIn: [ReassessmentStatus.DELETED, ReassessmentStatus.ISSUED],
-      },
-    },
-    select: {
-      id: true,
-    },
-  });
-  if (otherReassessments.length > 0) {
-    return getErrorActionResponse("Invalid Action!");
   }
   const latestReassessment = await prisma.reassessment.findFirst({
     where: {
@@ -446,7 +429,7 @@ export const submitReassessment = async (
   const reassessmentObjectName = getReportFullObjectName("reassessment");
   let reassessmentIdToReturn: number = latestReassessment
     ? latestReassessment.id
-    : NaN;
+    : Number.NaN;
   await prisma.$transaction(async (tx) => {
     if (
       latestReassessment &&
@@ -486,6 +469,7 @@ export const submitReassessment = async (
           status: ReassessmentStatus.SUBMITTED_TO_DIRECTOR,
           sequenceNumber,
           objectName: reassessmentObjectName,
+          modelYearReportId: isLegacy ? null : myrId,
         },
       });
       reassessmentIdToReturn = reassessmentId;
@@ -494,6 +478,13 @@ export const submitReassessment = async (
         userId,
         ReassessmentStatus.SUBMITTED_TO_DIRECTOR,
         comment,
+        tx,
+      );
+    }
+    if (!isLegacy) {
+      await updateMyrReassessmentStatus(
+        myrId,
+        ReassessmentStatus.SUBMITTED_TO_DIRECTOR,
         tx,
       );
     }
@@ -661,6 +652,7 @@ export const returnReassessment = async (
   if (!reassessment) {
     return getErrorActionResponse("Valid Reassessment not found!");
   }
+  const myrId = reassessment.modelYearReportId;
   await prisma.$transaction(async (tx) => {
     await tx.reassessment.update({
       where: {
@@ -677,6 +669,13 @@ export const returnReassessment = async (
       comment,
       tx,
     );
+    if (myrId) {
+      await updateMyrReassessmentStatus(
+        myrId,
+        ReassessmentStatus.RETURNED_TO_ANALYST,
+        tx,
+      );
+    }
   });
   return getSuccessActionResponse();
 };
@@ -700,17 +699,8 @@ export const issueReassessment = async (
   }
   const organizationId = reassessment.organizationId;
   const modelYear = reassessment.modelYear;
-  const reassessableMyr = await getReassessableMyrData(
-    organizationId,
-    modelYear,
-  );
-  if (reassessableMyr.myrId === null || reassessableMyr.isLegacy === null) {
-    return getErrorActionResponse(
-      "Associated MYR not found or is not reassessable!",
-    );
-  }
-  const myrId = reassessableMyr.myrId;
-  const isLegacy = reassessableMyr.isLegacy;
+  const myrId = reassessment.modelYearReportId;
+  const legacyMyr = await getLegacyAssessedMyr(organizationId, modelYear);
   const complianceDate = getComplianceDate(modelYear);
   const reassessmentData = await getAssessmentSystemData(
     reassessment.objectName,
@@ -757,8 +747,8 @@ export const issueReassessment = async (
         return {
           ...transaction,
           organizationId,
-          referenceId: isLegacy ? null : myrId,
-          legacyReferenceId: isLegacy ? myrId : null,
+          referenceId: myrId,
+          legacyReferenceId: legacyMyr ? legacyMyr.id : null,
           timestamp: complianceDate,
         };
       }),
@@ -789,6 +779,9 @@ export const issueReassessment = async (
       comment,
       tx,
     );
+    if (myrId) {
+      await updateMyrReassessmentStatus(myrId, ReassessmentStatus.ISSUED, tx);
+    }
   });
   return getSuccessActionResponse();
 };
@@ -810,6 +803,7 @@ export const deleteReassessment = async (
   if (!reassessment) {
     return getErrorActionResponse("Valid Reassessment not found!");
   }
+  const myrId = reassessment.modelYearReportId;
   await prisma.$transaction(async (tx) => {
     await tx.reassessment.update({
       where: {
@@ -826,6 +820,9 @@ export const deleteReassessment = async (
       comment,
       tx,
     );
+    if (myrId) {
+      await updateMyrReassessmentStatus(myrId, ReassessmentStatus.DELETED, tx);
+    }
   });
   return getSuccessActionResponse();
 };

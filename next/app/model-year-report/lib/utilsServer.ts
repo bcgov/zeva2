@@ -33,6 +33,8 @@ import {
   getStringsToModelYearsEnumsMap,
   getStringsToMyrStatusEnumsMap,
   getStringsToMyrSupplierStatusEnumsMap,
+  getStringsToReassessmentStatusEnumsMap,
+  getStringsToSupplierReassessmentStatusEnumsMap,
   getStringsToVehicleClassEnumsMap,
   getStringsToZevClassEnumsMap,
 } from "@/app/lib/utils/enumMaps";
@@ -378,6 +380,9 @@ export const getWhereClause = (
   const modelYearsMap = getStringsToModelYearsEnumsMap();
   const statusMap = getStringsToMyrStatusEnumsMap();
   const supplierStatusMap = getStringsToMyrSupplierStatusEnumsMap();
+  const reassessmentStatusMap = getStringsToReassessmentStatusEnumsMap();
+  const supplierReassessmentStatusMap =
+    getStringsToSupplierReassessmentStatusEnumsMap();
   for (const [key, rawValue] of Object.entries(filters)) {
     const value = rawValue.trim();
     if (key === "id") {
@@ -399,6 +404,24 @@ export const getWhereClause = (
         result["supplierStatus"] = {
           in: getMatchingTerms(supplierStatusMap, value),
         };
+      }
+    } else if (key === "reassessmentStatus") {
+      if (userIsGov) {
+        if (value === "--") {
+          result[key] = null;
+        } else {
+          result[key] = {
+            in: getMatchingTerms(reassessmentStatusMap, value),
+          };
+        }
+      } else {
+        if (value === "--") {
+          result["supplierReassessmentStatus"] = null;
+        } else {
+          result["supplierReassessmentStatus"] = {
+            in: getMatchingTerms(supplierReassessmentStatusMap, value),
+          };
+        }
       }
     }
   }
@@ -426,6 +449,12 @@ export const getOrderByClause = (
         } else {
           orderBy["supplierStatus"] = value;
         }
+      } else if (key === "reassessmentStatus") {
+        if (userIsGov) {
+          orderBy[key] = value;
+        } else {
+          orderBy["supplierReassessmentStatus"] = value;
+        }
       }
     }
     if (Object.keys(orderBy).length > 0) {
@@ -438,7 +467,10 @@ export const getOrderByClause = (
   return result;
 };
 
-export type MyrSparseSerialized = Omit<MyrSparse, "supplierStatus">;
+export type MyrSparseSerialized = Omit<
+  MyrSparse,
+  "supplierStatus" | "supplierReassessmentStatus"
+>;
 
 export const getSerializedMyrs = (
   myrs: MyrSparse[],
@@ -448,6 +480,7 @@ export const getSerializedMyrs = (
     const { supplierStatus, ...result } = myr;
     if (!userIsGov) {
       result.status = myr.supplierStatus;
+      result.reassessmentStatus = myr.supplierReassessmentStatus;
     }
     return result;
   });

@@ -19,6 +19,7 @@ import {
   ReassessmentStatus,
   ReferenceType,
   Role,
+  SupplierReassessmentStatus,
   TransactionType,
   VehicleClass,
   VehicleStatus,
@@ -291,6 +292,20 @@ export const getStringsToReassessmentStatusEnumsMap = () => {
 export const getReassessmentStatusEnumsToStringsMap = () => {
   return getEnumsToStringsMap<ReassessmentStatus>(
     ReassessmentStatus,
+    statusTransformer,
+  );
+};
+
+export const getStringsToSupplierReassessmentStatusEnumsMap = () => {
+  return getStringsToEnumsMap<SupplierReassessmentStatus>(
+    SupplierReassessmentStatus,
+    statusTransformer,
+  );
+};
+
+export const getSupplierReassessmentStatusEnumsToStringsMap = () => {
+  return getEnumsToStringsMap<SupplierReassessmentStatus>(
+    SupplierReassessmentStatus,
     statusTransformer,
   );
 };

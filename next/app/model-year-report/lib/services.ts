@@ -524,3 +524,38 @@ export const getMyrDataForLegacyReassessment = async (
     zevClassOrdering: legacyMyr.zevClassOrdering,
   };
 };
+
+export const getLegacyAssessedMyr = async (
+  organizationId: number,
+  modelYear: ModelYear,
+) => {
+  return await prisma.legacyAssessedModelYearReport.findUnique({
+    where: {
+      organizationId_modelYear: {
+        organizationId,
+        modelYear,
+      },
+    },
+    select: {
+      id: true,
+    },
+  });
+};
+
+export const updateMyrReassessmentStatus = async (
+  myrId: number,
+  status: ReassessmentStatus,
+  transactionClient?: TransactionClient,
+) => {
+  const client = transactionClient ?? prisma;
+  await client.modelYearReport.update({
+    where: {
+      id: myrId,
+    },
+    data: {
+      reassessmentStatus: status,
+      supplierReassessmentStatus:
+        status === ReassessmentStatus.ISSUED ? ReassessmentStatus.ISSUED : null,
+    },
+  });
+};

@@ -6,6 +6,7 @@ import { Table } from "@/app/lib/components";
 import {
   getModelYearEnumsToStringsMap,
   getMyrStatusEnumsToStringsMap,
+  getReassessmentStatusEnumsToStringsMap,
 } from "@/app/lib/utils/enumMaps";
 import { MyrSparseSerialized } from "../utilsServer";
 import { useRouter } from "next/navigation";
@@ -27,6 +28,9 @@ export const ReportsTable = (props: {
   const statusMap = useMemo(() => {
     return getMyrStatusEnumsToStringsMap();
   }, []);
+  const reassessmentStatusMap = useMemo(() => {
+    return getReassessmentStatusEnumsToStringsMap();
+  }, []);
   const columns = useMemo(() => {
     const result: ColumnDef<MyrSparseSerialized, any>[] = [
       columnHelper.accessor((row) => modelYearEnumMap[row.modelYear], {
@@ -41,6 +45,18 @@ export const ReportsTable = (props: {
         enableColumnFilter: true,
         header: () => <span>Status</span>,
       }),
+      columnHelper.accessor(
+        (row) =>
+          row.reassessmentStatus
+            ? reassessmentStatusMap[row.reassessmentStatus]
+            : "--",
+        {
+          id: "reassessmentStatus",
+          enableSorting: true,
+          enableColumnFilter: true,
+          header: () => <span>Status</span>,
+        },
+      ),
     ];
     if (props.userIsGov) {
       result.unshift(

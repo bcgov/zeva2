@@ -1,5 +1,5 @@
 import { getOrgsMap } from "@/app/lib/data/orgs";
-import { LegacyReassessmentForm } from "@/app/model-year-report/lib/components/LegacyReassessmentForm";
+import { AssessmentForm } from "@/app/model-year-report/lib/components/AssessmentForm";
 import { getUserInfo } from "@/auth";
 
 const Page = async () => {
@@ -13,7 +13,7 @@ const Page = async () => {
       <h1 className="text-xl font-bold mb-4">
         Reassess a Legacy Model Year Report
       </h1>
-      <LegacyReassessmentForm orgsMap={orgsMap} />
+      <AssessmentForm assessmentType="legacyReassessment" orgsMap={orgsMap} />
     </div>
   );
 };

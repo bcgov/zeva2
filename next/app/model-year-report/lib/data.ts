@@ -6,6 +6,7 @@ import {
   ModelYearReportSupplierStatus,
   Prisma,
   ReassessmentStatus,
+  SupplierReassessmentStatus,
   Role,
 } from "@/prisma/generated/client";
 import { getOrderByClause, getWhereClause } from "./utilsServer";
@@ -139,6 +140,8 @@ export type MyrSparse = {
   modelYear: ModelYear;
   status: ModelYearReportStatus;
   supplierStatus: ModelYearReportSupplierStatus;
+  reassessmentStatus: ReassessmentStatus | null;
+  supplierReassessmentStatus: SupplierReassessmentStatus | null;
   organization?: {
     name: string;
   };
@@ -164,6 +167,8 @@ export const getModelYearReports = async (
     modelYear: true,
     status: true,
     supplierStatus: true,
+    reassessmentStatus: true,
+    supplierReassessmentStatus: true,
   };
   if (userIsGov) {
     select.organization = {
@@ -374,16 +379,7 @@ export const getLegacyReassessments = async (
     status: {
       not: ReassessmentStatus.DELETED,
     },
-    modelYear: {
-      in: [
-        ModelYear.MY_2019,
-        ModelYear.MY_2020,
-        ModelYear.MY_2021,
-        ModelYear.MY_2022,
-        ModelYear.MY_2023,
-        ModelYear.MY_2024,
-      ],
-    },
+    modelYearReportId: null,
   };
   const select: Prisma.ReassessmentSelect = {
     id: true,

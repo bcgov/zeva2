@@ -19,10 +19,10 @@ const Page = async (props: { params: Promise<{ id: string }> }) => {
     <div className="max-w-xl mx-auto p-4">
       <h1 className="text-xl font-bold mb-4">Reassess a Model Year Report</h1>
       <AssessmentForm
+        assessmentType="nonLegacyReassessment"
         myrId={report.id}
         orgId={report.organizationId}
         modelYear={report.modelYear}
-        isReassessment={true}
       />
     </div>
   );

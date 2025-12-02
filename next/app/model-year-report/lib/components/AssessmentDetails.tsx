@@ -3,7 +3,7 @@ import { getArrayBuffer } from "@/app/lib/utils/parseReadable";
 import { parseAssessment } from "../utils";
 import { ParsedAssessment } from "./ParsedAssessment";
 import { getAssessmentObject, getReassessmentObject } from "../data";
-import { Readable } from "stream";
+import { Readable } from "node:stream";
 
 // used by both assessments and reassessments; id is either a myrId or a reassessmentId
 export const AssessmentDetails = async (props: {

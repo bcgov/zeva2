@@ -637,17 +637,31 @@ enum ModelYearReportSupplierStatus {
   SUBMITTED_TO_GOVERNMENT
 }
 
+enum ReassessmentStatus {
+  DELETED
+  ISSUED
+  RETURNED_TO_ANALYST
+  SUBMITTED_TO_DIRECTOR
+}
+
+enum SupplierReassessmentStatus {
+  ISSUED
+}
+
 model ModelYearReport {
-  id                       Int                           @id @default(autoincrement())
-  organization             Organization                  @relation(fields: [organizationId], references: [id])
-  organizationId           Int                           @map("organization_id")
-  modelYear                ModelYear                     @map("model_year")
-  status                   ModelYearReportStatus
-  supplierStatus           ModelYearReportSupplierStatus @map("supplier_status")
-  objectName               String                        @unique @map("object_name")
-  forecastReportObjectName String                        @unique @map("forecast_report_object_name")
-  modelYearReportHistory   ModelYearReportHistory[]
-  assessment               Assessment?
+  id                         Int                           @id @default(autoincrement())
+  organization               Organization                  @relation(fields: [organizationId], references: [id])
+  organizationId             Int                           @map("organization_id")
+  modelYear                  ModelYear                     @map("model_year")
+  status                     ModelYearReportStatus
+  supplierStatus             ModelYearReportSupplierStatus @map("supplier_status")
+  reassessmentStatus         ReassessmentStatus?           @map("reassessment_status")
+  supplierReassessmentStatus SupplierReassessmentStatus?   @map("supplier_reassessment_status")
+  objectName                 String                        @unique @map("object_name")
+  forecastReportObjectName   String                        @unique @map("forecast_report_object_name")
+  modelYearReportHistory     ModelYearReportHistory[]
+  assessment                 Assessment?
+  Reassessment               Reassessment[]
 
   @@unique([organizationId, modelYear])
   @@map("model_year_report")
@@ -719,19 +733,14 @@ model SupplementaryReportHistory {
   @@map("supplementary_report_history")
 }
 
-enum ReassessmentStatus {
-  DELETED
-  ISSUED
-  RETURNED_TO_ANALYST
-  SUBMITTED_TO_DIRECTOR
-}
-
 model Reassessment {
   id                  Int                   @id @default(autoincrement())
   status              ReassessmentStatus
   organization        Organization          @relation(fields: [organizationId], references: [id])
   organizationId      Int                   @map("organization_id")
   modelYear           ModelYear             @map("model_year")
+  modelYearReportId   Int?                  @map("model_year_report_id")
+  modelYearReport     ModelYearReport?      @relation(fields: [modelYearReportId], references: [id])
   sequenceNumber      Int                   @map("sequence_number")
   objectName          String                @unique @map("object_name")
   ReassessmentHistory ReassessmentHistory[]

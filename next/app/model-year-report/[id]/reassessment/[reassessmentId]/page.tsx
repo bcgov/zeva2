@@ -5,8 +5,8 @@ const Page = async (props: {
   params: Promise<{ id: string; reassessmentId: string }>;
 }) => {
   const args = await props.params;
-  const myrId = parseInt(args.id, 10);
-  const reassessmentId = parseInt(args.reassessmentId, 10);
+  const myrId = Number.parseInt(args.id, 10);
+  const reassessmentId = Number.parseInt(args.reassessmentId, 10);
   const reassessment = await getReassessment(reassessmentId, myrId);
   if (!reassessment) {
     return null;
