@@ -19,11 +19,13 @@ const Page = async (props: { params: Promise<{ id: string }> }) => {
       <h1 className="text-2xl font-bold mb-4">
         User organization: {user.organization.name}
       </h1>
-      <UserForm
-        user={user}
-        userOrgId={userOrgId.toString()}
-        govOrgId={govOrgId.toString()}
-      />
+      <div className="bg-white rounded-lg shadow-level-1 p-6">
+        <UserForm
+          user={user}
+          userOrgId={userOrgId.toString()}
+          govOrgId={govOrgId.toString()}
+        />
+      </div>
     </div>
   );
 };

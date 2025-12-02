@@ -43,13 +43,15 @@ const Page = async () => {
       <h2 className="text-xl font-semibold text-primaryBlue pb-4">
         New Agreement
       </h2>
-      <AgreementEditForm
-        supplierSelections={await supplierSelectionsPromise}
-        modelYearSelections={modelYearSelections}
-        zevClassSelections={[ZevClass.A, ZevClass.B]}
-        upsertAgreement={createAgreement}
-        handleCancel={handleCancel}
-      />
+      <div className="bg-white rounded-lg shadow-level-1 p-6">
+        <AgreementEditForm
+          supplierSelections={await supplierSelectionsPromise}
+          modelYearSelections={modelYearSelections}
+          zevClassSelections={[ZevClass.A, ZevClass.B]}
+          upsertAgreement={createAgreement}
+          handleCancel={handleCancel}
+        />
+      </div>
     </div>
   );
 };

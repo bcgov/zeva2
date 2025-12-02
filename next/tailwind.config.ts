@@ -60,6 +60,13 @@ export default {
           lg: "3px 3px 6px rgba(0,0,0,0.5)",
         },
       },
+      boxShadow: {
+        // Design system shadow levels
+        "level-1": "0 1px 2px 0 rgba(0, 0, 0, 0.05)", // Cards, titles
+        "level-2": "0 2px 4px 0 rgba(0, 0, 0, 0.08)", // Hover state on cards
+        "level-3": "0 4px 8px 0 rgba(0, 0, 0, 0.12)", // Modal / pop-up
+        "level-4": "0 8px 16px 0 rgba(0, 0, 0, 0.16)", // Tooltip / overlay
+      },
     },
   },
   plugins: [
