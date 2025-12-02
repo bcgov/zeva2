@@ -124,7 +124,7 @@ export const Navbar: React.FC<{
           {showUserDropDown && (
             <div
               onClick={keycloakSignOut}
-              className="absolute right-0 bg-primaryBlue hover:bg-primaryBlueHover border mt-[0.5px] p-2 shadow-lg cursor-pointer"
+              className="absolute right-0 bg-primaryBlue hover:bg-primaryBlueHover border mt-[0.5px] p-2 shadow-level-3 cursor-pointer"
             >
               Sign Out
             </div>

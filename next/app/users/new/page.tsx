@@ -13,11 +13,13 @@ const Page = async () => {
   return (
     <div className="p-6 max-w-3xl mx-auto">
       <h1 className="text-2xl font-bold mb-4">New User</h1>
-      <UserForm
-        orgsMap={orgsMap}
-        userOrgId={userOrgId.toString()}
-        govOrgId={govOrgId.toString()}
-      />
+      <div className="bg-white rounded-lg shadow-level-1 p-6">
+        <UserForm
+          orgsMap={orgsMap}
+          userOrgId={userOrgId.toString()}
+          govOrgId={govOrgId.toString()}
+        />
+      </div>
     </div>
   );
 };
