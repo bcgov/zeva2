@@ -691,6 +691,7 @@ model ModelYearReportHistory {
 
 model LegacyAssessedModelYearReport {
   id               Int          @id @default(autoincrement())
+  legacyId         Int          @unique @map("legacy_id")
   organization     Organization @relation(fields: [organizationId], references: [id])
   organizationId   Int          @map("organization_id")
   modelYear        ModelYear    @map("model_year")

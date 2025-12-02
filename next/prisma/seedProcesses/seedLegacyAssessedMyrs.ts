@@ -45,6 +45,7 @@ export const seedLegacyAssessedMyrs = async (
     }
     await tx.legacyAssessedModelYearReport.create({
       data: {
+        legacyId: myr.id,
         organizationId: newOrgId,
         modelYear: modelYearEnum,
         zevClassOrdering,

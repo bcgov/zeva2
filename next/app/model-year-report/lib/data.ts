@@ -332,7 +332,7 @@ export const getReassessmentObject = async (reassessmentId: number) => {
 export const getReassessmentHistory = async (reassessmentId: number) => {
   const { userIsGov } = await getUserInfo();
   const whereClause: Prisma.ReassessmentHistoryWhereInput = {
-    id: reassessmentId,
+    reassessmentId,
   };
   if (!userIsGov) {
     whereClause.userAction = ReassessmentStatus.ISSUED;

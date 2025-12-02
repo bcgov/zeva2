@@ -360,17 +360,13 @@ export const createReassessmentHistory = async (
 
 export type ReassessableMyr = {
   myrId: number | null;
-  isLegacy: boolean | null;
+  legacyMyrId: number | null;
 };
 
 export const getReassessableMyrData = async (
   organizationId: number,
   modelYear: ModelYear,
 ): Promise<ReassessableMyr> => {
-  const result: ReassessableMyr = {
-    myrId: null,
-    isLegacy: null,
-  };
   const myrs = await prisma.modelYearReport.findMany({
     where: {
       organizationId,
@@ -385,14 +381,13 @@ export const getReassessableMyrData = async (
     },
     take: 5,
   });
-  myrs.forEach((myr) => {
+  for (const myr of myrs) {
     if (myr.modelYear === modelYear) {
-      result.myrId = myr.id;
-      result.isLegacy = false;
+      return {
+        myrId: myr.id,
+        legacyMyrId: null,
+      };
     }
-  });
-  if (result.myrId !== null && result.isLegacy !== null) {
-    return result;
   }
   const legacyAssessedMyrs =
     await prisma.legacyAssessedModelYearReport.findMany({
@@ -400,7 +395,7 @@ export const getReassessableMyrData = async (
         organizationId,
       },
       select: {
-        id: true,
+        legacyId: true,
         modelYear: true,
       },
       orderBy: {
@@ -408,13 +403,18 @@ export const getReassessableMyrData = async (
       },
       take: 5 - myrs.length,
     });
-  legacyAssessedMyrs.forEach((legacyMyr) => {
+  for (const legacyMyr of legacyAssessedMyrs) {
     if (legacyMyr.modelYear === modelYear) {
-      result.myrId = legacyMyr.id;
-      result.isLegacy = true;
+      return {
+        myrId: null,
+        legacyMyrId: legacyMyr.legacyId,
+      };
     }
-  });
-  return result;
+  }
+  return {
+    myrId: null,
+    legacyMyrId: null,
+  };
 };
 
 export type MyrDataForAssessment = {
@@ -537,7 +537,7 @@ export const getLegacyAssessedMyr = async (
       },
     },
     select: {
-      id: true,
+      legacyId: true,
     },
   });
 };

@@ -75,7 +75,9 @@ export const Dropzone = (props: {
 
   return (
     <div className="w-full">
-      <div className={`${props.disabled ? "bg-gray-100" : "bg-white"} py-2 my-2 rounded-lg shadow-level-1 p-4`}>
+      <div
+        className={`${props.disabled ? "bg-gray-100" : "bg-white"} py-2 my-2 rounded-lg shadow-level-1 p-4`}
+      >
         <div {...getRootProps()}>
           <input {...getInputProps()} />
           {isDragActive ? (

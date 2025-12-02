@@ -49,7 +49,10 @@ import {
 } from "./utilsServer";
 import { SupplierClass } from "@/app/lib/constants/complianceRatio";
 import { prisma } from "@/lib/prisma";
-import { getComplianceDate } from "@/app/lib/utils/complianceYear";
+import {
+  getComplianceDate,
+  getCompliancePeriod,
+} from "@/app/lib/utils/complianceYear";
 import { addJobToEmailQueue } from "@/app/lib/services/queue";
 import { Buffer } from "node:buffer";
 
@@ -295,7 +298,7 @@ export const getAssessmentData = async (
       nvValuesToUse,
       zevClassOrdering,
       args.adjustments,
-      args.assessmentType === "assessment",
+      args.assessmentType !== "assessment",
     );
     const complianceInfo = getComplianceInfo(
       supplierClass,
@@ -403,11 +406,11 @@ export const submitReassessment = async (
   if (!userIsGov || !userRoles.includes(Role.ENGINEER_ANALYST)) {
     return getErrorActionResponse("Unauthorized!");
   }
-  const { myrId, isLegacy } = await getReassessableMyrData(
+  const { myrId, legacyMyrId } = await getReassessableMyrData(
     organizationId,
     modelYear,
   );
-  if (myrId === null || isLegacy === null) {
+  if (!myrId && !legacyMyrId) {
     return getErrorActionResponse("A reassessable MYR does not exist!");
   }
   const latestReassessment = await prisma.reassessment.findFirst({
@@ -469,7 +472,7 @@ export const submitReassessment = async (
           status: ReassessmentStatus.SUBMITTED_TO_DIRECTOR,
           sequenceNumber,
           objectName: reassessmentObjectName,
-          modelYearReportId: isLegacy ? null : myrId,
+          modelYearReportId: myrId,
         },
       });
       reassessmentIdToReturn = reassessmentId;
@@ -481,7 +484,7 @@ export const submitReassessment = async (
         tx,
       );
     }
-    if (!isLegacy) {
+    if (myrId) {
       await updateMyrReassessmentStatus(
         myrId,
         ReassessmentStatus.SUBMITTED_TO_DIRECTOR,
@@ -702,6 +705,7 @@ export const issueReassessment = async (
   const myrId = reassessment.modelYearReportId;
   const legacyMyr = await getLegacyAssessedMyr(organizationId, modelYear);
   const complianceDate = getComplianceDate(modelYear);
+  const compliancePeriod = getCompliancePeriod(modelYear);
   const reassessmentData = await getAssessmentSystemData(
     reassessment.objectName,
   );
@@ -739,7 +743,10 @@ export const issueReassessment = async (
       where: {
         organizationId,
         referenceType: ReferenceType.OBLIGATION_REDUCTION,
-        modelYear,
+        AND: [
+          { timestamp: { gte: compliancePeriod.closedLowerBound } },
+          { timestamp: { lt: compliancePeriod.openUpperBound } },
+        ],
       },
     });
     await tx.zevUnitTransaction.createMany({
@@ -748,7 +755,7 @@ export const issueReassessment = async (
           ...transaction,
           organizationId,
           referenceId: myrId,
-          legacyReferenceId: legacyMyr ? legacyMyr.id : null,
+          legacyReferenceId: legacyMyr ? legacyMyr.legacyId : null,
           timestamp: complianceDate,
         };
       }),
