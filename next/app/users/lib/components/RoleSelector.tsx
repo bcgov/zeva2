@@ -98,17 +98,19 @@ export const RoleSelector = (props: {
 
   return (
     <>
-      <div className="flex items-center py-2 my-2">
-        <label className="w-72">Roles</label>
+      <div className="space-y-2">
         {roles.map((role) => (
-          <label className="w-72" key={role}>
+          <label
+            className="flex items-start gap-3 rounded-md border border-dividerMedium/50 bg-disabledSurface px-3 py-2 text-sm text-primaryText"
+            key={role}
+          >
             <input
-              className="border p-2 w-full"
+              className="mt-1 h-4 w-4 accent-primaryBlue"
               type="checkbox"
               checked={props.roles.includes(role)}
               onChange={(e) => handleRoleCheck(role, e.target.checked)}
             />
-            {rolesMap[role]}
+            <span>{rolesMap[role]}</span>
           </label>
         ))}
       </div>

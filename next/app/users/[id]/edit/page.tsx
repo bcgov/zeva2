@@ -15,10 +15,7 @@ const Page = async (props: { params: Promise<{ id: string }> }) => {
   const govOrgId = await getGovOrgId();
 
   return (
-    <div className="p-6 max-w-3xl mx-auto">
-      <h1 className="text-2xl font-bold mb-4">
-        User organization: {user.organization.name}
-      </h1>
+    <div className="w-full px-6 py-6 lg:px-10 xl:px-14">
       <UserForm
         user={user}
         userOrgId={userOrgId.toString()}

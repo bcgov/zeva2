@@ -21,106 +21,76 @@ export function UserFormFields({
   }, []);
 
   const isActive = form.isActive === "true";
-  const [showStatusModal, setShowStatusModal] = useState(false);
-  const [pendingActive, setPendingActive] = useState<boolean | null>(null);
-
-  const handleActiveIntent = (nextChecked: boolean) => {
-    setPendingActive(nextChecked);
-    setShowStatusModal(true);
-  };
-
-  const cancelStatusChange = () => {
-    setShowStatusModal(false);
-    setPendingActive(null);
-  };
-
-  const confirmStatusChange = () => {
-    if (pendingActive === null) return;
-    onChange("isActive", pendingActive ? "true" : "false");
-    setShowStatusModal(false);
-    setPendingActive(null);
-  };
-
-  const statusModalTitle = pendingActive
-    ? "Confirm: Activate User"
-    : "Confirm: Deactivate User";
-  const modalConfirmLabel = pendingActive ? "Activate" : "Deactivate";
-  const modalConfirmClass = pendingActive ? "confirmation" : "error";
 
   return (
-    <>
-      <div className="flex items-center py-2 my-2">
-        <label className="w-72">First Name</label>
-        <input
-          name="firstName"
-          className="border p-2 w-full"
-          value={form.firstName ?? ""}
-          onChange={(e) => onChange(e.target.name, e.target.value)}
-        />
-      </div>
-      <div className="flex items-center py-2 my-2">
-        <label className="w-72">Last Name</label>
-        <input
-          name="lastName"
-          className="border p-2 w-full"
-          value={form.lastName ?? ""}
-          onChange={(e) => onChange(e.target.name, e.target.value)}
-        />
-      </div>
-      <div className="flex items-center py-2 my-2">
-        <label className="w-72">Contact Email</label>
-        <input
-          name="contactEmail"
-          className="border p-2 w-full"
-          value={form.contactEmail ?? ""}
-          onChange={(e) => onChange(e.target.name, e.target.value)}
-        />
-      </div>
-      <div className="flex items-center py-2 my-2">
-        <label className="w-72">IDP Username</label>
-        <input
-          name="idpUsername"
-          className="border p-2 w-full"
-          value={form.idpUsername ?? ""}
-          onChange={(e) => onChange(e.target.name, e.target.value)}
-        />
-      </div>
-      <div className="flex items-center py-2 my-2">
-        <label className="w-72">Is Active</label>
-        <input
-          className="border p-2 w-full"
-          type="checkbox"
-          name="isActive"
-          value="true"
-          checked={isActive}
-          onChange={(e) => handleActiveIntent(e.target.checked)}
-        />
-      </div>
-      <Modal
-        showModal={showStatusModal}
-        handleCancel={cancelStatusChange}
-        handleSubmit={confirmStatusChange}
-        title={statusModalTitle}
-        confirmLabel={modalConfirmLabel}
-        modalType={modalConfirmClass}
-        content={"Are you sure you want to update this user?"}
-        disablePrimaryButton={false}
-        disableSecondaryButton={false}
-      />
-      <div className="flex items-center py-2 my-2">
-        <label className="w-72">Notifications</label>
-        {Object.values(Notification).map((value) => (
-          <label className="w-72" key={value}>
+    <div className="space-y-4">
+      <div className="space-y-3 rounded-lg border border-dividerMedium/30 bg-white p-5 shadow-sm">
+        <div className="space-y-3">
+          <div className="space-y-1">
+            <label className="form-label">First name (required)</label>
             <input
-              className="border p-2 w-full"
-              type="checkbox"
-              checked={notifications.includes(value)}
-              onChange={() => toggleNotification(value)}
+              name="firstName"
+              className="form-input-base"
+              placeholder="Test name"
+              value={form.firstName ?? ""}
+              onChange={(e) => onChange(e.target.name, e.target.value)}
             />
-            {notificationsMap[value]}
-          </label>
-        ))}
+          </div>
+          <div className="space-y-1">
+            <label className="form-label">Last name (required)</label>
+            <input
+              name="lastName"
+              className="form-input-base"
+              placeholder="Test last name"
+              value={form.lastName ?? ""}
+              onChange={(e) => onChange(e.target.name, e.target.value)}
+            />
+          </div>
+          <div className="space-y-1">
+            <label className="form-label">Job title (required)</label>
+            <input
+              name="idpUsername"
+              className="form-input-base"
+              placeholder="Policy Analyst"
+              value={form.idpUsername ?? ""}
+              onChange={(e) => onChange(e.target.name, e.target.value)}
+            />
+          </div>
+          <div className="space-y-1">
+            <label className="form-label">IDIR user Id (required)</label>
+            <input
+              name="idpUsername"
+              className="form-input-base"
+              placeholder="TEST"
+              value={form.idpUsername ?? ""}
+              onChange={(e) => onChange(e.target.name, e.target.value)}
+            />
+          </div>
+          <div className="space-y-1">
+            <label className="form-label">IDIR user email (required)</label>
+            <input
+              name="contactEmail"
+              className="form-input-base"
+              placeholder="test@gov.bc.ca"
+              value={form.contactEmail ?? ""}
+              onChange={(e) => onChange(e.target.name, e.target.value)}
+            />
+          </div>
+          <div className="space-y-1">
+            <label className="form-label">Notification email (optional)</label>
+            <p className="text-xs text-secondaryText">
+              The email used to receive notifications, if different from above
+            </p>
+            <input
+              name="contactEmail"
+              className="form-input-base"
+              placeholder="test@gov.bc.ca"
+              value={form.contactEmail ?? ""}
+              onChange={(e) => onChange(e.target.name, e.target.value)}
+            />
+          </div>
+        </div>
       </div>
-    </>
+    </div>
   );
 }
