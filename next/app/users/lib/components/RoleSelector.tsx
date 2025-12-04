@@ -44,6 +44,24 @@ export const RoleSelector = (props: {
     return getRoleEnumsToStringsMap();
   }, []);
 
+  const roleDescriptions: Partial<Record<Role, string>> = useMemo(
+    () => ({
+      [Role.ORGANIZATION_ADMINISTRATOR]:
+        "Can add and manage BCeID users and assign roles.",
+      [Role.SIGNING_AUTHORITY]:
+        "Can sign-off and submit Credit Applications and Transfers to government.",
+      [Role.ZEVA_USER]:
+        "Can submit new ZEV models and create Credit Applications and Transfers.",
+      [Role.ENGINEER_ANALYST]:
+        "Can add new auto suppliers and BCeID users, validate new ZEV Models; upload ICBC data, analyse and recommend issuance of Credit Applications and Transfers.",
+      [Role.ADMINISTRATOR]:
+        "Can add and manage IDIR users and assign roles.",
+      [Role.DIRECTOR]:
+        "Can provide statutory decisions to issue, record and/or approve Credit Applications and Transfers.",
+    }),
+    [],
+  );
+
   const handleRoleCheck = useCallback(
     (role: Role, checked: boolean) => {
       if (props.userId === undefined) {
@@ -110,7 +128,12 @@ export const RoleSelector = (props: {
               checked={props.roles.includes(role)}
               onChange={(e) => handleRoleCheck(role, e.target.checked)}
             />
-            <span>{rolesMap[role]}</span>
+            <span className="space-y-1">
+              <p className="font-semibold text-primaryText">{rolesMap[role]}</p>
+              {roleDescriptions[role] && (
+                <p className="text-sm text-secondaryText">{roleDescriptions[role]}</p>
+              )}
+            </span>
           </label>
         ))}
       </div>
