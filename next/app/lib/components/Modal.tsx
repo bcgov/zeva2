@@ -86,7 +86,7 @@ export function Modal({
         aria-hidden={!showModal}
       >
         <div
-          className={`w-full max-w-lg rounded-2xl bg-white shadow-xl ring-1 ring-black/5 p-6 ${modalClass}`}
+          className={`w-full max-w-lg rounded-2xl bg-white shadow-level-3 ring-1 ring-black/5 p-6 ${modalClass}`}
           role="document"
         >
           <div className="flex justify-between items-center">
@@ -98,7 +98,7 @@ export function Modal({
             />
           </div>
           <h3 className="text-xl font-bold text-primaryText py-4">{title}</h3>
-          {typeof content === 'string' ? (
+          {typeof content === "string" ? (
             <div className="text-base font-bold">{content}</div>
           ) : (
             <div>{content}</div>

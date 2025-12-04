@@ -29,16 +29,18 @@ export const UserForm = ({
   govOrgId: string;
 }) => {
   const router = useRouter();
-  const [formChanged, setFormChanged] = useState<boolean>(false);
   const [error, setError] = useState<string>("");
   const [form, setForm] = useState<Partial<Record<string, string>>>({});
-  const [initialForm, setInitialForm] = useState<Partial<Record<string, string>>>({});
+  const [initialForm, setInitialForm] = useState<
+    Partial<Record<string, string>>
+  >({});
   const [roles, setRoles] = useState<Role[]>([]);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [isPending, startTransition] = useTransition();
   const isActive = form.isActive === "true";
   const [showStatusModal, setShowStatusModal] = useState(false);
   const [pendingActive, setPendingActive] = useState<boolean | null>(null);
+  const [submitClicked, setSubmitClicked] = useState<boolean>(false);
 
   const handleActiveIntent = (nextChecked: boolean) => {
     setPendingActive(nextChecked);
@@ -56,10 +58,8 @@ export const UserForm = ({
     setShowStatusModal(false);
     setPendingActive(null);
   };
-  
-  const navGuard = useNavigationGuard({ enabled: formChanged });
-  const inputBaseClasses =
-    "w-full rounded-md border border-dividerMedium bg-disabledSurface px-3 py-2.5 text-sm text-primaryText placeholder:text-placeholder focus:border-primaryBlue focus:ring-2 focus:ring-primaryBlue/20";
+  const [guardEnabled, setGuardEnabled] = useState<boolean>(false);
+  const navGuard = useNavigationGuard({ enabled: guardEnabled });
 
   useEffect(() => {
     if (user) {
@@ -94,31 +94,32 @@ export const UserForm = ({
     });
   }, []);
 
-  useEffect(() => {
+  const textFieldsChanged = useCallback(() => {
     if (Object.keys(initialForm).length === 0) {
-      return;
+      return false;
     }
-    
-    const textFieldsChanged = 
+    return (
       form.firstName !== initialForm.firstName ||
       form.lastName !== initialForm.lastName ||
       form.contactEmail !== initialForm.contactEmail ||
-      form.idpUsername !== initialForm.idpUsername;
-    
-    setFormChanged(textFieldsChanged);
+      form.idpUsername !== initialForm.idpUsername
+    );
   }, [form, initialForm]);
+
+  useEffect(() => {
+    setGuardEnabled(textFieldsChanged());
+  }, [textFieldsChanged]);
 
   // Handle browser navigation (reload, close tab) - shows native browser warning
   useEffect(() => {
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
-      if (formChanged) {
+      if (guardEnabled) {
         e.preventDefault();
       }
     };
-
-    window.addEventListener('beforeunload', handleBeforeUnload);
-    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
-  }, [formChanged]);
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+  }, [guardEnabled]);
 
   const toggleNotification = useCallback((notification: Notification) => {
     setNotifications((prev) => {
@@ -149,38 +150,38 @@ export const UserForm = ({
         if (response.responseType === "error") {
           throw new Error(response.message);
         }
-        setFormChanged(false);
-        router.push(`${Routes.Users}/${userId}/edit`);
+        if (guardEnabled) {
+          navGuard.accept();
+        } else {
+          router.push(`${Routes.Users}/${userId}/edit`);
+        }
+        setSubmitClicked(false);
       } catch (e) {
         if (e instanceof Error) {
           setError(e.message);
         }
+        if (guardEnabled) {
+          navGuard.reject();
+        } else {
+          setGuardEnabled(textFieldsChanged());
+        }
+        setSubmitClicked(false);
       }
     });
-  }, [user, form, roles, notifications, router]);
+  }, [user, form, roles, notifications, guardEnabled, navGuard]);
 
-  const handleSaveAndNavigate = useCallback(async () => {
-    try {
-      const payload = getUserPayload(form, roles, notifications);
-      let response:
-        | ErrorOrSuccessActionResponse
-        | DataOrErrorActionResponse<number>;
-      if (user) {
-        response = await updateUser(user.id, payload);
-      } else {
-        response = await createUser(payload);
-      }
-      if (response.responseType === "error") {
-        throw new Error(response.message);
-      }
-      setFormChanged(false);
-      navGuard.accept();
-    } catch (e) {
-      if (e instanceof Error) {
-        setError(e.message);
-      }
+  // Allow deferred submit after turning off guard
+  useEffect(() => {
+    if (!guardEnabled && submitClicked) {
+      setSubmitClicked(false);
+      handleSubmit();
     }
-  }, [user, form, roles, notifications, navGuard]);
+  }, [guardEnabled, submitClicked, handleSubmit]);
+
+  const handleSaveAndNavigate = () => {
+    setGuardEnabled(false);
+    setSubmitClicked(true);
+  };
 
   return (
     <div className="bg-lightGrey min-h-screen text-primaryText">
@@ -217,7 +218,7 @@ export const UserForm = ({
                 </label>
                 <select
                   name="organizationId"
-                  className={inputBaseClasses}
+                  className="form-input-base"
                   value={form.organizationId ?? ""}
                   onChange={(e) => {
                     handleChange(e.target.name, e.target.value);
@@ -231,7 +232,6 @@ export const UserForm = ({
                 </select>
               </div>
             )}
-
             <UserFormFields
               form={form}
               notifications={notifications}
@@ -311,7 +311,7 @@ export const UserForm = ({
           showWarningModal={navGuard.active}
           handleSaveAndNavigate={handleSaveAndNavigate}
           handleNavigateWithoutSaving={() => {
-            setFormChanged(false);
+            setGuardEnabled(false);
             navGuard.accept();
           }}
           handleClose={navGuard.reject}
@@ -341,7 +341,10 @@ export const UserForm = ({
           </Button>
           <Button
             type="submit"
-            onClick={handleSubmit}
+            onClick={() => {
+              setGuardEnabled(false);
+              setSubmitClicked(true);
+            }}
             disabled={isPending}
             className="rounded-md bg-primaryBlue px-5 py-2 text-sm font-semibold text-textOnPrimary shadow-sm hover:bg-primaryBlueHover disabled:cursor-not-allowed disabled:bg-disabledBG disabled:text-disabledText"
           >

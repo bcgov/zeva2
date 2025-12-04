@@ -17,7 +17,9 @@ const Page = async () => {
       <h1 className="text-xl font-bold mb-4">
         Submit Penalty Credits To Director
       </h1>
-      <PenaltyCreditCreateForm orgNamesAndIds={orgNamesAndIds} />
+      <div className="bg-white rounded-lg shadow-level-1 p-6">
+        <PenaltyCreditCreateForm orgNamesAndIds={orgNamesAndIds} />
+      </div>
     </div>
   );
 };

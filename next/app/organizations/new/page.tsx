@@ -21,13 +21,15 @@ const Page = async () => {
 
   return (
     <div className="p-6">
-      <OrganizationEditForm
-        formHeading="New Vehicle Supplier"
-        submitButtonText="Create"
-        isActive={true}
-        upsertData={createNew}
-        handleCancel={handleCancel}
-      />
+      <div className="bg-white rounded-lg shadow-level-1 p-6">
+        <OrganizationEditForm
+          formHeading="New Vehicle Supplier"
+          submitButtonText="Create"
+          isActive={true}
+          upsertData={createNew}
+          handleCancel={handleCancel}
+        />
+      </div>
     </div>
   );
 };
