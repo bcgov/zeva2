@@ -5,65 +5,55 @@ import { ColumnDef, createColumnHelper } from "@tanstack/react-table";
 import { Table } from "@/app/lib/components";
 import {
   getModelYearEnumsToStringsMap,
-  getMyrStatusEnumsToStringsMap,
   getReassessmentStatusEnumsToStringsMap,
 } from "@/app/lib/utils/enumMaps";
-import { MyrSparseSerialized } from "../utilsServer";
 import { useRouter } from "next/navigation";
 import { Routes } from "@/app/lib/constants";
+import { LegacyReassessment } from "../data";
 
-export const ReportsTable = (props: {
-  myrs: MyrSparseSerialized[];
-  totalNumbeOfMyrs: number;
+export const LegacyReassessmentsTable = (props: {
+  reassessments: LegacyReassessment[];
+  totalNumbeOfReassessments: number;
   userIsGov: boolean;
 }) => {
   const router = useRouter();
   const navigationAction = useCallback(async (id: number) => {
-    router.push(`${Routes.ComplianceReporting}/${id}`);
+    router.push(`${Routes.LegacyReassessments}/${id}`);
   }, []);
-  const columnHelper = createColumnHelper<MyrSparseSerialized>();
+  const columnHelper = createColumnHelper<LegacyReassessment>();
   const modelYearEnumMap = useMemo(() => {
     return getModelYearEnumsToStringsMap();
   }, []);
   const statusMap = useMemo(() => {
-    return getMyrStatusEnumsToStringsMap();
-  }, []);
-  const reassessmentStatusMap = useMemo(() => {
     return getReassessmentStatusEnumsToStringsMap();
   }, []);
   const columns = useMemo(() => {
-    const result: ColumnDef<MyrSparseSerialized, any>[] = [
+    const result: ColumnDef<LegacyReassessment, any>[] = [
       columnHelper.accessor((row) => modelYearEnumMap[row.modelYear], {
         id: "modelYear",
-        enableSorting: true,
-        enableColumnFilter: true,
+        enableSorting: false,
+        enableColumnFilter: false,
         header: () => <span>Model Year</span>,
       }),
       columnHelper.accessor((row) => statusMap[row.status], {
         id: "status",
-        enableSorting: true,
-        enableColumnFilter: true,
+        enableSorting: false,
+        enableColumnFilter: false,
         header: () => <span>Status</span>,
       }),
-      columnHelper.accessor(
-        (row) =>
-          row.reassessmentStatus
-            ? reassessmentStatusMap[row.reassessmentStatus]
-            : "--",
-        {
-          id: "reassessmentStatus",
-          enableSorting: true,
-          enableColumnFilter: true,
-          header: () => <span>Status</span>,
-        },
-      ),
+      columnHelper.accessor((row) => row.sequenceNumber, {
+        id: "sequenceNumber",
+        enableSorting: false,
+        enableColumnFilter: false,
+        header: () => <span>Sequence Number</span>,
+      }),
     ];
     if (props.userIsGov) {
       result.unshift(
         columnHelper.accessor((row) => row.organization?.name, {
           id: "organization",
-          enableSorting: true,
-          enableColumnFilter: true,
+          enableSorting: false,
+          enableColumnFilter: false,
           header: () => <span>Supplier</span>,
         }),
       );
@@ -71,19 +61,19 @@ export const ReportsTable = (props: {
     result.unshift(
       columnHelper.accessor((row) => row.id, {
         id: "id",
-        enableSorting: true,
-        enableColumnFilter: true,
+        enableSorting: false,
+        enableColumnFilter: false,
         header: () => <span>ID</span>,
       }),
     );
     return result;
-  }, [columnHelper, props.myrs, props.userIsGov]);
+  }, [columnHelper, props.reassessments, props.userIsGov]);
 
   return (
-    <Table<MyrSparseSerialized>
+    <Table<LegacyReassessment>
       columns={columns}
-      data={props.myrs}
-      totalNumberOfRecords={props.totalNumbeOfMyrs}
+      data={props.reassessments}
+      totalNumberOfRecords={props.totalNumbeOfReassessments}
       navigationAction={navigationAction}
     />
   );

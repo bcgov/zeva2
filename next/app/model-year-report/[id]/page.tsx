@@ -4,17 +4,14 @@ import { getUserInfo } from "@/auth";
 import { JSX, Suspense } from "react";
 import { ModelYearReportDetails } from "../lib/components/ModelYearReportDetails";
 import { ModelYearReportHistory } from "../lib/components/ModelYearReportHistory";
-import { getLatestReassessment, getModelYearReport } from "../lib/data";
+import { getModelYearReport } from "../lib/data";
 import { SupplierActions } from "../lib/components/SupplierActions";
-import {
-  ModelYearReportStatus,
-  ReassessmentStatus,
-  Role,
-} from "@/prisma/generated/client";
+import { ModelYearReportStatus, Role } from "@/prisma/generated/client";
 import { DirectorActions } from "../lib/components/DirectorActions";
 import { AnalystActions } from "../lib/components/AnalystActions";
 import { AssessmentDetails } from "../lib/components/AssessmentDetails";
 import { ForecastReportDetails } from "../lib/components/ForecastReportDetails";
+import { ReassessmentsList } from "../lib/components/ReassessmentsList";
 
 const Page = async (props: { params: Promise<{ id: string }> }) => {
   const args = await props.params;
@@ -23,55 +20,30 @@ const Page = async (props: { params: Promise<{ id: string }> }) => {
   if (!myr) {
     return null;
   }
-  const latestReassessment = await getLatestReassessment(
-    myr.organizationId,
-    myr.modelYear,
-  );
   const status = myr.status;
-  let assessableReassessmentId = null;
-  let canConductReassessment = false;
-  if (
-    status === ModelYearReportStatus.ASSESSED &&
-    latestReassessment &&
-    latestReassessment.status === ReassessmentStatus.SUBMITTED_TO_DIRECTOR
-  ) {
-    assessableReassessmentId = latestReassessment.id;
-  }
-  if (
-    status === ModelYearReportStatus.ASSESSED &&
-    (!latestReassessment ||
-      (latestReassessment &&
-        (latestReassessment.status === ReassessmentStatus.ISSUED ||
-          latestReassessment.status ===
-            ReassessmentStatus.RETURNED_TO_ANALYST)))
-  ) {
-    canConductReassessment = true;
-  }
-
   const { userIsGov, userRoles } = await getUserInfo();
   let actionComponent: JSX.Element | null = null;
   if (!userIsGov) {
     actionComponent = <SupplierActions id={myrId} status={status} />;
-  } else if (userIsGov && userRoles.includes(Role.DIRECTOR)) {
-    actionComponent = (
-      <DirectorActions
-        myrId={myrId}
-        assessableReassessmentId={assessableReassessmentId}
-        status={status}
-      />
-    );
-  } else if (userIsGov && userRoles.includes(Role.ENGINEER_ANALYST)) {
+  } else if (userRoles.includes(Role.DIRECTOR)) {
+    actionComponent = <DirectorActions myrId={myrId} status={status} />;
+  } else if (userRoles.includes(Role.ENGINEER_ANALYST)) {
     actionComponent = (
       <AnalystActions
         id={myrId}
         status={status}
-        canConductReassessment={canConductReassessment}
+        canConductReassessment={status === ModelYearReportStatus.ASSESSED}
       />
     );
   }
 
   return (
     <div className="flex flex-col w-1/3">
+      <ContentCard title="Reassessments">
+        <Suspense fallback={<LoadingSkeleton />}>
+          <ReassessmentsList myrId={myrId} />
+        </Suspense>
+      </ContentCard>
       <ContentCard title="Model Year Report History">
         <Suspense fallback={<LoadingSkeleton />}>
           <ModelYearReportHistory id={myrId} />
@@ -89,7 +61,7 @@ const Page = async (props: { params: Promise<{ id: string }> }) => {
       </ContentCard>
       <ContentCard title="Assessment Details">
         <Suspense fallback={<LoadingSkeleton />}>
-          <AssessmentDetails myrId={myrId} />
+          <AssessmentDetails type="assessment" id={myrId} />
         </Suspense>
       </ContentCard>
       <ContentCard title="Actions">

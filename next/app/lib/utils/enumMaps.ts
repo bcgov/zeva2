@@ -16,8 +16,10 @@ import {
   ModelYearReportSupplierStatus,
   Notification,
   PenaltyCreditStatus,
+  ReassessmentStatus,
   ReferenceType,
   Role,
+  SupplierReassessmentStatus,
   TransactionType,
   VehicleClass,
   VehicleStatus,
@@ -278,4 +280,32 @@ export const getStringsToCreditApplicationSupplierStatusEnumsMap = () => {
 
 export const getNotificationEnumsToStringsMap = () => {
   return getEnumsToStringsMap<Notification>(Notification, statusTransformer);
+};
+
+export const getStringsToReassessmentStatusEnumsMap = () => {
+  return getStringsToEnumsMap<ReassessmentStatus>(
+    ReassessmentStatus,
+    statusTransformer,
+  );
+};
+
+export const getReassessmentStatusEnumsToStringsMap = () => {
+  return getEnumsToStringsMap<ReassessmentStatus>(
+    ReassessmentStatus,
+    statusTransformer,
+  );
+};
+
+export const getStringsToSupplierReassessmentStatusEnumsMap = () => {
+  return getStringsToEnumsMap<SupplierReassessmentStatus>(
+    SupplierReassessmentStatus,
+    statusTransformer,
+  );
+};
+
+export const getSupplierReassessmentStatusEnumsToStringsMap = () => {
+  return getEnumsToStringsMap<SupplierReassessmentStatus>(
+    SupplierReassessmentStatus,
+    statusTransformer,
+  );
 };

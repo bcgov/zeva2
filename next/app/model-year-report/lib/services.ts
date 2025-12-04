@@ -360,17 +360,13 @@ export const createReassessmentHistory = async (
 
 export type ReassessableMyr = {
   myrId: number | null;
-  isLegacy: boolean | null;
+  legacyMyrId: number | null;
 };
 
 export const getReassessableMyrData = async (
   organizationId: number,
   modelYear: ModelYear,
 ): Promise<ReassessableMyr> => {
-  const result: ReassessableMyr = {
-    myrId: null,
-    isLegacy: null,
-  };
   const myrs = await prisma.modelYearReport.findMany({
     where: {
       organizationId,
@@ -385,14 +381,13 @@ export const getReassessableMyrData = async (
     },
     take: 5,
   });
-  myrs.forEach((myr) => {
+  for (const myr of myrs) {
     if (myr.modelYear === modelYear) {
-      result.myrId = myr.id;
-      result.isLegacy = false;
+      return {
+        myrId: myr.id,
+        legacyMyrId: null,
+      };
     }
-  });
-  if (result.myrId !== null && result.isLegacy !== null) {
-    return result;
   }
   const legacyAssessedMyrs =
     await prisma.legacyAssessedModelYearReport.findMany({
@@ -400,7 +395,7 @@ export const getReassessableMyrData = async (
         organizationId,
       },
       select: {
-        id: true,
+        legacyId: true,
         modelYear: true,
       },
       orderBy: {
@@ -408,16 +403,31 @@ export const getReassessableMyrData = async (
       },
       take: 5 - myrs.length,
     });
-  legacyAssessedMyrs.forEach((legacyMyr) => {
+  for (const legacyMyr of legacyAssessedMyrs) {
     if (legacyMyr.modelYear === modelYear) {
-      result.myrId = legacyMyr.id;
-      result.isLegacy = true;
+      return {
+        myrId: null,
+        legacyMyrId: legacyMyr.legacyId,
+      };
     }
-  });
-  return result;
+  }
+  return {
+    myrId: null,
+    legacyMyrId: null,
+  };
 };
 
-export const getMyrDataForAssessment = async (myrId: number) => {
+export type MyrDataForAssessment = {
+  orgName: string;
+  organizationId: number;
+  modelYear: ModelYear;
+  nvValues: NvValues;
+  zevClassOrdering: ZevClass[];
+};
+
+export const getMyrDataForAssessment = async (
+  myrId: number,
+): Promise<MyrDataForAssessment> => {
   const myr = await prisma.modelYearReport.findUnique({
     where: {
       id: myrId,
@@ -455,4 +465,97 @@ export const getAssessmentSystemData = async (objectName: string) => {
   const assessmentWorkbook = new Excel.Workbook();
   await assessmentWorkbook.xlsx.load(assessmentBuf);
   return parseAssesmentForData(assessmentWorkbook);
+};
+
+export const getMyrDataForLegacyReassessment = async (
+  orgId: number,
+  modelYear: ModelYear,
+): Promise<MyrDataForAssessment> => {
+  const legacyMyr = await prisma.legacyAssessedModelYearReport.findUnique({
+    where: {
+      organizationId_modelYear: {
+        organizationId: orgId,
+        modelYear,
+      },
+    },
+    include: {
+      organization: {
+        select: {
+          name: true,
+        },
+      },
+    },
+  });
+  if (!legacyMyr) {
+    throw new Error("Legacy MYR not found!");
+  }
+  const nvValues: NvValues = {};
+  for (const vehicleClass of Object.values(VehicleClass)) {
+    const whereClause = {
+      organizationId_vehicleClass_modelYear: {
+        organizationId: orgId,
+        vehicleClass,
+        modelYear,
+      },
+    };
+    const selectClause = {
+      volume: true,
+    };
+    const salesVolume = await prisma.legacySalesVolume.findUnique({
+      where: whereClause,
+      select: selectClause,
+    });
+    const supplyVolume = await prisma.supplyVolume.findUnique({
+      where: whereClause,
+      select: selectClause,
+    });
+    if (salesVolume) {
+      nvValues[vehicleClass] = new Decimal(salesVolume.volume).toFixed(0);
+    }
+    if (supplyVolume) {
+      nvValues[vehicleClass] = new Decimal(supplyVolume.volume).toFixed(0);
+    }
+  }
+  return {
+    orgName: legacyMyr.organization.name,
+    organizationId: legacyMyr.organizationId,
+    modelYear: legacyMyr.modelYear,
+    nvValues,
+    zevClassOrdering: legacyMyr.zevClassOrdering,
+  };
+};
+
+export const getLegacyAssessedMyr = async (
+  organizationId: number,
+  modelYear: ModelYear,
+) => {
+  return await prisma.legacyAssessedModelYearReport.findUnique({
+    where: {
+      organizationId_modelYear: {
+        organizationId,
+        modelYear,
+      },
+    },
+    select: {
+      legacyId: true,
+    },
+  });
+};
+
+export const updateMyrReassessmentStatus = async (
+  myrId: number,
+  status: ReassessmentStatus,
+  transactionClient?: TransactionClient,
+) => {
+  const client = transactionClient ?? prisma;
+  await client.modelYearReport.update({
+    where: {
+      id: myrId,
+    },
+    data: {
+      reassessmentStatus: status,
+      supplierReassessmentStatus:
+        status === ReassessmentStatus.ISSUED ? ReassessmentStatus.ISSUED : null,
+    },
+  });
 };
