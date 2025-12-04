@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState, useTransition } from "react";
 import { Button } from "@/app/lib/components";
-import { Notification, Role, User } from "@/prisma/generated/client";
+import { Role, User } from "@/prisma/generated/client";
 import { createUser, updateUser } from "../actions";
 import { UserFormFields } from "./UserFormFields";
 import { getUserPayload } from "../utilsClient";
@@ -15,6 +15,7 @@ import {
 import { RoleSelector } from "./RoleSelector";
 import { FormChangeWarning } from "./FormChangeWarning";
 import { useNavigationGuard } from "next-navigation-guard";
+import { Modal } from "@/app/lib/components/Modal";
 
 export const UserForm = ({
   user,
@@ -34,11 +35,29 @@ export const UserForm = ({
     Partial<Record<string, string>>
   >({});
   const [roles, setRoles] = useState<Role[]>([]);
-  const [notifications, setNotifications] = useState<Notification[]>([]);
   const [isPending, startTransition] = useTransition();
+  const [showStatusModal, setShowStatusModal] = useState(false);
+  const [pendingActive, setPendingActive] = useState<boolean | null>(null);
+  const [submitClicked, setSubmitClicked] = useState<boolean>(false);
+
+  const handleActiveIntent = (nextChecked: boolean) => {
+    setPendingActive(nextChecked);
+    setShowStatusModal(true);
+  };
+
+  const cancelStatusChange = () => {
+    setShowStatusModal(false);
+    setPendingActive(null);
+  };
+
+  const confirmStatusChange = () => {
+    if (pendingActive === null) return;
+    handleChange("isActive", pendingActive ? "true" : "false");
+    setShowStatusModal(false);
+    setPendingActive(null);
+  };
   const [guardEnabled, setGuardEnabled] = useState<boolean>(false);
   const navGuard = useNavigationGuard({ enabled: guardEnabled });
-  const [submitClicked, setSubmitClicked] = useState<boolean>(false);
 
   useEffect(() => {
     if (user) {
@@ -53,7 +72,6 @@ export const UserForm = ({
       setForm(initialFormData);
       setInitialForm(initialFormData);
       setRoles(user.roles);
-      setNotifications(user.notifications);
     } else {
       const initialFormData = {
         isActive: "true",
@@ -100,26 +118,10 @@ export const UserForm = ({
     return () => window.removeEventListener("beforeunload", handleBeforeUnload);
   }, [guardEnabled]);
 
-  useEffect(() => {
-    if (!guardEnabled && submitClicked) {
-      setSubmitClicked(false);
-      handleSubmit();
-    }
-  }, [guardEnabled, submitClicked]);
-
-  const toggleNotification = useCallback((notification: Notification) => {
-    setNotifications((prev) => {
-      if (prev.includes(notification)) {
-        return prev.filter((element) => element !== notification);
-      }
-      return [...prev, notification];
-    });
-  }, []);
-
   const handleSubmit = useCallback(() => {
     startTransition(async () => {
       try {
-        const payload = getUserPayload(form, roles, notifications);
+        const payload = getUserPayload(form, roles);
         let response:
           | ErrorOrSuccessActionResponse
           | DataOrErrorActionResponse<number>;
@@ -152,67 +154,194 @@ export const UserForm = ({
         }
       }
     });
-  }, [user, form, roles, notifications, guardEnabled, navGuard]);
+  }, [user, form, roles, guardEnabled, navGuard]);
+
+  // Allow deferred submit after turning off guard
+  useEffect(() => {
+    if (!guardEnabled && submitClicked) {
+      setSubmitClicked(false);
+      handleSubmit();
+    }
+  }, [guardEnabled, submitClicked, handleSubmit]);
 
   return (
-    <div>
-      {error && <p className="text-red-600">{error}</p>}
-
-      {orgsMap && (
-        <div className="flex items-center py-2 my-2">
-          <label className="w-72">Organization</label>
-          <select
-            name="organizationId"
-            className="border p-2 w-full"
-            value={form.organizationId ?? ""}
-            onChange={(e) => {
-              handleChange(e.target.name, e.target.value);
-            }}
-          >
-            {Object.entries(orgsMap).map(([id, name]) => (
-              <option key={id} value={id}>
-                {name}
-              </option>
-            ))}
-          </select>
+    <div className="bg-lightGrey min-h-screen text-primaryText">
+      <div className="w-full px-2 py-4 space-y-4 sm:px-4 lg:px-8 xl:px-12">
+        <div className="space-y-2">
+          <h1 className="text-2xl font-semibold text-primaryText">
+            Government User Management
+          </h1>
+          <p className="text-sm text-secondaryText">
+            Manage user account details, status, and roles.
+          </p>
+          {error && (
+            <p className="rounded-md border border-error/40 bg-primaryRed/10 px-3 py-2 text-sm text-error">
+              {error}
+            </p>
+          )}
         </div>
-      )}
 
-      <UserFormFields
-        form={form}
-        notifications={notifications}
-        onChange={handleChange}
-        toggleNotification={toggleNotification}
-      />
+        <div className="grid gap-4 lg:grid-cols-[1.7fr,1fr] 2xl:grid-cols-[2fr,1fr]">
+          <section className="space-y-5 rounded-lg border border-dividerMedium/40 bg-white p-4 shadow-sm lg:p-5">
+            <div className="space-y-1">
+              <h2 className="text-xl font-semibold text-primaryText">
+                {user ? "Edit user" : "Create user"}
+              </h2>
+            </div>
 
-      <FormChangeWarning
-        showWarningModal={navGuard.active}
-        handleSaveAndNavigate={handleSubmit}
-        handleNavigateWithoutSaving={navGuard.accept}
-        handleClose={navGuard.reject}
-        isPending={isPending}
-      />
+            {orgsMap && (
+              <div className="space-y-1">
+                <label className="text-sm font-medium text-primaryText">
+                  Organization
+                </label>
+                <select
+                  name="organizationId"
+                  className="form-input-base"
+                  value={form.organizationId ?? ""}
+                  onChange={(e) => {
+                    handleChange(e.target.name, e.target.value);
+                  }}
+                >
+                  {Object.entries(orgsMap).map(([id, name]) => (
+                    <option key={id} value={id}>
+                      {name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+            <UserFormFields
+              form={form}
+              onChange={handleChange}
+              disabled={isPending}
+            />
+          </section>
 
-      <RoleSelector
-        userId={user ? user.id : undefined}
-        govOrSupplier={form.organizationId === govOrgId ? "gov" : "supplier"}
-        roles={roles}
-        setRoles={setRoles}
-        setError={setError}
-      />
+          <div className="space-y-3">
+            <section className="space-y-3 rounded-lg border border-dividerMedium/40 bg-white p-4 shadow-sm">
+              <h3 className="text-lg font-semibold text-primaryText">
+                Account
+              </h3>
+              <p className="flex items-center gap-2 text-sm text-secondaryText">
+                {user && user.idpSub
+                  ? "User account is mapped."
+                  : "User account has not been mapped."}
+              </p>
+            </section>
 
-      <div className="pt-4 flex gap-4">
-        <Button
-          variant="primary"
-          type="submit"
-          onClick={() => {
-            setGuardEnabled(false);
-            setSubmitClicked(true);
-          }}
-          disabled={isPending}
-        >
-          {isPending ? "..." : user ? "Update" : "Create"}
-        </Button>
+            <section className="space-y-3 rounded-lg border border-dividerMedium/40 bg-white p-4 shadow-sm">
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-semibold text-primaryText">
+                  Status
+                </h3>
+                <span className="text-xs font-medium text-secondaryText">
+                  Controls login access
+                </span>
+              </div>
+              <div className="space-y-3">
+                <label className="flex cursor-pointer items-start gap-3 rounded-lg border border-dividerMedium/60 px-4 py-3 hover:border-primaryBlue">
+                  <input
+                    className="mt-1 h-4 w-4 accent-success"
+                    type="radio"
+                    name="status"
+                    checked={form.isActive === "true"}
+                    onChange={() => handleActiveIntent(true)}
+                  />
+                  <div className="space-y-1">
+                    <p className="text-success font-semibold">Active</p>
+                    <p className="text-sm text-secondaryText">
+                      User can log in and perform actions based on their
+                      assigned role.
+                    </p>
+                  </div>
+                </label>
+                <label className="flex cursor-pointer items-start gap-3 rounded-lg border border-dividerMedium/60 px-4 py-3 hover:border-primaryRed">
+                  <input
+                    className="mt-1 h-4 w-4 accent-error"
+                    type="radio"
+                    name="status"
+                    checked={form.isActive === "false"}
+                    onChange={() => handleActiveIntent(false)}
+                  />
+                  <div className="space-y-1">
+                    <p className="text-error font-semibold">Inactive</p>
+                    <p className="text-sm text-secondaryText">
+                      Prevents login and notifications. Activity history is
+                      retained.
+                    </p>
+                  </div>
+                </label>
+              </div>
+            </section>
+
+            <section className="space-y-3 rounded-lg border border-dividerMedium/40 bg-white p-4 shadow-sm">
+              <div className="space-y-1">
+                <h3 className="text-lg font-semibold text-primaryText">
+                  Roles
+                </h3>
+                <p className="text-sm text-secondaryText">
+                  Users can have more than one role.
+                </p>
+              </div>
+              <RoleSelector
+                userId={user ? user.id : undefined}
+                govOrSupplier={
+                  form.organizationId === govOrgId ? "gov" : "supplier"
+                }
+                roles={roles}
+                setRoles={setRoles}
+                setError={setError}
+                disabled={isPending}
+              />
+            </section>
+          </div>
+        </div>
+
+        <FormChangeWarning
+          showWarningModal={navGuard.active}
+          handleSaveAndNavigate={handleSubmit}
+          handleNavigateWithoutSaving={navGuard.accept}
+          handleClose={navGuard.reject}
+          isPending={isPending}
+        />
+
+        <Modal
+          showModal={showStatusModal}
+          handleCancel={cancelStatusChange}
+          handleSubmit={confirmStatusChange}
+          title={
+            pendingActive
+              ? "Confirm: Activate User"
+              : "Confirm: Deactivate User"
+          }
+          confirmLabel={pendingActive ? "Activate" : "Deactivate"}
+          modalType={pendingActive ? "confirmation" : "error"}
+          content="Are you sure you want to update this user?"
+          disablePrimaryButton={false}
+          disableSecondaryButton={false}
+        />
+
+        <div className="flex items-center justify-end gap-4 border-t border-dividerMedium/30 pt-4">
+          <Button
+            type="button"
+            className="rounded-md border border-dividerMedium bg-white px-4 py-2 text-sm font-medium text-primaryText hover:border-primaryBlue hover:text-primaryBlue"
+            onClick={() => router.back()}
+            disabled={isPending}
+          >
+            Back
+          </Button>
+          <Button
+            type="submit"
+            onClick={() => {
+              setGuardEnabled(false);
+              setSubmitClicked(true);
+            }}
+            disabled={isPending}
+            className="rounded-md bg-primaryBlue px-5 py-2 text-sm font-semibold text-textOnPrimary shadow-sm hover:bg-primaryBlueHover disabled:cursor-not-allowed disabled:bg-disabledBG disabled:text-disabledText"
+          >
+            {isPending ? "..." : user ? "Update" : "Create"}
+          </Button>
+        </div>
       </div>
     </div>
   );

@@ -78,7 +78,7 @@ export default async function Page(props: {
         totalCount={totalCount}
         navigationAction={async (id: number) => {
           "use server";
-          redirect(`${Routes.Users}/${id}`);
+          redirect(`${Routes.Users}/${id}/edit`);
         }}
         userIsGov={userIsGov}
       />
