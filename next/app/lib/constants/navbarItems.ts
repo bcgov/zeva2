@@ -93,4 +93,14 @@ export const navbarSubItems: NavbarSubItems = {
       roles: govRoles,
     },
   ],
+  "Compliance Reporting": [
+    {
+      label: "Model Year Reports",
+      route: Routes.ComplianceReporting,
+    },
+    {
+      label: "Legacy Reassessments",
+      route: Routes.LegacyReassessments,
+    },
+  ],
 };
