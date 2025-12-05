@@ -26,7 +26,7 @@ const Page = async (props: { searchParams?: Promise<pageStringParams> }) => {
     <Suspense key={Date.now()} fallback={<LoadingSkeleton />}>
       {canCreateNewAgreement && (
         <a href={`${Routes.CreditAgreements}/new`}>
-          <Button className="ml-4 p-2">+ New Agreement</Button>
+          <Button variant="primary">New Agreement</Button>
         </a>
       )}
       <AgreementList

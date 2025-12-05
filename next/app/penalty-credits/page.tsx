@@ -16,7 +16,7 @@ const Page = async (props: { searchParams?: Promise<pageStringParams> }) => {
     <Suspense key={Date.now()} fallback={<LoadingSkeleton />}>
       {userIsGov && userRoles.includes(Role.ENGINEER_ANALYST) && (
         <Link href={`${Routes.PenaltyCredit}/new`}>
-          <Button>Create New Penalty Credit</Button>
+          <Button variant="primary">Create New Penalty Credit</Button>
         </Link>
       )}
       <PenaltyCreditsList

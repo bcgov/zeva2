@@ -59,6 +59,8 @@ export const Dropzone = (props: {
           <div className="flex flex-row">
             <p className="mr-2 truncate">{file.name}</p>
             <Button
+              variant="danger"
+              size="small"
               disabled={props.disabled}
               onClick={() => {
                 removeFile(file);

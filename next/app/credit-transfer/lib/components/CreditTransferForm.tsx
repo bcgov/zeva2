@@ -120,7 +120,7 @@ export const CreditTransferForm = (props: {
         disabled={isPending}
       />
       <div className="flex space-x-2">
-        <Button onClick={handleSubmit} disabled={isPending}>
+        <Button variant="primary" onClick={handleSubmit} disabled={isPending}>
           {isPending ? "..." : "Submit to Transfer Partner"}
         </Button>
       </div>

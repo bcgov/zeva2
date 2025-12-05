@@ -184,7 +184,7 @@ export const PenaltyCreditCreateForm = (props: {
         }}
       />
 
-      <Button disabled={isPending} onClick={handleSubmit}>
+      <Button variant="primary" disabled={isPending} onClick={handleSubmit}>
         {isPending ? "..." : "Submit"}
       </Button>
     </div>

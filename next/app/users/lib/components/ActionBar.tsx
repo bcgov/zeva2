@@ -17,7 +17,7 @@ export const ActionBar = async (props: { userId: number }) => {
   }
   return (
     <Link href={`${Routes.Users}/${props.userId}/edit`}>
-      <Button>Edit</Button>
+      <Button variant="secondary">Edit</Button>
     </Link>
   );
 };

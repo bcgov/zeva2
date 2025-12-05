@@ -188,7 +188,7 @@ export const AgreementDetails = (props: {
           )}
           {handleRecommendApproval && ready && (
             <Button
-              className={buttonStyle}
+              variant="primary"
               onClick={() => {
                 setIsProcessing(true);
                 handleRecommendApproval();
@@ -199,7 +199,7 @@ export const AgreementDetails = (props: {
           )}
           {handleReturnToAnalyst && (
             <Button
-              className={`${buttonStyle} ${warningButtonClass}`}
+              variant="secondary"
               onClick={() => {
                 setIsProcessing(true);
                 handleReturnToAnalyst();
@@ -210,7 +210,7 @@ export const AgreementDetails = (props: {
           )}
           {handleDeleteAgreement && (
             <Button
-              className={`${buttonStyle} ${warningButtonClass}`}
+              variant="danger"
               onClick={() => {
                 setIsProcessing(true);
                 handleDeleteAgreement();
@@ -221,7 +221,7 @@ export const AgreementDetails = (props: {
           )}
           {handleIssueAgreement && (
             <Button
-              className={buttonStyle}
+              variant="primary"
               onClick={() => {
                 setIsProcessing(true);
                 handleIssueAgreement();

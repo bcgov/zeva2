@@ -42,7 +42,8 @@ export const AttachmentsList = (props: {
             {attachment.fileName}
             {props.deleteAttachment && (
               <Button
-                className="ml-4 px-2 text-xs border border-alertDanger bg-white text-alertDanger disabled:opacity-50"
+                variant="danger"
+                size="small"
                 onClick={() => handleDeleteAttachment(attachment.objectName)}
                 disabled={deletingAttachmentObj !== null}
               >

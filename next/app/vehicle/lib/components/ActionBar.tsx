@@ -56,12 +56,14 @@ export const ActionBar = (props: {
             disabled={isPending}
           />
           <Button
+            variant="danger"
             onClick={() => handleSubmit(VehicleStatus.REJECTED)}
             disabled={isPending}
           >
             {isPending ? "..." : "Reject"}
           </Button>
           <Button
+            variant="primary"
             onClick={() => handleSubmit(VehicleStatus.VALIDATED)}
             disabled={isPending}
           >
@@ -72,12 +74,13 @@ export const ActionBar = (props: {
       {!props.userIsGov && props.vehicleStatus === VehicleStatus.REJECTED && (
         <>
           <Button
+            variant="danger"
             onClick={() => handleSubmit(VehicleStatus.DELETED)}
             disabled={isPending}
           >
             {isPending ? "..." : "Delete"}
           </Button>
-          <Button onClick={handleGoToNewVehicleForm} disabled={isPending}>
+          <Button variant="secondary" onClick={handleGoToNewVehicleForm} disabled={isPending}>
             {isPending ? "..." : "Submit a new Vehicle"}
           </Button>
         </>

@@ -214,13 +214,13 @@ export const AssessmentForm = (props: {
       )}
       <div className="flex space-x-2">
         {assessment ? (
-          <Button onClick={handleClearAssessment} disabled={isPending}>
+          <Button variant="tertiary" size="small" onClick={handleClearAssessment} disabled={isPending}>
             {isPending
               ? "..."
               : `Clear ${props.isReassessment ? "Rea" : "A"}ssessment`}
           </Button>
         ) : (
-          <Button onClick={handleGenerateAssessment} disabled={isPending}>
+          <Button variant="secondary" onClick={handleGenerateAssessment} disabled={isPending}>
             {isPending
               ? "..."
               : `Generate ${props.isReassessment ? "Rea" : "A"}ssessment`}
@@ -235,7 +235,7 @@ export const AssessmentForm = (props: {
       />
       {error && <p className="text-red-600">{error}</p>}
       <div className="flex space-x-2">
-        <Button onClick={handleSubmit} disabled={isPending}>
+        <Button variant="primary" onClick={handleSubmit} disabled={isPending}>
           {isPending ? "..." : "Submit to Director"}
         </Button>
       </div>
