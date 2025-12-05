@@ -23,7 +23,7 @@ export const Button: FC<IButtonProps> = ({
 }) => {
 
   const baseStyles =
-    "inline-flex items-center justify-center font-medium rounded transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2";
+    "inline-flex items-center justify-center font-medium rounded transition-all duration-200 focus:outline-none";
 
   const sizeStyles = {
     small: "h-8 px-3 text-[14px] gap-2",
