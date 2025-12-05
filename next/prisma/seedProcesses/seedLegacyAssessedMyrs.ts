@@ -1,5 +1,5 @@
 import { TransactionClient } from "@/types/prisma";
-import { ModelYear } from "../generated/client";
+import { ModelYear, ZevClass } from "../generated/client";
 import { prismaOld } from "@/lib/prismaOld";
 
 export const seedLegacyAssessedMyrs = async (
@@ -28,10 +28,27 @@ export const seedLegacyAssessedMyrs = async (
         `old assessed myr with id ${myr.id} has an unknown model year id!`,
       );
     }
+    let zevClassOrdering = [
+      ZevClass.UNSPECIFIED,
+      ZevClass.B,
+      ZevClass.A,
+      ZevClass.C,
+    ];
+    const priorityZevClass = myr.credit_reduction_selection;
+    if (!priorityZevClass || priorityZevClass === ZevClass.A) {
+      zevClassOrdering = [
+        ZevClass.UNSPECIFIED,
+        ZevClass.A,
+        ZevClass.B,
+        ZevClass.C,
+      ];
+    }
     await tx.legacyAssessedModelYearReport.create({
       data: {
+        legacyId: myr.id,
         organizationId: newOrgId,
         modelYear: modelYearEnum,
+        zevClassOrdering,
       },
     });
   }

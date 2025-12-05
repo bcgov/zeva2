@@ -1,6 +1,6 @@
 import { prismaOld } from "@/lib/prismaOld";
 import { TransactionClient } from "@/types/prisma";
-import { Decimal } from "@prisma/client/runtime/client.js";
+import { Decimal } from "../generated/client/runtime/library";
 import {
   ModelYear,
   ReferenceType,
@@ -8,6 +8,12 @@ import {
   VehicleClass,
   ZevClass,
 } from "../generated/client";
+import { SupplierClass } from "@/app/lib/constants/complianceRatio";
+import {
+  ComplianceReduction,
+  getComplianceRatioReductions,
+} from "@/app/model-year-report/lib/utilsServer";
+import { getComplianceDate } from "@/app/lib/utils/complianceYear";
 
 export const seedTransactions = async (
   tx: TransactionClient,
@@ -107,31 +113,23 @@ export const seedTransactions = async (
       transactionType = TransactionType.DEBIT;
       organizationId = transaction.debit_from_id;
     }
-
     if (transactionType && organizationId) {
       const newOrgId = mapOfOldOrgIdsToNewOrgIds[organizationId];
-      const referenceTyepAndId = getReferenceTypeAndId(transaction.id);
+      const referenceTypeAndId = getReferenceTypeAndId(transaction.id);
       if (!newOrgId) {
         throw new Error(
           "credit transaction " + transaction.id + " with unknown org id!",
         );
       }
-      if (
-        transactionType === TransactionType.CREDIT &&
-        referenceTyepAndId[0] === ReferenceType.OBLIGATION_REDUCTION
-      ) {
-        throw new Error(
-          "credit transaction " +
-            transaction.id +
-            " associated with a MYR, but is not a reduction!",
-        );
+      if (referenceTypeAndId[0] === ReferenceType.OBLIGATION_REDUCTION) {
+        continue;
       }
       await tx.zevUnitTransaction.create({
         data: {
           type: transactionType,
           organizationId: newOrgId,
-          referenceType: referenceTyepAndId[0],
-          legacyReferenceId: referenceTyepAndId[1],
+          referenceType: referenceTypeAndId[0],
+          legacyReferenceId: referenceTypeAndId[1],
           numberOfUnits: numberOfUnits,
           zevClass: zevClass,
           vehicleClass: VehicleClass.REPORTABLE,
@@ -193,6 +191,105 @@ export const seedTransactions = async (
           timestamp: transaction.transaction_timestamp,
         },
       });
+    }
+  }
+
+  const mapOfVolumes: Partial<
+    Record<number, Partial<Record<ModelYear, number>>>
+  > = {};
+  const oldVolumes = await prismaOld.organization_ldv_sales.findMany();
+  for (const oldVolume of oldVolumes) {
+    const newOrgId = mapOfOldOrgIdsToNewOrgIds[oldVolume.organization_id];
+    if (!newOrgId) {
+      throw new Error(
+        `oldVolume with id ${oldVolume.id} has an unknown org id!`,
+      );
+    }
+    const modelYearEnum =
+      mapOfModelYearIdsToModelYearEnum[oldVolume.model_year_id];
+    if (!modelYearEnum) {
+      throw new Error(
+        `oldVolume with id ${oldVolume.id} has an unknown model year id!`,
+      );
+    }
+    const isSupplied = oldVolume.is_supplied;
+    const volume = oldVolume.ldv_sales;
+    if (
+      (modelYearEnum < ModelYear.MY_2024 && !isSupplied) ||
+      (modelYearEnum >= ModelYear.MY_2024 && isSupplied)
+    ) {
+      if (!mapOfVolumes[newOrgId]) {
+        mapOfVolumes[newOrgId] = {};
+      }
+      if (mapOfVolumes[newOrgId][modelYearEnum] !== undefined) {
+        throw new Error(
+          `oldVolume with id ${oldVolume.id} is an inconsistent entry!`,
+        );
+      }
+      mapOfVolumes[newOrgId][modelYearEnum] = volume;
+    }
+  }
+  const oldMyrs = await prismaOld.model_year_report.findMany();
+  for (const oldMyr of oldMyrs) {
+    const status = oldMyr.validation_status;
+    if (status === "ASSESSED" || status === "REASSESSED") {
+      const newOrgId = mapOfOldOrgIdsToNewOrgIds[oldMyr.organization_id];
+      if (!newOrgId) {
+        throw new Error(`oldMyr with id ${oldMyr.id} has an unknown org id!`);
+      }
+      const modelYearEnum =
+        mapOfModelYearIdsToModelYearEnum[oldMyr.model_year_id];
+      if (!modelYearEnum) {
+        throw new Error(
+          `oldMyr with id ${oldMyr.id} has an unknown model year id!`,
+        );
+      }
+      const supplierClass = oldMyr.supplier_class;
+      if (!supplierClass || !["S", "M", "L"].includes(supplierClass)) {
+        throw new Error(
+          `oldMyr with id ${oldMyr.id} has an unknown supplier class!`,
+        );
+      }
+      const modelYearsToVolumes = mapOfVolumes[newOrgId];
+      if (!modelYearsToVolumes) {
+        throw new Error(
+          `oldMyr with id ${oldMyr.id} does not have an associated volume`,
+        );
+      }
+      const volume = modelYearsToVolumes[modelYearEnum];
+      if (volume === undefined) {
+        throw new Error(
+          `oldMyr with id ${oldMyr.id} does not have an associated volume`,
+        );
+      }
+      let newSupplierClass: SupplierClass;
+      if (supplierClass === "L") {
+        newSupplierClass = "large volume supplier";
+      } else if (supplierClass === "M") {
+        newSupplierClass = "medium volume supplier";
+      } else {
+        newSupplierClass = "small volume supplier";
+      }
+      const reductions: ComplianceReduction[] = getComplianceRatioReductions(
+        { [VehicleClass.REPORTABLE]: volume.toString() },
+        modelYearEnum,
+        newSupplierClass,
+      );
+      for (const reduction of reductions) {
+        await tx.zevUnitTransaction.create({
+          data: {
+            type: TransactionType.DEBIT,
+            organizationId: newOrgId,
+            referenceType: ReferenceType.OBLIGATION_REDUCTION,
+            legacyReferenceId: oldMyr.id,
+            numberOfUnits: reduction.numberOfUnits,
+            zevClass: reduction.zevClass,
+            vehicleClass: VehicleClass.REPORTABLE,
+            modelYear: modelYearEnum,
+            timestamp: getComplianceDate(modelYearEnum),
+          },
+        });
+      }
     }
   }
 };

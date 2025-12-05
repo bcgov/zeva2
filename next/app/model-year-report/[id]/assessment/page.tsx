@@ -20,12 +20,9 @@ const Page = async (props: { params: Promise<{ id: string }> }) => {
     <div className="max-w-xl mx-auto p-4">
       <h1 className="text-xl font-bold mb-4">Assess a Model Year Report</h1>
       <AssessmentForm
+        assessmentType="assessment"
         myrId={report.id}
-        orgId={report.organizationId}
-        orgName={report.organization.name}
-        status={report.status}
         modelYear={report.modelYear}
-        isReassessment={false}
       />
     </div>
   );

@@ -28,15 +28,17 @@ export const UserForm = ({
   govOrgId: string;
 }) => {
   const router = useRouter();
-  const [formChanged, setFormChanged] = useState<boolean>(false);
   const [error, setError] = useState<string>("");
   const [form, setForm] = useState<Partial<Record<string, string>>>({});
-  const [initialForm, setInitialForm] = useState<Partial<Record<string, string>>>({});
+  const [initialForm, setInitialForm] = useState<
+    Partial<Record<string, string>>
+  >({});
   const [roles, setRoles] = useState<Role[]>([]);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [isPending, startTransition] = useTransition();
-  
-  const navGuard = useNavigationGuard({ enabled: formChanged });
+  const [guardEnabled, setGuardEnabled] = useState<boolean>(false);
+  const navGuard = useNavigationGuard({ enabled: guardEnabled });
+  const [submitClicked, setSubmitClicked] = useState<boolean>(false);
 
   useEffect(() => {
     if (user) {
@@ -71,31 +73,39 @@ export const UserForm = ({
     });
   }, []);
 
-  useEffect(() => {
+  const textFieldsChanged = useCallback(() => {
     if (Object.keys(initialForm).length === 0) {
-      return;
+      return false;
     }
-    
-    const textFieldsChanged = 
+    return (
       form.firstName !== initialForm.firstName ||
       form.lastName !== initialForm.lastName ||
       form.contactEmail !== initialForm.contactEmail ||
-      form.idpUsername !== initialForm.idpUsername;
-    
-    setFormChanged(textFieldsChanged);
+      form.idpUsername !== initialForm.idpUsername
+    );
   }, [form, initialForm]);
+
+  useEffect(() => {
+    setGuardEnabled(textFieldsChanged());
+  }, [textFieldsChanged]);
 
   // Handle browser navigation (reload, close tab) - shows native browser warning
   useEffect(() => {
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
-      if (formChanged) {
+      if (guardEnabled) {
         e.preventDefault();
       }
     };
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+  }, [guardEnabled]);
 
-    window.addEventListener('beforeunload', handleBeforeUnload);
-    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
-  }, [formChanged]);
+  useEffect(() => {
+    if (!guardEnabled && submitClicked) {
+      setSubmitClicked(false);
+      handleSubmit();
+    }
+  }, [guardEnabled, submitClicked]);
 
   const toggleNotification = useCallback((notification: Notification) => {
     setNotifications((prev) => {
@@ -126,38 +136,23 @@ export const UserForm = ({
         if (response.responseType === "error") {
           throw new Error(response.message);
         }
-        setFormChanged(false);
-        router.push(`${Routes.Users}/${userId}`);
+        if (guardEnabled) {
+          navGuard.accept();
+        } else {
+          router.push(`${Routes.Users}/${userId}`);
+        }
       } catch (e) {
         if (e instanceof Error) {
           setError(e.message);
         }
+        if (guardEnabled) {
+          navGuard.reject();
+        } else {
+          setGuardEnabled(textFieldsChanged());
+        }
       }
     });
-  }, [user, form, roles, notifications, router]);
-
-  const handleSaveAndNavigate = useCallback(async () => {
-    try {
-      const payload = getUserPayload(form, roles, notifications);
-      let response:
-        | ErrorOrSuccessActionResponse
-        | DataOrErrorActionResponse<number>;
-      if (user) {
-        response = await updateUser(user.id, payload);
-      } else {
-        response = await createUser(payload);
-      }
-      if (response.responseType === "error") {
-        throw new Error(response.message);
-      }
-      setFormChanged(false);
-      navGuard.accept();
-    } catch (e) {
-      if (e instanceof Error) {
-        setError(e.message);
-      }
-    }
-  }, [user, form, roles, notifications, navGuard]);
+  }, [user, form, roles, notifications, guardEnabled, navGuard]);
 
   return (
     <div>
@@ -192,11 +187,8 @@ export const UserForm = ({
 
       <FormChangeWarning
         showWarningModal={navGuard.active}
-        handleSaveAndNavigate={handleSaveAndNavigate}
-        handleNavigateWithoutSaving={() => {
-          setFormChanged(false);
-          navGuard.accept();
-        }}
+        handleSaveAndNavigate={handleSubmit}
+        handleNavigateWithoutSaving={navGuard.accept}
         handleClose={navGuard.reject}
         isPending={isPending}
       />
@@ -210,7 +202,15 @@ export const UserForm = ({
       />
 
       <div className="pt-4 flex gap-4">
-        <Button variant="primary" type="submit" onClick={handleSubmit} disabled={isPending}>
+        <Button
+          variant="primary"
+          type="submit"
+          onClick={() => {
+            setGuardEnabled(false);
+            setSubmitClicked(true);
+          }}
+          disabled={isPending}
+        >
           {isPending ? "..." : user ? "Update" : "Create"}
         </Button>
       </div>
