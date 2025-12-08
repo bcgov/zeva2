@@ -80,7 +80,11 @@ export const ActionBar = (props: {
           >
             {isPending ? "..." : "Delete"}
           </Button>
-          <Button variant="secondary" onClick={handleGoToNewVehicleForm} disabled={isPending}>
+          <Button
+            variant="secondary"
+            onClick={handleGoToNewVehicleForm}
+            disabled={isPending}
+          >
             {isPending ? "..." : "Submit a new Vehicle"}
           </Button>
         </>

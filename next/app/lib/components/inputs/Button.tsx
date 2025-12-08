@@ -21,7 +21,6 @@ export const Button: FC<IButtonProps> = ({
   disabled = false,
   ...rest
 }) => {
-
   const baseStyles =
     "inline-flex items-center justify-center font-medium rounded transition-all duration-200 focus:outline-none";
 

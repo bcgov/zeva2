@@ -323,11 +323,7 @@ export const AgreementEditForm = (props: {
       </div>
 
       <div>
-        <Button
-          variant="primary"
-          type="button"
-          onClick={handleSave}
-        >
+        <Button variant="primary" type="button" onClick={handleSave}>
           Save
         </Button>
         <Button

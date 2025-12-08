@@ -138,7 +138,11 @@ export const AnalystActions = (props: {
             >
               {isPending ? "..." : "Recommend Rejection"}
             </Button>
-            <Button variant="secondary" onClick={handleReturnToSupplier} disabled={isPending}>
+            <Button
+              variant="secondary"
+              onClick={handleReturnToSupplier}
+              disabled={isPending}
+            >
               {isPending ? "..." : "Return to Supplier"}
             </Button>
           </>
