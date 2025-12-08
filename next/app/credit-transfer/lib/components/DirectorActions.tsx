@@ -72,6 +72,7 @@ export const DirectorActions = (props: {
         disabled={isPending}
       />
       <Button
+        variant="secondary"
         onClick={() => {
           directorAction(CreditTransferStatus.RETURNED_TO_ANALYST);
         }}
@@ -81,6 +82,7 @@ export const DirectorActions = (props: {
       </Button>
       {props.status === CreditTransferStatus.RECOMMEND_APPROVAL_GOV && (
         <Button
+          variant="primary"
           onClick={() => {
             directorAction(CreditTransferStatus.APPROVED_BY_GOV);
           }}
@@ -91,6 +93,7 @@ export const DirectorActions = (props: {
       )}
       {props.status === CreditTransferStatus.RECOMMEND_REJECTION_GOV && (
         <Button
+          variant="danger"
           onClick={() => {
             directorAction(CreditTransferStatus.REJECTED_BY_GOV);
           }}

@@ -142,11 +142,11 @@ const OrganizationEditForm = (props: {
         </div>
 
         <div className="flex flex-row gap-12 my-2">
-          <Button className="py-1 w-16" type="submit">
+          <Button variant="primary" type="submit">
             {props.submitButtonText}
           </Button>
           <Button
-            className="bg-white border border-primaryBlue text-primaryBlue py-1 w-16"
+            variant="secondary"
             type="button"
             onClick={props.handleCancel}
           >

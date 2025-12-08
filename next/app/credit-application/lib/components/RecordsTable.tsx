@@ -263,7 +263,7 @@ export const RecordsTable = (props: {
       />
       {!props.readOnly && (
         <ContentCard title="Actions">
-          <Button onClick={handleSave} disabled={isPending}>
+          <Button variant="primary" onClick={handleSave} disabled={isPending}>
             {isPending ? "..." : "Save"}
           </Button>
         </ContentCard>

@@ -29,7 +29,7 @@ const Page = async (props: { searchParams?: Promise<pageStringParams> }) => {
     <Suspense key={Date.now()} fallback={<LoadingSkeleton />}>
       {canSubmitReport && (
         <Link href={`${Routes.ComplianceReporting}/new`}>
-          <Button>Submit a Model Year Report</Button>
+          <Button variant="primary">Submit a Model Year Report</Button>
         </Link>
       )}
       <ReportsList

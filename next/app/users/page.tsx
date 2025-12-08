@@ -34,7 +34,7 @@ export default async function Page(props: {
     <Suspense key={Date.now()} fallback={<LoadingSkeleton />}>
       {isAdmin && (
         <Link href={`${Routes.Users}/new`}>
-          <Button>Create New User</Button>
+          <Button variant="primary">Create New User</Button>
         </Link>
       )}
       <div className="mb-4 flex gap-2 border-b">

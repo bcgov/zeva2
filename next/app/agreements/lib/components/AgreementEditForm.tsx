@@ -324,16 +324,15 @@ export const AgreementEditForm = (props: {
 
       <div>
         <Button
+          variant="primary"
           type="button"
-          className="bg-primaryBlue text-white px-4 py-2 rounded"
           onClick={handleSave}
         >
           Save
         </Button>
         <Button
+          variant="secondary"
           type="button"
-          className="bg-white text-primaryBlue px-4 py-2 rounded ml-2
-            border border-primaryBlue"
           onClick={() => {
             setProcessingMsg("Cancel...");
             handleCancel();

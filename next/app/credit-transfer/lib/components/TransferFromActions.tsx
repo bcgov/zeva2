@@ -49,7 +49,7 @@ export const TransferFromActions = (props: {
         setComment={setComment}
         disabled={isPending}
       />
-      <Button onClick={handleRescind} disabled={isPending}>
+      <Button variant="danger" onClick={handleRescind} disabled={isPending}>
         {isPending ? "..." : "Rescind"}
       </Button>
     </div>

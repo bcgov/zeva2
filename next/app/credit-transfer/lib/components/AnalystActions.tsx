@@ -56,6 +56,7 @@ export const AnalystActions = (props: {
         disabled={isPending}
       />
       <Button
+        variant="primary"
         onClick={() => {
           handleRecommend(CreditTransferStatus.RECOMMEND_APPROVAL_GOV);
         }}
@@ -64,6 +65,7 @@ export const AnalystActions = (props: {
         {isPending ? "..." : "Recommend Approval"}
       </Button>
       <Button
+        variant="secondary"
         onClick={() => {
           handleRecommend(CreditTransferStatus.RECOMMEND_REJECTION_GOV);
         }}

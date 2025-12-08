@@ -57,7 +57,7 @@ export const AgreementHistories = (props: {
 
       {!isProcessing && (
         <Button
-          className="mt-2 px-2"
+          variant="primary"
           disabled={newComment.trim().length === 0}
           onClick={async () => {
             setErrorMessage(undefined);

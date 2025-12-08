@@ -139,14 +139,14 @@ export const Adjustments = (props: {
               />
             </span>
             <span>
-              <Button onClick={() => props.removeAdjustment(adjustment.id)}>
+              <Button variant="danger" size="small" onClick={() => props.removeAdjustment(adjustment.id)}>
                 Remove Adjustment
               </Button>
             </span>
           </div>
         );
       })}
-      <Button onClick={props.addAdjustment}>Add Adjustment</Button>
+      <Button variant="secondary" onClick={props.addAdjustment}>Add Adjustment</Button>
     </div>
   );
 };

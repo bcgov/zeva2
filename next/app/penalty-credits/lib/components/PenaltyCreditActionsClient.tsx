@@ -57,6 +57,7 @@ export const PenaltyCreditActionsClient = (props: {
       />
 
       <Button
+        variant="primary"
         disabled={isPending}
         onClick={() => {
           handleAction(PenaltyCreditStatus.APPROVED);
@@ -66,6 +67,7 @@ export const PenaltyCreditActionsClient = (props: {
       </Button>
 
       <Button
+        variant="danger"
         disabled={isPending}
         onClick={() => {
           handleAction(PenaltyCreditStatus.REJECTED);
