@@ -109,7 +109,11 @@ export const CreditApplicationForm = (props: { userOrgName: string }) => {
     <div>
       {error && <p className="text-red-600">{error}</p>}
       <div className="flex space-x-2">
-        <Button variant="secondary" onClick={handleDownload} disabled={isPending}>
+        <Button
+          variant="secondary"
+          onClick={handleDownload}
+          disabled={isPending}
+        >
           {isPending ? "..." : "Download Template"}
         </Button>
       </div>

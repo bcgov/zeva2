@@ -62,16 +62,28 @@ export const AnalystActions = (props: {
               setComment={setComment}
               disabled={isPending}
             />
-            <Button variant="secondary" onClick={handleReturnToSupplier} disabled={isPending}>
+            <Button
+              variant="secondary"
+              onClick={handleReturnToSupplier}
+              disabled={isPending}
+            >
               {isPending ? "..." : "Return To Supplier"}
             </Button>
-            <Button variant="primary" onClick={handleGoToConductAssessment} disabled={isPending}>
+            <Button
+              variant="primary"
+              onClick={handleGoToConductAssessment}
+              disabled={isPending}
+            >
               {isPending ? "..." : "Conduct Assessment"}
             </Button>
           </>
         )}
       {props.canConductReassessment && (
-        <Button variant="primary" onClick={handleGoToConductReassessment} disabled={isPending}>
+        <Button
+          variant="primary"
+          onClick={handleGoToConductReassessment}
+          disabled={isPending}
+        >
           {isPending ? "..." : "Conduct Reassessment"}
         </Button>
       )}

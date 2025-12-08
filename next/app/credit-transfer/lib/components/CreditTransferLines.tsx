@@ -123,14 +123,20 @@ export const CreditTransferLines = (props: {
               />
             </span>
             <span>
-              <Button variant="danger" size="small" onClick={() => props.removeLine(line.id)}>
+              <Button
+                variant="danger"
+                size="small"
+                onClick={() => props.removeLine(line.id)}
+              >
                 Remove Line
               </Button>
             </span>
           </div>
         );
       })}
-      <Button variant="secondary" onClick={props.addLine}>Add Line</Button>
+      <Button variant="secondary" onClick={props.addLine}>
+        Add Line
+      </Button>
     </div>
   );
 };
