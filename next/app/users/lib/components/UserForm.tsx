@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState, useTransition } from "react";
 import { Button } from "@/app/lib/components";
-import { Notification, Role, User } from "@/prisma/generated/client";
+import { Role, User } from "@/prisma/generated/client";
 import { createUser, updateUser } from "../actions";
 import { UserFormFields } from "./UserFormFields";
 import { getUserPayload } from "../utilsClient";
@@ -35,9 +35,7 @@ export const UserForm = ({
     Partial<Record<string, string>>
   >({});
   const [roles, setRoles] = useState<Role[]>([]);
-  const [notifications, setNotifications] = useState<Notification[]>([]);
   const [isPending, startTransition] = useTransition();
-  const isActive = form.isActive === "true";
   const [showStatusModal, setShowStatusModal] = useState(false);
   const [pendingActive, setPendingActive] = useState<boolean | null>(null);
   const [submitClicked, setSubmitClicked] = useState<boolean>(false);
@@ -74,7 +72,6 @@ export const UserForm = ({
       setForm(initialFormData);
       setInitialForm(initialFormData);
       setRoles(user.roles);
-      setNotifications(user.notifications);
     } else {
       const initialFormData = {
         isActive: "true",
@@ -121,19 +118,10 @@ export const UserForm = ({
     return () => window.removeEventListener("beforeunload", handleBeforeUnload);
   }, [guardEnabled]);
 
-  const toggleNotification = useCallback((notification: Notification) => {
-    setNotifications((prev) => {
-      if (prev.includes(notification)) {
-        return prev.filter((element) => element !== notification);
-      }
-      return [...prev, notification];
-    });
-  }, []);
-
   const handleSubmit = useCallback(() => {
     startTransition(async () => {
       try {
-        const payload = getUserPayload(form, roles, notifications);
+        const payload = getUserPayload(form, roles);
         let response:
           | ErrorOrSuccessActionResponse
           | DataOrErrorActionResponse<number>;
@@ -153,9 +141,8 @@ export const UserForm = ({
         if (guardEnabled) {
           navGuard.accept();
         } else {
-          router.push(`${Routes.Users}/${userId}/edit`);
+          router.push(`${Routes.Users}/${userId}`);
         }
-        setSubmitClicked(false);
       } catch (e) {
         if (e instanceof Error) {
           setError(e.message);
@@ -165,10 +152,9 @@ export const UserForm = ({
         } else {
           setGuardEnabled(textFieldsChanged());
         }
-        setSubmitClicked(false);
       }
     });
-  }, [user, form, roles, notifications, guardEnabled, navGuard]);
+  }, [user, form, roles, guardEnabled, navGuard]);
 
   // Allow deferred submit after turning off guard
   useEffect(() => {
@@ -177,11 +163,6 @@ export const UserForm = ({
       handleSubmit();
     }
   }, [guardEnabled, submitClicked, handleSubmit]);
-
-  const handleSaveAndNavigate = () => {
-    setGuardEnabled(false);
-    setSubmitClicked(true);
-  };
 
   return (
     <div className="bg-lightGrey min-h-screen text-primaryText">
@@ -206,9 +187,6 @@ export const UserForm = ({
               <h2 className="text-xl font-semibold text-primaryText">
                 {user ? "Edit user" : "Create user"}
               </h2>
-              <p className="text-sm text-secondaryText">
-                Update user contact details and notification preferences.
-              </p>
             </div>
 
             {orgsMap && (
@@ -234,23 +212,28 @@ export const UserForm = ({
             )}
             <UserFormFields
               form={form}
-              notifications={notifications}
               onChange={handleChange}
-              toggleNotification={toggleNotification}
+              disabled={isPending}
             />
           </section>
 
           <div className="space-y-3">
             <section className="space-y-3 rounded-lg border border-dividerMedium/40 bg-white p-4 shadow-sm">
-              <h3 className="text-lg font-semibold text-primaryText">Account</h3>
+              <h3 className="text-lg font-semibold text-primaryText">
+                Account
+              </h3>
               <p className="flex items-center gap-2 text-sm text-secondaryText">
-                {user ? "User account is mapped." : "User account has not been mapped."}
+                {user && user.idpSub
+                  ? "User account is mapped."
+                  : "User account has not been mapped."}
               </p>
             </section>
 
             <section className="space-y-3 rounded-lg border border-dividerMedium/40 bg-white p-4 shadow-sm">
               <div className="flex items-center justify-between">
-                <h3 className="text-lg font-semibold text-primaryText">Status</h3>
+                <h3 className="text-lg font-semibold text-primaryText">
+                  Status
+                </h3>
                 <span className="text-xs font-medium text-secondaryText">
                   Controls login access
                 </span>
@@ -267,7 +250,8 @@ export const UserForm = ({
                   <div className="space-y-1">
                     <p className="text-success font-semibold">Active</p>
                     <p className="text-sm text-secondaryText">
-                      User can log in and perform actions based on their assigned role.
+                      User can log in and perform actions based on their
+                      assigned role.
                     </p>
                   </div>
                 </label>
@@ -282,7 +266,8 @@ export const UserForm = ({
                   <div className="space-y-1">
                     <p className="text-error font-semibold">Inactive</p>
                     <p className="text-sm text-secondaryText">
-                      Prevents login and notifications. Activity history is retained.
+                      Prevents login and notifications. Activity history is
+                      retained.
                     </p>
                   </div>
                 </label>
@@ -291,17 +276,22 @@ export const UserForm = ({
 
             <section className="space-y-3 rounded-lg border border-dividerMedium/40 bg-white p-4 shadow-sm">
               <div className="space-y-1">
-                <h3 className="text-lg font-semibold text-primaryText">Roles</h3>
+                <h3 className="text-lg font-semibold text-primaryText">
+                  Roles
+                </h3>
                 <p className="text-sm text-secondaryText">
                   Users can have more than one role.
                 </p>
               </div>
               <RoleSelector
                 userId={user ? user.id : undefined}
-                govOrSupplier={form.organizationId === govOrgId ? "gov" : "supplier"}
+                govOrSupplier={
+                  form.organizationId === govOrgId ? "gov" : "supplier"
+                }
                 roles={roles}
                 setRoles={setRoles}
                 setError={setError}
+                disabled={isPending}
               />
             </section>
           </div>
@@ -309,11 +299,8 @@ export const UserForm = ({
 
         <FormChangeWarning
           showWarningModal={navGuard.active}
-          handleSaveAndNavigate={handleSaveAndNavigate}
-          handleNavigateWithoutSaving={() => {
-            setGuardEnabled(false);
-            navGuard.accept();
-          }}
+          handleSaveAndNavigate={handleSubmit}
+          handleNavigateWithoutSaving={navGuard.accept}
           handleClose={navGuard.reject}
           isPending={isPending}
         />
@@ -322,7 +309,11 @@ export const UserForm = ({
           showModal={showStatusModal}
           handleCancel={cancelStatusChange}
           handleSubmit={confirmStatusChange}
-          title={pendingActive ? "Confirm: Activate User" : "Confirm: Deactivate User"}
+          title={
+            pendingActive
+              ? "Confirm: Activate User"
+              : "Confirm: Deactivate User"
+          }
           confirmLabel={pendingActive ? "Activate" : "Deactivate"}
           modalType={pendingActive ? "confirmation" : "error"}
           content="Are you sure you want to update this user?"

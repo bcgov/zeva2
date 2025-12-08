@@ -4,7 +4,6 @@ import { UserPayload } from "./actions";
 export const getUserPayload = (
   data: Partial<Record<string, string>>,
   roles: Role[],
-  notifications: Notification[],
 ): UserPayload => {
   if (
     !data.organizationId ||
@@ -29,7 +28,6 @@ export const getUserPayload = (
     idpUsername: data.idpUsername,
     isActive: data.isActive === "true",
     roles,
-    notifications,
   };
 };
 

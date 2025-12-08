@@ -1,24 +1,28 @@
 "use client";
 
-import { useMemo } from "react";
+import { useCallback, useMemo } from "react";
 import { ColumnDef, createColumnHelper } from "@tanstack/react-table";
 import { Table } from "@/app/lib/components";
 import type { UserWithOrgName } from "../data";
 import { getRoleEnumsToStringsMap } from "@/app/lib/utils/enumMaps";
+import { useRouter } from "next/navigation";
+import { Routes } from "@/app/lib/constants";
 
 export interface UserTableProps {
   users: UserWithOrgName[];
   totalCount: number;
-  navigationAction: (id: number) => Promise<void>;
   userIsGov: boolean;
 }
 
 export default function UserTable({
   users,
   totalCount,
-  navigationAction,
   userIsGov,
 }: UserTableProps) {
+  const router = useRouter();
+  const navigationAction = useCallback(async (id: number) => {
+    router.push(`${Routes.Users}/${id}`);
+  }, []);
   const columnHelper = createColumnHelper<UserWithOrgName>();
 
   const rolesMap = useMemo(() => {

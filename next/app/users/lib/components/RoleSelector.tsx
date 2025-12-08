@@ -23,6 +23,7 @@ export const RoleSelector = (props: {
   roles: Role[];
   setRoles: Dispatch<SetStateAction<Role[]>>;
   setError: Dispatch<SetStateAction<string>>;
+  disabled: boolean;
 }) => {
   const [roleInQuestion, setRoleInQuestion] = useState<{
     role: Role;
@@ -54,8 +55,7 @@ export const RoleSelector = (props: {
         "Can submit new ZEV models and create Credit Applications and Transfers.",
       [Role.ENGINEER_ANALYST]:
         "Can add new auto suppliers and BCeID users, validate new ZEV Models; upload ICBC data, analyse and recommend issuance of Credit Applications and Transfers.",
-      [Role.ADMINISTRATOR]:
-        "Can add and manage IDIR users and assign roles.",
+      [Role.ADMINISTRATOR]: "Can add and manage IDIR users and assign roles.",
       [Role.DIRECTOR]:
         "Can provide statutory decisions to issue, record and/or approve Credit Applications and Transfers.",
     }),
@@ -127,11 +127,14 @@ export const RoleSelector = (props: {
               type="checkbox"
               checked={props.roles.includes(role)}
               onChange={(e) => handleRoleCheck(role, e.target.checked)}
+              disabled={props.disabled}
             />
             <span className="space-y-1">
               <p className="font-semibold text-primaryText">{rolesMap[role]}</p>
               {roleDescriptions[role] && (
-                <p className="text-sm text-secondaryText">{roleDescriptions[role]}</p>
+                <p className="text-sm text-secondaryText">
+                  {roleDescriptions[role]}
+                </p>
               )}
             </span>
           </label>
