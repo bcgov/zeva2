@@ -4,9 +4,10 @@ import React, { useEffect } from "react";
 import { MenuItem, NavbarSubItems } from "../constants/navbarItems";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { FaAngleDown, FaAngleUp } from "react-icons/fa";
 import { keycloakSignOut } from "../actions/keycloak";
 import { Row } from "./layout";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faAngleDown, faAngleUp } from "@fortawesome/free-solid-svg-icons";
 
 /** Client Component used for navigation */
 export const Navbar: React.FC<{
@@ -116,9 +117,9 @@ export const Navbar: React.FC<{
           >
             {userName}
             {!showUserDropDown ? (
-              <FaAngleDown className="mt-[0.5px] ml-1" />
+              <FontAwesomeIcon icon={faAngleDown} className="mt-[0.5px] ml-1" />
             ) : (
-              <FaAngleUp className="mt-[0.5px] ml-1" />
+              <FontAwesomeIcon icon={faAngleUp} className="mt-[0.5px] ml-1" />
             )}
           </div>
           {showUserDropDown && (
