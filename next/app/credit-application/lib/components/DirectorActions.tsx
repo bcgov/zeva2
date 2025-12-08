@@ -83,7 +83,7 @@ export const DirectorActions = (props: {
         props.status === CreditApplicationStatus.RECOMMEND_REJECTION ||
         props.status === CreditApplicationStatus.APPROVED ||
         props.status === CreditApplicationStatus.REJECTED) && (
-        <Button onClick={handleViewValidated} disabled={isPending}>
+        <Button variant="secondary" onClick={handleViewValidated} disabled={isPending}>
           {isPending ? "..." : "View Validated Records"}
         </Button>
       )}
@@ -95,18 +95,18 @@ export const DirectorActions = (props: {
             setComment={setComment}
             disabled={isPending}
           />
-          <Button onClick={handleReturn} disabled={isPending}>
+          <Button variant="secondary" onClick={handleReturn} disabled={isPending}>
             {isPending ? "..." : "Return to Analyst"}
           </Button>
         </>
       )}
       {props.status === CreditApplicationStatus.RECOMMEND_APPROVAL && (
-        <Button onClick={handleApprove} disabled={isPending}>
+        <Button variant="primary" onClick={handleApprove} disabled={isPending}>
           {isPending ? "..." : "Approve"}
         </Button>
       )}
       {props.status === CreditApplicationStatus.RECOMMEND_REJECTION && (
-        <Button onClick={handleReject} disabled={isPending}>
+        <Button variant="danger" onClick={handleReject} disabled={isPending}>
           {isPending ? "..." : "Reject"}
         </Button>
       )}

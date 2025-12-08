@@ -92,7 +92,7 @@ const OrganizationDetails = (props: {
           {props.organizationName}
         </h2>
         {props.update && (
-          <Button className="py-1 w-16" onClick={() => setMode("edit")}>
+          <Button variant="secondary" onClick={() => setMode("edit")}>
             Edit
           </Button>
         )}

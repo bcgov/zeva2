@@ -72,7 +72,7 @@ export const Upload = () => {
         />
       </div>
       <div className="flex space-x-2">
-        <Button onClick={handleSubmit} disabled={isPending}>
+        <Button variant="primary" onClick={handleSubmit} disabled={isPending}>
           {isPending ? "..." : "Submit"}
         </Button>
       </div>

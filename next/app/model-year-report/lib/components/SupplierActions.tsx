@@ -21,7 +21,7 @@ export const SupplierActions = (props: {
   }
   return (
     <div className="space-y-2">
-      <Button onClick={handleGoToResubmit}>Resubmit Reports</Button>
+      <Button variant="primary" onClick={handleGoToResubmit}>Resubmit Reports</Button>
     </div>
   );
 };

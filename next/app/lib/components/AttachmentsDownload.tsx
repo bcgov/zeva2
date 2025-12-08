@@ -33,7 +33,7 @@ export const AttachmentsDownload = (props: {
   return (
     <div>
       {error && <p className="text-red-600">{error}</p>}
-      <Button onClick={handleDownload} disabled={isPending}>
+      <Button variant="secondary" onClick={handleDownload} disabled={isPending}>
         {isPending ? "..." : "Download"}
       </Button>
     </div>

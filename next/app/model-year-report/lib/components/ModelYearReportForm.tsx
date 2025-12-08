@@ -230,19 +230,19 @@ export const ModelYearReportForm = (props: {
       )}
       <div className="flex space-x-2">
         {myr ? (
-          <Button onClick={handleClearMyr} disabled={isPending}>
+          <Button variant="tertiary" size="small" onClick={handleClearMyr} disabled={isPending}>
             {isPending ? "..." : "Clear Generated Report"}
           </Button>
         ) : (
-          <Button onClick={handleGenerateReport} disabled={isPending}>
+          <Button variant="secondary" onClick={handleGenerateReport} disabled={isPending}>
             {isPending ? "..." : "Generate your Model Year Report"}
           </Button>
         )}
       </div>
       {myr && <ParsedModelYearReport myr={myr[1]} />}
       <div className="flex space-x-2">
-        <Button onClick={handleDownloadForecastTemplate} disabled={isPending}>
-          {isPending ? "..." : "Download Forecast Report Template"}
+        <Button variant="secondary" onClick={handleDownloadForecastTemplate} disabled={isPending}>
+          {isPending ? "..." : "Download Forecast Template"}
         </Button>
       </div>
       <div className="flex items-center space-x-4">
@@ -268,7 +268,7 @@ export const ModelYearReportForm = (props: {
       />
       {error && <p className="text-red-600">{error}</p>}
       <div className="flex space-x-2">
-        <Button onClick={handleSubmit} disabled={isPending}>
+        <Button variant="primary" onClick={handleSubmit} disabled={isPending}>
           {isPending ? "..." : "Submit"}
         </Button>
       </div>

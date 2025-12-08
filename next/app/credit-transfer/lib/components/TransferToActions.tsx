@@ -53,6 +53,7 @@ export const TransferToActions = (props: {
         disabled={isPending}
       />
       <Button
+        variant="primary"
         onClick={() => {
           handleApproveOrReject(CreditTransferStatus.APPROVED_BY_TRANSFER_TO);
         }}
@@ -61,6 +62,7 @@ export const TransferToActions = (props: {
         {isPending ? "..." : "Approve"}
       </Button>
       <Button
+        variant="danger"
         onClick={() => {
           handleApproveOrReject(CreditTransferStatus.REJECTED_BY_TRANSFER_TO);
         }}

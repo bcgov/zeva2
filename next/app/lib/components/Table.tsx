@@ -248,7 +248,7 @@ export const Table = <T extends ZevaObject>({
   return (
     <div className="bg-white rounded-lg shadow-level-1 p-4">
       <div className="flex flex-row-reverse">
-        <Button className="mr-10 mb-3 px-3" onClick={handleReset}>
+        <Button variant="secondary" size="small" onClick={handleReset}>
           Reset Table
         </Button>
       </div>

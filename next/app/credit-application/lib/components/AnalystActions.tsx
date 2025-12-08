@@ -85,7 +85,7 @@ export const AnalystActions = (props: {
     <>
       {(props.status === CreditApplicationStatus.SUBMITTED ||
         props.status === CreditApplicationStatus.RETURNED_TO_ANALYST) && (
-        <Button onClick={handleValidate} disabled={isPending}>
+        <Button variant="primary" onClick={handleValidate} disabled={isPending}>
           {isPending ? "..." : "Validate"}
         </Button>
       )}
@@ -93,6 +93,7 @@ export const AnalystActions = (props: {
         props.status !== CreditApplicationStatus.RETURNED_TO_ANALYST &&
         props.validatedBefore && (
           <Button
+            variant="secondary"
             onClick={() => {
               handleGoToValidated(false);
             }}
@@ -111,6 +112,7 @@ export const AnalystActions = (props: {
               disabled={isPending}
             />
             <Button
+              variant="secondary"
               onClick={() => {
                 handleGoToValidated(true);
               }}
@@ -119,6 +121,7 @@ export const AnalystActions = (props: {
               {isPending ? "..." : "Edit Validated Records"}
             </Button>
             <Button
+              variant="primary"
               onClick={() => {
                 handleRecommend(CreditApplicationStatus.RECOMMEND_APPROVAL);
               }}
@@ -127,6 +130,7 @@ export const AnalystActions = (props: {
               {isPending ? "..." : "Recommend Approval"}
             </Button>
             <Button
+              variant="secondary"
               onClick={() => {
                 handleRecommend(CreditApplicationStatus.RECOMMEND_REJECTION);
               }}
@@ -134,7 +138,7 @@ export const AnalystActions = (props: {
             >
               {isPending ? "..." : "Recommend Rejection"}
             </Button>
-            <Button onClick={handleReturnToSupplier} disabled={isPending}>
+            <Button variant="secondary" onClick={handleReturnToSupplier} disabled={isPending}>
               {isPending ? "..." : "Return to Supplier"}
             </Button>
           </>

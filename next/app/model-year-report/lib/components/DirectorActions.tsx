@@ -60,10 +60,10 @@ export const DirectorActions = (props: {
         disabled={isPending}
       />
       {error && <p className="text-red-600">{error}</p>}
-      <Button onClick={handleReturnToAnalyst} disabled={isPending}>
+      <Button variant="secondary" onClick={handleReturnToAnalyst} disabled={isPending}>
         {isPending ? "..." : "Return To Analyst"}
       </Button>
-      <Button onClick={handleIssueAssessment} disabled={isPending}>
+      <Button variant="primary" onClick={handleIssueAssessment} disabled={isPending}>
         {isPending ? "..." : "Issue Assessment"}
       </Button>
     </div>
