@@ -26,11 +26,21 @@ const Page = async (props: { searchParams?: Promise<pageStringParams> }) => {
     <Suspense key={Date.now()} fallback={<LoadingSkeleton />}>
       {canCreateNewOrg && (
         <a href={`${Routes.VehicleSuppliers}/new`}>
-          <Button 
-            variant="primary" 
+          <Button
+            variant="primary"
             icon={
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+                strokeWidth={2}
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M12 4.5v15m7.5-7.5h-15"
+                />
               </svg>
             } // An example of how to add an icon to the button. Not sure where we want to get our icons from.
             iconPosition="left"
