@@ -7,12 +7,6 @@ import {
   getCoreRowModel,
   useReactTable,
 } from "@tanstack/react-table";
-import {
-  FaArrowLeft,
-  FaArrowRight,
-  FaDownLong,
-  FaUpLong,
-} from "react-icons/fa6";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import {
   getLegalPairs,
@@ -21,6 +15,13 @@ import {
 } from "@/lib/utils/urlSearchParams";
 import { LoadingSkeleton } from "./skeletons";
 import { Button } from "./inputs";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import {
+  faAngleDown,
+  faAngleUp,
+  faAngleLeft,
+  faAngleRight,
+} from "@fortawesome/free-solid-svg-icons";
 
 interface ITableProps<T> {
   columns: ColumnDef<T, any>[];
@@ -290,9 +291,15 @@ export const Table = <T extends ZevaObject>({
                               header.getContext(),
                             )}
                             {sortsMap[header.id] === "asc" ? (
-                              <FaUpLong size={10} className="mb-1" />
+                              <FontAwesomeIcon
+                                icon={faAngleUp}
+                                className="mb-1"
+                              />
                             ) : sortsMap[header.id] === "desc" ? (
-                              <FaDownLong size={10} className="mb-1" />
+                              <FontAwesomeIcon
+                                icon={faAngleDown}
+                                className="mb-1"
+                              />
                             ) : (
                               ""
                             )}
@@ -356,7 +363,8 @@ export const Table = <T extends ZevaObject>({
         </table>
       </div>
       <div className="flex items-center justify-center bg-navBorder w-full rounded p-2">
-        <FaArrowLeft
+        <FontAwesomeIcon
+          icon={faAngleLeft}
           onClick={() => {
             handlePageNav("prev");
           }}
@@ -376,7 +384,8 @@ export const Table = <T extends ZevaObject>({
           }{" "}
           of {numberOfPages}
         </span>
-        <FaArrowRight
+        <FontAwesomeIcon
+          icon={faAngleRight}
           onClick={() => {
             handlePageNav("next");
           }}
