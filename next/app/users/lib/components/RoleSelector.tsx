@@ -23,6 +23,7 @@ export const RoleSelector = (props: {
   roles: Role[];
   setRoles: Dispatch<SetStateAction<Role[]>>;
   setError: Dispatch<SetStateAction<string>>;
+  disabled: boolean;
 }) => {
   const [roleInQuestion, setRoleInQuestion] = useState<{
     role: Role;
@@ -43,6 +44,23 @@ export const RoleSelector = (props: {
   const rolesMap = useMemo(() => {
     return getRoleEnumsToStringsMap();
   }, []);
+
+  const roleDescriptions: Partial<Record<Role, string>> = useMemo(
+    () => ({
+      [Role.ORGANIZATION_ADMINISTRATOR]:
+        "Can add and manage BCeID users and assign roles.",
+      [Role.SIGNING_AUTHORITY]:
+        "Can sign-off and submit Credit Applications and Transfers to government.",
+      [Role.ZEVA_USER]:
+        "Can submit new ZEV models and create Credit Applications and Transfers.",
+      [Role.ENGINEER_ANALYST]:
+        "Can add new auto suppliers and BCeID users, validate new ZEV Models; upload ICBC data, analyse and recommend issuance of Credit Applications and Transfers.",
+      [Role.ADMINISTRATOR]: "Can add and manage IDIR users and assign roles.",
+      [Role.DIRECTOR]:
+        "Can provide statutory decisions to issue, record and/or approve Credit Applications and Transfers.",
+    }),
+    [],
+  );
 
   const handleRoleCheck = useCallback(
     (role: Role, checked: boolean) => {
@@ -98,17 +116,27 @@ export const RoleSelector = (props: {
 
   return (
     <>
-      <div className="flex items-center py-2 my-2">
-        <label className="w-72">Roles</label>
+      <div className="space-y-2">
         {roles.map((role) => (
-          <label className="w-72" key={role}>
+          <label
+            className="flex items-start gap-3 rounded-md border border-dividerMedium/50 bg-disabledSurface px-3 py-2 text-sm text-primaryText"
+            key={role}
+          >
             <input
-              className="border p-2 w-full"
+              className="mt-1 h-4 w-4 accent-primaryBlue"
               type="checkbox"
               checked={props.roles.includes(role)}
               onChange={(e) => handleRoleCheck(role, e.target.checked)}
+              disabled={props.disabled}
             />
-            {rolesMap[role]}
+            <span className="space-y-1">
+              <p className="font-semibold text-primaryText">{rolesMap[role]}</p>
+              {roleDescriptions[role] && (
+                <p className="text-sm text-secondaryText">
+                  {roleDescriptions[role]}
+                </p>
+              )}
+            </span>
           </label>
         ))}
       </div>
