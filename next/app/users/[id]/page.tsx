@@ -1,6 +1,6 @@
 import { getUserInfo } from "@/auth";
-import { getUser } from "../../lib/data";
-import { UserForm } from "../../lib/components/UserForm";
+import { getUser } from "../lib/data";
+import { UserForm } from "../lib/components/UserForm";
 import { getGovOrgId } from "@/app/organizations/lib/data";
 
 const Page = async (props: { params: Promise<{ id: string }> }) => {

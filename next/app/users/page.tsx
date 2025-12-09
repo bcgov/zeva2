@@ -73,15 +73,7 @@ export default async function Page(props: {
           Inactive users
         </Link>
       </div>
-      <UserTable
-        users={users}
-        totalCount={totalCount}
-        navigationAction={async (id: number) => {
-          "use server";
-          redirect(`${Routes.Users}/${id}/edit`);
-        }}
-        userIsGov={userIsGov}
-      />
+      <UserTable users={users} totalCount={totalCount} userIsGov={userIsGov} />
     </Suspense>
   );
 }

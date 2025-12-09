@@ -1,27 +1,14 @@
 "use client";
 
-import { getNotificationEnumsToStringsMap } from "@/app/lib/utils/enumMaps";
-import { Notification } from "@/prisma/generated/client";
-import { useMemo, useState } from "react";
-import { Modal } from "@/app/lib/components/Modal";
-
 export function UserFormFields({
   form,
-  notifications,
   onChange,
-  toggleNotification,
+  disabled,
 }: {
   form: Partial<Record<string, string>>;
-  notifications: Notification[];
   onChange: (field: string, value: any) => void;
-  toggleNotification: (role: Notification) => void;
+  disabled: boolean;
 }) {
-  const notificationsMap = useMemo(() => {
-    return getNotificationEnumsToStringsMap();
-  }, []);
-
-  const isActive = form.isActive === "true";
-
   return (
     <div className="space-y-4">
       <div className="space-y-3 rounded-lg border border-dividerMedium/30 bg-white p-5 shadow-sm">
@@ -34,6 +21,7 @@ export function UserFormFields({
               placeholder="Test name"
               value={form.firstName ?? ""}
               onChange={(e) => onChange(e.target.name, e.target.value)}
+              disabled={disabled}
             />
           </div>
           <div className="space-y-1">
@@ -44,6 +32,7 @@ export function UserFormFields({
               placeholder="Test last name"
               value={form.lastName ?? ""}
               onChange={(e) => onChange(e.target.name, e.target.value)}
+              disabled={disabled}
             />
           </div>
           <div className="space-y-1">
@@ -54,6 +43,7 @@ export function UserFormFields({
               placeholder="Policy Analyst"
               value={form.idpUsername ?? ""}
               onChange={(e) => onChange(e.target.name, e.target.value)}
+              disabled={disabled}
             />
           </div>
           <div className="space-y-1">
@@ -64,6 +54,7 @@ export function UserFormFields({
               placeholder="TEST"
               value={form.idpUsername ?? ""}
               onChange={(e) => onChange(e.target.name, e.target.value)}
+              disabled={disabled}
             />
           </div>
           <div className="space-y-1">
@@ -74,6 +65,7 @@ export function UserFormFields({
               placeholder="test@gov.bc.ca"
               value={form.contactEmail ?? ""}
               onChange={(e) => onChange(e.target.name, e.target.value)}
+              disabled={disabled}
             />
           </div>
           <div className="space-y-1">
@@ -87,6 +79,7 @@ export function UserFormFields({
               placeholder="test@gov.bc.ca"
               value={form.contactEmail ?? ""}
               onChange={(e) => onChange(e.target.name, e.target.value)}
+              disabled={disabled}
             />
           </div>
         </div>
