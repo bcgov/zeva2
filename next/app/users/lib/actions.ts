@@ -14,7 +14,10 @@ import {
 import { govRoles, supplierRoles } from "./constants";
 import { orgIsGovernment } from "./services";
 
-export type UserPayload = Omit<User, "id" | "idp" | "idpSub" | "wasUpdated">;
+export type UserPayload = Omit<
+  User,
+  "id" | "idp" | "idpSub" | "wasUpdated" | "notifications"
+>;
 
 export const updateUser = async (
   id: number,

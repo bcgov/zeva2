@@ -56,3 +56,13 @@ button {
   font-weight: bold;
   color: theme("colors.primaryBlue");
 }
+
+@layer components {
+  .form-input-base {
+    @apply w-full rounded-md border border-dividerMedium bg-disabledSurface px-3 py-2.5 text-sm text-primaryText placeholder:text-placeholder focus:border-primaryBlue focus:ring-2 focus:ring-primaryBlue/20;
+  }
+
+  .form-label {
+    @apply text-sm font-medium text-primaryText;
+  }
+}

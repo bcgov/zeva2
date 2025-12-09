@@ -1,24 +1,26 @@
-import { ContentCard } from "@/app/lib/components";
-import { Suspense } from "react";
-import { LoadingSkeleton } from "@/app/lib/components/skeletons";
-import { UserDetails } from "../lib/components/UserDetails";
-import { ActionBar } from "../lib/components/ActionBar";
+import { getUserInfo } from "@/auth";
+import { getUser } from "../lib/data";
+import { UserForm } from "../lib/components/UserForm";
+import { getGovOrgId } from "@/app/organizations/lib/data";
 
 const Page = async (props: { params: Promise<{ id: string }> }) => {
   const args = await props.params;
   const id = parseInt(args.id, 10);
+  const user = await getUser(id);
+  if (!user) {
+    return <div>User not found</div>;
+  }
+
+  const { userOrgId } = await getUserInfo();
+  const govOrgId = await getGovOrgId();
+
   return (
-    <div className="flex flex-col w-1/3">
-      <ContentCard title="User Details">
-        <Suspense fallback={<LoadingSkeleton />}>
-          <UserDetails userId={id} />
-        </Suspense>
-      </ContentCard>
-      <ContentCard title="Actions">
-        <Suspense fallback={<LoadingSkeleton />}>
-          <ActionBar userId={id} />
-        </Suspense>
-      </ContentCard>
+    <div className="w-full px-6 py-6 lg:px-10 xl:px-14">
+      <UserForm
+        user={user}
+        userOrgId={userOrgId.toString()}
+        govOrgId={govOrgId.toString()}
+      />
     </div>
   );
 };
