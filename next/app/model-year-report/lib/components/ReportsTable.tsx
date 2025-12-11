@@ -54,7 +54,7 @@ export const ReportsTable = (props: {
           id: "reassessmentStatus",
           enableSorting: true,
           enableColumnFilter: true,
-          header: () => <span>Status</span>,
+          header: () => <span>Reassessment Status</span>,
         },
       ),
     ];

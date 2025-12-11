@@ -1,41 +1,41 @@
 import { prisma } from "@/lib/prisma";
 import { prismaOld } from "@/lib/prismaOld";
-import {
-  ModelYear,
-  ZevClass,
-  CreditApplicationVinLegacy,
-} from "./generated/client";
+import { ModelYear, ZevClass } from "./generated/client";
 import { getStringsToModelYearsEnumsMap } from "@/app/lib/utils/enumMaps";
-import { Decimal } from "./generated/client/runtime/library";
 import { Notification } from "./generated/client";
 import { isNotification } from "@/app/lib/utils/typeGuards";
 import { seedOrganizations } from "./seedProcesses/seedOrganizations";
 import { seedTransactions } from "./seedProcesses/seedTransactions";
 import { seedIcbc } from "./seedProcesses/seedIcbc";
 import { seedUsers } from "./seedProcesses/seedUsers";
-import { seedAgreements } from "./seedProcesses/seedAgreements";
 import { seedVolumes } from "./seedProcesses/seedVolumes";
 import { seedVehicles } from "./seedProcesses/seedVehicles";
 import { seedLegacyAssessedMyrs } from "./seedProcesses/seedLegacyAssessedMyrs";
 import { seedEndingBalances } from "./seedProcesses/seedEndingBalances";
+import { seedLegacyVins } from "./seedProcesses/seedLegacyVins";
 
 // prismaOld to interact with old zeva db; prisma to interact with new zeva db
 const main = () => {
   const modelYearsMap = getStringsToModelYearsEnumsMap();
   return prisma.$transaction(
     async (tx) => {
-      const decimalZero = new Decimal(0);
-      const mapOfModelYearIdsToModelYearEnum: {
-        [id: number]: ModelYear | undefined;
-      } = {};
-      const mapOfOldCreditClassIdsToZevClasses: {
-        [id: number]: ZevClass | undefined;
-      } = {};
+      const mapOfModelYearIdsToModelYearEnum: Partial<
+        Record<number, ModelYear>
+      > = {};
+      const mapOfOldCreditClassIdsToZevClasses: Partial<
+        Record<number, ZevClass>
+      > = {};
 
       const modelYearsOld = await prismaOld.model_year.findMany();
       for (const modelYearOld of modelYearsOld) {
         mapOfModelYearIdsToModelYearEnum[modelYearOld.id] =
           modelYearsMap[modelYearOld.description];
+      }
+
+      const creditClassesOld = await prismaOld.credit_class_code.findMany();
+      for (const creditClass of creditClassesOld) {
+        mapOfOldCreditClassIdsToZevClasses[creditClass.id] =
+          ZevClass[creditClass.credit_class as keyof typeof ZevClass];
       }
 
       // seed organization tables
@@ -49,12 +49,6 @@ const main = () => {
         tx,
         mapOfOldOrgIdsToNewOrgIds,
       );
-
-      const creditClassesOld = await prismaOld.credit_class_code.findMany();
-      for (const creditClass of creditClassesOld) {
-        mapOfOldCreditClassIdsToZevClasses[creditClass.id] =
-          ZevClass[creditClass.credit_class as keyof typeof ZevClass];
-      }
 
       // add notifications from old subscription table
       const notificationsOld = await prismaOld.notification.findMany({
@@ -102,14 +96,6 @@ const main = () => {
         mapOfOldOrgIdsToNewOrgIds,
       );
 
-      /** Uncomment the following code to seed Agreement tables for local testing **/
-      // await seedAgreements(
-      //   tx,
-      //   mapOfOldCreditClassIdsToZevClasses,
-      //   mapOfModelYearIdsToModelYearEnum,
-      //   mapOfOldOrgIdsToNewOrgIds,
-      // );
-
       await seedEndingBalances(
         tx,
         mapOfModelYearIdsToModelYearEnum,
@@ -123,28 +109,7 @@ const main = () => {
         mapOfOldCreditClassIdsToZevClasses,
       );
 
-      const issuedVinRecords = await prismaOld.record_of_sale.findMany({
-        where: {
-          sales_submission: {
-            is: {
-              validation_status: "VALIDATED",
-            },
-          },
-        },
-        select: {
-          vin: true,
-        },
-      });
-      const legacyVinsToCreate: Omit<CreditApplicationVinLegacy, "id">[] = [];
-      issuedVinRecords.forEach((record) => {
-        const vin = record.vin;
-        if (vin) {
-          legacyVinsToCreate.push({ vin });
-        }
-      });
-      await tx.creditApplicationVinLegacy.createMany({
-        data: legacyVinsToCreate,
-      });
+      await seedLegacyVins(tx);
 
       await seedIcbc(tx, mapOfModelYearIdsToModelYearEnum);
 

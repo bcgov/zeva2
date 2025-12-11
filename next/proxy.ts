@@ -1,4 +1,4 @@
-export { auth as middleware } from "@/auth";
+export { auth as proxy } from "@/auth";
 
 export const config = {
   matcher: [
@@ -9,6 +9,6 @@ export const config = {
      * - _next/image (image optimization files)
      * - favicon.ico, sitemap.xml, robots.txt (metadata files)
      */
-    "/((?!api|_next/static|_next/image|favicon.ico|sitemap.xml|robots.txt|signOut|.*\\.(?:png|jpg|jpeg|gif|svg)).*)",
+    "/((?!api|_next/static|_next/image|favicon.ico|sitemap.xml|robots.txt|.*\\.(?:png|jpg|jpeg|gif|svg)).*)",
   ],
 };
