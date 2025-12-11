@@ -1,7 +1,6 @@
 "use client";
 
-export interface IContentCardProps
-  extends React.HTMLAttributes<HTMLDivElement> {
+export interface IContentCardProps extends React.HTMLAttributes<HTMLDivElement> {
   title: string;
   children: React.ReactNode;
   icon?: React.ReactNode;
