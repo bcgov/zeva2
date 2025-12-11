@@ -5,12 +5,9 @@ import { Profile } from "next-auth";
 
 export type UserWithOrg = User & { organization: Organization };
 
-export const getActiveUser = async (
-  profile: Profile | undefined,
+export const getActiveUserByProfile = async (
+  profile: Profile,
 ): Promise<UserWithOrg | null> => {
-  if (!profile) {
-    return null;
-  }
   const idp = profile.identity_provider;
   const idpSub = profile.sub;
   if (!idp || !idpSub) {
@@ -88,29 +85,16 @@ export const mapUser = async (id: number, idpSub: string | null) => {
   });
 };
 
-export const resetFlag = async (id: number) => {
-  await prisma.user.update({
-    where: {
-      id: id,
-    },
-    data: {
-      wasUpdated: false,
-    },
-  });
-};
-
-export const wasUserUpdated = async (id: number) => {
-  const user = await prisma.user.findUnique({
+export const getActiveUserById = async (
+  id: number,
+): Promise<UserWithOrg | null> => {
+  return await prisma.user.findUnique({
     where: {
       id,
-      wasUpdated: true,
+      isActive: true,
     },
-    select: {
-      id: true,
+    include: {
+      organization: true,
     },
   });
-  if (user) {
-    return true;
-  }
-  return false;
 };

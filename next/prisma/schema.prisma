@@ -131,7 +131,6 @@ model User {
   notifications              Notification[]
   firstName                  String                       @map("first_name")
   lastName                   String                       @map("last_name")
-  wasUpdated                 Boolean                      @default(false) @map("was_updated")
   VehicleHistory             VehicleHistory[]
   CreditApplicationHistory   CreditApplicationHistory[]
   PenaltyCreditHistory       PenaltyCreditHistory[]
