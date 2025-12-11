@@ -7,6 +7,9 @@ const nextConfig: NextConfig = {
       ignore: [/\api\/health/],
     },
   },
+  experimental: {
+    cpus: 4,
+  },
 };
 
 export default nextConfig;
