@@ -303,26 +303,27 @@ enum VehicleStatus {
 }
 
 model Vehicle {
-  id                   Int                    @id @default(autoincrement())
-  legacyId             Int?
-  organization         Organization           @relation(fields: [organizationId], references: [id])
-  organizationId       Int                    @map("organization_id")
-  status               VehicleStatus
-  make                 String
-  modelName            String                 @map("model_name")
-  modelYear            ModelYear              @map("model_year")
-  vehicleZevType       VehicleZevType         @map("vehicle_zev_type")
-  range                Int
-  vehicleClass         VehicleClass           @map("vehicle_class")
-  zevClass             ZevClass               @map("zev_class")
-  numberOfUnits        Decimal                @map("numberOfUnits") @db.Decimal(65, 2)
-  vehicleClassCode     VehicleClassCode       @map("vehicle_class_code")
-  weight               Int
-  us06RangeGte16       Boolean                @map("us06_range_gte_16")
-  isActive             Boolean                @map("is_active")
-  VehicleHistory       VehicleHistory[]
-  VehicleAttachment    VehicleAttachment[]
-  CreditApplicationVin CreditApplicationVin[]
+  id                Int                 @id @default(autoincrement())
+  legacyId          Int?
+  organization      Organization        @relation(fields: [organizationId], references: [id])
+  organizationId    Int                 @map("organization_id")
+  status            VehicleStatus
+  make              String
+  modelName         String              @map("model_name")
+  modelYear         ModelYear           @map("model_year")
+  vehicleZevType    VehicleZevType      @map("vehicle_zev_type")
+  range             Int
+  vehicleClass      VehicleClass        @map("vehicle_class")
+  zevClass          ZevClass            @map("zev_class")
+  numberOfUnits     Decimal             @map("numberOfUnits") @db.Decimal(65, 2)
+  vehicleClassCode  VehicleClassCode    @map("vehicle_class_code")
+  weight            Int
+  us06RangeGte16    Boolean             @map("us06_range_gte_16")
+  isActive          Boolean             @map("is_active")
+  issuedCount       Int                 @default(0) @map("issued_count")
+  submittedCount    Int                 @default(0) @map("submitted_count")
+  VehicleHistory    VehicleHistory[]
+  VehicleAttachment VehicleAttachment[]
 
   @@map("vehicle")
 }
@@ -385,18 +386,19 @@ model IcbcRecord {
 
 enum CreditApplicationStatus {
   APPROVED
+  DELETED
+  DRAFT
   RECOMMEND_APPROVAL
-  RECOMMEND_REJECTION
   REJECTED
   RETURNED_TO_ANALYST
-  RETURNED_TO_SUPPLIER
   SUBMITTED
 }
 
 enum CreditApplicationSupplierStatus {
   APPROVED
+  DELETED
+  DRAFT
   REJECTED
-  RETURNED_TO_SUPPLIER
   SUBMITTED
 }
 
@@ -404,27 +406,38 @@ model CreditApplication {
   id                          Int                             @id @default(autoincrement())
   organization                Organization                    @relation(fields: [organizationId], references: [id])
   organizationId              Int                             @map("organization_id")
-  submissionTimestamp         DateTime                        @default(now()) @map("submission_timestamp") @db.Timestamptz(6)
+  submissionTimestamp         DateTime?                       @map("submission_timestamp") @db.Timestamptz(6)
+  transactionTimestamp        DateTime?                       @map("transaction_timestamp") @db.Timestamptz(6)
   status                      CreditApplicationStatus         @map("status")
   supplierStatus              CreditApplicationSupplierStatus @map("supplier_status")
-  supplierFileId              String                          @map("supplier_file_id")
-  supplierFileName            String                          @map("supplier_file_name")
+  objectName                  String                          @unique @map("object_name")
+  fileName                    String                          @map("file_name")
+  modelYears                  ModelYear[]                     @map("model_years")
+  acceptedVinsCount           Int?                            @map("accepted_vins_count")
+  rejectedVinsCount           Int?                            @map("rejected_vins_count")
   CreditApplicationHistory    CreditApplicationHistory[]
   CreditApplicationRecord     CreditApplicationRecord[]
-  CreditApplicationVin        CreditApplicationVin[]
   CreditApplicationAttachment CreditApplicationAttachment[]
 
   @@map("credit_application")
 }
 
+enum CreditApplicationHistoryStatus {
+  APPROVED
+  RECOMMEND_APPROVAL
+  REJECTED
+  RETURNED_TO_ANALYST
+  SUBMITTED
+}
+
 model CreditApplicationHistory {
-  id                  Int                     @id @default(autoincrement())
-  creditApplicationId Int                     @map("credit_application_id")
-  creditApplication   CreditApplication       @relation(fields: [creditApplicationId], references: [id])
-  userId              Int                     @map("user_id")
-  user                User                    @relation(fields: [userId], references: [id])
-  timestamp           DateTime                @default(now()) @db.Timestamptz(6)
-  userAction          CreditApplicationStatus @map("user_action")
+  id                  Int                            @id @default(autoincrement())
+  creditApplicationId Int                            @map("credit_application_id")
+  creditApplication   CreditApplication              @relation(fields: [creditApplicationId], references: [id])
+  userId              Int                            @map("user_id")
+  user                User                           @relation(fields: [userId], references: [id])
+  timestamp           DateTime                       @default(now()) @db.Timestamptz(6)
+  userAction          CreditApplicationHistoryStatus @map("user_action")
   comment             String?
 
   @@map("credit_application_history")
@@ -436,10 +449,10 @@ model CreditApplicationRecord {
   creditApplication   CreditApplication @relation(fields: [creditApplicationId], references: [id])
   vin                 String            @db.VarChar(17)
   timestamp           DateTime          @db.Timestamptz(6)
-  vehicleClass        VehicleClass?     @map("vehicle_class")
-  zevClass            ZevClass?         @map("zev_class")
+  vehicleClass        VehicleClass      @map("vehicle_class")
+  zevClass            ZevClass          @map("zev_class")
   modelYear           ModelYear         @map("model_year")
-  numberOfUnits       Decimal?          @map("number_of_units") @db.Decimal(65, 2)
+  numberOfUnits       Decimal           @map("number_of_units") @db.Decimal(65, 2)
   make                String
   modelName           String            @map("model_name")
   icbcMake            String?           @map("icbc_make")
@@ -458,28 +471,16 @@ model CreditApplicationAttachment {
   creditApplicationId Int               @map("credit_application_id")
   creditApplication   CreditApplication @relation(fields: [creditApplicationId], references: [id])
   fileName            String            @map("file_name")
-  objectName          String            @map("object_name")
+  objectName          String            @unique @map("object_name")
 
   @@map("credit_application_attachment")
 }
 
-model CreditApplicationVin {
-  id                  Int               @id @default(autoincrement())
-  creditApplicationId Int               @map("credit_application_id")
-  creditApplication   CreditApplication @relation(fields: [creditApplicationId], references: [id])
-  vin                 String            @unique @db.VarChar(17)
-  vehicleId           Int               @map("vehicle_id")
-  vehicle             Vehicle           @relation(fields: [vehicleId], references: [id])
-  timestamp           DateTime          @db.Timestamptz(6)
-
-  @@map("credit_application_vin")
-}
-
-model CreditApplicationVinLegacy {
+model ReservedVin {
   id  Int    @id @default(autoincrement())
   vin String @unique @db.VarChar(17)
 
-  @@map("credit_application_vin_legacy")
+  @@map("reserved_vin")
 }
 
 enum PenaltyCreditStatus {

@@ -4,7 +4,7 @@ import { Button } from "@/app/lib/components";
 import { CreditApplicationStatus } from "@/prisma/generated/client";
 import { useRouter } from "next/navigation";
 import { useCallback, useState, useTransition } from "react";
-import { directorApprove, directorReject, returnToAnalyst } from "../actions";
+import { directorApprove, directorReturnToAnalyst } from "../actions";
 import {
   CreditApplicationCreditSerialized,
   getNormalizedComment,
@@ -36,7 +36,7 @@ export const DirectorActions = (props: {
 
   const handleReturn = useCallback(() => {
     startTransition(async () => {
-      const response = await returnToAnalyst(
+      const response = await directorReturnToAnalyst(
         props.id,
         getNormalizedComment(comment),
       );
@@ -63,24 +63,9 @@ export const DirectorActions = (props: {
     });
   }, [props.id, props.credits, comment, refresh]);
 
-  const handleReject = useCallback(() => {
-    startTransition(async () => {
-      const response = await directorReject(
-        props.id,
-        getNormalizedComment(comment),
-      );
-      if (response.responseType === "error") {
-        console.error(response.message);
-      } else {
-        refresh();
-      }
-    });
-  }, [props.id, comment, refresh]);
-
   return (
     <>
       {(props.status === CreditApplicationStatus.RECOMMEND_APPROVAL ||
-        props.status === CreditApplicationStatus.RECOMMEND_REJECTION ||
         props.status === CreditApplicationStatus.APPROVED ||
         props.status === CreditApplicationStatus.REJECTED) && (
         <Button
@@ -91,8 +76,7 @@ export const DirectorActions = (props: {
           {isPending ? "..." : "View Validated Records"}
         </Button>
       )}
-      {(props.status === CreditApplicationStatus.RECOMMEND_APPROVAL ||
-        props.status === CreditApplicationStatus.RECOMMEND_REJECTION) && (
+      {props.status === CreditApplicationStatus.RECOMMEND_APPROVAL && (
         <>
           <CommentBox
             comment={comment}
@@ -111,11 +95,6 @@ export const DirectorActions = (props: {
       {props.status === CreditApplicationStatus.RECOMMEND_APPROVAL && (
         <Button variant="primary" onClick={handleApprove} disabled={isPending}>
           {isPending ? "..." : "Approve"}
-        </Button>
-      )}
-      {props.status === CreditApplicationStatus.RECOMMEND_REJECTION && (
-        <Button variant="danger" onClick={handleReject} disabled={isPending}>
-          {isPending ? "..." : "Reject"}
         </Button>
       )}
     </>

@@ -17,11 +17,9 @@ const Page = async (props: { searchParams?: Promise<pageStringParams> }) => {
   let canSubmitReport = false;
   if (!userIsGov) {
     const modelYear = getModelYearReportModelYear();
-    if (modelYear) {
-      const reportExists = await modelYearReportExists(modelYear);
-      if (!reportExists) {
-        canSubmitReport = true;
-      }
+    const reportExists = await modelYearReportExists(modelYear);
+    if (!reportExists) {
+      canSubmitReport = true;
     }
   }
 

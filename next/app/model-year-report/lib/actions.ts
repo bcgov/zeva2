@@ -52,6 +52,7 @@ import { prisma } from "@/lib/prisma";
 import {
   getComplianceDate,
   getCompliancePeriod,
+  getModelYearReportModelYear,
 } from "@/app/lib/utils/complianceYear";
 import { addJobToEmailQueue } from "@/app/lib/services/queue";
 import { Buffer } from "node:buffer";
@@ -165,9 +166,11 @@ export const submitReports = async (
       },
     },
   });
+  const reportYear = getModelYearReportModelYear();
   if (
-    existingMyr &&
-    existingMyr.status !== ModelYearReportStatus.RETURNED_TO_SUPPLIER
+    (existingMyr &&
+      existingMyr.status !== ModelYearReportStatus.RETURNED_TO_SUPPLIER) ||
+    (!existingMyr && modelYear !== reportYear)
   ) {
     return getErrorActionResponse("Invalid Action!");
   }

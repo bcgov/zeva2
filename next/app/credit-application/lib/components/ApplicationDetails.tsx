@@ -1,9 +1,9 @@
 import { getIsoYmdString } from "@/app/lib/utils/date";
-import { CreditApplicationWithOrg } from "../data";
+import { CreditApplicationWithOrgAndAttachmentsCount } from "../data";
 import { getCreditApplicationStatusEnumsToStringsMap } from "@/app/lib/utils/enumMaps";
 
 export const ApplicationDetails = async (props: {
-  application: CreditApplicationWithOrg;
+  application: CreditApplicationWithOrgAndAttachmentsCount;
   userIsGov: boolean;
 }) => {
   let status = props.application.status;
@@ -13,8 +13,15 @@ export const ApplicationDetails = async (props: {
   const statusMap = getCreditApplicationStatusEnumsToStringsMap();
   return (
     <>
-      <div>Supplier: {props.application.organization.name}</div>
-      <div>Date: {getIsoYmdString(props.application.submissionTimestamp)}</div>
+      {props.userIsGov && (
+        <div>Supplier: {props.application.organization.name}</div>
+      )}
+      {props.application.submissionTimestamp && (
+        <div>
+          Submission Date:{" "}
+          {getIsoYmdString(props.application.submissionTimestamp)}
+        </div>
+      )}
       <div>Status: {statusMap[status]}</div>
     </>
   );

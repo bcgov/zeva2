@@ -5,7 +5,6 @@ import {
   CreditApplicationHistory,
   CreditApplicationRecord,
   CreditApplicationStatus,
-  CreditApplicationSupplierStatus,
   Organization,
   Prisma,
   Role,
@@ -19,24 +18,61 @@ import {
 } from "./utils";
 import { ZevUnitRecord } from "@/lib/utils/zevUnit";
 
-export type CreditApplicationWithOrg = CreditApplication & {
+export type CreditApplicationWithOrgAndAttachmentsCount = CreditApplication & {
   organization: Organization;
+  _count: {
+    CreditApplicationAttachment: number;
+  };
 };
 
 export const getCreditApplication = async (
   creditApplicationId: number,
-): Promise<CreditApplicationWithOrg | null> => {
-  const { userIsGov, userOrgId } = await getUserInfo();
+): Promise<CreditApplicationWithOrgAndAttachmentsCount | null> => {
+  const { userIsGov, userOrgId, userRoles } = await getUserInfo();
   let whereClause: Prisma.CreditApplicationWhereUniqueInput = {
     id: creditApplicationId,
   };
-  if (!userIsGov) {
-    whereClause = { ...whereClause, organizationId: userOrgId };
+  if (userIsGov) {
+    const notClause: Prisma.CreditApplicationWhereInput[] = [
+      {
+        status: {
+          in: [
+            CreditApplicationStatus.DELETED,
+            CreditApplicationStatus.DRAFT,
+            CreditApplicationStatus.REJECTED,
+          ],
+        },
+      },
+    ];
+    if (userRoles.includes(Role.DIRECTOR)) {
+      notClause.push({
+        status: {
+          in: [
+            CreditApplicationStatus.RETURNED_TO_ANALYST,
+            CreditApplicationStatus.SUBMITTED,
+          ],
+        },
+      });
+    }
+    whereClause = { ...whereClause, NOT: notClause };
+  } else {
+    whereClause = {
+      ...whereClause,
+      organizationId: userOrgId,
+      NOT: {
+        status: CreditApplicationStatus.DELETED,
+      },
+    };
   }
   return await prisma.creditApplication.findUnique({
     where: whereClause,
     include: {
       organization: true,
+      _count: {
+        select: {
+          CreditApplicationAttachment: true,
+        },
+      },
     },
   });
 };
@@ -140,21 +176,38 @@ export const getCreditApplications = async (
   const { userIsGov, userOrgId, userRoles } = await getUserInfo();
   const skip = (page - 1) * pageSize;
   const take = pageSize;
-  const where = getWhereClause(filters, userIsGov);
+  const where: Prisma.CreditApplicationWhereInput = getWhereClause(
+    filters,
+    userIsGov,
+  );
   const orderBy = getOrderByClause(sorts, true, userIsGov);
-  if (userIsGov && userRoles.includes(Role.DIRECTOR)) {
-    where.CreditApplicationHistory = {
-      some: {
-        userAction: {
+  if (userIsGov) {
+    where.NOT = [
+      {
+        status: {
           in: [
-            CreditApplicationStatus.RECOMMEND_APPROVAL,
-            CreditApplicationStatus.RECOMMEND_REJECTION,
+            CreditApplicationStatus.DELETED,
+            CreditApplicationStatus.DRAFT,
+            CreditApplicationStatus.REJECTED,
           ],
         },
       },
-    };
-  } else if (!userIsGov) {
+    ];
+    if (userRoles.includes(Role.DIRECTOR)) {
+      where.NOT.push({
+        status: {
+          in: [
+            CreditApplicationStatus.RETURNED_TO_ANALYST,
+            CreditApplicationStatus.SUBMITTED,
+          ],
+        },
+      });
+    }
+  } else {
     where.organizationId = userOrgId;
+    where.NOT = {
+      status: CreditApplicationStatus.DELETED,
+    };
   }
   return await prisma.$transaction([
     prisma.creditApplication.findMany({
@@ -198,7 +251,11 @@ export const getApplicationHistories = async (
       organizationId: userOrgId,
     };
     where.userAction = {
-      in: Object.values(CreditApplicationSupplierStatus),
+      in: [
+        CreditApplicationStatus.APPROVED,
+        CreditApplicationStatus.REJECTED,
+        CreditApplicationStatus.SUBMITTED,
+      ],
     };
   }
   return await prisma.creditApplicationHistory.findMany({

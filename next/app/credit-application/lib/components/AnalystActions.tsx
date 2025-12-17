@@ -4,11 +4,7 @@ import { Button } from "@/app/lib/components";
 import { CreditApplicationStatus } from "@/prisma/generated/client";
 import { useRouter } from "next/navigation";
 import { useCallback, useState, useTransition } from "react";
-import {
-  analystRecommend,
-  returnToSupplier,
-  validateCreditApplication,
-} from "../actions";
+import { analystRecommend, validateCreditApplication } from "../actions";
 import { Routes } from "@/app/lib/constants";
 import { CommentBox } from "@/app/lib/components/inputs/CommentBox";
 import { getNormalizedComment } from "../utils";
@@ -49,27 +45,9 @@ export const AnalystActions = (props: {
     [props.id, router],
   );
 
-  const handleRecommend = useCallback(
-    (newStatus: CreditApplicationStatus) => {
-      startTransition(async () => {
-        const response = await analystRecommend(
-          props.id,
-          newStatus,
-          getNormalizedComment(comment),
-        );
-        if (response.responseType === "error") {
-          console.error(response.message);
-        } else {
-          refresh();
-        }
-      });
-    },
-    [props.id, comment, refresh],
-  );
-
-  const handleReturnToSupplier = useCallback(() => {
+  const handleRecommend = useCallback(() => {
     startTransition(async () => {
-      const response = await returnToSupplier(
+      const response = await analystRecommend(
         props.id,
         getNormalizedComment(comment),
       );
@@ -123,27 +101,11 @@ export const AnalystActions = (props: {
             <Button
               variant="primary"
               onClick={() => {
-                handleRecommend(CreditApplicationStatus.RECOMMEND_APPROVAL);
+                handleRecommend();
               }}
               disabled={isPending}
             >
               {isPending ? "..." : "Recommend Approval"}
-            </Button>
-            <Button
-              variant="secondary"
-              onClick={() => {
-                handleRecommend(CreditApplicationStatus.RECOMMEND_REJECTION);
-              }}
-              disabled={isPending}
-            >
-              {isPending ? "..." : "Recommend Rejection"}
-            </Button>
-            <Button
-              variant="secondary"
-              onClick={handleReturnToSupplier}
-              disabled={isPending}
-            >
-              {isPending ? "..." : "Return to Supplier"}
             </Button>
           </>
         )}

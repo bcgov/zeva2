@@ -1,14 +1,19 @@
 import { prisma } from "@/lib/prisma";
 import {
+  CreditApplicationHistoryStatus,
   CreditApplicationStatus,
   ModelYear,
   Prisma,
-  Vehicle,
+  VehicleClass,
   VehicleStatus,
+  ZevClass,
 } from "@/prisma/generated/client";
 import { mapOfStatusToSupplierStatus } from "./constants";
-import { Attachment } from "@/app/lib/services/attachments";
+import { CaFile } from "@/app/lib/services/attachments";
 import { TransactionClient } from "@/types/prisma";
+import { getApplicationFullObjectName } from "./utils";
+import { putObject } from "@/app/lib/minio";
+import { Decimal } from "@/prisma/generated/client/runtime/library";
 
 export const getReservedVins = async (vins: string[]) => {
   const where = {
@@ -19,17 +24,13 @@ export const getReservedVins = async (vins: string[]) => {
   const select = {
     vin: true,
   };
-  const [vinRecords, legacyVinRecords] = await prisma.$transaction([
-    prisma.creditApplicationVin.findMany({
-      where,
-      select,
-    }),
-    prisma.creditApplicationVinLegacy.findMany({
-      where,
-      select,
-    }),
-  ]);
-  return vinRecords.concat(legacyVinRecords);
+  const records = await prisma.reservedVin.findMany({
+    where,
+    select,
+  });
+  return records.reduce((acc: string[], cv) => {
+    return [...acc, cv.vin];
+  }, []);
 };
 
 export type VehicleSparse = {
@@ -41,73 +42,60 @@ export type VehicleSparse = {
 
 export const getEligibleVehicles = async (
   orgId: number,
-): Promise<VehicleSparse[]> => {
+  includeAdditionalFields: boolean,
+) => {
+  const select: Prisma.VehicleSelect = {
+    make: true,
+    modelName: true,
+    modelYear: true,
+  };
+  if (includeAdditionalFields) {
+    select.vehicleClass = true;
+    select.zevClass = true;
+    select.numberOfUnits = true;
+  }
   return await prisma.vehicle.findMany({
     where: {
       organizationId: orgId,
       status: VehicleStatus.VALIDATED,
       isActive: true,
     },
-    select: {
-      id: true,
-      make: true,
-      modelName: true,
-      modelYear: true,
-    },
+    select,
   });
 };
 
-export type CreditApplicationVehicle = Pick<
-  Vehicle,
-  | "status"
-  | "isActive"
-  | "vehicleClass"
-  | "zevClass"
-  | "modelYear"
-  | "numberOfUnits"
-  | "make"
-  | "modelName"
->;
-
-export type VinRecordsMap = Record<
-  string,
-  {
-    timestamp: Date;
-    vehicle: CreditApplicationVehicle;
+export const getEligibleVehiclesMap = async (orgId: number) => {
+  const result: Partial<
+    Record<
+      string,
+      Partial<
+        Record<
+          string,
+          Partial<Record<ModelYear, [VehicleClass, ZevClass, Decimal]>>
+        >
+      >
+    >
+  > = {};
+  const vehicles = await getEligibleVehicles(orgId, true);
+  for (const vehicle of vehicles) {
+    const make = vehicle.make;
+    const modelName = vehicle.modelName;
+    const modelYear = vehicle.modelYear;
+    if (result[make]?.[modelName]?.[modelYear]) {
+      throw new Error("Duplicate system vehicles found!");
+    }
+    if (!result[make]) {
+      result[make] = {};
+    }
+    if (!result[make][modelName]) {
+      result[make][modelName] = {};
+    }
+    result[make][modelName][modelYear] = [
+      vehicle.vehicleClass,
+      vehicle.zevClass,
+      vehicle.numberOfUnits,
+    ];
   }
->;
-
-export const getVinRecordsMap = async (
-  creditApplicationId: number,
-): Promise<VinRecordsMap> => {
-  const result: VinRecordsMap = {};
-  const records = await prisma.creditApplicationVin.findMany({
-    where: {
-      creditApplicationId,
-    },
-    select: {
-      vin: true,
-      timestamp: true,
-      vehicle: {
-        select: {
-          status: true,
-          isActive: true,
-          vehicleClass: true,
-          zevClass: true,
-          modelYear: true,
-          numberOfUnits: true,
-          make: true,
-          modelName: true,
-        },
-      },
-    },
-  });
-  records.forEach((record) => {
-    result[record.vin] = {
-      timestamp: record.timestamp,
-      vehicle: record.vehicle,
-    };
-  });
   return result;
 };
 
@@ -154,7 +142,7 @@ export const getIcbcRecordsMap = async (
 export const createHistory = async (
   userId: number,
   creditApplicationId: number,
-  userAction: CreditApplicationStatus,
+  userAction: CreditApplicationHistoryStatus,
   comment?: string,
   transactionClient?: TransactionClient,
 ): Promise<number> => {
@@ -188,39 +176,35 @@ export const updateStatus = async (
 };
 
 export const unreserveVins = async (
-  creditApplicationId: number,
-  vins?: string[],
+  vins: string[],
   transactionClient?: TransactionClient,
 ) => {
   const prismaClient = transactionClient ?? prisma;
-  const where: Prisma.CreditApplicationVinWhereInput = {
-    creditApplicationId,
-  };
-  if (vins) {
-    where.vin = {
-      in: vins,
-    };
-  }
-  await prismaClient.creditApplicationVin.deleteMany({
-    where,
+  await prismaClient.reservedVin.deleteMany({
+    where: {
+      vin: {
+        in: vins,
+      },
+    },
   });
 };
 
-export const createAttachments = async (
+export const uploadAttachments = async (
   creditApplicationId: number,
-  attachments: Attachment[],
+  attachments: CaFile[],
   transactionClient?: TransactionClient,
 ) => {
   const client = transactionClient ?? prisma;
-  const toCreate: Prisma.CreditApplicationAttachmentUncheckedCreateInput[] = [];
-  attachments.forEach((attachment) => {
-    toCreate.push({
-      creditApplicationId,
-      fileName: attachment.fileName,
-      objectName: attachment.objectName,
+  for (const attachment of attachments) {
+    const objectName = getApplicationFullObjectName("attachment");
+    await client.creditApplicationAttachment.create({
+      data: {
+        creditApplicationId,
+        fileName: attachment.fileName,
+        objectName,
+      },
     });
-  });
-  await client.creditApplicationAttachment.createMany({
-    data: toCreate,
-  });
+    const object = Buffer.from(attachment.data, "base64");
+    await putObject(objectName, object);
+  }
 };
