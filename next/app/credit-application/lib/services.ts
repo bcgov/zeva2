@@ -4,6 +4,7 @@ import {
   CreditApplicationStatus,
   ModelYear,
   Prisma,
+  TransactionType,
   VehicleClass,
   VehicleStatus,
   ZevClass,
@@ -14,6 +15,7 @@ import { TransactionClient } from "@/types/prisma";
 import { getApplicationFullObjectName } from "./utils";
 import { putObject } from "@/app/lib/minio";
 import { Decimal } from "@/prisma/generated/client/runtime/library";
+import { flattenZevUnitRecords, ZevUnitRecord } from "@/lib/utils/zevUnit";
 
 export const getReservedVins = async (vins: string[]) => {
   const where = {
@@ -31,13 +33,6 @@ export const getReservedVins = async (vins: string[]) => {
   return records.reduce((acc: string[], cv) => {
     return [...acc, cv.vin];
   }, []);
-};
-
-export type VehicleSparse = {
-  id: number;
-  make: string;
-  modelName: string;
-  modelYear: ModelYear;
 };
 
 export const getEligibleVehicles = async (
@@ -64,6 +59,7 @@ export const getEligibleVehicles = async (
   });
 };
 
+// returns a map {make -> modelName -> modelYear -> [vehicleClass, zevClass, numberOfUnits]}
 export const getEligibleVehiclesMap = async (orgId: number) => {
   const result: Partial<
     Record<
@@ -71,7 +67,7 @@ export const getEligibleVehiclesMap = async (orgId: number) => {
       Partial<
         Record<
           string,
-          Partial<Record<ModelYear, [VehicleClass, ZevClass, Decimal]>>
+          Partial<Record<ModelYear, [number, VehicleClass, ZevClass, Decimal]>>
         >
       >
     >
@@ -91,6 +87,7 @@ export const getEligibleVehiclesMap = async (orgId: number) => {
       result[make][modelName] = {};
     }
     result[make][modelName][modelYear] = [
+      vehicle.id,
       vehicle.vehicleClass,
       vehicle.zevClass,
       vehicle.numberOfUnits,
@@ -109,6 +106,7 @@ export type IcbcRecordsMap = Partial<
 export const getIcbcRecordsMap = async (
   vins: string[],
 ): Promise<IcbcRecordsMap> => {
+  const result: IcbcRecordsMap = {};
   const icbcRecords = await prisma.icbcRecord.findMany({
     where: {
       vin: {
@@ -127,16 +125,15 @@ export const getIcbcRecordsMap = async (
       },
     },
   });
-  const icbcMap: IcbcRecordsMap = {};
   for (const icbcRecord of icbcRecords) {
-    icbcMap[icbcRecord.vin] = {
+    result[icbcRecord.vin] = {
       make: icbcRecord.make,
       modelName: icbcRecord.model,
       modelYear: icbcRecord.year,
       timestamp: icbcRecord.icbcFile.timestamp,
     };
   }
-  return icbcMap;
+  return result;
 };
 
 export const createHistory = async (
@@ -207,4 +204,71 @@ export const uploadAttachments = async (
     const object = Buffer.from(attachment.data, "base64");
     await putObject(objectName, object);
   }
+};
+
+export const getApplicationFlattenedCreditRecords = async (
+  creditApplicationId: number,
+) => {
+  const applicationRecords = await prisma.creditApplicationRecord.findMany({
+    where: {
+      creditApplicationId,
+      validated: true,
+    },
+    select: {
+      vehicleClass: true,
+      zevClass: true,
+      modelYear: true,
+      numberOfUnits: true,
+    },
+  });
+  const zevUnitRecords: ZevUnitRecord[] = [];
+  for (const record of applicationRecords) {
+    zevUnitRecords.push({ ...record, type: TransactionType.CREDIT });
+  }
+  return flattenZevUnitRecords(zevUnitRecords);
+};
+
+// returns a list of tuples [vehicleId v, # of validated VINs in CA associated with v]
+export const getVehicleCounts = async (
+  creditApplicationId: number,
+  type: "all" | "validated",
+) => {
+  const prelimResult: Record<number, [number, number]> = {};
+  const application = await prisma.creditApplication.findUnique({
+    where: {
+      id: creditApplicationId,
+    },
+    select: {
+      organizationId: true,
+      CreditApplicationRecord: {
+        where:
+          type === "all"
+            ? undefined
+            : {
+                validated: true,
+              },
+        select: {
+          make: true,
+          modelName: true,
+          modelYear: true,
+        },
+      },
+    },
+  });
+  if (!application) {
+    throw new Error("Credit application not found!");
+  }
+  const vehiclesMap = await getEligibleVehiclesMap(application.organizationId);
+  for (const record of application.CreditApplicationRecord) {
+    const vehicleId =
+      vehiclesMap[record.make]?.[record.modelName]?.[record.modelYear]?.[0];
+    if (!vehicleId) {
+      throw new Error("Cannot find associated system vehicle!");
+    }
+    if (!prelimResult[vehicleId]) {
+      prelimResult[vehicleId] = [vehicleId, 0];
+    }
+    prelimResult[vehicleId][1] = prelimResult[vehicleId][1] + 1;
+  }
+  return Object.values(prelimResult);
 };

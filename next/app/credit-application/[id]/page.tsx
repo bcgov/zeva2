@@ -2,35 +2,28 @@ import { getUserInfo } from "@/auth";
 import { Role } from "@/prisma/generated/client";
 import { getCreditApplication } from "../lib/data";
 import { ContentCard } from "@/app/lib/components";
-import { AnalystView } from "../lib/components/AnalystView";
-import { DirectorView } from "../lib/components/DirectorView";
 import { Suspense } from "react";
 import { LoadingSkeleton } from "@/app/lib/components/skeletons";
 import { ApplicationHistories } from "../lib/components/ApplicationHistories";
 import { ApplicationDetails } from "../lib/components/ApplicationDetails";
-import {
-  getApplicationDownloadUrl,
-  getAttachmentDownloadUrls,
-} from "../lib/actions";
+import { getDocumentDownloadUrls } from "../lib/actions";
 import { AttachmentsDownload } from "@/app/lib/components/AttachmentsDownload";
 import { SupplierActions } from "../lib/components/SupplierActions";
+import { DirectorActions } from "../lib/components/DirectorActions";
+import { AnalystActions } from "../lib/components/AnalystActions";
 
 const Page = async (props: { params: Promise<{ id: string }> }) => {
   const args = await props.params;
-  const id = parseInt(args.id, 10);
+  const id = Number.parseInt(args.id, 10);
   const creditApplication = await getCreditApplication(id);
   if (!creditApplication) {
     return null;
   }
   const applicationStatus = creditApplication.status;
   const { userIsGov, userRoles } = await getUserInfo();
-  const downloadApplication = async () => {
+  const download = async () => {
     "use server";
-    return getApplicationDownloadUrl(id);
-  };
-  const downloadAttachments = async () => {
-    "use server";
-    return getAttachmentDownloadUrls(id);
+    return getDocumentDownloadUrls(id);
   };
 
   const applicationData = (
@@ -46,16 +39,11 @@ const Page = async (props: { params: Promise<{ id: string }> }) => {
           userIsGov={userIsGov}
         />
       </ContentCard>
-      <ContentCard title="Download Credit Application">
-        <AttachmentsDownload download={downloadApplication} zipName="" />
-      </ContentCard>
-      <ContentCard title="Download Credit Application Attachments">
-        {creditApplication._count.CreditApplicationAttachment > 0 && (
-          <AttachmentsDownload
-            download={downloadAttachments}
-            zipName={`credit-application-attachments-${id}`}
-          />
-        )}
+      <ContentCard title="Download Documents">
+        <AttachmentsDownload
+          download={download}
+          zipName={`credit-application-attachments-${id}`}
+        />
       </ContentCard>
     </>
   );
@@ -66,7 +54,7 @@ const Page = async (props: { params: Promise<{ id: string }> }) => {
         <div className="flex flex-col w-1/3">
           {applicationData}
           <ContentCard title="Actions">
-            <AnalystView id={id} status={applicationStatus} />
+            <AnalystActions id={id} status={applicationStatus} />
           </ContentCard>
         </div>
       );
@@ -75,7 +63,7 @@ const Page = async (props: { params: Promise<{ id: string }> }) => {
         <div className="flex flex-col w-1/3">
           {applicationData}
           <ContentCard title="Actions">
-            <DirectorView id={id} status={applicationStatus} />
+            <DirectorActions id={id} status={applicationStatus} />
           </ContentCard>
         </div>
       );

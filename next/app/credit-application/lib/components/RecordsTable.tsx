@@ -10,7 +10,7 @@ import {
   useTransition,
 } from "react";
 import { Button, ContentCard, Table } from "@/app/lib/components";
-import { ReasonsMap, updateValidatedRecords, ValidatedMap } from "../actions";
+import { MapOfValidatedAndReasons, updateValidatedRecords } from "../actions";
 import { useRouter } from "next/navigation";
 import { getModelYearEnumsToStringsMap } from "@/app/lib/utils/enumMaps";
 import { CreditApplicationRecordSparseSerialized } from "../utils";
@@ -21,20 +21,14 @@ export const RecordsTable = (props: {
   totalNumbeOfRecords: number;
   readOnly: boolean;
 }) => {
-  const [validatedMap, setValidatedMap] = useState<ValidatedMap>({});
-  const [reasonsMap, setReasonsMap] = useState<ReasonsMap>({});
+  const [mapOfData, setMapOfData] = useState<MapOfValidatedAndReasons>({});
   const [isPending, startTransition] = useTransition();
   const router = useRouter();
 
   useEffect(() => {
-    const mapOfValidated: Record<number, boolean> = {};
-    const mapOfReasons: Record<number, string | null> = {};
-    props.records.forEach((record) => {
-      mapOfValidated[record.id] = record.validated;
-      mapOfReasons[record.id] = record.reason;
-    });
-    setValidatedMap(mapOfValidated);
-    setReasonsMap(mapOfReasons);
+    for (const record of props.records) {
+      mapOfData[record.id] = [record.validated, record.reason];
+    }
   }, [props.records]);
 
   const getReasonsJSX = useCallback((id: number, reason: string | null) => {
@@ -42,8 +36,6 @@ export const RecordsTable = (props: {
       "Evidence provided",
       "Validated by other means as being registered in BC",
       "Error in ICBC data",
-      "VIN decoder, confirmed a ZEV",
-      "VIN decoder, not a ZEV",
       "Other, explained in comments",
     ];
     const options: JSX.Element[] = [];
@@ -60,8 +52,8 @@ export const RecordsTable = (props: {
         onChange={(event) => {
           const targetValue = event.target.value;
           const newValue = targetValue ? targetValue : null;
-          setReasonsMap((prev) => {
-            return { ...prev, [id]: newValue };
+          setMapOfData((prev) => {
+            return { ...prev, [id]: [prev[id][0], newValue] };
           });
         }}
       >
@@ -72,26 +64,21 @@ export const RecordsTable = (props: {
   }, []);
 
   const handleValidateChange = useCallback((id: number) => {
-    setValidatedMap((prev) => {
-      const prevValue = prev[id];
-      return { ...prev, [id]: !prevValue };
+    setMapOfData((prev) => {
+      return { ...prev, [id]: [!prev[id][0], prev[id][1]] };
     });
   }, []);
 
   const handleSave = useCallback(() => {
     startTransition(async () => {
-      const response = await updateValidatedRecords(
-        props.id,
-        validatedMap,
-        reasonsMap,
-      );
+      const response = await updateValidatedRecords(props.id, mapOfData);
       if (response.responseType === "error") {
         console.error(response.message);
       } else {
         router.refresh();
       }
     });
-  }, [props.id, validatedMap, reasonsMap, router]);
+  }, [props.id, mapOfData, router]);
 
   const modelYearsMap = useMemo(() => {
     return getModelYearEnumsToStringsMap();
@@ -210,7 +197,7 @@ export const RecordsTable = (props: {
           }
           const value = (
             <input
-              checked={validatedMap[id]}
+              checked={mapOfData[id][0]}
               onChange={() => {
                 handleValidateChange(id);
               }}
@@ -229,7 +216,7 @@ export const RecordsTable = (props: {
         enableColumnFilter: true,
         cell: (cellProps) => {
           const id = cellProps.row.original.id;
-          const reason = reasonsMap[id];
+          const reason = mapOfData[id][1];
           if (props.readOnly) {
             return cellProps.row.original.reason;
           }
@@ -244,9 +231,8 @@ export const RecordsTable = (props: {
     columnHelper,
     props.records,
     props.readOnly,
-    validatedMap,
+    mapOfData,
     handleValidateChange,
-    reasonsMap,
     getReasonsJSX,
     modelYearsMap,
   ]);

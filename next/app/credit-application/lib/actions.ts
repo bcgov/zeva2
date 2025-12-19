@@ -15,20 +15,22 @@ import {
   ReferenceType,
   Notification,
   ModelYear,
+  ZevClass,
 } from "@/prisma/generated/client";
 import Excel from "exceljs";
 import {
-  CreditApplicationCreditSerialized,
   getApplicationFullObjectName,
   getWarningsMap,
   parseSupplierSubmission,
 } from "./utils";
 import {
   createHistory,
+  getApplicationFlattenedCreditRecords,
   getEligibleVehicles,
   getEligibleVehiclesMap,
   getIcbcRecordsMap,
   getReservedVins,
+  getVehicleCounts,
   unreserveVins,
   updateStatus,
   uploadAttachments,
@@ -50,6 +52,7 @@ import {
   getCompliancePeriod,
   getComplianceYear,
 } from "@/app/lib/utils/complianceYear";
+import { Decimal } from "@/prisma/generated/client/runtime/library";
 
 export const getSupplierTemplateDownloadUrl = async () => {
   return await getPresignedGetObjectUrl(
@@ -62,39 +65,7 @@ export const getSupplierEligibleVehicles = async () => {
   return await getEligibleVehicles(userOrgId, false);
 };
 
-export const getApplicationDownloadUrl = async (
-  creditApplicationId: number,
-): Promise<DataOrErrorActionResponse<AttachmentDownload[]>> => {
-  const { userIsGov, userOrgId } = await getUserInfo();
-  if (!userIsGov) {
-    return getErrorActionResponse("Unauthorized!");
-  }
-  const application = await prisma.creditApplication.findUnique({
-    where: {
-      id: creditApplicationId,
-      organizationId: userOrgId,
-      status: {
-        not: CreditApplicationStatus.DELETED,
-      },
-    },
-    select: {
-      objectName: true,
-      fileName: true,
-    },
-  });
-  if (!application) {
-    return getErrorActionResponse("Invalid Action!");
-  }
-  const url = await getPresignedGetObjectUrl(application.objectName);
-  return getDataActionResponse([
-    {
-      url,
-      fileName: application.fileName,
-    },
-  ]);
-};
-
-export const getAttachmentDownloadUrls = async (
+export const getDocumentDownloadUrls = async (
   creditApplicationId: number,
 ): Promise<DataOrErrorActionResponse<AttachmentDownload[]>> => {
   const result: AttachmentDownload[] = [];
@@ -116,6 +87,8 @@ export const getAttachmentDownloadUrls = async (
   const application = await prisma.creditApplication.findUnique({
     where: whereClause,
     select: {
+      objectName: true,
+      fileName: true,
       CreditApplicationAttachment: {
         select: {
           objectName: true,
@@ -127,6 +100,10 @@ export const getAttachmentDownloadUrls = async (
   if (!application) {
     return getErrorActionResponse("Invalid Action!");
   }
+  result.push({
+    url: await getPresignedGetObjectUrl(application.objectName),
+    fileName: application.fileName,
+  });
   for (const attachment of application.CreditApplicationAttachment) {
     result.push({
       url: await getPresignedGetObjectUrl(attachment.objectName),
@@ -286,9 +263,9 @@ export const supplierSubmit = async (
           modelName: info.modelName,
           modelYear: info.modelYear,
           timestamp: info.timestamp,
-          vehicleClass: vehicleInfo[0],
-          zevClass: vehicleInfo[1],
-          numberOfUnits: vehicleInfo[2],
+          vehicleClass: vehicleInfo[1],
+          zevClass: vehicleInfo[2],
+          numberOfUnits: vehicleInfo[3],
           validated: false,
         });
         modelYears.add(info.modelYear);
@@ -344,64 +321,85 @@ export const validateCreditApplication = async (
   if (!userIsGov || !userRoles.includes(Role.ENGINEER_ANALYST)) {
     return getErrorActionResponse("Unauthorized!");
   }
-  const records = await prisma.creditApplicationRecord.findMany({
+  const creditApplication = await prisma.creditApplication.findUnique({
     where: {
-      creditApplication: {
-        id: creditApplicationId,
-        OR: [
-          { status: CreditApplicationStatus.SUBMITTED },
-          { status: CreditApplicationStatus.RETURNED_TO_ANALYST },
-        ],
-      },
+      id: creditApplicationId,
+      OR: [
+        { status: CreditApplicationStatus.SUBMITTED },
+        { status: CreditApplicationStatus.RETURNED_TO_ANALYST },
+      ],
     },
-    select: {
-      id: true,
-      vin: true,
-      make: true,
-      modelName: true,
-      modelYear: true,
+    include: {
+      CreditApplicationRecord: true,
     },
   });
+  if (!creditApplication) {
+    return getErrorActionResponse("Invalid Action!");
+  }
+  const records = creditApplication.CreditApplicationRecord;
   const vins = records.reduce((acc: string[], cv) => {
     return [...acc, cv.vin];
   }, []);
   const icbcMap = await getIcbcRecordsMap(vins);
   const warningsMap = getWarningsMap(records, icbcMap);
-  // at most 2000 update queries; hopefully this doesn't have a noticeable impact on performance!
-  await prisma.$transaction(async (tx) => {
-    for (const record of records) {
-      const id = record.id;
-      const vin = record.vin;
-      let validated = true;
-      const warnings = warningsMap[vin];
-      if (warnings) {
-        validated = false;
+  let eligibleVinsCount = 0;
+  let ineligibleVinsCount = 0;
+  let aCredits = new Decimal(0);
+  let bCredits = new Decimal(0);
+  for (const record of records) {
+    const vin = record.vin;
+    let validated;
+    const warnings = warningsMap[vin];
+    if (warnings) {
+      validated = false;
+      ineligibleVinsCount = ineligibleVinsCount + 1;
+    } else {
+      validated = true;
+      eligibleVinsCount = eligibleVinsCount + 1;
+      const zevClass = record.zevClass;
+      const numberOfUnits = record.numberOfUnits;
+      if (zevClass === ZevClass.A) {
+        aCredits = aCredits.plus(numberOfUnits);
+      } else if (zevClass === ZevClass.B) {
+        bCredits = bCredits.plus(numberOfUnits);
       }
-      await tx.creditApplicationRecord.update({
-        where: {
-          id,
-        },
-        data: {
-          icbcMake: icbcMap[vin]?.make,
-          icbcModelName: icbcMap[vin]?.modelName,
-          icbcModelYear: icbcMap[vin]?.modelYear,
-          validated,
-          warnings,
-        },
-      });
     }
+    record.icbcMake = icbcMap[vin]?.make ?? null;
+    record.icbcModelName = icbcMap[vin]?.modelName ?? null;
+    record.icbcModelYear = icbcMap[vin]?.modelYear ?? null;
+    record.validated = validated;
+    record.warnings = [];
+  }
+  await prisma.$transaction(async (tx) => {
+    await tx.creditApplicationRecord.deleteMany({
+      where: {
+        creditApplicationId,
+      },
+    });
+    await tx.creditApplicationRecord.createMany({
+      data: records,
+    });
+    await tx.creditApplication.update({
+      where: {
+        id: creditApplicationId,
+      },
+      data: {
+        icbcTimestamp: ,
+        eligibleVinsCount,
+        ineligibleVinsCount,
+        aCredits,
+        bCredits,
+      },
+    });
   });
   return getSuccessActionResponse();
 };
 
-export type ValidatedMap = Record<number, boolean>;
-
-export type ReasonsMap = Record<number, string | null>;
+export type MapOfValidatedAndReasons = Record<number, [boolean, string | null]>;
 
 export const updateValidatedRecords = async (
-  id: number,
-  validatedMap: ValidatedMap,
-  reasonsMap: ReasonsMap,
+  creditApplicationId: number,
+  mapOfData: MapOfValidatedAndReasons,
 ): Promise<ErrorOrSuccessActionResponse> => {
   const { userIsGov, userRoles } = await getUserInfo();
   if (!userIsGov || !userRoles.some((role) => role === Role.ENGINEER_ANALYST)) {
@@ -409,7 +407,14 @@ export const updateValidatedRecords = async (
   }
   const creditApplication = await prisma.creditApplication.findUnique({
     where: {
-      id,
+      id: creditApplicationId,
+    },
+    select: {
+      status: true,
+      eligibleVinsCount: true,
+      ineligibleVinsCount: true,
+      aCredits: true,
+      bCredits: true,
     },
   });
   if (
@@ -419,39 +424,78 @@ export const updateValidatedRecords = async (
   ) {
     return getErrorActionResponse("Invalid Action!");
   }
-  const ids = new Set<number>();
-  Object.keys(validatedMap)
-    .concat(Object.keys(reasonsMap))
-    .forEach((id) => {
-      const idInt = parseInt(id, 10);
-      ids.add(idInt);
-    });
+  let eligibleVinsCount = creditApplication.eligibleVinsCount;
+  let ineligibleVinsCount = creditApplication.ineligibleVinsCount;
+  let aCredits = creditApplication.aCredits;
+  let bCredits = creditApplication.bCredits;
+  if (
+    eligibleVinsCount === null ||
+    ineligibleVinsCount === null ||
+    aCredits === null ||
+    bCredits === null
+  ) {
+    return getErrorActionResponse("Invalid Action!");
+  }
   const records = await prisma.creditApplicationRecord.findMany({
     where: {
       id: {
-        in: Array.from(ids),
+        in: Object.keys(mapOfData).reduce((acc: number[], cv) => {
+          return [...acc, Number.parseInt(cv, 10)];
+        }, []),
       },
     },
   });
   const recordIds: number[] = [];
-  records.forEach((record) => {
+  for (const record of records) {
     const id = record.id;
-    recordIds.push(id);
-    record.validated = validatedMap[id];
-    record.reason = reasonsMap[id];
-  });
-  await prisma.$transaction([
-    prisma.creditApplicationRecord.deleteMany({
+    recordIds.push(record.id);
+    const zevClass = record.zevClass;
+    const numberOfUnits = record.numberOfUnits;
+    const oldValidated = record.validated;
+    const newValidated = mapOfData[id][0];
+    if (oldValidated && !newValidated) {
+      eligibleVinsCount = eligibleVinsCount - 1;
+      ineligibleVinsCount = ineligibleVinsCount + 1;
+      if (zevClass === ZevClass.A) {
+        aCredits = aCredits.minus(numberOfUnits);
+      } else if (zevClass === ZevClass.B) {
+        bCredits = bCredits.minus(numberOfUnits);
+      }
+    } else if (!oldValidated && newValidated) {
+      eligibleVinsCount = eligibleVinsCount + 1;
+      ineligibleVinsCount = ineligibleVinsCount - 1;
+      if (zevClass === ZevClass.A) {
+        aCredits = aCredits.plus(numberOfUnits);
+      } else if (zevClass === ZevClass.B) {
+        bCredits = bCredits.plus(numberOfUnits);
+      }
+    }
+    record.validated = newValidated;
+    record.reason = mapOfData[id][1];
+  }
+  await prisma.$transaction(async (tx) => {
+    await tx.creditApplicationRecord.deleteMany({
       where: {
         id: {
           in: recordIds,
         },
       },
-    }),
-    prisma.creditApplicationRecord.createMany({
+    });
+    await tx.creditApplicationRecord.createMany({
       data: records,
-    }),
-  ]);
+    });
+    await tx.creditApplication.update({
+      where: {
+        id: creditApplicationId,
+      },
+      data: {
+        eligibleVinsCount,
+        ineligibleVinsCount,
+        aCredits,
+        bCredits,
+      },
+    });
+  });
   return getSuccessActionResponse();
 };
 
@@ -531,6 +575,15 @@ export const analystReject = async (
     },
     [],
   );
+  let counts;
+  try {
+    counts = await getVehicleCounts(creditApplicationId, "all");
+  } catch (e) {
+    if (e instanceof Error) {
+      return getErrorActionResponse(e.message);
+    }
+    throw e;
+  }
   await prisma.$transaction(async (tx) => {
     await updateStatus(
       creditApplicationId,
@@ -545,6 +598,18 @@ export const analystReject = async (
       comment,
       tx,
     );
+    for (const [vehicleId, count] of counts) {
+      await tx.vehicle.update({
+        where: {
+          id: vehicleId,
+        },
+        data: {
+          submittedCount: {
+            decrement: count,
+          },
+        },
+      });
+    }
     await addJobToEmailQueue({
       historyId,
       notificationType: Notification.CREDIT_APPLICATION,
@@ -593,7 +658,6 @@ export const directorReturnToAnalyst = async (
 
 export const directorApprove = async (
   creditApplicationId: number,
-  credits: CreditApplicationCreditSerialized[],
   comment?: string,
 ): Promise<ErrorOrSuccessActionResponse> => {
   const { userIsGov, userRoles, userId } = await getUserInfo();
@@ -637,19 +701,30 @@ export const directorApprove = async (
     transactionTimestamp = getComplianceDate(applicationComplianceYear);
   }
   const transactionsToCreate: Prisma.ZevUnitTransactionCreateManyInput[] = [];
-  credits.forEach((credit) => {
+  const creditRecords =
+    await getApplicationFlattenedCreditRecords(creditApplicationId);
+  for (const record of creditRecords) {
     transactionsToCreate.push({
       organizationId: creditApplication.organizationId,
       timestamp: transactionTimestamp,
       type: TransactionType.CREDIT,
       referenceType: ReferenceType.SUPPLY_CREDITS,
       referenceId: creditApplicationId,
-      vehicleClass: credit.vehicleClass,
-      zevClass: credit.zevClass,
-      modelYear: credit.modelYear,
-      numberOfUnits: credit.numberOfUnits,
+      vehicleClass: record.vehicleClass,
+      zevClass: record.zevClass,
+      modelYear: record.modelYear,
+      numberOfUnits: record.numberOfUnits,
     });
-  });
+  }
+  let counts;
+  try {
+    counts = await getVehicleCounts(creditApplicationId, "validated");
+  } catch (e) {
+    if (e instanceof Error) {
+      return getErrorActionResponse(e.message);
+    }
+    throw e;
+  }
   await prisma.$transaction(async (tx) => {
     await tx.creditApplication.update({
       where: {
@@ -662,6 +737,21 @@ export const directorApprove = async (
       },
     });
     await unreserveVins(invalidVins, tx);
+    for (const [vehicleId, count] of counts) {
+      await tx.vehicle.update({
+        where: {
+          id: vehicleId,
+        },
+        data: {
+          issuedCount: {
+            increment: count,
+          },
+          submittedCount: {
+            decrement: count,
+          },
+        },
+      });
+    }
     await tx.zevUnitTransaction.createMany({
       data: transactionsToCreate,
     });

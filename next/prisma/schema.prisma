@@ -413,8 +413,15 @@ model CreditApplication {
   objectName                  String                          @unique @map("object_name")
   fileName                    String                          @map("file_name")
   modelYears                  ModelYear[]                     @map("model_years")
-  acceptedVinsCount           Int?                            @map("accepted_vins_count")
-  rejectedVinsCount           Int?                            @map("rejected_vins_count")
+  supplierName                String                          @map("supplier_name")
+  makes                       String[]
+  serviceAddress              String                          @map("service_address")
+  recordsAddress              String                          @map("records_address")
+  eligibleVinsCount           Int?                            @map("eligible_vins_count")
+  ineligibleVinsCount         Int?                            @map("ineligible_vins_count")
+  aCredits                    Decimal?                        @map("a_credits") @db.Decimal(65, 2)
+  bCredits                    Decimal?                        @map("b_credits") @db.Decimal(65, 2)
+  icbcTimestamp               DateTime?                       @map("icbc_timestamp") @db.Timestamptz(6)
   CreditApplicationHistory    CreditApplicationHistory[]
   CreditApplicationRecord     CreditApplicationRecord[]
   CreditApplicationAttachment CreditApplicationAttachment[]
@@ -455,6 +462,8 @@ model CreditApplicationRecord {
   numberOfUnits       Decimal           @map("number_of_units") @db.Decimal(65, 2)
   make                String
   modelName           String            @map("model_name")
+  zevType             VehicleZevType    @map("zev_type")
+  range               Int
   icbcMake            String?           @map("icbc_make")
   icbcModelName       String?           @map("icbc_model_name")
   icbcModelYear       ModelYear?        @map("icbc_model_year")

@@ -295,7 +295,8 @@ export const parseSupplierSubmission = (sheet: Excel.Worksheet) => {
       if (
         modelYearEnum &&
         isValidDate &&
-        timestamp >= new Date("2018-01-02T00:00:00")
+        timestamp >= new Date("2018-01-02T00:00:00") &&
+        timestamp <= new Date()
       ) {
         data[vin] = {
           make,
@@ -325,8 +326,6 @@ export const parseSupplierSubmission = (sheet: Excel.Worksheet) => {
   return data;
 };
 
-export type WarningsMap = Partial<Record<string, string[]>>;
-
 export const getWarningsMap = (
   records: {
     vin: string;
@@ -335,8 +334,8 @@ export const getWarningsMap = (
     modelYear: ModelYear;
   }[],
   icbcMap: IcbcRecordsMap,
-): WarningsMap => {
-  const result: WarningsMap = {};
+) => {
+  const result: Partial<Record<string, string[]>> = {};
   for (const record of records) {
     const vin = record.vin;
     const icbcRecord = icbcMap[record.vin];

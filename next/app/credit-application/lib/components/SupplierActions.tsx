@@ -17,11 +17,13 @@ export const SupplierActions = (props: {
   const [isPending, startTransition] = useTransition();
   const router = useRouter();
   const [comment, setComment] = useState<string>("");
+  const [error, setError] = useState<string>("");
 
   const handleDelete = useCallback(() => {
     startTransition(async () => {
       const response = await supplierDelete(props.creditApplicationId);
       if (response.responseType === "error") {
+        setError(response.message);
       } else {
         router.push(Routes.CreditApplication);
       }
@@ -41,6 +43,7 @@ export const SupplierActions = (props: {
         getNormalizedComment(comment),
       );
       if (response.responseType === "error") {
+        setError(response.message);
       } else {
         router.refresh();
       }
@@ -52,6 +55,7 @@ export const SupplierActions = (props: {
   }
   return (
     <>
+      {error && <p className="text-red-600">{error}</p>}
       <CommentBox
         comment={comment}
         setComment={setComment}
