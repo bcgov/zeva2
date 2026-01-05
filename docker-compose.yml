@@ -59,6 +59,9 @@ services:
       - CHECKPOINT_DISABLE=1
       - LENIENT_REPORTING=true
       - START_WORKERS=false
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - MINIO_EXTERNAL_ENDPOINT=localhost:9000
       - TZ=America/Vancouver
     depends_on:
       db:
@@ -85,6 +88,8 @@ services:
       - DATABASE_URL=postgresql://postgres:postgres@db:5432/zeva?schema=public
       - CHECKPOINT_DISABLE=1
       - START_WORKERS=true
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
       - TZ=America/Vancouver
       - CHES_AUTH_URL
       - CHES_EMAIL_URL

@@ -6,6 +6,7 @@ import { parse } from "fast-csv";
 import { getStringsToModelYearsEnumsMap } from "@/app/lib/utils/enumMaps";
 import { TransactionClient } from "@/types/prisma";
 import { getIcbcFileFullObjectName } from "@/app/icbc/lib/utils";
+import { publishIcbcStatusUpdate } from "@/app/lib/services/redis-events";
 
 type Row = { [key: string]: string };
 
@@ -143,7 +144,7 @@ export const handleConsumeIcbcFileJobCompleted = async (job: Job<number>) => {
     new Date(),
   );
   const numberOfRecordsPostProcessing = await prisma.icbcRecord.count();
-  await prisma.icbcFile.update({
+  const updatedFile = await prisma.icbcFile.update({
     where: {
       id: icbcFileId,
     },
@@ -151,6 +152,13 @@ export const handleConsumeIcbcFileJobCompleted = async (job: Job<number>) => {
       status: IcbcFileStatus.SUCCESS,
       numberOfRecordsPostProcessing,
     },
+  });
+  
+  // Publish status update event
+  await publishIcbcStatusUpdate({
+    icbcFileId: updatedFile.id,
+    status: updatedFile.status,
+    timestamp: updatedFile.timestamp,
   });
 };
 
@@ -167,7 +175,7 @@ export const handleConsumeIcbcFileJobFailed = async (
       error.message,
     );
     const numberOfRecordsPostProcessing = await prisma.icbcRecord.count();
-    await prisma.icbcFile.update({
+    const updatedFile = await prisma.icbcFile.update({
       where: {
         id: icbcFileId,
       },
@@ -175,6 +183,13 @@ export const handleConsumeIcbcFileJobFailed = async (
         status: IcbcFileStatus.FAILURE,
         numberOfRecordsPostProcessing,
       },
+    });
+    
+    // Publish status update event
+    await publishIcbcStatusUpdate({
+      icbcFileId: updatedFile.id,
+      status: updatedFile.status,
+      timestamp: updatedFile.timestamp,
     });
   }
 };

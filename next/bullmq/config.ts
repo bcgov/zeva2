@@ -30,7 +30,7 @@ const connection: ConnectionOptions = {
 export const bullmqConfig = {
   startWorkers: process.env.START_WORKERS === "true",
   connection: connection,
-  queueConnection: { ...connection, enableOfflineQueue: false },
+  queueConnection: connection,
   workerSpecs: [
     {
       queueName: QueueNames.Email,
