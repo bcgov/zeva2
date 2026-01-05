@@ -7,7 +7,7 @@ import { useCallback, useState, useTransition } from "react";
 import { analystRecommend, validateCreditApplication } from "../actions";
 import { Routes } from "@/app/lib/constants";
 import { CommentBox } from "@/app/lib/components/inputs/CommentBox";
-import { getNormalizedComment } from "../utils";
+import { getNormalizedComment } from "@/app/lib/utils/comment";
 
 export const AnalystActions = (props: {
   id: number;

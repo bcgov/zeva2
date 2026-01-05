@@ -5,7 +5,7 @@ import { CommentBox } from "@/app/lib/components/inputs/CommentBox";
 import { CreditTransferStatus } from "@/prisma/generated/client";
 import { useRouter } from "next/navigation";
 import { useCallback, useState, useTransition } from "react";
-import { getNormalizedComment } from "@/app/credit-application/lib/utils";
+import { getNormalizedComment } from "@/app/lib/utils/comment";
 import {
   directorIssueTransfer,
   directorRejectTransfer,

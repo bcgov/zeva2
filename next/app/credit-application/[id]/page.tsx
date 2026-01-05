@@ -54,7 +54,11 @@ const Page = async (props: { params: Promise<{ id: string }> }) => {
         <div className="flex flex-col w-1/3">
           {applicationData}
           <ContentCard title="Actions">
-            <AnalystActions id={id} status={applicationStatus} />
+            <AnalystActions
+              id={id}
+              status={applicationStatus}
+              validatedBefore={creditApplication.icbcTimestamp !== null}
+            />
           </ContentCard>
         </div>
       );

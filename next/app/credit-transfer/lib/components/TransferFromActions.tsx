@@ -7,7 +7,7 @@ import { useRouter } from "next/navigation";
 import { useCallback, useState, useTransition } from "react";
 import { rescindTransfer } from "../actions";
 import { transferFromSupplierRescindableStatuses } from "../constants";
-import { getNormalizedComment } from "@/app/credit-application/lib/utils";
+import { getNormalizedComment } from "@/app/lib/utils/comment";
 
 export const TransferFromActions = (props: {
   id: number;

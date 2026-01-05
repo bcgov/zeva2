@@ -77,7 +77,7 @@ model OrganizationAddress {
   country        String?
   representative String?
 
-  @@index([organizationId, addressType, expirationDate], map: "organization_address_organization_type_expiration")
+  @@unique([organizationId, addressType])
   @@map("organization_address")
 }
 
@@ -407,7 +407,7 @@ model CreditApplication {
   organization                Organization                    @relation(fields: [organizationId], references: [id])
   organizationId              Int                             @map("organization_id")
   submissionTimestamp         DateTime?                       @map("submission_timestamp") @db.Timestamptz(6)
-  transactionTimestamp        DateTime?                       @map("transaction_timestamp") @db.Timestamptz(6)
+  transactionTimestamps       DateTime[]                      @map("transaction_timestamps") @db.Timestamptz(6)
   status                      CreditApplicationStatus         @map("status")
   supplierStatus              CreditApplicationSupplierStatus @map("supplier_status")
   objectName                  String                          @unique @map("object_name")

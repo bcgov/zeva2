@@ -6,7 +6,7 @@ import { ModelYearReportStatus } from "@/prisma/generated/client";
 import { useRouter } from "next/navigation";
 import { useCallback, useState, useTransition } from "react";
 import { returnModelYearReport } from "../actions";
-import { getNormalizedComment } from "@/app/credit-application/lib/utils";
+import { getNormalizedComment } from "@/app/lib/utils/comment";
 import { CommentBox } from "@/app/lib/components/inputs/CommentBox";
 
 export const AnalystActions = (props: {

@@ -15,7 +15,7 @@ import { Dropzone } from "@/app/lib/components/Dropzone";
 import axios from "axios";
 import { FileWithPath } from "react-dropzone";
 import { Button } from "@/app/lib/components";
-import { getNormalizedComment } from "@/app/credit-application/lib/utils";
+import { getNormalizedComment } from "@/app/lib/utils/comment";
 import { Attachment } from "@/app/lib/services/attachments";
 import { getDefaultAttchmentTypes } from "@/app/lib/utils/attachments";
 

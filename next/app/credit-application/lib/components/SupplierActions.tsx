@@ -5,7 +5,7 @@ import { CreditApplicationStatus, Role } from "@/prisma/generated/client";
 import { useRouter } from "next/navigation";
 import { useCallback, useState, useTransition } from "react";
 import { supplierDelete, supplierSubmit } from "../actions";
-import { getNormalizedComment } from "../utils";
+import { getNormalizedComment } from "@/app/lib/utils/comment";
 import { Routes } from "@/app/lib/constants";
 import { CommentBox } from "@/app/lib/components/inputs/CommentBox";
 

@@ -15,6 +15,12 @@ import {
 } from "./data";
 import { getIsoYmdString, validateDate } from "@/app/lib/utils/date";
 import { randomUUID } from "node:crypto";
+import {
+  getComplianceDate,
+  getComplianceYear,
+  getIsInReportingPeriod,
+  getPreviousComplianceYear,
+} from "@/app/lib/utils/complianceYear";
 
 export const getApplicationFullObjectName = (
   type: "creditApplication" | "attachment",
@@ -295,8 +301,7 @@ export const parseSupplierSubmission = (sheet: Excel.Worksheet) => {
       if (
         modelYearEnum &&
         isValidDate &&
-        timestamp >= new Date("2018-01-02T00:00:00") &&
-        timestamp <= new Date()
+        timestamp >= new Date("2018-01-02T00:00:00")
       ) {
         data[vin] = {
           make,
@@ -399,9 +404,24 @@ export const serializeCredits = (
   });
 };
 
-export const getNormalizedComment = (comment: string) => {
-  if (comment === "") {
-    return undefined;
+export const getTransactionTimestamp = (
+  submissionTimestamp: Date,
+  issuanceTimestamp: Date,
+  modelYear: ModelYear,
+) => {
+  const submittedDuringReportingPeriod =
+    getIsInReportingPeriod(submissionTimestamp);
+  if (submittedDuringReportingPeriod) {
+    const complianceYear = getPreviousComplianceYear(submissionTimestamp);
+    return getComplianceDate(complianceYear);
   }
-  return comment;
+  const submissionComplianceYear = getComplianceYear(submissionTimestamp);
+  const issuanceComplianceYear = getComplianceYear(issuanceTimestamp);
+  if (
+    submissionComplianceYear !== issuanceComplianceYear &&
+    modelYear <= submissionComplianceYear
+  ) {
+    return getComplianceDate(submissionComplianceYear);
+  }
+  return issuanceTimestamp;
 };
