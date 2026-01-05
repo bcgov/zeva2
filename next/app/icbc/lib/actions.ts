@@ -38,10 +38,14 @@ export const getPutObjectData = async (): Promise<
   });
 };
 
+export type CreateIcbcFileData = {
+  icbcFileId: number;
+};
+
 export const createIcbcFile = async (
   objectName: string,
   datestring: string,
-): Promise<ErrorOrSuccessActionResponse> => {
+): Promise<DataOrErrorActionResponse<CreateIcbcFileData>> => {
   const { userIsGov } = await getUserInfo();
   if (!userIsGov) {
     return getErrorActionResponse("Unauthorized!");
@@ -50,15 +54,61 @@ export const createIcbcFile = async (
   if (!isValidDate) {
     return getErrorActionResponse("Invalid Date!");
   }
-  await prisma.$transaction(async (tx) => {
-    const icbcFile = await tx.icbcFile.create({
-      data: {
-        name: objectName,
-        status: IcbcFileStatus.PROCESSING,
-        timestamp: date,
-      },
-    });
-    await addJobToIcbcQueue(icbcFile.id);
+    const icbcFile = await prisma.icbcFile.create({
+    data: {
+      name: objectName,
+      status: IcbcFileStatus.PROCESSING,
+      timestamp: date,
+    },
   });
-  return getSuccessActionResponse();
+  
+  await addJobToIcbcQueue(icbcFile.id);
+  
+  return getDataActionResponse<CreateIcbcFileData>({ icbcFileId: icbcFile.id });
+};
+
+export type IcbcFileStatusData = {
+  status: IcbcFileStatus;
+  timestamp: Date;
+};
+
+export const getIcbcFileStatus = async (
+  icbcFileId: number,
+): Promise<DataOrErrorActionResponse<IcbcFileStatusData>> => {
+  const { userIsGov } = await getUserInfo();
+  if (!userIsGov) {
+    return getErrorActionResponse("Unauthorized!");
+  }
+  const icbcFile = await prisma.icbcFile.findUnique({
+    where: { id: icbcFileId },
+    select: { status: true, timestamp: true },
+  });
+  if (!icbcFile) {
+    return getErrorActionResponse("ICBC file not found");
+  }
+  return getDataActionResponse<IcbcFileStatusData>({
+    status: icbcFile.status,
+    timestamp: icbcFile.timestamp,
+  });
+};
+
+export type MostRecentUploadData = {
+  timestamp: Date | null;
+};
+
+export const getMostRecentSuccessfulUpload = async (): Promise<
+  DataOrErrorActionResponse<MostRecentUploadData>
+> => {
+  const { userIsGov } = await getUserInfo();
+  if (!userIsGov) {
+    return getErrorActionResponse("Unauthorized!");
+  }
+  const mostRecentFile = await prisma.icbcFile.findFirst({
+    where: { status: IcbcFileStatus.SUCCESS },
+    orderBy: { timestamp: "desc" },
+    select: { timestamp: true },
+  });
+  return getDataActionResponse<MostRecentUploadData>({
+    timestamp: mostRecentFile?.timestamp ?? null,
+  });
 };
