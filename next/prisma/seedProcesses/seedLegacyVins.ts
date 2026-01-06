@@ -1,5 +1,4 @@
 import { prismaOld } from "@/lib/prismaOld";
-import { CreditApplicationVinLegacy } from "../generated/client";
 import { TransactionClient } from "@/types/prisma";
 
 export const seedLegacyVins = async (tx: TransactionClient) => {
@@ -15,14 +14,14 @@ export const seedLegacyVins = async (tx: TransactionClient) => {
       vin: true,
     },
   });
-  const legacyVinsToCreate: Omit<CreditApplicationVinLegacy, "id">[] = [];
+  const vinsToReserve: { vin: string }[] = [];
   for (const record of issuedVinRecords) {
     const vin = record.vin;
     if (vin) {
-      legacyVinsToCreate.push({ vin });
+      vinsToReserve.push({ vin });
     }
   }
-  await tx.creditApplicationVinLegacy.createMany({
-    data: legacyVinsToCreate,
+  await tx.reservedVin.createMany({
+    data: vinsToReserve,
   });
 };

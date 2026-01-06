@@ -4,31 +4,30 @@ import axios from "axios";
 import Excel from "exceljs";
 import { Button } from "@/app/lib/components";
 import { Dropzone } from "@/app/lib/components/Dropzone";
-import { CommentBox } from "@/app/lib/components/inputs/CommentBox";
 import { useRouter } from "next/navigation";
 import { useCallback, useMemo, useState, useTransition } from "react";
 import { FileWithPath } from "react-dropzone";
 import {
-  getCreditApplicationPutData,
   getSupplierEligibleVehicles,
   getSupplierTemplateDownloadUrl,
-  processSupplierFile,
+  supplierSave,
 } from "../actions";
 import { SupplierTemplate } from "../constants";
 import { getModelYearEnumsToStringsMap } from "@/app/lib/utils/enumMaps";
 import { downloadBuffer } from "@/app/lib/utils/download";
 import { Routes } from "@/app/lib/constants";
-import { getNormalizedComment } from "../utils";
-import { Attachment } from "@/app/lib/services/attachments";
 import { getDefaultAttchmentTypes } from "@/app/lib/utils/attachments";
+import { bytesToBase64 } from "@/app/lib/utils/base64";
+import { CaFile } from "@/app/lib/services/attachments";
 
-export const CreditApplicationForm = (props: { userOrgName: string }) => {
+export const CreditApplicationForm = (props: {
+  creditApplicationId?: number;
+}) => {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [files, setFiles] = useState<FileWithPath[]>([]);
   const [attachments, setAttachments] = useState<FileWithPath[]>([]);
   const [error, setError] = useState<string>("");
-  const [comment, setComment] = useState<string>("");
 
   const allowedFileTypes = useMemo(() => {
     return getDefaultAttchmentTypes();
@@ -60,7 +59,7 @@ export const CreditApplicationForm = (props: { userOrgName: string }) => {
           });
         }
         const buffer = await workbook.xlsx.writeBuffer();
-        const fileName = `credit-application-template-${props.userOrgName}-${new Date().toISOString()}.xlsx`;
+        const fileName = `credit-application-template-${new Date().toISOString()}.xlsx`;
         downloadBuffer(fileName, buffer);
       } catch (e) {
         if (e instanceof Error) {
@@ -68,9 +67,9 @@ export const CreditApplicationForm = (props: { userOrgName: string }) => {
         }
       }
     });
-  }, [props.userOrgName]);
+  }, []);
 
-  const handleSubmit = useCallback(() => {
+  const handleSave = useCallback(() => {
     setError("");
     startTransition(async () => {
       try {
@@ -78,19 +77,21 @@ export const CreditApplicationForm = (props: { userOrgName: string }) => {
           throw new Error("Exactly 1 Credit Application file expected!");
         }
         const file = files[0];
-        const documents = [file, ...attachments];
-        const putData = await getCreditApplicationPutData(
-          1 + attachments.length,
-        );
-        const attachmentsPayload: Attachment[] = [];
-        for (const [index, document] of documents.entries()) {
-          const { objectName, url } = putData[index];
-          await axios.put(url, document);
-          attachmentsPayload.push({ fileName: document.name, objectName });
+        const application = {
+          data: bytesToBase64(await file.arrayBuffer()),
+          fileName: file.name,
+        };
+        const documents: CaFile[] = [];
+        for (const attachment of attachments) {
+          documents.push({
+            data: bytesToBase64(await attachment.arrayBuffer()),
+            fileName: attachment.name,
+          });
         }
-        const response = await processSupplierFile(
-          attachmentsPayload,
-          getNormalizedComment(comment),
+        const response = await supplierSave(
+          application,
+          documents,
+          props.creditApplicationId,
         );
         if (response.responseType === "error") {
           throw new Error(response.message);
@@ -103,7 +104,7 @@ export const CreditApplicationForm = (props: { userOrgName: string }) => {
         }
       }
     });
-  }, [files, attachments, comment]);
+  }, [props.creditApplicationId, files, attachments]);
 
   return (
     <div>
@@ -140,14 +141,9 @@ export const CreditApplicationForm = (props: { userOrgName: string }) => {
           allowedFileTypes={allowedFileTypes}
         />
       </div>
-      <CommentBox
-        comment={comment}
-        setComment={setComment}
-        disabled={isPending}
-      />
       <div className="flex space-x-2">
-        <Button variant="primary" onClick={handleSubmit} disabled={isPending}>
-          {isPending ? "..." : "Submit"}
+        <Button variant="primary" onClick={handleSave} disabled={isPending}>
+          {isPending ? "..." : "Save"}
         </Button>
       </div>
     </div>

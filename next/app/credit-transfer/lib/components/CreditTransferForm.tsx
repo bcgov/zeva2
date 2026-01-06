@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useCallback, useMemo, useState, useTransition } from "react";
 import { Routes } from "@/app/lib/constants";
 import { CommentBox } from "@/app/lib/components/inputs/CommentBox";
-import { getNormalizedComment } from "@/app/credit-application/lib/utils";
+import { getNormalizedComment } from "@/app/lib/utils/comment";
 import { CreditTransferLine, CreditTransferLines } from "./CreditTransferLines";
 import { ModelYear, VehicleClass, ZevClass } from "@/prisma/generated/client";
 import { submitTransfer } from "../actions";

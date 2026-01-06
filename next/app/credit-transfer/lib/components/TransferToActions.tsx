@@ -6,7 +6,7 @@ import { CreditTransferStatus } from "@/prisma/generated/client";
 import { useRouter } from "next/navigation";
 import { useCallback, useState, useTransition } from "react";
 import { transferToSupplierActionTransfer } from "../actions";
-import { getNormalizedComment } from "@/app/credit-application/lib/utils";
+import { getNormalizedComment } from "@/app/lib/utils/comment";
 
 export const TransferToActions = (props: {
   id: number;

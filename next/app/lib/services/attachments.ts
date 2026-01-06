@@ -1,5 +1,10 @@
 import { removeObjects } from "../minio";
 
+export type CaFile = {
+  data: string;
+  fileName: string;
+};
+
 export type Attachment = {
   fileName: string;
   objectName: string;
