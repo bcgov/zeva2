@@ -70,6 +70,8 @@ export const getWhereClause = (filters: {
       } else {
         result.id = -1;
       }
+    } else if (key === "submittedCount" || key === "issuedCount") {
+      result[key] = Number.parseInt(value, 10);
     }
   }
   return result;
@@ -95,7 +97,9 @@ export const getOrderByClause = (
         key === "zevClass" ||
         key === "modelYear" ||
         key === "vehicleZevType" ||
-        key === "isActive"
+        key === "isActive" ||
+        key === "submittedCount" ||
+        key === "issuedCount"
       ) {
         orderBy[key] = value;
       } else if (key === "organization") {

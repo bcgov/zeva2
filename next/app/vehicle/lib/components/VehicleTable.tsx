@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useMemo } from "react";
+import { useMemo } from "react";
 import { ColumnDef, createColumnHelper } from "@tanstack/react-table";
 import { Table } from "@/app/lib/components";
 import { VehicleSparseSerialized } from "./VehicleList";
@@ -76,6 +76,18 @@ export const VehicleTable = (props: {
         enableSorting: true,
         enableColumnFilter: true,
         header: () => <span>Active</span>,
+      }),
+      columnHelper.accessor((row) => row.submittedCount, {
+        id: "submittedCount",
+        enableSorting: true,
+        enableColumnFilter: true,
+        header: () => <span>Submitted Count</span>,
+      }),
+      columnHelper.accessor((row) => row.issuedCount, {
+        id: "issuedCount",
+        enableSorting: true,
+        enableColumnFilter: true,
+        header: () => <span>Issued Count</span>,
       }),
     ];
     if (

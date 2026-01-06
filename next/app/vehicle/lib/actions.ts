@@ -63,6 +63,8 @@ export type VehiclePayload = Omit<
   | "vehicleClass"
   | "zevClass"
   | "numberOfUnits"
+  | "issuedCount"
+  | "submittedCount"
 >;
 
 export async function submitVehicle(

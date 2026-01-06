@@ -3,6 +3,7 @@ import { getPageParams, pageStringParams } from "@/app/lib/utils/nextPage";
 import { Suspense } from "react";
 import { RecordsList } from "../../lib/components/RecordsList";
 import { ModelNameMismatches } from "../../lib/components/ModelNameMismatches";
+import { ApplicationCreateOrEdit } from "../../lib/components/ApplicationCreateOrEdit";
 
 const Page = async (props: {
   params: Promise<{ id: string; slug: string }>;
@@ -37,6 +38,8 @@ const Page = async (props: {
         <ModelNameMismatches creditApplicationId={id} />
       </Suspense>
     );
+  } else if (slug === "edit") {
+    return <ApplicationCreateOrEdit creditApplicationId={id} />;
   }
   return null;
 };

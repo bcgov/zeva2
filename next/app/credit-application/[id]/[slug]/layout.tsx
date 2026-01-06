@@ -12,6 +12,8 @@ const Layout = async (props: {
         {props.children}
       </>
     );
+  } else if (slug === "edit") {
+    return <>{props.children}</>;
   }
   return null;
 };

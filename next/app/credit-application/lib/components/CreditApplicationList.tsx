@@ -26,12 +26,12 @@ export const CreditApplicationList = async (props: {
     applications,
     userIsGov,
   );
-
   return (
     <ApplicationsTable
       applications={serializedApplications}
       totalNumberOfApplications={totalNumberOfApplications}
       navigationAction={navigationAction}
+      userIsGov={userIsGov}
     />
   );
 };

@@ -6,7 +6,7 @@ import { VehicleStatus } from "@/prisma/generated/client";
 import { updateStatus } from "../actions";
 import { Button } from "@/app/lib/components";
 import { Routes } from "@/app/lib/constants";
-import { getNormalizedComment } from "@/app/credit-application/lib/utils";
+import { getNormalizedComment } from "@/app/lib/utils/comment";
 
 export const ActionBar = (props: {
   userIsGov: boolean;

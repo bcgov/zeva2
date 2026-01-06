@@ -6,10 +6,9 @@ import {
 
 // please only use these functions server-side, where the TZ is set to "America/Vancouver"
 
-export const getCurrentComplianceYear = () => {
-  const now = new Date();
-  const month = now.getMonth();
-  let year = now.getFullYear();
+export const getComplianceYear = (date: Date) => {
+  const month = date.getMonth();
+  let year = date.getFullYear();
   if (month < 9) {
     year = year - 1;
   }
@@ -19,6 +18,15 @@ export const getCurrentComplianceYear = () => {
     throw new Error("Error getting current compliance year!");
   }
   return modelYear;
+};
+
+export const getCurrentComplianceYear = () => {
+  return getComplianceYear(new Date());
+};
+
+export const getPreviousComplianceYear = (date: Date) => {
+  const nowYear = getComplianceYear(date);
+  return getAdjacentYear("prev", nowYear);
 };
 
 export const getAdjacentYear = (
@@ -50,21 +58,9 @@ export const getCompliancePeriod = (complianceYear: ModelYear) => {
 };
 
 export const getModelYearReportModelYear = () => {
-  const modelYearsMap = getStringsToModelYearsEnumsMap();
-  const now = new Date();
-  const month = now.getMonth();
-  const year = now.getFullYear();
-  const date = now.getDate();
-  if (month === 9 && date >= 1 && date <= 20) {
-    return modelYearsMap[year - 1];
-  }
-  if (process.env.LENIENT_REPORTING === "true") {
-    if (month >= 9) {
-      return modelYearsMap[year];
-    } else if (month < 9) {
-      return modelYearsMap[year - 1];
-    }
-  }
+  const currentComplianceYear = getCurrentComplianceYear();
+  const reportYear = getAdjacentYear("prev", currentComplianceYear);
+  return reportYear;
 };
 
 export const getComplianceDate = (modelYear: ModelYear): Date => {
@@ -75,4 +71,13 @@ export const getComplianceDate = (modelYear: ModelYear): Date => {
 
 export const getDominatedComplianceYears = (complianceYear: ModelYear) => {
   return Object.values(ModelYear).filter((cy) => cy < complianceYear);
+};
+
+export const getIsInReportingPeriod = (date: Date) => {
+  const month = date.getMonth();
+  const day = date.getDate();
+  if (month === 9 && day >= 1 && day <= 20) {
+    return true;
+  }
+  return false;
 };
