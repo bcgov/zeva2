@@ -36,6 +36,8 @@ export const getVehicles = async (
     range: true,
     vehicleZevType: true,
     isActive: true,
+    submittedCount: true,
+    issuedCount: true,
   };
   const where = getWhereClause(filters);
   where.NOT = {

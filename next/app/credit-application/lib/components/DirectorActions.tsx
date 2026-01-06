@@ -35,7 +35,7 @@ export const DirectorActions = (props: {
       if (response.responseType === "error") {
         setError(response.message);
       } else {
-        router.refresh();
+        router.push(Routes.CreditApplication);
       }
     });
   }, [props.id, comment]);

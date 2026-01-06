@@ -12,17 +12,18 @@ export const ApplicationDetails = async (props: {
   }
   const statusMap = getCreditApplicationStatusEnumsToStringsMap();
   return (
-    <>
-      {props.userIsGov && (
-        <div>Supplier: {props.application.organization.name}</div>
+    <ul className="space-y-3">
+      <li>Supplier: {props.application.organization.name}</li>
+      <li>Makes: {props.application.makes.join(", ")}</li>
+      <li>Service Address: {props.application.serviceAddress}</li>
+      <li>Records Address: {props.application.recordsAddress}</li>
+      <li>Status: {statusMap[status]}</li>
+      {props.userIsGov && props.application.icbcTimestamp && (
+        <li>
+          Validated using ICBC file with date:{" "}
+          {getIsoYmdString(props.application.icbcTimestamp)}
+        </li>
       )}
-      {props.application.submissionTimestamp && (
-        <div>
-          Submission Date:{" "}
-          {getIsoYmdString(props.application.submissionTimestamp)}
-        </div>
-      )}
-      <div>Status: {statusMap[status]}</div>
-    </>
+    </ul>
   );
 };

@@ -28,6 +28,19 @@ export const seedVehicles = async (
       validation_status: "VALIDATED",
     },
   });
+  const recordsOfSaleGroupsOld = await prismaOld.record_of_sale.groupBy({
+    where: {
+      validation_status: "VALIDATED",
+    },
+    by: ["vehicle_id"],
+    _count: {
+      id: true,
+    },
+  });
+  const mapOfSaleCounts: Partial<Record<number, number>> = {};
+  for (const group of recordsOfSaleGroupsOld) {
+    mapOfSaleCounts[group.vehicle_id] = group._count.id;
+  }
   for (const vehicleOld of vehiclesOld) {
     const modelYearEnum =
       mapOfModelYearIdsToModelYearEnum[vehicleOld.model_year_id];
@@ -65,6 +78,7 @@ export const seedVehicles = async (
       );
     }
     const newWeight = oldWeight.toNumber();
+    const issuedCount = mapOfSaleCounts[vehicleOld.id];
 
     await tx.vehicle.create({
       select: { id: true },
@@ -84,6 +98,7 @@ export const seedVehicles = async (
         us06RangeGte16: vehicleOld.has_passed_us_06_test,
         isActive: vehicleOld.is_active,
         vehicleClass: VehicleClass.REPORTABLE,
+        issuedCount,
       },
     });
   }

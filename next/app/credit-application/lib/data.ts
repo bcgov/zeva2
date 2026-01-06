@@ -17,6 +17,7 @@ import {
   getWhereClause,
 } from "./utils";
 import { ZevUnitRecord } from "@/lib/utils/zevUnit";
+import { getCreditStats, getRecordStats } from "./services";
 
 export type CreditApplicationWithOrgAndAttachmentsCount = CreditApplication & {
   organization: Organization;
@@ -164,7 +165,12 @@ export const getData = async (
 
 export type CreditApplicationSparse = Pick<
   CreditApplication,
-  "id" | "status" | "submissionTimestamp" | "supplierStatus"
+  | "id"
+  | "status"
+  | "submissionTimestamp"
+  | "supplierStatus"
+  | "transactionTimestamps"
+  | "modelYears"
 > & { organization: { name: string } };
 
 export const getCreditApplications = async (
@@ -218,12 +224,14 @@ export const getCreditApplications = async (
         id: true,
         status: true,
         submissionTimestamp: true,
+        transactionTimestamps: true,
         supplierStatus: true,
         organization: {
           select: {
             name: true,
           },
         },
+        modelYears: true,
       },
       orderBy,
     }),
@@ -316,4 +324,44 @@ export const getModelMismatchesMap = async (
     result[modelName][icbcModelName] = result[modelName][icbcModelName] + 1;
   });
   return result;
+};
+
+export const getApplicationStatistics = async (creditApplicationId: number) => {
+  const { userIsGov, userOrgId } = await getUserInfo();
+  const whereClause: Prisma.CreditApplicationWhereUniqueInput = {
+    id: creditApplicationId,
+    NOT: {
+      status: CreditApplicationStatus.DELETED,
+    },
+  };
+  if (userIsGov) {
+    whereClause.status = {
+      not: CreditApplicationStatus.DRAFT,
+    };
+  } else {
+    whereClause.organizationId = userOrgId;
+  }
+  const creditApplication = await prisma.creditApplication.findUnique({
+    where: whereClause,
+    select: {
+      status: true,
+    },
+  });
+  if (!creditApplication) {
+    return null;
+  }
+  const status = creditApplication.status;
+  const getValidatedStats =
+    userIsGov || status === CreditApplicationStatus.APPROVED;
+  return {
+    status,
+    recordStats: await getRecordStats(creditApplicationId, "all"),
+    recordStatsValidated: getValidatedStats
+      ? await getRecordStats(creditApplicationId, "validated")
+      : null,
+    creditStats: await getCreditStats(creditApplicationId, "all"),
+    creditStatsValidated: getValidatedStats
+      ? await getCreditStats(creditApplicationId, "validated")
+      : null,
+  };
 };

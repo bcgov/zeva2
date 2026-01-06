@@ -26,9 +26,11 @@ export const RecordsTable = (props: {
   const router = useRouter();
 
   useEffect(() => {
+    const mapOfDataToSet: MapOfValidatedAndReasons = {};
     for (const record of props.records) {
-      mapOfData[record.id] = [record.validated, record.reason];
+      mapOfDataToSet[record.id] = [record.validated, record.reason];
     }
+    setMapOfData(mapOfDataToSet);
   }, [props.records]);
 
   const getReasonsJSX = useCallback((id: number, reason: string | null) => {
@@ -86,9 +88,6 @@ export const RecordsTable = (props: {
 
   const getHighlighted = useCallback(
     (value: string | JSX.Element, warnings: string[]): string | JSX.Element => {
-      if (warnings.includes("1")) {
-        return <div className="bg-red-200 truncate">{value}</div>;
-      }
       if (warnings.length > 0) {
         return <div className="bg-yellow-200 truncate">{value}</div>;
       }
@@ -189,12 +188,11 @@ export const RecordsTable = (props: {
         enableSorting: true,
         enableColumnFilter: true,
         cell: (cellProps) => {
+          if (Object.keys(mapOfData).length === 0) {
+            return null;
+          }
           const id = cellProps.row.original.id;
           const warnings = cellProps.row.original.warnings;
-          let disabled = false;
-          if (warnings.includes("1")) {
-            disabled = true;
-          }
           const value = (
             <input
               checked={mapOfData[id][0]}
@@ -202,7 +200,7 @@ export const RecordsTable = (props: {
                 handleValidateChange(id);
               }}
               type="checkbox"
-              disabled={props.readOnly || disabled}
+              disabled={props.readOnly}
             />
           );
           return getHighlighted(value, warnings);
@@ -215,6 +213,9 @@ export const RecordsTable = (props: {
         enableSorting: true,
         enableColumnFilter: true,
         cell: (cellProps) => {
+          if (Object.keys(mapOfData).length === 0) {
+            return null;
+          }
           const id = cellProps.row.original.id;
           const reason = mapOfData[id][1];
           if (props.readOnly) {

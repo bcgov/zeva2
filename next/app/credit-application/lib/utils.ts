@@ -42,6 +42,7 @@ export const getWhereClause = (
   const statusMap = getStringsToCreditApplicationStatusEnumsMap();
   const supplierStatusMap =
     getStringsToCreditApplicationSupplierStatusEnumsMap();
+  const modelYearsMap = getStringsToModelYearsEnumsMap();
   Object.entries(filters).forEach(([key, rawValue]) => {
     const value = rawValue.trim();
     if (key === "id") {
@@ -77,6 +78,10 @@ export const getWhereClause = (
           },
         },
       };
+    } else if (key === "modelYears") {
+      result[key] = {
+        hasSome: getMatchingTerms(modelYearsMap, value),
+      };
     }
   });
   return result;
@@ -88,7 +93,7 @@ export const getOrderByClause = (
   userIsGov: boolean,
 ): Prisma.CreditApplicationOrderByWithRelationInput[] => {
   const result: Prisma.CreditApplicationOrderByWithRelationInput[] = [];
-  Object.entries(sorts).forEach(([key, value]) => {
+  for (const [key, value] of Object.entries(sorts)) {
     const orderBy: Prisma.CreditApplicationOrderByWithRelationInput = {};
     if (value === "asc" || value === "desc") {
       if (key === "id" || key === "submissionTimestamp") {
@@ -108,7 +113,7 @@ export const getOrderByClause = (
     if (Object.keys(orderBy).length > 0) {
       result.push(orderBy);
     }
-  });
+  }
   if (defaultSortById && result.length === 0) {
     result.push({ id: "desc" });
   }
@@ -244,8 +249,15 @@ export const getSerializedRecords = (
 
 export type CreditApplicationSparseSerialized = Omit<
   CreditApplicationSparse,
-  "submissionTimestamp" | "supplierStatus" | "organization"
-> & { submissionTimestamp?: string; organization?: string };
+  | "submissionTimestamp"
+  | "supplierStatus"
+  | "organization"
+  | "transactionTimestamps"
+> & {
+  submissionTimestamp?: string;
+  organization?: string;
+  transactionTimestamps: string[];
+};
 
 export const getSerializedApplications = (
   records: CreditApplicationSparse[],
@@ -259,6 +271,10 @@ export const getSerializedApplications = (
       submissionTimestamp: record.submissionTimestamp
         ? getIsoYmdString(record.submissionTimestamp)
         : undefined,
+      transactionTimestamps: record.transactionTimestamps.map((ts) => {
+        return getIsoYmdString(ts);
+      }),
+      modelYears: record.modelYears,
     };
     if (userIsGov) {
       resultRecord.organization = record.organization.name;

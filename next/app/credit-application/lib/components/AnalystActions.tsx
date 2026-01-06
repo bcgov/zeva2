@@ -4,7 +4,11 @@ import { Button } from "@/app/lib/components";
 import { CreditApplicationStatus } from "@/prisma/generated/client";
 import { useRouter } from "next/navigation";
 import { useCallback, useState, useTransition } from "react";
-import { analystRecommend, validateCreditApplication } from "../actions";
+import {
+  analystRecommend,
+  analystReject,
+  validateCreditApplication,
+} from "../actions";
 import { Routes } from "@/app/lib/constants";
 import { CommentBox } from "@/app/lib/components/inputs/CommentBox";
 import { getNormalizedComment } from "@/app/lib/utils/comment";
@@ -55,6 +59,20 @@ export const AnalystActions = (props: {
     });
   }, [props.id, comment]);
 
+  const handleReject = useCallback(() => {
+    startTransition(async () => {
+      const response = await analystReject(
+        props.id,
+        getNormalizedComment(comment),
+      );
+      if (response.responseType === "error") {
+        setError(response.message);
+      } else {
+        router.push(Routes.CreditApplication);
+      }
+    });
+  }, [props.id, comment]);
+
   if (
     props.status === CreditApplicationStatus.DELETED ||
     props.status === CreditApplicationStatus.DRAFT ||
@@ -89,6 +107,9 @@ export const AnalystActions = (props: {
       <Button variant="primary" onClick={handleValidate} disabled={isPending}>
         {isPending ? "..." : "Validate"}
       </Button>
+      <Button variant="primary" onClick={handleReject} disabled={isPending}>
+        {isPending ? "..." : "Reject"}
+      </Button>
       {props.validatedBefore && (
         <>
           <Button
@@ -109,17 +130,17 @@ export const AnalystActions = (props: {
           >
             {isPending ? "..." : "Edit Validated Records"}
           </Button>
+          <Button
+            variant="primary"
+            onClick={() => {
+              handleRecommend();
+            }}
+            disabled={isPending}
+          >
+            {isPending ? "..." : "Recommend Approval"}
+          </Button>
         </>
       )}
-      <Button
-        variant="primary"
-        onClick={() => {
-          handleRecommend();
-        }}
-        disabled={isPending}
-      >
-        {isPending ? "..." : "Recommend Approval"}
-      </Button>
     </>
   );
 };

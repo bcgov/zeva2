@@ -90,16 +90,6 @@ export const getEligibleVehicles = async (
   modelYears: "all" | ModelYear[],
   includeAdditionalFields: boolean,
 ) => {
-  const select: Prisma.VehicleSelect = {
-    make: true,
-    modelName: true,
-    modelYear: true,
-  };
-  if (includeAdditionalFields) {
-    select.vehicleClass = true;
-    select.zevClass = true;
-    select.numberOfUnits = true;
-  }
   return await prisma.vehicle.findMany({
     where: {
       organizationId: orgId,
@@ -112,7 +102,17 @@ export const getEligibleVehicles = async (
               in: modelYears,
             },
     },
-    select,
+    select: {
+      make: true,
+      modelName: true,
+      modelYear: true,
+      id: includeAdditionalFields,
+      vehicleClass: includeAdditionalFields,
+      zevClass: includeAdditionalFields,
+      numberOfUnits: includeAdditionalFields,
+      vehicleZevType: includeAdditionalFields,
+      range: includeAdditionalFields,
+    },
   });
 };
 
@@ -355,4 +355,51 @@ export const getVehicleCounts = async (
     );
   }
   return Object.values(result);
+};
+
+export const getRecordStats = async (
+  creditApplicationId: number,
+  type: "all" | "validated",
+) => {
+  const whereClause: Prisma.CreditApplicationRecordWhereInput = {
+    creditApplicationId,
+  };
+  if (type === "validated") {
+    whereClause.validated = true;
+  }
+  return await prisma.creditApplicationRecord.groupBy({
+    where: whereClause,
+    by: [
+      "make",
+      "modelName",
+      "modelYear",
+      "vehicleClass",
+      "zevClass",
+      "zevType",
+      "range",
+      "numberOfUnits",
+    ],
+    _count: {
+      id: true,
+    },
+  });
+};
+
+export const getCreditStats = async (
+  creditApplicationId: number,
+  type: "all" | "validated",
+) => {
+  const whereClause: Prisma.CreditApplicationRecordWhereInput = {
+    creditApplicationId,
+  };
+  if (type === "validated") {
+    whereClause.validated = true;
+  }
+  return await prisma.creditApplicationRecord.groupBy({
+    where: whereClause,
+    by: ["vehicleClass", "zevClass", "modelYear"],
+    _sum: {
+      numberOfUnits: true,
+    },
+  });
 };

@@ -11,6 +11,7 @@ import { AttachmentsDownload } from "@/app/lib/components/AttachmentsDownload";
 import { SupplierActions } from "../lib/components/SupplierActions";
 import { DirectorActions } from "../lib/components/DirectorActions";
 import { AnalystActions } from "../lib/components/AnalystActions";
+import { ApplicationStatistics } from "../lib/components/ApplicationStatistics";
 
 const Page = async (props: { params: Promise<{ id: string }> }) => {
   const args = await props.params;
@@ -38,6 +39,14 @@ const Page = async (props: { params: Promise<{ id: string }> }) => {
           application={creditApplication}
           userIsGov={userIsGov}
         />
+      </ContentCard>
+      <ContentCard title="Application Statistics">
+        <Suspense fallback={<LoadingSkeleton />}>
+          <ApplicationStatistics
+            creditApplicationId={id}
+            userIsGov={userIsGov}
+          />
+        </Suspense>
       </ContentCard>
       <ContentCard title="Download Documents">
         <AttachmentsDownload

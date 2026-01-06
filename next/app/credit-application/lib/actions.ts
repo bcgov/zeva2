@@ -475,7 +475,7 @@ export const validateCreditApplication = async (
     record.icbcModelName = icbcMap[vin]?.modelName ?? null;
     record.icbcModelYear = icbcMap[vin]?.modelYear ?? null;
     record.validated = validated;
-    record.warnings = [];
+    record.warnings = warnings ? warnings : [];
   }
   await prisma.$transaction(async (tx) => {
     await tx.creditApplicationRecord.deleteMany({
@@ -800,7 +800,7 @@ export const directorApprove = async (
   const creditRecords =
     await getApplicationFlattenedCreditRecords(creditApplicationId);
   const issuanceTimestamp = new Date();
-  const transactionTimestamps: Date[] = [];
+  const transactionTimestamps: Set<Date> = new Set();
   for (const record of creditRecords) {
     const modelYear = record.modelYear;
     const timestamp = getTransactionTimestamp(
@@ -808,7 +808,7 @@ export const directorApprove = async (
       issuanceTimestamp,
       modelYear,
     );
-    transactionTimestamps.push(timestamp);
+    transactionTimestamps.add(timestamp);
     transactionsToCreate.push({
       organizationId: creditApplication.organizationId,
       timestamp,
@@ -836,7 +836,7 @@ export const directorApprove = async (
         id: creditApplicationId,
       },
       data: {
-        transactionTimestamps,
+        transactionTimestamps: Array.from(transactionTimestamps),
         status: CreditApplicationStatus.APPROVED,
         supplierStatus: CreditApplicationStatus.APPROVED,
       },
