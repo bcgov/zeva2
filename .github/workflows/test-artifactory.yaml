@@ -1,5 +1,5 @@
 # This workflow builds and deploys the Zeva2 application to the development environment in OpenShift.
-name: Zeva2 Dev CI
+name: Artifactory Test
 
 on:
   push:
@@ -142,14 +142,3 @@ jobs:
             "docker://${ARTIFACTORY_REGISTRY}/${ARTIFACTORY_REPO}/zeva2/dev/zeva2-bullmq:${VERSION}"
 
 
-  # deploy to Dev
-  deploy:
-    name: Deploy Zeva2 develop branch TO Dev
-    needs: [install-oc, versioning,tag-images]
-    uses: ./.github/workflows/deploy-template.yaml
-    with:
-      git_ref: ${{ github.ref_name }}
-      version: ${{ needs.versioning.outputs.VERSION }}
-      values_file: values-dev.yaml
-    secrets:
-      manifest-repo-deploy-key: ${{ secrets.MANIFEST_REPO_DEPLOY_KEY }}
