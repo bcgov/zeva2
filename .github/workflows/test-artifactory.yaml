@@ -45,52 +45,52 @@ jobs:
         
   # determine the version of the application
   # A sample version 0.1.0-alpha.91
-  versioning:
-    runs-on: ubuntu-latest
+  # versioning:
+  #   runs-on: ubuntu-latest
 
-    outputs:
-      VERSION: ${{ steps.export-version.outputs.VERSION }}
+  #   outputs:
+  #     VERSION: ${{ steps.export-version.outputs.VERSION }}
 
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
+  #   steps:
+  #     - name: Checkout
+  #       uses: actions/checkout@v4
+  #       with:
+  #         fetch-depth: 0
 
-      - name: Install GitVersion
-        uses: gittools/actions/gitversion/setup@v3.1.11
-        with:
-          versionSpec: "6.0.x"
+  #     - name: Install GitVersion
+  #       uses: gittools/actions/gitversion/setup@v3.1.11
+  #       with:
+  #         versionSpec: "6.0.x"
 
-      - name: Determine Version
-        id: version-step # step id used as reference for output values
-        uses: gittools/actions/gitversion/execute@v3.1.11
-        with:
-          useConfigFile: true
+  #     - name: Determine Version
+  #       id: version-step # step id used as reference for output values
+  #       uses: gittools/actions/gitversion/execute@v3.1.11
+  #       with:
+  #         useConfigFile: true
 
-      - name: Export Version
-        id: export-version
-        run: |
-          echo "VERSION=${{ steps.version-step.outputs.SemVer }}"
-          echo "VERSION=${{ steps.version-step.outputs.SemVer }}" >> $GITHUB_OUTPUT
+  #     - name: Export Version
+  #       id: export-version
+  #       run: |
+  #         echo "VERSION=${{ steps.version-step.outputs.SemVer }}"
+  #         echo "VERSION=${{ steps.version-step.outputs.SemVer }}" >> $GITHUB_OUTPUT
 
   # build Zeva2 applications on Openshift
-  build:
-    name: Build Zeva2 from develop
-    needs: [install-oc, versioning]
-    uses: ./.github/workflows/build-template.yaml
-    with:
-      git_ref: ${{ github.ref_name }}
-      version: ${{ needs.versioning.outputs.VERSION }}
-    secrets:
-      tools-namespace: ${{ secrets.OPENSHIFT_NAMESPACE_PLATE }}-tools
-      openshift-server: ${{ secrets.OPENSHIFT_SERVER }}
-      openshift-token: ${{ secrets.OPENSHIFT_TOKEN }}
+  # build:
+  #   name: Build Zeva2 from develop
+  #   needs: [install-oc, versioning]
+  #   uses: ./.github/workflows/build-template.yaml
+  #   with:
+  #     git_ref: ${{ github.ref_name }}
+  #     version: ${{ needs.versioning.outputs.VERSION }}
+  #   secrets:
+  #     tools-namespace: ${{ secrets.OPENSHIFT_NAMESPACE_PLATE }}-tools
+  #     openshift-server: ${{ secrets.OPENSHIFT_SERVER }}
+  #     openshift-token: ${{ secrets.OPENSHIFT_TOKEN }}
 
   # Tag the images from tools namespace to dev namespace
   tag-images:
     name: Tag Zeva2 images to Dev
-    needs: [versioning, build]
+    # needs: [versioning, build]
     runs-on: ubuntu-latest
     steps:
       - name: Restore oc command from Cache
@@ -109,9 +109,9 @@ jobs:
 
       - name: Tag images to target namespace
         run: |
-          echo "VERSION=${{ needs.versioning.outputs.VERSION }}"
-          oc tag ${{ env.TOOLS_NAMESPACE }}/zeva2-next:${{ needs.versioning.outputs.VERSION}} ${{ env.DEV_NAMESPACE}}/zeva2-next:${{ needs.versioning.outputs.VERSION}}
-          oc tag ${{ env.TOOLS_NAMESPACE }}/zeva2-bullmq:${{ needs.versioning.outputs.VERSION}} ${{ env.DEV_NAMESPACE }}/zeva2-bullmq:${{ needs.versioning.outputs.VERSION}}
+
+          oc tag ${{ env.TOOLS_NAMESPACE }}/zeva2-next:0.4.0-devops-trunk-based-workflow.1 ${{ env.DEV_NAMESPACE}}/zeva2-next:0.4.0-devops-trunk-based-workflow.1
+          oc tag ${{ env.TOOLS_NAMESPACE }}/zeva2-bullmq:0.4.0-devops-trunk-based-workflow.1 ${{ env.DEV_NAMESPACE }}/zeva2-bullmq:0.4.0-devops-trunk-based-workflow.1
 
       - name: Install skopeo
         run: |
@@ -126,19 +126,21 @@ jobs:
           ARTIFACTORY_PASSWORD: ${{ secrets.ARTIFACTORY_PASSWORD }}
         run: |
           set -euo pipefail
-          VERSION="${{ needs.versioning.outputs.VERSION }}"
+          VERSION="0.4.0-devops-trunk-based-workflow.1"
           OPENSHIFT_REGISTRY="$(oc registry info --public)"
-          SRC_CREDS="$(oc whoami):$(oc whoami -t)"
-          DEST_CREDS="${ARTIFACTORY_USERNAME}:${ARTIFACTORY_PASSWORD}"
+          oc registry login --registry="${OPENSHIFT_REGISTRY}" --to=/tmp/openshift-auth.json
+          skopeo login --authfile /tmp/artifactory-auth.json \
+            --username "${ARTIFACTORY_USERNAME}" \
+            --password "${ARTIFACTORY_PASSWORD}" \
+            "${ARTIFACTORY_REGISTRY}"
 
           skopeo copy --src-tls-verify=false --dest-tls-verify=true \
-            --src-creds "${SRC_CREDS}" --dest-creds "${DEST_CREDS}" \
+            --src-authfile /tmp/openshift-auth.json --dest-authfile /tmp/artifactory-auth.json \
             "docker://${OPENSHIFT_REGISTRY}/${{ env.TOOLS_NAMESPACE }}/zeva2-next:${VERSION}" \
             "docker://${ARTIFACTORY_REGISTRY}/${ARTIFACTORY_REPO}/zeva2/dev/zeva2-next:${VERSION}"
 
           skopeo copy --src-tls-verify=false --dest-tls-verify=true \
-            --src-creds "${SRC_CREDS}" --dest-creds "${DEST_CREDS}" \
+            --src-authfile /tmp/openshift-auth.json --dest-authfile /tmp/artifactory-auth.json \
             "docker://${OPENSHIFT_REGISTRY}/${{ env.TOOLS_NAMESPACE }}/zeva2-bullmq:${VERSION}" \
             "docker://${ARTIFACTORY_REGISTRY}/${ARTIFACTORY_REPO}/zeva2/dev/zeva2-bullmq:${VERSION}"
-
 
