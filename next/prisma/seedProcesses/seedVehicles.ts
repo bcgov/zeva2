@@ -26,6 +26,7 @@ export const seedVehicles = async (
   const vehiclesOld = await prismaOld.vehicle.findMany({
     where: {
       validation_status: "VALIDATED",
+      is_active: true,
     },
   });
   const recordsOfSaleGroupsOld = await prismaOld.record_of_sale.groupBy({

@@ -71,12 +71,6 @@ export const VehicleTable = (props: {
         enableColumnFilter: true,
         header: () => <span>ZEV Type</span>,
       }),
-      columnHelper.accessor((row) => row.isActive, {
-        id: "isActive",
-        enableSorting: true,
-        enableColumnFilter: true,
-        header: () => <span>Active</span>,
-      }),
       columnHelper.accessor((row) => row.submittedCount, {
         id: "submittedCount",
         enableSorting: true,

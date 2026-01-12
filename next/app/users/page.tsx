@@ -7,11 +7,11 @@ import { Routes } from "../lib/constants";
 import { Button } from "../lib/components";
 import { getUserInfo } from "@/auth";
 import UserTable from "./lib/components/UserTable";
+import { userIsAdmin } from "./lib/utils";
 import {
   getFilterStringWithActiveFilter,
   getTransformedFilters,
-  userIsAdmin,
-} from "./lib/utils";
+} from "../lib/utils/filter";
 
 export default async function Page(props: {
   searchParams?: Promise<pageStringParams>;
@@ -20,8 +20,10 @@ export default async function Page(props: {
   const isAdmin = await userIsAdmin();
   const searchParams = await props.searchParams;
   const { page, pageSize, filters, sorts } = getPageParams(searchParams, 1, 10);
-  const { filters: transformedFilters, isActive } =
-    getTransformedFilters(filters);
+  const { filters: transformedFilters, isActive } = getTransformedFilters(
+    "user",
+    filters,
+  );
   const { users, totalCount } = await fetchUsers(
     page,
     pageSize,
@@ -39,11 +41,11 @@ export default async function Page(props: {
       <div className="mb-4 flex gap-2 border-b">
         <Link
           href={{
-            pathname: "/users",
+            pathname: Routes.Users,
             query: {
               ...searchParams,
               page: "1",
-              filters: getFilterStringWithActiveFilter(filters, true),
+              filters: getFilterStringWithActiveFilter("user", filters, true),
             },
           }}
           className={`px-3 py-2 text-sm font-medium border-b-2 -mb-px ${
@@ -56,11 +58,11 @@ export default async function Page(props: {
         </Link>
         <Link
           href={{
-            pathname: "/users",
+            pathname: Routes.Users,
             query: {
               ...searchParams,
               page: "1",
-              filters: getFilterStringWithActiveFilter(filters, false),
+              filters: getFilterStringWithActiveFilter("user", filters, false),
             },
           }}
           className={`px-3 py-2 text-sm font-medium border-b-2 -mb-px ${

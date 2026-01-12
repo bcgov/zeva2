@@ -1,9 +1,9 @@
 import { getStringsToRoleEnumsMap } from "@/app/lib/utils/enumMaps";
 import { getUserInfo } from "@/auth";
 import { UserWithOrg } from "@/lib/data/user";
-import { getString } from "@/lib/utils/urlSearchParams";
 import { Prisma, Role } from "@/prisma/generated/client";
-import { ActiveFilter, govRoles, supplierRoles } from "./constants";
+import { govRoles, supplierRoles } from "./constants";
+import { UserActiveFilter } from "@/app/lib/constants/filter";
 
 export const userConfiguredCorrectly = (user: UserWithOrg) => {
   const userIsGov = user.organization.isGovernment;
@@ -41,11 +41,11 @@ export const getWhereClause = (
         contains: newValue,
         mode: "insensitive",
       };
-    } else if (key === ActiveFilter.key) {
+    } else if (key === UserActiveFilter.key) {
       const newValue = value.toLowerCase().trim();
-      if (newValue === ActiveFilter.activeValue) {
+      if (newValue === UserActiveFilter.activeValue) {
         result[key] = true;
-      } else if (newValue === ActiveFilter.inactiveValue) {
+      } else if (newValue === UserActiveFilter.inactiveValue) {
         result[key] = false;
       } else {
         result["id"] = -1;
@@ -117,35 +117,4 @@ export const userIsAdmin = async () => {
     return true;
   }
   return false;
-};
-
-export const getTransformedFilters = (
-  filters: Record<string, string>,
-): { filters: Record<string, string>; isActive: boolean } => {
-  if (
-    filters[ActiveFilter.key]?.toLowerCase().trim() ===
-    ActiveFilter.inactiveValue
-  ) {
-    return {
-      filters,
-      isActive: false,
-    };
-  }
-  return {
-    filters: { ...filters, [ActiveFilter.key]: ActiveFilter.activeValue },
-    isActive: true,
-  };
-};
-
-export const getFilterStringWithActiveFilter = (
-  filters: Record<string, string>,
-  isActive: boolean,
-): string => {
-  const newFilters = {
-    ...filters,
-    [ActiveFilter.key]: isActive
-      ? ActiveFilter.activeValue
-      : ActiveFilter.inactiveValue,
-  };
-  return getString(newFilters);
 };
