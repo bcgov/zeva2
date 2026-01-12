@@ -14,25 +14,12 @@ import {
   CreditApplicationSparse,
 } from "./data";
 import { getIsoYmdString, validateDate } from "@/app/lib/utils/date";
-import { randomUUID } from "node:crypto";
 import {
   getComplianceDate,
   getComplianceYear,
   getIsInReportingPeriod,
   getPreviousComplianceYear,
 } from "@/app/lib/utils/complianceYear";
-
-export const getApplicationFullObjectName = (
-  type: "creditApplication" | "attachment",
-) => {
-  const objectName = randomUUID();
-  switch (type) {
-    case "creditApplication":
-      return `${CreditApplicationSubDirectory.CreditApplications}/${objectName}`;
-    case "attachment":
-      return `${CreditApplicationSubDirectory.CreditApplicationAttachments}/${objectName}`;
-  }
-};
 
 export const getWhereClause = (
   filters: Record<string, string>,

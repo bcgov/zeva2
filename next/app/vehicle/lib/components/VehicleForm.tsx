@@ -1,37 +1,40 @@
 "use client";
 
-import { useState, useCallback, useTransition, useMemo } from "react";
-import { useRouter } from "next/navigation";
+import axios from "axios";
 import {
-  submitVehicle,
-  getPutObjectData,
-  VehiclePutObjectData,
-} from "../actions";
+  useState,
+  useCallback,
+  useTransition,
+  useMemo,
+  useEffect,
+} from "react";
+import { useRouter } from "next/navigation";
+import { getVehicleAttachmentsPutData, supplierSave } from "../actions";
 import { Routes } from "@/app/lib/constants";
-import { VehicleClassCode, VehicleZevType } from "@/prisma/generated/client";
+import { VehicleClassCode, ZevType } from "@/prisma/generated/client";
 import { getVehiclePayload } from "../utilsClient";
 import { getStringsToModelYearsEnumsMap } from "@/app/lib/utils/enumMaps";
 import { Dropzone } from "@/app/lib/components/Dropzone";
-import axios from "axios";
 import { FileWithPath } from "react-dropzone";
 import { Button } from "@/app/lib/components";
-import { getNormalizedComment } from "@/app/lib/utils/comment";
 import { Attachment } from "@/app/lib/services/attachments";
 import { getDefaultAttchmentTypes } from "@/app/lib/utils/attachments";
 
-export const VehicleForm = () => {
+export const VehicleForm = (props: { vehicleId?: number }) => {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string>("");
   const [formData, setFormData] = useState<Partial<Record<string, string>>>({});
   const [files, setFiles] = useState<FileWithPath[]>([]);
-  const [comment, setComment] = useState<string>("");
   const modelYearsMap = useMemo(() => {
     return getStringsToModelYearsEnumsMap();
   }, []);
   const allowedFileTypes = useMemo(() => {
     return getDefaultAttchmentTypes();
   }, []);
+
+  // todo: write existing vehicle info into formData, write existing files into files state
+  useEffect(() => {}, []);
 
   const handleChange = useCallback((key: string, value: string) => {
     if (key === "us06" && value === "false") {
@@ -46,27 +49,20 @@ export const VehicleForm = () => {
     setError("");
     startTransition(async () => {
       try {
-        const vehiclePayload = getVehiclePayload(formData, files);
-        const vehicleFiles: Attachment[] = [];
+        const vehiclePayload = getVehiclePayload(formData);
+        const attachments: Attachment[] = [];
         if (files.length > 0) {
-          const putData = await getPutObjectData(files.length);
-          const filesAndPutData: [FileWithPath, VehiclePutObjectData][] =
-            files.map((file, index) => [file, putData[index]]);
-          for (const tuple of filesAndPutData) {
-            const file = tuple[0];
-            const putData = tuple[1];
-            await axios.put(putData.url, file);
-            vehicleFiles.push({
+          const putData = await getVehicleAttachmentsPutData(files.length);
+          for (const [index, file] of files.entries()) {
+            const putDatum = putData[index];
+            await axios.put(putDatum.url, file);
+            attachments.push({
               fileName: file.name,
-              objectName: putData.objectName,
+              objectName: putDatum.objectName,
             });
           }
         }
-        const response = await submitVehicle(
-          vehiclePayload,
-          vehicleFiles,
-          getNormalizedComment(comment),
-        );
+        const response = await supplierSave(vehiclePayload, attachments);
         if (response.responseType === "error") {
           throw new Error(response.message);
         }
@@ -78,11 +74,10 @@ export const VehicleForm = () => {
         }
       }
     });
-  }, [formData, files, comment]);
+  }, [formData, files]);
 
   return (
     <div>
-      {error && <p className="text-red-600">{error}</p>}
       <div className="flex items-center py-2 my-2">
         <label htmlFor="modelYear" className="w-72">
           Model Year
@@ -144,7 +139,7 @@ export const VehicleForm = () => {
           }}
         >
           <option value="">--</option>
-          {Object.keys(VehicleZevType).map((zevType) => (
+          {Object.keys(ZevType).map((zevType) => (
             <option key={zevType} value={zevType}>
               {zevType}
             </option>
@@ -220,17 +215,10 @@ export const VehicleForm = () => {
           allowedFileTypes={allowedFileTypes}
         />
       )}
-      <textarea
-        className="w-full border  p-2"
-        rows={3}
-        value={comment}
-        onChange={(e) => setComment(e.target.value)}
-        placeholder="Optional Comment"
-        disabled={isPending}
-      />
+      {error && <p className="text-red-600">{error}</p>}
       <div className="flex space-x-2">
         <Button variant="primary" onClick={handleSubmit} disabled={isPending}>
-          {isPending ? "..." : "Submit"}
+          {isPending ? "..." : "Save"}
         </Button>
       </div>
     </div>

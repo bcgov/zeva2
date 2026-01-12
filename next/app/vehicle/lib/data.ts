@@ -1,5 +1,5 @@
 import { getUserInfo } from "@/auth";
-import { getOrderByClause, getWhereClause } from "./utils";
+import { getOrderByClause, getWhereClause } from "./utilsServer";
 import { prisma } from "@/lib/prisma";
 import {
   Organization,
@@ -34,7 +34,7 @@ export const getVehicles = async (
     modelName: true,
     make: true,
     range: true,
-    vehicleZevType: true,
+    zevType: true,
     isActive: true,
     submittedCount: true,
     issuedCount: true,
@@ -63,7 +63,10 @@ export const getVehicles = async (
   ]);
 };
 
-export type VehicleWithOrg = Vehicle & { organization: Organization };
+export type VehicleWithOrg = Vehicle & {
+  organization: Organization;
+  _count: { VehicleAttachment: number };
+};
 
 export const getVehicle = async (
   vehicleId: number,
@@ -76,34 +79,29 @@ export const getVehicle = async (
     },
   };
   if (!userIsGov) {
-    whereClause = { ...whereClause, organizationId: userOrgId };
+    whereClause.organizationId = userOrgId;
+  } else {
+    whereClause.NOT = {
+      status: {
+        in: [
+          VehicleStatus.DRAFT,
+          VehicleStatus.REJECTED,
+          VehicleStatus.RETURNED_TO_SUPPLIER,
+        ],
+      },
+    };
   }
   return await prisma.vehicle.findUnique({
     where: whereClause,
     include: {
       organization: true,
+      _count: {
+        select: {
+          VehicleAttachment: true,
+        },
+      },
     },
   });
-};
-
-export type SerializedVehicleWithOrg = Omit<Vehicle, "numberOfUnits"> & {
-  numberOfUnits: string;
-} & {
-  organization: Organization;
-};
-
-export const getSerializedVehicle = async (
-  vehicleId: number,
-): Promise<SerializedVehicleWithOrg | null> => {
-  const vehicle = await getVehicle(vehicleId);
-  if (vehicle) {
-    return {
-      ...vehicle,
-      weight: vehicle.weight,
-      numberOfUnits: vehicle.numberOfUnits.toString(),
-    };
-  }
-  return null;
 };
 
 export const getVehicleHistories = async (vehicleId: number) => {
@@ -117,37 +115,39 @@ export const getVehicleHistories = async (vehicleId: number) => {
     },
   };
   if (!userIsGov) {
-    whereClause = { ...whereClause, vehicle: { organizationId: userOrgId } };
+    whereClause.vehicle = {
+      organizationId: userOrgId,
+    };
+  } else {
+    whereClause.NOT = {
+      vehicle: {
+        status: {
+          notIn: [
+            VehicleStatus.DRAFT,
+            VehicleStatus.REJECTED,
+            VehicleStatus.RETURNED_TO_SUPPLIER,
+          ],
+        },
+      },
+    };
   }
   return await prisma.vehicleHistory.findMany({
     where: whereClause,
     include: {
-      vehicle: {
-        include: {
-          organization: true,
-        },
-      },
       user: {
-        include: {
-          organization: true,
+        select: {
+          firstName: true,
+          lastName: true,
+          organization: {
+            select: {
+              isGovernment: true,
+            },
+          },
         },
       },
     },
     orderBy: {
       timestamp: "asc",
     },
-  });
-};
-
-export const getAttachmentsCount = async (id: number): Promise<number> => {
-  const { userIsGov, userOrgId } = await getUserInfo();
-  const whereClause: Prisma.VehicleAttachmentWhereInput = { vehicleId: id };
-  if (!userIsGov) {
-    whereClause.vehicle = {
-      organizationId: userOrgId,
-    };
-  }
-  return await prisma.vehicleAttachment.count({
-    where: whereClause,
   });
 };

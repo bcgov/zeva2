@@ -106,6 +106,7 @@ export const getSupplierClass = async (
     ],
     organizationId,
     vehicleClass: VehicleClass.REPORTABLE,
+    volume: { gt: 0 },
   };
   let volumes: SupplyVolume[] = [];
   if (modelYear < ModelYear.MY_2024) {
@@ -119,10 +120,9 @@ export const getSupplierClass = async (
   }
   let average = new Decimal(0);
   if (volumes.length === 3) {
-    let total = 0;
-    volumes.forEach((volume) => {
-      total = total + volume.volume;
-    });
+    const total = volumes.reduce((acc, cv) => {
+      return acc + cv.volume;
+    }, 0);
     average = new Decimal(total).div(3);
   } else {
     // will throw on invalid reportableNvValue

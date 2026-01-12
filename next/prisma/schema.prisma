@@ -40,14 +40,12 @@ model Organization {
   isGovernment                  Boolean                         @default(false) @map("is_government")
   isActive                      Boolean                         @default(true) @map("is_active")
   shortName                     String                          @map("short_name")
-  firstModelYear                ModelYear?                      @map("first_model_year")
   users                         User[]
   zevUnitTransactions           ZevUnitTransaction[]
   zevUnitEndingBalances         ZevUnitEndingBalance[]
   creditTransferTo              CreditTransfer[]                @relation("creditTransferTo")
   creditTransferFrom            CreditTransfer[]                @relation("creditTransferFrom")
   Vehicle                       Vehicle[]
-  VehicleHistory                VehicleHistory[]
   organizationAddress           OrganizationAddress[]
   ldvSupplied                   OrganizationLDVSupplied[]
   CreditApplication             CreditApplication[]
@@ -269,7 +267,7 @@ model CreditTransferHistory {
   @@map("credit_transfer_history")
 }
 
-enum VehicleZevType {
+enum ZevType {
   BEV
   PHEV
   EREV
@@ -297,7 +295,9 @@ enum VehicleClassCode {
 
 enum VehicleStatus {
   DELETED
+  DRAFT
   REJECTED
+  RETURNED_TO_SUPPLIER
   SUBMITTED
   VALIDATED
 }
@@ -311,7 +311,7 @@ model Vehicle {
   make              String
   modelName         String              @map("model_name")
   modelYear         ModelYear           @map("model_year")
-  vehicleZevType    VehicleZevType      @map("vehicle_zev_type")
+  zevType           ZevType             @map("zev_type")
   range             Int
   vehicleClass      VehicleClass        @map("vehicle_class")
   zevClass          ZevClass            @map("zev_class")
@@ -328,27 +328,32 @@ model Vehicle {
   @@map("vehicle")
 }
 
+enum VehicleHistoryStatus {
+  REJECTED
+  RETURNED_TO_SUPPLIER
+  SUBMITTED
+  VALIDATED
+}
+
 model VehicleHistory {
-  id             Int           @id @default(autoincrement())
-  vehicleId      Int           @map("vehicle_id")
-  vehicle        Vehicle       @relation(fields: [vehicleId], references: [id])
-  userId         Int           @map("user_id")
-  user           User          @relation(fields: [userId], references: [id])
-  timestamp      DateTime      @default(now()) @db.Timestamptz(6)
-  userAction     VehicleStatus @map("user_action")
-  comment        String?
-  Organization   Organization? @relation(fields: [organizationId], references: [id])
-  organizationId Int?
+  id         Int                  @id @default(autoincrement())
+  vehicleId  Int                  @map("vehicle_id")
+  vehicle    Vehicle              @relation(fields: [vehicleId], references: [id])
+  userId     Int                  @map("user_id")
+  user       User                 @relation(fields: [userId], references: [id])
+  timestamp  DateTime             @default(now()) @db.Timestamptz(6)
+  userAction VehicleHistoryStatus @map("user_action")
+  comment    String?
 
   @@map("vehicle_history")
 }
 
 model VehicleAttachment {
-  id         Int     @id @default(autoincrement())
-  vehicleId  Int     @map("vehicle_id")
-  vehicle    Vehicle @relation(fields: [vehicleId], references: [id])
-  fileName   String  @map("file_name")
-  objectName String  @map("object_name")
+  id         Int      @id @default(autoincrement())
+  vehicleId  Int?     @map("vehicle_id")
+  vehicle    Vehicle? @relation(fields: [vehicleId], references: [id])
+  fileName   String?  @map("file_name")
+  objectName String   @unique @map("object_name")
 
   @@map("vehicle_file_attachment")
 }
@@ -410,8 +415,6 @@ model CreditApplication {
   transactionTimestamps       DateTime[]                      @map("transaction_timestamps") @db.Timestamptz(6)
   status                      CreditApplicationStatus         @map("status")
   supplierStatus              CreditApplicationSupplierStatus @map("supplier_status")
-  objectName                  String                          @unique @map("object_name")
-  fileName                    String                          @map("file_name")
   modelYears                  ModelYear[]                     @map("model_years")
   supplierName                String                          @map("supplier_name")
   makes                       String[]
@@ -462,7 +465,7 @@ model CreditApplicationRecord {
   numberOfUnits       Decimal           @map("number_of_units") @db.Decimal(65, 2)
   make                String
   modelName           String            @map("model_name")
-  zevType             VehicleZevType    @map("zev_type")
+  zevType             ZevType           @map("zev_type")
   range               Int
   icbcMake            String?           @map("icbc_make")
   icbcModelName       String?           @map("icbc_model_name")
@@ -476,11 +479,11 @@ model CreditApplicationRecord {
 }
 
 model CreditApplicationAttachment {
-  id                  Int               @id @default(autoincrement())
-  creditApplicationId Int               @map("credit_application_id")
-  creditApplication   CreditApplication @relation(fields: [creditApplicationId], references: [id])
-  fileName            String            @map("file_name")
-  objectName          String            @unique @map("object_name")
+  id                  Int                @id @default(autoincrement())
+  creditApplicationId Int?               @map("credit_application_id")
+  creditApplication   CreditApplication? @relation(fields: [creditApplicationId], references: [id])
+  fileName            String?            @map("file_name")
+  objectName          String             @unique @map("object_name")
 
   @@map("credit_application_attachment")
 }

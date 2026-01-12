@@ -65,8 +65,8 @@ export const VehicleTable = (props: {
         enableColumnFilter: true,
         header: () => <span>Range (km)</span>,
       }),
-      columnHelper.accessor((row) => row.vehicleZevType, {
-        id: "vehicleZevType",
+      columnHelper.accessor((row) => row.zevType, {
+        id: "zevType",
         enableSorting: true,
         enableColumnFilter: true,
         header: () => <span>ZEV Type</span>,

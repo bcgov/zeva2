@@ -21,6 +21,7 @@ const Page = async (props: { params: Promise<{ id: string }> }) => {
     return null;
   }
   const applicationStatus = creditApplication.status;
+  const applicationSupplierStatus = creditApplication.supplierStatus;
   const { userIsGov, userRoles } = await getUserInfo();
   const download = async () => {
     "use server";
@@ -88,7 +89,7 @@ const Page = async (props: { params: Promise<{ id: string }> }) => {
       <ContentCard title="Actions">
         <SupplierActions
           creditApplicationId={id}
-          status={applicationStatus}
+          status={applicationSupplierStatus}
           userRoles={userRoles}
         />
       </ContentCard>

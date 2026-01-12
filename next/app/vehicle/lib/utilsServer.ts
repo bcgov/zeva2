@@ -1,24 +1,17 @@
-import { Prisma, VehicleZevType, ZevClass } from "@/prisma/generated/client";
+import {
+  ModelYear,
+  Prisma,
+  VehicleClass,
+  ZevType,
+  ZevClass,
+} from "@/prisma/generated/client";
 import { Decimal } from "@/prisma/generated/client/runtime/library";
-import { AttachmentsSubDirectory } from "./constants";
 import {
   getMatchingTerms,
   getStringsToModelYearsEnumsMap,
   getStringsToVehicleStatusEnumsMap,
   getStringsToZevClassEnumsMap,
 } from "@/app/lib/utils/enumMaps";
-
-export const getOrConditions = <T>(
-  terms: T[],
-  key: keyof Prisma.VehicleWhereInput,
-) => {
-  if (terms.length === 0) {
-    return [{ id: -1 }];
-  }
-  return terms.map((t) => {
-    return { [key]: t };
-  });
-};
 
 export const getWhereClause = (filters: {
   [key: string]: string;
@@ -57,9 +50,9 @@ export const getWhereClause = (filters: {
       result[key] = {
         in: getMatchingTerms(modelYearsMap, value),
       };
-    } else if (key === "vehicleZevType") {
+    } else if (key === "zevType") {
       result[key] = {
-        in: getMatchingTerms(VehicleZevType, value),
+        in: getMatchingTerms(ZevType, value),
       };
     } else if (key === "isActive") {
       const lowerCaseValue = value.toLowerCase();
@@ -96,7 +89,7 @@ export const getOrderByClause = (
         key === "range" ||
         key === "zevClass" ||
         key === "modelYear" ||
-        key === "vehicleZevType" ||
+        key === "zevType" ||
         key === "isActive" ||
         key === "submittedCount" ||
         key === "issuedCount"
@@ -148,9 +141,62 @@ export const getNumberOfUnits = (
   throw new Error("Cannot calculate the credit value for this vehicle!");
 };
 
-export const getAttachmentFullObjectName = (
-  orgId: number,
-  objectName: string,
-) => {
-  return `${orgId}/${AttachmentsSubDirectory.VehicleAttachments}/${objectName}`;
+export const getVehicleClass = (
+  modelYear: ModelYear,
+  weight: number,
+): VehicleClass => {
+  const weightDec = new Decimal(weight);
+  if (
+    (modelYear <= ModelYear.MY_2023 && weightDec.lte(3856)) ||
+    (modelYear >= ModelYear.MY_2024 && weightDec.lte(4536))
+  ) {
+    return VehicleClass.REPORTABLE;
+  }
+  throw new Error("Cannot associate a vehicle class with this vehicle!");
+};
+
+export const getZevClass = (
+  modelYear: ModelYear,
+  zevType: ZevType,
+  range: number,
+): ZevClass => {
+  const rangeDec = new Decimal(range);
+  if (
+    modelYear <= ModelYear.MY_2025 &&
+    ((zevType === ZevType.BEV && rangeDec.gte("80.47")) ||
+      (zevType === ZevType.EREV && rangeDec.gte(121)) ||
+      (zevType === ZevType.FCEV && rangeDec.gte("80.47")))
+  ) {
+    return ZevClass.A;
+  }
+  if (
+    modelYear >= ModelYear.MY_2026 &&
+    ((zevType === ZevType.BEV && rangeDec.gte(241)) ||
+      (zevType === ZevType.FCEV && rangeDec.gte(241)))
+  ) {
+    return ZevClass.A;
+  }
+  if (
+    modelYear <= ModelYear.MY_2025 &&
+    ((zevType === ZevType.EREV && rangeDec.gte(16) && rangeDec.lt(121)) ||
+      (zevType === ZevType.PHEV && rangeDec.gte(16)))
+  ) {
+    return ZevClass.B;
+  }
+  if (
+    modelYear >= ModelYear.MY_2026 &&
+    ((zevType === ZevType.EREV && rangeDec.gte(80)) ||
+      (zevType === ZevType.PHEV &&
+        modelYear === ModelYear.MY_2026 &&
+        rangeDec.gte(55)) ||
+      (zevType === ZevType.PHEV &&
+        modelYear === ModelYear.MY_2027 &&
+        rangeDec.gte(65)) ||
+      (zevType === ZevType.PHEV &&
+        modelYear >= ModelYear.MY_2028 &&
+        rangeDec.gte(80)))
+  ) {
+    return ZevClass.B;
+  }
+  throw new Error("Cannot associate a zev class with this vehicle!");
 };

@@ -8,6 +8,7 @@ import { useRouter } from "next/navigation";
 import { useCallback, useMemo, useState, useTransition } from "react";
 import { FileWithPath } from "react-dropzone";
 import {
+  getCreditApplicationAttachmentPutData,
   getSupplierEligibleVehicles,
   getSupplierTemplateDownloadUrl,
   supplierSave,
@@ -17,8 +18,7 @@ import { getModelYearEnumsToStringsMap } from "@/app/lib/utils/enumMaps";
 import { downloadBuffer } from "@/app/lib/utils/download";
 import { Routes } from "@/app/lib/constants";
 import { getDefaultAttchmentTypes } from "@/app/lib/utils/attachments";
-import { bytesToBase64 } from "@/app/lib/utils/base64";
-import { CaFile } from "@/app/lib/services/attachments";
+import { Attachment } from "@/app/lib/services/attachments";
 
 export const CreditApplicationForm = (props: {
   creditApplicationId?: number;
@@ -76,21 +76,21 @@ export const CreditApplicationForm = (props: {
         if (files.length !== 1) {
           throw new Error("Exactly 1 Credit Application file expected!");
         }
-        const file = files[0];
-        const application = {
-          data: bytesToBase64(await file.arrayBuffer()),
-          fileName: file.name,
-        };
-        const documents: CaFile[] = [];
-        for (const attachment of attachments) {
-          documents.push({
-            data: bytesToBase64(await attachment.arrayBuffer()),
+        const allAttachments = [files[0], ...attachments];
+        const attachmentsPayload: Attachment[] = [];
+        const putData = await getCreditApplicationAttachmentPutData(
+          allAttachments.length,
+        );
+        for (const [index, attachment] of attachments.entries()) {
+          const putDatum = putData[index];
+          await axios.put(putDatum.url, attachment);
+          attachmentsPayload.push({
+            objectName: putDatum.objectName,
             fileName: attachment.name,
           });
         }
         const response = await supplierSave(
-          application,
-          documents,
+          attachmentsPayload,
           props.creditApplicationId,
         );
         if (response.responseType === "error") {

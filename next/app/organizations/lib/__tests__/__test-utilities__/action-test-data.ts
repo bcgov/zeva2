@@ -94,7 +94,6 @@ export const mockFunctions = (opt: {
   const createdOrg: Organization | undefined = orgWithId
     ? {
         ...orgWithId,
-        firstModelYear: null,
       }
     : undefined;
   const createdServiceAddress: OrganizationAddress | undefined =

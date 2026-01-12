@@ -1,12 +1,17 @@
 import { prisma } from "@/lib/prisma";
 import { TransactionClient } from "@/types/prisma";
-import { Prisma, VehicleStatus } from "@/prisma/generated/client";
+import {
+  ModelYear,
+  Prisma,
+  VehicleHistoryStatus,
+  VehicleStatus,
+} from "@/prisma/generated/client";
 import { Attachment } from "@/app/lib/services/attachments";
 
 export const createHistory = async (
   vehicleId: number,
   userId: number,
-  userAction: VehicleStatus,
+  userAction: VehicleHistoryStatus,
   comment?: string,
   transactionClient?: TransactionClient,
 ): Promise<number> => {
@@ -22,21 +27,56 @@ export const createHistory = async (
   return id;
 };
 
-export const createAttachments = async (
+export const getConflictingVehicle = async (
+  orgId: number,
+  make: string,
+  modelName: string,
+  modelYear: ModelYear,
+) => {
+  const conflictingVehicle = await prisma.vehicle.findFirst({
+    where: {
+      organizationId: orgId,
+      make: make,
+      modelName: modelName,
+      modelYear: modelYear,
+      isActive: true,
+      status: VehicleStatus.VALIDATED,
+    },
+    select: {
+      id: true,
+    },
+  });
+  return conflictingVehicle;
+};
+
+export const updateAttachments = async (
   vehicleId: number,
   attachments: Attachment[],
   transactionClient?: TransactionClient,
 ) => {
   const client = transactionClient ?? prisma;
-  const toCreate: Prisma.VehicleAttachmentUncheckedCreateInput[] = [];
-  attachments.forEach((attachment) => {
-    toCreate.push({
-      vehicleId,
-      fileName: attachment.fileName,
-      objectName: attachment.objectName,
+  for (const attachment of attachments) {
+    // throws if record to update does not exist in table
+    await client.vehicleAttachment.update({
+      where: {
+        objectName: attachment.objectName,
+      },
+      data: {
+        vehicleId,
+        fileName: attachment.fileName,
+      },
     });
-  });
-  await client.vehicleAttachment.createMany({
-    data: toCreate,
+  }
+};
+
+export const deleteAttachments = async (
+  vehicleId: number,
+  transactionClient?: TransactionClient,
+) => {
+  const client = transactionClient ?? prisma;
+  await client.vehicleAttachment.deleteMany({
+    where: {
+      vehicleId,
+    },
   });
 };
