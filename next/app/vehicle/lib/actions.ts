@@ -79,7 +79,7 @@ export const supplierSave = async (
   }
   const modelYear = data.modelYear;
   const range = data.range;
-  let zevModelId = vehicleId ?? NaN;
+  let zevModelId = vehicleId ?? Number.NaN;
   try {
     const vehicleClass = getVehicleClass(modelYear, data.weight);
     const zevClass = getZevClass(modelYear, data.zevType, range);

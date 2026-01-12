@@ -155,7 +155,7 @@ export const supplierSave = async (
       return getErrorActionResponse("Invalid Action!");
     }
   }
-  let applicationId = creditApplicationId ?? NaN;
+  let applicationId = creditApplicationId ?? Number.NaN;
   try {
     const applicationObject = await getObject(application.objectName);
     const applicationBuf = await getArrayBuffer(applicationObject);

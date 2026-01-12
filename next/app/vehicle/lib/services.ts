@@ -2,7 +2,6 @@ import { prisma } from "@/lib/prisma";
 import { TransactionClient } from "@/types/prisma";
 import {
   ModelYear,
-  Prisma,
   VehicleHistoryStatus,
   VehicleStatus,
 } from "@/prisma/generated/client";

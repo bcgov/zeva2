@@ -14,7 +14,6 @@ import {
 import { mapOfStatusToSupplierStatus } from "./constants";
 import { Attachment } from "@/app/lib/services/attachments";
 import { TransactionClient } from "@/types/prisma";
-import { putObject } from "@/app/lib/minio";
 import { Decimal } from "@/prisma/generated/client/runtime/library";
 import { flattenZevUnitRecords, ZevUnitRecord } from "@/lib/utils/zevUnit";
 

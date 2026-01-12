@@ -24,7 +24,7 @@ export const getWhereClause = (filters: {
   for (const [key, rawValue] of Object.entries(filters)) {
     const value = rawValue.trim();
     if (key === "id" || key === "legacyId") {
-      result[key] = parseInt(value, 10);
+      result[key] = Number.parseInt(value, 10);
     } else if (key === "organization") {
       result[key] = {
         is: { name: { contains: value, mode: "insensitive" } },

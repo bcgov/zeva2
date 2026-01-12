@@ -6,7 +6,7 @@ import {
   getStringsToCreditApplicationSupplierStatusEnumsMap,
   getStringsToModelYearsEnumsMap,
 } from "@/app/lib/utils/enumMaps";
-import { CreditApplicationSubDirectory, SupplierTemplate } from "./constants";
+import { SupplierTemplate } from "./constants";
 import { IcbcRecordsMap } from "./services";
 import {
   CreditApplicationCredit,
