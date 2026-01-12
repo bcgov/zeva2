@@ -7,6 +7,7 @@ import { useCallback, useState, useTransition } from "react";
 import { analystUpdate } from "../actions";
 import { CommentBox } from "@/app/lib/components/inputs/CommentBox";
 import { getNormalizedComment } from "@/app/lib/utils/comment";
+import { Routes } from "@/app/lib/constants";
 
 export const AnalystActions = (props: {
   vehicleId: number;
@@ -42,11 +43,15 @@ export const AnalystActions = (props: {
         if (response.responseType === "error") {
           setError(response.message);
         } else {
-          router.refresh();
+          if (newStatus === VehicleStatus.VALIDATED) {
+            router.refresh();
+          } else {
+            router.push(Routes.Vehicle);
+          }
         }
       });
     },
-    [props.vehicleId],
+    [props.vehicleId, comment],
   );
 
   if (props.status !== VehicleStatus.SUBMITTED) {

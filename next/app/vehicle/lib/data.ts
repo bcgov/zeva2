@@ -40,14 +40,24 @@ export const getVehicles = async (
     issuedCount: true,
   };
   const where = getWhereClause(filters);
-  where.NOT = {
-    status: VehicleStatus.DELETED,
-  };
   const orderBy = getOrderByClause(sorts, true);
   if (userIsGov) {
     select = { ...select, organization: { select: { name: true } } };
+    where.NOT = {
+      status: {
+        in: [
+          VehicleStatus.DELETED,
+          VehicleStatus.DRAFT,
+          VehicleStatus.REJECTED,
+          VehicleStatus.RETURNED_TO_SUPPLIER,
+        ],
+      },
+    };
   } else {
     where.organizationId = userOrgId;
+    where.NOT = {
+      status: VehicleStatus.DELETED,
+    };
   }
   return await prisma.$transaction([
     prisma.vehicle.findMany({
@@ -122,7 +132,7 @@ export const getVehicleHistories = async (vehicleId: number) => {
     whereClause.NOT = {
       vehicle: {
         status: {
-          notIn: [
+          in: [
             VehicleStatus.DRAFT,
             VehicleStatus.REJECTED,
             VehicleStatus.RETURNED_TO_SUPPLIER,

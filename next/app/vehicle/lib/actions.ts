@@ -350,6 +350,7 @@ export const analystUpdate = async (
       },
       data: {
         status: newStatus,
+        ...(newStatus === VehicleStatus.VALIDATED && { isActive: true }),
       },
     });
     const historyId = await createHistory(

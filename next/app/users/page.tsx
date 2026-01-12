@@ -7,7 +7,6 @@ import { Routes } from "../lib/constants";
 import { Button } from "../lib/components";
 import { getUserInfo } from "@/auth";
 import UserTable from "./lib/components/UserTable";
-import { redirect } from "next/navigation";
 import {
   getFilterStringWithActiveFilter,
   getTransformedFilters,

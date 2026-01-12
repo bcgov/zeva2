@@ -104,29 +104,46 @@ export const SupplierActions = (props: {
       </Button>
     );
   }
+  if (props.status === VehicleStatus.REJECTED) {
+    return (
+      <Button variant="secondary" onClick={handleDelete} disabled={isPending}>
+        {isPending ? "..." : "Delete"}
+      </Button>
+    );
+  }
   if (
     props.status === VehicleStatus.DRAFT ||
     props.status === VehicleStatus.RETURNED_TO_SUPPLIER
   ) {
-    <>
-      {error && <p className="text-red-600">{error}</p>}
-      <CommentBox
-        comment={comment}
-        setComment={setComment}
-        disabled={isPending}
-      />
-      <Button variant="secondary" onClick={handleDelete} disabled={isPending}>
-        {isPending ? "..." : "Delete"}
-      </Button>
-      <Button variant="secondary" onClick={handleGoToEdit} disabled={isPending}>
-        {isPending ? "..." : "Edit"}
-      </Button>
-      {props.userRoles.includes(Role.SIGNING_AUTHORITY) && (
-        <Button variant="secondary" onClick={handleSubmit} disabled={isPending}>
-          {isPending ? "..." : "Submit"}
+    return (
+      <>
+        {error && <p className="text-red-600">{error}</p>}
+        <CommentBox
+          comment={comment}
+          setComment={setComment}
+          disabled={isPending}
+        />
+        <Button variant="secondary" onClick={handleDelete} disabled={isPending}>
+          {isPending ? "..." : "Delete"}
         </Button>
-      )}
-    </>;
+        <Button
+          variant="secondary"
+          onClick={handleGoToEdit}
+          disabled={isPending}
+        >
+          {isPending ? "..." : "Edit"}
+        </Button>
+        {props.userRoles.includes(Role.SIGNING_AUTHORITY) && (
+          <Button
+            variant="secondary"
+            onClick={handleSubmit}
+            disabled={isPending}
+          >
+            {isPending ? "..." : "Submit"}
+          </Button>
+        )}
+      </>
+    );
   }
   return null;
 };

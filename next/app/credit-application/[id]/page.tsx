@@ -50,6 +50,10 @@ const Page = async (props: { params: Promise<{ id: string }> }) => {
         </Suspense>
       </ContentCard>
       <ContentCard title="Download Documents">
+        <span>
+          Number of Attachments:{" "}
+          {creditApplication._count.CreditApplicationAttachment}
+        </span>
         <AttachmentsDownload
           download={download}
           zipName={`credit-application-attachments-${id}`}

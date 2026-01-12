@@ -1,4 +1,3 @@
-import React from "react";
 import { getVehicles, VehicleSparse } from "../data";
 import { redirect } from "next/navigation";
 import { Routes } from "@/app/lib/constants";

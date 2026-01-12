@@ -257,10 +257,11 @@ export const unreserveVins = async (
 export const updateAttachments = async (
   creditApplicationId: number,
   attachments: Attachment[],
+  indexOfApplication: number,
   transactionClient?: TransactionClient,
 ) => {
   const client = transactionClient ?? prisma;
-  for (const attachment of attachments) {
+  for (const [index, attachment] of attachments.entries()) {
     // throws if record to update does not exist in table
     await client.creditApplicationAttachment.update({
       where: {
@@ -269,6 +270,7 @@ export const updateAttachments = async (
       data: {
         creditApplicationId,
         fileName: attachment.fileName,
+        ...(index === indexOfApplication && { isApplication: true }),
       },
     });
   }

@@ -83,8 +83,10 @@ export const getSupplierEligibleVehicles = async () => {
 
 export const getDocumentDownloadUrls = async (
   creditApplicationId: number,
-): Promise<DataOrErrorActionResponse<AttachmentDownload[]>> => {
-  const result: AttachmentDownload[] = [];
+): Promise<
+  DataOrErrorActionResponse<(AttachmentDownload & { isApplication: boolean })[]>
+> => {
+  const result: (AttachmentDownload & { isApplication: boolean })[] = [];
   const { userIsGov, userOrgId } = await getUserInfo();
   const whereClause: Prisma.CreditApplicationAttachmentWhereInput = {
     creditApplicationId,
@@ -110,6 +112,7 @@ export const getDocumentDownloadUrls = async (
     select: {
       objectName: true,
       fileName: true,
+      isApplication: true,
     },
   });
   for (const attachment of attachments) {
@@ -117,6 +120,7 @@ export const getDocumentDownloadUrls = async (
       result.push({
         url: await getPresignedGetObjectUrl(attachment.objectName),
         fileName: attachment.fileName,
+        isApplication: attachment.isApplication,
       });
     }
   }
@@ -251,7 +255,7 @@ export const supplierSave = async (
         data: recordsToCreate,
       });
       await deleteAttachments(applicationId, tx);
-      await updateAttachments(applicationId, attachments, tx);
+      await updateAttachments(applicationId, attachments, 0, tx);
     });
   } catch (e) {
     if (e instanceof Error) {

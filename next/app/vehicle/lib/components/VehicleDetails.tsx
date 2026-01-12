@@ -18,14 +18,13 @@ export const VehicleDetails = async ({ vehicle }: VehicleProps) => {
   if (vehicle) {
     const { userIsGov } = await getUserInfo();
     return (
-      <ul>
+      <ul className="space-y-3">
         <li key="id">ID: {vehicle.id}</li>
         {vehicle.legacyId && (
           <li key="legacyId">Legacy ID: {vehicle.legacyId}</li>
         )}
-        <li key="validationStatus">
-          Validation Status: {statusMap[vehicle.status]}
-        </li>
+        <li key="status">Status: {statusMap[vehicle.status]}</li>
+        <li key="isActive">Is Active: {vehicle.isActive ? "Yes" : "No"}</li>
         {userIsGov && (
           <li key="supplier">Supplier: {vehicle.organization.name} </li>
         )}

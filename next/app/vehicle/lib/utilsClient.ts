@@ -6,10 +6,9 @@ import {
   isZevType,
 } from "@/app/lib/utils/typeGuards";
 import { ModelYear } from "@/prisma/generated/client";
+import { VehicleFormData } from "./components/VehicleForm";
 
-export const getVehiclePayload = (
-  data: Partial<Record<string, string>>,
-): VehiclePayload => {
+export const getVehiclePayload = (data: VehicleFormData): VehiclePayload => {
   if (
     !data.modelYear ||
     !data.make ||

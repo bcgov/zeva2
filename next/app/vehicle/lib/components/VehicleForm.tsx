@@ -17,14 +17,28 @@ import { getStringsToModelYearsEnumsMap } from "@/app/lib/utils/enumMaps";
 import { Dropzone } from "@/app/lib/components/Dropzone";
 import { FileWithPath } from "react-dropzone";
 import { Button } from "@/app/lib/components";
-import { Attachment } from "@/app/lib/services/attachments";
+import { Attachment, AttachmentDownload } from "@/app/lib/services/attachments";
 import { getDefaultAttchmentTypes } from "@/app/lib/utils/attachments";
+import { getFiles } from "@/app/lib/utils/download";
 
-export const VehicleForm = (props: { vehicleId?: number }) => {
+export type VehicleFormData = {
+  modelYear?: string;
+  make?: string;
+  modelName?: string;
+  zevType?: string;
+  range?: string;
+  bodyType?: string;
+  gvwr?: string;
+  us06?: string;
+};
+
+export const VehicleForm = (props: {
+  vehicle?: { id: number; attachments: AttachmentDownload[] } & VehicleFormData;
+}) => {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string>("");
-  const [formData, setFormData] = useState<Partial<Record<string, string>>>({});
+  const [formData, setFormData] = useState<VehicleFormData>({});
   const [files, setFiles] = useState<FileWithPath[]>([]);
   const modelYearsMap = useMemo(() => {
     return getStringsToModelYearsEnumsMap();
@@ -33,8 +47,33 @@ export const VehicleForm = (props: { vehicleId?: number }) => {
     return getDefaultAttchmentTypes();
   }, []);
 
-  // todo: write existing vehicle info into formData, write existing files into files state
-  useEffect(() => {}, []);
+  useEffect(() => {
+    const initializeForm = async () => {
+      const vehicle = props.vehicle;
+      if (vehicle) {
+        const formDataToSet = {
+          modelYear: vehicle.modelYear,
+          make: vehicle.make,
+          modelName: vehicle.modelName,
+          zevType: vehicle.zevType,
+          range: vehicle.range,
+          bodyType: vehicle.bodyType,
+          gvwr: vehicle.gvwr,
+          us06: vehicle.us06,
+        };
+        setFormData(formDataToSet);
+        const attachments = vehicle.attachments;
+        if (attachments.length > 0 && vehicle.us06 === "true") {
+          const downloadedFiles = await getFiles(attachments);
+          const filesToSet = downloadedFiles.map((file) => {
+            return new File([file.data], file.fileName);
+          });
+          setFiles(filesToSet);
+        }
+      }
+    };
+    initializeForm();
+  }, [props.vehicle]);
 
   const handleChange = useCallback((key: string, value: string) => {
     if (key === "us06" && value === "false") {
@@ -62,7 +101,11 @@ export const VehicleForm = (props: { vehicleId?: number }) => {
             });
           }
         }
-        const response = await supplierSave(vehiclePayload, attachments);
+        const response = await supplierSave(
+          vehiclePayload,
+          attachments,
+          props.vehicle?.id,
+        );
         if (response.responseType === "error") {
           throw new Error(response.message);
         }
@@ -74,7 +117,7 @@ export const VehicleForm = (props: { vehicleId?: number }) => {
         }
       }
     });
-  }, [formData, files]);
+  }, [formData, files, props.vehicle]);
 
   return (
     <div>
