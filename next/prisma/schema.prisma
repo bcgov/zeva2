@@ -355,7 +355,7 @@ model VehicleAttachment {
   fileName   String?  @map("file_name")
   objectName String   @unique @map("object_name")
 
-  @@map("vehicle_file_attachment")
+  @@map("vehicle_attachment")
 }
 
 enum IcbcFileStatus {
