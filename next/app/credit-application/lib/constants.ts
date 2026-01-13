@@ -3,11 +3,6 @@ import {
   CreditApplicationSupplierStatus,
 } from "@/prisma/generated/client";
 
-export enum CreditApplicationSubDirectory {
-  CreditApplications = "creditApplication",
-  CreditApplicationAttachments = "creditApplicationAttachments",
-}
-
 export enum SupplierTemplate {
   Name = "credit_application_supplier_template.xlsx",
   ValidVehiclesSheetName = "Valid Vehicles",

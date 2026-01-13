@@ -1,4 +1,3 @@
-import React from "react";
 import { getVehicles, VehicleSparse } from "../data";
 import { redirect } from "next/navigation";
 import { Routes } from "@/app/lib/constants";
@@ -15,8 +14,8 @@ export type VehicleSparseSerialized = Omit<
 export const VehicleList = async (props: {
   page: number;
   pageSize: number;
-  filters: { [key: string]: string };
-  sorts: { [key: string]: string };
+  filters: Record<string, string>;
+  sorts: Record<string, string>;
 }) => {
   const navigationAction = async (id: number) => {
     "use server";

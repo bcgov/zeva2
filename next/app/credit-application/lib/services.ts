@@ -8,14 +8,12 @@ import {
   TransactionType,
   VehicleClass,
   VehicleStatus,
-  VehicleZevType,
+  ZevType,
   ZevClass,
 } from "@/prisma/generated/client";
 import { mapOfStatusToSupplierStatus } from "./constants";
-import { CaFile } from "@/app/lib/services/attachments";
+import { Attachment } from "@/app/lib/services/attachments";
 import { TransactionClient } from "@/types/prisma";
-import { getApplicationFullObjectName } from "./utils";
-import { putObject } from "@/app/lib/minio";
 import { Decimal } from "@/prisma/generated/client/runtime/library";
 import { flattenZevUnitRecords, ZevUnitRecord } from "@/lib/utils/zevUnit";
 
@@ -110,7 +108,7 @@ export const getEligibleVehicles = async (
       vehicleClass: includeAdditionalFields,
       zevClass: includeAdditionalFields,
       numberOfUnits: includeAdditionalFields,
-      vehicleZevType: includeAdditionalFields,
+      zevType: includeAdditionalFields,
       range: includeAdditionalFields,
     },
   });
@@ -130,7 +128,7 @@ export const getEligibleVehiclesMap = async (
           Partial<
             Record<
               ModelYear,
-              [number, VehicleClass, ZevClass, Decimal, VehicleZevType, number]
+              [number, VehicleClass, ZevClass, Decimal, ZevType, number]
             >
           >
         >
@@ -156,7 +154,7 @@ export const getEligibleVehiclesMap = async (
       vehicle.vehicleClass,
       vehicle.zevClass,
       vehicle.numberOfUnits,
-      vehicle.vehicleZevType,
+      vehicle.zevType,
       vehicle.range,
     ];
   }
@@ -255,24 +253,38 @@ export const unreserveVins = async (
   });
 };
 
-export const uploadAttachments = async (
+export const updateAttachments = async (
   creditApplicationId: number,
-  attachments: CaFile[],
+  attachments: Attachment[],
+  indexOfApplication: number,
   transactionClient?: TransactionClient,
 ) => {
   const client = transactionClient ?? prisma;
-  for (const attachment of attachments) {
-    const objectName = getApplicationFullObjectName("attachment");
-    await client.creditApplicationAttachment.create({
+  for (const [index, attachment] of attachments.entries()) {
+    // throws if record to update does not exist in table
+    await client.creditApplicationAttachment.update({
+      where: {
+        objectName: attachment.objectName,
+      },
       data: {
         creditApplicationId,
         fileName: attachment.fileName,
-        objectName,
+        ...(index === indexOfApplication && { isApplication: true }),
       },
     });
-    const object = Buffer.from(attachment.data, "base64");
-    await putObject(objectName, object);
   }
+};
+
+export const deleteAttachments = async (
+  creditApplicationId: number,
+  transactionClient?: TransactionClient,
+) => {
+  const client = transactionClient ?? prisma;
+  await client.creditApplicationAttachment.deleteMany({
+    where: {
+      creditApplicationId,
+    },
+  });
 };
 
 export const getApplicationFlattenedCreditRecords = async (
