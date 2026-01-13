@@ -25,6 +25,7 @@ export enum Directory {
 export const getPutObjectData = async (
   numberOfFiles: number,
   type: "creditApplication" | "vehicle",
+  orgId: number,
 ) => {
   const result: { objectName: string; url: string }[] = [];
   let directory: string;
@@ -45,7 +46,7 @@ export const getPutObjectData = async (
     });
   }
   const toCreate = result.map(({ objectName }) => {
-    return { objectName };
+    return { objectName, organizationId: orgId };
   });
   // will throw if uniqueness constraint violated
   switch (type) {
@@ -61,4 +62,41 @@ export const getPutObjectData = async (
       break;
   }
   return result;
+};
+
+export const checkAttachments = async (
+  attachments: Attachment[],
+  type: "creditApplication" | "vehicle",
+  orgId: number,
+) => {
+  if (attachments.length === 0) {
+    return;
+  }
+  const objectNames = attachments.map((attachment) => attachment.objectName);
+  let attachmentsFound;
+  switch (type) {
+    case "creditApplication":
+      attachmentsFound = await prisma.creditApplicationAttachment.findMany({
+        where: {
+          objectName: {
+            in: objectNames,
+          },
+          organizationId: orgId,
+        },
+      });
+      break;
+    case "vehicle":
+      attachmentsFound = await prisma.vehicleAttachment.findMany({
+        where: {
+          objectName: {
+            in: objectNames,
+          },
+          organizationId: orgId,
+        },
+      });
+      break;
+  }
+  if (attachments.length !== attachmentsFound.length) {
+    throw new Error("Invalid Attachments!");
+  }
 };

@@ -29,12 +29,14 @@ import { getVehicleClass, getZevClass, getNumberOfUnits } from "./utilsServer";
 import {
   Attachment,
   AttachmentDownload,
+  checkAttachments,
   getPutObjectData,
 } from "@/app/lib/services/attachments";
 import { addJobToEmailQueue } from "@/app/lib/services/queue";
 
 export const getVehicleAttachmentsPutData = async (numberOfFiles: number) => {
-  return await getPutObjectData(numberOfFiles, "vehicle");
+  const { userOrgId } = await getUserInfo();
+  return await getPutObjectData(numberOfFiles, "vehicle", userOrgId);
 };
 
 export type VehiclePayload = Omit<
@@ -81,6 +83,7 @@ export const supplierSave = async (
   const range = data.range;
   let zevModelId = vehicleId ?? Number.NaN;
   try {
+    await checkAttachments(attachments, "vehicle", userOrgId);
     const vehicleClass = getVehicleClass(modelYear, data.weight);
     const zevClass = getZevClass(modelYear, data.zevType, range);
     const us06RangeGte16 = data.us06RangeGte16;

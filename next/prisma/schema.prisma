@@ -57,6 +57,8 @@ model Organization {
   Reassessment                  Reassessment[]
   SupplementaryReport           SupplementaryReport[]
   LegacyAssessedModelYearReport LegacyAssessedModelYearReport[]
+  vehicleAttachments            VehicleAttachment[]
+  creditApplicationAttachments  CreditApplicationAttachment[]
 
   @@map("organization")
 }
@@ -349,11 +351,13 @@ model VehicleHistory {
 }
 
 model VehicleAttachment {
-  id         Int      @id @default(autoincrement())
-  vehicleId  Int?     @map("vehicle_id")
-  vehicle    Vehicle? @relation(fields: [vehicleId], references: [id])
-  fileName   String?  @map("file_name")
-  objectName String   @unique @map("object_name")
+  id             Int          @id @default(autoincrement())
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  organizationId Int          @map("organization_id")
+  vehicleId      Int?         @map("vehicle_id")
+  vehicle        Vehicle?     @relation(fields: [vehicleId], references: [id])
+  fileName       String?      @map("file_name")
+  objectName     String       @unique @map("object_name")
 
   @@map("vehicle_attachment")
 }
@@ -480,6 +484,8 @@ model CreditApplicationRecord {
 
 model CreditApplicationAttachment {
   id                  Int                @id @default(autoincrement())
+  organization        Organization       @relation(fields: [organizationId], references: [id])
+  organizationId      Int                @map("organization_id")
   creditApplicationId Int?               @map("credit_application_id")
   creditApplication   CreditApplication? @relation(fields: [creditApplicationId], references: [id])
   fileName            String?            @map("file_name")

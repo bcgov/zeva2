@@ -45,6 +45,7 @@ import {
 import {
   Attachment,
   AttachmentDownload,
+  checkAttachments,
   getPutObjectData,
 } from "@/app/lib/services/attachments";
 import { addJobToEmailQueue } from "@/app/lib/services/queue";
@@ -67,7 +68,8 @@ export const getSupplierTemplateDownloadUrl = async () => {
 export const getCreditApplicationAttachmentPutData = async (
   numberOfFiles: number,
 ) => {
-  return await getPutObjectData(numberOfFiles, "creditApplication");
+  const { userOrgId } = await getUserInfo();
+  return await getPutObjectData(numberOfFiles, "creditApplication", userOrgId);
 };
 
 export const getSupplierEligibleVehicles = async () => {
@@ -157,6 +159,7 @@ export const supplierSave = async (
   }
   let applicationId = creditApplicationId ?? Number.NaN;
   try {
+    await checkAttachments(attachments, "creditApplication", userOrgId);
     const applicationObject = await getObject(application.objectName);
     const applicationBuf = await getArrayBuffer(applicationObject);
     const workbook = new Excel.Workbook();
