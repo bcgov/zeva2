@@ -29,7 +29,7 @@ export const VehicleDetails = async ({ vehicle }: VehicleProps) => {
           <li key="supplier">Supplier: {vehicle.organization.name} </li>
         )}
         <li key="vehicleMake">Make: {vehicle.make}</li>
-        <li key="vehicleModel">Model: {vehicle.modelName}</li>
+        <li key="vehicleModel">Model Name: {vehicle.modelName}</li>
         <li key="modelYear">Model Year: {modelYearsMap[vehicle.modelYear]}</li>
         <li key="zevType">ZEV Type: {vehicle.zevType}</li>
         <li key="passedTest">
