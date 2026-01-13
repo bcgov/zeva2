@@ -21,6 +21,7 @@ const Page = async (props: { params: Promise<{ id: string }> }) => {
     return null;
   }
   const applicationStatus = creditApplication.status;
+  const applicationSupplierStatus = creditApplication.supplierStatus;
   const { userIsGov, userRoles } = await getUserInfo();
   const download = async () => {
     "use server";
@@ -49,6 +50,10 @@ const Page = async (props: { params: Promise<{ id: string }> }) => {
         </Suspense>
       </ContentCard>
       <ContentCard title="Download Documents">
+        <span>
+          Number of Attachments:{" "}
+          {creditApplication._count.CreditApplicationAttachment}
+        </span>
         <AttachmentsDownload
           download={download}
           zipName={`credit-application-attachments-${id}`}
@@ -88,7 +93,7 @@ const Page = async (props: { params: Promise<{ id: string }> }) => {
       <ContentCard title="Actions">
         <SupplierActions
           creditApplicationId={id}
-          status={applicationStatus}
+          status={applicationSupplierStatus}
           userRoles={userRoles}
         />
       </ContentCard>

@@ -365,3 +365,18 @@ export const getApplicationStatistics = async (creditApplicationId: number) => {
       : null,
   };
 };
+
+export const getAttachmentsCount = async (creditApplicationId: number) => {
+  const { userIsGov, userOrgId } = await getUserInfo();
+  const whereClause: Prisma.CreditApplicationAttachmentWhereInput = {
+    creditApplicationId,
+  };
+  if (!userIsGov) {
+    whereClause.creditApplication = {
+      organizationId: userOrgId,
+    };
+  }
+  return await prisma.creditApplicationAttachment.count({
+    where: whereClause,
+  });
+};

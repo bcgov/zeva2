@@ -1,7 +1,10 @@
 "use client";
 
 import { Button } from "@/app/lib/components";
-import { CreditApplicationStatus, Role } from "@/prisma/generated/client";
+import {
+  CreditApplicationSupplierStatus,
+  Role,
+} from "@/prisma/generated/client";
 import { useRouter } from "next/navigation";
 import { useCallback, useState, useTransition } from "react";
 import { supplierDelete, supplierSubmit } from "../actions";
@@ -11,7 +14,7 @@ import { CommentBox } from "@/app/lib/components/inputs/CommentBox";
 
 export const SupplierActions = (props: {
   creditApplicationId: number;
-  status: CreditApplicationStatus;
+  status: CreditApplicationSupplierStatus;
   userRoles: Role[];
 }) => {
   const [isPending, startTransition] = useTransition();
@@ -50,7 +53,7 @@ export const SupplierActions = (props: {
     });
   }, [props.creditApplicationId, comment]);
 
-  if (props.status !== CreditApplicationStatus.DRAFT) {
+  if (props.status !== CreditApplicationSupplierStatus.DRAFT) {
     return null;
   }
   return (
