@@ -23,11 +23,14 @@ export const AnalystActions = (props: {
     setError("");
     startTransition(async () => {
       try {
-        await returnModelYearReport(
+        const response = await returnModelYearReport(
           props.id,
           ModelYearReportStatus.RETURNED_TO_SUPPLIER,
           getNormalizedComment(comment),
         );
+        if (response.responseType === "error") {
+          throw new Error(response.message);
+        }
         router.refresh();
       } catch (e) {
         if (e instanceof Error) {

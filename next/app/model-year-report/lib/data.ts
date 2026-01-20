@@ -8,22 +8,40 @@ import {
   ReassessmentStatus,
   SupplierReassessmentStatus,
   Role,
+  SupplierClass,
 } from "@/prisma/generated/client";
 import { getOrderByClause, getWhereClause } from "./utilsServer";
 import { getObject } from "@/app/lib/minio";
 
 export const modelYearReportExists = async (modelYear: ModelYear) => {
   const { userOrgId } = await getUserInfo();
-  const report = await prisma.modelYearReport.findFirst({
+  const report = await prisma.modelYearReport.findUnique({
     where: {
-      organizationId: userOrgId,
-      modelYear: modelYear,
+      organizationId_modelYear: {
+        organizationId: userOrgId,
+        modelYear,
+      },
     },
     select: {
       id: true,
     },
   });
   if (report) {
+    return true;
+  }
+  const legacyAssessedReport =
+    await prisma.legacyAssessedModelYearReport.findUnique({
+      where: {
+        organizationId_modelYear: {
+          organizationId: userOrgId,
+          modelYear,
+        },
+      },
+      select: {
+        id: true,
+      },
+    });
+  if (legacyAssessedReport) {
     return true;
   }
   return false;
@@ -145,6 +163,12 @@ export type MyrSparse = {
   organization?: {
     name: string;
   };
+  compliant: boolean | null;
+  supplierCompliant: boolean | null;
+  reportableNvValue: number;
+  supplierReportableNvValue: number;
+  supplierClass: SupplierClass;
+  supplierSupplierClass: SupplierClass;
 };
 
 export const getModelYearReports = async (
@@ -169,6 +193,12 @@ export const getModelYearReports = async (
     supplierStatus: true,
     reassessmentStatus: true,
     supplierReassessmentStatus: true,
+    compliant: true,
+    supplierCompliant: true,
+    reportableNvValue: true,
+    supplierReportableNvValue: true,
+    supplierClass: true,
+    supplierSupplierClass: true,
   };
   if (userIsGov) {
     select.organization = {
@@ -261,7 +291,6 @@ export const getReassessment = async (
   const { userIsGov, userOrgId } = await getUserInfo();
   const whereClause: Prisma.ReassessmentWhereUniqueInput = {
     id: reassessmentId,
-    NOT: { status: ReassessmentStatus.DELETED },
   };
   if (!userIsGov) {
     whereClause.organizationId = userOrgId;
@@ -306,7 +335,6 @@ export const getReassessmentObject = async (reassessmentId: number) => {
   const { userIsGov, userOrgId, userRoles } = await getUserInfo();
   const whereClause: Prisma.ReassessmentWhereUniqueInput = {
     id: reassessmentId,
-    NOT: { status: ReassessmentStatus.DELETED },
   };
   if (!userIsGov) {
     whereClause.organizationId = userOrgId;
@@ -376,9 +404,6 @@ export const getLegacyReassessments = async (
   const skip = (page - 1) * pageSize;
   const take = pageSize;
   const where: Prisma.ReassessmentWhereInput = {
-    status: {
-      not: ReassessmentStatus.DELETED,
-    },
     modelYearReportId: null,
   };
   const select: Prisma.ReassessmentSelect = {
@@ -440,9 +465,6 @@ export const getReassessments = async (myrId: number) => {
   const whereClause: Prisma.ReassessmentWhereInput = {
     organizationId: myr.organizationId,
     modelYear: myr.modelYear,
-    status: {
-      not: ReassessmentStatus.DELETED,
-    },
   };
   if (!userIsGov) {
     whereClause.status = ReassessmentStatus.ISSUED;

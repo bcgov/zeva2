@@ -1,10 +1,5 @@
 import { ModelYear, VehicleClass, ZevClass } from "@/prisma/generated/client";
 
-export type SupplierClass =
-  | "small volume supplier"
-  | "medium volume supplier"
-  | "large volume supplier";
-
 export const unspecifiedComplianceRatios: Readonly<
   Partial<Record<VehicleClass, Partial<Record<ModelYear, string>>>>
 > = {

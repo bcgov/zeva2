@@ -31,10 +31,7 @@ export const ReassessmentAnalystActions = (props: {
     setError("");
     startTransition(async () => {
       try {
-        await deleteReassessment(
-          props.reassessmentId,
-          getNormalizedComment(comment),
-        );
+        await deleteReassessment(props.reassessmentId);
         if (props.myrId) {
           router.push(`${Routes.ComplianceReporting}/${props.myrId}`);
         } else {

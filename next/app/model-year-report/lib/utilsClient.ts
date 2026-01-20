@@ -6,6 +6,7 @@ import Excel, { Workbook } from "exceljs";
 import {
   ModelYear,
   ReferenceType,
+  SupplierClass,
   TransactionType,
   VehicleClass,
   ZevClass,
@@ -21,11 +22,12 @@ import {
   AdjustmentPayload,
   AssessmentData,
 } from "./actions";
-import { divisors, SupplierZevClassChoice } from "./constants";
+import { divisors, IsCompliant, SupplierZevClassChoice } from "./constants";
 import {
   getBalanceTypeEnumsToStringsMap,
   getModelYearEnumsToStringsMap,
   getReferenceTypeEnumsToStringsMap,
+  getSupplierClassEnumsToStringsMap,
   getTransactionTypeEnumsToStringMap,
   getVehicleClassEnumsToStringsMap,
   getZevClassEnumsToStringsMap,
@@ -38,9 +40,9 @@ import {
   isVehicleClass,
   isZevClass,
 } from "@/app/lib/utils/typeGuards";
-import { SupplierClass } from "@/app/lib/constants/complianceRatio";
 import { ComplianceInfo } from "./utilsServer";
 import { getAssessmentSheets, getMyrSheets } from "./utils";
+import { VehicleStatistics } from "./services";
 
 export const getZevClassOrdering = (
   priorityZevClass: SupplierZevClassChoice,
@@ -76,6 +78,7 @@ export type MyrHelpingMaps = {
   vehicleClassesMap: Partial<Record<VehicleClass, string>>;
   zevClassesMap: Partial<Record<ZevClass, string>>;
   modelYearsMap: Partial<Record<ModelYear, string>>;
+  supplierClassesMap: Partial<Record<SupplierClass, string>>;
 };
 
 export const getHelpingMaps = (): MyrHelpingMaps => {
@@ -86,6 +89,7 @@ export const getHelpingMaps = (): MyrHelpingMaps => {
     vehicleClassesMap: getVehicleClassEnumsToStringsMap(),
     zevClassesMap: getZevClassEnumsToStringsMap(),
     modelYearsMap: getModelYearEnumsToStringsMap(),
+    supplierClassesMap: getSupplierClassEnumsToStringsMap(),
   };
 };
 
@@ -100,7 +104,16 @@ export const generateMyr = async (template: Excel.Buffer, myrData: MyrData) => {
     myrData.zevClassOrdering,
     helpingMaps,
   );
-  writeSupplierDetails(sheets.supplierDetailsSheet, myrData.supplierData);
+  writeSupplierDetails(
+    sheets.supplierDetailsSheet,
+    myrData.supplierData,
+    helpingMaps,
+  );
+  writeVehicleStatistics(
+    sheets.vehicleStatisticsSheet,
+    myrData.vehicleStatistics,
+    helpingMaps,
+  );
   writeComplianceReductions(
     sheets.complianceReductionsSheet,
     myrData.complianceReductions,
@@ -149,16 +162,14 @@ const writeMyrDetails = (
 const writeSupplierDetails = (
   sheet: Excel.Worksheet,
   supplierDetails: SupplierData,
+  helpingMaps: MyrHelpingMaps,
 ) => {
   const { name, makes, recordsAddress, serviceAddress, supplierClass } =
     supplierDetails;
   sheet.addRow([
     name,
     makes.join(", "),
-    supplierClass
-      .split(" ")
-      .map((s) => lowerCaseAndCapitalize(s))
-      .join(" "),
+    helpingMaps.supplierClassesMap[supplierClass],
     serviceAddress
       ? `${serviceAddress.addressLines}, ${serviceAddress.city}, ${serviceAddress.state}, ${serviceAddress.postalCode}, ${serviceAddress.country}`
       : "",
@@ -166,6 +177,26 @@ const writeSupplierDetails = (
       ? `${recordsAddress.addressLines}, ${recordsAddress.city}, ${recordsAddress.state}, ${recordsAddress.postalCode}, ${recordsAddress.country}`
       : "",
   ]);
+};
+
+const writeVehicleStatistics = (
+  sheet: Excel.Worksheet,
+  vehicleStatistics: VehicleStatistics,
+  helpingMaps: MyrHelpingMaps,
+) => {
+  for (const vehicle of vehicleStatistics) {
+    sheet.addRow([
+      helpingMaps.vehicleClassesMap[vehicle.vehicleClass],
+      helpingMaps.zevClassesMap[vehicle.zevClass],
+      vehicle.make,
+      vehicle.modelName,
+      helpingMaps.modelYearsMap[vehicle.modelYear],
+      vehicle.zevType,
+      vehicle.range,
+      vehicle.submittedCount,
+      vehicle.issuedCount,
+    ]);
+  }
 };
 
 const writeBalance = (
@@ -306,6 +337,7 @@ export const generateAssessment = async (
     assessmentData.modelYear,
     assessmentData.supplierClass,
     assessmentData.zevClassOrdering,
+    assessmentData.complianceInfo,
     helpingMaps,
   );
   writeComplianceReductions(
@@ -358,18 +390,24 @@ const writeAssessmentDetails = (
   modelYear: ModelYear,
   classification: SupplierClass,
   zevClassOrdering: ZevClass[],
+  complianceInfo: ComplianceInfo,
   helpingMaps: MyrHelpingMaps,
 ) => {
+  let isCompliant: IsCompliant = IsCompliant.Yes;
+  for (const [_vehicleClass, data] of Object.values(complianceInfo)) {
+    if (!data.isCompliant) {
+      isCompliant = IsCompliant.No;
+      break;
+    }
+  }
   sheet.addRow([
     supplierName,
     helpingMaps.modelYearsMap[modelYear],
-    classification
-      .split(" ")
-      .map((s) => lowerCaseAndCapitalize(s))
-      .join(" "),
+    helpingMaps.supplierClassesMap[classification],
     zevClassOrdering
       .map((zevClass) => helpingMaps.zevClassesMap[zevClass])
       .join(", "),
+    isCompliant,
   ]);
 };
 
