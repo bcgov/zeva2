@@ -4,7 +4,7 @@ export enum MyrTemplate {
   Name = "model_year_report_template.xlsx",
   DetailsSheetName = "Details",
   SupplierDetailsSheetName = "Supplier Details",
-  VehiclesSuppliedSheetName = "Section 17(4)",
+  VehicleStatisticsSheetName = "Vehicle Statistics",
   ComplianceReductionsSheetName = "Compliance Ratio Reductions",
   BeginningBalanceSheetName = "Beginning Balance",
   CreditsSheetName = "Credits",
@@ -49,3 +49,8 @@ export type SupplierZevClassChoice =
 export const divisors: Readonly<Partial<Record<ModelYear, string>>> = {
   [ModelYear.MY_2025]: "3.5",
 };
+
+export enum IsCompliant {
+  Yes = "Yes",
+  No = "No",
+}

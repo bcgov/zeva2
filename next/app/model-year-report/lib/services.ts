@@ -1,5 +1,4 @@
 import Excel from "exceljs";
-import { SupplierClass } from "@/app/lib/constants/complianceRatio";
 import {
   getCompliancePeriod,
   getDominatedComplianceYears,
@@ -18,9 +17,12 @@ import {
   Prisma,
   ReassessmentStatus,
   ReferenceType,
+  SupplierClass,
   SupplyVolume,
   VehicleClass,
+  VehicleStatus,
   ZevClass,
+  ZevType,
 } from "@/prisma/generated/client";
 import { Decimal } from "@/prisma/generated/client/runtime/library";
 import {
@@ -30,6 +32,7 @@ import {
   getTransformedAdjustments,
   parseMyrForAssessmentData,
   parseAssesmentForData,
+  parseMyrForData,
 } from "./utilsServer";
 import { TransactionClient } from "@/types/prisma";
 import { AdjustmentPayload, NvValues } from "./actions";
@@ -86,6 +89,42 @@ export const getOrgDetails = async (
   };
 };
 
+export type VehicleStatistics = {
+  vehicleClass: VehicleClass;
+  zevClass: ZevClass;
+  make: string;
+  modelName: string;
+  modelYear: ModelYear;
+  zevType: ZevType;
+  range: number;
+  submittedCount: number;
+  issuedCount: number;
+}[];
+
+export const getVehicleStatistics = async (
+  organizationId: number,
+  modelYear: ModelYear,
+): Promise<VehicleStatistics> => {
+  return await prisma.vehicle.findMany({
+    where: {
+      organizationId,
+      modelYear,
+      status: VehicleStatus.VALIDATED,
+    },
+    select: {
+      vehicleClass: true,
+      zevClass: true,
+      make: true,
+      modelName: true,
+      modelYear: true,
+      zevType: true,
+      range: true,
+      submittedCount: true,
+      issuedCount: true,
+    },
+  });
+};
+
 export const getSupplierClass = async (
   organizationId: number,
   modelYear: ModelYear,
@@ -129,12 +168,12 @@ export const getSupplierClass = async (
     average = new Decimal(reportableNvValue);
   }
   if (average.lt(1000)) {
-    return "small volume supplier";
+    return SupplierClass.SMALL_VOLUME_SUPPLIER;
   }
   if (average.gte(1000) && average.lt(5000)) {
-    return "medium volume supplier";
+    return SupplierClass.MEDIUM_VOLUME_SUPPLIER;
   }
-  return "large volume supplier";
+  return SupplierClass.LARGE_VOLUME_SUPPLIER;
 };
 
 export const getPrevEndingBalance = async (
@@ -417,6 +456,12 @@ export const getReassessableMyrData = async (
   };
 };
 
+export const getMyrDataFromSubmission = async (myr: ArrayBuffer) => {
+  const myrWorkbook = new Excel.Workbook();
+  await myrWorkbook.xlsx.load(myr);
+  return parseMyrForData(myrWorkbook);
+};
+
 export type MyrDataForAssessment = {
   orgName: string;
   organizationId: number;
@@ -459,9 +504,14 @@ export const getMyrDataForAssessment = async (
   };
 };
 
-export const getAssessmentSystemData = async (objectName: string) => {
-  const assessmentFile = await getObject(objectName);
-  const assessmentBuf = await getArrayBuffer(assessmentFile);
+export const getAssessmentSystemData = async (object: string | ArrayBuffer) => {
+  let assessmentBuf: ArrayBuffer;
+  if (typeof object === "string") {
+    const assessmentFile = await getObject(object);
+    assessmentBuf = await getArrayBuffer(assessmentFile);
+  } else {
+    assessmentBuf = object;
+  }
   const assessmentWorkbook = new Excel.Workbook();
   await assessmentWorkbook.xlsx.load(assessmentBuf);
   return parseAssesmentForData(assessmentWorkbook);
@@ -544,7 +594,7 @@ export const getLegacyAssessedMyr = async (
 
 export const updateMyrReassessmentStatus = async (
   myrId: number,
-  status: ReassessmentStatus,
+  status: ReassessmentStatus | null,
   transactionClient?: TransactionClient,
 ) => {
   const client = transactionClient ?? prisma;
@@ -556,6 +606,26 @@ export const updateMyrReassessmentStatus = async (
       reassessmentStatus: status,
       supplierReassessmentStatus:
         status === ReassessmentStatus.ISSUED ? ReassessmentStatus.ISSUED : null,
+    },
+  });
+};
+
+export const revertFields = async (
+  myrId: number,
+  supplierClass: SupplierClass,
+  reportableNvValue: number,
+  compliant: boolean | null,
+  transactionClient?: TransactionClient,
+) => {
+  const client = transactionClient ?? prisma;
+  await client.modelYearReport.update({
+    where: {
+      id: myrId,
+    },
+    data: {
+      supplierClass,
+      reportableNvValue,
+      compliant,
     },
   });
 };

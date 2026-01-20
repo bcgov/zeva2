@@ -8,6 +8,9 @@ export const getMyrSheets = (workbook: Workbook) => {
   const supplierDetailsSheet = workbook.getWorksheet(
     MyrTemplate.SupplierDetailsSheetName,
   );
+  const vehicleStatisticsSheet = workbook.getWorksheet(
+    MyrTemplate.VehicleStatisticsSheetName,
+  );
   const complianceReductionsSheet = workbook.getWorksheet(
     MyrTemplate.ComplianceReductionsSheetName,
   );
@@ -24,6 +27,7 @@ export const getMyrSheets = (workbook: Workbook) => {
   if (
     !detailsSheet ||
     !supplierDetailsSheet ||
+    !vehicleStatisticsSheet ||
     !complianceReductionsSheet ||
     !beginningBalanceSheet ||
     !creditsSheet ||
@@ -35,6 +39,7 @@ export const getMyrSheets = (workbook: Workbook) => {
   return {
     detailsSheet,
     supplierDetailsSheet,
+    vehicleStatisticsSheet,
     complianceReductionsSheet,
     beginningBalanceSheet,
     creditsSheet,
@@ -69,6 +74,7 @@ export type FileReductionRecord = {
 export type ParsedMyr = {
   details: FileMyrDetails;
   supplierDetails: FileMyrSupplierDetails;
+  vehicleStatistics: FileVehicleStatistic[];
   complianceReductions: FileReductionRecord[];
   beginningBalance: FileZevUnitRecord[];
   credits: FileZevUnitRecord[];
@@ -81,6 +87,7 @@ export const parseMyr = (workbook: Workbook): ParsedMyr => {
   return {
     details: parseMyrDetails(sheets.detailsSheet),
     supplierDetails: parseSupplierDetails(sheets.supplierDetailsSheet),
+    vehicleStatistics: parseVehicleStatistics(sheets.vehicleStatisticsSheet),
     complianceReductions: parseComplianceReductions(
       sheets.complianceReductionsSheet,
     ),
@@ -125,6 +132,40 @@ const parseSupplierDetails = (
     serviceAddress: supplierDetailsRow.getCell(4).toString(),
     recordsAddress: supplierDetailsRow.getCell(5).toString(),
   };
+};
+
+type FileVehicleStatistic = {
+  vehicleClass: string;
+  zevClass: string;
+  make: string;
+  modelName: string;
+  modelYear: string;
+  zevType: string;
+  range: string;
+  submittedCount: string;
+  issuedCount: string;
+};
+
+const parseVehicleStatistics = (
+  sheet: Excel.Worksheet,
+): FileVehicleStatistic[] => {
+  const result: FileVehicleStatistic[] = [];
+  sheet.eachRow((row, rowNumber) => {
+    if (rowNumber > 1) {
+      result.push({
+        vehicleClass: row.getCell(1).toString(),
+        zevClass: row.getCell(2).toString(),
+        make: row.getCell(3).toString(),
+        modelName: row.getCell(4).toString(),
+        modelYear: row.getCell(5).toString(),
+        zevType: row.getCell(6).toString(),
+        range: row.getCell(7).toString(),
+        submittedCount: row.getCell(8).toString(),
+        issuedCount: row.getCell(9).toString(),
+      });
+    }
+  });
+  return result;
 };
 
 const parseComplianceReductions = (
@@ -233,6 +274,7 @@ export type FileAssessmentDetails = {
   modelYear: string;
   classification: string;
   zevClassOrdering: string;
+  isCompliant: string;
 };
 
 export const parseAssessment = (workbook: Workbook): ParsedAssmnt => {
@@ -263,6 +305,7 @@ const parseAssessmentDetails = (
     modelYear: row.getCell(2).toString(),
     classification: row.getCell(3).toString(),
     zevClassOrdering: row.getCell(4).toString(),
+    isCompliant: row.getCell(5).toString(),
   };
 };
 

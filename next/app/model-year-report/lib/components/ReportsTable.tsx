@@ -1,16 +1,18 @@
 "use client";
 
-import React, { useCallback, useMemo } from "react";
+import { useCallback, useMemo } from "react";
 import { ColumnDef, createColumnHelper } from "@tanstack/react-table";
 import { Table } from "@/app/lib/components";
 import {
   getModelYearEnumsToStringsMap,
   getMyrStatusEnumsToStringsMap,
   getReassessmentStatusEnumsToStringsMap,
+  getSupplierClassEnumsToStringsMap,
 } from "@/app/lib/utils/enumMaps";
 import { MyrSparseSerialized } from "../utilsServer";
 import { useRouter } from "next/navigation";
 import { Routes } from "@/app/lib/constants";
+import { IsCompliant } from "../constants";
 
 export const ReportsTable = (props: {
   myrs: MyrSparseSerialized[];
@@ -30,6 +32,9 @@ export const ReportsTable = (props: {
   }, []);
   const reassessmentStatusMap = useMemo(() => {
     return getReassessmentStatusEnumsToStringsMap();
+  }, []);
+  const supplierClassesMap = useMemo(() => {
+    return getSupplierClassEnumsToStringsMap();
   }, []);
   const columns = useMemo(() => {
     const result: ColumnDef<MyrSparseSerialized, any>[] = [
@@ -57,6 +62,31 @@ export const ReportsTable = (props: {
           header: () => <span>Reassessment Status</span>,
         },
       ),
+      columnHelper.accessor((row) => row.compliant, {
+        id: "compliant",
+        enableSorting: true,
+        enableColumnFilter: true,
+        header: () => <span>Compliant</span>,
+        cell: (cellProps) => {
+          const value = cellProps.row.original.compliant;
+          if (value === null) {
+            return "--";
+          }
+          return value ? IsCompliant.Yes : IsCompliant.No;
+        },
+      }),
+      columnHelper.accessor((row) => supplierClassesMap[row.supplierClass], {
+        id: "supplierClass",
+        enableSorting: true,
+        enableColumnFilter: true,
+        header: () => <span>Supplier Class</span>,
+      }),
+      columnHelper.accessor((row) => row.reportableNvValue, {
+        id: "reportableNvValue",
+        enableSorting: true,
+        enableColumnFilter: false,
+        header: () => <span>Reportable NV Value</span>,
+      }),
     ];
     if (props.userIsGov) {
       result.unshift(
