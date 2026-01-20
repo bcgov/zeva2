@@ -657,7 +657,6 @@ enum ModelYearReportSupplierStatus {
 }
 
 enum ReassessmentStatus {
-  DELETED
   ISSUED
   RETURNED_TO_ANALYST
   SUBMITTED_TO_DIRECTOR
@@ -665,6 +664,12 @@ enum ReassessmentStatus {
 
 enum SupplierReassessmentStatus {
   ISSUED
+}
+
+enum SupplierClass {
+  LARGE_VOLUME_SUPPLIER
+  MEDIUM_VOLUME_SUPPLIER
+  SMALL_VOLUME_SUPPLIER
 }
 
 model ModelYearReport {
@@ -678,6 +683,12 @@ model ModelYearReport {
   supplierReassessmentStatus SupplierReassessmentStatus?   @map("supplier_reassessment_status")
   objectName                 String                        @unique @map("object_name")
   forecastReportObjectName   String                        @unique @map("forecast_report_object_name")
+  compliant                  Boolean?
+  supplierCompliant          Boolean?                      @map("supplier_compliant")
+  reportableNvValue          Int                           @map("reportable_nv_value")
+  supplierReportableNvValue  Int                           @map("supplier_reportable_nv_value")
+  supplierClass              SupplierClass                 @map("supplier_class")
+  supplierSupplierClass      SupplierClass                 @map("supplier_supplier_class")
   modelYearReportHistory     ModelYearReportHistory[]
   assessment                 Assessment?
   Reassessment               Reassessment[]

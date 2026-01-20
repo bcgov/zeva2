@@ -30,7 +30,9 @@ export const seedVehicles = async (
   });
   const recordsOfSaleGroupsOld = await prismaOld.record_of_sale.groupBy({
     where: {
-      validation_status: "VALIDATED",
+      sales_submission: {
+        validation_status: "VALIDATED",
+      },
     },
     by: ["vehicle_id"],
     _count: {
