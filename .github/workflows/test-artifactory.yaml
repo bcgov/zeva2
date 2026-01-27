@@ -144,3 +144,14 @@ jobs:
           #   "docker://${OPENSHIFT_REGISTRY}/${{ env.TOOLS_NAMESPACE }}/zeva2-bullmq:${VERSION}" \
           #   "docker://${ARTIFACTORY_REGISTRY}/${ARTIFACTORY_REPO}/zeva2/dev/zeva2-bullmq:${VERSION}"
 
+  # deploy to Dev
+  deploy:
+    name: Deploy Zeva2 test artifact TO Dev
+    needs: [install-oc,tag-images]
+    uses: ./.github/workflows/deploy-template.yaml
+    with:
+      git_ref: ${{ github.ref_name }}
+      version: ${{ needs.versioning.outputs.VERSION }}
+      values_file: values-dev.yaml
+    secrets:
+      manifest-repo-deploy-key: ${{ secrets.MANIFEST_REPO_DEPLOY_KEY }}

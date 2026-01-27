@@ -113,6 +113,34 @@ jobs:
           oc tag ${{ env.TOOLS_NAMESPACE }}/zeva2-next:${{ needs.versioning.outputs.VERSION}} ${{ env.DEV_NAMESPACE}}/zeva2-next:${{ needs.versioning.outputs.VERSION}}
           oc tag ${{ env.TOOLS_NAMESPACE }}/zeva2-bullmq:${{ needs.versioning.outputs.VERSION}} ${{ env.DEV_NAMESPACE }}/zeva2-bullmq:${{ needs.versioning.outputs.VERSION}}
 
+      - name: Install skopeo
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y skopeo
+
+      - name: Tag images to Artifactory
+        env:
+          ARTIFACTORY_REGISTRY: ${{ secrets.ARTIFACTORY_REGISTRY }}
+          ARTIFACTORY_REPO: ${{ secrets.ARTIFACTORY_REPO }}
+          ARTIFACTORY_USERNAME: ${{ secrets.ARTIFACTORY_USERNAME }}
+          ARTIFACTORY_PASSWORD: ${{ secrets.ARTIFACTORY_PASSWORD }}
+        run: |
+          set -euo pipefail
+          VERSION="${{ needs.versioning.outputs.VERSION }}"
+          OPENSHIFT_REGISTRY="$(oc registry info --public)"
+          SRC_CREDS="$(oc whoami):$(oc whoami -t)"
+          DEST_CREDS="${ARTIFACTORY_USERNAME}:${ARTIFACTORY_PASSWORD}"
+
+          skopeo copy --src-tls-verify=false --dest-tls-verify=true \
+            --src-creds "${SRC_CREDS}" --dest-creds "${DEST_CREDS}" \
+            "docker://${OPENSHIFT_REGISTRY}/${{ env.TOOLS_NAMESPACE }}/zeva2-next:${VERSION}" \
+            "docker://${ARTIFACTORY_REGISTRY}/${ARTIFACTORY_REPO}/zeva2/dev/zeva2-next:${VERSION}"
+
+          skopeo copy --src-tls-verify=false --dest-tls-verify=true \
+            --src-creds "${SRC_CREDS}" --dest-creds "${DEST_CREDS}" \
+            "docker://${OPENSHIFT_REGISTRY}/${{ env.TOOLS_NAMESPACE }}/zeva2-bullmq:${VERSION}" \
+            "docker://${ARTIFACTORY_REGISTRY}/${ARTIFACTORY_REPO}/zeva2/dev/zeva2-bullmq:${VERSION}"
+
 
   # deploy to Dev
   deploy:
