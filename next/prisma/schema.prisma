@@ -645,6 +645,7 @@ model SupplyVolume {
 
 enum ModelYearReportStatus {
   ASSESSED
+  DRAFT
   RETURNED_TO_ANALYST
   RETURNED_TO_SUPPLIER
   SUBMITTED_TO_DIRECTOR
@@ -653,6 +654,7 @@ enum ModelYearReportStatus {
 
 enum ModelYearReportSupplierStatus {
   ASSESSED
+  DRAFT
   RETURNED_TO_SUPPLIER
   SUBMITTED_TO_GOVERNMENT
 }
@@ -685,14 +687,12 @@ model ModelYearReport {
   objectName                 String                        @unique @map("object_name")
   forecastReportObjectName   String                        @unique @map("forecast_report_object_name")
   compliant                  Boolean?
-  supplierCompliant          Boolean?                      @map("supplier_compliant")
-  reportableNvValue          Int                           @map("reportable_nv_value")
-  supplierReportableNvValue  Int                           @map("supplier_reportable_nv_value")
-  supplierClass              SupplierClass                 @map("supplier_class")
-  supplierSupplierClass      SupplierClass                 @map("supplier_supplier_class")
+  reportableNvValue          Int?                          @map("reportable_nv_value")
+  supplierClass              SupplierClass?                @map("supplier_class")
   modelYearReportHistory     ModelYearReportHistory[]
   assessment                 Assessment?
   Reassessment               Reassessment[]
+  supplementaryReports       SupplementaryReport[]
 
   @@unique([organizationId, modelYear])
   @@map("model_year_report")
@@ -734,7 +734,8 @@ model LegacyAssessedModelYearReport {
 
 enum SupplementaryReportStatus {
   ACKNOWLEDGED
-  SUBMITTED_TO_GOVERNMENT
+  DRAFT
+  SUBMITTED
 }
 
 model SupplementaryReport {
@@ -743,8 +744,9 @@ model SupplementaryReport {
   organization               Organization                 @relation(fields: [organizationId], references: [id])
   organizationId             Int                          @map("organization_id")
   modelYear                  ModelYear                    @map("model_year")
+  modelYearReportId          Int?                         @map("model_year_report_id")
+  modelYearReport            ModelYearReport?             @relation(fields: [modelYearReportId], references: [id])
   sequenceNumber             Int                          @map("sequence_number")
-  fileName                   String                       @map("file_name")
   objectName                 String                       @unique @map("object_name")
   SupplementaryReportHistory SupplementaryReportHistory[]
 

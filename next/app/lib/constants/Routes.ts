@@ -4,6 +4,7 @@ export enum Routes {
   Home = "/dashboard",
   ComplianceReporting = "/model-year-report",
   LegacyReassessments = "/legacy-reassessment",
+  LegacySupplementary = "/legacy-supplementary",
   CreditTransfers = "/credit-transfer",
   CreditAgreements = "/agreements",
   VehicleSuppliers = "/organizations",

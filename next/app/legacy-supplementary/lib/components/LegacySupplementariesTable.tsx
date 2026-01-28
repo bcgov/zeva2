@@ -5,30 +5,30 @@ import { ColumnDef, createColumnHelper } from "@tanstack/react-table";
 import { Table } from "@/app/lib/components";
 import {
   getModelYearEnumsToStringsMap,
-  getReassessmentStatusEnumsToStringsMap,
+  getSupplementaryReportStatusEnumsToStringsMap,
 } from "@/app/lib/utils/enumMaps";
 import { useRouter } from "next/navigation";
 import { Routes } from "@/app/lib/constants";
-import { LegacyReassessment } from "../data";
+import { LegacySupplementary } from "../data";
 
-export const LegacyReassessmentsTable = (props: {
-  reassessments: LegacyReassessment[];
-  totalNumbeOfReassessments: number;
+export const LegacySupplementariesTable = (props: {
+  supplementaries: LegacySupplementary[];
+  totalNumbeOfSupplementaries: number;
   userIsGov: boolean;
 }) => {
   const router = useRouter();
   const navigationAction = useCallback(async (id: number) => {
-    router.push(`${Routes.LegacyReassessments}/${id}`);
+    router.push(`${Routes.LegacySupplementary}/${id}`);
   }, []);
-  const columnHelper = createColumnHelper<LegacyReassessment>();
+  const columnHelper = createColumnHelper<LegacySupplementary>();
   const modelYearEnumMap = useMemo(() => {
     return getModelYearEnumsToStringsMap();
   }, []);
   const statusMap = useMemo(() => {
-    return getReassessmentStatusEnumsToStringsMap();
+    return getSupplementaryReportStatusEnumsToStringsMap();
   }, []);
   const columns = useMemo(() => {
-    const result: ColumnDef<LegacyReassessment, any>[] = [
+    const result: ColumnDef<LegacySupplementary, any>[] = [
       columnHelper.accessor((row) => modelYearEnumMap[row.modelYear], {
         id: "modelYear",
         enableSorting: false,
@@ -67,13 +67,13 @@ export const LegacyReassessmentsTable = (props: {
       }),
     );
     return result;
-  }, [columnHelper, props.reassessments, props.userIsGov]);
+  }, [columnHelper, props.userIsGov]);
 
   return (
-    <Table<LegacyReassessment>
+    <Table<LegacySupplementary>
       columns={columns}
-      data={props.reassessments}
-      totalNumberOfRecords={props.totalNumbeOfReassessments}
+      data={props.supplementaries}
+      totalNumberOfRecords={props.totalNumbeOfSupplementaries}
       navigationAction={navigationAction}
     />
   );

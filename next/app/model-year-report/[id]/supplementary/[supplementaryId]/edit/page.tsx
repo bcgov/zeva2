@@ -1,0 +1,32 @@
+import { getUserInfo } from "@/auth";
+import { SupplementaryForm } from "@/app/model-year-report/lib/components/SupplementaryForm";
+import { getSupplementaryReport } from "@/app/model-year-report/lib/data";
+import { SupplementaryReportStatus } from "@/prisma/generated/client";
+
+const Page = async (props: {
+  params: Promise<{ id: string; supplementaryId: string }>;
+}) => {
+  const args = await props.params;
+  const suppId = Number.parseInt(args.supplementaryId, 10);
+  const { userIsGov } = await getUserInfo();
+  const report = await getSupplementaryReport(suppId);
+  if (
+    userIsGov ||
+    !report ||
+    report.status !== SupplementaryReportStatus.DRAFT
+  ) {
+    return null;
+  }
+  return (
+    <div className="max-w-xl mx-auto p-4">
+      <h1 className="text-xl font-bold mb-4">Edit a Supplementary Report</h1>
+      <SupplementaryForm
+        type="nonLegacySaved"
+        modelYear={report.modelYear}
+        supplementaryId={suppId}
+      />
+    </div>
+  );
+};
+
+export default Page;

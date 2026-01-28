@@ -221,7 +221,7 @@ export const getZevUnitRecordsOrderByClause = (): [
 };
 
 export const getReportFullObjectName = (
-  type: "myr" | "forecast" | "assessment" | "reassessment",
+  type: "myr" | "forecast" | "assessment" | "reassessment" | "supplementary",
 ): string => {
   const objectName = randomUUID();
   switch (type) {
@@ -233,6 +233,8 @@ export const getReportFullObjectName = (
       return `${ReportSubDirectory.Assessment}/${objectName}`;
     case "reassessment":
       return `${ReportSubDirectory.Reassessment}/${objectName}`;
+    case "supplementary":
+      return `${ReportSubDirectory.Supplementary}/${objectName}`;
   }
 };
 
@@ -377,15 +379,14 @@ export const getPenalty = (
 export const getWhereClause = (
   filters: Record<string, string>,
   userIsGov: boolean,
-): Prisma.ModelYearReportWhereInput => {
-  const result: Prisma.ModelYearReportWhereInput = {};
+): Omit<Prisma.ModelYearReportWhereInput, "NOT"> => {
+  const result: Omit<Prisma.ModelYearReportWhereInput, "NOT"> = {};
   const modelYearsMap = getStringsToModelYearsEnumsMap();
   const statusMap = getStringsToMyrStatusEnumsMap();
   const supplierStatusMap = getStringsToMyrSupplierStatusEnumsMap();
   const reassessmentStatusMap = getStringsToReassessmentStatusEnumsMap();
   const supplierReassessmentStatusMap =
     getStringsToSupplierReassessmentStatusEnumsMap();
-  const supplierClassesMap = getStringsToSupplierClassEnumsMap();
   for (const [key, rawValue] of Object.entries(filters)) {
     const value = rawValue.trim();
     if (key === "id") {
@@ -428,20 +429,13 @@ export const getWhereClause = (
       }
     } else if (key === "compliant") {
       const lowerCasedValue = value.toLowerCase();
-      const keyToUse = userIsGov ? "compliant" : "supplierCompliant";
       if (IsCompliant.No.toLowerCase().includes(lowerCasedValue)) {
-        result[keyToUse] = false;
+        result[key] = false;
       } else if (IsCompliant.Yes.toLowerCase().includes(lowerCasedValue)) {
-        result[keyToUse] = true;
-      } else if (lowerCasedValue === "--") {
-        result[keyToUse] = null;
+        result[key] = true;
       } else {
         result.id = -1;
       }
-    } else if (key === "supplierClass") {
-      result[key] = {
-        in: getMatchingTerms(supplierClassesMap, value),
-      };
     }
   }
   return result;
@@ -494,11 +488,7 @@ export const getOrderByClause = (
 
 export type MyrSparseSerialized = Omit<
   MyrSparse,
-  | "supplierStatus"
-  | "supplierReassessmentStatus"
-  | "supplierCompliant"
-  | "supplierReportableNvValue"
-  | "supplierSupplierClass"
+  "supplierStatus" | "supplierReassessmentStatus"
 >;
 
 export const getSerializedMyrs = (
@@ -506,20 +496,10 @@ export const getSerializedMyrs = (
   userIsGov: boolean,
 ): MyrSparseSerialized[] => {
   return myrs.map((myr) => {
-    const {
-      supplierStatus,
-      supplierReassessmentStatus,
-      supplierCompliant,
-      supplierReportableNvValue,
-      supplierSupplierClass,
-      ...result
-    } = myr;
+    const { supplierStatus, supplierReassessmentStatus, ...result } = myr;
     if (!userIsGov) {
       result.status = supplierStatus;
       result.reassessmentStatus = supplierReassessmentStatus;
-      result.compliant = supplierCompliant;
-      result.reportableNvValue = supplierReportableNvValue;
-      result.supplierClass = supplierSupplierClass;
     }
     return result;
   });
@@ -579,6 +559,11 @@ const parseReductionsForData = (
 
 export const parseMyrForData = (workbook: Workbook) => {
   const parsedMyr = parseMyr(workbook);
+  const modelYearsMap = getStringsToModelYearsEnumsMap();
+  const modelYear = modelYearsMap[parsedMyr.details.modelYear];
+  if (!modelYear) {
+    throw new Error("Model Year not found!");
+  }
   const supplierClassesMap = getStringsToSupplierClassEnumsMap();
   const supplierClass =
     supplierClassesMap[parsedMyr.supplierDetails.classification];
@@ -597,6 +582,7 @@ export const parseMyrForData = (workbook: Workbook) => {
     throw new Error("Reportable NV Value not found!");
   }
   return {
+    modelYear,
     supplierClass,
     reportableNvValue,
   };
@@ -609,7 +595,6 @@ export const parseMyrForAssessmentData = (workbook: Workbook) => {
   };
   const zevClassMap = getStringsToZevClassEnumsMap();
   const parsedMyr = parseMyr(workbook);
-  const supplierClass = parsedMyr.supplierDetails.classification;
   const zevClassOrdering = parsedMyr.details.zevClassOrdering;
   const complianceReductions = parsedMyr.complianceReductions;
   const zevClassOrderingSplit = zevClassOrdering.replaceAll(" ", "").split(",");

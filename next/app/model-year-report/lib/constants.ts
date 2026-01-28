@@ -36,6 +36,7 @@ export enum ReportSubDirectory {
   Forecast = "forecast",
   Assessment = "assessment",
   Reassessment = "reassessment",
+  Supplementary = "supplementary",
 }
 
 export const supplierZevClasses = {

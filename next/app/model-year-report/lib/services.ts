@@ -17,6 +17,7 @@ import {
   Prisma,
   ReassessmentStatus,
   ReferenceType,
+  SupplementaryReportStatus,
   SupplierClass,
   SupplyVolume,
   VehicleClass,
@@ -456,7 +457,7 @@ export const getReassessableMyrData = async (
   };
 };
 
-export const getMyrDataFromSubmission = async (myr: ArrayBuffer) => {
+export const getMyrDataForMyr = async (myr: ArrayBuffer) => {
   const myrWorkbook = new Excel.Workbook();
   await myrWorkbook.xlsx.load(myr);
   return parseMyrForData(myrWorkbook);
@@ -610,22 +611,80 @@ export const updateMyrReassessmentStatus = async (
   });
 };
 
-export const revertFields = async (
-  myrId: number,
-  supplierClass: SupplierClass,
-  reportableNvValue: number,
-  compliant: boolean | null,
+export const createSupplementaryHistory = async (
+  supplementaryReportId: number,
+  userId: number,
+  userAction: SupplementaryReportStatus,
+  comment?: string,
   transactionClient?: TransactionClient,
 ) => {
   const client = transactionClient ?? prisma;
-  await client.modelYearReport.update({
-    where: {
-      id: myrId,
-    },
+  await client.supplementaryReportHistory.create({
     data: {
-      supplierClass,
-      reportableNvValue,
-      compliant,
+      supplementaryReportId,
+      userId,
+      userAction,
+      comment,
     },
   });
+};
+
+// returns {sequenceNumber, myrId} if non-legacy supplementary,
+// {sequenceNumber, null} if legacy supplementary,
+// throws error otherwise
+export const getDataForSupplementary = async (
+  organizationId: number,
+  modelYear: ModelYear,
+) => {
+  const myr = await prisma.modelYearReport.findUnique({
+    where: {
+      organizationId_modelYear: {
+        organizationId,
+        modelYear: modelYear,
+      },
+      status: {
+        notIn: [
+          ModelYearReportStatus.DRAFT,
+          ModelYearReportStatus.RETURNED_TO_SUPPLIER,
+        ],
+      },
+    },
+    select: {
+      id: true,
+    },
+  });
+  const legacyMyr = await prisma.legacyAssessedModelYearReport.findUnique({
+    where: {
+      organizationId_modelYear: {
+        organizationId,
+        modelYear: modelYear,
+      },
+    },
+    select: {
+      id: true,
+    },
+  });
+  if ((!myr && !legacyMyr) || (myr && legacyMyr)) {
+    throw new Error();
+  }
+  let sequenceNumber = 0;
+  const latestSupplementary = await prisma.supplementaryReport.findFirst({
+    where: {
+      organizationId,
+      modelYear,
+    },
+    select: {
+      sequenceNumber: true,
+    },
+    orderBy: {
+      sequenceNumber: "desc",
+    },
+  });
+  if (latestSupplementary) {
+    sequenceNumber = latestSupplementary.sequenceNumber + 1;
+  }
+  return {
+    sequenceNumber,
+    myrId: myr ? myr.id : null,
+  };
 };
