@@ -5,6 +5,9 @@ on:
   pull_request_target:
     types: [unlabeled, closed]
 
+permissions:
+  contents: read
+
 env:
   DEV_NAMESPACE: ${{ secrets.OPENSHIFT_NAMESPACE_PLATE }}-dev
   PR_NUMBER: ${{ github.event.pull_request.number }}
