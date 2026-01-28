@@ -13,6 +13,10 @@ on:
         description: "Please carefully choose the release branch merged into main, it impacts the versioning"
         required: false
 
+permissions:
+  contents: read
+  issues: write
+
 env:
   TOOLS_NAMESPACE: ${{ secrets.OPENSHIFT_NAMESPACE_PLATE }}-tools
   PROD_NAMESPACE: ${{ secrets.OPENSHIFT_NAMESPACE_PLATE }}-prod

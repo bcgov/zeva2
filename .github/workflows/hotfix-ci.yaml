@@ -7,6 +7,10 @@ on:
       - hotfix/*
   workflow_dispatch:
 
+permissions:
+  contents: read
+  issues: write
+
 env:
   TOOLS_NAMESPACE: ${{ secrets.OPENSHIFT_NAMESPACE_PLATE }}-tools
   PROD_NAMESPACE: ${{ secrets.OPENSHIFT_NAMESPACE_PLATE }}-prod
@@ -85,7 +89,7 @@ jobs:
       tools-namespace: ${{ secrets.OPENSHIFT_NAMESPACE_PLATE }}-tools
       openshift-server: ${{ secrets.OPENSHIFT_SERVER }}
       openshift-token: ${{ secrets.OPENSHIFT_TOKEN }}
-  
+
   # tag zeva2 images to production
   tag-images:
     name: Tag Zeva2 images to Prod
