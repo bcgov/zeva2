@@ -2,16 +2,17 @@
 
 name: Zeva2 Prod CI
 
-on:
-  pull_request:
-    types: [closed]
-    branches:
-      - main
-  workflow_dispatch:
-    inputs:
-      branch:
-        description: "Please carefully choose the release branch merged into main, it impacts the versioning"
-        required: false
+# Workflow is currently disabled
+# on:
+#   pull_request:
+#     types: [closed]
+#     branches:
+#       - main
+#   workflow_dispatch:
+#     inputs:
+#       branch:
+#         description: "Please carefully choose the release branch merged into main, it impacts the versioning"
+#         required: false
 
 permissions:
   contents: read
