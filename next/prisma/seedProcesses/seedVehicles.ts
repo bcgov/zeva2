@@ -4,7 +4,7 @@ import {
   VehicleClass,
   VehicleClassCode,
   VehicleStatus,
-  VehicleZevType,
+  ZevType,
   ZevClass,
 } from "../generated/client";
 import { prismaOld } from "@/lib/prismaOld";
@@ -19,15 +19,30 @@ export const seedVehicles = async (
   for (const r of await prismaOld.vehicle_class_code.findMany()) {
     vClassIdToEnum[r.id] = r.vehicle_class_code as VehicleClassCode;
   }
-  const vZevIdToEnum: Record<number, VehicleZevType> = {};
+  const vZevIdToEnum: Record<number, ZevType> = {};
   for (const r of await prismaOld.vehicle_zev_type.findMany()) {
-    vZevIdToEnum[r.id] = r.vehicle_zev_code as VehicleZevType;
+    vZevIdToEnum[r.id] = r.vehicle_zev_code as ZevType;
   }
   const vehiclesOld = await prismaOld.vehicle.findMany({
     where: {
       validation_status: "VALIDATED",
     },
   });
+  const recordsOfSaleGroupsOld = await prismaOld.record_of_sale.groupBy({
+    where: {
+      sales_submission: {
+        validation_status: "VALIDATED",
+      },
+    },
+    by: ["vehicle_id"],
+    _count: {
+      id: true,
+    },
+  });
+  const mapOfSaleCounts: Partial<Record<number, number>> = {};
+  for (const group of recordsOfSaleGroupsOld) {
+    mapOfSaleCounts[group.vehicle_id] = group._count.id;
+  }
   for (const vehicleOld of vehiclesOld) {
     const modelYearEnum =
       mapOfModelYearIdsToModelYearEnum[vehicleOld.model_year_id];
@@ -65,6 +80,7 @@ export const seedVehicles = async (
       );
     }
     const newWeight = oldWeight.toNumber();
+    const issuedCount = mapOfSaleCounts[vehicleOld.id];
 
     await tx.vehicle.create({
       select: { id: true },
@@ -76,7 +92,7 @@ export const seedVehicles = async (
         status: VehicleStatus.VALIDATED,
         modelName: vehicleOld.model_name,
         numberOfUnits,
-        vehicleZevType: zevEnum,
+        zevType: zevEnum,
         vehicleClassCode: classEnum,
         weight: newWeight,
         organizationId: orgNewId,
@@ -84,6 +100,7 @@ export const seedVehicles = async (
         us06RangeGte16: vehicleOld.has_passed_us_06_test,
         isActive: vehicleOld.is_active,
         vehicleClass: VehicleClass.REPORTABLE,
+        issuedCount,
       },
     });
   }

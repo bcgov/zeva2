@@ -4,11 +4,11 @@ import { Decimal } from "../generated/client/runtime/library";
 import {
   ModelYear,
   ReferenceType,
+  SupplierClass,
   TransactionType,
   VehicleClass,
   ZevClass,
 } from "../generated/client";
-import { SupplierClass } from "@/app/lib/constants/complianceRatio";
 import {
   ComplianceReduction,
   getComplianceRatioReductions,
@@ -264,11 +264,11 @@ export const seedTransactions = async (
       }
       let newSupplierClass: SupplierClass;
       if (supplierClass === "L") {
-        newSupplierClass = "large volume supplier";
+        newSupplierClass = SupplierClass.LARGE_VOLUME_SUPPLIER;
       } else if (supplierClass === "M") {
-        newSupplierClass = "medium volume supplier";
+        newSupplierClass = SupplierClass.MEDIUM_VOLUME_SUPPLIER;
       } else {
-        newSupplierClass = "small volume supplier";
+        newSupplierClass = SupplierClass.SMALL_VOLUME_SUPPLIER;
       }
       const reductions: ComplianceReduction[] = getComplianceRatioReductions(
         { [VehicleClass.REPORTABLE]: volume.toString() },

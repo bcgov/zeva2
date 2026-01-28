@@ -4,31 +4,61 @@ import axios from "axios";
 import Excel from "exceljs";
 import { Button } from "@/app/lib/components";
 import { Dropzone } from "@/app/lib/components/Dropzone";
-import { CommentBox } from "@/app/lib/components/inputs/CommentBox";
 import { useRouter } from "next/navigation";
-import { useCallback, useMemo, useState, useTransition } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+  useTransition,
+} from "react";
 import { FileWithPath } from "react-dropzone";
 import {
-  getCreditApplicationPutData,
+  getCreditApplicationAttachmentPutData,
   getSupplierEligibleVehicles,
   getSupplierTemplateDownloadUrl,
-  processSupplierFile,
+  supplierSave,
 } from "../actions";
 import { SupplierTemplate } from "../constants";
 import { getModelYearEnumsToStringsMap } from "@/app/lib/utils/enumMaps";
-import { downloadBuffer } from "@/app/lib/utils/download";
+import { downloadBuffer, getFiles } from "@/app/lib/utils/download";
 import { Routes } from "@/app/lib/constants";
-import { getNormalizedComment } from "../utils";
-import { Attachment } from "@/app/lib/services/attachments";
 import { getDefaultAttchmentTypes } from "@/app/lib/utils/attachments";
+import { Attachment, AttachmentDownload } from "@/app/lib/services/attachments";
 
-export const CreditApplicationForm = (props: { userOrgName: string }) => {
+export const CreditApplicationForm = (props: {
+  creditApplication?: {
+    id: number;
+    applicationFile: AttachmentDownload;
+    attachments: AttachmentDownload[];
+  };
+}) => {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [files, setFiles] = useState<FileWithPath[]>([]);
   const [attachments, setAttachments] = useState<FileWithPath[]>([]);
   const [error, setError] = useState<string>("");
-  const [comment, setComment] = useState<string>("");
+
+  useEffect(() => {
+    const loadPrev = async () => {
+      const creditApplication = props.creditApplication;
+      if (creditApplication) {
+        const attachments = [
+          creditApplication.applicationFile,
+          ...creditApplication.attachments,
+        ];
+        const downloadedFiles = await getFiles(attachments);
+        const toSet = downloadedFiles.map((file) => {
+          return new File([file.data], file.fileName);
+        });
+        setFiles([toSet[0]]);
+        if (toSet.length > 1) {
+          setAttachments(toSet.slice(1));
+        }
+      }
+    };
+    loadPrev();
+  }, [props.creditApplication]);
 
   const allowedFileTypes = useMemo(() => {
     return getDefaultAttchmentTypes();
@@ -60,7 +90,7 @@ export const CreditApplicationForm = (props: { userOrgName: string }) => {
           });
         }
         const buffer = await workbook.xlsx.writeBuffer();
-        const fileName = `credit-application-template-${props.userOrgName}-${new Date().toISOString()}.xlsx`;
+        const fileName = `credit-application-template-${new Date().toISOString()}.xlsx`;
         downloadBuffer(fileName, buffer);
       } catch (e) {
         if (e instanceof Error) {
@@ -68,29 +98,31 @@ export const CreditApplicationForm = (props: { userOrgName: string }) => {
         }
       }
     });
-  }, [props.userOrgName]);
+  }, []);
 
-  const handleSubmit = useCallback(() => {
+  const handleSave = useCallback(() => {
     setError("");
     startTransition(async () => {
       try {
         if (files.length !== 1) {
           throw new Error("Exactly 1 Credit Application file expected!");
         }
-        const file = files[0];
-        const documents = [file, ...attachments];
-        const putData = await getCreditApplicationPutData(
-          1 + attachments.length,
-        );
+        const allAttachments = [files[0], ...attachments];
         const attachmentsPayload: Attachment[] = [];
-        for (const [index, document] of documents.entries()) {
-          const { objectName, url } = putData[index];
-          await axios.put(url, document);
-          attachmentsPayload.push({ fileName: document.name, objectName });
+        const putData = await getCreditApplicationAttachmentPutData(
+          allAttachments.length,
+        );
+        for (const [index, attachment] of allAttachments.entries()) {
+          const putDatum = putData[index];
+          await axios.put(putDatum.url, attachment);
+          attachmentsPayload.push({
+            objectName: putDatum.objectName,
+            fileName: attachment.name,
+          });
         }
-        const response = await processSupplierFile(
+        const response = await supplierSave(
           attachmentsPayload,
-          getNormalizedComment(comment),
+          props.creditApplication?.id,
         );
         if (response.responseType === "error") {
           throw new Error(response.message);
@@ -103,7 +135,7 @@ export const CreditApplicationForm = (props: { userOrgName: string }) => {
         }
       }
     });
-  }, [files, attachments, comment]);
+  }, [props.creditApplication, files, attachments]);
 
   return (
     <div>
@@ -140,14 +172,9 @@ export const CreditApplicationForm = (props: { userOrgName: string }) => {
           allowedFileTypes={allowedFileTypes}
         />
       </div>
-      <CommentBox
-        comment={comment}
-        setComment={setComment}
-        disabled={isPending}
-      />
       <div className="flex space-x-2">
-        <Button variant="primary" onClick={handleSubmit} disabled={isPending}>
-          {isPending ? "..." : "Submit"}
+        <Button variant="primary" onClick={handleSave} disabled={isPending}>
+          {isPending ? "..." : "Save"}
         </Button>
       </div>
     </div>

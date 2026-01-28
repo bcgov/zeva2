@@ -5,7 +5,7 @@ import { ModelYearReportStatus } from "@/prisma/generated/client";
 import { useRouter } from "next/navigation";
 import { useCallback, useState, useTransition } from "react";
 import { assessModelYearReport, returnModelYearReport } from "../actions";
-import { getNormalizedComment } from "@/app/credit-application/lib/utils";
+import { getNormalizedComment } from "@/app/lib/utils/comment";
 import { CommentBox } from "@/app/lib/components/inputs/CommentBox";
 
 export const DirectorActions = (props: {
@@ -21,11 +21,14 @@ export const DirectorActions = (props: {
     setError("");
     startTransition(async () => {
       try {
-        await returnModelYearReport(
+        const response = await returnModelYearReport(
           props.myrId,
           ModelYearReportStatus.RETURNED_TO_ANALYST,
           getNormalizedComment(comment),
         );
+        if (response.responseType === "error") {
+          throw new Error(response.message);
+        }
         router.refresh();
       } catch (e) {
         if (e instanceof Error) {
@@ -39,7 +42,13 @@ export const DirectorActions = (props: {
     setError("");
     startTransition(async () => {
       try {
-        await assessModelYearReport(props.myrId, getNormalizedComment(comment));
+        const response = await assessModelYearReport(
+          props.myrId,
+          getNormalizedComment(comment),
+        );
+        if (response.responseType === "error") {
+          throw new Error(response.message);
+        }
         router.refresh();
       } catch (e) {
         if (e instanceof Error) {

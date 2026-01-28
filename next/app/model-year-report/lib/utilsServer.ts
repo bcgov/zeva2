@@ -6,8 +6,10 @@ import { Decimal } from "@/prisma/generated/client/runtime/library";
 import {
   BalanceType,
   ModelYear,
+  ModelYearReportStatus,
   Prisma,
   ReferenceType,
+  SupplierClass,
   TransactionType,
   VehicleClass,
   ZevClass,
@@ -15,7 +17,6 @@ import {
 import { AdjustmentPayload, NvValues } from "./actions";
 import {
   specialComplianceRatios,
-  SupplierClass,
   unspecifiedComplianceRatios,
 } from "@/app/lib/constants/complianceRatio";
 import {
@@ -24,7 +25,7 @@ import {
   UnexpectedDebit,
   ZevUnitRecord,
 } from "@/lib/utils/zevUnit";
-import { ReportSubDirectory } from "./constants";
+import { IsCompliant, ReportSubDirectory } from "./constants";
 import { penaltyRates } from "@/app/lib/constants/penaltyRate";
 import { isVehicleClass, isZevClass } from "@/app/lib/utils/typeGuards";
 import {
@@ -34,6 +35,7 @@ import {
   getStringsToMyrStatusEnumsMap,
   getStringsToMyrSupplierStatusEnumsMap,
   getStringsToReassessmentStatusEnumsMap,
+  getStringsToSupplierClassEnumsMap,
   getStringsToSupplierReassessmentStatusEnumsMap,
   getStringsToVehicleClassEnumsMap,
   getStringsToZevClassEnumsMap,
@@ -93,7 +95,7 @@ export const getComplianceRatioReductions = (
   supplierClass: SupplierClass,
 ): ComplianceReduction[] => {
   const result: ComplianceReduction[] = [];
-  if (supplierClass === "small volume supplier") {
+  if (supplierClass === SupplierClass.SMALL_VOLUME_SUPPLIER) {
     Object.entries(nvValues).forEach(([vehicleClass, nv]) => {
       if (isVehicleClass(vehicleClass)) {
         result.push(
@@ -118,8 +120,8 @@ export const getComplianceRatioReductions = (
         modelYear,
       );
       if (
-        supplierClass === "large volume supplier" ||
-        (supplierClass === "medium volume supplier" &&
+        supplierClass === SupplierClass.LARGE_VOLUME_SUPPLIER ||
+        (supplierClass === SupplierClass.MEDIUM_VOLUME_SUPPLIER &&
           modelYear >= ModelYear.MY_2026)
       ) {
         const specialReductions: ComplianceReduction[] = [];
@@ -311,8 +313,8 @@ export const getComplianceInfo = (
     const hasNonZeroCredit = complianceData.hasNonZeroCredit;
     if (
       hasNonZeroSpecialDebit &&
-      (supplierClass === "large volume supplier" ||
-        (supplierClass === "medium volume supplier" &&
+      (supplierClass === SupplierClass.LARGE_VOLUME_SUPPLIER ||
+        (supplierClass === SupplierClass.MEDIUM_VOLUME_SUPPLIER &&
           modelYear >= ModelYear.MY_2026))
     ) {
       result[vehicleClass][1].isCompliant = false;
@@ -322,7 +324,7 @@ export const getComplianceInfo = (
         endingBalance,
       );
     } else if (
-      supplierClass !== "small volume supplier" &&
+      supplierClass !== SupplierClass.SMALL_VOLUME_SUPPLIER &&
       hasNonZeroDebit &&
       !hasNonZeroCredit
     ) {
@@ -383,6 +385,7 @@ export const getWhereClause = (
   const reassessmentStatusMap = getStringsToReassessmentStatusEnumsMap();
   const supplierReassessmentStatusMap =
     getStringsToSupplierReassessmentStatusEnumsMap();
+  const supplierClassesMap = getStringsToSupplierClassEnumsMap();
   for (const [key, rawValue] of Object.entries(filters)) {
     const value = rawValue.trim();
     if (key === "id") {
@@ -423,6 +426,22 @@ export const getWhereClause = (
           };
         }
       }
+    } else if (key === "compliant") {
+      const lowerCasedValue = value.toLowerCase();
+      const keyToUse = userIsGov ? "compliant" : "supplierCompliant";
+      if (IsCompliant.No.toLowerCase().includes(lowerCasedValue)) {
+        result[keyToUse] = false;
+      } else if (IsCompliant.Yes.toLowerCase().includes(lowerCasedValue)) {
+        result[keyToUse] = true;
+      } else if (lowerCasedValue === "--") {
+        result[keyToUse] = null;
+      } else {
+        result.id = -1;
+      }
+    } else if (key === "supplierClass") {
+      result[key] = {
+        in: getMatchingTerms(supplierClassesMap, value),
+      };
     }
   }
   return result;
@@ -437,7 +456,13 @@ export const getOrderByClause = (
   Object.entries(sorts).forEach(([key, value]) => {
     const orderBy: Prisma.ModelYearReportOrderByWithRelationInput = {};
     if (value === "asc" || value === "desc") {
-      if (key === "id" || key === "modelYear") {
+      if (
+        key === "id" ||
+        key === "modelYear" ||
+        key === "reportableNvValue" ||
+        key === "supplierClass" ||
+        key === "compliant"
+      ) {
         orderBy[key] = value;
       } else if (key === "organization" && userIsGov) {
         orderBy[key] = {
@@ -469,7 +494,11 @@ export const getOrderByClause = (
 
 export type MyrSparseSerialized = Omit<
   MyrSparse,
-  "supplierStatus" | "supplierReassessmentStatus"
+  | "supplierStatus"
+  | "supplierReassessmentStatus"
+  | "supplierCompliant"
+  | "supplierReportableNvValue"
+  | "supplierSupplierClass"
 >;
 
 export const getSerializedMyrs = (
@@ -477,10 +506,20 @@ export const getSerializedMyrs = (
   userIsGov: boolean,
 ): MyrSparseSerialized[] => {
   return myrs.map((myr) => {
-    const { supplierStatus, ...result } = myr;
+    const {
+      supplierStatus,
+      supplierReassessmentStatus,
+      supplierCompliant,
+      supplierReportableNvValue,
+      supplierSupplierClass,
+      ...result
+    } = myr;
     if (!userIsGov) {
-      result.status = myr.supplierStatus;
-      result.reassessmentStatus = myr.supplierReassessmentStatus;
+      result.status = supplierStatus;
+      result.reassessmentStatus = supplierReassessmentStatus;
+      result.compliant = supplierCompliant;
+      result.reportableNvValue = supplierReportableNvValue;
+      result.supplierClass = supplierSupplierClass;
     }
     return result;
   });
@@ -538,6 +577,31 @@ const parseReductionsForData = (
   return result;
 };
 
+export const parseMyrForData = (workbook: Workbook) => {
+  const parsedMyr = parseMyr(workbook);
+  const supplierClassesMap = getStringsToSupplierClassEnumsMap();
+  const supplierClass =
+    supplierClassesMap[parsedMyr.supplierDetails.classification];
+  if (!supplierClass) {
+    throw new Error("Supplier Class not found!");
+  }
+  let reportableNvValue: number | null = null;
+  const complianceReductions = parsedMyr.complianceReductions;
+  const reductionsData = parseReductionsForData(complianceReductions);
+  for (const [vehicleClass, nv] of reductionsData.nvValues) {
+    if (vehicleClass === VehicleClass.REPORTABLE) {
+      reportableNvValue = nv.toNumber();
+    }
+  }
+  if (!reportableNvValue) {
+    throw new Error("Reportable NV Value not found!");
+  }
+  return {
+    supplierClass,
+    reportableNvValue,
+  };
+};
+
 export const parseMyrForAssessmentData = (workbook: Workbook) => {
   const result: { zevClassOrdering: ZevClass[]; nvValues: NvValues } = {
     zevClassOrdering: [],
@@ -545,6 +609,7 @@ export const parseMyrForAssessmentData = (workbook: Workbook) => {
   };
   const zevClassMap = getStringsToZevClassEnumsMap();
   const parsedMyr = parseMyr(workbook);
+  const supplierClass = parsedMyr.supplierDetails.classification;
   const zevClassOrdering = parsedMyr.details.zevClassOrdering;
   const complianceReductions = parsedMyr.complianceReductions;
   const zevClassOrderingSplit = zevClassOrdering.replaceAll(" ", "").split(",");
@@ -632,6 +697,9 @@ export const parseAssesmentForData = (
     initialNumberOfUnits: Decimal;
     finalNumberOfUnits: Decimal;
   })[];
+  compliant: boolean;
+  supplierClass: SupplierClass;
+  reportableNvValue: number;
 } => {
   const parsedAssessment = parseAssessment(workbook);
   const reductions = parsedAssessment.complianceReductions;
@@ -668,9 +736,28 @@ export const parseAssesmentForData = (
       finalNumberOfUnits: record.finalNumberOfUnits,
     };
   });
+  let compliant: boolean | null = null;
+  const isCompliant = parsedAssessment.details.isCompliant;
+  if (isCompliant === IsCompliant.No) {
+    compliant = false;
+  } else if (isCompliant === IsCompliant.Yes) {
+    compliant = true;
+  }
+  const supplierClassesMap = getStringsToSupplierClassEnumsMap();
+  const supplierClass =
+    supplierClassesMap[parsedAssessment.details.classification];
+  const reportableNvValue = nvValues.find(
+    ([vehicleClass, nvValue]) => vehicleClass === VehicleClass.REPORTABLE,
+  );
+  if (compliant === null || !supplierClass || !reportableNvValue) {
+    throw new Error("Error parsing assessment data!");
+  }
   return {
     nvValues,
     transactions,
     endingBalance,
+    compliant,
+    supplierClass,
+    reportableNvValue: reportableNvValue[1],
   };
 };

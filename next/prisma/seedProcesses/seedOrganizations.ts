@@ -19,8 +19,6 @@ export const seedOrganizations = async (
     const orgNew = await tx.organization.create({
       data: {
         name: orgOld.organization_name,
-        firstModelYear:
-          mapOfModelYearIdsToModelYearEnum[orgOld.first_model_year_id ?? -1],
         isGovernment: orgOld.is_government,
         isActive: orgOld.is_active,
         shortName: orgOld.short_name ?? orgOld.organization_name,

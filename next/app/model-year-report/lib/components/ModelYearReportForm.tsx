@@ -34,7 +34,7 @@ import { MyrNvValues } from "./MyrNvValues";
 import { ZevClassSelect } from "./ZevClassSelect";
 import { Routes } from "@/app/lib/constants";
 import { CommentBox } from "@/app/lib/components/inputs/CommentBox";
-import { getNormalizedComment } from "@/app/credit-application/lib/utils";
+import { getNormalizedComment } from "@/app/lib/utils/comment";
 import { Workbook } from "exceljs";
 import { ParsedForecast, ParsedMyr, parseForecast, parseMyr } from "../utils";
 import { ParsedModelYearReport } from "./ParsedModelYearReport";

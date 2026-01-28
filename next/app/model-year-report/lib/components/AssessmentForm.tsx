@@ -31,7 +31,7 @@ import { bytesToBase64 } from "@/app/lib/utils/base64";
 import { Adjustment, Adjustments } from "./Adjustments";
 import { CommentBox } from "@/app/lib/components/inputs/CommentBox";
 import { Routes } from "@/app/lib/constants";
-import { getNormalizedComment } from "@/app/credit-application/lib/utils";
+import { getNormalizedComment } from "@/app/lib/utils/comment";
 import { Workbook } from "exceljs";
 import { parseAssessment, ParsedAssmnt } from "../utils";
 import { ParsedAssessment } from "./ParsedAssessment";

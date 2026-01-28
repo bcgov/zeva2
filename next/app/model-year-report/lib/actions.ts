@@ -13,6 +13,7 @@ import {
   ReassessmentStatus,
   ReferenceType,
   Role,
+  SupplierClass,
   VehicleClass,
   ZevClass,
 } from "@/prisma/generated/client";
@@ -23,12 +24,16 @@ import {
   getLegacyAssessedMyr,
   getMyrDataForAssessment,
   getMyrDataForLegacyReassessment,
+  getMyrDataFromSubmission,
   getOrgDetails,
   getReassessableMyrData,
+  getVehicleStatistics,
   getZevUnitData,
   MyrZevUnitTransaction,
   OrgNameAndAddresses,
+  revertFields,
   updateMyrReassessmentStatus,
+  VehicleStatistics,
 } from "./services";
 import {
   DataOrErrorActionResponse,
@@ -47,14 +52,16 @@ import {
   getSerializedMyrRecordsExcludeKey,
   UnitsAsString,
 } from "./utilsServer";
-import { SupplierClass } from "@/app/lib/constants/complianceRatio";
 import { prisma } from "@/lib/prisma";
 import {
+  getAdjacentYear,
   getComplianceDate,
   getCompliancePeriod,
+  getModelYearReportModelYear,
 } from "@/app/lib/utils/complianceYear";
 import { addJobToEmailQueue } from "@/app/lib/services/queue";
 import { Buffer } from "node:buffer";
+import { getModelYearEnumsToStringsMap } from "@/app/lib/utils/enumMaps";
 
 export type NvValues = Partial<Record<VehicleClass, string>>;
 
@@ -77,6 +84,7 @@ export type MyrData = {
   modelYear: ModelYear;
   zevClassOrdering: ZevClass[];
   supplierData: SupplierData;
+  vehicleStatistics: VehicleStatistics;
   prevEndingBalance: MyrEndingBalance;
   complianceReductions: MyrComplianceReductions;
   offsets: MyrOffsets;
@@ -97,6 +105,7 @@ export const getMyrData = async (
 ): Promise<DataOrErrorActionResponse<MyrData>> => {
   const { userOrgId } = await getUserInfo();
   const orgData = await getOrgDetails(userOrgId);
+  const vehicleStatistics = await getVehicleStatistics(userOrgId, modelYear);
   try {
     const {
       supplierClass,
@@ -117,6 +126,7 @@ export const getMyrData = async (
       modelYear,
       zevClassOrdering,
       supplierData: { ...orgData, supplierClass },
+      vehicleStatistics,
       prevEndingBalance:
         getSerializedMyrRecords<ZevUnitRecord>(prevEndingBalance),
       complianceReductions: getSerializedMyrRecordsExcludeKey<
@@ -165,10 +175,24 @@ export const submitReports = async (
       },
     },
   });
+  const reportYear = getModelYearReportModelYear();
   if (
-    existingMyr &&
-    existingMyr.status !== ModelYearReportStatus.RETURNED_TO_SUPPLIER
+    (existingMyr &&
+      existingMyr.status !== ModelYearReportStatus.RETURNED_TO_SUPPLIER) ||
+    (!existingMyr && modelYear !== reportYear)
   ) {
+    return getErrorActionResponse("Invalid Action!");
+  }
+  const existingLegacyAssessedReport =
+    await prisma.legacyAssessedModelYearReport.findUnique({
+      where: {
+        organizationId_modelYear: {
+          organizationId: userOrgId,
+          modelYear: modelYear,
+        },
+      },
+    });
+  if (existingLegacyAssessedReport) {
     return getErrorActionResponse("Invalid Action!");
   }
   const myrObject = Buffer.from(modelYearReport, "base64");
@@ -181,6 +205,9 @@ export const submitReports = async (
     objectName: myrObjectName,
     forecastReportObjectName: forecastObjectName,
   };
+  const data = await getMyrDataFromSubmission(myrObject.buffer);
+  const supplierClass = data.supplierClass;
+  const reportableNvValue = data.reportableNvValue;
   await prisma.$transaction(async (tx) => {
     if (existingMyr) {
       await tx.modelYearReport.update({
@@ -191,6 +218,10 @@ export const submitReports = async (
           ...upsertData,
           status: ModelYearReportStatus.SUBMITTED_TO_GOVERNMENT,
           supplierStatus: ModelYearReportSupplierStatus.SUBMITTED_TO_GOVERNMENT,
+          supplierClass,
+          supplierSupplierClass: supplierClass,
+          reportableNvValue,
+          supplierReportableNvValue: reportableNvValue,
         },
       });
       idOfReport = existingMyr.id;
@@ -200,6 +231,10 @@ export const submitReports = async (
           ...upsertData,
           organizationId: userOrgId,
           modelYear,
+          supplierClass,
+          supplierSupplierClass: supplierClass,
+          reportableNvValue,
+          supplierReportableNvValue: reportableNvValue,
         },
       });
       idOfReport = newId;
@@ -357,8 +392,17 @@ export const submitAssessment = async (
   if (!myr) {
     return getErrorActionResponse("Invalid Action!");
   }
+  const modelYearsMap = getModelYearEnumsToStringsMap();
+  const year = modelYearsMap[getAdjacentYear("next", myr.modelYear)];
+  if (!year) {
+    return getErrorActionResponse("Unexpected Error!");
+  }
+  if (new Date() < new Date(`${year}-${10}-${21}T00:00:00`)) {
+    return getErrorActionResponse("Invalid Action!");
+  }
   const assessmentObject = Buffer.from(assessment, "base64");
   const assessmentObjectName = getReportFullObjectName("assessment");
+  const data = await getAssessmentSystemData(assessmentObject.buffer);
   await prisma.$transaction(async (tx) => {
     await tx.modelYearReport.update({
       where: {
@@ -366,17 +410,14 @@ export const submitAssessment = async (
       },
       data: {
         status: ModelYearReportStatus.SUBMITTED_TO_DIRECTOR,
+        compliant: data.compliant,
+        supplierClass: data.supplierClass,
+        reportableNvValue: data.reportableNvValue,
       },
     });
-    await tx.assessment.upsert({
-      where: {
+    await tx.assessment.create({
+      data: {
         modelYearReportId: myrId,
-      },
-      create: {
-        modelYearReportId: myrId,
-        objectName: assessmentObjectName,
-      },
-      update: {
         objectName: assessmentObjectName,
       },
     });
@@ -430,6 +471,7 @@ export const submitReassessment = async (
   }
   const reassessmentObject = Buffer.from(reassessment, "base64");
   const reassessmentObjectName = getReportFullObjectName("reassessment");
+  const data = await getAssessmentSystemData(reassessmentObject.buffer);
   let reassessmentIdToReturn: number = latestReassessment
     ? latestReassessment.id
     : Number.NaN;
@@ -457,7 +499,6 @@ export const submitReassessment = async (
       );
     } else if (
       !latestReassessment ||
-      latestReassessment.status === ReassessmentStatus.DELETED ||
       latestReassessment.status === ReassessmentStatus.ISSUED
     ) {
       // new submission:
@@ -490,6 +531,16 @@ export const submitReassessment = async (
         ReassessmentStatus.SUBMITTED_TO_DIRECTOR,
         tx,
       );
+      await tx.modelYearReport.update({
+        where: {
+          id: myrId,
+        },
+        data: {
+          supplierClass: data.supplierClass,
+          compliant: data.compliant,
+          reportableNvValue: data.reportableNvValue,
+        },
+      });
     }
     await putObject(reassessmentObjectName, reassessmentObject);
   });
@@ -509,6 +560,9 @@ export const returnModelYearReport = async (
     where: { id: myrId },
     select: {
       status: true,
+      supplierSupplierClass: true,
+      supplierCompliant: true,
+      supplierReportableNvValue: true,
     },
   });
   if (!myr) {
@@ -543,6 +597,20 @@ export const returnModelYearReport = async (
         comment,
         tx,
       );
+      if (returnType === ModelYearReportStatus.RETURNED_TO_SUPPLIER) {
+        await revertFields(
+          myrId,
+          myr.supplierSupplierClass,
+          myr.supplierReportableNvValue,
+          myr.supplierCompliant,
+          tx,
+        );
+        await tx.assessment.delete({
+          where: {
+            modelYearReportId: myrId,
+          },
+        });
+      }
       await addJobToEmailQueue({
         historyId,
         notificationType: Notification.MODEL_YEAR_REPORT,
@@ -615,6 +683,9 @@ export const assessModelYearReport = async (
         data: {
           status: ModelYearReportStatus.ASSESSED,
           supplierStatus: ModelYearReportStatus.ASSESSED,
+          supplierCompliant: assessmentData.compliant,
+          supplierReportableNvValue: assessmentData.reportableNvValue,
+          supplierSupplierClass: assessmentData.supplierClass,
         },
       });
       const historyId = await createHistory(
@@ -788,6 +859,16 @@ export const issueReassessment = async (
     );
     if (myrId) {
       await updateMyrReassessmentStatus(myrId, ReassessmentStatus.ISSUED, tx);
+      await tx.modelYearReport.update({
+        where: {
+          id: myrId,
+        },
+        data: {
+          supplierCompliant: reassessmentData.compliant,
+          supplierReportableNvValue: reassessmentData.reportableNvValue,
+          supplierSupplierClass: reassessmentData.supplierClass,
+        },
+      });
     }
   });
   return getSuccessActionResponse();
@@ -795,9 +876,8 @@ export const issueReassessment = async (
 
 export const deleteReassessment = async (
   reassessmentId: number,
-  comment?: string,
 ): Promise<ErrorOrSuccessActionResponse> => {
-  const { userIsGov, userId, userRoles } = await getUserInfo();
+  const { userIsGov, userRoles } = await getUserInfo();
   if (!userIsGov || !userRoles.includes(Role.ENGINEER_ANALYST)) {
     return getErrorActionResponse("Unauthorized!");
   }
@@ -806,29 +886,46 @@ export const deleteReassessment = async (
       id: reassessmentId,
       status: ReassessmentStatus.RETURNED_TO_ANALYST,
     },
+    include: {
+      modelYearReport: {
+        select: {
+          id: true,
+          supplierReassessmentStatus: true,
+          supplierCompliant: true,
+          supplierReportableNvValue: true,
+          supplierSupplierClass: true,
+        },
+      },
+    },
   });
   if (!reassessment) {
     return getErrorActionResponse("Valid Reassessment not found!");
   }
-  const myrId = reassessment.modelYearReportId;
+  const myr = reassessment.modelYearReport;
   await prisma.$transaction(async (tx) => {
-    await tx.reassessment.update({
+    await tx.reassessmentHistory.deleteMany({
       where: {
-        id: reassessment.id,
-      },
-      data: {
-        status: ReassessmentStatus.DELETED,
+        reassessmentId,
       },
     });
-    await createReassessmentHistory(
-      reassessment.id,
-      userId,
-      ReassessmentStatus.DELETED,
-      comment,
-      tx,
-    );
-    if (myrId) {
-      await updateMyrReassessmentStatus(myrId, ReassessmentStatus.DELETED, tx);
+    await tx.reassessment.delete({
+      where: {
+        id: reassessmentId,
+      },
+    });
+    if (myr) {
+      await updateMyrReassessmentStatus(
+        myr.id,
+        myr.supplierReassessmentStatus,
+        tx,
+      );
+      await revertFields(
+        myr.id,
+        myr.supplierSupplierClass,
+        myr.supplierReportableNvValue,
+        myr.supplierCompliant,
+        tx,
+      );
     }
   });
   return getSuccessActionResponse();

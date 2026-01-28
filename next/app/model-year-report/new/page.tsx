@@ -9,9 +9,6 @@ const Page = async () => {
     return null;
   }
   const modelYear = getModelYearReportModelYear();
-  if (!modelYear) {
-    return null;
-  }
   const reportExists = await modelYearReportExists(modelYear);
   if (reportExists) {
     return null;
