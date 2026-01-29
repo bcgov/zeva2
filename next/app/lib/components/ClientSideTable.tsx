@@ -155,6 +155,26 @@ export const ClientSideTable = <T extends ZevaObject>({
     );
   };
 
+  const renderPaginationButton = (
+    icon: typeof faAngleLeft | typeof faAngleRight,
+    canNavigate: boolean,
+    onNavigate: () => void,
+    additionalClassName: string,
+  ) => {
+    return (
+      <FontAwesomeIcon
+        icon={icon}
+        onClick={onNavigate}
+        className={`cursor-pointer ${additionalClassName} ${
+          canNavigate ? "text-defaultTextBlack" : "text-gray-400"
+        }`}
+        style={{
+          pointerEvents: canNavigate ? "auto" : "none",
+        }}
+      />
+    );
+  };
+
   return (
     <div className="bg-white rounded-lg shadow-level-1 p-4">
       <div className="flex flex-row-reverse">
@@ -249,18 +269,12 @@ export const ClientSideTable = <T extends ZevaObject>({
         </table>
       </div>
       <div className="flex items-center justify-center bg-navBorder w-full rounded p-2">
-        <FontAwesomeIcon
-          icon={faAngleLeft}
-          onClick={() => table.previousPage()}
-          className={`mr-2 cursor-pointer ${
-            table.getCanPreviousPage()
-              ? "text-defaultTextBlack"
-              : "text-gray-400"
-          }`}
-          style={{
-            pointerEvents: table.getCanPreviousPage() ? "auto" : "none",
-          }}
-        />
+        {renderPaginationButton(
+          faAngleLeft,
+          table.getCanPreviousPage(),
+          () => table.previousPage(),
+          "mr-2",
+        )}
         <span className="text-sm text-gray-700">
           Page{" "}
           {
@@ -282,16 +296,12 @@ export const ClientSideTable = <T extends ZevaObject>({
           }{" "}
           of {table.getPageCount()}
         </span>
-        <FontAwesomeIcon
-          icon={faAngleRight}
-          onClick={() => table.nextPage()}
-          className={`ml-2 cursor-pointer ${
-            table.getCanNextPage() ? "text-defaultTextBlack" : "text-gray-400"
-          }`}
-          style={{
-            pointerEvents: table.getCanNextPage() ? "auto" : "none",
-          }}
-        />
+        {renderPaginationButton(
+          faAngleRight,
+          table.getCanNextPage(),
+          () => table.nextPage(),
+          "ml-2",
+        )}
         <span className="ml-3">
           <select
             value={table.getState().pagination.pageSize}
