@@ -24,6 +24,9 @@ on:
       openshift-token:
         required: true
 
+permissions:
+  contents: read
+
 jobs:
   build:
     name: Build Zeva2

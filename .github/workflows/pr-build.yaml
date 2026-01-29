@@ -10,6 +10,9 @@ on:
       - develop
       - release/*
 
+permissions:
+  contents: read
+
 env:
   GIT_URL: https://github.com/bcgov/zeva2.git
   TOOLS_NAMESPACE: ${{ secrets.OPENSHIFT_NAMESPACE_PLATE }}-tools
