@@ -124,6 +124,37 @@ export const ClientSideTable = <T extends ZevaObject>({
     return null;
   };
 
+  const renderSortIcon = (sortState: false | "asc" | "desc") => {
+    if (!enableSorting) return null;
+    
+    if (sortState === "asc") {
+      return <FontAwesomeIcon icon={faAngleUp} className="mb-1" />;
+    }
+    if (sortState === "desc") {
+      return <FontAwesomeIcon icon={faAngleDown} className="mb-1" />;
+    }
+    return null;
+  };
+
+  const renderFilterInput = (header: any) => {
+    if (!enableFiltering || !header.column.getCanFilter()) {
+      return null;
+    }
+    return (
+      <div>
+        <input
+          className="w-36 border shadow-level-1 rounded"
+          onChange={(event) => {
+            header.column.setFilterValue(event.target.value);
+          }}
+          placeholder={"Filter..."}
+          type="text"
+          value={(header.column.getFilterValue() as string) ?? ""}
+        />
+      </div>
+    );
+  };
+
   return (
     <div className="bg-white rounded-lg shadow-level-1 p-4">
       <div className="flex flex-row-reverse">
@@ -152,56 +183,32 @@ export const ClientSideTable = <T extends ZevaObject>({
                     >
                       {header.isPlaceholder ? null : (
                         <>
-                          <div
+                          <button
+                            type="button"
                             className={
                               enableSorting && header.column.getCanSort()
-                                ? "cursor-pointer select-none"
-                                : ""
+                                ? "cursor-pointer select-none bg-transparent border-0 p-0 text-inherit font-inherit"
+                                : "bg-transparent border-0 p-0 text-inherit font-inherit cursor-default"
                             }
                             onClick={() => {
                               if (enableSorting && header.column.getCanSort()) {
                                 header.column.toggleSorting();
                               }
                             }}
+                            disabled={!enableSorting || !header.column.getCanSort()}
+                            aria-label={
+                              enableSorting && header.column.getCanSort()
+                                ? `Sort by ${header.column.columnDef.header}`
+                                : undefined
+                            }
                           >
                             {flexRender(
                               header.column.columnDef.header,
                               header.getContext(),
                             )}
-                            {enableSorting &&
-                            header.column.getIsSorted() === "asc" ? (
-                              <FontAwesomeIcon
-                                icon={faAngleUp}
-                                className="mb-1"
-                              />
-                            ) : enableSorting &&
-                              header.column.getIsSorted() === "desc" ? (
-                              <FontAwesomeIcon
-                                icon={faAngleDown}
-                                className="mb-1"
-                              />
-                            ) : (
-                              ""
-                            )}
-                          </div>
-                          {enableFiltering && header.column.getCanFilter() ? (
-                            <div>
-                              <input
-                                className="w-36 border shadow-level-1 rounded"
-                                onChange={(event) => {
-                                  header.column.setFilterValue(
-                                    event.target.value,
-                                  );
-                                }}
-                                placeholder={"Filter..."}
-                                type="text"
-                                value={
-                                  (header.column.getFilterValue() as string) ??
-                                  ""
-                                }
-                              />
-                            </div>
-                          ) : null}
+                            {renderSortIcon(header.column.getIsSorted())}
+                          </button>
+                          {renderFilterInput(header)}
                         </>
                       )}
                     </span>
@@ -211,16 +218,17 @@ export const ClientSideTable = <T extends ZevaObject>({
             ))}
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
-            {table.getRowModel().rows.map((row) => (
-              <tr
-                key={row.id}
-                className={
-                  navigationAction
-                    ? "hover:bg-gray-200 transition-colors cursor-pointer"
-                    : ""
-                }
-                onClick={() => handleNavigation(row.original.id)}
-              >
+            {table.getRowModel().rows.map((row) => {
+              const rowClassName = navigationAction
+                ? "hover:bg-gray-200 transition-colors cursor-pointer"
+                : "";
+              
+              return (
+                <tr
+                  key={row.id}
+                  className={rowClassName}
+                  onClick={() => handleNavigation(row.original.id)}
+                >
                 {row.getVisibleCells().map((cell) => (
                   <td
                     key={cell.id}
@@ -235,7 +243,8 @@ export const ClientSideTable = <T extends ZevaObject>({
                   </td>
                 ))}
               </tr>
-            ))}
+              );
+            })}
           </tbody>
         </table>
       </div>
