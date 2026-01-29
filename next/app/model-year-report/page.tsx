@@ -17,11 +17,9 @@ const Page = async (props: { searchParams?: Promise<pageStringParams> }) => {
   let canSubmitReport = false;
   if (!userIsGov) {
     const modelYear = getModelYearReportModelYear();
-    if (modelYear) {
-      const reportExists = await modelYearReportExists(modelYear);
-      if (!reportExists) {
-        canSubmitReport = true;
-      }
+    const reportExists = await modelYearReportExists(modelYear);
+    if (!reportExists) {
+      canSubmitReport = true;
     }
   }
 
@@ -29,7 +27,7 @@ const Page = async (props: { searchParams?: Promise<pageStringParams> }) => {
     <Suspense key={Date.now()} fallback={<LoadingSkeleton />}>
       {canSubmitReport && (
         <Link href={`${Routes.ComplianceReporting}/new`}>
-          <Button>Submit a Report</Button>
+          <Button variant="primary">Submit a Model Year Report</Button>
         </Link>
       )}
       <ReportsList

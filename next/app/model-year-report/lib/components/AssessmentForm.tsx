@@ -3,64 +3,102 @@
 import axios from "axios";
 import {
   ModelYear,
-  ModelYearReportStatus,
   TransactionType,
   VehicleClass,
   ZevClass,
 } from "@/prisma/generated/client";
 import { useRouter } from "next/navigation";
-import { useCallback, useMemo, useState, useTransition } from "react";
-import { SupplierZevClassChoice } from "../constants";
-import { FileWithPath } from "react-dropzone";
+import { JSX, useCallback, useMemo, useState, useTransition } from "react";
 import {
+  AssessmentArgs,
   getAssessmentData,
   getAssessmentTemplateUrl,
-  getPutAssessmentData,
+  LegacyReassessmentArgs,
+  NonLegacyReassessmentArgs,
   NvValues,
-  submitToDirector,
+  submitAssessment,
+  submitReassessment,
 } from "../actions";
 import { getModelYearEnumsToStringsMap } from "@/app/lib/utils/enumMaps";
 import { MyrNvValues } from "./MyrNvValues";
-import { ZevClassSelect } from "./ZevClassSelect";
 import { Button } from "@/app/lib/components";
-import { Dropzone } from "@/app/lib/components/Dropzone";
 import {
-  downloadAssessment,
+  generateAssessment,
   getAdjustmentsPayload,
-  getZevClassOrdering,
-  parseAssessment,
   validateNvValues,
 } from "../utilsClient";
+import { bytesToBase64 } from "@/app/lib/utils/base64";
 import { Adjustment, Adjustments } from "./Adjustments";
-import { AssessmentResult, AssessmentResultData } from "./AssessmentResult";
 import { CommentBox } from "@/app/lib/components/inputs/CommentBox";
 import { Routes } from "@/app/lib/constants";
+import { getNormalizedComment } from "@/app/lib/utils/comment";
+import { Workbook } from "exceljs";
+import { parseAssessment, ParsedAssmnt } from "../utils";
+import { ParsedAssessment } from "./ParsedAssessment";
+import { isModelYear } from "@/app/lib/utils/typeGuards";
 
-export const AssessmentForm = (props: {
-  id: number;
-  orgId: number;
-  orgName: string;
-  status: ModelYearReportStatus;
+type AssessmentProps = {
+  assessmentType: "assessment";
+  myrId: number;
   modelYear: ModelYear;
-}) => {
+};
+
+type LegacyReassessmentProps = {
+  assessmentType: "legacyReassessment";
+  orgsMap: Partial<Record<number, string>>;
+};
+
+type NonLegacyReassessmentProps = {
+  assessmentType: "nonLegacyReassessment";
+  myrId: number;
+  orgId: number;
+  modelYear: ModelYear;
+};
+
+export const AssessmentForm = (
+  props: AssessmentProps | LegacyReassessmentProps | NonLegacyReassessmentProps,
+) => {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string>("");
-  const [nvValues, setNvValues] = useState<NvValues>({});
-  const [zevClassSelection, setZevClassSelection] =
-    useState<SupplierZevClassChoice>(ZevClass.B);
-  const [adjustments, setAdjustments] = useState<Adjustment[]>([]);
-  const [assessments, setAssessments] = useState<FileWithPath[]>([]);
-  const [assessmentResult, setAssessmentResult] = useState<
-    AssessmentResultData | undefined
+  const [selectedOrgId, setSelectedOrgId] = useState<number | undefined>();
+  const [selectedModelYear, setSelectedModelYear] = useState<
+    ModelYear | undefined
   >();
+  const [nvValues, setNvValues] = useState<NvValues>({});
+  const [adjustments, setAdjustments] = useState<Adjustment[]>([]);
+  const [assessment, setAssessment] = useState<[Workbook, ParsedAssmnt] | null>(
+    null,
+  );
   const [comment, setComment] = useState<string>("");
 
   const modelYearsMap = useMemo(() => {
     return getModelYearEnumsToStringsMap();
   }, []);
 
+  const legacyModelYearsMap: Partial<Record<string, ModelYear>> =
+    useMemo(() => {
+      return {
+        "2019": ModelYear.MY_2019,
+        "2020": ModelYear.MY_2020,
+        "2021": ModelYear.MY_2021,
+        "2022": ModelYear.MY_2022,
+        "2023": ModelYear.MY_2023,
+        "2024": ModelYear.MY_2024,
+      };
+    }, []);
+
   const addAdjustment = useCallback(() => {
+    let defaultModelYear;
+    if (props.assessmentType === "legacyReassessment") {
+      if (selectedModelYear) {
+        defaultModelYear = selectedModelYear;
+      } else {
+        defaultModelYear = ModelYear.MY_2024;
+      }
+    } else {
+      defaultModelYear = props.modelYear;
+    }
     setAdjustments((prev) => {
       return [
         ...prev,
@@ -69,12 +107,12 @@ export const AssessmentForm = (props: {
           type: TransactionType.CREDIT,
           vehicleClass: VehicleClass.REPORTABLE,
           zevClass: ZevClass.A,
-          modelYear: props.modelYear,
+          modelYear: defaultModelYear,
           numberOfUnits: "0",
         },
       ];
     });
-  }, [props.modelYear]);
+  }, [props, selectedModelYear]);
 
   const removeAdjustment = useCallback((id: string) => {
     setAdjustments((prev) => {
@@ -105,29 +143,46 @@ export const AssessmentForm = (props: {
     [],
   );
 
-  const handleZevClassSelect = useCallback(
-    (zevClass: SupplierZevClassChoice) => {
-      setZevClassSelection(zevClass);
-    },
-    [],
-  );
-
   const handleGenerateAssessment = useCallback(() => {
     setError("");
     startTransition(async () => {
       try {
-        validateNvValues(nvValues);
-        const zevClassOrdering = getZevClassOrdering(zevClassSelection);
+        if (props.assessmentType !== "assessment") {
+          validateNvValues(nvValues);
+        }
         const adjustmentsPayload = getAdjustmentsPayload(adjustments);
+        let getDataArgs:
+          | AssessmentArgs
+          | LegacyReassessmentArgs
+          | NonLegacyReassessmentArgs;
+        if (props.assessmentType === "assessment") {
+          getDataArgs = {
+            assessmentType: "assessment",
+            myrId: props.myrId,
+            adjustments: adjustmentsPayload,
+          };
+        } else if (props.assessmentType === "legacyReassessment") {
+          if (!selectedOrgId || !selectedModelYear) {
+            throw new Error("Invalid supplier or model year!");
+          }
+          getDataArgs = {
+            assessmentType: "legacyReassessment",
+            orgId: selectedOrgId,
+            modelYear: selectedModelYear,
+            adjustments: adjustmentsPayload,
+            nvValues,
+          };
+        } else {
+          getDataArgs = {
+            assessmentType: "nonLegacyReassessment",
+            myrId: props.myrId,
+            adjustments: adjustmentsPayload,
+            nvValues,
+          };
+        }
         const [templateUrl, assessmentResponse] = await Promise.all([
           getAssessmentTemplateUrl(),
-          getAssessmentData(
-            props.orgId,
-            props.modelYear,
-            nvValues,
-            zevClassOrdering,
-            adjustmentsPayload,
-          ),
+          getAssessmentData(getDataArgs),
         ]);
         if (assessmentResponse.responseType === "error") {
           throw new Error(assessmentResponse.message);
@@ -136,82 +191,156 @@ export const AssessmentForm = (props: {
           responseType: "arraybuffer",
         });
         const template = templateResponse.data;
-        await downloadAssessment(
+        const assessment = await generateAssessment(
           template,
           assessmentResponse.data,
-          zevClassSelection,
           adjustmentsPayload,
-          props.orgName,
-          props.modelYear,
         );
+        const parsedAssessment = parseAssessment(assessment);
+        setAssessment([assessment, parsedAssessment]);
       } catch (e) {
         if (e instanceof Error) {
           setError(e.message);
         }
       }
     });
-  }, [
-    props.orgId,
-    props.orgName,
-    props.modelYear,
-    nvValues,
-    zevClassSelection,
-    adjustments,
-  ]);
+  }, [props, selectedOrgId, selectedModelYear, nvValues, adjustments]);
 
-  const handleAssessmentDrop = useCallback(
-    async (files: File[]) => {
-      setError("");
-      try {
-        const file = await files[0].arrayBuffer();
-        const data = await parseAssessment(file, props.modelYear);
-        setAssessmentResult(data);
-      } catch (e) {
-        setError("Error parsing uploaded assessment!");
-      }
-    },
-    [props.modelYear],
-  );
-
-  const handleAssessmentRemove = useCallback(() => {
-    setAssessmentResult(undefined);
+  const handleClearAssessment = useCallback(() => {
+    setError("");
+    setAssessment(null);
   }, []);
 
   const handleSubmit = useCallback(() => {
     setError("");
     startTransition(async () => {
       try {
-        if (assessments.length !== 1 || !assessmentResult) {
+        if (assessment === null) {
           throw new Error("Exactly 1 valid Assessment expected!");
         }
-        const assessment = assessments[0];
-        const putDataResponse = await getPutAssessmentData(props.orgId);
-        if (putDataResponse.responseType === "error") {
-          throw new Error(putDataResponse.message);
-        }
-        await axios.put(putDataResponse.data.url, assessment);
-        const submitResponse = await submitToDirector(
-          props.id,
-          props.orgId,
-          putDataResponse.data.objectName,
-          assessment.name,
-          comment,
+        let submitResponse;
+        const assessmentBase64 = bytesToBase64(
+          await assessment[0].xlsx.writeBuffer(),
         );
+        if (props.assessmentType === "assessment") {
+          submitResponse = await submitAssessment(
+            props.myrId,
+            assessmentBase64,
+            getNormalizedComment(comment),
+          );
+        } else if (props.assessmentType === "legacyReassessment") {
+          if (!selectedOrgId || !selectedModelYear) {
+            throw new Error("Invalid supplier or model year!");
+          }
+          submitResponse = await submitReassessment(
+            selectedOrgId,
+            selectedModelYear,
+            assessmentBase64,
+            getNormalizedComment(comment),
+          );
+        } else {
+          submitResponse = await submitReassessment(
+            props.orgId,
+            props.modelYear,
+            assessmentBase64,
+            getNormalizedComment(comment),
+          );
+        }
         if (submitResponse.responseType === "error") {
           throw new Error(submitResponse.message);
         }
-        router.push(`${Routes.ComplianceReporting}/${props.id}`);
+        if (submitResponse.responseType === "data") {
+          const reassessmentId = submitResponse.data;
+          if (props.assessmentType === "legacyReassessment") {
+            router.push(`${Routes.LegacyReassessments}/${reassessmentId}`);
+          } else {
+            router.push(
+              `${Routes.ComplianceReporting}/${props.myrId}/reassessment/${reassessmentId}`,
+            );
+          }
+        } else if (props.assessmentType === "assessment") {
+          router.push(`${Routes.ComplianceReporting}/${props.myrId}`);
+        }
       } catch (e) {
         if (e instanceof Error) {
           setError(e.message);
         }
       }
     });
-  }, [assessments, assessmentResult, props.id, props.orgId, comment]);
+  }, [props, selectedOrgId, selectedModelYear, assessment, comment]);
 
-  return (
-    <div>
-      {error && <p className="text-red-600">{error}</p>}
+  const handleOrgSelect = useCallback(
+    (selectedOrgId: string) => {
+      if (props.assessmentType === "legacyReassessment") {
+        const orgIdNumber = Number.parseInt(selectedOrgId, 10);
+        if (props.orgsMap[orgIdNumber]) {
+          setSelectedOrgId(orgIdNumber);
+        } else {
+          setSelectedOrgId(undefined);
+        }
+      }
+    },
+    [props],
+  );
+
+  const orgsComponent: JSX.Element | null = useMemo(() => {
+    if (props.assessmentType === "legacyReassessment" && !assessment) {
+      return (
+        <div className="flex items-center py-2 my-2">
+          <label className="w-72" htmlFor="orgs">
+            Supplier
+          </label>
+          <select
+            name="orgs"
+            value={selectedOrgId}
+            className="border p-2 w-full"
+            onChange={(e) => {
+              handleOrgSelect(e.target.value);
+            }}
+          >
+            <option key={undefined}>--</option>
+            {Object.entries(props.orgsMap).map(([key, value]) => (
+              <option key={key} value={key}>
+                {value}
+              </option>
+            ))}
+          </select>
+        </div>
+      );
+    }
+    return null;
+  }, [props, selectedOrgId, assessment, handleOrgSelect]);
+
+  const modelYearComponent: JSX.Element | null = useMemo(() => {
+    if (props.assessmentType === "legacyReassessment") {
+      if (assessment) {
+        return null;
+      }
+      return (
+        <div className="flex items-center py-2 my-2">
+          <label className="w-72" htmlFor="modelYear">
+            Model Year
+          </label>
+          <select
+            name="modelYear"
+            value={selectedModelYear}
+            className="border p-2 w-full"
+            onChange={(e) => {
+              const value = e.target.value;
+              setSelectedModelYear(isModelYear(value) ? value : undefined);
+            }}
+          >
+            <option key={undefined}>--</option>
+            {Object.entries(legacyModelYearsMap).map(([key, value]) => (
+              <option key={key} value={value}>
+                {key}
+              </option>
+            ))}
+          </select>
+        </div>
+      );
+    }
+    return (
       <div className="flex items-center py-2 my-2">
         <label className="w-72" htmlFor="modelYear">
           Model Year
@@ -224,64 +353,68 @@ export const AssessmentForm = (props: {
           className="border p-2 w-full"
         />
       </div>
-      <MyrNvValues
-        nvValues={nvValues}
-        handleChange={handleNvValuesChange}
-        disabled={isPending}
-      />
-      <div className="flex items-center py-2 my-2">
-        <p>
-          Select the ZEV class of credits that should be used first when
-          offsetting debits of the unspecified ZEV class:
-        </p>
-      </div>
-      <div className="flex items-center py-2 my-2 space-x-4">
-        <ZevClassSelect
-          zevClassSelection={zevClassSelection}
-          handleChange={handleZevClassSelect}
+    );
+  }, [
+    props,
+    selectedModelYear,
+    modelYearsMap,
+    legacyModelYearsMap,
+    assessment,
+  ]);
+
+  return (
+    <div>
+      {orgsComponent}
+      {modelYearComponent}
+      {props.assessmentType !== "assessment" && !assessment && (
+        <MyrNvValues
+          nvValues={nvValues}
+          handleChange={handleNvValuesChange}
           disabled={isPending}
         />
-      </div>
-      <Adjustments
-        adjustments={adjustments}
-        addAdjustment={addAdjustment}
-        removeAdjustment={removeAdjustment}
-        handleAdjustmentChange={handleAdjustmentChange}
-        disabled={isPending}
-      />
+      )}
+      {!assessment && (
+        <Adjustments
+          adjustments={adjustments}
+          addAdjustment={addAdjustment}
+          removeAdjustment={removeAdjustment}
+          handleAdjustmentChange={handleAdjustmentChange}
+          disabled={isPending}
+        />
+      )}
       <div className="flex space-x-2">
-        <Button onClick={handleGenerateAssessment} disabled={isPending}>
-          {isPending ? "..." : "Generate and Download Assessment"}
-        </Button>
+        {assessment ? (
+          <Button
+            variant="tertiary"
+            size="small"
+            onClick={handleClearAssessment}
+            disabled={isPending}
+          >
+            {isPending
+              ? "..."
+              : `Clear ${props.assessmentType === "assessment" ? "Assessment" : "Reassessment"}`}
+          </Button>
+        ) : (
+          <Button
+            variant="secondary"
+            onClick={handleGenerateAssessment}
+            disabled={isPending}
+          >
+            {isPending
+              ? "..."
+              : `Generate ${props.assessmentType === "assessment" ? "Assessment" : "Reassessment"}`}
+          </Button>
+        )}
       </div>
-      <div className="flex items-center space-x-4">
-        <span>Upload the Assessment here:</span>
-        <Dropzone
-          files={assessments}
-          setFiles={setAssessments}
-          handleDrop={handleAssessmentDrop}
-          handleRemove={handleAssessmentRemove}
-          disabled={isPending}
-          maxNumberOfFiles={1}
-          allowedFileTypes={{
-            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet":
-              [".xlsx"],
-          }}
-        />
-      </div>
-      <div className="flex flex-col items-center space-x-4">
-        <AssessmentResult
-          data={assessmentResult}
-          complianceYear={props.modelYear}
-        />
-      </div>
+      {assessment && <ParsedAssessment assessment={assessment[1]} />}
       <CommentBox
         comment={comment}
         setComment={setComment}
         disabled={isPending}
       />
+      {error && <p className="text-red-600">{error}</p>}
       <div className="flex space-x-2">
-        <Button onClick={handleSubmit} disabled={isPending}>
+        <Button variant="primary" onClick={handleSubmit} disabled={isPending}>
           {isPending ? "..." : "Submit to Director"}
         </Button>
       </div>

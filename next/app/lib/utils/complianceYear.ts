@@ -6,23 +6,27 @@ import {
 
 // please only use these functions server-side, where the TZ is set to "America/Vancouver"
 
-export const getCurrentComplianceYear = () => {
-  const now = new Date();
-  const month = now.getMonth();
-  const year = now.getFullYear();
-  if (month >= 9) {
-    return year;
+export const getComplianceYear = (date: Date) => {
+  const month = date.getMonth();
+  let year = date.getFullYear();
+  if (month < 9) {
+    year = year - 1;
   }
-  return year - 1;
+  const modelYearsMap = getStringsToModelYearsEnumsMap();
+  const modelYear = modelYearsMap[year.toString()];
+  if (!modelYear) {
+    throw new Error("Error getting current compliance year!");
+  }
+  return modelYear;
 };
 
-export const getCompliancePeriod = (complianceYear: number) => {
-  const upperBoundYear = complianceYear + 1;
-  const isoStringSuffix = "-10-01T00:00:00.000";
-  return {
-    closedLowerBound: new Date(complianceYear + isoStringSuffix),
-    openUpperBound: new Date(upperBoundYear + isoStringSuffix),
-  };
+export const getCurrentComplianceYear = () => {
+  return getComplianceYear(new Date());
+};
+
+export const getPreviousComplianceYear = (date: Date) => {
+  const nowYear = getComplianceYear(date);
+  return getAdjacentYear("prev", nowYear);
 };
 
 export const getAdjacentYear = (
@@ -43,7 +47,7 @@ export const getAdjacentYear = (
   throw new Error("Error getting adjacent year!");
 };
 
-export const getComplianceInterval = (complianceYear: ModelYear) => {
+export const getCompliancePeriod = (complianceYear: ModelYear) => {
   const modelYearsMap = getModelYearEnumsToStringsMap();
   const lowerYear = modelYearsMap[complianceYear];
   const upperYear = modelYearsMap[getAdjacentYear("next", complianceYear)];
@@ -54,22 +58,26 @@ export const getComplianceInterval = (complianceYear: ModelYear) => {
 };
 
 export const getModelYearReportModelYear = () => {
-  const modelYearsMap = getStringsToModelYearsEnumsMap();
-  const now = new Date();
-  const month = now.getMonth();
-  const year = now.getFullYear();
-  const date = now.getDate();
-  if (month === 9 && date >= 1 && date <= 20) {
-    return modelYearsMap[year - 1];
-  } else if (month >= 9) {
-    return modelYearsMap[year];
-  } else if (month < 9) {
-    return modelYearsMap[year - 1];
-  }
+  const currentComplianceYear = getCurrentComplianceYear();
+  const reportYear = getAdjacentYear("prev", currentComplianceYear);
+  return reportYear;
 };
 
 export const getComplianceDate = (modelYear: ModelYear): Date => {
   const modelYearsMap = getModelYearEnumsToStringsMap();
   const year = getAdjacentYear("next", modelYear);
   return new Date(`${modelYearsMap[year]}-09-30T23:59:59`);
+};
+
+export const getDominatedComplianceYears = (complianceYear: ModelYear) => {
+  return Object.values(ModelYear).filter((cy) => cy < complianceYear);
+};
+
+export const getIsInReportingPeriod = (date: Date) => {
+  const month = date.getMonth();
+  const day = date.getDate();
+  if (month === 9 && day >= 1 && day <= 20) {
+    return true;
+  }
+  return false;
 };

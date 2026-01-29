@@ -1,20 +1,41 @@
 import { ContentCard } from "@/app/lib/components";
 import { getUserInfo } from "@/auth";
 import { LoadingSkeleton } from "@/app/lib/components/skeletons";
-import { Suspense } from "react";
+import { JSX, Suspense } from "react";
 import { VehicleHistories } from "../lib/components/VehicleHistories";
 import { VehicleDetails } from "../lib/components/VehicleDetails";
-import { ActionBar } from "../lib/components/ActionBar";
-import { getSerializedVehicle } from "../lib/data";
-import { VehicleStatus } from "@/prisma/generated/client";
-import { VehicleAttachments } from "../lib/components/VehicleAttachments";
+import { getVehicle } from "../lib/data";
+import { Role } from "@/prisma/generated/client";
+import { getAttachmentDownloadUrls } from "../lib/actions";
+import { AttachmentsDownload } from "@/app/lib/components/AttachmentsDownload";
+import { SupplierActions } from "../lib/components/SupplierActions";
+import { AnalystActions } from "../lib/components/AnalystActions";
+
 const Page = async (props: { params: Promise<{ id: string }> }) => {
-  const { userIsGov } = await getUserInfo();
+  const { userIsGov, userRoles } = await getUserInfo();
   const args = await props.params;
   const id = parseInt(args.id);
-  const vehicle = await getSerializedVehicle(id);
-  if (!vehicle || vehicle.status === VehicleStatus.DELETED) {
+  const vehicle = await getVehicle(id);
+  if (!vehicle) {
     return null;
+  }
+  const download = async () => {
+    "use server";
+    return getAttachmentDownloadUrls(id);
+  };
+  const status = vehicle.status;
+  let actions: JSX.Element | null = null;
+  if (!userIsGov) {
+    actions = (
+      <SupplierActions
+        vehicleId={id}
+        status={status}
+        isActive={vehicle.isActive}
+        userRoles={userRoles}
+      />
+    );
+  } else if (userIsGov && userRoles.includes(Role.ENGINEER_ANALYST)) {
+    actions = <AnalystActions vehicleId={id} status={status} />;
   }
   return (
     <div className="flex flex-col w-1/3">
@@ -28,20 +49,15 @@ const Page = async (props: { params: Promise<{ id: string }> }) => {
           <VehicleDetails vehicle={vehicle} />
         </Suspense>
       </ContentCard>
-      <ContentCard title="Vehicle Attachments">
-        <Suspense fallback={<LoadingSkeleton />}>
-          <VehicleAttachments id={id} />
-        </Suspense>
-      </ContentCard>
-      <ContentCard title="Actions">
-        <Suspense fallback={<LoadingSkeleton />}>
-          <ActionBar
-            userIsGov={userIsGov}
-            vehicleId={vehicle.id}
-            vehicleStatus={vehicle.status}
+      {vehicle._count.VehicleAttachment > 0 && (
+        <ContentCard title="Download Additional Documents">
+          <AttachmentsDownload
+            download={download}
+            zipName={`zev-model-attachments-${id}`}
           />
-        </Suspense>
-      </ContentCard>
+        </ContentCard>
+      )}
+      {actions && <ContentCard title="Actions">{actions}</ContentCard>}
     </div>
   );
 };

@@ -6,48 +6,62 @@ import { ModelYearReportDetails } from "../lib/components/ModelYearReportDetails
 import { ModelYearReportHistory } from "../lib/components/ModelYearReportHistory";
 import { getModelYearReport } from "../lib/data";
 import { SupplierActions } from "../lib/components/SupplierActions";
-import { Role } from "@/prisma/generated/client";
+import { ModelYearReportStatus, Role } from "@/prisma/generated/client";
 import { DirectorActions } from "../lib/components/DirectorActions";
 import { AnalystActions } from "../lib/components/AnalystActions";
-import { DownloadDocuments } from "../lib/components/DownloadDocuments";
+import { AssessmentDetails } from "../lib/components/AssessmentDetails";
+import { ForecastReportDetails } from "../lib/components/ForecastReportDetails";
+import { ReassessmentsList } from "../lib/components/ReassessmentsList";
 
 const Page = async (props: { params: Promise<{ id: string }> }) => {
   const args = await props.params;
-  const id = parseInt(args.id, 10);
-  const myr = await getModelYearReport(id);
+  const myrId = parseInt(args.id, 10);
+  const myr = await getModelYearReport(myrId);
   if (!myr) {
     return null;
   }
   const status = myr.status;
-  const modelYear = myr.modelYear;
-
   const { userIsGov, userRoles } = await getUserInfo();
   let actionComponent: JSX.Element | null = null;
   if (!userIsGov) {
-    actionComponent = <SupplierActions id={id} status={status} />;
-  } else if (userIsGov && userRoles.includes(Role.DIRECTOR)) {
+    actionComponent = <SupplierActions id={myrId} status={status} />;
+  } else if (userRoles.includes(Role.DIRECTOR)) {
+    actionComponent = <DirectorActions myrId={myrId} status={status} />;
+  } else if (userRoles.includes(Role.ENGINEER_ANALYST)) {
     actionComponent = (
-      <DirectorActions id={id} status={status} modelYear={modelYear} />
+      <AnalystActions
+        id={myrId}
+        status={status}
+        canConductReassessment={status === ModelYearReportStatus.ASSESSED}
+      />
     );
-  } else if (userIsGov && userRoles.includes(Role.ENGINEER_ANALYST)) {
-    actionComponent = <AnalystActions id={id} status={status} />;
   }
 
   return (
     <div className="flex flex-col w-1/3">
+      <ContentCard title="Reassessments">
+        <Suspense fallback={<LoadingSkeleton />}>
+          <ReassessmentsList myrId={myrId} />
+        </Suspense>
+      </ContentCard>
       <ContentCard title="Model Year Report History">
         <Suspense fallback={<LoadingSkeleton />}>
-          <ModelYearReportHistory id={id} />
+          <ModelYearReportHistory id={myrId} />
         </Suspense>
       </ContentCard>
       <ContentCard title="Model Year Report Details">
         <Suspense fallback={<LoadingSkeleton />}>
-          <ModelYearReportDetails id={id} />
+          <ModelYearReportDetails id={myrId} />
         </Suspense>
       </ContentCard>
-      <ContentCard title="Model Year Report Documents">
+      <ContentCard title="Forecast Report Details">
         <Suspense fallback={<LoadingSkeleton />}>
-          <DownloadDocuments id={id} />
+          <ForecastReportDetails myrId={myrId} />
+        </Suspense>
+      </ContentCard>
+      <ContentCard title="Assessment Details">
+        <Suspense fallback={<LoadingSkeleton />}>
+          <AssessmentDetails type="assessment" id={myrId} />
         </Suspense>
       </ContentCard>
       <ContentCard title="Actions">

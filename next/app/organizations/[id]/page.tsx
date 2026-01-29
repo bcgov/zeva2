@@ -43,9 +43,6 @@ const Page = async (props: { params: Promise<{ id: string }> }) => {
           organizationName={organization.name}
           shortName={organization.shortName ?? undefined}
           isActive={organization.isActive}
-          firstModelYear={
-            organization.firstModelYear?.toString().substring(3) ?? "N/A"
-          }
           serviceAddress={organization.serviceAddress}
           recordsAddress={organization.recordsAddress}
           supplierClass={getSupplierClass(organization.ldvSupplied)}

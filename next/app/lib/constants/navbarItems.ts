@@ -1,21 +1,14 @@
 import { Role } from "@/prisma/generated/client";
 import { Routes } from "./Routes";
+import { govRoles, supplierRoles } from "@/app/users/lib/constants";
 
 export type MenuItem = {
   label: string;
   route: string;
-  roles?: Role[];
+  roles?: readonly Role[];
 };
 
 export type NavbarSubItems = Record<string, MenuItem[]>;
-
-const govRoles = [Role.ADMINISTRATOR, Role.ENGINEER_ANALYST, Role.DIRECTOR];
-
-const supplierRoles = [
-  Role.ORGANIZATION_ADMINISTRATOR,
-  Role.SIGNING_AUTHORITY,
-  Role.ZEVA_USER,
-];
 
 export const navbarMainItems: MenuItem[] = [
   {
@@ -70,7 +63,7 @@ export const navbarSubItems: NavbarSubItems = {
     },
     {
       label: "Credit Transfers",
-      route: Routes.CreditTransactions,
+      route: Routes.CreditTransfers,
     },
     {
       label: "Credit Agreements",
@@ -98,6 +91,16 @@ export const navbarSubItems: NavbarSubItems = {
       label: "Credit Transactions",
       route: `${Routes.ZevUnitBalance}/:id`,
       roles: govRoles,
+    },
+  ],
+  "Compliance Reporting": [
+    {
+      label: "Model Year Reports",
+      route: Routes.ComplianceReporting,
+    },
+    {
+      label: "Legacy Reassessments",
+      route: Routes.LegacyReassessments,
     },
   ],
 };

@@ -1,80 +1,47 @@
 import Excel from "exceljs";
+import { ModelYear, Prisma } from "@/prisma/generated/client";
 import {
-  CreditApplicationStatus,
-  CreditApplicationSupplierStatus,
-  ModelYear,
-  VehicleStatus,
-  Prisma,
-} from "@/prisma/generated/client";
-import { getStringsToModelYearsEnumsMap } from "@/app/lib/utils/enumMaps";
-import {
-  CreditApplicationSubDirectory,
-  SupplierTemplateZEVsSuppliedSheetHeaderNames,
-  SupplierTemplateZEVsSuppliedSheetData,
-} from "./constants";
-import { IcbcRecordsMap, VehicleSparse, VinRecordsMap } from "./services";
+  getMatchingTerms,
+  getStringsToCreditApplicationStatusEnumsMap,
+  getStringsToCreditApplicationSupplierStatusEnumsMap,
+  getStringsToModelYearsEnumsMap,
+} from "@/app/lib/utils/enumMaps";
+import { SupplierTemplate } from "./constants";
+import { IcbcRecordsMap } from "./services";
 import {
   CreditApplicationCredit,
   CreditApplicationRecordSparse,
   CreditApplicationSparse,
 } from "./data";
 import { getIsoYmdString, validateDate } from "@/app/lib/utils/date";
-
-export const getCreditApplicationFullObjectName = (
-  userOrgId: number,
-  objectName: string,
-) => {
-  return `${userOrgId}/${CreditApplicationSubDirectory.CreditApplications}/${objectName}`;
-};
-
-// make -> modelName -> modelYear -> id
-export type VehiclesMapSparse = Record<
-  string,
-  Record<string, Partial<Record<ModelYear, number>>>
->;
-
-export const getSupplierVehiclesMap = (vehicles: VehicleSparse[]) => {
-  const result: VehiclesMapSparse = {};
-  vehicles.forEach((vehicle) => {
-    const make = vehicle.make;
-    const modelName = vehicle.modelName;
-    const modelYear = vehicle.modelYear;
-    if (!result[make]) {
-      result[make] = {};
-    }
-    if (!result[make][modelName]) {
-      result[make][modelName] = {};
-    }
-    result[make][modelName][modelYear] = vehicle.id;
-  });
-  return result;
-};
+import {
+  getComplianceDate,
+  getComplianceYear,
+  getIsInReportingPeriod,
+  getPreviousComplianceYear,
+} from "@/app/lib/utils/complianceYear";
 
 export const getWhereClause = (
   filters: Record<string, string>,
   userIsGov: boolean,
-): Prisma.CreditApplicationWhereInput => {
-  const result: Prisma.CreditApplicationWhereInput = {};
-  Object.entries(filters).forEach(([key, value]) => {
+): Omit<Prisma.CreditApplicationWhereInput, "NOT"> => {
+  const result: Omit<Prisma.CreditApplicationWhereInput, "NOT"> = {};
+  const statusMap = getStringsToCreditApplicationStatusEnumsMap();
+  const supplierStatusMap =
+    getStringsToCreditApplicationSupplierStatusEnumsMap();
+  const modelYearsMap = getStringsToModelYearsEnumsMap();
+  Object.entries(filters).forEach(([key, rawValue]) => {
+    const value = rawValue.trim();
     if (key === "id") {
       result[key] = parseInt(value, 10);
     } else if (key === "status") {
-      const newValue = value.replaceAll(" ", "").toLowerCase();
-      const statuses = Object.values(CreditApplicationStatus);
-      const matches = statuses.filter((status) => {
-        const newStatus = status.replaceAll("_", "").toLowerCase();
-        return newStatus.includes(newValue);
-      });
       if (userIsGov) {
         result[key] = {
-          in: matches,
+          in: getMatchingTerms(statusMap, value),
         };
       } else {
-        const supplierMatches = new Set(matches).intersection(
-          new Set(Object.values(CreditApplicationSupplierStatus)),
-        );
-        result.supplierStatus = {
-          in: Array.from(supplierMatches),
+        result["supplierStatus"] = {
+          in: getMatchingTerms(supplierStatusMap, value),
         };
       }
     } else if (key === "submissionTimestamp") {
@@ -90,14 +57,17 @@ export const getWhereClause = (
         result.id = -1;
       }
     } else if (key === "organization" && userIsGov) {
-      const newValue = value.trim();
       result[key] = {
         is: {
           name: {
-            contains: newValue,
+            contains: value,
             mode: "insensitive",
           },
         },
+      };
+    } else if (key === "modelYears") {
+      result[key] = {
+        hasSome: getMatchingTerms(modelYearsMap, value),
       };
     }
   });
@@ -110,25 +80,27 @@ export const getOrderByClause = (
   userIsGov: boolean,
 ): Prisma.CreditApplicationOrderByWithRelationInput[] => {
   const result: Prisma.CreditApplicationOrderByWithRelationInput[] = [];
-  Object.entries(sorts).forEach(([key, value]) => {
+  for (const [key, value] of Object.entries(sorts)) {
+    const orderBy: Prisma.CreditApplicationOrderByWithRelationInput = {};
     if (value === "asc" || value === "desc") {
       if (key === "id" || key === "submissionTimestamp") {
-        result.push({ [key]: value });
+        orderBy[key] = value;
       } else if (key === "status") {
         if (userIsGov) {
-          result.push({ status: value });
+          orderBy[key] = value;
         } else {
-          result.push({ supplierStatus: value });
+          orderBy["supplierStatus"] = value;
         }
       } else if (key === "organization" && userIsGov) {
-        result.push({
-          [key]: {
-            name: value,
-          },
-        });
+        orderBy[key] = {
+          name: value,
+        };
       }
     }
-  });
+    if (Object.keys(orderBy).length > 0) {
+      result.push(orderBy);
+    }
+  }
   if (defaultSortById && result.length === 0) {
     result.push({ id: "desc" });
   }
@@ -140,24 +112,18 @@ export const getRecordsWhereClause = (
 ): Prisma.CreditApplicationRecordWhereInput => {
   const result: Prisma.CreditApplicationRecordWhereInput = {};
   const modelYearsMap = getStringsToModelYearsEnumsMap();
-  Object.entries(filters).forEach(([key, value]) => {
+  Object.entries(filters).forEach(([key, rawValue]) => {
+    const value = rawValue.trim();
     if (key === "validated") {
-      const newValue = value.toLowerCase().trim();
+      const newValue = value.toLowerCase();
       if (newValue === "y") {
         result[key] = true;
       } else if (newValue === "n") {
         result[key] = false;
       }
     } else if (key === "modelYear" || key === "icbcModelYear") {
-      const modelYearEnums: ModelYear[] = [];
-      const modelYearStrings = Object.keys(modelYearsMap);
-      modelYearStrings.forEach((my) => {
-        if (my.includes(value) && modelYearsMap[my]) {
-          modelYearEnums.push(modelYearsMap[my]);
-        }
-      });
       result[key] = {
-        in: modelYearEnums,
+        in: getMatchingTerms(modelYearsMap, value),
       };
     } else if (key === "timestamp" || key === "icbcTimestamp") {
       const [isValidDate, date] = validateDate(value);
@@ -173,13 +139,13 @@ export const getRecordsWhereClause = (
       key === "icbcMake" ||
       key === "icbcModelName"
     ) {
-      const newValue = value.trim().toLowerCase();
+      const newValue = value.toLowerCase();
       result[key] = {
         contains: newValue,
         mode: "insensitive",
       };
     } else if (key === "warnings") {
-      let newValue: string | string[] = value.toLowerCase().trim();
+      let newValue: string | string[] = value.toLowerCase();
       if (newValue === "any") {
         result[key] = {
           isEmpty: false,
@@ -195,7 +161,7 @@ export const getRecordsWhereClause = (
         };
       }
     } else if (key === "reason") {
-      let newValue: string = value.toLowerCase().trim();
+      let newValue: string = value.toLowerCase();
       if (newValue === "any") {
         result[key] = {
           not: null,
@@ -219,6 +185,7 @@ export const getRecordsOrderByClause = (
 ): Prisma.CreditApplicationRecordOrderByWithRelationInput[] => {
   const result: Prisma.CreditApplicationRecordOrderByWithRelationInput[] = [];
   Object.entries(sorts).forEach(([key, value]) => {
+    const orderBy: Prisma.CreditApplicationRecordOrderByWithRelationInput = {};
     if (
       (value === "asc" || value === "desc") &&
       (key === "vin" ||
@@ -234,7 +201,10 @@ export const getRecordsOrderByClause = (
         key === "warnings" ||
         key === "reason")
     ) {
-      result.push({ [key]: value });
+      orderBy[key] = value;
+    }
+    if (Object.keys(orderBy).length > 0) {
+      result.push(orderBy);
     }
   });
   if (defaultSortById && result.length === 0) {
@@ -266,8 +236,15 @@ export const getSerializedRecords = (
 
 export type CreditApplicationSparseSerialized = Omit<
   CreditApplicationSparse,
-  "submissionTimestamp" | "supplierStatus" | "organization"
-> & { submissionTimestamp: string; organization?: string };
+  | "submissionTimestamp"
+  | "supplierStatus"
+  | "organization"
+  | "transactionTimestamps"
+> & {
+  submissionTimestamp?: string;
+  organization?: string;
+  transactionTimestamps: string[];
+};
 
 export const getSerializedApplications = (
   records: CreditApplicationSparse[],
@@ -278,7 +255,13 @@ export const getSerializedApplications = (
     const resultRecord: CreditApplicationSparseSerialized = {
       id: record.id,
       status: userIsGov ? record.status : record.supplierStatus,
-      submissionTimestamp: getIsoYmdString(record.submissionTimestamp),
+      submissionTimestamp: record.submissionTimestamp
+        ? getIsoYmdString(record.submissionTimestamp)
+        : undefined,
+      transactionTimestamps: record.transactionTimestamps.map((ts) => {
+        return getIsoYmdString(ts);
+      }),
+      modelYears: record.modelYears,
     };
     if (userIsGov) {
       resultRecord.organization = record.organization.name;
@@ -286,20 +269,6 @@ export const getSerializedApplications = (
     result.push(resultRecord);
   });
   return result;
-};
-
-export type ColsToHeadersMap = Partial<Record<string, string>>;
-
-export const getColsToHeadersMap = (headersRow: Excel.Row) => {
-  const headersMap: ColsToHeadersMap = {};
-  headersRow.eachCell((cell) => {
-    const col = cell.col;
-    const value = cell.value?.toString();
-    if (col && value) {
-      headersMap[col] = value;
-    }
-  });
-  return headersMap;
 };
 
 export const parseSupplierSubmission = (sheet: Excel.Worksheet) => {
@@ -312,88 +281,46 @@ export const parseSupplierSubmission = (sheet: Excel.Worksheet) => {
       timestamp: Date;
     }
   > = {};
-  const duplicateVins: string[] = [];
+  const duplicateVins: Set<string> = new Set();
   const invalidRows: number[] = [];
-  const headersIndex = SupplierTemplateZEVsSuppliedSheetData.HeaderIndex;
   const modelYearsMap = getStringsToModelYearsEnumsMap();
-  const headers = sheet.getRow(headersIndex);
-  const headersMap = getColsToHeadersMap(headers);
-  const requiredHeaders = Object.values(
-    SupplierTemplateZEVsSuppliedSheetHeaderNames,
-  );
-  requiredHeaders.forEach((requiredHeader) => {
-    let found = false;
-    headers.eachCell((header) => {
-      const headerText = header.value?.toString();
-      if (headerText && headerText === requiredHeader) {
-        found = true;
-      }
-    });
-    if (!found) {
-      throw new Error(`Missing required header "${requiredHeader}"`);
+  for (let i = 2; i <= SupplierTemplate.ZEVsSuppliedSheetNumberOfRows; i++) {
+    const row = sheet.getRow(i);
+    const make = row.getCell(1).value?.toString();
+    const modelName = row.getCell(2).value?.toString();
+    const modelYear = row.getCell(3).value?.toString();
+    const vin = row.getCell(4).value?.toString();
+    const date = row.getCell(5).value?.toString();
+    if (!make && !modelName && !modelYear && !vin && !date) {
+      continue;
     }
-  });
-  sheet.eachRow((row, rowNumber) => {
-    if (rowNumber > headersIndex) {
-      let vin: string | undefined;
-      let make: string | undefined;
-      let modelName: string | undefined;
-      let modelYear: ModelYear | undefined;
-      let timestamp: Date | undefined;
-      row.eachCell((cell) => {
-        const col = cell.col;
-        const header = headersMap[col];
-        if (header) {
-          const value = cell.value?.toString();
-          if (value) {
-            if (
-              header === SupplierTemplateZEVsSuppliedSheetHeaderNames.VIN &&
-              value.length === 17
-            ) {
-              vin = value;
-            } else if (
-              header === SupplierTemplateZEVsSuppliedSheetHeaderNames.Make
-            ) {
-              make = value;
-            } else if (
-              header === SupplierTemplateZEVsSuppliedSheetHeaderNames.ModelName
-            ) {
-              modelName = value;
-            } else if (
-              header === SupplierTemplateZEVsSuppliedSheetHeaderNames.ModelYear
-            ) {
-              const year = modelYearsMap[value];
-              if (year) {
-                modelYear = year;
-              }
-            } else if (
-              header === SupplierTemplateZEVsSuppliedSheetHeaderNames.Date
-            ) {
-              const [isValidDate, date] = validateDate(value);
-              if (isValidDate && date >= new Date("2018-01-02T00:00:00")) {
-                timestamp = date;
-              }
-            }
-          }
-        }
-      });
-      if (vin && make && modelName && modelYear && timestamp) {
-        if (data[vin]) {
-          duplicateVins.push(vin);
-        }
+    if (vin && vin.length === 17 && make && modelName && modelYear && date) {
+      if (data[vin]) {
+        duplicateVins.add(vin);
+        continue;
+      }
+      const modelYearEnum = modelYearsMap[modelYear];
+      const [isValidDate, timestamp] = validateDate(date);
+      if (
+        modelYearEnum &&
+        isValidDate &&
+        timestamp >= new Date("2018-01-02T00:00:00")
+      ) {
         data[vin] = {
           make,
           modelName,
-          modelYear,
+          modelYear: modelYearEnum,
           timestamp,
         };
       } else {
-        invalidRows.push(rowNumber);
+        invalidRows.push(i);
       }
+    } else {
+      invalidRows.push(i);
     }
-  });
-  if (duplicateVins.length > 0) {
-    throw new Error(`Duplicate VINs: ${duplicateVins.join(", ")}`);
+  }
+  if (duplicateVins.size > 0) {
+    throw new Error(`Duplicate VINs: ${[...duplicateVins].join(", ")}`);
   }
   if (invalidRows.length > 0) {
     throw new Error(
@@ -401,44 +328,40 @@ export const parseSupplierSubmission = (sheet: Excel.Worksheet) => {
     );
   }
   const numberOfVins = Object.keys(data).length;
-  const maxVins = SupplierTemplateZEVsSuppliedSheetData.MaxNumberOfRecords;
-  if (numberOfVins === 0 || numberOfVins > maxVins) {
-    throw new Error(
-      `Submission must have at least one VIN, and no more than ${maxVins} VINs`,
-    );
+  if (numberOfVins === 0) {
+    throw new Error("Submission must have at least one VIN!");
   }
   return data;
 };
 
-export type WarningsMap = Partial<Record<string, string[]>>;
-
 export const getWarningsMap = (
-  recordsMap: VinRecordsMap,
+  records: {
+    vin: string;
+    make: string;
+    modelName: string;
+    modelYear: ModelYear;
+  }[],
   icbcMap: IcbcRecordsMap,
-): WarningsMap => {
-  const result: WarningsMap = {};
-  Object.entries(recordsMap).forEach(([vin, data]) => {
-    result[vin] = [];
-    const vehicle = data.vehicle;
-    const icbcRecord = icbcMap[vin];
-    if (vehicle.status !== VehicleStatus.VALIDATED || !vehicle.isActive) {
-      result[vin].push("1");
-    }
+) => {
+  const result: Partial<Record<string, string[]>> = {};
+  for (const record of records) {
+    const vin = record.vin;
+    const icbcRecord = icbcMap[record.vin];
     if (!icbcRecord) {
-      result[vin].push("2");
+      result[vin] = ["1"];
+      continue;
     }
-    if (vehicle && icbcRecord) {
-      if (icbcRecord.make !== vehicle.make) {
-        result[vin].push("3");
-      }
-      if (icbcRecord.modelYear !== vehicle.modelYear) {
-        result[vin].push("4");
-      }
+    const warnings: string[] = [];
+    if (icbcRecord.make !== record.make) {
+      warnings.push("2");
     }
-    if (result[vin].length === 0) {
-      delete result[vin];
+    if (icbcRecord.modelYear !== record.modelYear) {
+      warnings.push("3");
     }
-  });
+    if (warnings.length > 0) {
+      result[vin] = warnings;
+    }
+  }
   return result;
 };
 
@@ -484,9 +407,24 @@ export const serializeCredits = (
   });
 };
 
-export const getNormalizedComment = (comment: string) => {
-  if (comment === "") {
-    return undefined;
+export const getTransactionTimestamp = (
+  submissionTimestamp: Date,
+  issuanceTimestamp: Date,
+  modelYear: ModelYear,
+) => {
+  const submittedDuringReportingPeriod =
+    getIsInReportingPeriod(submissionTimestamp);
+  if (submittedDuringReportingPeriod) {
+    const complianceYear = getPreviousComplianceYear(submissionTimestamp);
+    return getComplianceDate(complianceYear);
   }
-  return comment;
+  const submissionComplianceYear = getComplianceYear(submissionTimestamp);
+  const issuanceComplianceYear = getComplianceYear(issuanceTimestamp);
+  if (
+    submissionComplianceYear !== issuanceComplianceYear &&
+    modelYear <= submissionComplianceYear
+  ) {
+    return getComplianceDate(submissionComplianceYear);
+  }
+  return issuanceTimestamp;
 };

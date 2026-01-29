@@ -24,6 +24,9 @@ on:
       manifest-repo-deploy-key:
         required: true
 
+permissions:
+  contents: read
+
 jobs:
 
   deploy:

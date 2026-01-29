@@ -1,20 +1,7 @@
-import { getUserInfo } from "@/auth";
-import { SupplierUpload } from "../lib/components/SupplierUpload";
-import { ContentCard } from "@/app/lib/components";
-import { SupplierDownload } from "../lib/components/SupplierDownload";
+import { ApplicationCreateOrEdit } from "../lib/components/ApplicationCreateOrEdit";
 
 const Page = async () => {
-  const { userOrgName } = await getUserInfo();
-  return (
-    <div>
-      <ContentCard title="Download Template">
-        <SupplierDownload userOrgName={userOrgName} />
-      </ContentCard>
-      <ContentCard title="Upload File">
-        <SupplierUpload />
-      </ContentCard>
-    </div>
-  );
+  return <ApplicationCreateOrEdit />;
 };
 
 export default Page;

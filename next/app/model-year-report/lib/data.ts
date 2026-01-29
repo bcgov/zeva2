@@ -5,22 +5,43 @@ import {
   ModelYearReportStatus,
   ModelYearReportSupplierStatus,
   Prisma,
+  ReassessmentStatus,
+  SupplierReassessmentStatus,
   Role,
+  SupplierClass,
 } from "@/prisma/generated/client";
-import { getOrderByClause, getWhereClause } from "./utils";
+import { getOrderByClause, getWhereClause } from "./utilsServer";
+import { getObject } from "@/app/lib/minio";
 
 export const modelYearReportExists = async (modelYear: ModelYear) => {
   const { userOrgId } = await getUserInfo();
-  const report = await prisma.modelYearReport.findFirst({
+  const report = await prisma.modelYearReport.findUnique({
     where: {
-      organizationId: userOrgId,
-      modelYear: modelYear,
+      organizationId_modelYear: {
+        organizationId: userOrgId,
+        modelYear,
+      },
     },
     select: {
       id: true,
     },
   });
   if (report) {
+    return true;
+  }
+  const legacyAssessedReport =
+    await prisma.legacyAssessedModelYearReport.findUnique({
+      where: {
+        organizationId_modelYear: {
+          organizationId: userOrgId,
+          modelYear,
+        },
+      },
+      select: {
+        id: true,
+      },
+    });
+  if (legacyAssessedReport) {
     return true;
   }
   return false;
@@ -79,14 +100,33 @@ export const getMyrHistory = async (myrId: number) => {
 };
 
 export const getModelYearReportDetails = async (id: number) => {
-  const { userIsGov, userOrgId } = await getUserInfo();
-  const whereClause: Prisma.ModelYearReportWhereUniqueInput = {
+  const { userIsGov, userOrgId, userRoles } = await getUserInfo();
+  let whereClause: Prisma.ModelYearReportWhereUniqueInput = {
     id,
   };
   if (!userIsGov) {
     whereClause.organizationId = userOrgId;
+  } else if (userIsGov && userRoles.includes(Role.ENGINEER_ANALYST)) {
+    whereClause = {
+      ...whereClause,
+      NOT: {
+        status: ModelYearReportStatus.RETURNED_TO_SUPPLIER,
+      },
+    };
+  } else if (userIsGov && userRoles.includes(Role.DIRECTOR)) {
+    whereClause = {
+      ...whereClause,
+      status: {
+        in: [
+          ModelYearReportStatus.SUBMITTED_TO_DIRECTOR,
+          ModelYearReportStatus.ASSESSED,
+        ],
+      },
+    };
+  } else {
+    return null;
   }
-  return await prisma.modelYearReport.findUnique({
+  const myr = await prisma.modelYearReport.findUnique({
     where: whereClause,
     select: {
       organization: {
@@ -96,9 +136,21 @@ export const getModelYearReportDetails = async (id: number) => {
       },
       status: true,
       supplierStatus: true,
-      modelYear: true,
+      objectName: true,
+      forecastReportObjectName: true,
     },
   });
+  if (!myr) {
+    return null;
+  }
+  const myrFile = await getObject(myr.objectName);
+  const forecastFile = await getObject(myr.forecastReportObjectName);
+  return {
+    status: myr.status,
+    supplierStatus: myr.supplierStatus,
+    myrFile,
+    forecastFile,
+  };
 };
 
 export type MyrSparse = {
@@ -106,9 +158,17 @@ export type MyrSparse = {
   modelYear: ModelYear;
   status: ModelYearReportStatus;
   supplierStatus: ModelYearReportSupplierStatus;
+  reassessmentStatus: ReassessmentStatus | null;
+  supplierReassessmentStatus: SupplierReassessmentStatus | null;
   organization?: {
     name: string;
   };
+  compliant: boolean | null;
+  supplierCompliant: boolean | null;
+  reportableNvValue: number;
+  supplierReportableNvValue: number;
+  supplierClass: SupplierClass;
+  supplierSupplierClass: SupplierClass;
 };
 
 export const getModelYearReports = async (
@@ -131,6 +191,14 @@ export const getModelYearReports = async (
     modelYear: true,
     status: true,
     supplierStatus: true,
+    reassessmentStatus: true,
+    supplierReassessmentStatus: true,
+    compliant: true,
+    supplierCompliant: true,
+    reportableNvValue: true,
+    supplierReportableNvValue: true,
+    supplierClass: true,
+    supplierSupplierClass: true,
   };
   if (userIsGov) {
     select.organization = {
@@ -139,11 +207,11 @@ export const getModelYearReports = async (
       },
     };
     if (userRoles.includes(Role.DIRECTOR)) {
-      where.OR = [
-        { status: ModelYearReportStatus.SUBMITTED_TO_DIRECTOR },
-        { status: ModelYearReportStatus.RETURNED_TO_ANALYST },
-        { status: ModelYearReportStatus.ASSESSED },
-      ];
+      where.modelYearReportHistory = {
+        some: {
+          userAction: ModelYearReportStatus.SUBMITTED_TO_DIRECTOR,
+        },
+      };
     }
   } else {
     where.organizationId = userOrgId;
@@ -160,4 +228,253 @@ export const getModelYearReports = async (
       where,
     }),
   ]);
+};
+
+export const getAssessmentObject = async (myrId: number) => {
+  const { userIsGov, userOrgId, userRoles } = await getUserInfo();
+  let whereClause: Prisma.ModelYearReportWhereUniqueInput = {
+    id: myrId,
+  };
+  if (!userIsGov) {
+    whereClause = {
+      ...whereClause,
+      organizationId: userOrgId,
+      status: ModelYearReportStatus.ASSESSED,
+    };
+  } else if (userIsGov && userRoles.includes(Role.ENGINEER_ANALYST)) {
+    whereClause = {
+      ...whereClause,
+      NOT: {
+        status: {
+          in: [
+            ModelYearReportStatus.RETURNED_TO_SUPPLIER,
+            ModelYearReportStatus.SUBMITTED_TO_GOVERNMENT,
+          ],
+        },
+      },
+    };
+  } else if (userIsGov && userRoles.includes(Role.DIRECTOR)) {
+    whereClause = {
+      ...whereClause,
+      status: {
+        in: [
+          ModelYearReportStatus.SUBMITTED_TO_DIRECTOR,
+          ModelYearReportStatus.ASSESSED,
+        ],
+      },
+    };
+  } else {
+    return null;
+  }
+  const myr = await prisma.modelYearReport.findUnique({
+    where: whereClause,
+    select: {
+      id: true,
+      assessment: {
+        select: {
+          objectName: true,
+        },
+      },
+    },
+  });
+  if (!myr || !myr.assessment) {
+    return null;
+  }
+  const assessmentFile = await getObject(myr.assessment.objectName);
+  return assessmentFile;
+};
+
+export const getReassessment = async (
+  reassessmentId: number,
+  myrId?: number,
+) => {
+  const { userIsGov, userOrgId } = await getUserInfo();
+  const whereClause: Prisma.ReassessmentWhereUniqueInput = {
+    id: reassessmentId,
+  };
+  if (!userIsGov) {
+    whereClause.organizationId = userOrgId;
+    whereClause.status = ReassessmentStatus.ISSUED;
+  }
+  const reassessment = await prisma.reassessment.findUnique({
+    where: whereClause,
+    select: {
+      id: true,
+      modelYear: true,
+      organizationId: true,
+      status: true,
+    },
+  });
+  if (!reassessment) {
+    return null;
+  }
+  if (myrId) {
+    const myr = await prisma.modelYearReport.findUnique({
+      where: {
+        id: myrId,
+      },
+      select: {
+        modelYear: true,
+        organizationId: true,
+      },
+    });
+    if (!myr) {
+      return null;
+    }
+    if (
+      myr.modelYear !== reassessment.modelYear ||
+      myr.organizationId !== reassessment.organizationId
+    ) {
+      return null;
+    }
+  }
+  return reassessment;
+};
+
+export const getReassessmentObject = async (reassessmentId: number) => {
+  const { userIsGov, userOrgId, userRoles } = await getUserInfo();
+  const whereClause: Prisma.ReassessmentWhereUniqueInput = {
+    id: reassessmentId,
+  };
+  if (!userIsGov) {
+    whereClause.organizationId = userOrgId;
+    whereClause.status = ReassessmentStatus.ISSUED;
+  }
+  if (userIsGov && userRoles.includes(Role.DIRECTOR)) {
+    whereClause.status = {
+      not: ReassessmentStatus.RETURNED_TO_ANALYST,
+    };
+  }
+  const reassessment = await prisma.reassessment.findUnique({
+    where: whereClause,
+    select: {
+      objectName: true,
+    },
+  });
+  if (!reassessment) {
+    return null;
+  }
+  return await getObject(reassessment.objectName);
+};
+
+export const getReassessmentHistory = async (reassessmentId: number) => {
+  const { userIsGov } = await getUserInfo();
+  const whereClause: Prisma.ReassessmentHistoryWhereInput = {
+    reassessmentId,
+  };
+  if (!userIsGov) {
+    whereClause.userAction = ReassessmentStatus.ISSUED;
+  }
+  return await prisma.reassessmentHistory.findMany({
+    where: whereClause,
+    include: {
+      user: {
+        select: {
+          firstName: true,
+          lastName: true,
+          organization: {
+            select: {
+              isGovernment: true,
+            },
+          },
+        },
+      },
+    },
+    orderBy: {
+      timestamp: "asc",
+    },
+  });
+};
+
+export type LegacyReassessment = {
+  id: number;
+  modelYear: ModelYear;
+  status: ReassessmentStatus;
+  sequenceNumber: number;
+  organization?: {
+    name: string;
+  };
+};
+
+export const getLegacyReassessments = async (
+  page: number,
+  pageSize: number,
+): Promise<[LegacyReassessment[], number]> => {
+  const { userIsGov, userOrgId, userRoles } = await getUserInfo();
+  const skip = (page - 1) * pageSize;
+  const take = pageSize;
+  const where: Prisma.ReassessmentWhereInput = {
+    modelYearReportId: null,
+  };
+  const select: Prisma.ReassessmentSelect = {
+    id: true,
+    modelYear: true,
+    status: true,
+    sequenceNumber: true,
+  };
+  if (userIsGov) {
+    select.organization = {
+      select: {
+        name: true,
+      },
+    };
+    if (userRoles.includes(Role.DIRECTOR)) {
+      where.ReassessmentHistory = {
+        some: {
+          userAction: ReassessmentStatus.SUBMITTED_TO_DIRECTOR,
+        },
+      };
+    }
+  } else {
+    where.organizationId = userOrgId;
+    where.status = ReassessmentStatus.ISSUED;
+  }
+  return await prisma.$transaction([
+    prisma.reassessment.findMany({
+      skip,
+      take,
+      select,
+      where,
+      orderBy: [{ organizationId: "asc" }, { sequenceNumber: "asc" }],
+    }),
+    prisma.reassessment.count({
+      where,
+    }),
+  ]);
+};
+
+export const getReassessments = async (myrId: number) => {
+  const { userIsGov, userOrgId } = await getUserInfo();
+  const myrWhereClause: Prisma.ModelYearReportWhereUniqueInput = {
+    id: myrId,
+    status: ModelYearReportStatus.ASSESSED,
+  };
+  if (!userIsGov) {
+    myrWhereClause.organizationId = userOrgId;
+  }
+  const myr = await prisma.modelYearReport.findUnique({
+    where: myrWhereClause,
+    select: {
+      organizationId: true,
+      modelYear: true,
+    },
+  });
+  if (!myr) {
+    return [];
+  }
+  const whereClause: Prisma.ReassessmentWhereInput = {
+    organizationId: myr.organizationId,
+    modelYear: myr.modelYear,
+  };
+  if (!userIsGov) {
+    whereClause.status = ReassessmentStatus.ISSUED;
+  }
+  return await prisma.reassessment.findMany({
+    where: whereClause,
+    select: {
+      id: true,
+      status: true,
+      sequenceNumber: true,
+    },
+  });
 };

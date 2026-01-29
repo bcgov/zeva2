@@ -6,10 +6,23 @@ import {
   ModelYear,
   ZevClass,
 } from "@/prisma/generated/client";
-import { useState } from "react";
-import { AgreementContentPayload, AgreementPayload } from "../action";
+import { useMemo, useState, useCallback } from "react";
+import {
+  AgreementContentPayload,
+  AgreementPayload,
+  getPutObjectData,
+  AgreementPutObjectData,
+  deleteAgreementAttachment,
+} from "../action";
 import { cleanupStringData } from "@/lib/utils/dataCleanup";
+import { Button } from "@/app/lib/components/inputs";
 import { AgreementDetailsType } from "../services";
+import { Dropzone } from "@/app/lib/components/Dropzone";
+import { FileWithPath } from "react-dropzone";
+import { getDefaultAttchmentTypes } from "@/app/lib/utils/attachments";
+import axios from "axios";
+import { Attachment } from "@/app/lib/services/attachments";
+import { AttachmentsList } from "@/app/lib/components/AttachmentsList";
 
 const mainDivClass = "grid grid-cols-[220px_1fr]";
 const fieldLabelClass = "py-1 font-semibold text-primaryBlue";
@@ -20,7 +33,10 @@ export const AgreementEditForm = (props: {
   modelYearSelections: ModelYear[];
   zevClassSelections: ZevClass[];
   agreementDetails?: AgreementDetailsType;
-  upsertAgreement: (data: AgreementPayload) => Promise<void>;
+  upsertAgreement: (
+    data: AgreementPayload,
+    files: Attachment[],
+  ) => Promise<void>;
   handleCancel: () => void;
 }) => {
   const {
@@ -60,8 +76,12 @@ export const AgreementEditForm = (props: {
   const [processingMsg, setProcessingMsg] = useState<string | undefined>(
     undefined,
   );
+  const [newFiles, setNewFiles] = useState<FileWithPath[]>([]);
+  const allowedFileTypes = useMemo(() => {
+    return getDefaultAttchmentTypes();
+  }, []);
 
-  const handleSave = async () => {
+  const handleSave = useCallback(async () => {
     if (!supplier || !agreementType) {
       setErrorMsg(
         "Both the Agreement Type and the Vehicle Supplier are required.",
@@ -69,16 +89,44 @@ export const AgreementEditForm = (props: {
       return;
     }
     setProcessingMsg("Saving...");
-    await upsertAgreement({
-      referenceId: cleanupStringData(referenceId),
-      organizationId: supplier,
-      agreementType: agreementType,
-      status: agreementDetails?.status ?? AgreementStatus.DRAFT,
-      effectiveDate: effectiveDate ?? null,
-      comment: cleanupStringData(msgToSupplier),
-      agreementContent: agreementContent,
-    });
-  };
+
+    const agreementFiles: Attachment[] = [];
+    if (newFiles.length > 0) {
+      const putData = await getPutObjectData(newFiles.length);
+      const filesAndPutData: [FileWithPath, AgreementPutObjectData][] =
+        newFiles.map((file, index) => [file, putData[index]]);
+      for (const tuple of filesAndPutData) {
+        const file = tuple[0];
+        const putData = tuple[1];
+        await axios.put(putData.url, file);
+        agreementFiles.push({
+          fileName: file.name,
+          objectName: putData.objectName,
+        });
+      }
+    }
+
+    await upsertAgreement(
+      {
+        referenceId: cleanupStringData(referenceId),
+        organizationId: supplier,
+        agreementType: agreementType,
+        status: agreementDetails?.status ?? AgreementStatus.DRAFT,
+        effectiveDate: effectiveDate ?? null,
+        comment: cleanupStringData(msgToSupplier),
+        agreementContent: agreementContent,
+      },
+      agreementFiles,
+    );
+  }, [
+    supplier,
+    agreementType,
+    referenceId,
+    effectiveDate,
+    msgToSupplier,
+    agreementContent,
+    newFiles,
+  ]);
 
   if (processingMsg) {
     return <p className="p-4 text-primaryBlue">{processingMsg}</p>;
@@ -246,7 +294,7 @@ export const AgreementEditForm = (props: {
       </div>
 
       <div>
-        <p>Message to Supplier</p>
+        <p className={fieldLabelClass}>Message to Supplier</p>
         <textarea
           className={fieldContentClass + " w-full"}
           rows={4}
@@ -257,24 +305,37 @@ export const AgreementEditForm = (props: {
       </div>
 
       <div>
-        <button
-          type="button"
-          className="bg-primaryBlue text-white px-4 py-2 rounded"
-          onClick={handleSave}
-        >
+        <p className={fieldLabelClass}>Supporting Documents</p>
+        <Dropzone
+          files={newFiles}
+          setFiles={setNewFiles}
+          disabled={false}
+          maxNumberOfFiles={10}
+          allowedFileTypes={allowedFileTypes}
+        />
+        <div className="mb-3 p-2 bg-white">
+          <p>Uploaded Files</p>
+          <AttachmentsList
+            attachments={agreementDetails?.agreementAttachment ?? []}
+            deleteAttachment={deleteAgreementAttachment}
+          />
+        </div>
+      </div>
+
+      <div>
+        <Button variant="primary" type="button" onClick={handleSave}>
           Save
-        </button>
-        <button
+        </Button>
+        <Button
+          variant="secondary"
           type="button"
-          className="bg-white text-primaryBlue px-4 py-2 rounded ml-2
-            border border-primaryBlue"
           onClick={() => {
             setProcessingMsg("Cancel...");
             handleCancel();
           }}
         >
           Cancel
-        </button>
+        </Button>
       </div>
     </form>
   );

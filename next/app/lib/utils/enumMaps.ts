@@ -6,13 +6,21 @@
 
 import {
   BalanceType,
+  CreditApplicationStatus,
+  CreditApplicationSupplierStatus,
+  CreditTransferStatus,
+  CreditTransferSupplierStatus,
   Idp,
   ModelYear,
   ModelYearReportStatus,
   ModelYearReportSupplierStatus,
+  Notification,
   PenaltyCreditStatus,
+  ReassessmentStatus,
   ReferenceType,
   Role,
+  SupplierClass,
+  SupplierReassessmentStatus,
   TransactionType,
   VehicleClass,
   VehicleStatus,
@@ -37,7 +45,7 @@ export const getMatchingTerms = <Term>(
 };
 
 export const lowerCaseAndCapitalize = (s: string) => {
-  const firstLetter = s.charAt(0);
+  const firstLetter = s.charAt(0).toUpperCase();
   const lowerCasedTail = s.toLowerCase().slice(1);
   return firstLetter + lowerCasedTail;
 };
@@ -213,4 +221,100 @@ export const getBalanceTypeEnumsToStringsMap = () => {
 
 export const getStringsToBalanceTypeEnumsMap = () => {
   return getStringsToEnumsMap<BalanceType>(BalanceType, statusTransformer);
+};
+
+export const getCreditTransferStatusEnumsToStringsMap = () => {
+  return getEnumsToStringsMap<CreditTransferStatus>(
+    CreditTransferStatus,
+    statusTransformer,
+  );
+};
+
+export const getStringsToCreditTransferStatusEnumsMap = () => {
+  return getStringsToEnumsMap<CreditTransferStatus>(
+    CreditTransferStatus,
+    statusTransformer,
+  );
+};
+
+export const getCreditTransferSupplierStatusEnumsToStringsMap = () => {
+  return getEnumsToStringsMap<CreditTransferSupplierStatus>(
+    CreditTransferSupplierStatus,
+    statusTransformer,
+  );
+};
+
+export const getStringsToCreditTransferSupplierStatusEnumsMap = () => {
+  return getStringsToEnumsMap<CreditTransferSupplierStatus>(
+    CreditTransferSupplierStatus,
+    statusTransformer,
+  );
+};
+
+export const getCreditApplicationStatusEnumsToStringsMap = () => {
+  return getEnumsToStringsMap<CreditApplicationStatus>(
+    CreditApplicationStatus,
+    statusTransformer,
+  );
+};
+
+export const getStringsToCreditApplicationStatusEnumsMap = () => {
+  return getStringsToEnumsMap<CreditApplicationStatus>(
+    CreditApplicationStatus,
+    statusTransformer,
+  );
+};
+
+export const getCreditApplicationSupplierStatusEnumsToStringsMap = () => {
+  return getEnumsToStringsMap<CreditApplicationSupplierStatus>(
+    CreditApplicationSupplierStatus,
+    statusTransformer,
+  );
+};
+
+export const getStringsToCreditApplicationSupplierStatusEnumsMap = () => {
+  return getStringsToEnumsMap<CreditApplicationSupplierStatus>(
+    CreditApplicationSupplierStatus,
+    statusTransformer,
+  );
+};
+
+export const getNotificationEnumsToStringsMap = () => {
+  return getEnumsToStringsMap<Notification>(Notification, statusTransformer);
+};
+
+export const getStringsToReassessmentStatusEnumsMap = () => {
+  return getStringsToEnumsMap<ReassessmentStatus>(
+    ReassessmentStatus,
+    statusTransformer,
+  );
+};
+
+export const getReassessmentStatusEnumsToStringsMap = () => {
+  return getEnumsToStringsMap<ReassessmentStatus>(
+    ReassessmentStatus,
+    statusTransformer,
+  );
+};
+
+export const getStringsToSupplierReassessmentStatusEnumsMap = () => {
+  return getStringsToEnumsMap<SupplierReassessmentStatus>(
+    SupplierReassessmentStatus,
+    statusTransformer,
+  );
+};
+
+export const getSupplierReassessmentStatusEnumsToStringsMap = () => {
+  return getEnumsToStringsMap<SupplierReassessmentStatus>(
+    SupplierReassessmentStatus,
+    statusTransformer,
+  );
+};
+
+export const getStringsToSupplierClassEnumsMap = () => {
+  return getStringsToEnumsMap<SupplierClass>(SupplierClass, statusTransformer);
+};
+
+export const getSupplierClassEnumsToStringsMap = () => {
+  return getEnumsToStringsMap<SupplierClass>(SupplierClass, statusTransformer);
 };

@@ -7,12 +7,6 @@ import {
   getCoreRowModel,
   useReactTable,
 } from "@tanstack/react-table";
-import {
-  FaArrowLeft,
-  FaArrowRight,
-  FaDownLong,
-  FaUpLong,
-} from "react-icons/fa6";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import {
   getLegalPairs,
@@ -21,6 +15,13 @@ import {
 } from "@/lib/utils/urlSearchParams";
 import { LoadingSkeleton } from "./skeletons";
 import { Button } from "./inputs";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import {
+  faAngleDown,
+  faAngleUp,
+  faAngleLeft,
+  faAngleRight,
+} from "@fortawesome/free-solid-svg-icons";
 
 interface ITableProps<T> {
   columns: ColumnDef<T, any>[];
@@ -246,9 +247,9 @@ export const Table = <T extends ZevaObject>({
     return <LoadingSkeleton />;
   }
   return (
-    <div className="p-2">
+    <div className="bg-white rounded-lg shadow-level-1 p-4">
       <div className="flex flex-row-reverse">
-        <Button className="mr-10 mb-3 px-3" onClick={handleReset}>
+        <Button variant="secondary" size="small" onClick={handleReset}>
           Reset Table
         </Button>
       </div>
@@ -290,9 +291,15 @@ export const Table = <T extends ZevaObject>({
                               header.getContext(),
                             )}
                             {sortsMap[header.id] === "asc" ? (
-                              <FaUpLong size={10} className="mb-1" />
+                              <FontAwesomeIcon
+                                icon={faAngleUp}
+                                className="mb-1"
+                              />
                             ) : sortsMap[header.id] === "desc" ? (
-                              <FaDownLong size={10} className="mb-1" />
+                              <FontAwesomeIcon
+                                icon={faAngleDown}
+                                className="mb-1"
+                              />
                             ) : (
                               ""
                             )}
@@ -300,7 +307,7 @@ export const Table = <T extends ZevaObject>({
                           {header.column.getCanFilter() ? (
                             <div>
                               <input
-                                className="w-36 border shadow rounded"
+                                className="w-36 border shadow-level-1 rounded"
                                 onChange={(event) => {
                                   handleFilterChange(
                                     header.id,
@@ -356,7 +363,8 @@ export const Table = <T extends ZevaObject>({
         </table>
       </div>
       <div className="flex items-center justify-center bg-navBorder w-full rounded p-2">
-        <FaArrowLeft
+        <FontAwesomeIcon
+          icon={faAngleLeft}
           onClick={() => {
             handlePageNav("prev");
           }}
@@ -376,7 +384,8 @@ export const Table = <T extends ZevaObject>({
           }{" "}
           of {numberOfPages}
         </span>
-        <FaArrowRight
+        <FontAwesomeIcon
+          icon={faAngleRight}
           onClick={() => {
             handlePageNav("next");
           }}

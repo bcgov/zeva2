@@ -76,3 +76,19 @@ Zeva2 versioning is fully automatic and only updates major and minor versions. B
 - hotfix/\*
 
 ![Zeva2 Branch Model](Zeva2-Branching.png)
+
+# Zeva2 Release Process
+
+- Create branch release/x.x.x from the tip of develop branch.
+
+- The release branch will be triggered for the above release branch and deploy it Test environment.
+
+- For the changes for the release need to be added to the release branch
+
+- When the release branch passes the test on Test environment, create the pull request to merge the release branch to main.
+
+- Revew the pull request and approve it.
+
+- Approve the pull request, it will trigger the prod-ci workflow.
+
+- The prod-ci workflow will deploy to Prod environment and create tag x.x.x

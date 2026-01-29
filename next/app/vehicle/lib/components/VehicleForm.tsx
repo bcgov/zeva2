@@ -1,42 +1,79 @@
 "use client";
 
-import { useState, useCallback, useTransition, useMemo } from "react";
-import { useRouter } from "next/navigation";
-import {
-  submitVehicle,
-  getPutObjectData,
-  VehicleFile,
-  VehiclePutObjectData,
-} from "../actions";
-import { Routes } from "@/app/lib/constants";
-import { VehicleClassCode, VehicleZevType } from "@/prisma/generated/client";
-import { getVehiclePayload } from "../utilsClient";
-import { getModelYearEnumsToStringsMap } from "@/app/lib/utils/enumMaps";
-import { Dropzone } from "@/app/lib/components/Dropzone";
 import axios from "axios";
+import {
+  useState,
+  useCallback,
+  useTransition,
+  useMemo,
+  useEffect,
+} from "react";
+import { useRouter } from "next/navigation";
+import { getVehicleAttachmentsPutData, supplierSave } from "../actions";
+import { Routes } from "@/app/lib/constants";
+import { VehicleClassCode, ZevType } from "@/prisma/generated/client";
+import { getVehiclePayload } from "../utilsClient";
+import { getStringsToModelYearsEnumsMap } from "@/app/lib/utils/enumMaps";
+import { Dropzone } from "@/app/lib/components/Dropzone";
 import { FileWithPath } from "react-dropzone";
 import { Button } from "@/app/lib/components";
-import { getNormalizedComment } from "@/app/credit-application/lib/utils";
+import { Attachment, AttachmentDownload } from "@/app/lib/services/attachments";
+import { getDefaultAttchmentTypes } from "@/app/lib/utils/attachments";
+import { getFiles } from "@/app/lib/utils/download";
 
-export const VehicleForm = () => {
+export type VehicleFormData = {
+  modelYear?: string;
+  make?: string;
+  modelName?: string;
+  zevType?: string;
+  range?: string;
+  bodyType?: string;
+  gvwr?: string;
+  us06?: string;
+};
+
+export const VehicleForm = (props: {
+  vehicle?: { id: number; attachments: AttachmentDownload[] } & VehicleFormData;
+}) => {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string>("");
-  const [formData, setFormData] = useState<Partial<Record<string, string>>>({});
+  const [formData, setFormData] = useState<VehicleFormData>({});
   const [files, setFiles] = useState<FileWithPath[]>([]);
-  const [comment, setComment] = useState<string>("");
   const modelYearsMap = useMemo(() => {
-    return getModelYearEnumsToStringsMap();
+    return getStringsToModelYearsEnumsMap();
   }, []);
   const allowedFileTypes = useMemo(() => {
-    return {
-      "application/msword": [".doc", ".docx"],
-      "application/vnd.ms-excel": [".xls", ".xlsx"],
-      "application/pdf": [".pdf"],
-      "image/jpeg": [".jpg"],
-      "image/png": [".png"],
-    };
+    return getDefaultAttchmentTypes();
   }, []);
+
+  useEffect(() => {
+    const initializeForm = async () => {
+      const vehicle = props.vehicle;
+      if (vehicle) {
+        const formDataToSet = {
+          modelYear: vehicle.modelYear,
+          make: vehicle.make,
+          modelName: vehicle.modelName,
+          zevType: vehicle.zevType,
+          range: vehicle.range,
+          bodyType: vehicle.bodyType,
+          gvwr: vehicle.gvwr,
+          us06: vehicle.us06,
+        };
+        setFormData(formDataToSet);
+        const attachments = vehicle.attachments;
+        if (attachments.length > 0 && vehicle.us06 === "true") {
+          const downloadedFiles = await getFiles(attachments);
+          const filesToSet = downloadedFiles.map((file) => {
+            return new File([file.data], file.fileName);
+          });
+          setFiles(filesToSet);
+        }
+      }
+    };
+    initializeForm();
+  }, [props.vehicle]);
 
   const handleChange = useCallback((key: string, value: string) => {
     if (key === "us06" && value === "false") {
@@ -51,26 +88,23 @@ export const VehicleForm = () => {
     setError("");
     startTransition(async () => {
       try {
-        const vehiclePayload = getVehiclePayload(formData, files);
-        const vehicleFiles: VehicleFile[] = [];
+        const vehiclePayload = getVehiclePayload(formData);
+        const attachments: Attachment[] = [];
         if (files.length > 0) {
-          const putData = await getPutObjectData(files.length);
-          const filesAndPutData: [FileWithPath, VehiclePutObjectData][] =
-            files.map((file, index) => [file, putData[index]]);
-          for (const tuple of filesAndPutData) {
-            const file = tuple[0];
-            const putData = tuple[1];
-            await axios.put(putData.url, file);
-            vehicleFiles.push({
-              filename: file.name,
-              objectName: putData.objectName,
+          const putData = await getVehicleAttachmentsPutData(files.length);
+          for (const [index, file] of files.entries()) {
+            const putDatum = putData[index];
+            await axios.put(putDatum.url, file);
+            attachments.push({
+              fileName: file.name,
+              objectName: putDatum.objectName,
             });
           }
         }
-        const response = await submitVehicle(
+        const response = await supplierSave(
           vehiclePayload,
-          vehicleFiles,
-          getNormalizedComment(comment),
+          attachments,
+          props.vehicle?.id,
         );
         if (response.responseType === "error") {
           throw new Error(response.message);
@@ -78,14 +112,15 @@ export const VehicleForm = () => {
         const vehicleId = response.data;
         router.push(`${Routes.Vehicle}/${vehicleId}`);
       } catch (e) {
-        if (e instanceof Error) setError(e.message);
+        if (e instanceof Error) {
+          setError(e.message);
+        }
       }
     });
-  }, [formData, files, comment, router]);
+  }, [formData, files, props.vehicle]);
 
   return (
     <div>
-      {error && <p className="text-red-600">{error}</p>}
       <div className="flex items-center py-2 my-2">
         <label htmlFor="modelYear" className="w-72">
           Model Year
@@ -99,9 +134,9 @@ export const VehicleForm = () => {
           }}
         >
           <option value="">--</option>
-          {Object.values(modelYearsMap).map((year) => (
-            <option key={year} value={year}>
-              {year}
+          {Object.entries(modelYearsMap).map(([key, value]) => (
+            <option key={value} value={value}>
+              {key}
             </option>
           ))}
         </select>
@@ -147,7 +182,7 @@ export const VehicleForm = () => {
           }}
         >
           <option value="">--</option>
-          {Object.keys(VehicleZevType).map((zevType) => (
+          {Object.keys(ZevType).map((zevType) => (
             <option key={zevType} value={zevType}>
               {zevType}
             </option>
@@ -223,17 +258,10 @@ export const VehicleForm = () => {
           allowedFileTypes={allowedFileTypes}
         />
       )}
-      <textarea
-        className="w-full border  p-2"
-        rows={3}
-        value={comment}
-        onChange={(e) => setComment(e.target.value)}
-        placeholder="Optional Comment"
-        disabled={isPending}
-      />
+      {error && <p className="text-red-600">{error}</p>}
       <div className="flex space-x-2">
-        <Button onClick={handleSubmit} disabled={isPending}>
-          {isPending ? "..." : "Submit"}
+        <Button variant="primary" onClick={handleSubmit} disabled={isPending}>
+          {isPending ? "..." : "Save"}
         </Button>
       </div>
     </div>

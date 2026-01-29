@@ -10,6 +10,9 @@ on:
       - develop
       - release/*
 
+permissions:
+  contents: read
+
 env:
   GIT_URL: https://github.com/bcgov/zeva2.git
   TOOLS_NAMESPACE: ${{ secrets.OPENSHIFT_NAMESPACE_PLATE }}-tools
@@ -222,7 +225,7 @@ jobs:
       - name: deploy zeva2 apps
         run: |
           cd services/postgres-pr
-          helm -n ${{ env.DEV_NAMESPACE }} -f ./values-dev-pr.yaml upgrade --install zeva2-postgresql-dev-${{ env.PR_NUMBER }} oci://registry-1.docker.io/bitnamicharts/postgresql --version 15.5.17
+          helm -n ${{ env.DEV_NAMESPACE }} -f ./values-dev-pr.yaml upgrade --install zeva2-postgresql-dev-${{ env.PR_NUMBER }} oci://registry-1.docker.io/bitnamicharts/postgresql --version 16.2.0
           cd ../redis
           helm -n ${{ env.DEV_NAMESPACE }} -f ./values-dev-pr.yaml upgrade --install zeva2-redis-dev-${{ env.PR_NUMBER }} oci://registry-1.docker.io/bitnamicharts/redis --version 21.2.9
           cd ../minio-pr

@@ -141,7 +141,7 @@ export const getAgreementId = (agreement: {
   agreementType: AgreementType;
 }) => {
   return agreement.agreementType[0] + "A-" + agreement.id;
-}
+};
 
 export const historySelectClause = {
   id: true,
@@ -159,4 +159,8 @@ export const historySelectClause = {
       comment: true,
     },
   },
+};
+
+export const getAgreementAttachmentFullObjectName = (objectName: string) => {
+  return `agreements/${objectName}`;
 };

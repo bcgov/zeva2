@@ -16,7 +16,7 @@ const Page = async (props: { searchParams?: Promise<pageStringParams> }) => {
     <Suspense key={Date.now()} fallback={<LoadingSkeleton />}>
       {userIsGov && userRoles.includes(Role.ENGINEER_ANALYST) && (
         <Link href={`${Routes.Icbc}/new`}>
-          <Button>Upload ICBC File</Button>
+          <Button variant="primary">Upload ICBC File</Button>
         </Link>
       )}
       <IcbcFilesList

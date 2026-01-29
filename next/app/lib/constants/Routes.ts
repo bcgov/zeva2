@@ -3,7 +3,8 @@ export const MY_ORGANIZATION = "mine";
 export enum Routes {
   Home = "/dashboard",
   ComplianceReporting = "/model-year-report",
-  CreditTransactions = "/zev-unit-transfer",
+  LegacyReassessments = "/legacy-reassessment",
+  CreditTransfers = "/credit-transfer",
   CreditAgreements = "/agreements",
   VehicleSuppliers = "/organizations",
   Administration = `/organizations/${MY_ORGANIZATION}`,

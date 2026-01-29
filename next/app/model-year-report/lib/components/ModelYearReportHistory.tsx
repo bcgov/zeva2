@@ -20,7 +20,7 @@ export const ModelYearReportHistory = async (props: { id: number }) => {
     entries.push(
       <li key={history.id}>
         <p key="content">
-          {`[${name}] made the application "${statusMap[history.userAction]}" on 
+          {`[${name}] made the report "${statusMap[history.userAction]}" on 
           ${getIsoYmdString(history.timestamp)}, at ${getTimeWithTz(history.timestamp)}.`}
         </p>
         {history.comment && (

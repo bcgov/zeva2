@@ -1,19 +1,21 @@
 import { prisma } from "@/lib/prisma";
 import { TransactionClient } from "@/types/prisma";
-import { Prisma, VehicleStatus } from "@/prisma/generated/client";
-import { VehicleFile } from "./actions";
-import { removeObjects } from "@/app/lib/minio";
-import { getAttachmentFullObjectName } from "./utils";
+import {
+  ModelYear,
+  VehicleHistoryStatus,
+  VehicleStatus,
+} from "@/prisma/generated/client";
+import { Attachment } from "@/app/lib/services/attachments";
 
 export const createHistory = async (
   vehicleId: number,
   userId: number,
-  userAction: VehicleStatus,
+  userAction: VehicleHistoryStatus,
   comment?: string,
   transactionClient?: TransactionClient,
-) => {
+): Promise<number> => {
   const client = transactionClient ?? prisma;
-  await client.vehicleHistory.create({
+  const { id } = await client.vehicleHistory.create({
     data: {
       vehicleId,
       userId,
@@ -21,33 +23,59 @@ export const createHistory = async (
       comment,
     },
   });
+  return id;
 };
 
-export const createAttachments = async (
+export const getConflictingVehicle = async (
+  orgId: number,
+  make: string,
+  modelName: string,
+  modelYear: ModelYear,
+) => {
+  const conflictingVehicle = await prisma.vehicle.findFirst({
+    where: {
+      organizationId: orgId,
+      make: make,
+      modelName: modelName,
+      modelYear: modelYear,
+      isActive: true,
+      status: VehicleStatus.VALIDATED,
+    },
+    select: {
+      id: true,
+    },
+  });
+  return conflictingVehicle;
+};
+
+export const updateAttachments = async (
   vehicleId: number,
-  files: VehicleFile[],
+  attachments: Attachment[],
   transactionClient?: TransactionClient,
 ) => {
   const client = transactionClient ?? prisma;
-  const toCreate: Prisma.VehicleAttachmentUncheckedCreateInput[] = [];
-  files.forEach((file) => {
-    toCreate.push({
-      vehicleId,
-      filename: file.filename,
-      minioObjectName: file.objectName,
+  for (const attachment of attachments) {
+    // throws if record to update does not exist in table
+    await client.vehicleAttachment.update({
+      where: {
+        objectName: attachment.objectName,
+      },
+      data: {
+        vehicleId,
+        fileName: attachment.fileName,
+      },
     });
-  });
-  await client.vehicleAttachment.createMany({
-    data: toCreate,
-  });
+  }
 };
 
 export const deleteAttachments = async (
-  orgId: number,
-  files: VehicleFile[],
+  vehicleId: number,
+  transactionClient?: TransactionClient,
 ) => {
-  const objectNames = files.map((file) => {
-    return getAttachmentFullObjectName(orgId, file.objectName);
+  const client = transactionClient ?? prisma;
+  await client.vehicleAttachment.deleteMany({
+    where: {
+      vehicleId,
+    },
   });
-  await removeObjects(objectNames);
 };

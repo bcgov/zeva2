@@ -1,7 +1,6 @@
 "use client";
 
-export interface IContentCardProps
-  extends React.HTMLAttributes<HTMLDivElement> {
+export interface IContentCardProps extends React.HTMLAttributes<HTMLDivElement> {
   title: string;
   children: React.ReactNode;
   icon?: React.ReactNode;
@@ -18,7 +17,9 @@ export const ContentCard: React.FC<IContentCardProps> = ({
   ...rest
 }) => {
   return (
-    <div className={`bg-white rounded-lg shadow-lg p-6 mb-2 ${rest.className}`}>
+    <div
+      className={`bg-white rounded-lg shadow-level-1 hover:shadow-level-2 transition-shadow duration-200 p-6 mb-2 ${rest.className}`}
+    >
       <h2 className="text-xl font-semibold text-primaryBlue">{title}</h2>
       <div className="mt-4">{children}</div>
     </div>

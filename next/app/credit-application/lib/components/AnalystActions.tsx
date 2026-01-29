@@ -6,12 +6,12 @@ import { useRouter } from "next/navigation";
 import { useCallback, useState, useTransition } from "react";
 import {
   analystRecommend,
-  returnToSupplier,
+  analystReject,
   validateCreditApplication,
 } from "../actions";
 import { Routes } from "@/app/lib/constants";
-import { CommentBox } from "./CommentBox";
-import { getNormalizedComment } from "../utils";
+import { CommentBox } from "@/app/lib/components/inputs/CommentBox";
+import { getNormalizedComment } from "@/app/lib/utils/comment";
 
 export const AnalystActions = (props: {
   id: number;
@@ -21,22 +21,18 @@ export const AnalystActions = (props: {
   const [isPending, startTransition] = useTransition();
   const router = useRouter();
   const [comment, setComment] = useState<string>("");
-
-  const refresh = useCallback(() => {
-    setComment("");
-    router.refresh();
-  }, [router]);
+  const [error, setError] = useState<string>("");
 
   const handleValidate = useCallback(() => {
     startTransition(async () => {
       const response = await validateCreditApplication(props.id);
       if (response.responseType === "error") {
-        console.error(response.message);
+        setError(response.message);
       } else {
         router.push(`${Routes.CreditApplication}/${props.id}/validated`);
       }
     });
-  }, [props.id, router]);
+  }, [props.id]);
 
   const handleGoToValidated = useCallback(
     (edit: boolean) => {
@@ -49,50 +45,75 @@ export const AnalystActions = (props: {
     [props.id, router],
   );
 
-  const handleRecommend = useCallback(
-    (newStatus: CreditApplicationStatus) => {
-      startTransition(async () => {
-        const response = await analystRecommend(
-          props.id,
-          newStatus,
-          getNormalizedComment(comment),
-        );
-        if (response.responseType === "error") {
-          console.error(response.message);
-        } else {
-          refresh();
-        }
-      });
-    },
-    [props.id, comment, refresh],
-  );
-
-  const handleReturnToSupplier = useCallback(() => {
+  const handleRecommend = useCallback(() => {
     startTransition(async () => {
-      const response = await returnToSupplier(
+      const response = await analystRecommend(
         props.id,
         getNormalizedComment(comment),
       );
       if (response.responseType === "error") {
-        console.error(response.message);
+        setError(response.message);
       } else {
-        refresh();
+        router.refresh();
       }
     });
-  }, [props.id, comment, refresh]);
+  }, [props.id, comment]);
 
+  const handleReject = useCallback(() => {
+    startTransition(async () => {
+      const response = await analystReject(
+        props.id,
+        getNormalizedComment(comment),
+      );
+      if (response.responseType === "error") {
+        setError(response.message);
+      } else {
+        router.push(Routes.CreditApplication);
+      }
+    });
+  }, [props.id, comment]);
+
+  if (
+    props.status === CreditApplicationStatus.DELETED ||
+    props.status === CreditApplicationStatus.DRAFT ||
+    props.status === CreditApplicationStatus.REJECTED
+  ) {
+    return null;
+  }
+  if (
+    props.status === CreditApplicationStatus.APPROVED ||
+    props.status === CreditApplicationStatus.RECOMMEND_APPROVAL
+  ) {
+    return (
+      <Button
+        variant="secondary"
+        onClick={() => {
+          handleGoToValidated(false);
+        }}
+        disabled={isPending}
+      >
+        {isPending ? "..." : "View Validated Records"}
+      </Button>
+    );
+  }
   return (
     <>
-      {(props.status === CreditApplicationStatus.SUBMITTED ||
-        props.status === CreditApplicationStatus.RETURNED_TO_ANALYST) && (
-        <Button onClick={handleValidate} disabled={isPending}>
-          {isPending ? "..." : "Validate"}
-        </Button>
-      )}
-      {props.status !== CreditApplicationStatus.SUBMITTED &&
-        props.status !== CreditApplicationStatus.RETURNED_TO_ANALYST &&
-        props.validatedBefore && (
+      {error && <p className="text-red-600">{error}</p>}
+      <CommentBox
+        comment={comment}
+        setComment={setComment}
+        disabled={isPending}
+      />
+      <Button variant="primary" onClick={handleValidate} disabled={isPending}>
+        {isPending ? "..." : "Validate"}
+      </Button>
+      <Button variant="primary" onClick={handleReject} disabled={isPending}>
+        {isPending ? "..." : "Reject"}
+      </Button>
+      {props.validatedBefore && (
+        <>
           <Button
+            variant="secondary"
             onClick={() => {
               handleGoToValidated(false);
             }}
@@ -100,45 +121,26 @@ export const AnalystActions = (props: {
           >
             {isPending ? "..." : "View Validated Records"}
           </Button>
-        )}
-      {(props.status === CreditApplicationStatus.SUBMITTED ||
-        props.status === CreditApplicationStatus.RETURNED_TO_ANALYST) &&
-        props.validatedBefore && (
-          <>
-            <CommentBox
-              comment={comment}
-              setComment={setComment}
-              disabled={isPending}
-            />
-            <Button
-              onClick={() => {
-                handleGoToValidated(true);
-              }}
-              disabled={isPending}
-            >
-              {isPending ? "..." : "Edit Validated Records"}
-            </Button>
-            <Button
-              onClick={() => {
-                handleRecommend(CreditApplicationStatus.RECOMMEND_APPROVAL);
-              }}
-              disabled={isPending}
-            >
-              {isPending ? "..." : "Recommend Approval"}
-            </Button>
-            <Button
-              onClick={() => {
-                handleRecommend(CreditApplicationStatus.RECOMMEND_REJECTION);
-              }}
-              disabled={isPending}
-            >
-              {isPending ? "..." : "Recommend Rejection"}
-            </Button>
-            <Button onClick={handleReturnToSupplier} disabled={isPending}>
-              {isPending ? "..." : "Return to Supplier"}
-            </Button>
-          </>
-        )}
+          <Button
+            variant="secondary"
+            onClick={() => {
+              handleGoToValidated(true);
+            }}
+            disabled={isPending}
+          >
+            {isPending ? "..." : "Edit Validated Records"}
+          </Button>
+          <Button
+            variant="primary"
+            onClick={() => {
+              handleRecommend();
+            }}
+            disabled={isPending}
+          >
+            {isPending ? "..." : "Recommend Approval"}
+          </Button>
+        </>
+      )}
     </>
   );
 };

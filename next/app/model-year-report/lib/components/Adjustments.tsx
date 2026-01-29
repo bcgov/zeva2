@@ -1,15 +1,14 @@
 "use client";
 
 import { useMemo } from "react";
-import { getHelpingMaps } from "../utilsClient";
-import {
-  ModelYear,
-  TransactionType,
-  VehicleClass,
-  ZevClass,
-} from "@/prisma/generated/client";
 import { Button } from "@/app/lib/components";
 import { LoadingSkeleton } from "@/app/lib/components/skeletons";
+import {
+  getStringsToBalanceTypeEnumsMap,
+  getStringsToModelYearsEnumsMap,
+  getStringsToVehicleClassEnumsMap,
+  getStringsToZevClassEnumsMap,
+} from "@/app/lib/utils/enumMaps";
 
 export type Adjustment = { id: string } & Partial<Record<string, string>>;
 
@@ -20,8 +19,20 @@ export const Adjustments = (props: {
   handleAdjustmentChange: (id: string, key: string, value: string) => void;
   disabled: boolean;
 }) => {
-  const helpingMaps = useMemo(() => {
-    return getHelpingMaps();
+  const balanceTypesMap = useMemo(() => {
+    return getStringsToBalanceTypeEnumsMap();
+  }, []);
+
+  const vehicleClassesMap = useMemo(() => {
+    return getStringsToVehicleClassEnumsMap();
+  }, []);
+
+  const zevClassesMap = useMemo(() => {
+    return getStringsToZevClassEnumsMap();
+  }, []);
+
+  const modelYearsMap = useMemo(() => {
+    return getStringsToModelYearsEnumsMap();
   }, []);
 
   if (props.disabled) {
@@ -45,12 +56,11 @@ export const Adjustments = (props: {
                   );
                 }}
               >
-                <option value={TransactionType.CREDIT}>
-                  {helpingMaps.transactionTypesMap[TransactionType.CREDIT]}
-                </option>
-                <option value={TransactionType.DEBIT}>
-                  {helpingMaps.transactionTypesMap[TransactionType.DEBIT]}
-                </option>
+                {Object.entries(balanceTypesMap).map(([key, value]) => (
+                  <option key={value} value={value}>
+                    {key}
+                  </option>
+                ))}
               </select>
             </span>
             <span key="vehicleClass" className="flex flex-col">
@@ -66,9 +76,9 @@ export const Adjustments = (props: {
                   )
                 }
               >
-                {Object.values(VehicleClass).map((vehicleClass) => (
-                  <option key={vehicleClass} value={vehicleClass}>
-                    {helpingMaps.vehicleClassesMap[vehicleClass]}
+                {Object.entries(vehicleClassesMap).map(([key, value]) => (
+                  <option key={value} value={value}>
+                    {key}
                   </option>
                 ))}
               </select>
@@ -86,9 +96,9 @@ export const Adjustments = (props: {
                   )
                 }
               >
-                {Object.values(ZevClass).map((zevClass) => (
-                  <option key={zevClass} value={zevClass}>
-                    {helpingMaps.zevClassesMap[zevClass]}
+                {Object.entries(zevClassesMap).map(([key, value]) => (
+                  <option key={value} value={value}>
+                    {key}
                   </option>
                 ))}
               </select>
@@ -106,9 +116,9 @@ export const Adjustments = (props: {
                   )
                 }
               >
-                {Object.values(ModelYear).map((modelYear) => (
-                  <option key={modelYear} value={modelYear}>
-                    {helpingMaps.modelYearsMap[modelYear]}
+                {Object.entries(modelYearsMap).map(([key, value]) => (
+                  <option key={value} value={value}>
+                    {key}
                   </option>
                 ))}
               </select>
@@ -129,14 +139,20 @@ export const Adjustments = (props: {
               />
             </span>
             <span>
-              <Button onClick={() => props.removeAdjustment(adjustment.id)}>
+              <Button
+                variant="danger"
+                size="small"
+                onClick={() => props.removeAdjustment(adjustment.id)}
+              >
                 Remove Adjustment
               </Button>
             </span>
           </div>
         );
       })}
-      <Button onClick={props.addAdjustment}>Add Adjustment</Button>
+      <Button variant="secondary" onClick={props.addAdjustment}>
+        Add Adjustment
+      </Button>
     </div>
   );
 };

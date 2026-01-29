@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma";
 import {
   AgreementStatus,
   AgreementUserAction,
-  ModelYear
+  ModelYear,
 } from "@/prisma/generated/client";
 import { historySelectClause } from "./utils";
 
@@ -25,9 +25,9 @@ export const getSupplierSelections = async () => {
 };
 
 export const getModelYearSelections = () => {
-  const currentComplianceYear = getCurrentComplianceYear().toString();
+  const currentComplianceYear = getCurrentComplianceYear();
   const modelYearSelections = Object.values(ModelYear).filter(
-    (year) => year.substring(3) <= currentComplianceYear,
+    (year) => year <= currentComplianceYear,
   );
   return modelYearSelections;
 };
@@ -35,38 +35,45 @@ export const getModelYearSelections = () => {
 export const getAgreementDetails = async (id: number) => {
   const { userIsGov, userOrgId } = await getUserInfo();
 
-  const [
-    basicInfo,
-    agreementHistory
-  ] = await prisma.$transaction(async (tx) => {
-    const basicInfo = tx.agreement.findUnique({
-      where: {
-        id,
-        organizationId: userIsGov ? undefined : userOrgId,
-        status: userIsGov ? undefined : AgreementStatus.ISSUED,
-      },
-      include: {
-        organization: true,
-        agreementContent: {
-          select: {
-            zevClass: true,
-            modelYear: true,
-            numberOfUnits: true,
+  const [basicInfo, agreementHistory] = await prisma.$transaction(
+    async (tx) => {
+      const basicInfo = tx.agreement.findUnique({
+        where: {
+          id,
+          organizationId: userIsGov ? undefined : userOrgId,
+          status: userIsGov ? undefined : AgreementStatus.ISSUED,
+        },
+        include: {
+          organization: true,
+          agreementContent: {
+            select: {
+              zevClass: true,
+              modelYear: true,
+              numberOfUnits: true,
+            },
+          },
+          agreementAttachment: {
+            select: {
+              fileName: true,
+              objectName: true,
+            },
           },
         },
-      },
-    });
+      });
 
-    const history = userIsGov ? tx.agreementHistory.findMany({
-      where: {
-        agreementId: id,
-        userAction: { not: AgreementUserAction.SAVED },
-      },
-      select: historySelectClause
-    }): undefined;
+      const history = userIsGov
+        ? tx.agreementHistory.findMany({
+            where: {
+              agreementId: id,
+              userAction: { not: AgreementUserAction.SAVED },
+            },
+            select: historySelectClause,
+          })
+        : undefined;
 
-    return await Promise.all([basicInfo, history]);
-  });
+      return await Promise.all([basicInfo, history]);
+    },
+  );
 
   if (!basicInfo) {
     return null; // Agreement not found
@@ -78,7 +85,7 @@ export const getAgreementDetails = async (id: number) => {
       ...content,
       numberOfUnits: content.numberOfUnits.toNumber(),
     })),
-    agreementHistory
+    agreementHistory,
   };
 };
 

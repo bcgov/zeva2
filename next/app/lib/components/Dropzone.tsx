@@ -10,7 +10,7 @@ export const Dropzone = (props: {
   maxNumberOfFiles: number;
   disabled: boolean;
   allowedFileTypes?: Record<string, string[]>;
-  handleDrop?: (acceptedFiles: FileWithPath[]) => Promise<void>;
+  handleDrop?: (acceptedFiles: FileWithPath[]) => void;
   handleRemove?: (file: FileWithPath) => void;
 }) => {
   const onDrop = useCallback(
@@ -59,12 +59,14 @@ export const Dropzone = (props: {
           <div className="flex flex-row">
             <p className="mr-2 truncate">{file.name}</p>
             <Button
+              variant="danger"
+              size="small"
               disabled={props.disabled}
               onClick={() => {
                 removeFile(file);
               }}
             >
-              X
+              {props.disabled ? "..." : "X"}
             </Button>
           </div>
         </li>,
@@ -75,7 +77,9 @@ export const Dropzone = (props: {
 
   return (
     <div className="w-full">
-      <div className="bg-white py-2 my-2">
+      <div
+        className={`${props.disabled ? "bg-gray-100" : "bg-white"} py-2 my-2 rounded-lg shadow-level-1 p-4`}
+      >
         <div {...getRootProps()}>
           <input {...getInputProps()} />
           {isDragActive ? (

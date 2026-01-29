@@ -7,6 +7,9 @@ import { getAgreementId } from "../utils";
 import { AgreementDetailsType, AgreementHistoryType } from "../services";
 import { useState } from "react";
 import { AgreementHistories } from "./AgreementHistories";
+import { AttachmentsList } from "@/app/lib/components/AttachmentsList";
+import { AttachmentsDownload } from "@/app/lib/components/AttachmentsDownload";
+import { getAgreementAttachmentDownloadUrls } from "../action";
 
 const mainDivClass = "grid grid-cols-[220px_1fr]";
 const fieldLabelClass = "py-1 font-semibold text-primaryBlue";
@@ -46,6 +49,7 @@ export const AgreementDetails = (props: {
     organization,
     agreementContent,
     agreementHistory,
+    agreementAttachment,
   } = agreement;
 
   const [isProcessing, setIsProcessing] = useState(false);
@@ -138,7 +142,9 @@ export const AgreementDetails = (props: {
 
         {agreementHistory && (
           <div className="mt-4">
-            <p className={fieldLabelClass}>Government Internal History and Comments</p>
+            <p className={fieldLabelClass}>
+              Government Internal History and Comments
+            </p>
             <AgreementHistories
               className={fieldWithBoarderClass}
               agreementHistory={agreementHistory}
@@ -146,6 +152,24 @@ export const AgreementDetails = (props: {
             />
           </div>
         )}
+
+        <div className="mt-4">
+          <p className={fieldLabelClass}>Supporting Documents</p>
+          <div className={fieldWithBoarderClass}>
+            <AttachmentsList
+              className="mb-3"
+              attachments={agreementAttachment}
+            />
+            {agreementAttachment.length > 0 && (
+              <AttachmentsDownload
+                download={() =>
+                  getAgreementAttachmentDownloadUrls(agreementAttachment)
+                }
+                zipName={`agreement_${agreement.id}_attachments.zip`}
+              />
+            )}
+          </div>
+        </div>
 
         <div className="flex flex-row gap-12 my-4">
           <a
@@ -164,7 +188,7 @@ export const AgreementDetails = (props: {
           )}
           {handleRecommendApproval && ready && (
             <Button
-              className={buttonStyle}
+              variant="primary"
               onClick={() => {
                 setIsProcessing(true);
                 handleRecommendApproval();
@@ -175,7 +199,7 @@ export const AgreementDetails = (props: {
           )}
           {handleReturnToAnalyst && (
             <Button
-              className={`${buttonStyle} ${warningButtonClass}`}
+              variant="secondary"
               onClick={() => {
                 setIsProcessing(true);
                 handleReturnToAnalyst();
@@ -186,7 +210,7 @@ export const AgreementDetails = (props: {
           )}
           {handleDeleteAgreement && (
             <Button
-              className={`${buttonStyle} ${warningButtonClass}`}
+              variant="danger"
               onClick={() => {
                 setIsProcessing(true);
                 handleDeleteAgreement();
@@ -197,7 +221,7 @@ export const AgreementDetails = (props: {
           )}
           {handleIssueAgreement && (
             <Button
-              className={buttonStyle}
+              variant="primary"
               onClick={() => {
                 setIsProcessing(true);
                 handleIssueAgreement();

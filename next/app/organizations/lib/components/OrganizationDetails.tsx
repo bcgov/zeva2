@@ -60,7 +60,6 @@ const OrganizationDetails = (props: {
   organizationName: string;
   shortName?: string;
   isActive: boolean;
-  firstModelYear: string;
   serviceAddress?: OrganizationAddressSparse;
   recordsAddress?: OrganizationAddressSparse;
   supplierClass: string;
@@ -92,7 +91,7 @@ const OrganizationDetails = (props: {
           {props.organizationName}
         </h2>
         {props.update && (
-          <Button className="py-1 w-16" onClick={() => setMode("edit")}>
+          <Button variant="secondary" onClick={() => setMode("edit")}>
             Edit
           </Button>
         )}
@@ -117,11 +116,6 @@ const OrganizationDetails = (props: {
       <div>
         <span className="font-semibold mr-2">Vehicle Supplier Class:</span>
         {props.supplierClass}
-      </div>
-
-      <div>
-        <span className="font-semibold mr-2">First Model Year Report:</span>
-        {props.firstModelYear}
       </div>
 
       <div>

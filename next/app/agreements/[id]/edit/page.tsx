@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { Routes } from "@/app/lib/constants";
 import { ZevClass } from "@/prisma/generated/client";
 import { AgreementPayload, saveAgreement } from "../../lib/action";
+import { Attachment } from "@/app/lib/services/attachments";
 import {
   getAgreementDetails,
   getModelYearSelections,
@@ -34,9 +35,12 @@ const Page = async (props: { params: Promise<{ id: string }> }) => {
 
   const modelYearSelections = getModelYearSelections();
 
-  const updateAgreement = async (data: AgreementPayload) => {
+  const updateAgreement = async (
+    data: AgreementPayload,
+    files: Attachment[],
+  ) => {
     "use server";
-    const savedAgreement = await saveAgreement(data, agreementId);
+    const savedAgreement = await saveAgreement(data, files, agreementId);
     if (savedAgreement) {
       redirect(`${Routes.CreditAgreements}/${id}`);
     } else {
@@ -54,14 +58,16 @@ const Page = async (props: { params: Promise<{ id: string }> }) => {
       <h2 className="text-xl font-semibold text-primaryBlue pb-4">
         Edit Agreement
       </h2>
-      <AgreementEditForm
-        supplierSelections={supplierSelections}
-        modelYearSelections={modelYearSelections}
-        zevClassSelections={[ZevClass.A, ZevClass.B]}
-        agreementDetails={agreementDetails}
-        upsertAgreement={updateAgreement}
-        handleCancel={handleCancel}
-      />
+      <div className="bg-white rounded-lg shadow-level-1 p-6">
+        <AgreementEditForm
+          supplierSelections={supplierSelections}
+          modelYearSelections={modelYearSelections}
+          zevClassSelections={[ZevClass.A, ZevClass.B]}
+          agreementDetails={agreementDetails}
+          upsertAgreement={updateAgreement}
+          handleCancel={handleCancel}
+        />
+      </div>
     </div>
   );
 };

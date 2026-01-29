@@ -5,12 +5,12 @@ import { IcbcFileStatus, IcbcRecord } from "@/prisma/generated/client";
 import { parse } from "fast-csv";
 import { getStringsToModelYearsEnumsMap } from "@/app/lib/utils/enumMaps";
 import { TransactionClient } from "@/types/prisma";
+import { getIcbcFileFullObjectName } from "@/app/icbc/lib/utils";
 
 type Row = { [key: string]: string };
 
-export const handleConsumeIcbcFileJob = async (job: Job) => {
-  const jobData = job.data;
-  const icbcFileId: number = jobData.icbcFileId;
+export const handleConsumeIcbcFileJob = async (job: Job<number>) => {
+  const icbcFileId: number = job.data;
   console.log(
     "starting ICBC file job with file ID %s at %s",
     icbcFileId,
@@ -22,7 +22,7 @@ export const handleConsumeIcbcFileJob = async (job: Job) => {
     },
   });
   const fileName = icbcFile.name;
-  const fileStream = await getObject(fileName);
+  const fileStream = await getObject(getIcbcFileFullObjectName(fileName));
   const csvStream = fileStream.pipe(parse({ headers: true, delimiter: "|" }));
   const numberOfRecordsPreProcessing = await prisma.icbcRecord.count();
   await prisma.icbcFile.update({
@@ -135,9 +135,8 @@ const deleteAndCreate = async (
   });
 };
 
-export const handleConsumeIcbcFileJobCompleted = async (job: Job) => {
-  const jobData = job.data;
-  const icbcFileId: number = jobData.icbcFileId;
+export const handleConsumeIcbcFileJobCompleted = async (job: Job<number>) => {
+  const icbcFileId: number = job.data;
   console.log(
     "ICBC file job with file ID %s completed successfully at %s",
     icbcFileId,
@@ -156,12 +155,11 @@ export const handleConsumeIcbcFileJobCompleted = async (job: Job) => {
 };
 
 export const handleConsumeIcbcFileJobFailed = async (
-  job: Job | undefined,
+  job: Job<number> | undefined,
   error: Error,
 ) => {
   if (job) {
-    const jobData = job.data;
-    const icbcFileId: number = jobData.icbcFileId;
+    const icbcFileId: number = job.data;
     console.log(
       "ICBC file job with file ID %s failed at %s, with error message: %s",
       icbcFileId,

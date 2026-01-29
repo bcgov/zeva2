@@ -1,6 +1,6 @@
 import axios from "axios";
 import JSZip from "jszip";
-import { AttachmentPayload } from "@/app/vehicle/lib/actions";
+import { AttachmentDownload } from "../services/attachments";
 
 const doDownload = (filename: string, data: ArrayBuffer) => {
   const objectURL = window.URL.createObjectURL(new Blob([data]));
@@ -49,16 +49,13 @@ export const downloadZip = async (
   downloadBuffer(folderName, zipped);
 };
 
-export const downloadMultiple = async (
-  data: AttachmentPayload[],
-  zipName: string,
-) => {
+export const getFiles = async (data: AttachmentDownload[]) => {
   const fileNames: string[] = [];
   const urls: string[] = [];
-  data.forEach((obj) => {
-    fileNames.push(obj.fileName);
-    urls.push(obj.url);
-  });
+  for (const datum of data) {
+    fileNames.push(datum.fileName);
+    urls.push(datum.url);
+  }
   const files = await Promise.all(
     urls.map((url) => {
       return axios.get(url, {
@@ -67,12 +64,20 @@ export const downloadMultiple = async (
     }),
   );
   const payload: { fileName: string; data: ArrayBuffer }[] = [];
-  files.forEach((file, index) => {
+  for (const [index, file] of files.entries()) {
     payload.push({
       fileName: fileNames[index],
       data: file.data,
     });
-  });
+  }
+  return payload;
+};
+
+export const downloadMultiple = async (
+  data: AttachmentDownload[],
+  zipName: string,
+) => {
+  const payload = await getFiles(data);
   if (payload.length > 1) {
     await downloadZip(`${zipName}.zip`, payload);
   } else if (payload.length === 1) {

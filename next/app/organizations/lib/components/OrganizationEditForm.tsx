@@ -1,5 +1,5 @@
 "use client";
-import { FormEvent, useState } from "react";
+import { FormEvent, useCallback, useState } from "react";
 import { Button } from "@/app/lib/components";
 import { OrganizationPayload } from "../action";
 import AddressEditForm from "./AddressEditForm";
@@ -50,27 +50,30 @@ const OrganizationEditForm = (props: {
   );
   const [recordsAddress] = recordsAddressState;
 
-  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    const orgName = cleanupStringData(organizationName);
-    const shortOrgName = cleanupStringData(shortName);
-    if (!orgName || !shortOrgName) {
-      setErrorMsg(
-        "Both the organization name and the common name are required.",
-      );
-      return;
-    }
-    const data: OrganizationPayload = {
-      name: orgName,
-      shortName: shortOrgName,
-      isActive,
-      isGovernment: false,
-      serviceAddress: cleanupAddressData(serviceAddress),
-      recordsAddress: cleanupAddressData(recordsAddress),
-    };
-    await props.upsertData(data);
-    window.location.reload(); // Reload to reflect changes if not redirected
-  };
+  const handleSubmit = useCallback(
+    async (e: FormEvent<HTMLFormElement>) => {
+      e.preventDefault();
+      const orgName = cleanupStringData(organizationName);
+      const shortOrgName = cleanupStringData(shortName);
+      if (!orgName || !shortOrgName) {
+        setErrorMsg(
+          "Both the organization name and the common name are required.",
+        );
+        return;
+      }
+      const data: OrganizationPayload = {
+        name: orgName,
+        shortName: shortOrgName,
+        isActive,
+        isGovernment: false,
+        serviceAddress: cleanupAddressData(serviceAddress),
+        recordsAddress: cleanupAddressData(recordsAddress),
+      };
+      await props.upsertData(data);
+      window.location.reload(); // Reload to reflect changes if not redirected
+    },
+    [organizationName, shortName, isActive, serviceAddress, recordsAddress],
+  );
 
   return (
     <>
@@ -139,11 +142,11 @@ const OrganizationEditForm = (props: {
         </div>
 
         <div className="flex flex-row gap-12 my-2">
-          <Button className="py-1 w-16" type="submit">
+          <Button variant="primary" type="submit">
             {props.submitButtonText}
           </Button>
           <Button
-            className="bg-white border border-primaryBlue text-primaryBlue py-1 w-16"
+            variant="secondary"
             type="button"
             onClick={props.handleCancel}
           >

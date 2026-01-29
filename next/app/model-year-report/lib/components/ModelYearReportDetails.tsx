@@ -1,30 +1,18 @@
-import { getUserInfo } from "@/auth";
+import Excel from "exceljs";
 import { getModelYearReportDetails } from "../data";
-import {
-  getModelYearEnumsToStringsMap,
-  getMyrStatusEnumsToStringsMap,
-} from "@/app/lib/utils/enumMaps";
+import { getArrayBuffer } from "@/app/lib/utils/parseReadable";
+import { parseMyr } from "../utils";
+import { ParsedModelYearReport } from "./ParsedModelYearReport";
 
 export const ModelYearReportDetails = async (props: { id: number }) => {
   const report = await getModelYearReportDetails(props.id);
   if (!report) {
     return null;
   }
-  const { userIsGov } = await getUserInfo();
-  const modelYearsMap = getModelYearEnumsToStringsMap();
-  const statusMap = getMyrStatusEnumsToStringsMap();
-  return (
-    <ul>
-      {userIsGov && (
-        <li key="supplier">Supplier: {report.organization.name}</li>
-      )}
-      <li key="modelYear">Model Year: {modelYearsMap[report.modelYear]}</li>
-      <li key="status">
-        Status:{" "}
-        {userIsGov
-          ? statusMap[report.status]
-          : statusMap[report.supplierStatus]}
-      </li>
-    </ul>
-  );
+  const myrBuf = await getArrayBuffer(report.myrFile);
+  const myrWorkbook = new Excel.Workbook();
+  await myrWorkbook.xlsx.load(myrBuf);
+  const parsedMyr = parseMyr(myrWorkbook);
+
+  return <ParsedModelYearReport myr={parsedMyr} />;
 };

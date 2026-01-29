@@ -2,18 +2,10 @@ import { getStringsToRoleEnumsMap } from "@/app/lib/utils/enumMaps";
 import { getUserInfo } from "@/auth";
 import { UserWithOrg } from "@/lib/data/user";
 import { Prisma, Role } from "@/prisma/generated/client";
+import { govRoles, supplierRoles } from "./constants";
+import { UserActiveFilter } from "@/app/lib/constants/filter";
 
 export const userConfiguredCorrectly = (user: UserWithOrg) => {
-  const govRoles: Role[] = [
-    Role.ADMINISTRATOR,
-    Role.ENGINEER_ANALYST,
-    Role.DIRECTOR,
-  ];
-  const supplierRoles: Role[] = [
-    Role.ORGANIZATION_ADMINISTRATOR,
-    Role.SIGNING_AUTHORITY,
-    Role.ZEVA_USER,
-  ];
   const userIsGov = user.organization.isGovernment;
   const userRoles = user.roles;
   if (userIsGov && userRoles.some((role) => supplierRoles.includes(role))) {
@@ -49,11 +41,11 @@ export const getWhereClause = (
         contains: newValue,
         mode: "insensitive",
       };
-    } else if (key === "isActive") {
+    } else if (key === UserActiveFilter.key) {
       const newValue = value.toLowerCase().trim();
-      if (newValue === "active") {
+      if (newValue === UserActiveFilter.activeValue) {
         result[key] = true;
-      } else if (newValue === "inactive") {
+      } else if (newValue === UserActiveFilter.inactiveValue) {
         result[key] = false;
       } else {
         result["id"] = -1;
@@ -98,8 +90,7 @@ export const getOrderByClause = (
         key === "firstName" ||
         key === "lastName" ||
         key === "contactEmail" ||
-        key === "idpUsername" ||
-        key === "isActive"
+        key === "idpUsername"
       ) {
         result.push({ [key]: value });
       } else if (key === "organization" && userIsGov) {

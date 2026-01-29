@@ -3,8 +3,8 @@
 @tailwind utilities;
 
 :root {
-  --background: #f2f2f2;
-  --foreground: #171717;
+  --background: theme("colors.white");
+  --foreground: theme("colors.primaryText");
 }
 
 /* BC Sans Regular */
@@ -42,9 +42,7 @@ body {
 }
 
 button {
-  @apply m-1;
-  @apply bg-primaryBlue;
-  @apply text-white;
+  @apply m-1 bg-primaryBlue text-white hover:bg-primaryBlueHover;
 }
 
 .white-button {
@@ -56,5 +54,15 @@ button {
 .section-title {
   font-size: 1.2rem;
   font-weight: bold;
-  color: theme("colors.defaultTextBlue");
+  color: theme("colors.primaryBlue");
+}
+
+@layer components {
+  .form-input-base {
+    @apply w-full rounded-md border border-dividerMedium bg-disabledSurface px-3 py-2.5 text-sm text-primaryText placeholder:text-placeholder focus:border-primaryBlue focus:ring-2 focus:ring-primaryBlue/20;
+  }
+
+  .form-label {
+    @apply text-sm font-medium text-primaryText;
+  }
 }
