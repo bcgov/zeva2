@@ -30,7 +30,7 @@ export const analystSubmit = async (
 ): Promise<DataOrErrorActionResponse<number>> => {
   let result = NaN;
   const { userIsGov, userRoles, userId } = await getUserInfo();
-  if (!(userIsGov && userRoles.includes(Role.ENGINEER_ANALYST))) {
+  if (!(userIsGov && userRoles.includes(Role.ZEVA_IDIR_USER))) {
     return getErrorActionResponse("Unauthorized!");
   }
   try {

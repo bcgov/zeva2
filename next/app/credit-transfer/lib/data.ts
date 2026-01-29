@@ -59,7 +59,7 @@ export const getCreditTransfers = async (
         },
       },
     };
-  } else if (userIsGov && userRoles.includes(Role.ENGINEER_ANALYST)) {
+  } else if (userIsGov && userRoles.includes(Role.ZEVA_IDIR_USER)) {
     where.creditTransferHistory = {
       some: {
         userAction: CreditTransferStatus.APPROVED_BY_TRANSFER_TO,

@@ -63,7 +63,7 @@ const Page = async (props: { params: Promise<{ id: string }> }) => {
   );
 
   if (userIsGov) {
-    if (userRoles.includes(Role.ENGINEER_ANALYST)) {
+    if (userRoles.includes(Role.ZEVA_IDIR_USER)) {
       return (
         <div className="flex flex-col w-1/3">
           {applicationData}

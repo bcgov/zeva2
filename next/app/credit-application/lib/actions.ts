@@ -419,7 +419,7 @@ export const validateCreditApplication = async (
   creditApplicationId: number,
 ): Promise<ErrorOrSuccessActionResponse> => {
   const { userIsGov, userRoles } = await getUserInfo();
-  if (!userIsGov || !userRoles.includes(Role.ENGINEER_ANALYST)) {
+  if (!userIsGov || !userRoles.includes(Role.ZEVA_IDIR_USER)) {
     return getErrorActionResponse("Unauthorized!");
   }
   const creditApplication = await prisma.creditApplication.findUnique({
@@ -507,7 +507,7 @@ export const updateValidatedRecords = async (
   mapOfData: MapOfValidatedAndReasons,
 ): Promise<ErrorOrSuccessActionResponse> => {
   const { userIsGov, userRoles } = await getUserInfo();
-  if (!userIsGov || !userRoles.some((role) => role === Role.ENGINEER_ANALYST)) {
+  if (!userIsGov || !userRoles.some((role) => role === Role.ZEVA_IDIR_USER)) {
     return getErrorActionResponse("Unauthorized!");
   }
   const creditApplication = await prisma.creditApplication.findUnique({
@@ -609,7 +609,7 @@ export const analystRecommend = async (
   comment?: string,
 ): Promise<ErrorOrSuccessActionResponse> => {
   const { userIsGov, userId, userRoles } = await getUserInfo();
-  if (!userIsGov || !userRoles.some((role) => role === Role.ENGINEER_ANALYST)) {
+  if (!userIsGov || !userRoles.some((role) => role === Role.ZEVA_IDIR_USER)) {
     return getErrorActionResponse("Unauthorized!");
   }
   const creditApplication = await prisma.creditApplication.findUnique({
@@ -650,7 +650,7 @@ export const analystReject = async (
   comment?: string,
 ): Promise<ErrorOrSuccessActionResponse> => {
   const { userIsGov, userRoles, userId } = await getUserInfo();
-  if (!userIsGov || !userRoles.some((role) => role === Role.ENGINEER_ANALYST)) {
+  if (!userIsGov || !userRoles.some((role) => role === Role.ZEVA_IDIR_USER)) {
     return getErrorActionResponse("Unauthorized!");
   }
   const creditApplication = await prisma.creditApplication.findUnique({

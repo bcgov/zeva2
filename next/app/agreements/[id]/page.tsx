@@ -24,7 +24,7 @@ const Page = async (props: { params: Promise<{ id: string }> }) => {
   }
 
   const forAnalyst =
-    userRoles.includes(Role.ENGINEER_ANALYST) &&
+    userRoles.includes(Role.ZEVA_IDIR_USER) &&
     (agreement.status === AgreementStatus.DRAFT ||
       agreement.status === AgreementStatus.RETURNED_TO_ANALYST);
 

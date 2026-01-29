@@ -13,6 +13,7 @@ import {
 } from "@/app/lib/utils/actionResponse";
 import { govRoles, supplierRoles } from "./constants";
 import { orgIsGovernment } from "./services";
+import { validateRoles } from "./roleValidation";
 
 export type UserPayload = Omit<User, "id" | "idp" | "idpSub" | "notifications">;
 
@@ -68,6 +69,14 @@ export async function createUser(
   }
   const orgIsGov = await orgIsGovernment(dataOrgId);
   const roles = data.roles;
+  try {
+    validateRoles(roles);
+  } catch (e) {
+    if (e instanceof Error) {
+      return getErrorActionResponse(e.message);
+    }
+    return getErrorActionResponse("Invalid Role detected!");
+  }
   if (
     (!orgIsGov && roles.some((role) => govRoles.includes(role))) ||
     (orgIsGov && roles.some((role) => supplierRoles.includes(role)))
@@ -120,6 +129,14 @@ export const updateRoles = async (
     }
   } else {
     return getDataActionResponse(user.roles);
+  }
+  try {
+    validateRoles(newRoles);
+  } catch (e) {
+    if (e instanceof Error) {
+      return getErrorActionResponse(e.message);
+    }
+    return getErrorActionResponse("Invalid Role detected!");
   }
   const updatedUser = await prisma.user.update({
     where: {

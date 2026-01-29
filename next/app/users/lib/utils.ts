@@ -4,6 +4,7 @@ import { UserWithOrg } from "@/lib/data/user";
 import { Prisma, Role } from "@/prisma/generated/client";
 import { govRoles, supplierRoles } from "./constants";
 import { UserActiveFilter } from "@/app/lib/constants/filter";
+import { validateRoles } from "./roleValidation";
 
 export const userConfiguredCorrectly = (user: UserWithOrg) => {
   const userIsGov = user.organization.isGovernment;
@@ -11,15 +12,15 @@ export const userConfiguredCorrectly = (user: UserWithOrg) => {
   if (userIsGov && userRoles.some((role) => supplierRoles.includes(role))) {
     return false;
   }
-  if (
-    userIsGov &&
-    userRoles.includes(Role.ENGINEER_ANALYST) &&
-    userRoles.includes(Role.DIRECTOR)
-  ) {
-    return false;
-  }
   if (!userIsGov && userRoles.some((role) => govRoles.includes(role))) {
     return false;
+  }
+  if (userIsGov) {
+    try {
+      validateRoles(userRoles);
+    } catch {
+      return false;
+    }
   }
   return true;
 };

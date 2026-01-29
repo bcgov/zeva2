@@ -98,11 +98,11 @@ describe("Agreement action: saveAgreement", () => {
     expect(prisma.$transaction).not.toHaveBeenCalled();
   });
 
-  it("returns undefined if user is not ENGINEER_ANALYST", async () => {
+  it("returns undefined if user is not ZEVA_IDIR_USER", async () => {
     mockFunctions({
       userInfo: {
         ...baseGovUserInfo,
-        userRoles: [Role.DIRECTOR], // Not an ENGINEER_ANALYST
+        userRoles: [Role.DIRECTOR], // Not a ZEVA_IDIR_USER
       },
     });
     const result = await saveAgreement(baseAgreement);

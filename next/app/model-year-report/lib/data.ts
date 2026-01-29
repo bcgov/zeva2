@@ -106,7 +106,7 @@ export const getModelYearReportDetails = async (id: number) => {
   };
   if (!userIsGov) {
     whereClause.organizationId = userOrgId;
-  } else if (userIsGov && userRoles.includes(Role.ENGINEER_ANALYST)) {
+  } else if (userIsGov && userRoles.includes(Role.ZEVA_IDIR_USER)) {
     whereClause = {
       ...whereClause,
       NOT: {
@@ -241,7 +241,7 @@ export const getAssessmentObject = async (myrId: number) => {
       organizationId: userOrgId,
       status: ModelYearReportStatus.ASSESSED,
     };
-  } else if (userIsGov && userRoles.includes(Role.ENGINEER_ANALYST)) {
+  } else if (userIsGov && userRoles.includes(Role.ZEVA_IDIR_USER)) {
     whereClause = {
       ...whereClause,
       NOT: {

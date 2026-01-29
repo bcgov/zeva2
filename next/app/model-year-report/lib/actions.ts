@@ -375,7 +375,7 @@ export const submitAssessment = async (
   comment?: string,
 ): Promise<ErrorOrSuccessActionResponse> => {
   const { userIsGov, userId, userRoles } = await getUserInfo();
-  if (!userIsGov || !userRoles.includes(Role.ENGINEER_ANALYST)) {
+  if (!userIsGov || !userRoles.includes(Role.ZEVA_IDIR_USER)) {
     return getErrorActionResponse("Unauthorized!");
   }
   const myr = await prisma.modelYearReport.findUnique({
@@ -444,7 +444,7 @@ export const submitReassessment = async (
   comment?: string,
 ): Promise<DataOrErrorActionResponse<number>> => {
   const { userIsGov, userId, userRoles } = await getUserInfo();
-  if (!userIsGov || !userRoles.includes(Role.ENGINEER_ANALYST)) {
+  if (!userIsGov || !userRoles.includes(Role.ZEVA_IDIR_USER)) {
     return getErrorActionResponse("Unauthorized!");
   }
   const { myrId, legacyMyrId } = await getReassessableMyrData(
@@ -575,7 +575,7 @@ export const returnModelYearReport = async (
       userRoles.includes(Role.DIRECTOR)) ||
     (status === ModelYearReportStatus.SUBMITTED_TO_GOVERNMENT &&
       returnType === ModelYearReportStatus.RETURNED_TO_SUPPLIER &&
-      userRoles.includes(Role.ENGINEER_ANALYST))
+      userRoles.includes(Role.ZEVA_IDIR_USER))
   ) {
     await prisma.$transaction(async (tx) => {
       const updateData: Prisma.ModelYearReportUpdateInput = {
@@ -878,7 +878,7 @@ export const deleteReassessment = async (
   reassessmentId: number,
 ): Promise<ErrorOrSuccessActionResponse> => {
   const { userIsGov, userRoles } = await getUserInfo();
-  if (!userIsGov || !userRoles.includes(Role.ENGINEER_ANALYST)) {
+  if (!userIsGov || !userRoles.includes(Role.ZEVA_IDIR_USER)) {
     return getErrorActionResponse("Unauthorized!");
   }
   const reassessment = await prisma.reassessment.findUnique({

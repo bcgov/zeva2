@@ -16,7 +16,7 @@ export const Reassessment = async (props: {
 }) => {
   const { userRoles } = await getUserInfo();
   let actionComponent: JSX.Element | null = null;
-  if (userRoles.includes(Role.ENGINEER_ANALYST)) {
+  if (userRoles.includes(Role.ZEVA_IDIR_USER)) {
     actionComponent = (
       <ReassessmentAnalystActions
         reassessmentId={props.reassessmentId}

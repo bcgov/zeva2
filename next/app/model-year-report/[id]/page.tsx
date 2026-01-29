@@ -27,7 +27,7 @@ const Page = async (props: { params: Promise<{ id: string }> }) => {
     actionComponent = <SupplierActions id={myrId} status={status} />;
   } else if (userRoles.includes(Role.DIRECTOR)) {
     actionComponent = <DirectorActions myrId={myrId} status={status} />;
-  } else if (userRoles.includes(Role.ENGINEER_ANALYST)) {
+  } else if (userRoles.includes(Role.ZEVA_IDIR_USER)) {
     actionComponent = (
       <AnalystActions
         id={myrId}

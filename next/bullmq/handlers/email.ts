@@ -253,7 +253,7 @@ export const sendNotificationEmails = async (
         isGovernment: true,
       },
       roles: {
-        has: Role.ENGINEER_ANALYST,
+        has: Role.ZEVA_IDIR_USER,
       },
     });
   }
