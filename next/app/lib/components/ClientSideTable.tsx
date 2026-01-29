@@ -253,9 +253,9 @@ export const ClientSideTable = <T extends ZevaObject>({
           icon={faAngleLeft}
           onClick={() => table.previousPage()}
           className={`mr-2 cursor-pointer ${
-            !table.getCanPreviousPage()
-              ? "text-gray-400"
-              : "text-defaultTextBlack"
+            table.getCanPreviousPage()
+              ? "text-defaultTextBlack"
+              : "text-gray-400"
           }`}
           style={{
             pointerEvents: table.getCanPreviousPage() ? "auto" : "none",
@@ -286,7 +286,7 @@ export const ClientSideTable = <T extends ZevaObject>({
           icon={faAngleRight}
           onClick={() => table.nextPage()}
           className={`ml-2 cursor-pointer ${
-            !table.getCanNextPage() ? "text-gray-400" : "text-defaultTextBlack"
+            table.getCanNextPage() ? "text-defaultTextBlack" : "text-gray-400"
           }`}
           style={{
             pointerEvents: table.getCanNextPage() ? "auto" : "none",
