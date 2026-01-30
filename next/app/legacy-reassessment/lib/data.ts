@@ -3,38 +3,40 @@ import { prisma } from "@/lib/prisma";
 import {
   ModelYear,
   Prisma,
-  SupplementaryReportStatus,
+  ReassessmentStatus,
+  Role,
 } from "@/prisma/generated/client";
 
-export type LegacySupplementary = {
+export type LegacyReassessment = {
   id: number;
   modelYear: ModelYear;
-  status: SupplementaryReportStatus;
+  status: ReassessmentStatus;
   sequenceNumber: number;
   organization?: {
     name: string;
   };
 };
 
-export const getLegacySupplementaries = async (
+export const getLegacyReassessments = async (
   page: number,
   pageSize: number,
-): Promise<[LegacySupplementary[], number]> => {
-  const { userIsGov, userOrgId } = await getUserInfo();
+): Promise<[LegacyReassessment[], number]> => {
+  const { userIsGov, userOrgId, userRoles } = await getUserInfo();
   const skip = (page - 1) * pageSize;
   const take = pageSize;
-  const whereClause: Prisma.SupplementaryReportWhereInput = {
+  const whereClause: Prisma.ReassessmentWhereInput = {
     modelYearReportId: null,
   };
-  if (userIsGov) {
+  if (userIsGov && userRoles.includes(Role.DIRECTOR)) {
     whereClause.status = {
-      not: SupplementaryReportStatus.DRAFT,
+      notIn: [ReassessmentStatus.DRAFT, ReassessmentStatus.RETURNED_TO_ANALYST],
     };
-  } else {
+  } else if (!userIsGov) {
     whereClause.organizationId = userOrgId;
+    whereClause.status = ReassessmentStatus.ISSUED;
   }
   return await prisma.$transaction([
-    prisma.supplementaryReport.findMany({
+    prisma.reassessment.findMany({
       skip,
       take,
       where: whereClause,
@@ -47,7 +49,7 @@ export const getLegacySupplementaries = async (
       },
       orderBy: [{ organizationId: "asc" }, { sequenceNumber: "asc" }],
     }),
-    prisma.supplementaryReport.count({
+    prisma.reassessment.count({
       where: whereClause,
     }),
   ]);

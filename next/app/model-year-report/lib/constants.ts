@@ -55,3 +55,13 @@ export enum IsCompliant {
   Yes = "Yes",
   No = "No",
 }
+
+export const legacyModelYearsMap: Readonly<Partial<Record<string, ModelYear>>> =
+  {
+    "2019": ModelYear.MY_2019,
+    "2020": ModelYear.MY_2020,
+    "2021": ModelYear.MY_2021,
+    "2022": ModelYear.MY_2022,
+    "2023": ModelYear.MY_2023,
+    "2024": ModelYear.MY_2024,
+  };

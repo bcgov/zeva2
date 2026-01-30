@@ -660,6 +660,7 @@ enum ModelYearReportSupplierStatus {
 }
 
 enum ReassessmentStatus {
+  DRAFT
   ISSUED
   RETURNED_TO_ANALYST
   SUBMITTED_TO_DIRECTOR

@@ -6,7 +6,6 @@ import { Decimal } from "@/prisma/generated/client/runtime/library";
 import {
   BalanceType,
   ModelYear,
-  ModelYearReportStatus,
   Prisma,
   ReferenceType,
   SupplierClass,
@@ -555,37 +554,6 @@ const parseReductionsForData = (
     }
   });
   return result;
-};
-
-export const parseMyrForData = (workbook: Workbook) => {
-  const parsedMyr = parseMyr(workbook);
-  const modelYearsMap = getStringsToModelYearsEnumsMap();
-  const modelYear = modelYearsMap[parsedMyr.details.modelYear];
-  if (!modelYear) {
-    throw new Error("Model Year not found!");
-  }
-  const supplierClassesMap = getStringsToSupplierClassEnumsMap();
-  const supplierClass =
-    supplierClassesMap[parsedMyr.supplierDetails.classification];
-  if (!supplierClass) {
-    throw new Error("Supplier Class not found!");
-  }
-  let reportableNvValue: number | null = null;
-  const complianceReductions = parsedMyr.complianceReductions;
-  const reductionsData = parseReductionsForData(complianceReductions);
-  for (const [vehicleClass, nv] of reductionsData.nvValues) {
-    if (vehicleClass === VehicleClass.REPORTABLE) {
-      reportableNvValue = nv.toNumber();
-    }
-  }
-  if (!reportableNvValue) {
-    throw new Error("Reportable NV Value not found!");
-  }
-  return {
-    modelYear,
-    supplierClass,
-    reportableNvValue,
-  };
 };
 
 export const parseMyrForAssessmentData = (workbook: Workbook) => {

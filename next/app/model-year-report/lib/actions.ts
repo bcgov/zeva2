@@ -25,10 +25,8 @@ import {
   getDataForSupplementary,
   getLegacyAssessedMyr,
   getMyrDataForAssessment,
-  getMyrDataForLegacyReassessment,
-  getMyrDataForMyr,
   getOrgDetails,
-  getReassessableMyrData,
+  getDataForReassessment,
   getVehicleStatistics,
   getZevUnitData,
   MyrZevUnitTransaction,
@@ -158,6 +156,7 @@ export const getForecastTemplateUrl = async () => {
 };
 
 export const saveReports = async (
+  modelYear: ModelYear,
   modelYearReport: string,
   forecastReport: string,
 ): Promise<DataOrErrorActionResponse<number>> => {
@@ -166,11 +165,6 @@ export const saveReports = async (
   if (userIsGov) {
     return getErrorActionResponse("Unauthorized!");
   }
-  const myrObject = Buffer.from(modelYearReport, "base64");
-  const myrObjectName = getReportFullObjectName("myr");
-  const forecastObject = Buffer.from(forecastReport, "base64");
-  const forecastObjectName = getReportFullObjectName("forecast");
-  const { modelYear } = await getMyrDataForMyr(myrObject.buffer);
   const existingMyr = await prisma.modelYearReport.findUnique({
     where: {
       organizationId_modelYear: {
@@ -210,6 +204,10 @@ export const saveReports = async (
   if (existingLegacyAssessedReport) {
     return getErrorActionResponse("Invalid Action!");
   }
+  const myrObject = Buffer.from(modelYearReport, "base64");
+  const myrObjectName = getReportFullObjectName("myr");
+  const forecastObject = Buffer.from(forecastReport, "base64");
+  const forecastObjectName = getReportFullObjectName("forecast");
   await prisma.$transaction(async (tx) => {
     if (existingMyr) {
       await tx.modelYearReport.update({
@@ -315,47 +313,34 @@ export type AssessmentData = {
   complianceInfo: ComplianceInfo;
 };
 
-export type AssessmentArgs = {
-  assessmentType: "assessment";
-  myrId: number;
-  adjustments: AdjustmentPayload[];
-};
-
-export type LegacyReassessmentArgs = {
-  assessmentType: "legacyReassessment";
-  orgId: number;
-  modelYear: ModelYear;
-  adjustments: AdjustmentPayload[];
-  nvValues: NvValues;
-};
-
-export type NonLegacyReassessmentArgs = {
-  assessmentType: "nonLegacyReassessment";
-  myrId: number;
-  adjustments: AdjustmentPayload[];
-  nvValues: NvValues;
-};
-
 export const getAssessmentData = async (
-  args: AssessmentArgs | LegacyReassessmentArgs | NonLegacyReassessmentArgs,
+  type: "assessment" | "reassessment",
+  orgId: number,
+  modelYear: ModelYear,
+  adjustments: AdjustmentPayload[],
+  nvValues?: NvValues,
+  zevClassOrdering?: ZevClass[],
 ): Promise<DataOrErrorActionResponse<AssessmentData>> => {
   const { userIsGov } = await getUserInfo();
   if (!userIsGov) {
     return getErrorActionResponse("Unauthorized!");
   }
+  if (type === "reassessment" && (!nvValues || !zevClassOrdering)) {
+    return getErrorActionResponse("Invalid Action!");
+  }
   try {
     const {
       orgName,
       organizationId,
-      modelYear,
       nvValues: myrNvValues,
-      zevClassOrdering,
-    } = args.assessmentType === "assessment" ||
-    args.assessmentType === "nonLegacyReassessment"
-      ? await getMyrDataForAssessment(args.myrId)
-      : await getMyrDataForLegacyReassessment(args.orgId, args.modelYear);
-    const nvValuesToUse =
-      args.assessmentType === "assessment" ? myrNvValues : args.nvValues;
+      zevClassOrdering: myrZevClassOrdering,
+    } = await getMyrDataForAssessment(orgId, modelYear);
+    const nvValuesToUse = type === "assessment" ? myrNvValues : nvValues;
+    const zevClassOrderingToUse =
+      type === "assessment" ? myrZevClassOrdering : zevClassOrdering;
+    if (!nvValuesToUse || !zevClassOrderingToUse) {
+      throw new Error("Unexpected Error!");
+    }
     const {
       supplierClass,
       prevEndingBalance,
@@ -367,9 +352,9 @@ export const getAssessmentData = async (
       organizationId,
       modelYear,
       nvValuesToUse,
-      zevClassOrdering,
-      args.adjustments,
-      args.assessmentType !== "assessment",
+      zevClassOrderingToUse,
+      adjustments,
+      type === "reassessment",
     );
     const complianceInfo = getComplianceInfo(
       supplierClass,
@@ -380,7 +365,7 @@ export const getAssessmentData = async (
     return getDataActionResponse<AssessmentData>({
       orgName,
       modelYear,
-      zevClassOrdering,
+      zevClassOrdering: zevClassOrderingToUse,
       supplierClass,
       complianceInfo,
       beginningBalance:
@@ -405,13 +390,17 @@ export const getAssessmentData = async (
   }
 };
 
-export const submitAssessment = async (
+export const createOrSaveAssessment = async (
   myrId: number,
   assessment: string,
-  comment?: string,
 ): Promise<ErrorOrSuccessActionResponse> => {
+<<<<<<< HEAD
   const { userIsGov, userId, userRoles } = await getUserInfo();
   if (!userIsGov || !userRoles.includes(Role.ZEVA_IDIR_USER)) {
+=======
+  const { userIsGov, userRoles } = await getUserInfo();
+  if (!userIsGov || !userRoles.includes(Role.ENGINEER_ANALYST)) {
+>>>>>>> f784b9d (second commit)
     return getErrorActionResponse("Unauthorized!");
   }
   const myr = await prisma.modelYearReport.findUnique({
@@ -428,6 +417,51 @@ export const submitAssessment = async (
   if (!myr) {
     return getErrorActionResponse("Invalid Action!");
   }
+  const assessmentObject = Buffer.from(assessment, "base64");
+  const assessmentObjectName = getReportFullObjectName("assessment");
+  await prisma.$transaction(async (tx) => {
+    await tx.assessment.upsert({
+      where: {
+        modelYearReportId: myrId,
+      },
+      create: {
+        modelYearReportId: myrId,
+        objectName: assessmentObjectName,
+      },
+      update: {
+        objectName: assessmentObjectName,
+      },
+    });
+    await putObject(assessmentObjectName, assessmentObject);
+  });
+  return getSuccessActionResponse();
+};
+
+export const submitAssessment = async (
+  myrId: number,
+  comment?: string,
+): Promise<ErrorOrSuccessActionResponse> => {
+  const { userIsGov, userId, userRoles } = await getUserInfo();
+  if (!userIsGov || !userRoles.includes(Role.ENGINEER_ANALYST)) {
+    return getErrorActionResponse("Unauthorized!");
+  }
+  const myr = await prisma.modelYearReport.findUnique({
+    where: {
+      id: myrId,
+      status: {
+        in: [
+          ModelYearReportStatus.SUBMITTED_TO_GOVERNMENT,
+          ModelYearReportStatus.RETURNED_TO_ANALYST,
+        ],
+      },
+      assessment: {
+        isNot: null,
+      },
+    },
+  });
+  if (!myr) {
+    return getErrorActionResponse("Invalid Action!");
+  }
   const modelYearsMap = getModelYearEnumsToStringsMap();
   const year = modelYearsMap[getAdjacentYear("next", myr.modelYear)];
   if (!year) {
@@ -436,8 +470,6 @@ export const submitAssessment = async (
   if (new Date() < new Date(`${year}-${10}-${21}T00:00:00`)) {
     return getErrorActionResponse("Invalid Action!");
   }
-  const assessmentObject = Buffer.from(assessment, "base64");
-  const assessmentObjectName = getReportFullObjectName("assessment");
   await prisma.$transaction(async (tx) => {
     await tx.modelYearReport.update({
       where: {
@@ -447,12 +479,6 @@ export const submitAssessment = async (
         status: ModelYearReportStatus.SUBMITTED_TO_DIRECTOR,
       },
     });
-    await tx.assessment.create({
-      data: {
-        modelYearReportId: myrId,
-        objectName: assessmentObjectName,
-      },
-    });
     const historyId = await createHistory(
       myrId,
       userId,
@@ -460,112 +486,12 @@ export const submitAssessment = async (
       comment,
       tx,
     );
-    await putObject(assessmentObjectName, assessmentObject);
     await addJobToEmailQueue({
       historyId,
       notificationType: Notification.MODEL_YEAR_REPORT,
     });
   });
   return getSuccessActionResponse();
-};
-
-export const submitReassessment = async (
-  organizationId: number,
-  modelYear: ModelYear,
-  reassessment: string,
-  comment?: string,
-): Promise<DataOrErrorActionResponse<number>> => {
-  const { userIsGov, userId, userRoles } = await getUserInfo();
-  if (!userIsGov || !userRoles.includes(Role.ZEVA_IDIR_USER)) {
-    return getErrorActionResponse("Unauthorized!");
-  }
-  const { myrId, legacyMyrId } = await getReassessableMyrData(
-    organizationId,
-    modelYear,
-  );
-  if (!myrId && !legacyMyrId) {
-    return getErrorActionResponse("A reassessable MYR does not exist!");
-  }
-  const latestReassessment = await prisma.reassessment.findFirst({
-    where: {
-      organizationId,
-      modelYear: modelYear,
-    },
-    orderBy: {
-      sequenceNumber: "desc",
-    },
-  });
-  if (
-    latestReassessment &&
-    latestReassessment.status === ReassessmentStatus.SUBMITTED_TO_DIRECTOR
-  ) {
-    return getErrorActionResponse("Invalid Action!");
-  }
-  const reassessmentObject = Buffer.from(reassessment, "base64");
-  const reassessmentObjectName = getReportFullObjectName("reassessment");
-  let reassessmentIdToReturn: number = latestReassessment
-    ? latestReassessment.id
-    : Number.NaN;
-  await prisma.$transaction(async (tx) => {
-    if (
-      latestReassessment &&
-      latestReassessment.status === ReassessmentStatus.RETURNED_TO_ANALYST
-    ) {
-      // resubmission:
-      await tx.reassessment.update({
-        where: {
-          id: latestReassessment.id,
-        },
-        data: {
-          status: ReassessmentStatus.SUBMITTED_TO_DIRECTOR,
-          objectName: reassessmentObjectName,
-        },
-      });
-      await createReassessmentHistory(
-        latestReassessment.id,
-        userId,
-        ReassessmentStatus.SUBMITTED_TO_DIRECTOR,
-        comment,
-        tx,
-      );
-    } else if (
-      !latestReassessment ||
-      latestReassessment.status === ReassessmentStatus.ISSUED
-    ) {
-      // new submission:
-      let sequenceNumber = 0;
-      if (latestReassessment) {
-        sequenceNumber = latestReassessment.sequenceNumber + 1;
-      }
-      const { id: reassessmentId } = await tx.reassessment.create({
-        data: {
-          organizationId: organizationId,
-          modelYear: modelYear,
-          status: ReassessmentStatus.SUBMITTED_TO_DIRECTOR,
-          sequenceNumber,
-          objectName: reassessmentObjectName,
-          modelYearReportId: myrId,
-        },
-      });
-      reassessmentIdToReturn = reassessmentId;
-      await createReassessmentHistory(
-        reassessmentId,
-        userId,
-        ReassessmentStatus.SUBMITTED_TO_DIRECTOR,
-        comment,
-        tx,
-      );
-    }
-    if (myrId) {
-      await updateMyrReassessmentStatus(
-        myrId,
-        ReassessmentStatus.SUBMITTED_TO_DIRECTOR,
-        tx,
-      );
-    }
-    await putObject(reassessmentObjectName, reassessmentObject);
-  });
-  return getDataActionResponse(reassessmentIdToReturn);
 };
 
 export const returnModelYearReport = async (
@@ -720,6 +646,188 @@ export const assessModelYearReport = async (
   return getSuccessActionResponse();
 };
 
+export const createReassessment = async (
+  organizationId: number,
+  modelYear: ModelYear,
+  reassessment: string,
+): Promise<
+  DataOrErrorActionResponse<{ reassessmentId: number; myrId: number | null }>
+> => {
+  let reassessmentId = NaN;
+  const { userIsGov, userRoles } = await getUserInfo();
+  if (!userIsGov || !userRoles.includes(Role.ENGINEER_ANALYST)) {
+    return getErrorActionResponse("Unauthorized!");
+  }
+  let sequenceNumber;
+  let myrId;
+  try {
+    ({ sequenceNumber, myrId } = await getDataForReassessment(
+      organizationId,
+      modelYear,
+    ));
+  } catch (e) {
+    return getErrorActionResponse("Invalid Action!");
+  }
+  const reassessmentObject = Buffer.from(reassessment, "base64");
+  const reassessmentObjectName = getReportFullObjectName("reassessment");
+  await prisma.$transaction(async (tx) => {
+    const createdReassessment = await tx.reassessment.create({
+      data: {
+        organizationId,
+        modelYear,
+        sequenceNumber,
+        objectName: reassessmentObjectName,
+        status: ReassessmentStatus.DRAFT,
+        modelYearReportId: myrId,
+      },
+    });
+    reassessmentId = createdReassessment.id;
+    if (myrId) {
+      await updateMyrReassessmentStatus(myrId, ReassessmentStatus.DRAFT, tx);
+    }
+    await putObject(reassessmentObjectName, reassessmentObject);
+  });
+  return getDataActionResponse({
+    reassessmentId,
+    myrId,
+  });
+};
+
+export const saveReassessment = async (
+  reassessmentId: number,
+  reassessmentToSave: string,
+): Promise<
+  DataOrErrorActionResponse<{ reassessmentId: number; myrId: number | null }>
+> => {
+  const { userIsGov, userRoles } = await getUserInfo();
+  if (!userIsGov || !userRoles.includes(Role.ENGINEER_ANALYST)) {
+    return getErrorActionResponse("Unauthorized!");
+  }
+  const reassessment = await prisma.reassessment.findUnique({
+    where: {
+      id: reassessmentId,
+      status: {
+        in: [ReassessmentStatus.DRAFT, ReassessmentStatus.RETURNED_TO_ANALYST],
+      },
+    },
+    select: {
+      id: true,
+      modelYearReportId: true,
+    },
+  });
+  if (!reassessment) {
+    return getErrorActionResponse("Invalid Action!");
+  }
+  const reassessmentObject = Buffer.from(reassessmentToSave, "base64");
+  const reassessmentObjectName = getReportFullObjectName("reassessment");
+  await prisma.$transaction(async (tx) => {
+    await tx.supplementaryReport.update({
+      where: {
+        id: reassessmentId,
+      },
+      data: {
+        objectName: reassessmentObjectName,
+      },
+    });
+    await putObject(reassessmentObjectName, reassessmentObject);
+  });
+  return getDataActionResponse({
+    reassessmentId,
+    myrId: reassessment.modelYearReportId,
+  });
+};
+
+export const deleteReassessment = async (
+  reassessmentId: number,
+): Promise<ErrorOrSuccessActionResponse> => {
+  const { userIsGov, userRoles } = await getUserInfo();
+  if (!userIsGov || !userRoles.includes(Role.ENGINEER_ANALYST)) {
+    return getErrorActionResponse("Unauthorized!");
+  }
+  const reassessment = await prisma.reassessment.findUnique({
+    where: {
+      id: reassessmentId,
+      status: {
+        in: [ReassessmentStatus.DRAFT, ReassessmentStatus.RETURNED_TO_ANALYST],
+      },
+    },
+    select: {
+      modelYearReportId: true,
+    },
+  });
+  if (!reassessment) {
+    return getErrorActionResponse("Valid Reassessment not found!");
+  }
+  const myrId = reassessment.modelYearReportId;
+  await prisma.$transaction(async (tx) => {
+    await tx.reassessmentHistory.deleteMany({
+      where: {
+        reassessmentId,
+      },
+    });
+    await tx.reassessment.delete({
+      where: {
+        id: reassessmentId,
+      },
+    });
+    if (myrId) {
+      await updateMyrReassessmentStatus(myrId, null, tx);
+    }
+  });
+  return getSuccessActionResponse();
+};
+
+export const submitReassessment = async (
+  reassessmentId: number,
+  comment?: string,
+): Promise<ErrorOrSuccessActionResponse> => {
+  const { userIsGov, userId, userRoles } = await getUserInfo();
+  if (!userIsGov || !userRoles.includes(Role.ENGINEER_ANALYST)) {
+    return getErrorActionResponse("Unauthorized!");
+  }
+  const reassessment = await prisma.reassessment.findUnique({
+    where: {
+      id: reassessmentId,
+      status: {
+        in: [ReassessmentStatus.DRAFT, ReassessmentStatus.RETURNED_TO_ANALYST],
+      },
+    },
+    select: {
+      id: true,
+      modelYearReportId: true,
+    },
+  });
+  if (!reassessment) {
+    return getErrorActionResponse("Invalid Action!");
+  }
+  const myrId = reassessment.modelYearReportId;
+  await prisma.$transaction(async (tx) => {
+    tx.reassessment.update({
+      where: {
+        id: reassessmentId,
+      },
+      data: {
+        status: ReassessmentStatus.SUBMITTED_TO_DIRECTOR,
+      },
+    });
+    await createReassessmentHistory(
+      reassessmentId,
+      userId,
+      ReassessmentStatus.SUBMITTED_TO_DIRECTOR,
+      comment,
+      tx,
+    );
+    if (myrId) {
+      await updateMyrReassessmentStatus(
+        myrId,
+        ReassessmentStatus.SUBMITTED_TO_DIRECTOR,
+        tx,
+      );
+    }
+  });
+  return getSuccessActionResponse();
+};
+
 export const returnReassessment = async (
   reassessmentId: number,
   comment?: string,
@@ -732,6 +840,9 @@ export const returnReassessment = async (
     where: {
       id: reassessmentId,
       status: ReassessmentStatus.SUBMITTED_TO_DIRECTOR,
+    },
+    select: {
+      modelYearReportId: true,
     },
   });
   if (!reassessment) {
@@ -748,7 +859,7 @@ export const returnReassessment = async (
       },
     });
     await createReassessmentHistory(
-      reassessment.id,
+      reassessmentId,
       userId,
       ReassessmentStatus.RETURNED_TO_ANALYST,
       comment,
@@ -780,7 +891,7 @@ export const issueReassessment = async (
     },
   });
   if (!reassessment) {
-    return getErrorActionResponse("Valid Reassessment not found!");
+    return getErrorActionResponse("Invalid Action");
   }
   const organizationId = reassessment.organizationId;
   const modelYear = reassessment.modelYear;
@@ -885,54 +996,8 @@ export const issueReassessment = async (
   return getSuccessActionResponse();
 };
 
-export const deleteReassessment = async (
-  reassessmentId: number,
-): Promise<ErrorOrSuccessActionResponse> => {
-  const { userIsGov, userRoles } = await getUserInfo();
-  if (!userIsGov || !userRoles.includes(Role.ZEVA_IDIR_USER)) {
-    return getErrorActionResponse("Unauthorized!");
-  }
-  const reassessment = await prisma.reassessment.findUnique({
-    where: {
-      id: reassessmentId,
-      status: ReassessmentStatus.RETURNED_TO_ANALYST,
-    },
-    include: {
-      modelYearReport: {
-        select: {
-          id: true,
-          supplierReassessmentStatus: true,
-        },
-      },
-    },
-  });
-  if (!reassessment) {
-    return getErrorActionResponse("Valid Reassessment not found!");
-  }
-  const myr = reassessment.modelYearReport;
-  await prisma.$transaction(async (tx) => {
-    await tx.reassessmentHistory.deleteMany({
-      where: {
-        reassessmentId,
-      },
-    });
-    await tx.reassessment.delete({
-      where: {
-        id: reassessmentId,
-      },
-    });
-    if (myr) {
-      await updateMyrReassessmentStatus(
-        myr.id,
-        myr.supplierReassessmentStatus,
-        tx,
-      );
-    }
-  });
-  return getSuccessActionResponse();
-};
-
 export const createSupplementary = async (
+  modelYear: ModelYear,
   report: string,
 ): Promise<
   DataOrErrorActionResponse<{ supplementaryId: number; myrId: number | null }>
@@ -944,7 +1009,6 @@ export const createSupplementary = async (
   }
   const reportObject = Buffer.from(report, "base64");
   const reportObjectName = getReportFullObjectName("supplementary");
-  const { modelYear } = await getMyrDataForMyr(reportObject.buffer);
   let sequenceNumber;
   let myrId;
   try {
@@ -992,7 +1056,7 @@ export const saveSupplementary = async (
       status: SupplementaryReportStatus.DRAFT,
     },
     select: {
-      id: true,
+      modelYearReportId: true,
     },
   });
   if (!suppReport) {
@@ -1000,17 +1064,6 @@ export const saveSupplementary = async (
   }
   const reportObject = Buffer.from(report, "base64");
   const reportObjectName = getReportFullObjectName("supplementary");
-  const { modelYear } = await getMyrDataForMyr(reportObject.buffer);
-  let sequenceNumber;
-  let myrId;
-  try {
-    ({ sequenceNumber, myrId } = await getDataForSupplementary(
-      userOrgId,
-      modelYear,
-    ));
-  } catch (e) {
-    return getErrorActionResponse("Invalid Action!");
-  }
   await prisma.$transaction(async (tx) => {
     await tx.supplementaryReport.update({
       where: {
@@ -1018,16 +1071,13 @@ export const saveSupplementary = async (
       },
       data: {
         objectName: reportObjectName,
-        modelYear,
-        modelYearReportId: myrId,
-        sequenceNumber,
       },
     });
     await putObject(reportObjectName, reportObject);
   });
   return getDataActionResponse({
     supplementaryId,
-    myrId: myrId,
+    myrId: suppReport.modelYearReportId,
   });
 };
 
@@ -1104,14 +1154,13 @@ export const acknowledgeSupplementary = async (
   supplementaryId: number,
   comment?: string,
 ): Promise<ErrorOrSuccessActionResponse> => {
-  const { userIsGov, userOrgId, userId } = await getUserInfo();
+  const { userIsGov, userId } = await getUserInfo();
   if (!userIsGov) {
     return getErrorActionResponse("Unauthorized!");
   }
   const suppReport = await prisma.supplementaryReport.findUnique({
     where: {
       id: supplementaryId,
-      organizationId: userOrgId,
       status: SupplementaryReportStatus.SUBMITTED,
     },
     select: {

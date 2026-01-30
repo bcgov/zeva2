@@ -2,10 +2,11 @@
 
 import axios from "axios";
 import { Button } from "@/app/lib/components";
-import { getStringsToModelYearsEnumsMap } from "@/app/lib/utils/enumMaps";
+import { getModelYearEnumsToStringsMap } from "@/app/lib/utils/enumMaps";
 import { ModelYear, VehicleClass, ZevClass } from "@/prisma/generated/client";
 import { useRouter } from "next/navigation";
 import {
+  JSX,
   useCallback,
   useEffect,
   useMemo,
@@ -25,7 +26,7 @@ import {
   validateNvValues,
 } from "../utilsClient";
 import { bytesToBase64 } from "@/app/lib/utils/base64";
-import { SupplierZevClassChoice } from "../constants";
+import { legacyModelYearsMap, SupplierZevClassChoice } from "../constants";
 import { MyrNvValues } from "./MyrNvValues";
 import { ZevClassSelect } from "./ZevClassSelect";
 import { Routes } from "@/app/lib/constants";
@@ -39,28 +40,19 @@ type LegacyNewSuppProps = {
   type: "legacyNew";
 };
 
-type LegacySavedSuppProps = {
-  type: "legacySaved";
-  supplementaryId: number;
-};
-
 type NonLegacyNewSuppProps = {
   type: "nonLegacyNew";
   modelYear: ModelYear;
 };
 
-type NonLegacySavedSuppProps = {
-  type: "nonLegacySaved";
+type SavedSuppProps = {
+  type: "saved";
   modelYear: ModelYear;
   supplementaryId: number;
 };
 
 export const SupplementaryForm = (
-  props:
-    | LegacyNewSuppProps
-    | LegacySavedSuppProps
-    | NonLegacyNewSuppProps
-    | NonLegacySavedSuppProps,
+  props: LegacyNewSuppProps | NonLegacyNewSuppProps | SavedSuppProps,
 ) => {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -73,20 +65,13 @@ export const SupplementaryForm = (
   const [comment, setComment] = useState<string>("");
 
   useEffect(() => {
-    if (props.type === "nonLegacyNew" || props.type === "nonLegacySaved") {
+    if (props.type === "nonLegacyNew" || props.type === "saved") {
       setModelYear(props.modelYear);
     }
   }, [props]);
 
-  const modelYearsMap: Partial<Record<string, ModelYear>> = useMemo(() => {
-    const map = getStringsToModelYearsEnumsMap();
-    const entries = Object.entries(map).filter(([_key, value]) => {
-      if (value && value >= ModelYear.MY_2019 && value <= ModelYear.MY_2035) {
-        return true;
-      }
-      return false;
-    });
-    return Object.fromEntries(entries);
+  const modelYearsMap = useMemo(() => {
+    return getModelYearEnumsToStringsMap();
   }, []);
 
   const handleNvValuesChange = useCallback(
@@ -145,6 +130,9 @@ export const SupplementaryForm = (
     setError("");
     startTransition(async () => {
       try {
+        if (!modelYear) {
+          throw new Error("You must select a Model Year!");
+        }
         if (!report) {
           throw new Error("You must generate a Supplementary Report!");
         }
@@ -153,7 +141,7 @@ export const SupplementaryForm = (
         );
         let response;
         if (props.type === "legacyNew" || props.type === "nonLegacyNew") {
-          response = await createSupplementary(reportAsBase64);
+          response = await createSupplementary(modelYear, reportAsBase64);
         } else {
           response = await saveSupplementary(
             props.supplementaryId,
@@ -180,32 +168,58 @@ export const SupplementaryForm = (
     });
   }, [props, report]);
 
-  return (
-    <div>
-      <div className="flex items-center py-2 my-2">
-        <label className="w-72" htmlFor="modelYear">
-          Model Year
-        </label>
+  const modelYearComponent: JSX.Element | null = useMemo(() => {
+    let innerComponent;
+    if (
+      !report &&
+      modelYear &&
+      (props.type === "nonLegacyNew" || props.type === "saved")
+    ) {
+      innerComponent = (
+        <input
+          disabled={true}
+          name="modelYear"
+          type="text"
+          value={modelYearsMap[modelYear]}
+          className="border p-2 w-full"
+        />
+      );
+    } else if (!report && props.type === "legacyNew") {
+      innerComponent = (
         <select
           name="modelYear"
           value={modelYear}
           className="border p-2 w-full"
-          disabled={
-            props.type === "nonLegacyNew" || props.type === "nonLegacySaved"
-          }
           onChange={(e) => {
             const value = e.target.value;
             setModelYear(isModelYear(value) ? value : undefined);
           }}
         >
           <option key={undefined}>--</option>
-          {Object.entries(modelYearsMap).map(([key, value]) => (
+          {Object.entries(legacyModelYearsMap).map(([key, value]) => (
             <option key={key} value={value}>
               {key}
             </option>
           ))}
         </select>
-      </div>
+      );
+    }
+    if (innerComponent) {
+      return (
+        <div className="flex items-center py-2 my-2">
+          <label className="w-72" htmlFor="modelYear">
+            Model Year
+          </label>
+          {innerComponent}
+        </div>
+      );
+    }
+    return null;
+  }, [props, report, modelYear]);
+
+  return (
+    <div>
+      {modelYearComponent}
       {!report && (
         <MyrNvValues
           nvValues={nvValues}

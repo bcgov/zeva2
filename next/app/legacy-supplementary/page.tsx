@@ -18,7 +18,7 @@ const Page = async (props: { searchParams?: Promise<pageStringParams> }) => {
     <Suspense key={Date.now()} fallback={<LoadingSkeleton />}>
       {!userIsGov && (
         <Link href={`${Routes.LegacySupplementary}/new`}>
-          <Button>Submit a Legacy Supplementary Report</Button>
+          <Button>Create a Legacy Supplementary Report</Button>
         </Link>
       )}
       <LegacySupplementariesList page={page} pageSize={pageSize} />

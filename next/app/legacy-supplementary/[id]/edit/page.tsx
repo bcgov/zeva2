@@ -20,7 +20,11 @@ const Page = async (props: { params: Promise<{ id: string }> }) => {
       <h1 className="text-xl font-bold mb-4">
         Edit a Legacy Supplementary Report
       </h1>
-      <SupplementaryForm type="legacySaved" supplementaryId={suppId} />
+      <SupplementaryForm
+        type="saved"
+        modelYear={report.modelYear}
+        supplementaryId={suppId}
+      />
     </div>
   );
 };

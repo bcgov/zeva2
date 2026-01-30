@@ -21,7 +21,7 @@ const Page = async (props: {
     <div className="max-w-xl mx-auto p-4">
       <h1 className="text-xl font-bold mb-4">Edit a Supplementary Report</h1>
       <SupplementaryForm
-        type="nonLegacySaved"
+        type="saved"
         modelYear={report.modelYear}
         supplementaryId={suppId}
       />

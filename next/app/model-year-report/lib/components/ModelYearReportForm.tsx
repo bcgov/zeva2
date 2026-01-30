@@ -157,6 +157,7 @@ export const ModelYearReportForm = (props: {
           throw new Error("Exactly 1 Forecast Report expected!");
         }
         const response = await saveReports(
+          props.modelYear,
           bytesToBase64(await myr[0].xlsx.writeBuffer()),
           bytesToBase64(await forecasts[0].arrayBuffer()),
         );

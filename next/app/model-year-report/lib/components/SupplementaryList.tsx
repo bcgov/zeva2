@@ -2,10 +2,10 @@ import { JSX } from "react";
 import { getSupplementaryReportStatusEnumsToStringsMap } from "@/app/lib/utils/enumMaps";
 import Link from "next/link";
 import { Routes } from "@/app/lib/constants";
-import { getSupplementariesByMyrId } from "../data";
+import { getSupplementaries } from "../data";
 
 export const SupplementaryList = async (props: { myrId: number }) => {
-  const supplementaries = await getSupplementariesByMyrId(props.myrId);
+  const supplementaries = await getSupplementaries(props.myrId);
   if (supplementaries.length === 0) {
     return null;
   }

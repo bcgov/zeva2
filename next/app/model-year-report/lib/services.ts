@@ -33,7 +33,6 @@ import {
   getTransformedAdjustments,
   parseMyrForAssessmentData,
   parseAssesmentForData,
-  parseMyrForData,
 } from "./utilsServer";
 import { TransactionClient } from "@/types/prisma";
 import { AdjustmentPayload, NvValues } from "./actions";
@@ -398,15 +397,15 @@ export const createReassessmentHistory = async (
   });
 };
 
-export type ReassessableMyr = {
-  myrId: number | null;
-  legacyMyrId: number | null;
-};
-
-export const getReassessableMyrData = async (
+// returns {sequenceNumber, myrId} if non-legacy reassessment,
+// {sequenceNumber, null} if legacy reassessment,
+// throws error otherwise
+export const getDataForReassessment = async (
   organizationId: number,
   modelYear: ModelYear,
-): Promise<ReassessableMyr> => {
+) => {
+  let myr;
+  let legacyMyr;
   const myrs = await prisma.modelYearReport.findMany({
     where: {
       organizationId,
@@ -421,12 +420,10 @@ export const getReassessableMyrData = async (
     },
     take: 5,
   });
-  for (const myr of myrs) {
-    if (myr.modelYear === modelYear) {
-      return {
-        myrId: myr.id,
-        legacyMyrId: null,
-      };
+  for (const report of myrs) {
+    if (report.modelYear === modelYear) {
+      myr = report;
+      break;
     }
   }
   const legacyAssessedMyrs =
@@ -443,40 +440,58 @@ export const getReassessableMyrData = async (
       },
       take: 5 - myrs.length,
     });
-  for (const legacyMyr of legacyAssessedMyrs) {
-    if (legacyMyr.modelYear === modelYear) {
-      return {
-        myrId: null,
-        legacyMyrId: legacyMyr.legacyId,
-      };
+  for (const report of legacyAssessedMyrs) {
+    if (report.modelYear === modelYear) {
+      legacyMyr = report;
+      break;
     }
   }
+  if ((!myr && !legacyMyr) || (myr && legacyMyr)) {
+    throw new Error();
+  }
+  let sequenceNumber = 0;
+  const latestReassessment = await prisma.reassessment.findFirst({
+    where: {
+      organizationId,
+      modelYear,
+    },
+    select: {
+      status: true,
+      sequenceNumber: true,
+    },
+    orderBy: {
+      sequenceNumber: "desc",
+    },
+  });
+  if (latestReassessment?.status !== ReassessmentStatus.ISSUED) {
+    throw new Error();
+  }
+  if (latestReassessment) {
+    sequenceNumber = latestReassessment.sequenceNumber + 1;
+  }
   return {
-    myrId: null,
-    legacyMyrId: null,
+    sequenceNumber,
+    myrId: myr ? myr.id : null,
   };
-};
-
-export const getMyrDataForMyr = async (myr: ArrayBuffer) => {
-  const myrWorkbook = new Excel.Workbook();
-  await myrWorkbook.xlsx.load(myr);
-  return parseMyrForData(myrWorkbook);
 };
 
 export type MyrDataForAssessment = {
   orgName: string;
   organizationId: number;
-  modelYear: ModelYear;
   nvValues: NvValues;
   zevClassOrdering: ZevClass[];
 };
 
 export const getMyrDataForAssessment = async (
-  myrId: number,
+  organizationId: number,
+  modelYear: ModelYear,
 ): Promise<MyrDataForAssessment> => {
   const myr = await prisma.modelYearReport.findUnique({
     where: {
-      id: myrId,
+      organizationId_modelYear: {
+        organizationId,
+        modelYear,
+      },
     },
     select: {
       organization: {
@@ -485,7 +500,6 @@ export const getMyrDataForAssessment = async (
           name: true,
         },
       },
-      modelYear: true,
       objectName: true,
     },
   });
@@ -500,7 +514,6 @@ export const getMyrDataForAssessment = async (
   return {
     orgName: myr.organization.name,
     organizationId: myr.organization.id,
-    modelYear: myr.modelYear,
     ...data,
   };
 };
@@ -516,64 +529,6 @@ export const getAssessmentSystemData = async (object: string | ArrayBuffer) => {
   const assessmentWorkbook = new Excel.Workbook();
   await assessmentWorkbook.xlsx.load(assessmentBuf);
   return parseAssesmentForData(assessmentWorkbook);
-};
-
-export const getMyrDataForLegacyReassessment = async (
-  orgId: number,
-  modelYear: ModelYear,
-): Promise<MyrDataForAssessment> => {
-  const legacyMyr = await prisma.legacyAssessedModelYearReport.findUnique({
-    where: {
-      organizationId_modelYear: {
-        organizationId: orgId,
-        modelYear,
-      },
-    },
-    include: {
-      organization: {
-        select: {
-          name: true,
-        },
-      },
-    },
-  });
-  if (!legacyMyr) {
-    throw new Error("Legacy MYR not found!");
-  }
-  const nvValues: NvValues = {};
-  for (const vehicleClass of Object.values(VehicleClass)) {
-    const whereClause = {
-      organizationId_vehicleClass_modelYear: {
-        organizationId: orgId,
-        vehicleClass,
-        modelYear,
-      },
-    };
-    const selectClause = {
-      volume: true,
-    };
-    const salesVolume = await prisma.legacySalesVolume.findUnique({
-      where: whereClause,
-      select: selectClause,
-    });
-    const supplyVolume = await prisma.supplyVolume.findUnique({
-      where: whereClause,
-      select: selectClause,
-    });
-    if (salesVolume) {
-      nvValues[vehicleClass] = new Decimal(salesVolume.volume).toFixed(0);
-    }
-    if (supplyVolume) {
-      nvValues[vehicleClass] = new Decimal(supplyVolume.volume).toFixed(0);
-    }
-  }
-  return {
-    orgName: legacyMyr.organization.name,
-    organizationId: legacyMyr.organizationId,
-    modelYear: legacyMyr.modelYear,
-    nvValues,
-    zevClassOrdering: legacyMyr.zevClassOrdering,
-  };
 };
 
 export const getLegacyAssessedMyr = async (
@@ -674,12 +629,16 @@ export const getDataForSupplementary = async (
       modelYear,
     },
     select: {
+      status: true,
       sequenceNumber: true,
     },
     orderBy: {
       sequenceNumber: "desc",
     },
   });
+  if (latestSupplementary?.status !== SupplementaryReportStatus.ACKNOWLEDGED) {
+    throw new Error();
+  }
   if (latestSupplementary) {
     sequenceNumber = latestSupplementary.sequenceNumber + 1;
   }

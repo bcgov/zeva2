@@ -1,31 +1,33 @@
+import { AssessmentForm } from "@/app/model-year-report/lib/components/AssessmentForm";
+import { getModelYearReport } from "@/app/model-year-report/lib/data";
 import { getUserInfo } from "@/auth";
-import { AssessmentForm } from "../../lib/components/AssessmentForm";
-import { getModelYearReport } from "../../lib/data";
 import { ModelYearReportStatus } from "@/prisma/generated/client";
 
 const Page = async (props: { params: Promise<{ id: string }> }) => {
-  const args = await props.params;
-  const id = parseInt(args.id, 10);
   const { userIsGov } = await getUserInfo();
-  const report = await getModelYearReport(id, true);
+  if (!userIsGov) {
+    return null;
+  }
+  const args = await props.params;
+  const myrId = Number.parseInt(args.id, 10);
+  const report = await getModelYearReport(myrId, true);
   if (
-    !userIsGov ||
     !report ||
     (report.status !== ModelYearReportStatus.SUBMITTED_TO_GOVERNMENT &&
       report.status !== ModelYearReportStatus.RETURNED_TO_ANALYST) ||
-    report.assessment
+    !report.assessment
   ) {
     return null;
   }
   return (
     <div className="max-w-xl mx-auto p-4">
-      <h1 className="text-xl font-bold mb-4">Create an Assessment</h1>
+      <h1 className="text-xl font-bold mb-4">Edit an Assessment</h1>
       <AssessmentForm
         type="assessment"
         orgName={report.organization.name}
+        modelYear={report.modelYear}
         orgId={report.organizationId}
         myrId={report.id}
-        modelYear={report.modelYear}
       />
     </div>
   );
