@@ -13,11 +13,9 @@ import {
   ColumnFiltersState,
 } from "@tanstack/react-table";
 import { Button } from "./inputs";
-import { getSizingHeaders } from "@/app/lib/utils/tableUtils";
+import { TableHeader } from "./TableHeader";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
-  faAngleDown,
-  faAngleUp,
   faAngleLeft,
   faAngleRight,
 } from "@fortawesome/free-solid-svg-icons";
@@ -88,37 +86,6 @@ export const ClientSideTable = <T extends ZevaObject>({
     });
   };
 
-  const renderSortIcon = (sortState: false | "asc" | "desc") => {
-    if (!enableSorting) return null;
-    
-    if (sortState === "asc") {
-      return <FontAwesomeIcon icon={faAngleUp} className="mb-1" />;
-    }
-    if (sortState === "desc") {
-      return <FontAwesomeIcon icon={faAngleDown} className="mb-1" />;
-    }
-    return null;
-  };
-
-  const renderFilterInput = (header: any) => {
-    if (!enableFiltering || !header.column.getCanFilter()) {
-      return null;
-    }
-    return (
-      <div>
-        <input
-          className="w-36 border shadow-level-1 rounded"
-          onChange={(event) => {
-            header.column.setFilterValue(event.target.value);
-          }}
-          placeholder={"Filter..."}
-          type="text"
-          value={(header.column.getFilterValue() as string) ?? ""}
-        />
-      </div>
-    );
-  };
-
   return (
     <div className="bg-white rounded-lg shadow-level-1 p-4">
       <div className="flex flex-row-reverse">
@@ -130,57 +97,33 @@ export const ClientSideTable = <T extends ZevaObject>({
         <table
           className={`w-full divide-y divide-gray-200 rounded border-t border-l border-r border-navBorder ${explicitSizing ? "table-fixed" : ""}`}
         >
-          <thead className="bg-gray-50">
-            {explicitSizing && getSizingHeaders(table, explicitSizing)}
-            {table.getHeaderGroups().map((headerGroup) => (
-              <tr key={headerGroup.id}>
-                {headerGroup.headers.map((header) => (
-                  <th
-                    key={header.id}
-                    className={`px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider ${explicitSizing ? "truncate" : ""}`}
-                    style={
-                      explicitSizing ? { width: header.getSize() } : undefined
-                    }
-                  >
-                    <span
-                      className={`inline-flex gap-1 ${stackHeaderContents ? "flex-col items-start" : "items-center"}`}
-                    >
-                      {header.isPlaceholder ? null : (
-                        <>
-                          <button
-                            type="button"
-                            className={
-                              enableSorting && header.column.getCanSort()
-                                ? "cursor-pointer select-none bg-transparent border-0 p-0 text-inherit font-inherit"
-                                : "bg-transparent border-0 p-0 text-inherit font-inherit cursor-default"
-                            }
-                            onClick={() => {
-                              if (enableSorting && header.column.getCanSort()) {
-                                header.column.toggleSorting();
-                              }
-                            }}
-                            disabled={!enableSorting || !header.column.getCanSort()}
-                            aria-label={
-                              enableSorting && header.column.getCanSort()
-                                ? `Sort by ${header.column.columnDef.header}`
-                                : undefined
-                            }
-                          >
-                            {flexRender(
-                              header.column.columnDef.header,
-                              header.getContext(),
-                            )}
-                            {renderSortIcon(header.column.getIsSorted())}
-                          </button>
-                          {renderFilterInput(header)}
-                        </>
-                      )}
-                    </span>
-                  </th>
-                ))}
-              </tr>
-            ))}
-          </thead>
+          <TableHeader
+            table={table}
+            explicitSizing={explicitSizing}
+            stackHeaderContents={stackHeaderContents}
+            enableSorting={enableSorting}
+            enableFiltering={enableFiltering}
+            onSortChange={(columnId) => {
+              const column = table.getColumn(columnId);
+              if (column?.getCanSort()) {
+                column.toggleSorting();
+              }
+            }}
+            onFilterChange={(columnId, value) => {
+              const column = table.getColumn(columnId);
+              if (column) {
+                column.setFilterValue(value);
+              }
+            }}
+            sortState={sorting.reduce((acc, sort) => {
+              acc[sort.id] = sort.desc ? "desc" : "asc";
+              return acc;
+            }, {} as { [key: string]: "asc" | "desc" })}
+            filterState={columnFilters.reduce((acc, filter) => {
+              acc[filter.id] = (filter.value as string) ?? "";
+              return acc;
+            }, {} as { [key: string]: string })}
+          />
           <tbody className="bg-white divide-y divide-gray-200">
             {table.getRowModel().rows.map((row) => {
               const rowClassName = navigationAction
