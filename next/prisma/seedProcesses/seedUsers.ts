@@ -46,7 +46,10 @@ export const seedUsers = async (
         (userIsGov && role.is_government_role) ||
         (!userIsGov && !role.is_government_role)
       ) {
-        const roleEnum = rolesMap[role.role_code] ?? legacyRoleMap[role.role_code];
+        let roleEnum = rolesMap[role.role_code] ?? legacyRoleMap[role.role_code];
+        if (!roleEnum && role.role_code === "ZEVA User") {
+          roleEnum = Role.ZEVA_USER;
+        }
         if (!roleEnum) {
           throw new Error("Encountered unknown role " + role.role_code + "!");
         }
