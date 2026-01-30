@@ -49,49 +49,49 @@ export const ParsedForecastTables = (props: { forecast: ParsedForecast }) => {
     () => [
       zevColumnHelper.accessor((row) => row.modelYear, {
         id: "modelYear",
-        header: () => <span>Model Year</span>,
+        header: "Model Year",
         enableSorting: true,
         enableColumnFilter: true,
       }),
       zevColumnHelper.accessor((row) => row.make, {
         id: "make",
-        header: () => <span>Make</span>,
+        header: "Make",
         enableSorting: true,
         enableColumnFilter: true,
       }),
       zevColumnHelper.accessor((row) => row.model, {
         id: "model",
-        header: () => <span>Model</span>,
+        header: "Model",
         enableSorting: true,
         enableColumnFilter: true,
       }),
       zevColumnHelper.accessor((row) => row.type, {
         id: "type",
-        header: () => <span>Type</span>,
+        header: "Type",
         enableSorting: true,
         enableColumnFilter: true,
       }),
       zevColumnHelper.accessor((row) => row.range, {
         id: "range",
-        header: () => <span>Range</span>,
+        header: "Range",
         enableSorting: true,
         enableColumnFilter: true,
       }),
       zevColumnHelper.accessor((row) => row.zevClass, {
         id: "zevClass",
-        header: () => <span>ZEV Class</span>,
+        header: "ZEV Class",
         enableSorting: true,
         enableColumnFilter: true,
       }),
       zevColumnHelper.accessor((row) => row.interiorVolume, {
         id: "interiorVolume",
-        header: () => <span>Interior Volume</span>,
+        header: "Interior Volume",
         enableSorting: true,
         enableColumnFilter: true,
       }),
       zevColumnHelper.accessor((row) => row.supplyForecast, {
         id: "supplyForecast",
-        header: () => <span>Supply Forecast</span>,
+        header: "Supply Forecast",
         enableSorting: true,
         enableColumnFilter: true,
       }),
@@ -105,13 +105,13 @@ export const ParsedForecastTables = (props: { forecast: ParsedForecast }) => {
     () => [
       nonZevColumnHelper.accessor((row) => row.modelYear, {
         id: "modelYear",
-        header: () => <span>Model Year</span>,
+        header: "Model Year",
         enableSorting: true,
         enableColumnFilter: true,
       }),
       nonZevColumnHelper.accessor((row) => row.supplyForecast, {
         id: "supplyForecast",
-        header: () => <span>Supply Forecast</span>,
+        header: "Supply Forecast",
         enableSorting: true,
         enableColumnFilter: true,
       }),
