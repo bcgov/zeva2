@@ -1,8 +1,6 @@
 "use client";
 
-import * as React from "react";
-import { Table } from "@tanstack/react-table";
-import { flexRender } from "@tanstack/react-table";
+import { Table, flexRender } from "@tanstack/react-table";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faAngleDown, faAngleUp } from "@fortawesome/free-solid-svg-icons";
 import { getSizingHeaders } from "@/app/lib/utils/tableUtils";
@@ -66,18 +64,30 @@ export const TableHeader = <T,>({
               >
                 {header.isPlaceholder ? null : (
                   <>
-                    <div
-                      className={
+                    <button
+                      type="button"
+                      className={`bg-transparent border-0 p-0 text-inherit font-inherit ${
                         (enableSorting && header.column.getCanSort()) ||
                         (!enableSorting && header.column.getCanSort())
                           ? "cursor-pointer select-none"
-                          : ""
-                      }
+                          : "cursor-default"
+                      }`}
                       onClick={() => {
                         if (enableSorting && header.column.getCanSort()) {
                           onSortChange?.(header.id);
                         }
                       }}
+                      disabled={!enableSorting || !header.column.getCanSort()}
+                      aria-label={
+                        enableSorting && header.column.getCanSort()
+                          ? `Sort by ${
+                              typeof header.column.columnDef.header ===
+                              "string"
+                                ? header.column.columnDef.header
+                                : header.id
+                            }`
+                          : undefined
+                      }
                     >
                       {flexRender(
                         header.column.columnDef.header,
@@ -85,7 +95,7 @@ export const TableHeader = <T,>({
                       )}
                       {enableSorting &&
                         renderSortIcon(sortState[header.id] || null)}
-                    </div>
+                    </button>
                     {enableFiltering && header.column.getCanFilter() ? (
                       <div>
                         <input
