@@ -2,13 +2,28 @@ import { getUserInfo } from "@/auth";
 import { getModelYearReport } from "../../lib/data";
 import { SupplementaryForm } from "../../lib/components/SupplementaryForm";
 import { ModelYearReportStatus } from "@/prisma/generated/client";
+import { canCreateSupplementary } from "../../lib/services";
 
 const Page = async (props: { params: Promise<{ id: string }> }) => {
+  const { userIsGov } = await getUserInfo();
+  if (userIsGov) {
+    return null;
+  }
   const args = await props.params;
   const myrId = Number.parseInt(args.id, 10);
-  const { userIsGov } = await getUserInfo();
   const report = await getModelYearReport(myrId);
-  if (userIsGov || !report || report.status === ModelYearReportStatus.DRAFT) {
+  if (
+    !report ||
+    report.status === ModelYearReportStatus.DRAFT ||
+    report.status === ModelYearReportStatus.RETURNED_TO_SUPPLIER
+  ) {
+    return null;
+  }
+  const createSupplementaryPossible = await canCreateSupplementary(
+    myrId,
+    userIsGov,
+  );
+  if (!createSupplementaryPossible) {
     return null;
   }
   return (

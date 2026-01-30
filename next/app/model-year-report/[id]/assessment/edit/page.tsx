@@ -10,7 +10,7 @@ const Page = async (props: { params: Promise<{ id: string }> }) => {
   }
   const args = await props.params;
   const myrId = Number.parseInt(args.id, 10);
-  const report = await getModelYearReport(myrId, true);
+  const report = await getModelYearReport(myrId);
   if (
     !report ||
     (report.status !== ModelYearReportStatus.SUBMITTED_TO_GOVERNMENT &&

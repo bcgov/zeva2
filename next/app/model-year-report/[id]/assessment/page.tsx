@@ -7,7 +7,7 @@ const Page = async (props: { params: Promise<{ id: string }> }) => {
   const args = await props.params;
   const id = parseInt(args.id, 10);
   const { userIsGov } = await getUserInfo();
-  const report = await getModelYearReport(id, true);
+  const report = await getModelYearReport(id);
   if (
     !userIsGov ||
     !report ||

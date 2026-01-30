@@ -12,6 +12,7 @@ import { getNormalizedComment } from "@/app/lib/utils/comment";
 export const SupplierActions = (props: {
   myrId: number;
   status: ModelYearReportSupplierStatus;
+  canCreateSupplementary: boolean;
 }) => {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -48,28 +49,32 @@ export const SupplierActions = (props: {
 
   if (
     props.status === ModelYearReportSupplierStatus.DRAFT ||
-    props.status !== ModelYearReportSupplierStatus.RETURNED_TO_SUPPLIER
+    props.status === ModelYearReportSupplierStatus.RETURNED_TO_SUPPLIER
   ) {
-    <div className="space-y-2">
-      {error && <p className="text-red-600">{error}</p>}
-      <CommentBox
-        comment={comment}
-        setComment={setComment}
-        disabled={isPending}
-      />
-      <Button variant="secondary" onClick={handleGoToEdit}>
-        Edit
-      </Button>
-      <Button variant="primary" onClick={handleSubmit}>
-        Submit
-      </Button>
-    </div>;
+    return (
+      <div className="space-y-2">
+        {error && <p className="text-red-600">{error}</p>}
+        <CommentBox
+          comment={comment}
+          setComment={setComment}
+          disabled={isPending}
+        />
+        <Button variant="secondary" onClick={handleGoToEdit}>
+          Edit
+        </Button>
+        <Button variant="primary" onClick={handleSubmit}>
+          Submit
+        </Button>
+      </div>
+    );
+  } else if (props.canCreateSupplementary) {
+    return (
+      <div className="space-y-2">
+        <Button variant="primary" onClick={handleGoToCreateSupplementary}>
+          Create Supplementary Report
+        </Button>
+      </div>
+    );
   }
-  return (
-    <div className="space-y-2">
-      <Button variant="primary" onClick={handleGoToCreateSupplementary}>
-        Create Supplementary Report
-      </Button>
-    </div>
-  );
+  return null;
 };

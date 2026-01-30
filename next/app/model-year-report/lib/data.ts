@@ -48,12 +48,9 @@ export const modelYearReportExists = async (modelYear: ModelYear) => {
   return false;
 };
 
-export const getModelYearReport = async (
-  id: number,
-  includeAssessmentInfoForGov: boolean = false,
-) => {
+export const getModelYearReport = async (myrId: number) => {
   const { userIsGov, userOrgId } = await getUserInfo();
-  const whereClause: Prisma.ModelYearReportWhereUniqueInput = { id };
+  const whereClause: Prisma.ModelYearReportWhereUniqueInput = { id: myrId };
   if (userIsGov) {
     whereClause.status = {
       notIn: [
@@ -72,7 +69,7 @@ export const getModelYearReport = async (
           name: true,
         },
       },
-      ...(userIsGov && includeAssessmentInfoForGov && { assessment: true }),
+      ...(userIsGov && { assessment: true }),
     },
   });
 };
@@ -313,11 +310,14 @@ export const getReassessment = async (reassessmentId: number) => {
 };
 
 export const getReassessmentHistory = async (reassessmentId: number) => {
-  const { userIsGov } = await getUserInfo();
+  const { userIsGov, userOrgId } = await getUserInfo();
   const whereClause: Prisma.ReassessmentHistoryWhereInput = {
     reassessmentId,
   };
   if (!userIsGov) {
+    whereClause.reassessment = {
+      organizationId: userOrgId,
+    };
     whereClause.userAction = ReassessmentStatus.ISSUED;
   }
   return await prisma.reassessmentHistory.findMany({
@@ -356,6 +356,9 @@ export const getReassessments = async (myrId: number) => {
   }
   return await prisma.reassessment.findMany({
     where: whereClause,
+    orderBy: {
+      sequenceNumber: "asc",
+    },
   });
 };
 
@@ -426,6 +429,9 @@ export const getSupplementaries = async (myrId: number) => {
       id: true,
       status: true,
       sequenceNumber: true,
+    },
+    orderBy: {
+      sequenceNumber: "asc",
     },
   });
 };

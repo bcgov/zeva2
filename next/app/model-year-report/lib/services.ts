@@ -17,6 +17,7 @@ import {
   Prisma,
   ReassessmentStatus,
   ReferenceType,
+  Role,
   SupplementaryReportStatus,
   SupplierClass,
   SupplyVolume,
@@ -399,7 +400,7 @@ export const createReassessmentHistory = async (
 
 // returns {sequenceNumber, myrId} if non-legacy reassessment,
 // {sequenceNumber, null} if legacy reassessment,
-// throws error otherwise
+// throws error if creating a reassessment is not allowed.
 export const getDataForReassessment = async (
   organizationId: number,
   modelYear: ModelYear,
@@ -586,7 +587,7 @@ export const createSupplementaryHistory = async (
 
 // returns {sequenceNumber, myrId} if non-legacy supplementary,
 // {sequenceNumber, null} if legacy supplementary,
-// throws error otherwise
+// throws error if creating a supplementary is not allowed.
 export const getDataForSupplementary = async (
   organizationId: number,
   modelYear: ModelYear,
@@ -646,4 +647,81 @@ export const getDataForSupplementary = async (
     sequenceNumber,
     myrId: myr ? myr.id : null,
   };
+};
+
+export const canCreateReassessment = async (
+  myrId: number,
+  userIsGov: boolean,
+  userRoles: Role[],
+) => {
+  if (!userIsGov || !userRoles.includes(Role.ENGINEER_ANALYST)) {
+    return false;
+  }
+  const myr = await prisma.modelYearReport.findUnique({
+    where: {
+      id: myrId,
+      status: ModelYearReportStatus.ASSESSED,
+    },
+    select: {
+      Reassessment: {
+        select: {
+          status: true,
+        },
+        orderBy: {
+          sequenceNumber: "desc",
+        },
+      },
+    },
+  });
+  if (!myr) {
+    return false;
+  }
+  if (
+    myr.Reassessment.length > 0 &&
+    myr.Reassessment[0].status !== ReassessmentStatus.ISSUED
+  ) {
+    return false;
+  }
+  return true;
+};
+
+export const canCreateSupplementary = async (
+  myrId: number,
+  userIsGov: boolean,
+) => {
+  if (userIsGov) {
+    return false;
+  }
+  const myr = await prisma.modelYearReport.findUnique({
+    where: {
+      id: myrId,
+      status: {
+        notIn: [
+          ModelYearReportStatus.DRAFT,
+          ModelYearReportStatus.RETURNED_TO_SUPPLIER,
+        ],
+      },
+    },
+    select: {
+      supplementaryReports: {
+        select: {
+          status: true,
+        },
+        orderBy: {
+          sequenceNumber: "desc",
+        },
+      },
+    },
+  });
+  if (!myr) {
+    return false;
+  }
+  if (
+    myr.supplementaryReports.length > 0 &&
+    myr.supplementaryReports[0].status !==
+      SupplementaryReportStatus.ACKNOWLEDGED
+  ) {
+    return false;
+  }
+  return true;
 };
