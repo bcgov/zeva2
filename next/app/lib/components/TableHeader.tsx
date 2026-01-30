@@ -29,6 +29,64 @@ const renderSortIcon = (sortState: "asc" | "desc" | null) => {
   return null;
 };
 
+const getButtonClassName = (
+  enableSorting: boolean,
+  canSort: boolean,
+): string => {
+  const baseClasses = "bg-transparent border-0 p-0 text-inherit font-inherit";
+  const interactiveClass =
+    enableSorting && canSort ? "cursor-pointer select-none" : "cursor-default";
+  return `${baseClasses} ${interactiveClass}`;
+};
+
+const getSortAriaLabel = (
+  enableSorting: boolean,
+  canSort: boolean,
+  headerName: string | undefined,
+): string | undefined => {
+  if (!enableSorting || !canSort) {
+    return undefined;
+  }
+  return `Sort by ${headerName || ""}`;
+};
+
+const HeaderFilterInput = ({
+  columnId,
+  canFilter,
+  value,
+  filterOnApply,
+  onFilterChange,
+  onFilterApply,
+}: {
+  columnId: string;
+  canFilter: boolean;
+  value: string;
+  filterOnApply: boolean;
+  onFilterChange?: (columnId: string, value: string) => void;
+  onFilterApply?: () => void;
+}) => {
+  if (!canFilter) return null;
+
+  return (
+    <div>
+      <input
+        className="w-36 border shadow-level-1 rounded"
+        onChange={(event) => {
+          onFilterChange?.(columnId, event.target.value);
+        }}
+        onKeyDown={(event) => {
+          if (filterOnApply && event.key === "Enter") {
+            onFilterApply?.();
+          }
+        }}
+        placeholder={filterOnApply ? "Press Enter to Search" : "Filter..."}
+        type="text"
+        value={value}
+      />
+    </div>
+  );
+};
+
 export const TableHeader = <T,>({
   table,
   explicitSizing,
@@ -66,28 +124,23 @@ export const TableHeader = <T,>({
                   <>
                     <button
                       type="button"
-                      className={`bg-transparent border-0 p-0 text-inherit font-inherit ${
-                        (enableSorting && header.column.getCanSort()) ||
-                        (!enableSorting && header.column.getCanSort())
-                          ? "cursor-pointer select-none"
-                          : "cursor-default"
-                      }`}
+                      className={getButtonClassName(
+                        enableSorting,
+                        header.column.getCanSort(),
+                      )}
                       onClick={() => {
                         if (enableSorting && header.column.getCanSort()) {
                           onSortChange?.(header.id);
                         }
                       }}
                       disabled={!enableSorting || !header.column.getCanSort()}
-                      aria-label={
-                        enableSorting && header.column.getCanSort()
-                          ? `Sort by ${
-                              typeof header.column.columnDef.header ===
-                              "string"
-                                ? header.column.columnDef.header
-                                : header.id
-                            }`
-                          : undefined
-                      }
+                      aria-label={getSortAriaLabel(
+                        enableSorting,
+                        header.column.getCanSort(),
+                        typeof header.column.columnDef.header === "string"
+                          ? header.column.columnDef.header
+                          : header.id,
+                      )}
                     >
                       {flexRender(
                         header.column.columnDef.header,
@@ -96,28 +149,16 @@ export const TableHeader = <T,>({
                       {enableSorting &&
                         renderSortIcon(sortState[header.id] || null)}
                     </button>
-                    {enableFiltering && header.column.getCanFilter() ? (
-                      <div>
-                        <input
-                          className="w-36 border shadow-level-1 rounded"
-                          onChange={(event) => {
-                            onFilterChange?.(header.id, event.target.value);
-                          }}
-                          onKeyDown={(event) => {
-                            if (filterOnApply && event.key === "Enter") {
-                              onFilterApply?.();
-                            }
-                          }}
-                          placeholder={
-                            filterOnApply
-                              ? "Press Enter to Search"
-                              : "Filter..."
-                          }
-                          type="text"
-                          value={filterState[header.id] ?? ""}
-                        />
-                      </div>
-                    ) : null}
+                    {enableFiltering && (
+                      <HeaderFilterInput
+                        columnId={header.id}
+                        canFilter={header.column.getCanFilter()}
+                        value={filterState[header.id] ?? ""}
+                        filterOnApply={filterOnApply}
+                        onFilterChange={onFilterChange}
+                        onFilterApply={onFilterApply}
+                      />
+                    )}
                   </>
                 )}
               </span>
