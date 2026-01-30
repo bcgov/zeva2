@@ -13,6 +13,7 @@ import {
   ColumnFiltersState,
 } from "@tanstack/react-table";
 import { Button } from "./inputs";
+import { getSizingHeaders } from "@/app/lib/utils/tableUtils";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faAngleDown,
@@ -87,43 +88,6 @@ export const ClientSideTable = <T extends ZevaObject>({
     });
   };
 
-  const getSizingHeaders: () => React.JSX.Element | null = () => {
-    if (!explicitSizing) {
-      return null;
-    }
-    const lastGroup = table.getHeaderGroups().at(-1);
-    if (!lastGroup) {
-      return null;
-    }
-    const sizingHeaders: React.JSX.Element[] = lastGroup.headers.map(
-      (header) => (
-        <th
-          key={header.id}
-          className="px-6 py-3 border-b-2 relative"
-          style={{ width: header.getSize() }}
-        >
-          <div
-            {...{
-              onDoubleClick: () => header.column.resetSize(),
-              onMouseDown: header.getResizeHandler(),
-              className:
-                "bg-primaryBlue absolute w-[5px] h-full top-0 right-0 cursor-col-resize select-none touch-none",
-              style: {
-                transform: header.column.getIsResizing()
-                  ? `translateX(${table.getState().columnSizingInfo.deltaOffset ?? 0}px)`
-                  : "",
-              },
-            }}
-          />
-        </th>
-      ),
-    );
-    if (sizingHeaders) {
-      return <tr key={"sizingHeaders"}>{sizingHeaders}</tr>;
-    }
-    return null;
-  };
-
   const renderSortIcon = (sortState: false | "asc" | "desc") => {
     if (!enableSorting) return null;
     
@@ -155,26 +119,6 @@ export const ClientSideTable = <T extends ZevaObject>({
     );
   };
 
-  const renderPaginationButton = (
-    icon: typeof faAngleLeft | typeof faAngleRight,
-    canNavigate: boolean,
-    onNavigate: () => void,
-    additionalClassName: string,
-  ) => {
-    return (
-      <FontAwesomeIcon
-        icon={icon}
-        onClick={onNavigate}
-        className={`cursor-pointer ${additionalClassName} ${
-          canNavigate ? "text-defaultTextBlack" : "text-gray-400"
-        }`}
-        style={{
-          pointerEvents: canNavigate ? "auto" : "none",
-        }}
-      />
-    );
-  };
-
   return (
     <div className="bg-white rounded-lg shadow-level-1 p-4">
       <div className="flex flex-row-reverse">
@@ -187,7 +131,7 @@ export const ClientSideTable = <T extends ZevaObject>({
           className={`w-full divide-y divide-gray-200 rounded border-t border-l border-r border-navBorder ${explicitSizing ? "table-fixed" : ""}`}
         >
           <thead className="bg-gray-50">
-            {explicitSizing && getSizingHeaders()}
+            {explicitSizing && getSizingHeaders(table, explicitSizing)}
             {table.getHeaderGroups().map((headerGroup) => (
               <tr key={headerGroup.id}>
                 {headerGroup.headers.map((header) => (
@@ -269,12 +213,18 @@ export const ClientSideTable = <T extends ZevaObject>({
         </table>
       </div>
       <div className="flex items-center justify-center bg-navBorder w-full rounded p-2">
-        {renderPaginationButton(
-          faAngleLeft,
-          table.getCanPreviousPage(),
-          () => table.previousPage(),
-          "mr-2",
-        )}
+        <FontAwesomeIcon
+          icon={faAngleLeft}
+          onClick={() => table.previousPage()}
+          className={`mr-2 cursor-pointer ${
+            table.getCanPreviousPage()
+              ? "text-defaultTextBlack"
+              : "text-gray-400"
+          }`}
+          style={{
+            pointerEvents: table.getCanPreviousPage() ? "auto" : "none",
+          }}
+        />
         <span className="text-sm text-gray-700">
           Page{" "}
           {
@@ -296,12 +246,16 @@ export const ClientSideTable = <T extends ZevaObject>({
           }{" "}
           of {table.getPageCount()}
         </span>
-        {renderPaginationButton(
-          faAngleRight,
-          table.getCanNextPage(),
-          () => table.nextPage(),
-          "ml-2",
-        )}
+        <FontAwesomeIcon
+          icon={faAngleRight}
+          onClick={() => table.nextPage()}
+          className={`ml-2 cursor-pointer ${
+            table.getCanNextPage() ? "text-defaultTextBlack" : "text-gray-400"
+          }`}
+          style={{
+            pointerEvents: table.getCanNextPage() ? "auto" : "none",
+          }}
+        />
         <span className="ml-3">
           <select
             value={table.getState().pagination.pageSize}
