@@ -257,8 +257,8 @@ export const getAssessment = async (myrId: number) => {
     whereClause.NOT = {
       status: {
         in: [
+          ModelYearReportStatus.DRAFT,
           ModelYearReportStatus.RETURNED_TO_SUPPLIER,
-          ModelYearReportStatus.SUBMITTED_TO_GOVERNMENT,
         ],
       },
     };

@@ -660,7 +660,10 @@ export const parseAssesmentForData = (
   const finalEndingBalance = parsedAssessment.finalEndingBalance;
   const reductionsData = parseReductionsForData(reductions);
   const reductionTransactions = reductionsData.reductions.map((reduction) => {
-    return { ...reduction, referenceType: ReferenceType.OBLIGATION_REDUCTION };
+    return {
+      ...reduction,
+      referenceType: ReferenceType.COMPLIANCE_RATIO_REDUCTION,
+    };
   });
   const adjustmentsData = parseAdjustmentForData(currentAdjustments);
   const adjustmentTransactions = adjustmentsData.map((adjustment) => {

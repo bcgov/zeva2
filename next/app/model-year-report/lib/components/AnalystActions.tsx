@@ -35,7 +35,7 @@ export const AnalystActions = (props: {
         if (response.responseType === "error") {
           throw new Error(response.message);
         }
-        router.refresh();
+        router.push(Routes.ComplianceReporting);
       } catch (e) {
         if (e instanceof Error) {
           setError(e.message);

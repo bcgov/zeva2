@@ -23,6 +23,7 @@ const Page = async (props: {
         reassessmentId={reassessment.id}
         orgName={reassessment.organization.name}
         modelYear={reassessment.modelYear}
+        orgId={reassessment.organizationId}
       />
     </div>
   );

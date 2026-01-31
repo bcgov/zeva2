@@ -443,7 +443,13 @@ const writePreviousAdjustments = (
   helpingMaps: MyrHelpingMaps,
 ) => {
   records.forEach((record) => {
-    if (record.referenceType === ReferenceType.ASSESSMENT_ADJUSTMENT) {
+    const isLegacyDebitAdjustment =
+      record.referenceType === ReferenceType.AGREEMENT &&
+      record.type === TransactionType.DEBIT;
+    if (
+      record.referenceType === ReferenceType.ASSESSMENT_ADJUSTMENT ||
+      isLegacyDebitAdjustment
+    ) {
       sheet.addRow([
         helpingMaps.transactionTypesMap[record.type],
         helpingMaps.vehicleClassesMap[record.vehicleClass],

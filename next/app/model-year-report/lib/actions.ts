@@ -325,19 +325,16 @@ export const getAssessmentData = async (
   if (!userIsGov) {
     return getErrorActionResponse("Unauthorized!");
   }
-  if (type === "reassessment" && (!nvValues || !zevClassOrdering)) {
-    return getErrorActionResponse("Invalid Action!");
-  }
   try {
-    const {
-      orgName,
-      organizationId,
-      nvValues: myrNvValues,
-      zevClassOrdering: myrZevClassOrdering,
-    } = await getMyrDataForAssessment(orgId, modelYear);
-    const nvValuesToUse = type === "assessment" ? myrNvValues : nvValues;
-    const zevClassOrderingToUse =
-      type === "assessment" ? myrZevClassOrdering : zevClassOrdering;
+    const { name: orgName } = await getOrgDetails(orgId);
+    let nvValuesToUse = nvValues;
+    let zevClassOrderingToUse = zevClassOrdering;
+    if (type === "assessment") {
+      const { nvValues: myrNvValues, zevClassOrdering: myrZevClassOrdering } =
+        await getMyrDataForAssessment(orgId, modelYear);
+      nvValuesToUse = myrNvValues;
+      zevClassOrderingToUse = myrZevClassOrdering;
+    }
     if (!nvValuesToUse || !zevClassOrderingToUse) {
       throw new Error("Unexpected Error!");
     }
@@ -349,7 +346,7 @@ export const getAssessmentData = async (
       offsettedCredits,
       currentTransactions,
     } = await getZevUnitData(
-      organizationId,
+      orgId,
       modelYear,
       nvValuesToUse,
       zevClassOrderingToUse,
@@ -507,6 +504,11 @@ export const returnModelYearReport = async (
     where: { id: myrId },
     select: {
       status: true,
+      assessment: {
+        select: {
+          id: true,
+        },
+      },
     },
   });
   if (!myr) {
@@ -541,7 +543,10 @@ export const returnModelYearReport = async (
         comment,
         tx,
       );
-      if (returnType === ModelYearReportStatus.RETURNED_TO_SUPPLIER) {
+      if (
+        returnType === ModelYearReportStatus.RETURNED_TO_SUPPLIER &&
+        myr.assessment
+      ) {
         await tx.assessment.delete({
           where: {
             modelYearReportId: myrId,
@@ -721,7 +726,7 @@ export const saveReassessment = async (
   const reassessmentObject = Buffer.from(reassessmentToSave, "base64");
   const reassessmentObjectName = getReportFullObjectName("reassessment");
   await prisma.$transaction(async (tx) => {
-    await tx.supplementaryReport.update({
+    await tx.reassessment.update({
       where: {
         id: reassessmentId,
       },
@@ -802,7 +807,7 @@ export const submitReassessment = async (
   }
   const myrId = reassessment.modelYearReportId;
   await prisma.$transaction(async (tx) => {
-    tx.reassessment.update({
+    await tx.reassessment.update({
       where: {
         id: reassessmentId,
       },
@@ -935,7 +940,7 @@ export const issueReassessment = async (
     await tx.zevUnitTransaction.deleteMany({
       where: {
         organizationId,
-        referenceType: ReferenceType.OBLIGATION_REDUCTION,
+        referenceType: ReferenceType.COMPLIANCE_RATIO_REDUCTION,
         AND: [
           { timestamp: { gte: compliancePeriod.closedLowerBound } },
           { timestamp: { lt: compliancePeriod.openUpperBound } },

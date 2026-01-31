@@ -186,18 +186,20 @@ export const ModelYearReportForm = (props: {
 
   return (
     <div>
-      <div className="flex items-center py-2 my-2">
-        <label className="w-72" htmlFor="modelYear">
-          Model Year
-        </label>
-        <input
-          disabled={true}
-          name="modelYear"
-          type="text"
-          value={modelYearsMap[props.modelYear]}
-          className="border p-2 w-full"
-        />
-      </div>
+      {!myr && (
+        <div className="flex items-center py-2 my-2">
+          <label className="w-72" htmlFor="modelYear">
+            Model Year
+          </label>
+          <input
+            disabled={true}
+            name="modelYear"
+            type="text"
+            value={modelYearsMap[props.modelYear]}
+            className="border p-2 w-full"
+          />
+        </div>
+      )}
       {!myr && (
         <MyrNvValues
           nvValues={nvValues}

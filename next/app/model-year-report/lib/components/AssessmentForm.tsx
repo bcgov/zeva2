@@ -62,6 +62,7 @@ type SavedReassessmentProps = {
   reassessmentId: number;
   orgName: string;
   modelYear: ModelYear;
+  orgId: number;
 };
 
 export const AssessmentForm = (
@@ -81,10 +82,8 @@ export const AssessmentForm = (
   );
 
   useEffect(() => {
-    if (props.type === "assessment" || props.type === "nonLegacyNewReassment") {
-      setOrgId(props.orgId);
-    }
     if (props.type !== "legacyNewReassessment") {
+      setOrgId(props.orgId);
       setModelYear(props.modelYear);
     }
   }, [props]);
@@ -191,7 +190,7 @@ export const AssessmentForm = (
         }
       }
     });
-  }, [props.type, orgId, modelYear, nvValues, adjustments]);
+  }, [props.type, orgId, modelYear, nvValues, zevClassSelection, adjustments]);
 
   const handleClearAssessment = useCallback(() => {
     setError("");

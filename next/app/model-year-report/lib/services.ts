@@ -279,7 +279,7 @@ export const getTransactionsForModelYear = async (
   };
   if (excludeReductions) {
     whereClause.NOT = {
-      referenceType: ReferenceType.OBLIGATION_REDUCTION,
+      referenceType: ReferenceType.COMPLIANCE_RATIO_REDUCTION,
     };
   }
   const transactions = await prisma.zevUnitTransaction.findMany({
@@ -433,7 +433,6 @@ export const getDataForReassessment = async (
         organizationId,
       },
       select: {
-        legacyId: true,
         modelYear: true,
       },
       orderBy: {
@@ -464,7 +463,10 @@ export const getDataForReassessment = async (
       sequenceNumber: "desc",
     },
   });
-  if (latestReassessment?.status !== ReassessmentStatus.ISSUED) {
+  if (
+    latestReassessment &&
+    latestReassessment.status !== ReassessmentStatus.ISSUED
+  ) {
     throw new Error();
   }
   if (latestReassessment) {
@@ -477,8 +479,6 @@ export const getDataForReassessment = async (
 };
 
 export type MyrDataForAssessment = {
-  orgName: string;
-  organizationId: number;
   nvValues: NvValues;
   zevClassOrdering: ZevClass[];
 };
@@ -511,12 +511,7 @@ export const getMyrDataForAssessment = async (
   const myrBuf = await getArrayBuffer(myrFile);
   const myrWorkbook = new Excel.Workbook();
   await myrWorkbook.xlsx.load(myrBuf);
-  const data = parseMyrForAssessmentData(myrWorkbook);
-  return {
-    orgName: myr.organization.name,
-    organizationId: myr.organization.id,
-    ...data,
-  };
+  return parseMyrForAssessmentData(myrWorkbook);
 };
 
 export const getAssessmentSystemData = async (object: string | ArrayBuffer) => {
@@ -637,7 +632,10 @@ export const getDataForSupplementary = async (
       sequenceNumber: "desc",
     },
   });
-  if (latestSupplementary?.status !== SupplementaryReportStatus.ACKNOWLEDGED) {
+  if (
+    latestSupplementary &&
+    latestSupplementary.status !== SupplementaryReportStatus.ACKNOWLEDGED
+  ) {
     throw new Error();
   }
   if (latestSupplementary) {
