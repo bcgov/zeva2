@@ -533,11 +533,9 @@ export const populateForecastTemplate = async (
   if (nextThreeModelYears.length !== 3) {
     throw new Error("Not enough future Model Years!");
   }
-  const headerRow = nonZevSheet.getRow(1);
-  for (let i = 1; i <= 3; i++) {
-    headerRow.getCell(i).value =
-      `${nextThreeModelYears[i - 1]} Non-ZEV Supply Forecast`;
-  }
+  nonZevSheet.getCell("A2").value = nextThreeModelYears[0];
+  nonZevSheet.getCell("A3").value = nextThreeModelYears[1];
+  nonZevSheet.getCell("A4").value = nextThreeModelYears[2];
   return workbook;
 };
 
