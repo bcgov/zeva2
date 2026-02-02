@@ -2,6 +2,7 @@ import { getStringsToRoleEnumsMap } from "@/app/lib/utils/enumMaps";
 import { prismaOld } from "@/lib/prismaOld";
 import { TransactionClient } from "@/types/prisma";
 import { Idp, Role } from "../generated/client";
+import { validateRoles } from "@/app/users/lib/roleValidation";
 
 export const seedUsers = async (
   tx: TransactionClient,
@@ -14,6 +15,9 @@ export const seedUsers = async (
     },
   });
   const rolesMap = getStringsToRoleEnumsMap();
+  const legacyRoleMap: Partial<Record<string, Role>> = {
+    "Engineer/Analyst": Role.ZEVA_IDIR_USER,
+  };
   for (const userOld of usersOld) {
     if (!userOld.organization_id || !userOld.organization) {
       throw new Error("user " + userOld.id + " with no org id!");
@@ -42,7 +46,7 @@ export const seedUsers = async (
         (userIsGov && role.is_government_role) ||
         (!userIsGov && !role.is_government_role)
       ) {
-        const roleEnum = rolesMap[role.role_code];
+        const roleEnum = rolesMap[role.role_code] ?? legacyRoleMap[role.role_code];
         if (!roleEnum) {
           throw new Error("Encountered unknown role " + role.role_code + "!");
         }
@@ -52,10 +56,13 @@ export const seedUsers = async (
       }
     });
     if (
-      roles.includes(Role.ENGINEER_ANALYST) &&
+      roles.includes(Role.ZEVA_IDIR_USER) &&
       roles.includes(Role.DIRECTOR)
     ) {
       roles = roles.filter((role) => role !== Role.DIRECTOR);
+    }
+    if (userIsGov) {
+      validateRoles(roles);
     }
     const userNew = await tx.user.create({
       data: {

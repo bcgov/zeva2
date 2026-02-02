@@ -15,7 +15,7 @@ export const baseGovUserInfo = {
   userIsGov: true,
   userId: 3,
   userOrgId: 1,
-  userRoles: [Role.ENGINEER_ANALYST],
+  userRoles: [Role.ZEVA_IDIR_USER],
   userOrgName: "BC Government",
   userIdToken: "",
 };

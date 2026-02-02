@@ -67,8 +67,10 @@ export const idpTransformer = (s: string) => {
 };
 
 export const roleTransformer = (s: string) => {
-  if (s === Role.ENGINEER_ANALYST) {
-    return "Engineer/Analyst";
+  if (s === Role.ZEVA_IDIR_USER) {
+    return "ZEVA IDIR User";
+  } else if (s === Role.ZEVA_IDIR_USER_READ_ONLY) {
+    return "ZEVA IDIR User (read-only)";
   } else if (s === Role.ZEVA_USER) {
     return "ZEVA User";
   }

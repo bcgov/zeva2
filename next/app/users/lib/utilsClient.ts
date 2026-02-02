@@ -1,5 +1,6 @@
-import { Notification, Role } from "@/prisma/generated/client";
+import { Role } from "@/prisma/generated/client";
 import { UserPayload } from "./actions";
+import { validateRoles } from "./roleValidation";
 
 export const getUserPayload = (
   data: Partial<Record<string, string>>,
@@ -29,12 +30,4 @@ export const getUserPayload = (
     isActive: data.isActive === "true",
     roles,
   };
-};
-
-export const validateRoles = (roles: Role[]) => {
-  if (roles.includes(Role.DIRECTOR) && roles.includes(Role.ENGINEER_ANALYST)) {
-    throw new Error(
-      "A user cannot have both the Director and Engineer/Analyst roles!",
-    );
-  }
 };
