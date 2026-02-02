@@ -22,6 +22,7 @@ import {
 } from "../actions";
 import {
   generateMyr,
+  getWorkbook,
   getZevClassOrdering,
   validateNvValues,
 } from "../utilsClient";
@@ -35,6 +36,7 @@ import { Workbook } from "exceljs";
 import { ParsedMyr, parseMyr } from "../utils";
 import { ParsedModelYearReport } from "./ParsedModelYearReport";
 import { isModelYear } from "@/app/lib/utils/typeGuards";
+import { getFiles } from "@/app/lib/utils/download";
 
 type LegacyNewSuppProps = {
   type: "legacyNew";
@@ -49,6 +51,7 @@ type SavedSuppProps = {
   type: "saved";
   modelYear: ModelYear;
   supplementaryId: number;
+  url: string;
 };
 
 export const SupplementaryForm = (
@@ -63,6 +66,21 @@ export const SupplementaryForm = (
     useState<SupplierZevClassChoice>(ZevClass.B);
   const [report, setReport] = useState<[Workbook, ParsedMyr] | null>(null);
   const [comment, setComment] = useState<string>("");
+
+  useEffect(() => {
+    if (props.type === "saved") {
+      const loadSupp = async () => {
+        const files = await getFiles([{ fileName: "_", url: props.url }]);
+        if (files.length === 1) {
+          const supp = files[0];
+          const suppWorkbook = await getWorkbook(supp.data);
+          const parsedSupp = parseMyr(suppWorkbook);
+          setReport([suppWorkbook, parsedSupp]);
+        }
+      };
+      loadSupp();
+    }
+  }, [props]);
 
   useEffect(() => {
     if (props.type === "nonLegacyNew" || props.type === "saved") {

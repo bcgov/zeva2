@@ -2,15 +2,16 @@ import { getUserInfo } from "@/auth";
 import { ModelYearReportForm } from "../../lib/components/ModelYearReportForm";
 import { getModelYearReport } from "../../lib/data";
 import { ModelYearReportStatus } from "@/prisma/generated/client";
+import { getPresignedGetObjectUrl } from "@/app/lib/minio";
 
 const Page = async (props: { params: Promise<{ id: string }> }) => {
   const args = await props.params;
-  const id = parseInt(args.id, 10);
+  const myrId = parseInt(args.id, 10);
   const { userIsGov } = await getUserInfo();
   if (userIsGov) {
     return null;
   }
-  const myr = await getModelYearReport(id);
+  const myr = await getModelYearReport(myrId);
   if (
     !myr ||
     (myr.status !== ModelYearReportStatus.DRAFT &&
@@ -25,7 +26,13 @@ const Page = async (props: { params: Promise<{ id: string }> }) => {
       </h1>
       <ModelYearReportForm
         modelYear={myr.modelYear}
-        modelYearReportId={myr.id}
+        reports={{
+          myrUrl: await getPresignedGetObjectUrl(myr.objectName),
+          forecast: {
+            fileName: myr.forecastReportFileName,
+            url: await getPresignedGetObjectUrl(myr.forecastReportObjectName),
+          },
+        }}
       />
     </div>
   );

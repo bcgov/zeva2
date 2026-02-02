@@ -22,7 +22,12 @@ import {
   AdjustmentPayload,
   AssessmentData,
 } from "./actions";
-import { divisors, IsCompliant, SupplierZevClassChoice } from "./constants";
+import {
+  divisors,
+  interiorVolumes,
+  IsCompliant,
+  SupplierZevClassChoice,
+} from "./constants";
 import {
   getBalanceTypeEnumsToStringsMap,
   getModelYearEnumsToStringsMap,
@@ -31,7 +36,6 @@ import {
   getTransactionTypeEnumsToStringMap,
   getVehicleClassEnumsToStringsMap,
   getZevClassEnumsToStringsMap,
-  lowerCaseAndCapitalize,
 } from "@/app/lib/utils/enumMaps";
 import { Adjustment } from "./components/Adjustments";
 import {
@@ -41,7 +45,7 @@ import {
   isZevClass,
 } from "@/app/lib/utils/typeGuards";
 import { ComplianceInfo } from "./utilsServer";
-import { getAssessmentSheets, getMyrSheets } from "./utils";
+import { getAssessmentSheets, getForecastSheets, getMyrSheets } from "./utils";
 import { VehicleStatistics } from "./services";
 
 export const getZevClassOrdering = (
@@ -498,6 +502,42 @@ const writeFinalEndingBalance = (
 export const getWorkbook = async (buffer: Excel.Buffer) => {
   const workbook = new Excel.Workbook();
   await workbook.xlsx.load(buffer);
+  return workbook;
+};
+
+export const populateForecastTemplate = async (
+  template: Excel.Buffer,
+  modelYear: ModelYear,
+) => {
+  const workbook = await getWorkbook(template);
+  const { zevSheet, nonZevSheet } = getForecastSheets(workbook);
+  for (let i = 2; i <= 2001; i++) {
+    zevSheet.getCell(`G${i}`).dataValidation = {
+      type: "list",
+      allowBlank: true,
+      formulae: ['"' + interiorVolumes.join(",") + '"'],
+    };
+  }
+  const futureModelYears = Object.values(ModelYear).filter(
+    (my) => my > modelYear,
+  );
+  const nextThreeModelYearsPrelim = futureModelYears.slice(0, 3);
+  const modelYearsMap = getModelYearEnumsToStringsMap();
+  const nextThreeModelYears: string[] = [];
+  for (const my of nextThreeModelYearsPrelim) {
+    const myString = modelYearsMap[my];
+    if (myString) {
+      nextThreeModelYears.push(myString);
+    }
+  }
+  if (nextThreeModelYears.length !== 3) {
+    throw new Error("Not enough future Model Years!");
+  }
+  const headerRow = nonZevSheet.getRow(1);
+  for (let i = 1; i <= 3; i++) {
+    headerRow.getCell(i).value =
+      `${nextThreeModelYears[i - 1]} Non-ZEV Supply Forecast`;
+  }
   return workbook;
 };
 

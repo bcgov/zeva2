@@ -5,8 +5,10 @@ import {
 } from "@/app/lib/utils/complianceYear";
 import { prisma } from "@/lib/prisma";
 import {
+  applyTransfersAway,
   calculateBalance,
   flattenZevUnitRecords,
+  UncoveredTransfer,
   ZevUnitRecord,
 } from "@/lib/utils/zevUnit";
 import {
@@ -720,6 +722,43 @@ export const canCreateSupplementary = async (
       SupplementaryReportStatus.ACKNOWLEDGED
   ) {
     return false;
+  }
+  return true;
+};
+
+// upon issuance of an assessment or reassessment,
+// transfers may become uncovered due to the backdating
+// of compliance ratio reductions or debit adjustments
+export const areTransfersCovered = async (
+  organizationId: number,
+  complianceYear: ModelYear,
+  newEndingBalance: ZevUnitRecord[],
+) => {
+  const { openUpperBound: gteDate } = getCompliancePeriod(complianceYear);
+  const currentTransactions = await prisma.zevUnitTransaction.findMany({
+    where: {
+      timestamp: {
+        gte: gteDate,
+      },
+      organizationId,
+    },
+    select: {
+      type: true,
+      numberOfUnits: true,
+      vehicleClass: true,
+      zevClass: true,
+      modelYear: true,
+    },
+  });
+  const transactions = newEndingBalance.concat(currentTransactions);
+  try {
+    applyTransfersAway(transactions);
+  } catch (e) {
+    if (e instanceof UncoveredTransfer) {
+      return false;
+    } else {
+      throw e;
+    }
   }
   return true;
 };

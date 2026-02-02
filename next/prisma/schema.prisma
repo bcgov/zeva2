@@ -687,6 +687,7 @@ model ModelYearReport {
   supplierReassessmentStatus SupplierReassessmentStatus?   @map("supplier_reassessment_status")
   objectName                 String                        @unique @map("object_name")
   forecastReportObjectName   String                        @unique @map("forecast_report_object_name")
+  forecastReportFileName     String                        @unique @map("forecast_report_file_name")
   compliant                  Boolean?
   reportableNvValue          Int?                          @map("reportable_nv_value")
   supplierClass              SupplierClass?                @map("supplier_class")

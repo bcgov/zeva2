@@ -33,6 +33,7 @@ import {
   OrgNameAndAddresses,
   updateMyrReassessmentStatus,
   VehicleStatistics,
+  areTransfersCovered,
 } from "./services";
 import {
   DataOrErrorActionResponse,
@@ -159,6 +160,7 @@ export const saveReports = async (
   modelYear: ModelYear,
   modelYearReport: string,
   forecastReport: string,
+  forecastReportFileName: string,
 ): Promise<DataOrErrorActionResponse<number>> => {
   let idOfReport = NaN;
   const { userIsGov, userOrgId } = await getUserInfo();
@@ -225,6 +227,7 @@ export const saveReports = async (
         data: {
           objectName: myrObjectName,
           forecastReportObjectName: forecastObjectName,
+          forecastReportFileName,
           status: ModelYearReportStatus.DRAFT,
           supplierStatus: ModelYearReportStatus.DRAFT,
           organizationId: userOrgId,
@@ -590,6 +593,19 @@ export const assessModelYearReport = async (
     const assessmentData = await getAssessmentSystemData(
       myr.assessment.objectName,
     );
+    const endingBalance = assessmentData.endingBalance.map((record) => {
+      return { ...record, numberOfUnits: record.finalNumberOfUnits };
+    });
+    const transfersAreCovered = await areTransfersCovered(
+      organizationId,
+      modelYear,
+      endingBalance,
+    );
+    if (!transfersAreCovered) {
+      throw new Error(
+        "Issuing this assessment would cause a transfer to become uncovered!",
+      );
+    }
     const nvData: Prisma.SupplyVolumeCreateManyInput[] = [];
     assessmentData.nvValues.forEach(([vehicleClass, volume]) => {
       nvData.push({
@@ -907,6 +923,19 @@ export const issueReassessment = async (
   const reassessmentData = await getAssessmentSystemData(
     reassessment.objectName,
   );
+  const endingBalance = reassessmentData.endingBalance.map((record) => {
+    return { ...record, numberOfUnits: record.finalNumberOfUnits };
+  });
+  const transfersAreCovered = await areTransfersCovered(
+    organizationId,
+    modelYear,
+    endingBalance,
+  );
+  if (!transfersAreCovered) {
+    throw new Error(
+      "Issuing this reassessment would cause a transfer to become uncovered!",
+    );
+  }
   const volumeUpsertClauses = reassessmentData.nvValues.map(
     ([vehicleClass, volume]) => ({
       where: {

@@ -30,6 +30,7 @@ import { Button } from "@/app/lib/components";
 import {
   generateAssessment,
   getAdjustmentsPayload,
+  getWorkbook,
   getZevClassOrdering,
   validateNvValues,
 } from "../utilsClient";
@@ -42,14 +43,15 @@ import { ParsedAssessment } from "./ParsedAssessment";
 import { isModelYear } from "@/app/lib/utils/typeGuards";
 import { legacyModelYearsMap, SupplierZevClassChoice } from "../constants";
 import { ZevClassSelect } from "./ZevClassSelect";
+import { getFiles } from "@/app/lib/utils/download";
 
-// for new/saved assessments, and new non-legacy reassessments
-type GeneralProps = {
-  type: "assessment" | "nonLegacyNewReassment";
+type SavedAssessmentProps = {
+  type: "savedAssessment";
   orgName: string;
   modelYear: ModelYear;
   orgId: number;
   myrId: number;
+  url: string;
 };
 
 type LegacyNewReassessmentProps = {
@@ -57,16 +59,30 @@ type LegacyNewReassessmentProps = {
   orgsMap: Partial<Record<number, string>>;
 };
 
+// for both legacy and non-legacy saved reassessments
 type SavedReassessmentProps = {
   type: "savedReassessment";
   reassessmentId: number;
   orgName: string;
   modelYear: ModelYear;
   orgId: number;
+  url: string;
+};
+
+type OtherProps = {
+  type: "newAssessment" | "nonLegacyNewReassment";
+  orgName: string;
+  modelYear: ModelYear;
+  orgId: number;
+  myrId: number;
 };
 
 export const AssessmentForm = (
-  props: GeneralProps | LegacyNewReassessmentProps | SavedReassessmentProps,
+  props:
+    | SavedAssessmentProps
+    | LegacyNewReassessmentProps
+    | SavedReassessmentProps
+    | OtherProps,
 ) => {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -80,6 +96,24 @@ export const AssessmentForm = (
   const [assessment, setAssessment] = useState<[Workbook, ParsedAssmnt] | null>(
     null,
   );
+
+  useEffect(() => {
+    if (
+      props.type === "savedAssessment" ||
+      props.type === "savedReassessment"
+    ) {
+      const loadAssessment = async () => {
+        const files = await getFiles([{ fileName: "_", url: props.url }]);
+        if (files.length === 1) {
+          const assmnt = files[0];
+          const assmntWorkbook = await getWorkbook(assmnt.data);
+          const parsedAssmnt = parseAssessment(assmntWorkbook);
+          setAssessment([assmntWorkbook, parsedAssmnt]);
+        }
+      };
+      loadAssessment();
+    }
+  }, [props]);
 
   useEffect(() => {
     if (props.type !== "legacyNewReassessment") {
@@ -153,7 +187,10 @@ export const AssessmentForm = (
         }
         let nvValuesToUse;
         let zevClassOrdering;
-        if (props.type !== "assessment") {
+        if (
+          props.type !== "newAssessment" &&
+          props.type !== "savedAssessment"
+        ) {
           validateNvValues(nvValues);
           nvValuesToUse = nvValues;
           zevClassOrdering = getZevClassOrdering(zevClassSelection);
@@ -162,7 +199,9 @@ export const AssessmentForm = (
         const [templateUrl, assessmentResponse] = await Promise.all([
           getAssessmentTemplateUrl(),
           getAssessmentData(
-            props.type === "assessment" ? "assessment" : "reassessment",
+            props.type === "newAssessment" || props.type === "savedAssessment"
+              ? "assessment"
+              : "reassessment",
             orgId,
             modelYear,
             adjustmentsPayload,
@@ -208,7 +247,10 @@ export const AssessmentForm = (
         const assessmentBase64 = bytesToBase64(
           await assessment[0].xlsx.writeBuffer(),
         );
-        if (props.type === "assessment") {
+        if (
+          props.type === "newAssessment" ||
+          props.type === "savedAssessment"
+        ) {
           response = await createOrSaveAssessment(
             props.myrId,
             assessmentBase64,
@@ -237,7 +279,10 @@ export const AssessmentForm = (
         if (response.responseType === "error") {
           throw new Error(response.message);
         }
-        if (props.type === "assessment") {
+        if (
+          props.type === "newAssessment" ||
+          props.type === "savedAssessment"
+        ) {
           router.push(`${Routes.ComplianceReporting}/${props.myrId}`);
         } else if (response.responseType === "data") {
           const reassessmentId = response.data.reassessmentId;
@@ -369,28 +414,30 @@ export const AssessmentForm = (
     <div>
       {orgsComponent}
       {modelYearComponent}
-      {props.type !== "assessment" && !assessment && (
-        <>
-          <MyrNvValues
-            nvValues={nvValues}
-            handleChange={handleNvValuesChange}
-            disabled={isPending}
-          />
-          <div className="flex items-center py-2 my-2">
-            <p>
-              Select the ZEV class of credits that should be used first when
-              offsetting debits of the unspecified ZEV class:
-            </p>
-          </div>
-          <div className="flex items-center py-2 my-2 space-x-4">
-            <ZevClassSelect
-              zevClassSelection={zevClassSelection}
-              handleChange={handleZevClassSelect}
+      {props.type !== "newAssessment" &&
+        props.type !== "savedAssessment" &&
+        !assessment && (
+          <>
+            <MyrNvValues
+              nvValues={nvValues}
+              handleChange={handleNvValuesChange}
               disabled={isPending}
             />
-          </div>
-        </>
-      )}
+            <div className="flex items-center py-2 my-2">
+              <p>
+                Select the ZEV class of credits that should be used first when
+                offsetting debits of the unspecified ZEV class:
+              </p>
+            </div>
+            <div className="flex items-center py-2 my-2 space-x-4">
+              <ZevClassSelect
+                zevClassSelection={zevClassSelection}
+                handleChange={handleZevClassSelect}
+                disabled={isPending}
+              />
+            </div>
+          </>
+        )}
       {!assessment && (
         <Adjustments
           adjustments={adjustments}
@@ -410,7 +457,7 @@ export const AssessmentForm = (
           >
             {isPending
               ? "..."
-              : `Clear ${props.type === "assessment" ? "Assessment" : "Reassessment"}`}
+              : `Clear ${props.type === "newAssessment" || props.type === "savedAssessment" ? "Assessment" : "Reassessment"}`}
           </Button>
         ) : (
           <Button
@@ -420,7 +467,7 @@ export const AssessmentForm = (
           >
             {isPending
               ? "..."
-              : `Generate ${props.type === "assessment" ? "Assessment" : "Reassessment"}`}
+              : `Generate ${props.type === "newAssessment" || props.type === "savedAssessment" ? "Assessment" : "Reassessment"}`}
           </Button>
         )}
       </div>

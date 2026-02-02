@@ -1,3 +1,4 @@
+import { getPresignedGetObjectUrl } from "@/app/lib/minio";
 import { AssessmentForm } from "@/app/model-year-report/lib/components/AssessmentForm";
 import { getModelYearReport } from "@/app/model-year-report/lib/data";
 import { getUserInfo } from "@/auth";
@@ -23,11 +24,12 @@ const Page = async (props: { params: Promise<{ id: string }> }) => {
     <div className="max-w-xl mx-auto p-4">
       <h1 className="text-xl font-bold mb-4">Edit an Assessment</h1>
       <AssessmentForm
-        type="assessment"
+        type="savedAssessment"
         orgName={report.organization.name}
         modelYear={report.modelYear}
         orgId={report.organizationId}
         myrId={report.id}
+        url={await getPresignedGetObjectUrl(report.assessment.objectName)}
       />
     </div>
   );

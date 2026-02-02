@@ -2,6 +2,7 @@ import { getUserInfo } from "@/auth";
 import { SupplementaryForm } from "@/app/model-year-report/lib/components/SupplementaryForm";
 import { getSupplementaryReport } from "@/app/model-year-report/lib/data";
 import { SupplementaryReportStatus } from "@/prisma/generated/client";
+import { getPresignedGetObjectUrl } from "@/app/lib/minio";
 
 const Page = async (props: { params: Promise<{ id: string }> }) => {
   const args = await props.params;
@@ -24,6 +25,7 @@ const Page = async (props: { params: Promise<{ id: string }> }) => {
         type="saved"
         modelYear={report.modelYear}
         supplementaryId={suppId}
+        url={await getPresignedGetObjectUrl(report.objectName)}
       />
     </div>
   );

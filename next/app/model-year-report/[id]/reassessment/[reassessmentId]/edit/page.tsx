@@ -1,3 +1,4 @@
+import { getPresignedGetObjectUrl } from "@/app/lib/minio";
 import { AssessmentForm } from "@/app/model-year-report/lib/components/AssessmentForm";
 import { getReassessment } from "@/app/model-year-report/lib/data";
 import { getUserInfo } from "@/auth";
@@ -24,6 +25,7 @@ const Page = async (props: {
         orgName={reassessment.organization.name}
         modelYear={reassessment.modelYear}
         orgId={reassessment.organizationId}
+        url={await getPresignedGetObjectUrl(reassessment.objectName)}
       />
     </div>
   );
