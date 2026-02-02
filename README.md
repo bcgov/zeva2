@@ -10,7 +10,7 @@ npx husky init
 npm pkg set scripts.test="echo \"no tests\""
 
 ===
-cat <<'EOF' > /Users/kfan/Projects/zeva2/package.json
+$ cat <<'EOF' > /Users/kfan/Projects/zeva2/package.json
 {
 "name": "zeva2",
 "version": "1.0.0",
@@ -26,12 +26,26 @@ cat <<'EOF' > /Users/kfan/Projects/zeva2/package.json
 }
 EOF
 
-npm install
-npx husky init
+$ npm install
+$ npx husky init
 
-cat <<'EOF' > .husky/commit-msg
+$ cat <<'EOF' > .husky/commit-msg
 #!/usr/bin/env sh
 . "$(dirname -- "$0")/\_/husky.sh"
 
 npx commitlint --edit "$1"
 EOF
+
+$ chmod +x .husky/commit-msg
+
+$ npm pkg set scripts.test="echo \"no tests\""
+
+$ cat <<'EOF' > .husky/pre-commit
+#!/usr/bin/env sh
+. "$(dirname -- "$0")/\_/husky.sh"
+
+# npm test
+
+EOF
+
+$ chmod +x .husky/pre-commit
