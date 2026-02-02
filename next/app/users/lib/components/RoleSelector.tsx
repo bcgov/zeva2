@@ -13,7 +13,7 @@ import {
 } from "react";
 import { updateRoles } from "../actions";
 import { govRoles, supplierRoles } from "../constants";
-import { validateRoles } from "../roleValidation";
+import { validateRoles } from "../utils";
 
 export const RoleSelector = (props: {
   // if userId is undefined, then we're using this component as part of the "create user" process;
@@ -51,7 +51,7 @@ export const RoleSelector = (props: {
         "Can add and manage BCeID users and assign roles.",
       [Role.SIGNING_AUTHORITY]:
         "Can sign-off and submit Credit Applications and Transfers to government.",
-      [Role.ZEVA_USER]:
+      [Role.ZEVA_BCEID_USER]:
         "Can submit new ZEV models and create Credit Applications and Transfers.",
       [Role.ZEVA_IDIR_USER]:
         "Can add new auto suppliers and BCeID users, validate new ZEV Models; upload ICBC data, analyse and recommend issuance of Credit Applications and Transfers.",
@@ -74,13 +74,13 @@ export const RoleSelector = (props: {
         return false;
       }
       try {
-        validateRoles([...props.roles, role]);
+        validateRoles([...props.roles, role], props.govOrSupplier === "gov");
         return false;
       } catch {
         return true;
       }
     },
-    [props.disabled, props.roles],
+    [props.disabled, props.roles, props.govOrSupplier],
   );
 
   const handleRoleCheck = useCallback(
@@ -114,7 +114,7 @@ export const RoleSelector = (props: {
         }
         if (roleInQuestion.addOrRemove === "add") {
           const newRoles = [...props.roles, roleInQuestion.role];
-          validateRoles(newRoles);
+          validateRoles(newRoles, props.govOrSupplier === "gov");
         }
         const resp = await updateRoles(
           props.userId,
@@ -133,7 +133,7 @@ export const RoleSelector = (props: {
       }
       setShowModal(false);
     });
-  }, [props.userId, roleInQuestion, props.setError]);
+  }, [props.userId, roleInQuestion, props.setError, props.govOrSupplier]);
 
   return (
     <>

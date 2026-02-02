@@ -36,6 +36,7 @@ export enum ReportSubDirectory {
   Forecast = "forecast",
   Assessment = "assessment",
   Reassessment = "reassessment",
+  Supplementary = "supplementary",
 }
 
 export const supplierZevClasses = {
@@ -54,3 +55,33 @@ export enum IsCompliant {
   Yes = "Yes",
   No = "No",
 }
+
+export const legacyModelYearsMap: Readonly<Partial<Record<string, ModelYear>>> =
+  {
+    "2019": ModelYear.MY_2019,
+    "2020": ModelYear.MY_2020,
+    "2021": ModelYear.MY_2021,
+    "2022": ModelYear.MY_2022,
+    "2023": ModelYear.MY_2023,
+    "2024": ModelYear.MY_2024,
+  };
+
+export const interiorVolumes: readonly string[] = [
+  "Two-seater",
+  "Minicompact (less than 85 cu. ft.)",
+  "Subcompact (85–99 cu. ft.)",
+  "Compact (100–109 cu. ft.)",
+  "Mid-size (110–119 cu. ft.)",
+  "Full-size (120 cu. ft. or more)",
+  "Station wagon: Small (less than 130 cu. ft.)",
+  "Station wagon: Mid-size (130–159 cu. ft.)",
+  "Pickup truck: Small (less than 2722 kg)",
+  "Pickup truck: Standard (2722–3856 kg)",
+  "Sport utility vehicle: Small (less than 2722 kg)",
+  "Sport utility vehicle: Standard (2722–4536 kg)",
+  "Minivan (less than 3856 kg)",
+  "Van: Cargo (less than 3856 kg)",
+  "Van: Passenger (less than 4536 kg)",
+  "Special purpose vehicle (less than 3856 kg)",
+  "Other/TBD",
+];

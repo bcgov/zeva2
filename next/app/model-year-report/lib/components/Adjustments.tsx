@@ -9,6 +9,7 @@ import {
   getStringsToVehicleClassEnumsMap,
   getStringsToZevClassEnumsMap,
 } from "@/app/lib/utils/enumMaps";
+import { ModelYear } from "@/prisma/generated/client";
 
 export type Adjustment = { id: string } & Partial<Record<string, string>>;
 
@@ -31,8 +32,15 @@ export const Adjustments = (props: {
     return getStringsToZevClassEnumsMap();
   }, []);
 
-  const modelYearsMap = useMemo(() => {
-    return getStringsToModelYearsEnumsMap();
+  const modelYearsMap: Partial<Record<string, ModelYear>> = useMemo(() => {
+    const map = getStringsToModelYearsEnumsMap();
+    const entries = Object.entries(map).filter(([_key, value]) => {
+      if (value && value >= ModelYear.MY_2019 && value <= ModelYear.MY_2035) {
+        return true;
+      }
+      return false;
+    });
+    return Object.fromEntries(entries);
   }, []);
 
   if (props.disabled) {

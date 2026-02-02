@@ -4,7 +4,7 @@ import { modelYearReportExists } from "../lib/data";
 import { ModelYearReportForm } from "../lib/components/ModelYearReportForm";
 
 const Page = async () => {
-  const { userIsGov, userOrgName } = await getUserInfo();
+  const { userIsGov } = await getUserInfo();
   if (userIsGov) {
     return null;
   }
@@ -15,9 +15,11 @@ const Page = async () => {
   }
   return (
     <div className="max-w-xl mx-auto p-4">
-      <h1 className="text-xl font-bold mb-4">Submit a Model Year Report</h1>
+      <h1 className="text-xl font-bold mb-4">
+        Create a Model Year Report and Forecast Report
+      </h1>
       <div className="bg-white rounded-lg shadow-level-1 p-6">
-        <ModelYearReportForm orgName={userOrgName} modelYear={modelYear} />
+        <ModelYearReportForm modelYear={modelYear} />
       </div>
     </div>
   );

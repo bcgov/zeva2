@@ -102,5 +102,9 @@ export const navbarSubItems: NavbarSubItems = {
       label: "Legacy Reassessments",
       route: Routes.LegacyReassessments,
     },
+    {
+      label: "Legacy Supplementary Reports",
+      route: Routes.LegacySupplementary,
+    },
   ],
 };

@@ -143,7 +143,7 @@ export async function supplierSubmit(
   comment?: string,
 ): Promise<ErrorOrSuccessActionResponse> {
   const { userIsGov, userId, userOrgId, userRoles } = await getUserInfo();
-  if (userIsGov || !userRoles.includes(Role.ZEVA_USER)) {
+  if (userIsGov || !userRoles.includes(Role.ZEVA_BCEID_USER)) {
     return getErrorActionResponse("Unauthorized!");
   }
   const vehicle = await prisma.vehicle.findUnique({

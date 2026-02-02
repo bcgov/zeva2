@@ -12,15 +12,18 @@ const Page = async (props: { params: Promise<{ id: string }> }) => {
     !userIsGov ||
     !report ||
     (report.status !== ModelYearReportStatus.SUBMITTED_TO_GOVERNMENT &&
-      report.status !== ModelYearReportStatus.RETURNED_TO_ANALYST)
+      report.status !== ModelYearReportStatus.RETURNED_TO_ANALYST) ||
+    report.assessment
   ) {
     return null;
   }
   return (
     <div className="max-w-xl mx-auto p-4">
-      <h1 className="text-xl font-bold mb-4">Assess a Model Year Report</h1>
+      <h1 className="text-xl font-bold mb-4">Create an Assessment</h1>
       <AssessmentForm
-        assessmentType="assessment"
+        type="newAssessment"
+        orgName={report.organization.name}
+        orgId={report.organizationId}
         myrId={report.id}
         modelYear={report.modelYear}
       />

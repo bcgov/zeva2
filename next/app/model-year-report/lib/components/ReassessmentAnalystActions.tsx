@@ -5,9 +5,9 @@ import { Routes } from "@/app/lib/constants";
 import { ReassessmentStatus } from "@/prisma/generated/client";
 import { useRouter } from "next/navigation";
 import { useCallback, useState, useTransition } from "react";
-import { deleteReassessment } from "../actions";
-import { getNormalizedComment } from "@/app/lib/utils/comment";
+import { deleteReassessment, submitReassessment } from "../actions";
 import { CommentBox } from "@/app/lib/components/inputs/CommentBox";
+import { getNormalizedComment } from "@/app/lib/utils/comment";
 
 export const ReassessmentAnalystActions = (props: {
   reassessmentId: number;
@@ -19,19 +19,44 @@ export const ReassessmentAnalystActions = (props: {
   const [comment, setComment] = useState<string>("");
   const [error, setError] = useState<string>("");
 
-  const handleGoToConductReassessment = useCallback(() => {
+  const handleGoToEditReassessment = useCallback(() => {
     if (props.myrId) {
-      router.push(`${Routes.ComplianceReporting}/${props.myrId}/reassessment`);
+      router.push(
+        `${Routes.ComplianceReporting}/${props.myrId}/reassessment/${props.reassessmentId}/edit`,
+      );
     } else {
-      router.push(`${Routes.LegacyReassessments}/new`);
+      router.push(`${Routes.LegacyReassessments}/${props.reassessmentId}/edit`);
     }
-  }, [props.myrId]);
+  }, [props.reassessmentId, props.myrId]);
+
+  const handleSubmit = useCallback(() => {
+    setError("");
+    startTransition(async () => {
+      try {
+        const response = await submitReassessment(
+          props.reassessmentId,
+          getNormalizedComment(comment),
+        );
+        if (response.responseType === "error") {
+          throw new Error(response.message);
+        }
+        router.refresh();
+      } catch (e) {
+        if (e instanceof Error) {
+          setError(e.message);
+        }
+      }
+    });
+  }, [props.reassessmentId, comment]);
 
   const handleDelete = useCallback(() => {
     setError("");
     startTransition(async () => {
       try {
-        await deleteReassessment(props.reassessmentId);
+        const response = await deleteReassessment(props.reassessmentId);
+        if (response.responseType === "error") {
+          throw new Error(response.message);
+        }
         if (props.myrId) {
           router.push(`${Routes.ComplianceReporting}/${props.myrId}`);
         } else {
@@ -45,7 +70,10 @@ export const ReassessmentAnalystActions = (props: {
     });
   }, [props.reassessmentId, props.myrId, comment]);
 
-  if (props.status !== ReassessmentStatus.RETURNED_TO_ANALYST) {
+  if (
+    props.status !== ReassessmentStatus.DRAFT &&
+    props.status !== ReassessmentStatus.RETURNED_TO_ANALYST
+  ) {
     return null;
   }
   return (
@@ -56,11 +84,14 @@ export const ReassessmentAnalystActions = (props: {
         setComment={setComment}
         disabled={isPending}
       />
-      <Button onClick={handleGoToConductReassessment} disabled={isPending}>
-        {isPending ? "..." : "Conduct Reassessment"}
-      </Button>
       <Button onClick={handleDelete} disabled={isPending}>
         {isPending ? "..." : "Delete"}
+      </Button>
+      <Button onClick={handleGoToEditReassessment} disabled={isPending}>
+        {isPending ? "..." : "Edit Reassessment"}
+      </Button>
+      <Button onClick={handleSubmit} disabled={isPending}>
+        {isPending ? "..." : "Submit Reassessment"}
       </Button>
     </div>
   );

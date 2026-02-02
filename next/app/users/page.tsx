@@ -7,7 +7,7 @@ import { Routes } from "../lib/constants";
 import { Button } from "../lib/components";
 import { getUserInfo } from "@/auth";
 import UserTable from "./lib/components/UserTable";
-import { userIsAdmin } from "./lib/utils";
+import { userIsAdmin } from "./lib/utilsServer";
 import {
   getFilterStringWithActiveFilter,
   getTransformedFilters,

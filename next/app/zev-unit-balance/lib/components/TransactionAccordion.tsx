@@ -59,7 +59,7 @@ export const TransactionAccordion = ({
         return `${Routes.PenaltyCredit}/${referenceId}`;
       }
       if (
-        referenceType === ReferenceType.OBLIGATION_REDUCTION ||
+        referenceType === ReferenceType.COMPLIANCE_RATIO_REDUCTION ||
         referenceType === ReferenceType.ASSESSMENT_ADJUSTMENT
       ) {
         return `${Routes.ComplianceReporting}/${referenceId}`;

@@ -111,9 +111,7 @@ export const TableHeader = <T,>({
               className={`px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider ${
                 explicitSizing ? "truncate" : ""
               }`}
-              style={
-                explicitSizing ? { width: header.getSize() } : undefined
-              }
+              style={explicitSizing ? { width: header.getSize() } : undefined}
             >
               <span
                 className={`inline-flex gap-1 ${
