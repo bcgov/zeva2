@@ -1,93 +1,147 @@
-import { JSX } from "react";
+"use client";
+
+import { useMemo } from "react";
+import { ColumnDef, createColumnHelper } from "@tanstack/react-table";
+import { ClientSideTable } from "@/app/lib/components";
 import { ParsedForecast } from "../utils";
 
-// todo: create a common table component that doesn't use server side pagination/filters/sorting
-// and use it here for the ZEV forecast records
+type ZevForecastRecord = {
+  id: number;
+  modelYear: string;
+  make: string;
+  model: string;
+  type: string;
+  range: string;
+  zevClass: string;
+  interiorVolume: string;
+  supplyForecast: string;
+};
+
+type NonZevForecastRecord = {
+  id: number;
+  modelYear: string;
+  supplyForecast: string;
+};
+
 export const ParsedForecastTables = (props: { forecast: ParsedForecast }) => {
+  // Add id to each record for table compatibility
+  const zevRecordsWithId: ZevForecastRecord[] = useMemo(
+    () =>
+      props.forecast.zevRecords.map((record, index) => ({
+        ...record,
+        id: index,
+      })),
+    [props.forecast.zevRecords],
+  );
+
+  const nonZevRecordsWithId: NonZevForecastRecord[] = useMemo(
+    () =>
+      props.forecast.nonZevRecords.map((record, index) => ({
+        ...record,
+        id: index,
+      })),
+    [props.forecast.nonZevRecords],
+  );
+
+  // Define columns for ZEV records table
+  const zevColumnHelper = createColumnHelper<ZevForecastRecord>();
+  const zevColumns = useMemo<ColumnDef<ZevForecastRecord, any>[]>(
+    () => [
+      zevColumnHelper.accessor((row) => row.modelYear, {
+        id: "modelYear",
+        header: "Model Year",
+        enableSorting: true,
+        enableColumnFilter: true,
+      }),
+      zevColumnHelper.accessor((row) => row.make, {
+        id: "make",
+        header: "Make",
+        enableSorting: true,
+        enableColumnFilter: true,
+      }),
+      zevColumnHelper.accessor((row) => row.model, {
+        id: "model",
+        header: "Model",
+        enableSorting: true,
+        enableColumnFilter: true,
+      }),
+      zevColumnHelper.accessor((row) => row.type, {
+        id: "type",
+        header: "Type",
+        enableSorting: true,
+        enableColumnFilter: true,
+      }),
+      zevColumnHelper.accessor((row) => row.range, {
+        id: "range",
+        header: "Range",
+        enableSorting: true,
+        enableColumnFilter: true,
+      }),
+      zevColumnHelper.accessor((row) => row.zevClass, {
+        id: "zevClass",
+        header: "ZEV Class",
+        enableSorting: true,
+        enableColumnFilter: true,
+      }),
+      zevColumnHelper.accessor((row) => row.interiorVolume, {
+        id: "interiorVolume",
+        header: "Interior Volume",
+        enableSorting: true,
+        enableColumnFilter: true,
+      }),
+      zevColumnHelper.accessor((row) => row.supplyForecast, {
+        id: "supplyForecast",
+        header: "Supply Forecast",
+        enableSorting: true,
+        enableColumnFilter: true,
+      }),
+    ],
+    [zevColumnHelper],
+  );
+
+  // Define columns for Non-ZEV records table
+  const nonZevColumnHelper = createColumnHelper<NonZevForecastRecord>();
+  const nonZevColumns = useMemo<ColumnDef<NonZevForecastRecord, any>[]>(
+    () => [
+      nonZevColumnHelper.accessor((row) => row.modelYear, {
+        id: "modelYear",
+        header: "Model Year",
+        enableSorting: true,
+        enableColumnFilter: true,
+      }),
+      nonZevColumnHelper.accessor((row) => row.supplyForecast, {
+        id: "supplyForecast",
+        header: "Supply Forecast",
+        enableSorting: true,
+        enableColumnFilter: true,
+      }),
+    ],
+    [nonZevColumnHelper],
+  );
+
   return (
-    <div className="flex-col space-y-2">
-      <table key="zev" className="w-full text-left">
-        <caption className="text-left">ZEV Records</caption>
-        <thead>
-          <tr>
-            <th key="modelYear" className="border border-gray-300">
-              Model Year
-            </th>
-            <th key="make" className="border border-gray-300">
-              Make
-            </th>
-            <th key="model" className="border border-gray-300">
-              Model
-            </th>
-            <th key="type" className="border border-gray-300">
-              Type
-            </th>
-            <th key="range" className="border border-gray-300">
-              Range
-            </th>
-            <th key="zevClass" className="border border-gray-300">
-              ZEV Class
-            </th>
-            <th key="interiorVolume" className="border border-gray-300">
-              Interior Volume
-            </th>
-            <th key="supplyForecast" className="border border-gray-300">
-              Supply Forecast
-            </th>
-          </tr>
-        </thead>
-        <tbody>
-          {props.forecast.zevRecords.map((record) => (
-            <tr key={crypto.randomUUID()}>
-              <td key="modelYear" className="border border-gray-300">
-                {record.modelYear}
-              </td>
-              <td key="make" className="border border-gray-300">
-                {record.make}
-              </td>
-              <td key="model" className="border border-gray-300">
-                {record.model}
-              </td>
-              <td key="type" className="border border-gray-300">
-                {record.type}
-              </td>
-              <td key="range" className="border border-gray-300">
-                {record.range}
-              </td>
-              <td key="zevClass" className="border border-gray-300">
-                {record.zevClass}
-              </td>
-              <td key="interiorVolume" className="border border-gray-300">
-                {record.interiorVolume}
-              </td>
-              <td key="supplyForecast" className="border border-gray-300">
-                {record.supplyForecast}
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-      <table key="nonZev" className="w-full text-left">
-        <caption className="text-left">Non-ZEV Records</caption>
-        <thead>
-          <tr>
-            {props.forecast.nonZevRecords.map((record) => (
-              <th key={record.modelYear} className="border border-gray-300">
-                {record.modelYear}
-              </th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            {props.forecast.nonZevRecords.map((record) => (
-              <td key={record.modelYear} className="border border-gray-300">
-                {record.supplyForecast}
-              </td>
-            ))}
-          </tr>
-        </tbody>
-      </table>
+    <div className="flex-col space-y-4">
+      <div>
+        <h3 className="text-lg font-semibold mb-2">ZEV Records</h3>
+        <ClientSideTable<ZevForecastRecord>
+          columns={zevColumns}
+          data={zevRecordsWithId}
+          enableFiltering={true}
+          enableSorting={true}
+          initialPageSize={10}
+        />
+      </div>
+      <div>
+        <h3 className="text-lg font-semibold mb-2">Non-ZEV Records</h3>
+        <ClientSideTable<NonZevForecastRecord>
+          columns={nonZevColumns}
+          data={nonZevRecordsWithId}
+          enableFiltering={true}
+          enableSorting={true}
+          initialPageSize={10}
+        />
+      </div>
     </div>
   );
 };
+
