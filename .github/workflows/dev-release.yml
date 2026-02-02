@@ -1,0 +1,91 @@
+name: Dev Release
+
+on:
+  push:
+    branches:
+      - devops/semantic-release
+
+permissions:
+  contents: write
+  issues: write
+  pull-requests: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    outputs:
+      release_version: ${{ steps.release_version.outputs.version }}
+      release_is_new: ${{ steps.release_version.outputs.is_new }}
+      release_tag: ${{ steps.release_version.outputs.tag }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+          cache-dependency-path: ./package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Get previous release tag
+        id: prev_tag
+        run: |
+          git fetch --tags
+          # Capture the latest tag reachable from the current commit before the release runs.
+          echo "tag=$(git describe --tags --abbrev=0 2>/dev/null || true)" >> "$GITHUB_OUTPUT"
+
+      - name: Setup release config
+        run: cp .releaserc.dev.cjs .releaserc.cjs
+
+      # this step create a new tag or not, depending on semantic‑release formatting rules
+      # the following commit messages will create the corresponding version bump:
+      #   feat: → minor
+      #   fix: → patch
+      #   BREAKING CHANGE (or type!:) → major
+      - name: Run semantic-release for dev
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GIT_AUTHOR_NAME: Zelda Team
+          GIT_COMMITTER_NAME: Zelda Team
+        run: npx semantic-release
+
+      - name: Determine release version
+        id: release_version
+        run: |
+          git fetch --tags
+          # Read the latest tag after semantic-release (may be new or unchanged).
+          NEW_TAG=$(git describe --tags --abbrev=0 2>/dev/null || true)
+          # Compare with the pre-release tag to detect whether a new tag was created.
+          PREV_TAG="${{ steps.prev_tag.outputs.tag }}"
+          if [ -n "$NEW_TAG" ] && [ "$NEW_TAG" != "$PREV_TAG" ]; then
+            echo "Release created: $NEW_TAG"
+            echo "is_new=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "No new release tag created; using latest tag."
+            echo "is_new=false" >> "$GITHUB_OUTPUT"
+          fi
+          VERSION="${NEW_TAG#v}"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "tag=$NEW_TAG" >> "$GITHUB_OUTPUT"
+
+  report-version:
+    needs: release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Show release version
+        run: |
+          echo "Release version: ${{ needs.release.outputs.release_version }}"
+          echo "Release tag: ${{ needs.release.outputs.release_tag }}"
+          if [ "${{ needs.release.outputs.release_is_new }}" = "true" ]; then
+            echo "Release tag source: new (created by semantic-release)"
+            echo "There is new image built will happen for the newly created release"
+          else
+            echo "Release tag source: previous"
+            echo "There is no image built because the image shou;d have been build when the release was create before."
+          fi
