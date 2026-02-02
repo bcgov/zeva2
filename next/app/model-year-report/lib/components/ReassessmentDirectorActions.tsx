@@ -7,6 +7,7 @@ import { useCallback, useState, useTransition } from "react";
 import { issueReassessment, returnReassessment } from "../actions";
 import { getNormalizedComment } from "@/app/lib/utils/comment";
 import { CommentBox } from "@/app/lib/components/inputs/CommentBox";
+import { Routes } from "@/app/lib/constants";
 
 export const ReassessmentDirectorActions = (props: {
   reassessmentId: number;
@@ -21,11 +22,14 @@ export const ReassessmentDirectorActions = (props: {
     setError("");
     startTransition(async () => {
       try {
-        await returnReassessment(
+        const response = await returnReassessment(
           props.reassessmentId,
           getNormalizedComment(comment),
         );
-        router.refresh();
+        if (response.responseType === "error") {
+          throw new Error(response.message);
+        }
+        router.push(Routes.LegacyReassessments);
       } catch (e) {
         if (e instanceof Error) {
           setError(e.message);
@@ -38,10 +42,13 @@ export const ReassessmentDirectorActions = (props: {
     setError("");
     startTransition(async () => {
       try {
-        await issueReassessment(
+        const response = await issueReassessment(
           props.reassessmentId,
           getNormalizedComment(comment),
         );
+        if (response.responseType === "error") {
+          throw new Error(response.message);
+        }
         router.refresh();
       } catch (e) {
         if (e instanceof Error) {

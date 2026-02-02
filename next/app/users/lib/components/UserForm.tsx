@@ -121,7 +121,14 @@ export const UserForm = ({
   const handleSubmit = useCallback(() => {
     startTransition(async () => {
       try {
-        const payload = getUserPayload(form, roles);
+        if (!form.organizationId) {
+          throw new Error("Unexpected Error!");
+        }
+        const payload = getUserPayload(
+          form,
+          roles,
+          form.organizationId === govOrgId,
+        );
         let response:
           | ErrorOrSuccessActionResponse
           | DataOrErrorActionResponse<number>;
@@ -154,7 +161,7 @@ export const UserForm = ({
         }
       }
     });
-  }, [user, form, roles, guardEnabled, navGuard]);
+  }, [user, form, roles, guardEnabled, navGuard, govOrgId]);
 
   // Allow deferred submit after turning off guard
   useEffect(() => {

@@ -17,33 +17,35 @@ import {
   getMyrData,
   getMyrTemplateUrl,
   NvValues,
-  submitReports,
+  saveReports,
 } from "../actions";
 import {
   generateMyr,
   getWorkbook,
   getZevClassOrdering,
+  populateForecastTemplate,
   validateForecastReport,
   validateNvValues,
 } from "../utilsClient";
 import { bytesToBase64 } from "@/app/lib/utils/base64";
-import { downloadBuffer } from "@/app/lib/utils/download";
+import { downloadBuffer, getFiles } from "@/app/lib/utils/download";
 import { Dropzone } from "@/app/lib/components/Dropzone";
 import { SupplierZevClassChoice } from "../constants";
 import { MyrNvValues } from "./MyrNvValues";
 import { ZevClassSelect } from "./ZevClassSelect";
 import { Routes } from "@/app/lib/constants";
-import { CommentBox } from "@/app/lib/components/inputs/CommentBox";
-import { getNormalizedComment } from "@/app/lib/utils/comment";
 import { Workbook } from "exceljs";
 import { ParsedForecast, ParsedMyr, parseForecast, parseMyr } from "../utils";
 import { ParsedModelYearReport } from "./ParsedModelYearReport";
 import { ParsedForecastTables } from "./ParsedForecastReport";
+import { AttachmentDownload } from "@/app/lib/services/attachments";
 
 export const ModelYearReportForm = (props: {
-  orgName: string;
   modelYear: ModelYear;
-  modelYearReportId?: number;
+  reports?: {
+    myrUrl: string;
+    forecast: AttachmentDownload;
+  };
 }) => {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -56,7 +58,26 @@ export const ModelYearReportForm = (props: {
   const [parsedForecast, setParsedForecast] = useState<ParsedForecast | null>(
     null,
   );
-  const [comment, setComment] = useState<string>("");
+
+  useEffect(() => {
+    const loadReports = async () => {
+      const reports = props.reports;
+      if (reports) {
+        const myrAttachment = { fileName: "_", url: reports.myrUrl };
+        const files = await getFiles([myrAttachment, reports.forecast]);
+        if (files.length === 2) {
+          const myr = files[0];
+          const forecast = files[1];
+          const myrWorkbook = await getWorkbook(myr.data);
+          const parsedMyr = parseMyr(myrWorkbook);
+          const forecastFile = new File([forecast.data], forecast.fileName);
+          setMyr([myrWorkbook, parsedMyr]);
+          setForecasts([forecastFile]);
+        }
+      }
+    };
+    loadReports();
+  }, [props.reports]);
 
   useEffect(() => {
     const onForecastChange = async () => {
@@ -71,7 +92,7 @@ export const ModelYearReportForm = (props: {
           if (e instanceof Error) {
             setError(e.message);
           }
-          throw e;
+          return;
         }
         setParsedForecast(parseForecast(workbook));
       }
@@ -125,7 +146,7 @@ export const ModelYearReportForm = (props: {
         }
       }
     });
-  }, [props.modelYear, nvValues, zevClassSelection, props.orgName]);
+  }, [props.modelYear, nvValues, zevClassSelection]);
 
   const handleClearMyr = useCallback(() => {
     setError("");
@@ -140,17 +161,22 @@ export const ModelYearReportForm = (props: {
         const templateResponse = await axios.get(templateUrl, {
           responseType: "arraybuffer",
         });
-        const fileName = `forecast-report-${props.orgName.replaceAll(" ", "-")}-${modelYearsMap[props.modelYear]}.xlsx`;
-        downloadBuffer(fileName, templateResponse.data);
+        const template = await populateForecastTemplate(
+          templateResponse.data,
+          props.modelYear,
+        );
+        const templateBuf = await template.xlsx.writeBuffer();
+        const fileName = `forecast-report-${modelYearsMap[props.modelYear]}.xlsx`;
+        downloadBuffer(fileName, templateBuf);
       } catch (e) {
         if (e instanceof Error) {
           setError(e.message);
         }
       }
     });
-  }, [props.orgName, props.modelYear]);
+  }, [props.modelYear]);
 
-  const handleSubmit = useCallback(() => {
+  const handleSave = useCallback(() => {
     setError("");
     startTransition(async () => {
       try {
@@ -160,20 +186,16 @@ export const ModelYearReportForm = (props: {
         if (forecasts.length !== 1 || !parsedForecast) {
           throw new Error("Exactly 1 Forecast Report expected!");
         }
-        const response = await submitReports(
+        const response = await saveReports(
           props.modelYear,
           bytesToBase64(await myr[0].xlsx.writeBuffer()),
           bytesToBase64(await forecasts[0].arrayBuffer()),
-          getNormalizedComment(comment),
+          forecasts[0].name,
         );
         if (response.responseType === "error") {
           throw new Error(response.message);
         } else if (response.responseType === "data") {
           router.push(`${Routes.ComplianceReporting}/${response.data}`);
-        } else {
-          router.push(
-            `${Routes.ComplianceReporting}/${props.modelYearReportId}`,
-          );
         }
       } catch (e) {
         if (e instanceof Error) {
@@ -181,29 +203,24 @@ export const ModelYearReportForm = (props: {
         }
       }
     });
-  }, [
-    props.modelYear,
-    props.modelYearReportId,
-    myr,
-    forecasts,
-    parsedForecast,
-    comment,
-  ]);
+  }, [props.modelYear, myr, forecasts, parsedForecast]);
 
   return (
     <div>
-      <div className="flex items-center py-2 my-2">
-        <label className="w-72" htmlFor="modelYear">
-          Model Year
-        </label>
-        <input
-          disabled={true}
-          name="modelYear"
-          type="text"
-          value={modelYearsMap[props.modelYear]}
-          className="border p-2 w-full"
-        />
-      </div>
+      {!myr && (
+        <div className="flex items-center py-2 my-2">
+          <label className="w-72" htmlFor="modelYear">
+            Model Year
+          </label>
+          <input
+            disabled={true}
+            name="modelYear"
+            type="text"
+            value={modelYearsMap[props.modelYear]}
+            className="border p-2 w-full"
+          />
+        </div>
+      )}
       {!myr && (
         <MyrNvValues
           nvValues={nvValues}
@@ -249,15 +266,17 @@ export const ModelYearReportForm = (props: {
         )}
       </div>
       {myr && <ParsedModelYearReport myr={myr[1]} />}
-      <div className="flex space-x-2">
-        <Button
-          variant="secondary"
-          onClick={handleDownloadForecastTemplate}
-          disabled={isPending}
-        >
-          {isPending ? "..." : "Download Forecast Template"}
-        </Button>
-      </div>
+      {forecasts.length === 0 && !parsedForecast && (
+        <div className="flex space-x-2">
+          <Button
+            variant="secondary"
+            onClick={handleDownloadForecastTemplate}
+            disabled={isPending}
+          >
+            {isPending ? "..." : "Download Forecast Template"}
+          </Button>
+        </div>
+      )}
       <div className="flex items-center space-x-4">
         <span>Upload your Forecast Report here:</span>
         <Dropzone
@@ -274,15 +293,10 @@ export const ModelYearReportForm = (props: {
       {forecasts.length === 1 && parsedForecast && (
         <ParsedForecastTables forecast={parsedForecast} />
       )}
-      <CommentBox
-        comment={comment}
-        setComment={setComment}
-        disabled={isPending}
-      />
       {error && <p className="text-red-600">{error}</p>}
       <div className="flex space-x-2">
-        <Button variant="primary" onClick={handleSubmit} disabled={isPending}>
-          {isPending ? "..." : "Submit"}
+        <Button variant="primary" onClick={handleSave} disabled={isPending}>
+          {isPending ? "..." : "Save"}
         </Button>
       </div>
     </div>

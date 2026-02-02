@@ -1,6 +1,6 @@
 import { getUserInfo } from "@/auth";
 import { getUser } from "../data";
-import { userIsAdmin } from "../utils";
+import { userIsAdmin } from "../utilsServer";
 import { Button } from "@/app/lib/components";
 import { Routes } from "@/app/lib/constants";
 import Link from "next/link";

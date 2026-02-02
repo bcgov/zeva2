@@ -24,41 +24,41 @@ export const seedTransactions = async (
   const mapOfOldTransactionIdsToOldAgreementIds: Partial<
     Record<number, number>
   > = {};
-  const agreementsTransactions =
+  const agreementTransactions =
     await prismaOld.credit_agreement_credit_transaction.findMany();
-  agreementsTransactions.forEach((element) => {
+  for (const element of agreementTransactions) {
     mapOfOldTransactionIdsToOldAgreementIds[element.credit_transaction_id] =
       element.credit_agreement_id;
-  });
+  }
 
   const mapOfOldTransactionIdsToOldTransferIds: Partial<
     Record<number, number>
   > = {};
-  const transfersTransactions =
+  const transferTransactions =
     await prismaOld.credit_transfer_credit_transaction.findMany();
-  transfersTransactions.forEach((element) => {
+  for (const element of transferTransactions) {
     mapOfOldTransactionIdsToOldTransferIds[element.credit_transaction_id] =
       element.credit_transfer_id;
-  });
+  }
 
   const mapOfOldTransactionIdsToOldMYRIds: Partial<Record<number, number>> = {};
-  const myrsTransactions =
+  const myrTransactions =
     await prismaOld.model_year_report_credit_transaction.findMany();
-  myrsTransactions.forEach((element) => {
+  for (const element of myrTransactions) {
     mapOfOldTransactionIdsToOldMYRIds[element.credit_transaction_id] =
       element.model_year_report_id;
-  });
+  }
 
   const mapOfOldTransactionIdsToOldSalesSubmissionIds: Partial<
     Record<number, number>
   > = {};
-  const submissionsTransactions =
+  const submissionTransactions =
     await prismaOld.sales_submission_credit_transaction.findMany();
-  submissionsTransactions.forEach((element) => {
+  for (const element of submissionTransactions) {
     mapOfOldTransactionIdsToOldSalesSubmissionIds[
       element.credit_transaction_id
     ] = element.sales_submission_id;
-  });
+  }
 
   const getReferenceTypeAndId = (
     oldTransactionId: number,
@@ -72,7 +72,7 @@ export const seedTransactions = async (
       return [ReferenceType.AGREEMENT, agreementId];
     }
     if (myrId) {
-      return [ReferenceType.OBLIGATION_REDUCTION, myrId];
+      return [ReferenceType.COMPLIANCE_RATIO_REDUCTION, myrId];
     }
     if (submissionId) {
       return [ReferenceType.SUPPLY_CREDITS, submissionId];
@@ -88,7 +88,7 @@ export const seedTransactions = async (
   for (const transaction of creditTransactionsOld) {
     let transactionType;
     let organizationId;
-    const zevClass =
+    let zevClass =
       mapOfOldCreditClassIdsToZevClasses[transaction.credit_class_id];
     const modelYear =
       mapOfModelYearIdsToModelYearEnum[transaction.model_year_id];
@@ -121,8 +121,15 @@ export const seedTransactions = async (
           "credit transaction " + transaction.id + " with unknown org id!",
         );
       }
-      if (referenceTypeAndId[0] === ReferenceType.OBLIGATION_REDUCTION) {
+      if (referenceTypeAndId[0] === ReferenceType.COMPLIANCE_RATIO_REDUCTION) {
         continue;
+      }
+      if (
+        referenceTypeAndId[0] === ReferenceType.AGREEMENT &&
+        transactionType === TransactionType.DEBIT &&
+        zevClass === ZevClass.B
+      ) {
+        zevClass = ZevClass.UNSPECIFIED;
       }
       await tx.zevUnitTransaction.create({
         data: {
@@ -130,10 +137,10 @@ export const seedTransactions = async (
           organizationId: newOrgId,
           referenceType: referenceTypeAndId[0],
           legacyReferenceId: referenceTypeAndId[1],
-          numberOfUnits: numberOfUnits,
-          zevClass: zevClass,
+          numberOfUnits,
+          zevClass,
           vehicleClass: VehicleClass.REPORTABLE,
-          modelYear: modelYear,
+          modelYear,
           timestamp: transaction.transaction_timestamp,
         },
       });
@@ -280,7 +287,7 @@ export const seedTransactions = async (
           data: {
             type: TransactionType.DEBIT,
             organizationId: newOrgId,
-            referenceType: ReferenceType.OBLIGATION_REDUCTION,
+            referenceType: ReferenceType.COMPLIANCE_RATIO_REDUCTION,
             legacyReferenceId: oldMyr.id,
             numberOfUnits: reduction.numberOfUnits,
             zevClass: reduction.zevClass,

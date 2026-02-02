@@ -7,6 +7,7 @@ import { useCallback, useState, useTransition } from "react";
 import { assessModelYearReport, returnModelYearReport } from "../actions";
 import { getNormalizedComment } from "@/app/lib/utils/comment";
 import { CommentBox } from "@/app/lib/components/inputs/CommentBox";
+import { Routes } from "@/app/lib/constants";
 
 export const DirectorActions = (props: {
   myrId: number;
@@ -29,7 +30,7 @@ export const DirectorActions = (props: {
         if (response.responseType === "error") {
           throw new Error(response.message);
         }
-        router.refresh();
+        router.push(Routes.ComplianceReporting);
       } catch (e) {
         if (e instanceof Error) {
           setError(e.message);

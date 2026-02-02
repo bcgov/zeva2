@@ -144,4 +144,3 @@ export const ParsedForecastTables = (props: { forecast: ParsedForecast }) => {
     </div>
   );
 };
-

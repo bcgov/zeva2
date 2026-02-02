@@ -135,7 +135,7 @@ export const supplierSave = async (
   creditApplicationId?: number,
 ): Promise<DataOrErrorActionResponse<number>> => {
   const { userIsGov, userOrgId, userRoles } = await getUserInfo();
-  if (userIsGov || !userRoles.includes(Role.ZEVA_USER)) {
+  if (userIsGov || !userRoles.includes(Role.ZEVA_BCEID_USER)) {
     return getErrorActionResponse("Unauthorized!");
   }
   const application = attachments[0];
@@ -273,7 +273,7 @@ export const supplierDelete = async (
   creditApplicationId: number,
 ): Promise<ErrorOrSuccessActionResponse> => {
   const { userIsGov, userOrgId, userRoles } = await getUserInfo();
-  if (userIsGov || !userRoles.includes(Role.ZEVA_USER)) {
+  if (userIsGov || !userRoles.includes(Role.ZEVA_BCEID_USER)) {
     return getErrorActionResponse("Unauthorized!");
   }
   const creditApplication = await prisma.creditApplication.findUnique({

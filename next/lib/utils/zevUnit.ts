@@ -110,13 +110,13 @@ export const getBalance = (
       throw new UnexpectedDebit();
     }
   }
+  const zevUnitRecords = getZevUnitRecords(endingBalances).concat(transactions);
+  const recordsAfterTransfersAway = applyTransfersAway(zevUnitRecords);
   for (const balance of endingBalances) {
     if (balance.type === TransactionType.DEBIT) {
       return "deficit";
     }
   }
-  const zevUnitRecords = getZevUnitRecords(endingBalances).concat(transactions);
-  const recordsAfterTransfersAway = applyTransfersAway(zevUnitRecords);
   return getSummedZevUnitRecordsObj(recordsAfterTransfersAway);
 };
 
