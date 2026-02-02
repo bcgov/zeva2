@@ -22,17 +22,17 @@ const Page = async (props: {
   const status = report.status;
   const { userIsGov, userRoles } = await getUserInfo();
   let actionComponent: JSX.Element | null = null;
-  if (!userIsGov) {
+  if (userIsGov) {
+    actionComponent = (
+      <SupplementaryGovernmentActions suppId={suppId} status={status} />
+    );
+  } else {
     actionComponent = (
       <SupplementarySupplierActions
         suppId={suppId}
         status={status}
         myrId={myrId}
       />
-    );
-  } else if (userRoles.includes(Role.ENGINEER_ANALYST)) {
-    actionComponent = (
-      <SupplementaryGovernmentActions suppId={suppId} status={status} />
     );
   }
 

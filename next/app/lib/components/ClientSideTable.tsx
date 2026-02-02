@@ -15,10 +15,7 @@ import {
 import { Button } from "./inputs";
 import { TableHeader } from "./TableHeader";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import {
-  faAngleLeft,
-  faAngleRight,
-} from "@fortawesome/free-solid-svg-icons";
+import { faAngleLeft, faAngleRight } from "@fortawesome/free-solid-svg-icons";
 
 interface IClientSideTableProps<T> {
   columns: ColumnDef<T, any>[];
@@ -115,41 +112,50 @@ export const ClientSideTable = <T extends ZevaObject>({
                 column.setFilterValue(value);
               }
             }}
-            sortState={sorting.reduce((acc, sort) => {
-              acc[sort.id] = sort.desc ? "desc" : "asc";
-              return acc;
-            }, {} as { [key: string]: "asc" | "desc" })}
-            filterState={columnFilters.reduce((acc, filter) => {
-              acc[filter.id] = (filter.value as string) ?? "";
-              return acc;
-            }, {} as { [key: string]: string })}
+            sortState={sorting.reduce(
+              (acc, sort) => {
+                acc[sort.id] = sort.desc ? "desc" : "asc";
+                return acc;
+              },
+              {} as { [key: string]: "asc" | "desc" },
+            )}
+            filterState={columnFilters.reduce(
+              (acc, filter) => {
+                acc[filter.id] = (filter.value as string) ?? "";
+                return acc;
+              },
+              {} as { [key: string]: string },
+            )}
           />
           <tbody className="bg-white divide-y divide-gray-200">
             {table.getRowModel().rows.map((row) => {
               const rowClassName = navigationAction
                 ? "hover:bg-gray-200 transition-colors cursor-pointer"
                 : "";
-              
+
               return (
                 <tr
                   key={row.id}
                   className={rowClassName}
                   onClick={() => handleNavigation(row.original.id)}
                 >
-                {row.getVisibleCells().map((cell) => (
-                  <td
-                    key={cell.id}
-                    className={`px-6 py-4 whitespace-nowrap ${explicitSizing ? "truncate" : ""}`}
-                    style={
-                      explicitSizing
-                        ? { width: cell.column.getSize() }
-                        : undefined
-                    }
-                  >
-                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                  </td>
-                ))}
-              </tr>
+                  {row.getVisibleCells().map((cell) => (
+                    <td
+                      key={cell.id}
+                      className={`px-6 py-4 whitespace-nowrap ${explicitSizing ? "truncate" : ""}`}
+                      style={
+                        explicitSizing
+                          ? { width: cell.column.getSize() }
+                          : undefined
+                      }
+                    >
+                      {flexRender(
+                        cell.column.columnDef.cell,
+                        cell.getContext(),
+                      )}
+                    </td>
+                  ))}
+                </tr>
               );
             })}
           </tbody>

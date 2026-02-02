@@ -100,11 +100,11 @@ enum AddressType {
 enum Role {
   ADMINISTRATOR              @map("Administrator")
   DIRECTOR                   @map("Director")
-  ZEVA_IDIR_USER             @map("ZEVA IDIR User")
-  ZEVA_IDIR_USER_READ_ONLY   @map("ZEVA IDIR User (read-only)")
   ORGANIZATION_ADMINISTRATOR @map("Organization Administrator")
   SIGNING_AUTHORITY          @map("Signing Authority")
-  ZEVA_USER                  @map("ZEVA BCeID User")
+  ZEVA_BCEID_USER            @map("ZEVA BCeID User")
+  ZEVA_IDIR_USER             @map("ZEVA IDIR User")
+  ZEVA_IDIR_USER_READ_ONLY   @map("ZEVA IDIR User (read-only)")
 }
 
 enum Idp {

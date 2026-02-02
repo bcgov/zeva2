@@ -10,5 +10,5 @@ export const govRoles: readonly Role[] = [
 export const supplierRoles: readonly Role[] = [
   Role.ORGANIZATION_ADMINISTRATOR,
   Role.SIGNING_AUTHORITY,
-  Role.ZEVA_USER,
+  Role.ZEVA_BCEID_USER,
 ];

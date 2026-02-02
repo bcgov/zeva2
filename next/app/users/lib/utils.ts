@@ -1,121 +1,49 @@
-import { getStringsToRoleEnumsMap } from "@/app/lib/utils/enumMaps";
-import { getUserInfo } from "@/auth";
-import { UserWithOrg } from "@/lib/data/user";
-import { Prisma, Role } from "@/prisma/generated/client";
+import { Role } from "@/prisma/generated/client";
 import { govRoles, supplierRoles } from "./constants";
-import { UserActiveFilter } from "@/app/lib/constants/filter";
-import { validateRoles } from "./roleValidation";
 
-export const userConfiguredCorrectly = (user: UserWithOrg) => {
-  const userIsGov = user.organization.isGovernment;
-  const userRoles = user.roles;
-  if (userIsGov && userRoles.some((role) => supplierRoles.includes(role))) {
-    return false;
+export const validateRoles = (roles: Role[], rolesAreForGovUser: boolean) => {
+  const rolesSet = new Set<Role>(roles);
+  if (rolesSet.size !== roles.length) {
+    throw new Error("Duplicate roles detected!");
   }
-  if (!userIsGov && userRoles.some((role) => govRoles.includes(role))) {
-    return false;
+  if (
+    rolesAreForGovUser &&
+    roles.some((role) => supplierRoles.includes(role))
+  ) {
+    throw new Error("Invalid Role detected!");
   }
-  if (userIsGov) {
-    try {
-      validateRoles(userRoles);
-    } catch {
-      return false;
+  if (!rolesAreForGovUser && roles.some((role) => govRoles.includes(role))) {
+    throw new Error("Invalid Role detected!");
+  }
+
+  const hasReadOnlyRole = roles.includes(Role.ZEVA_IDIR_USER_READ_ONLY);
+  if (hasReadOnlyRole && roles.length > 1) {
+    throw new Error(
+      "ZEVA IDIR User (read-only) cannot be combined with other roles.",
+    );
+  }
+
+  if (roles.includes(Role.ZEVA_IDIR_USER)) {
+    const allowedRoles: Role[] = [Role.ZEVA_IDIR_USER, Role.ADMINISTRATOR];
+    const incompatibleRoles = roles.filter(
+      (role) => !allowedRoles.includes(role),
+    );
+    if (incompatibleRoles.length > 0) {
+      throw new Error(
+        "ZEVA IDIR User can only be combined with the Administrator role.",
+      );
     }
   }
-  return true;
-};
 
-export const getWhereClause = (
-  filters: Record<string, string>,
-  userIsGov: boolean,
-): Prisma.UserWhereInput => {
-  const result: Prisma.UserWhereInput = {};
-  Object.entries(filters).forEach(([key, value]) => {
-    if (
-      key === "firstName" ||
-      key === "lastName" ||
-      key === "contactEmail" ||
-      key === "idpUsername"
-    ) {
-      const newValue = value.trim();
-      result[key] = {
-        contains: newValue,
-        mode: "insensitive",
-      };
-    } else if (key === UserActiveFilter.key) {
-      const newValue = value.toLowerCase().trim();
-      if (newValue === UserActiveFilter.activeValue) {
-        result[key] = true;
-      } else if (newValue === UserActiveFilter.inactiveValue) {
-        result[key] = false;
-      } else {
-        result["id"] = -1;
-      }
-    } else if (key === "organization" && userIsGov) {
-      const newValue = value.trim();
-      result[key] = {
-        is: {
-          name: {
-            contains: newValue,
-            mode: "insensitive",
-          },
-        },
-      };
-    } else if (key === "roles") {
-      const rolesMap = getStringsToRoleEnumsMap();
-      const newValue = value.replaceAll(" ", "").toLowerCase();
-      const matches: Role[] = [];
-      Object.entries(rolesMap).forEach(([role, roleEnum]) => {
-        const roleTransformed = role.replaceAll("_", "").toLowerCase();
-        if (roleEnum && roleTransformed.includes(newValue)) {
-          matches.push(roleEnum);
-        }
-      });
-      result[key] = {
-        hasSome: matches,
-      };
+  if (roles.includes(Role.DIRECTOR)) {
+    const allowedRoles: Role[] = [Role.DIRECTOR, Role.ADMINISTRATOR];
+    const incompatibleRoles = roles.filter(
+      (role) => !allowedRoles.includes(role),
+    );
+    if (incompatibleRoles.length > 0) {
+      throw new Error(
+        "Director role can only be combined with the Administrator role.",
+      );
     }
-  });
-  return result;
-};
-
-export const getOrderByClause = (
-  sorts: Record<string, string>,
-  defaultSortById: boolean,
-  userIsGov: boolean,
-): Prisma.UserOrderByWithRelationInput[] => {
-  const result: Prisma.UserOrderByWithRelationInput[] = [];
-  Object.entries(sorts).forEach(([key, value]) => {
-    if (value === "asc" || value === "desc") {
-      if (
-        key === "firstName" ||
-        key === "lastName" ||
-        key === "contactEmail" ||
-        key === "idpUsername"
-      ) {
-        result.push({ [key]: value });
-      } else if (key === "organization" && userIsGov) {
-        result.push({
-          [key]: {
-            name: value,
-          },
-        });
-      }
-    }
-  });
-  if (defaultSortById && result.length === 0) {
-    result.push({ id: "desc" });
   }
-  return result;
-};
-
-export const userIsAdmin = async () => {
-  const { userIsGov, userRoles } = await getUserInfo();
-  if (userIsGov && userRoles.includes(Role.ADMINISTRATOR)) {
-    return true;
-  }
-  if (!userIsGov && userRoles.includes(Role.ORGANIZATION_ADMINISTRATOR)) {
-    return true;
-  }
-  return false;
 };

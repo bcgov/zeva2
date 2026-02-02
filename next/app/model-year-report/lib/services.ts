@@ -654,7 +654,7 @@ export const canCreateReassessment = async (
   userIsGov: boolean,
   userRoles: Role[],
 ) => {
-  if (!userIsGov || !userRoles.includes(Role.ENGINEER_ANALYST)) {
+  if (!userIsGov || !userRoles.includes(Role.ZEVA_IDIR_USER)) {
     return false;
   }
   const myr = await prisma.modelYearReport.findUnique({

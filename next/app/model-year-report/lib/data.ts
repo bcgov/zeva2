@@ -253,7 +253,7 @@ export const getAssessment = async (myrId: number) => {
   if (!userIsGov) {
     whereClause.organizationId = userOrgId;
     whereClause.status = ModelYearReportStatus.ASSESSED;
-  } else if (userIsGov && userRoles.includes(Role.ENGINEER_ANALYST)) {
+  } else if (userIsGov && userRoles.includes(Role.ZEVA_IDIR_USER)) {
     whereClause.NOT = {
       status: {
         in: [

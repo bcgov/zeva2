@@ -8,7 +8,7 @@ const Page = async (props: { params: Promise<{ id: string }> }) => {
   const args = await props.params;
   const myrId = parseInt(args.id, 10);
   const { userIsGov, userRoles } = await getUserInfo();
-  if (!userIsGov || !userRoles.includes(Role.ENGINEER_ANALYST)) {
+  if (!userIsGov || !userRoles.includes(Role.ZEVA_IDIR_USER)) {
     return false;
   }
   const report = await getModelYearReport(myrId);

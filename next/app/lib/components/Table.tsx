@@ -17,10 +17,7 @@ import { LoadingSkeleton } from "./skeletons";
 import { Button } from "./inputs";
 import { TableHeader } from "./TableHeader";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import {
-  faAngleLeft,
-  faAngleRight,
-} from "@fortawesome/free-solid-svg-icons";
+import { faAngleLeft, faAngleRight } from "@fortawesome/free-solid-svg-icons";
 
 interface ITableProps<T> {
   columns: ColumnDef<T, any>[];

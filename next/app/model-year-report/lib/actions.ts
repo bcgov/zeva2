@@ -394,13 +394,8 @@ export const createOrSaveAssessment = async (
   myrId: number,
   assessment: string,
 ): Promise<ErrorOrSuccessActionResponse> => {
-<<<<<<< HEAD
-  const { userIsGov, userId, userRoles } = await getUserInfo();
-  if (!userIsGov || !userRoles.includes(Role.ZEVA_IDIR_USER)) {
-=======
   const { userIsGov, userRoles } = await getUserInfo();
-  if (!userIsGov || !userRoles.includes(Role.ENGINEER_ANALYST)) {
->>>>>>> f784b9d (second commit)
+  if (!userIsGov || !userRoles.includes(Role.ZEVA_IDIR_USER)) {
     return getErrorActionResponse("Unauthorized!");
   }
   const myr = await prisma.modelYearReport.findUnique({
@@ -442,7 +437,7 @@ export const submitAssessment = async (
   comment?: string,
 ): Promise<ErrorOrSuccessActionResponse> => {
   const { userIsGov, userId, userRoles } = await getUserInfo();
-  if (!userIsGov || !userRoles.includes(Role.ENGINEER_ANALYST)) {
+  if (!userIsGov || !userRoles.includes(Role.ZEVA_IDIR_USER)) {
     return getErrorActionResponse("Unauthorized!");
   }
   const myr = await prisma.modelYearReport.findUnique({
@@ -676,7 +671,7 @@ export const createReassessment = async (
 > => {
   let reassessmentId = NaN;
   const { userIsGov, userRoles } = await getUserInfo();
-  if (!userIsGov || !userRoles.includes(Role.ENGINEER_ANALYST)) {
+  if (!userIsGov || !userRoles.includes(Role.ZEVA_IDIR_USER)) {
     return getErrorActionResponse("Unauthorized!");
   }
   let sequenceNumber;
@@ -721,7 +716,7 @@ export const saveReassessment = async (
   DataOrErrorActionResponse<{ reassessmentId: number; myrId: number | null }>
 > => {
   const { userIsGov, userRoles } = await getUserInfo();
-  if (!userIsGov || !userRoles.includes(Role.ENGINEER_ANALYST)) {
+  if (!userIsGov || !userRoles.includes(Role.ZEVA_IDIR_USER)) {
     return getErrorActionResponse("Unauthorized!");
   }
   const reassessment = await prisma.reassessment.findUnique({
@@ -762,7 +757,7 @@ export const deleteReassessment = async (
   reassessmentId: number,
 ): Promise<ErrorOrSuccessActionResponse> => {
   const { userIsGov, userRoles } = await getUserInfo();
-  if (!userIsGov || !userRoles.includes(Role.ENGINEER_ANALYST)) {
+  if (!userIsGov || !userRoles.includes(Role.ZEVA_IDIR_USER)) {
     return getErrorActionResponse("Unauthorized!");
   }
   const reassessment = await prisma.reassessment.findUnique({
@@ -803,7 +798,7 @@ export const submitReassessment = async (
   comment?: string,
 ): Promise<ErrorOrSuccessActionResponse> => {
   const { userIsGov, userId, userRoles } = await getUserInfo();
-  if (!userIsGov || !userRoles.includes(Role.ENGINEER_ANALYST)) {
+  if (!userIsGov || !userRoles.includes(Role.ZEVA_IDIR_USER)) {
     return getErrorActionResponse("Unauthorized!");
   }
   const reassessment = await prisma.reassessment.findUnique({

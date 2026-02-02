@@ -1,7 +1,7 @@
 import { getUserInfo } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { Prisma, Role, User } from "@/prisma/generated/client";
-import { getOrderByClause, getWhereClause, userIsAdmin } from "./utils";
+import { getOrderByClause, getWhereClause, userIsAdmin } from "./utilsServer";
 
 export type UserWithOrgName = User & { organization?: { name: string } };
 

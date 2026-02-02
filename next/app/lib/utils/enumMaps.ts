@@ -72,7 +72,7 @@ export const roleTransformer = (s: string) => {
     return "ZEVA IDIR User";
   } else if (s === Role.ZEVA_IDIR_USER_READ_ONLY) {
     return "ZEVA IDIR User (read-only)";
-  } else if (s === Role.ZEVA_USER) {
+  } else if (s === Role.ZEVA_BCEID_USER) {
     return "ZEVA BCeID User";
   }
   return statusTransformer(s);
