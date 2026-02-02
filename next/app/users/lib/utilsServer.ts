@@ -8,12 +8,10 @@ import { validateRoles } from "./utils";
 export const userConfiguredCorrectly = (user: UserWithOrg) => {
   const userIsGov = user.organization.isGovernment;
   const userRoles = user.roles;
-  if (userIsGov) {
-    try {
-      validateRoles(userRoles, userIsGov);
-    } catch {
-      return false;
-    }
+  try {
+    validateRoles(userRoles, userIsGov);
+  } catch {
+    return false;
   }
   return true;
 };
