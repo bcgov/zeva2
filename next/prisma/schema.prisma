@@ -104,7 +104,7 @@ enum Role {
   ZEVA_IDIR_USER_READ_ONLY   @map("ZEVA IDIR User (read-only)")
   ORGANIZATION_ADMINISTRATOR @map("Organization Administrator")
   SIGNING_AUTHORITY          @map("Signing Authority")
-  ZEVA_USER                  @map("ZEVA User")
+  ZEVA_USER                  @map("ZEVA BCeID User")
 }
 
 enum Idp {
