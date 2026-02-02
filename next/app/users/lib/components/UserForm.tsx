@@ -280,7 +280,8 @@ export const UserForm = ({
                   Roles
                 </h3>
                 <p className="text-sm text-secondaryText">
-                  Users can have more than one role.
+                  Users can have more than one role except ZEVA IDIR User
+                  (read-only), which must be assigned on its own.
                 </p>
               </div>
               <RoleSelector

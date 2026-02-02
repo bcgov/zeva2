@@ -16,7 +16,7 @@ const Page = async (props: { searchParams?: Promise<pageStringParams> }) => {
   const { page, pageSize } = getPageParams(searchParams, 1, 10);
 
   let canSubmitReassessment = false;
-  if (userIsGov && userRoles.includes(Role.ENGINEER_ANALYST)) {
+  if (userIsGov && userRoles.includes(Role.ZEVA_IDIR_USER)) {
     canSubmitReassessment = true;
   }
 

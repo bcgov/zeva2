@@ -78,7 +78,7 @@ export const navbarSubItems: NavbarSubItems = {
     {
       label: "Update ICBC Data",
       route: Routes.Icbc,
-      roles: [Role.ENGINEER_ANALYST],
+      roles: [Role.ZEVA_IDIR_USER],
     },
   ],
   "Vehicle Suppliers": [

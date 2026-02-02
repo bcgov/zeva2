@@ -8,7 +8,7 @@ import { Routes } from "@/app/lib/constants";
 
 const Page = async () => {
   const { userIsGov, userRoles } = await getUserInfo();
-  if (!userIsGov || !userRoles.includes(Role.ENGINEER_ANALYST)) {
+  if (!userIsGov || !userRoles.includes(Role.ZEVA_IDIR_USER)) {
     return null;
   }
   const orgNamesAndIds = await getOrgNamesAndIds();

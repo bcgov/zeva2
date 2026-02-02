@@ -20,7 +20,7 @@ const Page = async (props: { searchParams?: Promise<pageStringParams> }) => {
     );
   }
 
-  const canCreateNewAgreement = userRoles.includes(Role.ENGINEER_ANALYST);
+  const canCreateNewAgreement = userRoles.includes(Role.ZEVA_IDIR_USER);
 
   return (
     <Suspense key={Date.now()} fallback={<LoadingSkeleton />}>

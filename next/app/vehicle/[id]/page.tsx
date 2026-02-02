@@ -34,7 +34,7 @@ const Page = async (props: { params: Promise<{ id: string }> }) => {
         userRoles={userRoles}
       />
     );
-  } else if (userIsGov && userRoles.includes(Role.ENGINEER_ANALYST)) {
+  } else if (userIsGov && userRoles.includes(Role.ZEVA_IDIR_USER)) {
     actions = <AnalystActions vehicleId={id} status={status} />;
   }
   return (

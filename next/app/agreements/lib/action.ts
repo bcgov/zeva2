@@ -56,8 +56,8 @@ export const saveAgreement = async (
   id?: number,
 ) => {
   const { userId, userIsGov, userRoles } = await getUserInfo();
-  if (!userIsGov || !userRoles.includes(Role.ENGINEER_ANALYST)) {
-    return undefined; // Only government users with ENGINEER_ANALYST role can update agreements
+  if (!userIsGov || !userRoles.includes(Role.ZEVA_IDIR_USER)) {
+    return undefined; // Only government users with ZEVA IDIR User role can update agreements
   }
 
   try {
@@ -234,7 +234,7 @@ export const getAgreementAttachmentDownloadUrls = async (
  */
 export const deleteAgreementAttachment = async (objectName: string) => {
   const { userIsGov, userRoles } = await getUserInfo();
-  if (!userIsGov || !userRoles.includes(Role.ENGINEER_ANALYST)) {
+  if (!userIsGov || !userRoles.includes(Role.ZEVA_IDIR_USER)) {
     return false;
   }
 

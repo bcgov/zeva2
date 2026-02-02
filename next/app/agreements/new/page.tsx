@@ -9,7 +9,7 @@ import { getModelYearSelections, getSupplierSelections } from "../lib/services";
 
 const Page = async () => {
   const { userRoles } = await getUserInfo();
-  if (!userRoles.includes(Role.ENGINEER_ANALYST)) {
+  if (!userRoles.includes(Role.ZEVA_IDIR_USER)) {
     return (
       <div className="p-6 font-semibold">
         You do not have access to this page.

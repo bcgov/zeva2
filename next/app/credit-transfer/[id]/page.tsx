@@ -27,7 +27,7 @@ const Page = async (props: { params: Promise<{ id: string }> }) => {
     actionComponent = <TransferToActions id={id} status={status} />;
   } else if (userIsGov && userRoles.includes(Role.DIRECTOR)) {
     actionComponent = <DirectorActions id={id} status={status} />;
-  } else if (userIsGov && userRoles.includes(Role.ENGINEER_ANALYST)) {
+  } else if (userIsGov && userRoles.includes(Role.ZEVA_IDIR_USER)) {
     actionComponent = <AnalystActions id={id} status={status} />;
   }
   return (
