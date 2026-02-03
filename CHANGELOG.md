@@ -1,3 +1,10 @@
+## [1.0.3](https://github.com/bcgov/zeva2/compare/v1.0.2...v1.0.3) (2026-02-03)
+
+
+### Bug Fixes
+
+* run jest test for dev-release ([a6d124f](https://github.com/bcgov/zeva2/commit/a6d124feed4c3137a1308fb6194c21a25d42add9))
+
 ## [1.0.2](https://github.com/bcgov/zeva2/compare/v1.0.1...v1.0.2) (2026-02-03)
 
 
