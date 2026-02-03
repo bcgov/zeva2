@@ -140,7 +140,7 @@ jobs:
 
   tag-images-dev:
     name: Tag Zeva2 images to Dev
-    needs: [build-dev]
+    needs: [release, build-dev]
     runs-on: ubuntu-latest
     steps:
       - name: Restore oc command from Cache
@@ -159,9 +159,8 @@ jobs:
 
       - name: Tag images to target namespace
         run: |
-          echo "VERSION=${{ needs.versioning.outputs.VERSION }}"
-          oc tag ${{ env.TOOLS_NAMESPACE }}/zeva2-next:${{ needs.versioning.outputs.VERSION}} ${{ env.DEV_NAMESPACE}}/zeva2-next:${{ needs.versioning.outputs.VERSION}}
-          oc tag ${{ env.TOOLS_NAMESPACE }}/zeva2-bullmq:${{ needs.versioning.outputs.VERSION}} ${{ env.DEV_NAMESPACE }}/zeva2-bullmq:${{ needs.versioning.outputs.VERSION}}
+          oc tag ${{ env.TOOLS_NAMESPACE }}/zeva2-next:${{ needs.release.outputs.release_version}} ${{ env.DEV_NAMESPACE}}/zeva2-next:${{ needs.release.outputs.release_version}}
+          oc tag ${{ env.TOOLS_NAMESPACE }}/zeva2-bullmq:${{ needs.release.outputs.release_version}} ${{ env.DEV_NAMESPACE }}/zeva2-bullmq:${{ needs.release.outputs.release_version}}
 
   deploy-dev:
     name: Deploy Zeva2 develop branch TO Dev
