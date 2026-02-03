@@ -35,9 +35,8 @@ import { MyrNvValues } from "./MyrNvValues";
 import { ZevClassSelect } from "./ZevClassSelect";
 import { Routes } from "@/app/lib/constants";
 import { Workbook } from "exceljs";
-import { ParsedForecast, ParsedMyr, parseForecast, parseMyr } from "../utils";
+import { ParsedMyr, parseMyr } from "../utils";
 import { ParsedModelYearReport } from "./ParsedModelYearReport";
-import { ParsedForecastTables } from "./ParsedForecastReport";
 import { AttachmentDownload } from "@/app/lib/services/attachments";
 
 export const ModelYearReportForm = (props: {
@@ -49,15 +48,13 @@ export const ModelYearReportForm = (props: {
 }) => {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
-  const [error, setError] = useState<string>("");
   const [nvValues, setNvValues] = useState<NvValues>({});
   const [zevClassSelection, setZevClassSelection] =
     useState<SupplierZevClassChoice>(ZevClass.B);
   const [myr, setMyr] = useState<[Workbook, ParsedMyr] | null>(null);
   const [forecasts, setForecasts] = useState<File[]>([]);
-  const [parsedForecast, setParsedForecast] = useState<ParsedForecast | null>(
-    null,
-  );
+  const [generationError, setGenerationError] = useState<string>("");
+  const [saveError, setSaveError] = useState<string>("");
 
   useEffect(() => {
     const loadReports = async () => {
@@ -78,27 +75,6 @@ export const ModelYearReportForm = (props: {
     };
     loadReports();
   }, [props.reports]);
-
-  useEffect(() => {
-    const onForecastChange = async () => {
-      if (forecasts.length === 0) {
-        setParsedForecast(null);
-      } else {
-        const buf = await forecasts[0].arrayBuffer();
-        const workbook = await getWorkbook(buf);
-        try {
-          validateForecastReport(workbook);
-        } catch (e) {
-          if (e instanceof Error) {
-            setError(e.message);
-          }
-          return;
-        }
-        setParsedForecast(parseForecast(workbook));
-      }
-    };
-    onForecastChange();
-  }, [forecasts]);
 
   const modelYearsMap = useMemo(() => {
     return getModelYearEnumsToStringsMap();
@@ -121,7 +97,8 @@ export const ModelYearReportForm = (props: {
   );
 
   const handleGenerateReport = useCallback(() => {
-    setError("");
+    setGenerationError("");
+    setSaveError("");
     startTransition(async () => {
       try {
         validateNvValues(nvValues);
@@ -142,50 +119,48 @@ export const ModelYearReportForm = (props: {
         setMyr([workbook, parsedMyr]);
       } catch (e) {
         if (e instanceof Error) {
-          setError(e.message);
+          setGenerationError(e.message);
         }
       }
     });
   }, [props.modelYear, nvValues, zevClassSelection]);
 
   const handleClearMyr = useCallback(() => {
-    setError("");
+    setGenerationError("");
+    setSaveError("");
     setMyr(null);
   }, []);
 
   const handleDownloadForecastTemplate = useCallback(() => {
-    setError("");
     startTransition(async () => {
-      try {
-        const templateUrl = await getForecastTemplateUrl();
-        const templateResponse = await axios.get(templateUrl, {
-          responseType: "arraybuffer",
-        });
-        const template = await populateForecastTemplate(
-          templateResponse.data,
-          props.modelYear,
-        );
-        const templateBuf = await template.xlsx.writeBuffer();
-        const fileName = `forecast-report-${modelYearsMap[props.modelYear]}.xlsx`;
-        downloadBuffer(fileName, templateBuf);
-      } catch (e) {
-        if (e instanceof Error) {
-          setError(e.message);
-        }
-      }
+      const templateUrl = await getForecastTemplateUrl();
+      const templateResponse = await axios.get(templateUrl, {
+        responseType: "arraybuffer",
+      });
+      const template = await populateForecastTemplate(
+        templateResponse.data,
+        props.modelYear,
+      );
+      const templateBuf = await template.xlsx.writeBuffer();
+      const fileName = `forecast-report-${modelYearsMap[props.modelYear]}.xlsx`;
+      downloadBuffer(fileName, templateBuf);
     });
   }, [props.modelYear]);
 
   const handleSave = useCallback(() => {
-    setError("");
+    setGenerationError("");
+    setSaveError("");
     startTransition(async () => {
       try {
         if (!myr) {
           throw new Error("You must generate a Model Year Report!");
         }
-        if (forecasts.length !== 1 || !parsedForecast) {
+        if (forecasts.length !== 1) {
           throw new Error("Exactly 1 Forecast Report expected!");
         }
+        const forecastBuf = await forecasts[0].arrayBuffer();
+        const forecastWorkbook = await getWorkbook(forecastBuf);
+        validateForecastReport(forecastWorkbook, props.modelYear);
         const response = await saveReports(
           props.modelYear,
           bytesToBase64(await myr[0].xlsx.writeBuffer()),
@@ -199,11 +174,11 @@ export const ModelYearReportForm = (props: {
         }
       } catch (e) {
         if (e instanceof Error) {
-          setError(e.message);
+          setSaveError(e.message);
         }
       }
     });
-  }, [props.modelYear, myr, forecasts, parsedForecast]);
+  }, [props.modelYear, myr, forecasts]);
 
   return (
     <div>
@@ -245,6 +220,7 @@ export const ModelYearReportForm = (props: {
           </div>
         </>
       )}
+      {generationError && <p className="text-red-600">{generationError}</p>}
       <div className="flex space-x-2">
         {myr ? (
           <Button
@@ -266,7 +242,7 @@ export const ModelYearReportForm = (props: {
         )}
       </div>
       {myr && <ParsedModelYearReport myr={myr[1]} />}
-      {forecasts.length === 0 && !parsedForecast && (
+      {forecasts.length === 0 && (
         <div className="flex space-x-2">
           <Button
             variant="secondary"
@@ -290,10 +266,7 @@ export const ModelYearReportForm = (props: {
           }}
         />
       </div>
-      {forecasts.length === 1 && parsedForecast && (
-        <ParsedForecastTables forecast={parsedForecast} />
-      )}
-      {error && <p className="text-red-600">{error}</p>}
+      {saveError && <p className="text-red-600">{saveError}</p>}
       <div className="flex space-x-2">
         <Button variant="primary" onClick={handleSave} disabled={isPending}>
           {isPending ? "..." : "Save"}

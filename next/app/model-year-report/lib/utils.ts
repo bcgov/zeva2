@@ -2,6 +2,8 @@
 
 import Excel, { Workbook } from "exceljs";
 import { AssessmentTemplate, ForecastTemplate, MyrTemplate } from "./constants";
+import { ModelYear } from "@/prisma/generated/client";
+import { getModelYearEnumsToStringsMap } from "@/app/lib/utils/enumMaps";
 
 export const getMyrSheets = (workbook: Workbook) => {
   const detailsSheet = workbook.getWorksheet(MyrTemplate.DetailsSheetName);
@@ -351,6 +353,25 @@ export const getForecastSheets = (workbook: Workbook) => {
   };
 };
 
+export const getNextThreeModelYears = (modelYear: ModelYear) => {
+  const futureModelYears = Object.values(ModelYear).filter(
+    (my) => my > modelYear,
+  );
+  const nextThreeModelYearsPrelim = futureModelYears.slice(0, 3);
+  const modelYearsMap = getModelYearEnumsToStringsMap();
+  const nextThreeModelYears: string[] = [];
+  for (const my of nextThreeModelYearsPrelim) {
+    const myString = modelYearsMap[my];
+    if (myString) {
+      nextThreeModelYears.push(myString);
+    }
+  }
+  if (nextThreeModelYears.length !== 3) {
+    throw new Error("Not enough future Model Years!");
+  }
+  return nextThreeModelYears;
+};
+
 type ZevForecastRecord = {
   modelYear: string;
   make: string;
@@ -362,44 +383,91 @@ type ZevForecastRecord = {
   supplyForecast: string;
 };
 
-type NonZevForecastRecord = {
-  modelYear: string;
-  supplyForecast: string;
-};
+type ForecastStatistics = [
+  ["", string, string, string],
+  ["ZEV Supply Forecast", number, number, number],
+  ["Non-ZEV Supply Forecast", number, number, number],
+  ["Totals", number, number, number],
+];
 
 export type ParsedForecast = {
   zevRecords: ZevForecastRecord[];
-  nonZevRecords: NonZevForecastRecord[];
+  statistics: ForecastStatistics;
 };
 
-export const parseForecast = (workbook: Workbook): ParsedForecast => {
+export const parseForecast = (
+  workbook: Workbook,
+  myrModelYear: ModelYear,
+): ParsedForecast => {
   const sheets = getForecastSheets(workbook);
+  const nextThreeModelYears = getNextThreeModelYears(myrModelYear);
+  const my1 = nextThreeModelYears[0];
+  const my2 = nextThreeModelYears[1];
+  const my3 = nextThreeModelYears[2];
   const zevRecords: ZevForecastRecord[] = [];
-  const nonZevRecords: NonZevForecastRecord[] = [];
+  const zevSupplyTotals = {
+    [my1]: 0,
+    [my2]: 0,
+    [my3]: 0,
+  };
   sheets.zevSheet.eachRow((row, rowNumber) => {
     if (rowNumber > 1) {
+      const modelYear = row.getCell(1).toString();
+      const supplyForecast = row.getCell(8).toString();
+      if (Object.hasOwn(zevSupplyTotals, modelYear)) {
+        zevSupplyTotals[modelYear] =
+          zevSupplyTotals[modelYear] + Number.parseInt(supplyForecast, 10);
+      }
       zevRecords.push({
-        modelYear: row.getCell(1).toString(),
+        modelYear,
         make: row.getCell(2).toString(),
         model: row.getCell(3).toString(),
         type: row.getCell(4).toString(),
         range: row.getCell(5).toString(),
         zevClass: row.getCell(6).toString(),
         interiorVolume: row.getCell(7).toString(),
-        supplyForecast: row.getCell(8).toString(),
+        supplyForecast,
       });
     }
   });
+  const nonZevSupplyTotals = {
+    [my1]: 0,
+    [my2]: 0,
+    [my3]: 0,
+  };
   sheets.nonZevSheet.eachRow((row, rowNumber) => {
     if (rowNumber > 1) {
-      nonZevRecords.push({
-        modelYear: row.getCell(1).toString(),
-        supplyForecast: row.getCell(2).toString(),
-      });
+      const modelYear = row.getCell(1).toString();
+      const supplyForecast = row.getCell(2).toString();
+      if (Object.hasOwn(nonZevSupplyTotals, modelYear)) {
+        nonZevSupplyTotals[modelYear] =
+          nonZevSupplyTotals[modelYear] + Number.parseInt(supplyForecast, 10);
+      }
     }
   });
+  const statistics: ForecastStatistics = [
+    ["", my1, my2, my3],
+    [
+      "ZEV Supply Forecast",
+      zevSupplyTotals[my1],
+      zevSupplyTotals[my2],
+      zevSupplyTotals[my3],
+    ],
+    [
+      "Non-ZEV Supply Forecast",
+      nonZevSupplyTotals[my1],
+      nonZevSupplyTotals[my2],
+      nonZevSupplyTotals[my3],
+    ],
+    [
+      "Totals",
+      zevSupplyTotals[my1] + nonZevSupplyTotals[my1],
+      zevSupplyTotals[my2] + nonZevSupplyTotals[my2],
+      zevSupplyTotals[my3] + nonZevSupplyTotals[my3],
+    ],
+  ];
   return {
     zevRecords,
-    nonZevRecords,
+    statistics,
   };
 };

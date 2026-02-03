@@ -5,27 +5,13 @@ import { ColumnDef, createColumnHelper } from "@tanstack/react-table";
 import { ClientSideTable } from "@/app/lib/components";
 import { ParsedForecast } from "../utils";
 
-type ZevForecastRecord = {
+type TableZevForecastRecord = ParsedForecast["zevRecords"][number] & {
   id: number;
-  modelYear: string;
-  make: string;
-  model: string;
-  type: string;
-  range: string;
-  zevClass: string;
-  interiorVolume: string;
-  supplyForecast: string;
-};
-
-type NonZevForecastRecord = {
-  id: number;
-  modelYear: string;
-  supplyForecast: string;
 };
 
 export const ParsedForecastTables = (props: { forecast: ParsedForecast }) => {
   // Add id to each record for table compatibility
-  const zevRecordsWithId: ZevForecastRecord[] = useMemo(
+  const zevRecordsWithId: TableZevForecastRecord[] = useMemo(
     () =>
       props.forecast.zevRecords.map((record, index) => ({
         ...record,
@@ -34,18 +20,9 @@ export const ParsedForecastTables = (props: { forecast: ParsedForecast }) => {
     [props.forecast.zevRecords],
   );
 
-  const nonZevRecordsWithId: NonZevForecastRecord[] = useMemo(
-    () =>
-      props.forecast.nonZevRecords.map((record, index) => ({
-        ...record,
-        id: index,
-      })),
-    [props.forecast.nonZevRecords],
-  );
-
   // Define columns for ZEV records table
-  const zevColumnHelper = createColumnHelper<ZevForecastRecord>();
-  const zevColumns = useMemo<ColumnDef<ZevForecastRecord, any>[]>(
+  const zevColumnHelper = createColumnHelper<TableZevForecastRecord>();
+  const zevColumns = useMemo<ColumnDef<TableZevForecastRecord, any>[]>(
     () => [
       zevColumnHelper.accessor((row) => row.modelYear, {
         id: "modelYear",
@@ -99,31 +76,11 @@ export const ParsedForecastTables = (props: { forecast: ParsedForecast }) => {
     [zevColumnHelper],
   );
 
-  // Define columns for Non-ZEV records table
-  const nonZevColumnHelper = createColumnHelper<NonZevForecastRecord>();
-  const nonZevColumns = useMemo<ColumnDef<NonZevForecastRecord, any>[]>(
-    () => [
-      nonZevColumnHelper.accessor((row) => row.modelYear, {
-        id: "modelYear",
-        header: "Model Year",
-        enableSorting: true,
-        enableColumnFilter: true,
-      }),
-      nonZevColumnHelper.accessor((row) => row.supplyForecast, {
-        id: "supplyForecast",
-        header: "Supply Forecast",
-        enableSorting: true,
-        enableColumnFilter: true,
-      }),
-    ],
-    [nonZevColumnHelper],
-  );
-
   return (
     <div className="flex-col space-y-4">
       <div>
         <h3 className="text-lg font-semibold mb-2">ZEV Records</h3>
-        <ClientSideTable<ZevForecastRecord>
+        <ClientSideTable<TableZevForecastRecord>
           columns={zevColumns}
           data={zevRecordsWithId}
           enableFiltering={true}
@@ -133,13 +90,26 @@ export const ParsedForecastTables = (props: { forecast: ParsedForecast }) => {
       </div>
       <div>
         <h3 className="text-lg font-semibold mb-2">Non-ZEV Records</h3>
-        <ClientSideTable<NonZevForecastRecord>
-          columns={nonZevColumns}
-          data={nonZevRecordsWithId}
-          enableFiltering={true}
-          enableSorting={true}
-          initialPageSize={10}
-        />
+        <table key="details" className="w-full text-left">
+          <thead>
+            <tr>
+              {props.forecast.statistics[0].map((myHeader) => {
+                return <th key={myHeader ? myHeader : "_"}>{myHeader}</th>;
+              })}
+            </tr>
+          </thead>
+          <tbody>
+            {[1, 2, 3].map((i) => {
+              return (
+                <tr key={i}>
+                  {props.forecast.statistics[i].map((element) => {
+                    return <td key={crypto.randomUUID()}>{element}</td>;
+                  })}
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
       </div>
     </div>
   );

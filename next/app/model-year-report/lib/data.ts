@@ -147,6 +147,7 @@ export const getModelYearReportDetails = async (id: number) => {
       supplierStatus: true,
       objectName: true,
       forecastReportObjectName: true,
+      modelYear: true,
     },
   });
   if (!myr) {
@@ -159,6 +160,7 @@ export const getModelYearReportDetails = async (id: number) => {
     supplierStatus: myr.supplierStatus,
     myrFile,
     forecastFile,
+    modelYear: myr.modelYear,
   };
 };
 
