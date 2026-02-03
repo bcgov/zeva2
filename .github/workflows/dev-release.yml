@@ -87,6 +87,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GIT_AUTHOR_NAME: Zelda Team
           GIT_COMMITTER_NAME: Zelda Team
+          HUSKY: 0
         run: npx semantic-release
 
       - name: Determine release version
