@@ -12,7 +12,7 @@ export const ForecastReportDetails = async (props: { myrId: number }) => {
   const forecastBuf = await getArrayBuffer(report.forecastFile);
   const forecastWorkbook = new Excel.Workbook();
   await forecastWorkbook.xlsx.load(forecastBuf);
-  const parsedForecast = parseForecast(forecastWorkbook);
+  const parsedForecast = parseForecast(forecastWorkbook, report.modelYear);
 
   return <ParsedForecastTables forecast={parsedForecast} />;
 };
