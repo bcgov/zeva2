@@ -1,0 +1,68 @@
+# This workflow is a template for deploying the Zeva2 application in OpenShift.
+
+name: Deploy Template By Pull Request
+
+on:
+  workflow_call:
+    inputs:
+      # The git reference to check out the repository
+      git_ref:
+        required: true
+        type: string
+      # The version of the application to build
+      # This is typically set by the GitVersion action in the calling workflow
+      version:
+        required: true
+        type: string
+      # The name of the values file to use for the deployment
+      values_file:
+        required: true
+        type: string
+    secrets:
+      # the key used to checkout CD repository
+      manifest-repo-token:
+        required: true
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  deploy:
+    name: Deploy Zeva2
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+
+    steps:
+      - name: Restore oc command from Cache
+        uses: actions/cache@v4.2.0
+        with:
+          path: /usr/local/bin/oc
+          key: oc-cli-${{ runner.os }}
+
+      - name: Checkout CD repository
+        uses: actions/checkout@v4.1.1
+        with:
+          repository: bcgov-c/tenant-gitops-ea8eab
+          ref: main
+          token: ${{ secrets.manifest-repo-token }}
+
+      - name: Update tags
+        uses: mikefarah/yq@v4.40.5
+        with:
+          cmd: |
+            yq -i '.image.tag = "${{ inputs.version}}"' zeva2/zeva2-next/${{ inputs.values_file }}
+            yq -i '.image.tag = "${{ inputs.version}}"' zeva2/zeva2-bullmq/${{ inputs.values_file }}
+
+      - name: Create pull request to main
+        uses: peter-evans/create-pull-request@v6
+        with:
+          token: ${{ secrets.manifest-repo-token }}
+          commit-message: "Update zeva2 image tags to ${{ inputs.version }}"
+          title: "Update zeva2 image tags to ${{ inputs.version }}"
+          body: "Automated update of image tags for zeva2 next and bullmq values files."
+          branch: "zeva2/update-tags-${{ inputs.version }}-${{ github.run_id }}"
+          base: main
+          add-paths: |
+            zeva2/zeva2-next/${{ inputs.values_file}}
+            zeva2/zeva2-bullmq/${{ inputs.values_file}}

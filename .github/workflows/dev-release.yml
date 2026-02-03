@@ -164,11 +164,11 @@ jobs:
 
   deploy-dev:
     name: Deploy Zeva2 develop branch TO Dev
-    needs: [tag-images-dev]
-    uses: ./.github/workflows/deploy-template.yaml
+    needs: [release, tag-images-dev]
+    uses: ./.github/workflows/deploy-template-by-pr.yaml
     with:
       git_ref: ${{ github.ref_name }}
-      version: ${{ needs.versioning.outputs.VERSION }}
+      version: ${{ needs.release.outputs.release_version }}
       values_file: values-dev.yaml
     secrets:
-      manifest-repo-deploy-key: ${{ secrets.MANIFEST_REPO_DEPLOY_KEY }}
+      manifest-repo-token: ${{ secrets.MANIFEST_REPO_TOKEN }}
