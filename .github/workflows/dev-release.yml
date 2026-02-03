@@ -127,7 +127,7 @@ jobs:
 
   build-dev:
     name: Build Zeva2 for Dev
-    needs: [install-oc, report-version]
+    needs: [install-oc, release, report-version]
     if: needs.release.outputs.release_is_new == 'true'
     uses: ./.github/workflows/build-template.yaml
     with:
