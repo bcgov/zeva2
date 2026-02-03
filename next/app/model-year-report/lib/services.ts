@@ -320,7 +320,7 @@ export const getZevUnitData = async (
   nvValues: NvValues,
   zevClassOrdering: ZevClass[],
   adjustments: AdjustmentPayload[],
-  forReassessment: boolean,
+  excludeReductions: boolean,
 ) => {
   const reportableNvValue = nvValues[VehicleClass.REPORTABLE];
   if (!reportableNvValue) {
@@ -340,7 +340,7 @@ export const getZevUnitData = async (
   const currentTransactions = await getTransactionsForModelYear(
     orgId,
     modelYear,
-    forReassessment,
+    excludeReductions,
   );
   const transformedAdjustments = getTransformedAdjustments(adjustments);
   const [endingBalance, offsettedCredits] = calculateBalance(
