@@ -120,7 +120,7 @@ export const getMyrData = async (
       nvValues,
       zevClassOrdering,
       [],
-      false,
+      true,
     );
     return getDataActionResponse<MyrData>({
       modelYear,
