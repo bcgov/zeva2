@@ -1,3 +1,11 @@
+## [1.0.4](https://github.com/bcgov/zeva2/compare/v1.0.3...v1.0.4) (2026-02-03)
+
+
+### Bug Fixes
+
+* add fix2 ([d3aa274](https://github.com/bcgov/zeva2/commit/d3aa274af1824f1cd7c5cd02bf0393d63105b607))
+* add fix3 ([7341c17](https://github.com/bcgov/zeva2/commit/7341c17863468ba7f5b28eeb6294976311aadbf6))
+
 ## [1.0.3](https://github.com/bcgov/zeva2/compare/v1.0.2...v1.0.3) (2026-02-03)
 
 
