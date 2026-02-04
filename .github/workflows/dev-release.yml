@@ -198,12 +198,12 @@ jobs:
           oc tag ${{ env.TOOLS_NAMESPACE }}/zeva2-bullmq:${{ needs.release.outputs.release_version}} ${{ env.DEV_NAMESPACE }}/zeva2-bullmq:${{ needs.release.outputs.release_version}}
 
   deploy-dev:
-    name: Deploy Zeva2 develop branch TO Dev
+    name: Deploy Zeva2 on Dev
     needs: [release, tag-images-dev]
-    uses: ./.github/workflows/deploy-template-by-pr.yaml
+    uses: ./.github/workflows/deploy-template.yaml
     with:
       git_ref: ${{ github.ref_name }}
       version: ${{ needs.release.outputs.release_version }}
       values_file: values-dev.yaml
     secrets:
-      manifest-repo-token: ${{ secrets.MANIFEST_REPO_TOKEN }}
+      manifest-repo-deploy-key: ${{ secrets.MANIFEST_REPO_DEPLOY_KEY }}
