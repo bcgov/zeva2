@@ -1,3 +1,10 @@
+## [1.0.5](https://github.com/bcgov/zeva2/compare/v1.0.4...v1.0.5) (2026-02-04)
+
+
+### Bug Fixes
+
+* update deploy-template-by-pr ([7b0fb4f](https://github.com/bcgov/zeva2/commit/7b0fb4fd2064b8b4d9f6c6db76e5247c03e6521b))
+
 ## [1.0.4](https://github.com/bcgov/zeva2/compare/v1.0.3...v1.0.4) (2026-02-03)
 
 
