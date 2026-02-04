@@ -3,7 +3,7 @@ name: New Dev Release
 on:
   push:
     branches:
-      - devops/semantic-release
+      - main
   workflow_dispatch:
 
 permissions:
