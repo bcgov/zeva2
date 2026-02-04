@@ -116,7 +116,7 @@ jobs:
           oc tag ${{ env.TOOLS_NAMESPACE }}/zeva2-next:${{ needs.versioning.outputs.VERSION}} ${{ env.DEV_NAMESPACE}}/zeva2-next:${{ needs.versioning.outputs.VERSION}}
           oc tag ${{ env.TOOLS_NAMESPACE }}/zeva2-bullmq:${{ needs.versioning.outputs.VERSION}} ${{ env.DEV_NAMESPACE }}/zeva2-bullmq:${{ needs.versioning.outputs.VERSION}}
 
-  # deploy to Dev
+  # deploy to Dev through pull request to manifest repo
   deploy:
     name: Deploy Zeva2 develop branch TO Dev
     needs: [install-oc, versioning, tag-images]
