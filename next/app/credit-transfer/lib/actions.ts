@@ -168,7 +168,7 @@ export const govRecommendTransfer = async (
   comment?: string,
 ): Promise<ErrorOrSuccessActionResponse> => {
   const { userId, userIsGov, userRoles } = await getUserInfo();
-  if (!userIsGov || !userRoles.includes(Role.ENGINEER_ANALYST)) {
+  if (!userIsGov || !userRoles.includes(Role.ZEVA_IDIR_USER)) {
     return getErrorActionResponse("Unauthorized!");
   }
   if (

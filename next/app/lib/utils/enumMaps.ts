@@ -19,6 +19,7 @@ import {
   ReassessmentStatus,
   ReferenceType,
   Role,
+  SupplementaryReportStatus,
   SupplierClass,
   SupplierReassessmentStatus,
   TransactionType,
@@ -67,10 +68,12 @@ export const idpTransformer = (s: string) => {
 };
 
 export const roleTransformer = (s: string) => {
-  if (s === Role.ENGINEER_ANALYST) {
-    return "Engineer/Analyst";
-  } else if (s === Role.ZEVA_USER) {
-    return "ZEVA User";
+  if (s === Role.ZEVA_IDIR_USER) {
+    return "ZEVA IDIR User";
+  } else if (s === Role.ZEVA_IDIR_USER_READ_ONLY) {
+    return "ZEVA IDIR User (read-only)";
+  } else if (s === Role.ZEVA_BCEID_USER) {
+    return "ZEVA BCeID User";
   }
   return statusTransformer(s);
 };
@@ -317,4 +320,18 @@ export const getStringsToSupplierClassEnumsMap = () => {
 
 export const getSupplierClassEnumsToStringsMap = () => {
   return getEnumsToStringsMap<SupplierClass>(SupplierClass, statusTransformer);
+};
+
+export const getStringsToSupplementaryReportStatusEnumsMap = () => {
+  return getStringsToEnumsMap<SupplementaryReportStatus>(
+    SupplementaryReportStatus,
+    statusTransformer,
+  );
+};
+
+export const getSupplementaryReportStatusEnumsToStringsMap = () => {
+  return getEnumsToStringsMap<SupplementaryReportStatus>(
+    SupplementaryReportStatus,
+    statusTransformer,
+  );
 };

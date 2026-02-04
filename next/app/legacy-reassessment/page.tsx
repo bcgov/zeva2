@@ -6,7 +6,7 @@ import Link from "next/link";
 import { Button } from "../lib/components";
 import { Routes } from "../lib/constants";
 import { Role } from "@/prisma/generated/client";
-import { LegacyReassessmentsList } from "../model-year-report/lib/components/LegacyReassessmentsLists";
+import { LegacyReassessmentsList } from "./lib/components/LegacyReassessmentsLists";
 
 // todo: since there should be a minimal number of legacy reassessments over time, we will
 // transition to using the "client-side" table when it becomes available.
@@ -16,7 +16,7 @@ const Page = async (props: { searchParams?: Promise<pageStringParams> }) => {
   const { page, pageSize } = getPageParams(searchParams, 1, 10);
 
   let canSubmitReassessment = false;
-  if (userIsGov && userRoles.includes(Role.ENGINEER_ANALYST)) {
+  if (userIsGov && userRoles.includes(Role.ZEVA_IDIR_USER)) {
     canSubmitReassessment = true;
   }
 

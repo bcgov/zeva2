@@ -10,10 +10,8 @@ const Page = async () => {
   const orgsMap = await getOrgsMap(null, true);
   return (
     <div className="max-w-xl mx-auto p-4">
-      <h1 className="text-xl font-bold mb-4">
-        Reassess a Legacy Model Year Report
-      </h1>
-      <AssessmentForm assessmentType="legacyReassessment" orgsMap={orgsMap} />
+      <h1 className="text-xl font-bold mb-4">Create a Legacy Reassessment</h1>
+      <AssessmentForm type="legacyNewReassessment" orgsMap={orgsMap} />
     </div>
   );
 };

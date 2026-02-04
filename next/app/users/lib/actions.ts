@@ -3,7 +3,7 @@
 import { getUserInfo } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { Idp, Role, User } from "@/prisma/generated/client";
-import { userIsAdmin } from "./utils";
+import { userIsAdmin } from "./utilsServer";
 import {
   DataOrErrorActionResponse,
   ErrorOrSuccessActionResponse,
@@ -11,8 +11,8 @@ import {
   getErrorActionResponse,
   getSuccessActionResponse,
 } from "@/app/lib/utils/actionResponse";
-import { govRoles, supplierRoles } from "./constants";
 import { orgIsGovernment } from "./services";
+import { validateRoles } from "./utils";
 
 export type UserPayload = Omit<User, "id" | "idp" | "idpSub" | "notifications">;
 
@@ -68,10 +68,12 @@ export async function createUser(
   }
   const orgIsGov = await orgIsGovernment(dataOrgId);
   const roles = data.roles;
-  if (
-    (!orgIsGov && roles.some((role) => govRoles.includes(role))) ||
-    (orgIsGov && roles.some((role) => supplierRoles.includes(role)))
-  ) {
+  try {
+    validateRoles(roles, orgIsGov);
+  } catch (e) {
+    if (e instanceof Error) {
+      return getErrorActionResponse(e.message);
+    }
     return getErrorActionResponse("Invalid Role detected!");
   }
   let idp: Idp = Idp.BCEID_BUSINESS;
@@ -99,14 +101,19 @@ export const updateRoles = async (
       id: userId,
     },
     select: {
-      organizationId: true,
+      organization: {
+        select: {
+          id: true,
+          isGovernment: true,
+        },
+      },
       roles: true,
     },
   });
   if (!user) {
     return getErrorActionResponse("User not found!");
   }
-  if (!userIsGov && user.organizationId !== userOrgId) {
+  if (!userIsGov && user.organization.id !== userOrgId) {
     return getErrorActionResponse("Unauthorized!");
   }
   const newRoles: Role[] = [];
@@ -120,6 +127,14 @@ export const updateRoles = async (
     }
   } else {
     return getDataActionResponse(user.roles);
+  }
+  try {
+    validateRoles(newRoles, user.organization.isGovernment);
+  } catch (e) {
+    if (e instanceof Error) {
+      return getErrorActionResponse(e.message);
+    }
+    return getErrorActionResponse("Invalid Role detected!");
   }
   const updatedUser = await prisma.user.update({
     where: {

@@ -15,13 +15,9 @@ import {
 } from "@/lib/utils/urlSearchParams";
 import { LoadingSkeleton } from "./skeletons";
 import { Button } from "./inputs";
+import { TableHeader } from "./TableHeader";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import {
-  faAngleDown,
-  faAngleUp,
-  faAngleLeft,
-  faAngleRight,
-} from "@fortawesome/free-solid-svg-icons";
+import { faAngleLeft, faAngleRight } from "@fortawesome/free-solid-svg-icons";
 
 interface ITableProps<T> {
   columns: ColumnDef<T, any>[];
@@ -167,7 +163,7 @@ export const Table = <T extends ZevaObject>({
 
   const sortsMap = React.useMemo(() => {
     const sorts = searchParams.get("sorts");
-    return getObject(sorts);
+    return getObject(sorts) as { [key: string]: "asc" | "desc" | null };
   }, [searchParams]);
 
   const handleSortChange = React.useCallback(
@@ -206,43 +202,6 @@ export const Table = <T extends ZevaObject>({
     }
   };
 
-  const getSizingHeaders: () => React.JSX.Element | null = () => {
-    if (!explicitSizing) {
-      return null;
-    }
-    const lastGroup = table.getHeaderGroups().at(-1);
-    if (!lastGroup) {
-      return null;
-    }
-    const sizingHeaders: React.JSX.Element[] = lastGroup.headers.map(
-      (header) => (
-        <th
-          key={header.id}
-          className="px-6 py-3 border-b-2 relative"
-          style={{ width: header.getSize() }}
-        >
-          <div
-            {...{
-              onDoubleClick: () => header.column.resetSize(),
-              onMouseDown: header.getResizeHandler(),
-              className:
-                "bg-primaryBlue absolute w-[5px] h-full top-0 right-0 cursor-col-resize select-none touch-none",
-              style: {
-                transform: header.column.getIsResizing()
-                  ? `translateX(${table.getState().columnSizingInfo.deltaOffset ?? 0}px)`
-                  : "",
-              },
-            }}
-          />
-        </th>
-      ),
-    );
-    if (sizingHeaders) {
-      return <tr key={"sizingHeaders"}>{sizingHeaders}</tr>;
-    }
-    return null;
-  };
-
   if (navigationPending) {
     return <LoadingSkeleton />;
   }
@@ -257,82 +216,19 @@ export const Table = <T extends ZevaObject>({
         <table
           className={`w-full divide-y divide-gray-200 rounded border-t border-l border-r border-navBorder ${explicitSizing ? "table-fixed" : ""}`}
         >
-          <thead className="bg-gray-50">
-            {explicitSizing && getSizingHeaders()}
-            {table.getHeaderGroups().map((headerGroup) => (
-              <tr key={headerGroup.id}>
-                {headerGroup.headers.map((header) => (
-                  <th
-                    key={header.id}
-                    className={`px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider ${explicitSizing ? "truncate" : ""}`}
-                    style={
-                      explicitSizing ? { width: header.getSize() } : undefined
-                    }
-                  >
-                    <span
-                      className={`inline-flex gap-1 ${stackHeaderContents ? "flex-col items-start" : "items-center"}`}
-                    >
-                      {header.isPlaceholder ? null : (
-                        <>
-                          <div
-                            className={
-                              header.column.getCanSort()
-                                ? "cursor-pointer select-none"
-                                : ""
-                            }
-                            onClick={() => {
-                              if (header.column.getCanSort()) {
-                                handleSortChange(header.id);
-                              }
-                            }}
-                          >
-                            {flexRender(
-                              header.column.columnDef.header,
-                              header.getContext(),
-                            )}
-                            {sortsMap[header.id] === "asc" ? (
-                              <FontAwesomeIcon
-                                icon={faAngleUp}
-                                className="mb-1"
-                              />
-                            ) : sortsMap[header.id] === "desc" ? (
-                              <FontAwesomeIcon
-                                icon={faAngleDown}
-                                className="mb-1"
-                              />
-                            ) : (
-                              ""
-                            )}
-                          </div>
-                          {header.column.getCanFilter() ? (
-                            <div>
-                              <input
-                                className="w-36 border shadow-level-1 rounded"
-                                onChange={(event) => {
-                                  handleFilterChange(
-                                    header.id,
-                                    event.target.value,
-                                  );
-                                }}
-                                onKeyDown={(event) => {
-                                  if (event.key === "Enter") {
-                                    handleFilterApply();
-                                  }
-                                }}
-                                placeholder={"Press Enter to Search"}
-                                type="text"
-                                value={filters[header.id] ?? ""}
-                              />
-                            </div>
-                          ) : null}
-                        </>
-                      )}
-                    </span>
-                  </th>
-                ))}
-              </tr>
-            ))}
-          </thead>
+          <TableHeader
+            table={table}
+            explicitSizing={explicitSizing}
+            stackHeaderContents={stackHeaderContents}
+            enableSorting={true}
+            enableFiltering={true}
+            onSortChange={handleSortChange}
+            onFilterChange={handleFilterChange}
+            sortState={sortsMap}
+            filterState={filters}
+            filterOnApply={true}
+            onFilterApply={handleFilterApply}
+          />
           <tbody className="bg-white divide-y divide-gray-200">
             {table.getRowModel().rows.map((row) => (
               <tr

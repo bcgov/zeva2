@@ -13,7 +13,7 @@ import {
 } from "react";
 import { updateRoles } from "../actions";
 import { govRoles, supplierRoles } from "../constants";
-import { validateRoles } from "../utilsClient";
+import { validateRoles } from "../utils";
 
 export const RoleSelector = (props: {
   // if userId is undefined, then we're using this component as part of the "create user" process;
@@ -51,15 +51,36 @@ export const RoleSelector = (props: {
         "Can add and manage BCeID users and assign roles.",
       [Role.SIGNING_AUTHORITY]:
         "Can sign-off and submit Credit Applications and Transfers to government.",
-      [Role.ZEVA_USER]:
+      [Role.ZEVA_BCEID_USER]:
         "Can submit new ZEV models and create Credit Applications and Transfers.",
-      [Role.ENGINEER_ANALYST]:
+      [Role.ZEVA_IDIR_USER]:
         "Can add new auto suppliers and BCeID users, validate new ZEV Models; upload ICBC data, analyse and recommend issuance of Credit Applications and Transfers.",
       [Role.ADMINISTRATOR]: "Can add and manage IDIR users and assign roles.",
       [Role.DIRECTOR]:
         "Can provide statutory decisions to issue, record and/or approve Credit Applications and Transfers.",
+      [Role.ZEVA_IDIR_USER_READ_ONLY]:
+        "Can view government workflows and data but cannot make changes or decisions.",
     }),
     [],
+  );
+
+  const isRoleDisabled = useCallback(
+    (role: Role) => {
+      if (props.disabled) {
+        return true;
+      }
+      const isAlreadySelected = props.roles.includes(role);
+      if (isAlreadySelected) {
+        return false;
+      }
+      try {
+        validateRoles([...props.roles, role], props.govOrSupplier === "gov");
+        return false;
+      } catch {
+        return true;
+      }
+    },
+    [props.disabled, props.roles, props.govOrSupplier],
   );
 
   const handleRoleCheck = useCallback(
@@ -93,7 +114,7 @@ export const RoleSelector = (props: {
         }
         if (roleInQuestion.addOrRemove === "add") {
           const newRoles = [...props.roles, roleInQuestion.role];
-          validateRoles(newRoles);
+          validateRoles(newRoles, props.govOrSupplier === "gov");
         }
         const resp = await updateRoles(
           props.userId,
@@ -112,7 +133,7 @@ export const RoleSelector = (props: {
       }
       setShowModal(false);
     });
-  }, [props.userId, roleInQuestion, props.setError]);
+  }, [props.userId, roleInQuestion, props.setError, props.govOrSupplier]);
 
   return (
     <>
@@ -127,7 +148,7 @@ export const RoleSelector = (props: {
               type="checkbox"
               checked={props.roles.includes(role)}
               onChange={(e) => handleRoleCheck(role, e.target.checked)}
-              disabled={props.disabled}
+              disabled={isRoleDisabled(role)}
             />
             <span className="space-y-1">
               <p className="font-semibold text-primaryText">{rolesMap[role]}</p>

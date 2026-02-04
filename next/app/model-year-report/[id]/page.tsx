@@ -6,12 +6,14 @@ import { ModelYearReportDetails } from "../lib/components/ModelYearReportDetails
 import { ModelYearReportHistory } from "../lib/components/ModelYearReportHistory";
 import { getModelYearReport } from "../lib/data";
 import { SupplierActions } from "../lib/components/SupplierActions";
-import { ModelYearReportStatus, Role } from "@/prisma/generated/client";
+import { Role } from "@/prisma/generated/client";
 import { DirectorActions } from "../lib/components/DirectorActions";
 import { AnalystActions } from "../lib/components/AnalystActions";
 import { AssessmentDetails } from "../lib/components/AssessmentDetails";
 import { ForecastReportDetails } from "../lib/components/ForecastReportDetails";
 import { ReassessmentsList } from "../lib/components/ReassessmentsList";
+import { SupplementaryList } from "../lib/components/SupplementaryList";
+import { canCreateReassessment, canCreateSupplementary } from "../lib/services";
 
 const Page = async (props: { params: Promise<{ id: string }> }) => {
   const args = await props.params;
@@ -23,16 +25,29 @@ const Page = async (props: { params: Promise<{ id: string }> }) => {
   const status = myr.status;
   const { userIsGov, userRoles } = await getUserInfo();
   let actionComponent: JSX.Element | null = null;
-  if (!userIsGov) {
-    actionComponent = <SupplierActions id={myrId} status={status} />;
-  } else if (userRoles.includes(Role.DIRECTOR)) {
-    actionComponent = <DirectorActions myrId={myrId} status={status} />;
-  } else if (userRoles.includes(Role.ENGINEER_ANALYST)) {
+  if (userIsGov) {
+    if (userRoles.includes(Role.DIRECTOR)) {
+      actionComponent = <DirectorActions myrId={myrId} status={status} />;
+    } else if (userRoles.includes(Role.ZEVA_IDIR_USER)) {
+      actionComponent = (
+        <AnalystActions
+          myrId={myrId}
+          status={status}
+          assessmentExists={!!myr.assessment}
+          canCreateReassessment={await canCreateReassessment(
+            myrId,
+            userIsGov,
+            userRoles,
+          )}
+        />
+      );
+    }
+  } else {
     actionComponent = (
-      <AnalystActions
-        id={myrId}
-        status={status}
-        canConductReassessment={status === ModelYearReportStatus.ASSESSED}
+      <SupplierActions
+        myrId={myrId}
+        status={myr.supplierStatus}
+        canCreateSupplementary={await canCreateSupplementary(myrId, userIsGov)}
       />
     );
   }
@@ -42,6 +57,11 @@ const Page = async (props: { params: Promise<{ id: string }> }) => {
       <ContentCard title="Reassessments">
         <Suspense fallback={<LoadingSkeleton />}>
           <ReassessmentsList myrId={myrId} />
+        </Suspense>
+      </ContentCard>
+      <ContentCard title="Supplementary Reports">
+        <Suspense fallback={<LoadingSkeleton />}>
+          <SupplementaryList myrId={myrId} />
         </Suspense>
       </ContentCard>
       <ContentCard title="Model Year Report History">

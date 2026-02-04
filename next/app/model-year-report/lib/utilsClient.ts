@@ -22,7 +22,12 @@ import {
   AdjustmentPayload,
   AssessmentData,
 } from "./actions";
-import { divisors, IsCompliant, SupplierZevClassChoice } from "./constants";
+import {
+  divisors,
+  interiorVolumes,
+  IsCompliant,
+  SupplierZevClassChoice,
+} from "./constants";
 import {
   getBalanceTypeEnumsToStringsMap,
   getModelYearEnumsToStringsMap,
@@ -31,7 +36,6 @@ import {
   getTransactionTypeEnumsToStringMap,
   getVehicleClassEnumsToStringsMap,
   getZevClassEnumsToStringsMap,
-  lowerCaseAndCapitalize,
 } from "@/app/lib/utils/enumMaps";
 import { Adjustment } from "./components/Adjustments";
 import {
@@ -41,7 +45,12 @@ import {
   isZevClass,
 } from "@/app/lib/utils/typeGuards";
 import { ComplianceInfo } from "./utilsServer";
-import { getAssessmentSheets, getMyrSheets } from "./utils";
+import {
+  getAssessmentSheets,
+  getForecastSheets,
+  getMyrSheets,
+  getNextThreeModelYears,
+} from "./utils";
 import { VehicleStatistics } from "./services";
 
 export const getZevClassOrdering = (
@@ -443,7 +452,13 @@ const writePreviousAdjustments = (
   helpingMaps: MyrHelpingMaps,
 ) => {
   records.forEach((record) => {
-    if (record.referenceType === ReferenceType.ASSESSMENT_ADJUSTMENT) {
+    const isLegacyDebitAdjustment =
+      record.referenceType === ReferenceType.AGREEMENT &&
+      record.type === TransactionType.DEBIT;
+    if (
+      record.referenceType === ReferenceType.ASSESSMENT_ADJUSTMENT ||
+      isLegacyDebitAdjustment
+    ) {
       sheet.addRow([
         helpingMaps.transactionTypesMap[record.type],
         helpingMaps.vehicleClassesMap[record.vehicleClass],
@@ -495,6 +510,89 @@ export const getWorkbook = async (buffer: Excel.Buffer) => {
   return workbook;
 };
 
-export const validateForecastReport = (workbook: Workbook) => {
-  //todo
+export const populateForecastTemplate = async (
+  template: Excel.Buffer,
+  modelYear: ModelYear,
+) => {
+  const workbook = await getWorkbook(template);
+  const { zevSheet, nonZevSheet } = getForecastSheets(workbook);
+  const nextThreeModelYears: string[] = getNextThreeModelYears(modelYear);
+  for (let i = 2; i <= 2001; i++) {
+    zevSheet.getCell(`A${i}`).dataValidation = {
+      type: "list",
+      allowBlank: true,
+      formulae: ['"' + nextThreeModelYears.join(",") + '"'],
+    };
+    zevSheet.getCell(`G${i}`).dataValidation = {
+      type: "list",
+      allowBlank: true,
+      formulae: ['"' + interiorVolumes.join(",") + '"'],
+    };
+  }
+  nonZevSheet.getCell("A2").value = nextThreeModelYears[0];
+  nonZevSheet.getCell("A3").value = nextThreeModelYears[1];
+  nonZevSheet.getCell("A4").value = nextThreeModelYears[2];
+  return workbook;
+};
+
+export const validateForecastReport = (
+  workbook: Workbook,
+  myrModelYear: ModelYear,
+) => {
+  const { zevSheet, nonZevSheet } = getForecastSheets(workbook);
+  const nextThreeModelYears = getNextThreeModelYears(myrModelYear);
+  const invalidRows: number[] = [];
+  for (let i = 2; i <= 2001; i++) {
+    const row = zevSheet.getRow(i);
+    const modelYear = row.getCell(1).toString();
+    const make = row.getCell(2).toString();
+    const modelName = row.getCell(3).toString();
+    const zevType = row.getCell(4).toString();
+    const range = row.getCell(5).toString();
+    const zevClass = row.getCell(6).toString();
+    const interiorVolume = row.getCell(7).toString();
+    const supplyForecast = row.getCell(8).toString();
+    if (
+      !modelYear &&
+      !make &&
+      !modelName &&
+      !zevType &&
+      !range &&
+      !zevClass &&
+      !interiorVolume &&
+      !supplyForecast
+    ) {
+      continue;
+    }
+    if (
+      modelYear &&
+      make &&
+      modelName &&
+      zevType &&
+      range &&
+      zevClass &&
+      interiorVolume &&
+      supplyForecast &&
+      nextThreeModelYears.includes(modelYear) &&
+      !Number.isNaN(Number.parseInt(range, 10)) &&
+      !Number.isNaN(Number.parseInt(supplyForecast, 10))
+    ) {
+      continue;
+    } else {
+      invalidRows.push(i);
+    }
+  }
+  if (invalidRows.length > 0) {
+    throw new Error(
+      `In the ZEV Forecast sheet, the following rows have missing or invalid data: ${invalidRows.join(", ")}. Please refer to the instructions sheet for guidance.`,
+    );
+  }
+  for (const cell of ["B2", "B3", "B4"]) {
+    const value = nonZevSheet.getCell(cell).toString();
+    if (!value || Number.isNaN(Number.parseInt(value, 10))) {
+      throw new Error(
+        `Missing or invalid value detected in the Non-ZEV Forecast sheet!`,
+      );
+    }
+  }
 };

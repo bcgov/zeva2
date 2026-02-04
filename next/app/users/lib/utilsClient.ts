@@ -1,9 +1,11 @@
-import { Notification, Role } from "@/prisma/generated/client";
+import { Role } from "@/prisma/generated/client";
 import { UserPayload } from "./actions";
+import { validateRoles } from "./utils";
 
 export const getUserPayload = (
   data: Partial<Record<string, string>>,
   roles: Role[],
+  rolesAreForGovUser: boolean,
 ): UserPayload => {
   if (
     !data.organizationId ||
@@ -19,7 +21,7 @@ export const getUserPayload = (
   if (Number.isNaN(orgId)) {
     throw new Error("Org ID is not a number!");
   }
-  validateRoles(roles);
+  validateRoles(roles, rolesAreForGovUser);
   return {
     organizationId: orgId,
     firstName: data.firstName,
@@ -29,12 +31,4 @@ export const getUserPayload = (
     isActive: data.isActive === "true",
     roles,
   };
-};
-
-export const validateRoles = (roles: Role[]) => {
-  if (roles.includes(Role.DIRECTOR) && roles.includes(Role.ENGINEER_ANALYST)) {
-    throw new Error(
-      "A user cannot have both the Director and Engineer/Analyst roles!",
-    );
-  }
 };

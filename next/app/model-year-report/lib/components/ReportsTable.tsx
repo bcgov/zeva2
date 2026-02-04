@@ -75,18 +75,25 @@ export const ReportsTable = (props: {
           return value ? IsCompliant.Yes : IsCompliant.No;
         },
       }),
-      columnHelper.accessor((row) => supplierClassesMap[row.supplierClass], {
-        id: "supplierClass",
-        enableSorting: true,
-        enableColumnFilter: true,
-        header: () => <span>Supplier Class</span>,
-      }),
-      columnHelper.accessor((row) => row.reportableNvValue, {
-        id: "reportableNvValue",
-        enableSorting: true,
-        enableColumnFilter: false,
-        header: () => <span>Reportable NV Value</span>,
-      }),
+      columnHelper.accessor(
+        (row) =>
+          row.supplierClass ? supplierClassesMap[row.supplierClass] : "--",
+        {
+          id: "supplierClass",
+          enableSorting: true,
+          enableColumnFilter: false,
+          header: () => <span>Supplier Class</span>,
+        },
+      ),
+      columnHelper.accessor(
+        (row) => (row.reportableNvValue ? row.reportableNvValue : "--"),
+        {
+          id: "reportableNvValue",
+          enableSorting: true,
+          enableColumnFilter: false,
+          header: () => <span>Reportable NV Value</span>,
+        },
+      ),
     ];
     if (props.userIsGov) {
       result.unshift(
