@@ -54,12 +54,29 @@ jobs:
             yq -i '.image.tag = "${{ inputs.version}}"' zeva2/zeva2-next/${{ inputs.values_file }}
             yq -i '.image.tag = "${{ inputs.version}}"' zeva2/zeva2-bullmq/${{ inputs.values_file }}
 
+      - name: Set pull request title
+        id: pr_title
+        shell: bash
+        run: |
+          case "${{ inputs.values_file }}" in
+            values-test.yaml)
+              title="Test Release - Update zeva2 image tags to ${{ inputs.version }}"
+              ;;
+            values-prod.yaml)
+              title="Prod Release - Update zeva2 image tags to ${{ inputs.version }}"
+              ;;
+            *)
+              title="Update zeva2 image tags to ${{ inputs.version }}"
+              ;;
+          esac
+          echo "title=$title" >> "$GITHUB_OUTPUT"
+
       - name: Create pull request to main
         uses: peter-evans/create-pull-request@v6
         with:
           token: ${{ secrets.manifest-repo-token }}
           commit-message: "Update zeva2 image tags to ${{ inputs.version }}"
-          title: "Update zeva2 image tags to ${{ inputs.version }}"
+          title: "${{ steps.pr_title.outputs.title }}"
           body: "Automated update of image tags for zeva2 next and bullmq values files."
           branch: "zeva2/update-tags-${{ inputs.version }}-${{ github.run_id }}"
           base: main
