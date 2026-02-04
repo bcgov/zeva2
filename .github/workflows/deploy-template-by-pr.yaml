@@ -59,6 +59,9 @@ jobs:
         shell: bash
         run: |
           case "${{ inputs.values_file }}" in
+            values-dev.yaml)
+              title="Dev Release - Update zeva2 image tags to ${{ inputs.version }}"
+              ;;
             values-test.yaml)
               title="Test Release - Update zeva2 image tags to ${{ inputs.version }}"
               ;;

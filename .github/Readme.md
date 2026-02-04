@@ -134,8 +134,8 @@ Use feature flags to disable the unmatured feature on prod release
 Every commit to main triggers this pipeline. It does the following:
 
 - run the jest test suit
-- run the semantic release process
-- build the images on Openshift Tools namespace
+- based on the conventional commit history, the semantic release process decides if needs to create a release
+- if there is a new release created, build the images on Openshift Tools namespace
 - deploy the images on Openshift Dev environment.
 
 ## promote-test.yaml
