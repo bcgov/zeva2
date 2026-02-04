@@ -3,7 +3,7 @@ name: PR Test
 on:
   push:
     branches:
-      - devops/semantic-release
+      - main
     paths:
       - "next/**"
   workflow_dispatch:
