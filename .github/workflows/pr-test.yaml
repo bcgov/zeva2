@@ -1,11 +1,8 @@
 name: PR Test
 
 on:
-  push:
-    branches:
-      - main
-    paths:
-      - "next/**"
+  pull_request:
+    types: [opened, edited, synchronize, reopened, ready_for_review]
   workflow_dispatch:
 
 permissions:
