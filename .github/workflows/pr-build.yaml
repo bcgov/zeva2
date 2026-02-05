@@ -28,31 +28,7 @@ jobs:
     if: >
       (github.event.action == 'labeled' && github.event.label.name == 'build' && github.event.pull_request.base.ref == 'main'  ) ||
       (github.event.action == 'synchronize' && contains(github.event.pull_request.labels.*.name, 'build') && github.event.pull_request.base.ref == 'main' )
-
-    runs-on: ubuntu-latest
-    outputs:
-      cache-hit: ${{ steps.cache.outputs.cache-hit }}
-    steps:
-      - name: Check out repository
-        uses: actions/checkout@v4.1.1
-
-      - name: Set up cache for OpenShift CLI
-        id: cache
-        uses: actions/cache@v4.2.0
-        with:
-          path: /usr/local/bin/oc # Path where the `oc` binary will be installed
-          key: oc-cli-${{ runner.os }}
-
-      - name: Install OpenShift CLI (if not cached)
-        if: steps.cache.outputs.cache-hit != 'true'
-        run: |
-          curl -LO https://mirror.openshift.com/pub/openshift-v4/clients/ocp/stable/openshift-client-linux.tar.gz
-          tar -xvf openshift-client-linux.tar.gz
-          sudo mv oc /usr/local/bin/
-          oc version --client
-
-      - name: Confirm OpenShift CLI is Available
-        run: oc version --client
+    uses: ./.github/workflows/install-oc-template.yaml
 
   # determine the version of the application
   # A sample version 0.1.0

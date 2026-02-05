@@ -4,13 +4,11 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: "Version to promote, major.minor.patch"
+        description: "Enter the version to promote to Test:"
         required: true
 
 permissions:
-  contents: write
-  issues: write
-  pull-requests: write
+  contents: read
 
 env:
   TOOLS_NAMESPACE: ${{ secrets.OPENSHIFT_NAMESPACE_PLATE }}-tools
@@ -18,30 +16,7 @@ env:
 
 jobs:
   install-oc:
-    runs-on: ubuntu-latest
-    outputs:
-      cache-hit: ${{ steps.cache.outputs.cache-hit }}
-    steps:
-      - name: Check out repository
-        uses: actions/checkout@v4.1.1
-
-      - name: Set up cache for OpenShift CLI
-        id: cache
-        uses: actions/cache@v4.2.0
-        with:
-          path: /usr/local/bin/oc # Path where the `oc` binary will be installed
-          key: oc-cli-${{ runner.os }}
-
-      - name: Install OpenShift CLI (if not cached)
-        if: steps.cache.outputs.cache-hit != 'true'
-        run: |
-          curl -LO https://mirror.openshift.com/pub/openshift-v4/clients/ocp/stable/openshift-client-linux.tar.gz
-          tar -xvf openshift-client-linux.tar.gz
-          sudo mv oc /usr/local/bin/
-          oc version --client
-
-      - name: Confirm OpenShift CLI is Available
-        run: oc version --client
+    uses: ./.github/workflows/install-oc-template.yaml
 
   tag-images-test:
     name: Tag Zeva2 images to Test
@@ -75,7 +50,7 @@ jobs:
           oc tag ${{ env.TOOLS_NAMESPACE }}/zeva2-bullmq:${{ inputs.version }} ${{ env.TEST_NAMESPACE }}/zeva2-bullmq:${{ inputs.version }}
 
   deploy-test:
-    name: Deploy Zeva2 develop branch TO Test
+    name: Deploy Zeva2 to Test
     needs: tag-images-test
     uses: ./.github/workflows/deploy-template-by-pr.yaml
     with:
