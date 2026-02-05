@@ -26,8 +26,8 @@ jobs:
   # install oc command line tool
   install-oc:
     if: >
-      (github.event.action == 'labeled' && github.event.label.name == 'build' && ( github.event.pull_request.base.ref == 'develop' || startsWith( github.event.pull_request.base.ref, 'release' ) ) ) ||
-      (github.event.action == 'synchronize' && contains(github.event.pull_request.labels.*.name, 'build') && ( github.event.pull_request.base.ref == 'develop' || startsWith( github.event.pull_request.base.ref, 'release' ) ) )
+      (github.event.action == 'labeled' && github.event.label.name == 'build' && github.event.pull_request.base.ref == 'main'  ) ||
+      (github.event.action == 'synchronize' && contains(github.event.pull_request.labels.*.name, 'build') && github.event.pull_request.base.ref == 'main' )
 
     runs-on: ubuntu-latest
     outputs:
