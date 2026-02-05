@@ -24,8 +24,7 @@ on:
         required: true
 
 permissions:
-  contents: write
-  pull-requests: write
+  contents: read
 
 jobs:
   deploy:
