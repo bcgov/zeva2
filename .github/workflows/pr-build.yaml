@@ -7,8 +7,7 @@ on:
   pull_request_target:
     types: [labeled, synchronize]
     branches:
-      - develop
-      - release/*
+      - main
 
 permissions:
   contents: read
@@ -56,11 +55,11 @@ jobs:
         run: oc version --client
 
   # determine the version of the application
-  # A sample version 0.1.0-pr66.91
+  # A sample version 0.1.0
   versioning:
     if: >
-      (github.event.action == 'labeled' && github.event.label.name == 'build' && ( github.event.pull_request.base.ref == 'develop' || startsWith( github.event.pull_request.base.ref, 'release' ) ) ) ||
-      (github.event.action == 'synchronize' && contains(github.event.pull_request.labels.*.name, 'build') && ( github.event.pull_request.base.ref == 'develop' || startsWith( github.event.pull_request.base.ref, 'release' ) ) )
+      (github.event.action == 'labeled' && github.event.label.name == 'build' && github.event.pull_request.base.ref == 'main' ) ||
+      (github.event.action == 'synchronize' && contains(github.event.pull_request.labels.*.name, 'build') && github.event.pull_request.base.ref == 'main' )
 
     runs-on: ubuntu-latest
 
@@ -85,18 +84,6 @@ jobs:
         with:
           versionSpec: "6.0.x"
 
-      - name: Determine Version
-        id: version-step # step id used as reference for output values
-        uses: gittools/actions/gitversion/execute@v3.1.11
-        with:
-          useConfigFile: true
-
-      - name: Show GitVersion Config
-        run: |
-          pwd
-          ls -l /opt/hostedtoolcache/GitVersion.Tool
-          /opt/hostedtoolcache/GitVersion.Tool/6.0.5/dotnet-gitversion /showconfig
-
       # The original version fron gitversion is in the format 0.1.0-alpha.91
       # We need to change the alpha to pr<pr_number> so that we can deploy to dev
       # The version will be in the format 0.1.0-pr<pr_number>.91
@@ -104,12 +91,7 @@ jobs:
       - name: Export Version
         id: export-version
         run: |
-          VERSION="${{ steps.version-step.outputs.SemVer }}"
-          echo "ORIGINAL_VERSION=${VERSION}"
-          PR_NUMBER="${{ env.PR_NUMBER }}"
-          UPDATED_VERSION="${VERSION/alpha/pr${PR_NUMBER}}"
-          echo "VERSION=${UPDATED_VERSION}"
-          echo "VERSION=${UPDATED_VERSION}" >> $GITHUB_OUTPUT
+          echo "VERSION=pr${{ env.PR_NUMBER }}" | tee -a "$GITHUB_OUTPUT"
 
   # verify PR author
   # only allow certain users to trigger the build
@@ -123,7 +105,7 @@ jobs:
         uses: actions/github-script@v6
         with:
           script: |
-            const allowedAuthors = ['kuanfandevops', 'emi-hi', 'JulianForeman', 'rogerlcleung', 'tim738745', 'dependabot[bot]'];
+            const allowedAuthors = ['kuanfandevops', 'emi-hi', 'JulianForeman', 'tim738745', 'dallascrichmond', 'dependabot[bot]'];
             const prAuthor = context.payload.pull_request.user.login;
             if (!allowedAuthors.includes(prAuthor)) {
               throw new Error(`PR author ${prAuthor} is not allowed.`);
