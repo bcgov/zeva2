@@ -66,7 +66,7 @@ jobs:
         run: |
           set -euo pipefail
           for image in zeva2-next zeva2-bullmq; do
-            if ! oc get istag "${{ env.TOOLS_NAMESPACE }}/${image}:${{ inputs.version }}" >/dev/null 2>&1; then
+            if ! oc -n ${{ env.TOOLS_NAMESPACE }} get istag ${image}:${{ inputs.version }} >/dev/null 2>&1; then
               echo "Image tag not found: ${{ env.TOOLS_NAMESPACE }}/${image}:${{ inputs.version }}"
               exit 1
             fi
