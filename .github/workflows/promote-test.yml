@@ -50,7 +50,7 @@ jobs:
           oc tag ${{ env.TOOLS_NAMESPACE }}/zeva2-bullmq:${{ inputs.version }} ${{ env.TEST_NAMESPACE }}/zeva2-bullmq:${{ inputs.version }}
 
   deploy-test:
-    name: Deploy Zeva2 TO Test
+    name: Deploy Zeva2 to Test
     needs: tag-images-test
     uses: ./.github/workflows/deploy-template-by-pr.yaml
     with:
