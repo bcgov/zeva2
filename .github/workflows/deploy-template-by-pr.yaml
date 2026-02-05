@@ -47,6 +47,16 @@ jobs:
           ref: main
           token: ${{ secrets.manifest-repo-token }}
 
+      - name: Check if the tag has been released
+        shell: bash
+        run: |
+          set -euo pipefail
+          current_tag=$(yq -r '.image.tag' "zeva2/zeva2-next/${{ inputs.values_file }}")
+          if [ "$current_tag" = "${{ inputs.version }}" ]; then
+            echo "The tag ${{ inputs.version }} has been deployed"
+            exit 1
+          fi
+
       - name: Update tags
         uses: mikefarah/yq@v4.40.5
         with:
@@ -61,27 +71,32 @@ jobs:
           case "${{ inputs.values_file }}" in
             values-dev.yaml)
               title="Dev Release - Update zeva2 image tags to ${{ inputs.version }}"
+              branch="dev-release-${{ inputs.version }}-${{ github.run_id }}"
               ;;
             values-test.yaml)
               title="Test Release - Update zeva2 image tags to ${{ inputs.version }}"
+              branch="test-release-${{ inputs.version }}-${{ github.run_id }}"
               ;;
             values-prod.yaml)
               title="Prod Release - Update zeva2 image tags to ${{ inputs.version }}"
+              branch="prod-release-${{ inputs.version }}-${{ github.run_id }}"
               ;;
             *)
-              title="Update zeva2 image tags to ${{ inputs.version }}"
+              echo "Unsupported values_file: ${{ inputs.values_file }}"
+              exit 1
               ;;
           esac
           echo "title=$title" >> "$GITHUB_OUTPUT"
+          echo "branch=$branch" >> "$GITHUB_OUTPUT"
 
       - name: Create pull request to main
         uses: peter-evans/create-pull-request@v6
         with:
           token: ${{ secrets.manifest-repo-token }}
-          commit-message: "Update zeva2 image tags to ${{ inputs.version }}"
+          commit-message: "${{ steps.pr_title.outputs.title }}"
           title: "${{ steps.pr_title.outputs.title }}"
-          body: "Automated update of image tags for zeva2 next and bullmq values files."
-          branch: "zeva2/update-tags-${{ inputs.version }}-${{ github.run_id }}"
+          body: "${{ steps.pr_title.outputs.title }}"
+          branch: "${{ steps.pr_title.outputs.branch }}"
           base: main
           add-paths: |
             zeva2/zeva2-next/${{ inputs.values_file}}
