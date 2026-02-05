@@ -47,6 +47,16 @@ jobs:
           ref: main
           token: ${{ secrets.manifest-repo-token }}
 
+      - name: Check if the tag has been released
+        shell: bash
+        run: |
+          set -euo pipefail
+          current_tag=$(yq -r '.image.tag' "zeva2/zeva2-next/${{ inputs.values_file }}")
+          if [ "$current_tag" = "${{ inputs.version }}" ]; then
+            echo "The tag ${{ inputs.version }} has been deployed"
+            exit 1
+          fi
+
       - name: Update tags
         uses: mikefarah/yq@v4.40.5
         with:
