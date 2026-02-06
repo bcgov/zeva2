@@ -139,61 +139,6 @@ jobs:
             echo "There is no new release created so no new image build is needed."
           fi
 
-  changelog-pr:
-    name: Update changelog and version
-    needs: release
-    if: needs.release.outputs.release_is_new == 'true'
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-      pull-requests: write
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: "22"
-          cache: "npm"
-          cache-dependency-path: ./package-lock.json
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Update CHANGELOG.md
-        run: |
-          touch CHANGELOG.md
-          npx --yes conventional-changelog -p conventionalcommits -i CHANGELOG.md -s -r 0
-
-      - name: Update VERSION
-        run: |
-          echo "${{ needs.release.outputs.release_version }}" > VERSION
-
-      - name: Create changelog PR
-        id: cpr
-        uses: peter-evans/create-pull-request@v6
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          commit-message: "chore: update changelog for v${{ needs.release.outputs.release_version }}"
-          title: "chore: update changelog for v${{ needs.release.outputs.release_version }}"
-          body: "Automated update of CHANGELOG.md and VERSION."
-          branch: "chore/changelog-v${{ needs.release.outputs.release_version }}-${{ github.run_id }}"
-          base: main
-          add-paths: |
-            CHANGELOG.md
-            VERSION
-
-      - name: Enable auto-merge
-        if: steps.cpr.outputs.pull-request-number != ''
-        uses: peter-evans/enable-pull-request-automerge@v3
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          pull-request-number: ${{ steps.cpr.outputs.pull-request-number }}
-          merge-method: squash
-
   build-dev:
     name: Build Zeva2 for Dev
     needs: [install-oc, release, report-version]
