@@ -4,6 +4,9 @@ RUN apt-get update && apt-get install -y bash
 
 WORKDIR /next
 
+ARG ZEVA2_VERSION
+ENV ZEVA2_VERSION=$ZEVA2_VERSION
+
 COPY . .
 
 RUN npm install

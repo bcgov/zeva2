@@ -56,6 +56,9 @@ objects:
       strategy:
         dockerStrategy:
           dockerfilePath: ./Dockerfile-Openshift
+          buildArgs:
+            - name: ZEVA2_VERSION
+              value: ${VERSION}
           pullSecret:
             name: artifacts-pull-zeva2-artifactory-service-account-zbazfi
         type: Docker
