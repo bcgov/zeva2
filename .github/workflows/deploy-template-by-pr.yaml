@@ -47,10 +47,12 @@ jobs:
           token: ${{ secrets.manifest-repo-token }}
 
       - name: Check if the tag has been released
+        id: check_tag
         shell: bash
         run: |
           set -euo pipefail
           current_tag=$(yq -r '.image.tag' "zeva2/zeva2-next/${{ inputs.values_file }}")
+          echo "current_tag=$current_tag" >> "$GITHUB_OUTPUT"
           if [ "$current_tag" = "${{ inputs.version }}" ]; then
             echo "The tag ${{ inputs.version }} has been deployed"
             exit 1
@@ -63,39 +65,48 @@ jobs:
             yq -i '.image.tag = "${{ inputs.version}}"' zeva2/zeva2-next/${{ inputs.values_file }}
             yq -i '.image.tag = "${{ inputs.version}}"' zeva2/zeva2-bullmq/${{ inputs.values_file }}
 
-      - name: Set pull request title
-        id: pr_title
+      - name: Set pull request info
+        id: pr_info
         shell: bash
         run: |
           case "${{ inputs.values_file }}" in
             values-dev.yaml)
-              title="Dev Release - Update zeva2 image tags to ${{ inputs.version }}"
               branch="dev-release-${{ inputs.version }}-${{ github.run_id }}"
+              env_name="Dev"
               ;;
             values-test.yaml)
-              title="Test Release - Update zeva2 image tags to ${{ inputs.version }}"
               branch="test-release-${{ inputs.version }}-${{ github.run_id }}"
+              env_name="Test"
               ;;
             values-prod.yaml)
-              title="Prod Release - Update zeva2 image tags to ${{ inputs.version }}"
               branch="prod-release-${{ inputs.version }}-${{ github.run_id }}"
+              env_name="Prod"
               ;;
             *)
               echo "Unsupported values_file: ${{ inputs.values_file }}"
               exit 1
               ;;
           esac
+          title="${env_name} Release - Update zeva2 image tags to ${{ inputs.version }}"
           echo "title=$title" >> "$GITHUB_OUTPUT"
           echo "branch=$branch" >> "$GITHUB_OUTPUT"
+          {
+            echo "body<<EOF"
+            echo "Environment: ${env_name}"
+            echo ""
+            echo "- Current version: ${{ steps.check_tag.outputs.current_tag }}"
+            echo "- Target version: **${{ inputs.version }}**"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
 
       - name: Create pull request to main
         uses: peter-evans/create-pull-request@v6
         with:
           token: ${{ secrets.manifest-repo-token }}
-          commit-message: "${{ steps.pr_title.outputs.title }}"
-          title: "${{ steps.pr_title.outputs.title }}"
-          body: "${{ steps.pr_title.outputs.title }}"
-          branch: "${{ steps.pr_title.outputs.branch }}"
+          commit-message: "${{ steps.pr_info.outputs.title }}"
+          title: "${{ steps.pr_info.outputs.title }}"
+          body: "${{ steps.pr_info.outputs.body }}"
+          branch: "${{ steps.pr_info.outputs.branch }}"
           base: main
           add-paths: |
             zeva2/zeva2-next/${{ inputs.values_file}}
