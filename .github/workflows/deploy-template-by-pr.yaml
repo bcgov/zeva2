@@ -87,11 +87,17 @@ jobs:
               exit 1
               ;;
           esac
-          body="The active version on ${env_name} is ${{ steps.check_tag.outputs.current_tag }}\nThis PR will deploy ${{ inputs.version }} to ${env_name}"
           title="${env_name} Release - Update zeva2 image tags to ${{ inputs.version }}"
           echo "title=$title" >> "$GITHUB_OUTPUT"
           echo "branch=$branch" >> "$GITHUB_OUTPUT"
-          echo "body=$body" >> "$GITHUB_OUTPUT"
+          {
+            echo "body<<EOF"
+            echo "Environment: ${env_name}"
+            echo ""
+            echo "- Current version: ${{ steps.check_tag.outputs.current_tag }}"
+            echo "- Target version: **${{ inputs.version }}**"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
 
       - name: Create pull request to main
         uses: peter-evans/create-pull-request@v6
