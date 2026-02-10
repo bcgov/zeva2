@@ -107,11 +107,12 @@ jobs:
             echo "EOF"
           } >> "$GITHUB_OUTPUT"
 
+      # if it's a backward deployment, the PR will require manual approval before merging
       - name: Require approval for backward deployment
         if: steps.backward_check.outputs.is_backward == 'true'
         uses: trstringer/manual-approval@v1.10.0
         with:
-          secret: ${{ secrets.GITHUB_TOKEN }}
+          secret: ${{ secrets.manifest-repo-token }}
           approvers: emi-hi,tim738745,kuanfandevops,JulianForeman,dallascrichmond,ArawuSamuel1,danclancy85
           minimum-approvals: 1
           issue-title: "${{ steps.pr_info.outputs.env_name }} Release - backward deployment needs to be approved"
