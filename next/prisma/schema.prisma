@@ -666,8 +666,10 @@ enum ReassessmentStatus {
   SUBMITTED_TO_DIRECTOR
 }
 
-enum SupplierReassessmentStatus {
-  ISSUED
+enum SupplementaryReportStatus {
+  ACKNOWLEDGED
+  DRAFT
+  SUBMITTED
 }
 
 enum SupplierClass {
@@ -677,24 +679,24 @@ enum SupplierClass {
 }
 
 model ModelYearReport {
-  id                         Int                           @id @default(autoincrement())
-  organization               Organization                  @relation(fields: [organizationId], references: [id])
-  organizationId             Int                           @map("organization_id")
-  modelYear                  ModelYear                     @map("model_year")
-  status                     ModelYearReportStatus
-  supplierStatus             ModelYearReportSupplierStatus @map("supplier_status")
-  reassessmentStatus         ReassessmentStatus?           @map("reassessment_status")
-  supplierReassessmentStatus SupplierReassessmentStatus?   @map("supplier_reassessment_status")
-  objectName                 String                        @unique @map("object_name")
-  forecastReportObjectName   String                        @unique @map("forecast_report_object_name")
-  forecastReportFileName     String                        @unique @map("forecast_report_file_name")
-  compliant                  Boolean?
-  reportableNvValue          Int?                          @map("reportable_nv_value")
-  supplierClass              SupplierClass?                @map("supplier_class")
-  modelYearReportHistory     ModelYearReportHistory[]
-  assessment                 Assessment?
-  Reassessment               Reassessment[]
-  supplementaryReports       SupplementaryReport[]
+  id                        Int                           @id @default(autoincrement())
+  organization              Organization                  @relation(fields: [organizationId], references: [id])
+  organizationId            Int                           @map("organization_id")
+  modelYear                 ModelYear                     @map("model_year")
+  status                    ModelYearReportStatus
+  supplierStatus            ModelYearReportSupplierStatus @map("supplier_status")
+  reassessmentStatus        ReassessmentStatus?           @map("reassessment_status")
+  supplementaryReportStatus SupplementaryReportStatus?    @map("supplementary_report_status")
+  objectName                String                        @unique @map("object_name")
+  forecastReportObjectName  String                        @unique @map("forecast_report_object_name")
+  forecastReportFileName    String                        @unique @map("forecast_report_file_name")
+  compliant                 Boolean?
+  reportableNvValue         Int?                          @map("reportable_nv_value")
+  supplierClass             SupplierClass?                @map("supplier_class")
+  modelYearReportHistory    ModelYearReportHistory[]
+  assessment                Assessment?
+  Reassessment              Reassessment[]
+  supplementaryReports      SupplementaryReport[]
 
   @@unique([organizationId, modelYear])
   @@map("model_year_report")
@@ -732,12 +734,6 @@ model LegacyAssessedModelYearReport {
 
   @@unique([organizationId, modelYear])
   @@map("legacy_assessed_model_year_report")
-}
-
-enum SupplementaryReportStatus {
-  ACKNOWLEDGED
-  DRAFT
-  SUBMITTED
 }
 
 model SupplementaryReport {

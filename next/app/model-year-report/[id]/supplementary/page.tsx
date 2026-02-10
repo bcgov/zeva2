@@ -6,7 +6,7 @@ import {
 } from "../../lib/data";
 import { ModelYearReportForm } from "../../lib/components/ModelYearReportForm";
 import { ModelYearReportStatus } from "@/prisma/generated/client";
-import { canCreateSupplementary } from "../../lib/services";
+import { getDataForSupplementary } from "../../lib/services";
 
 const Page = async (props: { params: Promise<{ id: string }> }) => {
   const { userIsGov } = await getUserInfo();
@@ -23,10 +23,12 @@ const Page = async (props: { params: Promise<{ id: string }> }) => {
   ) {
     return null;
   }
-  const createSupplementaryPossible = await canCreateSupplementary(
-    myrId,
-    userIsGov,
-  );
+  let createSupplementaryPossible = true;
+  try {
+    await getDataForSupplementary(report.organizationId, report.modelYear);
+  } catch {
+    createSupplementaryPossible = false;
+  }
   if (!createSupplementaryPossible) {
     return null;
   }

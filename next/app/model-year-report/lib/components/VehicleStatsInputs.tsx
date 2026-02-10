@@ -142,6 +142,7 @@ export const VehicleStatsInput = (props: {
               </td>
               <td className="border border-gray-300">
                 <Button
+                  variant="danger"
                   onClick={() => handleDelete(index)}
                   disabled={props.disabled}
                 >

@@ -2,7 +2,7 @@ import { getUserInfo } from "@/auth";
 import { AssessmentForm } from "../../lib/components/AssessmentForm";
 import { getModelYearReport } from "../../lib/data";
 import { ModelYearReportStatus, Role } from "@/prisma/generated/client";
-import { canCreateReassessment } from "../../lib/services";
+import { getDataForReassessment } from "../../lib/services";
 
 const Page = async (props: { params: Promise<{ id: string }> }) => {
   const args = await props.params;
@@ -15,11 +15,12 @@ const Page = async (props: { params: Promise<{ id: string }> }) => {
   if (!report || report.status !== ModelYearReportStatus.ASSESSED) {
     return null;
   }
-  const createReassessmentPossible = await canCreateReassessment(
-    myrId,
-    userIsGov,
-    userRoles,
-  );
+  let createReassessmentPossible = true;
+  try {
+    await getDataForReassessment(report.organizationId, report.modelYear);
+  } catch {
+    createReassessmentPossible = false;
+  }
   if (!createReassessmentPossible) {
     return null;
   }

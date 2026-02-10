@@ -573,8 +573,6 @@ export const updateMyrReassessmentStatus = async (
     },
     data: {
       reassessmentStatus: status,
-      supplierReassessmentStatus:
-        status === ReassessmentStatus.ISSUED ? ReassessmentStatus.ISSUED : null,
     },
   });
 };
@@ -651,7 +649,7 @@ export const getDataForSupplementary = async (
   });
   if (
     latestSupplementary &&
-    latestSupplementary.status !== SupplementaryReportStatus.ACKNOWLEDGED
+    latestSupplementary.status === SupplementaryReportStatus.DRAFT
   ) {
     throw new Error();
   }
@@ -664,81 +662,20 @@ export const getDataForSupplementary = async (
   };
 };
 
-export const canCreateReassessment = async (
+export const updateMyrSupplementaryStatus = async (
   myrId: number,
-  userIsGov: boolean,
-  userRoles: Role[],
+  status: SupplementaryReportStatus | null,
+  transactionClient?: TransactionClient,
 ) => {
-  if (!userIsGov || !userRoles.includes(Role.ZEVA_IDIR_USER)) {
-    return false;
-  }
-  const myr = await prisma.modelYearReport.findUnique({
+  const client = transactionClient ?? prisma;
+  await client.modelYearReport.update({
     where: {
       id: myrId,
-      status: ModelYearReportStatus.ASSESSED,
     },
-    select: {
-      Reassessment: {
-        select: {
-          status: true,
-        },
-        orderBy: {
-          sequenceNumber: "desc",
-        },
-      },
+    data: {
+      supplementaryReportStatus: status,
     },
   });
-  if (!myr) {
-    return false;
-  }
-  if (
-    myr.Reassessment.length > 0 &&
-    myr.Reassessment[0].status !== ReassessmentStatus.ISSUED
-  ) {
-    return false;
-  }
-  return true;
-};
-
-export const canCreateSupplementary = async (
-  myrId: number,
-  userIsGov: boolean,
-) => {
-  if (userIsGov) {
-    return false;
-  }
-  const myr = await prisma.modelYearReport.findUnique({
-    where: {
-      id: myrId,
-      status: {
-        notIn: [
-          ModelYearReportStatus.DRAFT,
-          ModelYearReportStatus.RETURNED_TO_SUPPLIER,
-        ],
-      },
-    },
-    select: {
-      supplementaryReports: {
-        select: {
-          status: true,
-        },
-        orderBy: {
-          sequenceNumber: "desc",
-        },
-      },
-    },
-  });
-  if (!myr) {
-    return false;
-  }
-  if (
-    myr.supplementaryReports.length > 0 &&
-    myr.supplementaryReports[0].status !==
-      SupplementaryReportStatus.ACKNOWLEDGED
-  ) {
-    return false;
-  }
-  return true;
 };
 
 // upon issuance of an assessment or reassessment,

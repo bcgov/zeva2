@@ -31,6 +31,7 @@ import {
   areTransfersCovered,
   getSupplierClassAndVolumes,
   getVehicleStatistics,
+  updateMyrSupplementaryStatus,
 } from "./services";
 import {
   DataOrErrorActionResponse,
@@ -300,6 +301,58 @@ export const submitReports = async (
   return getSuccessActionResponse();
 };
 
+export const deleteReports = async (
+  myrId: number,
+): Promise<ErrorOrSuccessActionResponse> => {
+  const { userIsGov, userOrgId } = await getUserInfo();
+  if (userIsGov) {
+    return getErrorActionResponse("Unauthorized!");
+  }
+  const myr = await prisma.modelYearReport.findUnique({
+    where: {
+      id: myrId,
+      organizationId: userOrgId,
+      status: {
+        in: [
+          ModelYearReportStatus.DRAFT,
+          ModelYearReportStatus.RETURNED_TO_SUPPLIER,
+        ],
+      },
+    },
+    select: {
+      id: true,
+    },
+  });
+  if (!myr) {
+    return getErrorActionResponse("Invalid Action!");
+  }
+  await prisma.$transaction(async (tx) => {
+    await tx.supplementaryReportHistory.deleteMany({
+      where: {
+        supplementaryReport: {
+          modelYearReportId: myrId,
+        },
+      },
+    });
+    await tx.supplementaryReport.deleteMany({
+      where: {
+        modelYearReportId: myrId,
+      },
+    });
+    await tx.modelYearReportHistory.deleteMany({
+      where: {
+        modelYearReportId: myrId,
+      },
+    });
+    await tx.modelYearReport.delete({
+      where: {
+        id: myrId,
+      },
+    });
+  });
+  return getSuccessActionResponse();
+};
+
 export const getAssessmentTemplateUrl = async () => {
   return await getPresignedGetObjectUrl(
     `${Directory.Templates}/${AssessmentTemplate.Name}`,
@@ -514,7 +567,8 @@ export const returnModelYearReport = async (
     (status === ModelYearReportStatus.SUBMITTED_TO_DIRECTOR &&
       returnType === ModelYearReportStatus.RETURNED_TO_ANALYST &&
       userRoles.includes(Role.DIRECTOR)) ||
-    (status === ModelYearReportStatus.SUBMITTED_TO_GOVERNMENT &&
+    ((status === ModelYearReportStatus.SUBMITTED_TO_GOVERNMENT ||
+      status === ModelYearReportStatus.RETURNED_TO_ANALYST) &&
       returnType === ModelYearReportStatus.RETURNED_TO_SUPPLIER &&
       userRoles.includes(Role.ZEVA_IDIR_USER))
   ) {
@@ -807,10 +861,20 @@ export const submitReassessment = async (
     },
     select: {
       id: true,
+      organizationId: true,
+      modelYear: true,
       modelYearReportId: true,
     },
   });
   if (!reassessment) {
+    return getErrorActionResponse("Invalid Action!");
+  }
+  try {
+    await getDataForReassessment(
+      reassessment.organizationId,
+      reassessment.modelYear,
+    );
+  } catch {
     return getErrorActionResponse("Invalid Action!");
   }
   const myrId = reassessment.modelYearReportId;
@@ -908,6 +972,11 @@ export const issueReassessment = async (
   }
   const organizationId = reassessment.organizationId;
   const modelYear = reassessment.modelYear;
+  try {
+    await getDataForReassessment(organizationId, modelYear);
+  } catch {
+    return getErrorActionResponse("Invalid Action");
+  }
   const myrId = reassessment.modelYearReportId;
   const legacyMyr = await getLegacyAssessedMyr(organizationId, modelYear);
   const complianceDate = getComplianceDate(modelYear);
@@ -1057,6 +1126,13 @@ export const createSupplementary = async (
       },
     });
     supplementaryId = createdReport.id;
+    if (myrId) {
+      await updateMyrSupplementaryStatus(
+        myrId,
+        SupplementaryReportStatus.DRAFT,
+        tx,
+      );
+    }
     await putObject(reportObjectName, reportObject);
   });
   return getDataActionResponse({
@@ -1122,16 +1198,27 @@ export const deleteSupplementary = async (
     },
     select: {
       id: true,
+      modelYearReportId: true,
     },
   });
   if (!suppReport) {
     return getErrorActionResponse("Invalid Action!");
   }
-  await prisma.supplementaryReport.delete({
-    where: {
-      id: supplementaryId,
-    },
+  await prisma.$transaction(async (tx) => {
+    await tx.supplementaryReport.delete({
+      where: {
+        id: supplementaryId,
+      },
+    });
+    if (suppReport.modelYearReportId) {
+      await updateMyrSupplementaryStatus(
+        suppReport.modelYearReportId,
+        null,
+        tx,
+      );
+    }
   });
+
   return getSuccessActionResponse();
 };
 
@@ -1151,9 +1238,16 @@ export const submitSupplementary = async (
     },
     select: {
       id: true,
+      modelYear: true,
+      modelYearReportId: true,
     },
   });
   if (!suppReport) {
+    return getErrorActionResponse("Invalid Action!");
+  }
+  try {
+    await getDataForSupplementary(userOrgId, suppReport.modelYear);
+  } catch {
     return getErrorActionResponse("Invalid Action!");
   }
   await prisma.$transaction(async (tx) => {
@@ -1172,6 +1266,13 @@ export const submitSupplementary = async (
       comment,
       tx,
     );
+    if (suppReport.modelYearReportId) {
+      await updateMyrSupplementaryStatus(
+        suppReport.modelYearReportId,
+        SupplementaryReportStatus.SUBMITTED,
+        tx,
+      );
+    }
   });
   return getSuccessActionResponse();
 };
@@ -1191,6 +1292,7 @@ export const acknowledgeSupplementary = async (
     },
     select: {
       id: true,
+      modelYearReportId: true,
     },
   });
   if (!suppReport) {
@@ -1212,6 +1314,13 @@ export const acknowledgeSupplementary = async (
       comment,
       tx,
     );
+    if (suppReport.modelYearReportId) {
+      await updateMyrSupplementaryStatus(
+        suppReport.modelYearReportId,
+        SupplementaryReportStatus.ACKNOWLEDGED,
+        tx,
+      );
+    }
   });
   return getSuccessActionResponse();
 };

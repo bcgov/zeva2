@@ -6,7 +6,6 @@ import {
   ModelYearReportSupplierStatus,
   Prisma,
   ReassessmentStatus,
-  SupplierReassessmentStatus,
   Role,
   SupplierClass,
   SupplementaryReportStatus,
@@ -172,7 +171,7 @@ export type MyrSparse = {
   status: ModelYearReportStatus;
   supplierStatus: ModelYearReportSupplierStatus;
   reassessmentStatus: ReassessmentStatus | null;
-  supplierReassessmentStatus: SupplierReassessmentStatus | null;
+  supplementaryReportStatus: SupplementaryReportStatus | null;
   organization?: {
     name: string;
   };
@@ -202,7 +201,7 @@ export const getModelYearReports = async (
     status: true,
     supplierStatus: true,
     reassessmentStatus: true,
-    supplierReassessmentStatus: true,
+    supplementaryReportStatus: true,
     compliant: true,
     reportableNvValue: true,
     supplierClass: true,
@@ -380,6 +379,13 @@ export const getSupplementaryReport = async (suppId: number) => {
   }
   return await prisma.supplementaryReport.findUnique({
     where: whereClause,
+    include: {
+      organization: {
+        select: {
+          name: true,
+        },
+      },
+    },
   });
 };
 

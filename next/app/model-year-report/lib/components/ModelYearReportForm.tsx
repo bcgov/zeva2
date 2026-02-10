@@ -502,8 +502,7 @@ export const ModelYearReportForm = (
       <div className="flex space-x-2">
         {report ? (
           <Button
-            variant="tertiary"
-            size="small"
+            variant="secondary"
             onClick={handleClearMyr}
             disabled={isPending}
           >

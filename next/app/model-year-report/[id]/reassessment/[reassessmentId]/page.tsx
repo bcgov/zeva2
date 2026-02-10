@@ -14,7 +14,10 @@ const Page = async (props: {
   return (
     <Reassessment
       reassessmentId={reassessment.id}
+      orgName={reassessment.organization.name}
+      modelYear={reassessment.modelYear}
       status={reassessment.status}
+      sequenceNumber={reassessment.sequenceNumber}
       myrId={myrId}
     />
   );

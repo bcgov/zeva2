@@ -410,8 +410,7 @@ export const AssessmentForm = (
       <div className="flex space-x-2">
         {assessment ? (
           <Button
-            variant="tertiary"
-            size="small"
+            variant="secondary"
             onClick={handleClearAssessment}
             disabled={isPending}
           >

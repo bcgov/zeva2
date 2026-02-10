@@ -13,7 +13,12 @@ import { AssessmentDetails } from "../lib/components/AssessmentDetails";
 import { ForecastReportDetails } from "../lib/components/ForecastReportDetails";
 import { ReassessmentsList } from "../lib/components/ReassessmentsList";
 import { SupplementaryList } from "../lib/components/SupplementaryList";
-import { canCreateReassessment, canCreateSupplementary } from "../lib/services";
+import {
+  getDataForReassessment,
+  getDataForSupplementary,
+} from "../lib/services";
+import { SystemDetails } from "../lib/components/SystemDetails";
+import { getMyrStatusEnumsToStringsMap } from "@/app/lib/utils/enumMaps";
 
 const Page = async (props: { params: Promise<{ id: string }> }) => {
   const args = await props.params;
@@ -23,35 +28,44 @@ const Page = async (props: { params: Promise<{ id: string }> }) => {
     return null;
   }
   const status = myr.status;
+  const supplierStatus = myr.supplierStatus;
   const { userIsGov, userRoles } = await getUserInfo();
   let actionComponent: JSX.Element | null = null;
   if (userIsGov) {
     if (userRoles.includes(Role.DIRECTOR)) {
       actionComponent = <DirectorActions myrId={myrId} status={status} />;
     } else if (userRoles.includes(Role.ZEVA_IDIR_USER)) {
+      let canCreateReassessment = true;
+      try {
+        await getDataForReassessment(myr.organizationId, myr.modelYear);
+      } catch {
+        canCreateReassessment = false;
+      }
       actionComponent = (
         <AnalystActions
           myrId={myrId}
           status={status}
           assessmentExists={!!myr.assessment}
-          canCreateReassessment={await canCreateReassessment(
-            myrId,
-            userIsGov,
-            userRoles,
-          )}
+          canCreateReassessment={canCreateReassessment}
         />
       );
     }
   } else {
+    let canCreateSupplementary = true;
+    try {
+      await getDataForSupplementary(myr.organizationId, myr.modelYear);
+    } catch {
+      canCreateSupplementary = false;
+    }
     actionComponent = (
       <SupplierActions
         myrId={myrId}
-        status={myr.supplierStatus}
-        canCreateSupplementary={await canCreateSupplementary(myrId, userIsGov)}
+        status={supplierStatus}
+        canCreateSupplementary={canCreateSupplementary}
       />
     );
   }
-
+  const statusMap = getMyrStatusEnumsToStringsMap();
   return (
     <div className="flex flex-col w-1/3">
       <ContentCard title="Reassessments">
@@ -69,17 +83,29 @@ const Page = async (props: { params: Promise<{ id: string }> }) => {
           <ModelYearReportHistory id={myrId} />
         </Suspense>
       </ContentCard>
-      <ContentCard title="Model Year Report Details">
+      <ContentCard title="System Details">
+        <SystemDetails
+          userIsGov={userIsGov}
+          orgName={myr.organization.name}
+          modelYear={myr.modelYear}
+          status={
+            userIsGov
+              ? (statusMap[status] ?? "")
+              : (statusMap[supplierStatus] ?? "")
+          }
+        />
+      </ContentCard>
+      <ContentCard title="The Model Year Report">
         <Suspense fallback={<LoadingSkeleton />}>
           <ModelYearReportDetails id={myrId} />
         </Suspense>
       </ContentCard>
-      <ContentCard title="Forecast Report Details">
+      <ContentCard title="The Forecast Report">
         <Suspense fallback={<LoadingSkeleton />}>
           <ForecastReportDetails myrId={myrId} />
         </Suspense>
       </ContentCard>
-      <ContentCard title="Assessment Details">
+      <ContentCard title="The Assessment">
         <Suspense fallback={<LoadingSkeleton />}>
           <AssessmentDetails type="assessment" id={myrId} />
         </Suspense>

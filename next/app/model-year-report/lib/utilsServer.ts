@@ -7,7 +7,9 @@ import {
   BalanceType,
   ModelYear,
   Prisma,
+  ReassessmentStatus,
   ReferenceType,
+  SupplementaryReportStatus,
   SupplierClass,
   TransactionType,
   VehicleClass,
@@ -34,8 +36,8 @@ import {
   getStringsToMyrStatusEnumsMap,
   getStringsToMyrSupplierStatusEnumsMap,
   getStringsToReassessmentStatusEnumsMap,
+  getStringsToSupplementaryReportStatusEnumsMap,
   getStringsToSupplierClassEnumsMap,
-  getStringsToSupplierReassessmentStatusEnumsMap,
   getStringsToVehicleClassEnumsMap,
   getStringsToZevClassEnumsMap,
 } from "@/app/lib/utils/enumMaps";
@@ -383,8 +385,8 @@ export const getWhereClause = (
   const statusMap = getStringsToMyrStatusEnumsMap();
   const supplierStatusMap = getStringsToMyrSupplierStatusEnumsMap();
   const reassessmentStatusMap = getStringsToReassessmentStatusEnumsMap();
-  const supplierReassessmentStatusMap =
-    getStringsToSupplierReassessmentStatusEnumsMap();
+  const supplementaryStatusMap =
+    getStringsToSupplementaryReportStatusEnumsMap();
   for (const [key, rawValue] of Object.entries(filters)) {
     const value = rawValue.trim();
     if (key === "id") {
@@ -417,11 +419,43 @@ export const getWhereClause = (
           };
         }
       } else {
+        const matchingTerms = getMatchingTerms(reassessmentStatusMap, value);
         if (value === "--") {
-          result["supplierReassessmentStatus"] = null;
+          result[key] = {
+            not: ReassessmentStatus.ISSUED,
+          };
+        } else if (
+          matchingTerms.length === 1 &&
+          matchingTerms[0] === ReassessmentStatus.ISSUED
+        ) {
+          result[key] = ReassessmentStatus.ISSUED;
+        }
+      }
+    } else if (key === "supplementaryReportStatus") {
+      if (userIsGov) {
+        const matchingTerms = getMatchingTerms(supplementaryStatusMap, value);
+        if (value === "--") {
+          result[key] = {
+            notIn: [
+              SupplementaryReportStatus.ACKNOWLEDGED,
+              SupplementaryReportStatus.SUBMITTED,
+            ],
+          };
+        } else if (
+          matchingTerms.length === 2 &&
+          matchingTerms.includes(SupplementaryReportStatus.ACKNOWLEDGED) &&
+          matchingTerms.includes(SupplementaryReportStatus.SUBMITTED)
+        ) {
+          result[key] = {
+            in: matchingTerms,
+          };
+        }
+      } else {
+        if (value === "--") {
+          result[key] = null;
         } else {
-          result["supplierReassessmentStatus"] = {
-            in: getMatchingTerms(supplierReassessmentStatusMap, value),
+          result[key] = {
+            in: getMatchingTerms(supplementaryStatusMap, value),
           };
         }
       }
@@ -469,8 +503,10 @@ export const getOrderByClause = (
       } else if (key === "reassessmentStatus") {
         if (userIsGov) {
           orderBy[key] = value;
-        } else {
-          orderBy["supplierReassessmentStatus"] = value;
+        }
+      } else if (key === "supplementaryReportStatus") {
+        if (!userIsGov) {
+          orderBy[key] = value;
         }
       }
     }
@@ -484,20 +520,23 @@ export const getOrderByClause = (
   return result;
 };
 
-export type MyrSparseSerialized = Omit<
-  MyrSparse,
-  "supplierStatus" | "supplierReassessmentStatus"
->;
+export type MyrSparseSerialized = Omit<MyrSparse, "supplierStatus">;
 
 export const getSerializedMyrs = (
   myrs: MyrSparse[],
   userIsGov: boolean,
 ): MyrSparseSerialized[] => {
   return myrs.map((myr) => {
-    const { supplierStatus, supplierReassessmentStatus, ...result } = myr;
+    const { supplierStatus, ...result } = myr;
     if (!userIsGov) {
       result.status = supplierStatus;
-      result.reassessmentStatus = supplierReassessmentStatus;
+      if (result.reassessmentStatus !== ReassessmentStatus.ISSUED) {
+        result.reassessmentStatus = null;
+      }
+    } else if (
+      result.supplementaryReportStatus === SupplementaryReportStatus.DRAFT
+    ) {
+      result.supplementaryReportStatus = null;
     }
     return result;
   });
