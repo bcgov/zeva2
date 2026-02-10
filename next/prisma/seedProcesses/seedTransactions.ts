@@ -126,10 +126,12 @@ export const seedTransactions = async (
       }
       if (
         referenceTypeAndId[0] === ReferenceType.AGREEMENT &&
-        transactionType === TransactionType.DEBIT &&
-        zevClass === ZevClass.B
+        transactionType === TransactionType.DEBIT
       ) {
-        zevClass = ZevClass.UNSPECIFIED;
+        referenceTypeAndId[0] = ReferenceType.ASSESSMENT_ADJUSTMENT;
+        if (zevClass === ZevClass.B) {
+          zevClass = ZevClass.UNSPECIFIED;
+        }
       }
       await tx.zevUnitTransaction.create({
         data: {

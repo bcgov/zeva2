@@ -13,6 +13,8 @@ import {
 } from "@/prisma/generated/client";
 import { getOrderByClause, getWhereClause } from "./utilsServer";
 import { getObject } from "@/app/lib/minio";
+import { getSupplierDetails, getVehicleStatistics } from "./services";
+import { getAddressAsString } from "./utils";
 
 export const modelYearReportExists = async (modelYear: ModelYear) => {
   const { userOrgId } = await getUserInfo();
@@ -436,4 +438,28 @@ export const getSupplementaries = async (myrId: number) => {
       sequenceNumber: "asc",
     },
   });
+};
+
+export type SupplierData = {
+  legalName: string;
+  makes: string;
+  recordsAddress: string;
+  serviceAddress: string;
+};
+
+export const getSupplierOwnData = async (): Promise<SupplierData> => {
+  const { userOrgId } = await getUserInfo();
+  const { legalName, makes, recordsAddress, serviceAddress } =
+    await getSupplierDetails(userOrgId);
+  return {
+    legalName,
+    makes: makes.join(", "),
+    recordsAddress: recordsAddress ? getAddressAsString(recordsAddress) : "",
+    serviceAddress: serviceAddress ? getAddressAsString(serviceAddress) : "",
+  };
+};
+
+export const getSupplierOwnVehicleStats = async (modelYear: ModelYear) => {
+  const { userOrgId } = await getUserInfo();
+  return await getVehicleStatistics(userOrgId, modelYear);
 };

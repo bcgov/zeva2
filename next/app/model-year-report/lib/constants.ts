@@ -2,12 +2,15 @@ import { ModelYear, ZevClass } from "@/prisma/generated/client";
 
 export enum MyrTemplate {
   Name = "model_year_report_template.xlsx",
-  DetailsSheetName = "Details",
   SupplierDetailsSheetName = "Supplier Details",
+  PreviousVolumesSheetName = "Previous Volumes",
   VehicleStatisticsSheetName = "Vehicle Statistics",
   ComplianceReductionsSheetName = "Compliance Ratio Reductions",
   BeginningBalanceSheetName = "Beginning Balance",
   CreditsSheetName = "Credits",
+  PendingSupplyCreditsSheetName = "Pending Supply Credits",
+  AdjustmentsSheetName = "Adjustments",
+  SuggestedAdjustmentsSheetName = "Suggested Adjustments",
   OffsetsAndTransfersAwaySheetName = "Offsets and Transfers Away",
   PreliminaryEndingBalance = "Preliminary Ending Balance",
 }

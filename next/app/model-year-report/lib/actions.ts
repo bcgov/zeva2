@@ -24,16 +24,13 @@ import {
   getAssessmentSystemData,
   getDataForSupplementary,
   getLegacyAssessedMyr,
-  getMyrDataForAssessment,
-  getOrgDetails,
   getDataForReassessment,
-  getVehicleStatistics,
   getZevUnitData,
   MyrZevUnitTransaction,
-  OrgNameAndAddresses,
   updateMyrReassessmentStatus,
-  VehicleStatistics,
   areTransfersCovered,
+  getSupplierClassAndVolumes,
+  getVehicleStatistics,
 } from "./services";
 import {
   DataOrErrorActionResponse,
@@ -65,10 +62,6 @@ import { getModelYearEnumsToStringsMap } from "@/app/lib/utils/enumMaps";
 
 export type NvValues = Partial<Record<VehicleClass, string>>;
 
-export type SupplierData = OrgNameAndAddresses & {
-  supplierClass: SupplierClass;
-};
-
 export type MyrEndingBalance = UnitsAsString<ZevUnitRecord>[];
 
 export type MyrComplianceReductions = Omit<
@@ -81,15 +74,20 @@ export type MyrOffsets = Omit<UnitsAsString<ZevUnitRecord>, "type">[];
 export type MyrCurrentTransactions = UnitsAsString<MyrZevUnitTransaction>[];
 
 export type MyrData = {
-  modelYear: ModelYear;
-  zevClassOrdering: ZevClass[];
-  supplierData: SupplierData;
-  vehicleStatistics: VehicleStatistics;
+  supplierClass: SupplierClass;
+  volumes: [ModelYear, VehicleClass, number][];
   prevEndingBalance: MyrEndingBalance;
   complianceReductions: MyrComplianceReductions;
   offsets: MyrOffsets;
   currentTransactions: MyrCurrentTransactions;
+  pendingSupplyCredits: UnitsAsString<ZevUnitRecord>[];
   prelimEndingBalance: MyrEndingBalance;
+};
+
+export const retrieveVehicleStatistics = async (modelYear: ModelYear) => {
+  const { userOrgId } = await getUserInfo();
+  const vehicleStatistics = await getVehicleStatistics(userOrgId, modelYear);
+  return getDataActionResponse(vehicleStatistics);
 };
 
 export const getMyrTemplateUrl = async () => {
@@ -102,31 +100,38 @@ export const getMyrData = async (
   modelYear: ModelYear,
   nvValues: NvValues,
   zevClassOrdering: ZevClass[],
+  adjustments: AdjustmentPayload[],
 ): Promise<DataOrErrorActionResponse<MyrData>> => {
   const { userOrgId } = await getUserInfo();
-  const orgData = await getOrgDetails(userOrgId);
-  const vehicleStatistics = await getVehicleStatistics(userOrgId, modelYear);
+  const reportableNvValue = nvValues[VehicleClass.REPORTABLE];
+  if (!reportableNvValue) {
+    return getErrorActionResponse("Reportable NV Value not found!");
+  }
   try {
+    const { supplierClass, volumes } = await getSupplierClassAndVolumes(
+      userOrgId,
+      modelYear,
+      reportableNvValue,
+    );
     const {
-      supplierClass,
       prevEndingBalance,
       complianceReductions,
       offsettedCredits,
       currentTransactions,
+      pendingSupplyCredits,
       endingBalance,
     } = await getZevUnitData(
       userOrgId,
       modelYear,
+      supplierClass,
       nvValues,
       zevClassOrdering,
-      [],
+      adjustments,
       true,
     );
     return getDataActionResponse<MyrData>({
-      modelYear,
-      zevClassOrdering,
-      supplierData: { ...orgData, supplierClass },
-      vehicleStatistics,
+      supplierClass,
+      volumes,
       prevEndingBalance:
         getSerializedMyrRecords<ZevUnitRecord>(prevEndingBalance),
       complianceReductions: getSerializedMyrRecordsExcludeKey<
@@ -139,6 +144,8 @@ export const getMyrData = async (
       ),
       currentTransactions:
         getSerializedMyrRecords<MyrZevUnitTransaction>(currentTransactions),
+      pendingSupplyCredits:
+        getSerializedMyrRecords<ZevUnitRecord>(pendingSupplyCredits),
       prelimEndingBalance:
         getSerializedMyrRecords<ZevUnitRecord>(endingBalance),
     });
@@ -304,9 +311,6 @@ export type AdjustmentPayload = Omit<ZevUnitRecord, "numberOfUnits"> & {
 };
 
 export type AssessmentData = {
-  orgName: string;
-  modelYear: ModelYear;
-  zevClassOrdering: ZevClass[];
   supplierClass: SupplierClass;
   complianceReductions: MyrComplianceReductions;
   beginningBalance: MyrEndingBalance;
@@ -317,32 +321,27 @@ export type AssessmentData = {
 };
 
 export const getAssessmentData = async (
-  type: "assessment" | "reassessment",
   orgId: number,
   modelYear: ModelYear,
   adjustments: AdjustmentPayload[],
-  nvValues?: NvValues,
-  zevClassOrdering?: ZevClass[],
+  nvValues: NvValues,
+  zevClassOrdering: ZevClass[],
 ): Promise<DataOrErrorActionResponse<AssessmentData>> => {
   const { userIsGov } = await getUserInfo();
   if (!userIsGov) {
     return getErrorActionResponse("Unauthorized!");
   }
+  const reportableNvValue = nvValues[VehicleClass.REPORTABLE];
+  if (!reportableNvValue) {
+    return getErrorActionResponse("Reportable NV Value not found!");
+  }
   try {
-    const { name: orgName } = await getOrgDetails(orgId);
-    let nvValuesToUse = nvValues;
-    let zevClassOrderingToUse = zevClassOrdering;
-    if (type === "assessment") {
-      const { nvValues: myrNvValues, zevClassOrdering: myrZevClassOrdering } =
-        await getMyrDataForAssessment(orgId, modelYear);
-      nvValuesToUse = myrNvValues;
-      zevClassOrderingToUse = myrZevClassOrdering;
-    }
-    if (!nvValuesToUse || !zevClassOrderingToUse) {
-      throw new Error("Unexpected Error!");
-    }
+    const { supplierClass } = await getSupplierClassAndVolumes(
+      orgId,
+      modelYear,
+      reportableNvValue,
+    );
     const {
-      supplierClass,
       prevEndingBalance,
       complianceReductions,
       endingBalance,
@@ -351,10 +350,11 @@ export const getAssessmentData = async (
     } = await getZevUnitData(
       orgId,
       modelYear,
-      nvValuesToUse,
-      zevClassOrderingToUse,
+      supplierClass,
+      nvValues,
+      zevClassOrdering,
       adjustments,
-      type === "reassessment",
+      false,
     );
     const complianceInfo = getComplianceInfo(
       supplierClass,
@@ -363,9 +363,6 @@ export const getAssessmentData = async (
       endingBalance,
     );
     return getDataActionResponse<AssessmentData>({
-      orgName,
-      modelYear,
-      zevClassOrdering: zevClassOrderingToUse,
       supplierClass,
       complianceInfo,
       beginningBalance:
@@ -393,7 +390,7 @@ export const getAssessmentData = async (
 export const createOrSaveAssessment = async (
   myrId: number,
   assessment: string,
-): Promise<ErrorOrSuccessActionResponse> => {
+): Promise<DataOrErrorActionResponse<number>> => {
   const { userIsGov, userRoles } = await getUserInfo();
   if (!userIsGov || !userRoles.includes(Role.ZEVA_IDIR_USER)) {
     return getErrorActionResponse("Unauthorized!");
@@ -429,7 +426,7 @@ export const createOrSaveAssessment = async (
     });
     await putObject(assessmentObjectName, assessmentObject);
   });
-  return getSuccessActionResponse();
+  return getDataActionResponse(myrId);
 };
 
 export const submitAssessment = async (

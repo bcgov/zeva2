@@ -1,6 +1,6 @@
 import { JSX } from "react";
 import { getCreditTransfer } from "../data";
-import { getHelpingMaps } from "@/app/model-year-report/lib/utilsClient";
+import { getHelpingMaps } from "@/app/model-year-report/lib/utils";
 import { getUserInfo } from "@/auth";
 import { getCreditTransferStatusEnumsToStringsMap } from "@/app/lib/utils/enumMaps";
 

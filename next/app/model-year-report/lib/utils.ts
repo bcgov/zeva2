@@ -1,14 +1,42 @@
 // do not import, directly or indirectly, any Prisma versions of Decimal here!
 
 import Excel, { Workbook } from "exceljs";
-import { AssessmentTemplate, ForecastTemplate, MyrTemplate } from "./constants";
-import { ModelYear } from "@/prisma/generated/client";
-import { getModelYearEnumsToStringsMap } from "@/app/lib/utils/enumMaps";
+import {
+  AssessmentTemplate,
+  ForecastTemplate,
+  MyrTemplate,
+  SupplierZevClassChoice,
+  supplierZevClasses,
+} from "./constants";
+import {
+  ModelYear,
+  OrganizationAddress,
+  ReferenceType,
+  SupplierClass,
+  TransactionType,
+  VehicleClass,
+  ZevClass,
+} from "@/prisma/generated/client";
+import {
+  getBalanceTypeEnumsToStringsMap,
+  getModelYearEnumsToStringsMap,
+  getReferenceTypeEnumsToStringsMap,
+  getStringsToVehicleClassEnumsMap,
+  getStringsToZevClassEnumsMap,
+  getSupplierClassEnumsToStringsMap,
+  getTransactionTypeEnumsToStringMap,
+  getVehicleClassEnumsToStringsMap,
+  getZevClassEnumsToStringsMap,
+} from "@/app/lib/utils/enumMaps";
+import { VehicleStatistic } from "./services";
+import { NvValues } from "./actions";
 
 export const getMyrSheets = (workbook: Workbook) => {
-  const detailsSheet = workbook.getWorksheet(MyrTemplate.DetailsSheetName);
   const supplierDetailsSheet = workbook.getWorksheet(
     MyrTemplate.SupplierDetailsSheetName,
+  );
+  const previousVolumesSheet = workbook.getWorksheet(
+    MyrTemplate.PreviousVolumesSheetName,
   );
   const vehicleStatisticsSheet = workbook.getWorksheet(
     MyrTemplate.VehicleStatisticsSheetName,
@@ -20,6 +48,15 @@ export const getMyrSheets = (workbook: Workbook) => {
     MyrTemplate.BeginningBalanceSheetName,
   );
   const creditsSheet = workbook.getWorksheet(MyrTemplate.CreditsSheetName);
+  const pendingSupplyCreditsSheet = workbook.getWorksheet(
+    MyrTemplate.PendingSupplyCreditsSheetName,
+  );
+  const adjustmentsSheet = workbook.getWorksheet(
+    MyrTemplate.AdjustmentsSheetName,
+  );
+  const suggestedAdjustmentsSheet = workbook.getWorksheet(
+    MyrTemplate.SuggestedAdjustmentsSheetName,
+  );
   const offsetsAndTransfersAwaySheet = workbook.getWorksheet(
     MyrTemplate.OffsetsAndTransfersAwaySheetName,
   );
@@ -27,24 +64,30 @@ export const getMyrSheets = (workbook: Workbook) => {
     MyrTemplate.PreliminaryEndingBalance,
   );
   if (
-    !detailsSheet ||
     !supplierDetailsSheet ||
+    !previousVolumesSheet ||
     !vehicleStatisticsSheet ||
     !complianceReductionsSheet ||
     !beginningBalanceSheet ||
     !creditsSheet ||
+    !pendingSupplyCreditsSheet ||
+    !adjustmentsSheet ||
+    !suggestedAdjustmentsSheet ||
     !offsetsAndTransfersAwaySheet ||
     !prelimEndingBalanceSheet
   ) {
     throw new Error("Missing sheet in Model Year Report!");
   }
   return {
-    detailsSheet,
     supplierDetailsSheet,
+    previousVolumesSheet,
     vehicleStatisticsSheet,
     complianceReductionsSheet,
     beginningBalanceSheet,
     creditsSheet,
+    pendingSupplyCreditsSheet,
+    adjustmentsSheet,
+    suggestedAdjustmentsSheet,
     offsetsAndTransfersAwaySheet,
     prelimEndingBalanceSheet,
   };
@@ -74,12 +117,15 @@ export type FileReductionRecord = {
 } & Omit<FileZevUnitRecord, "type">;
 
 export type ParsedMyr = {
-  details: FileMyrDetails;
   supplierDetails: FileMyrSupplierDetails;
+  previousVolumes: FileMyrPreviousVolumes[];
   vehicleStatistics: FileVehicleStatistic[];
   complianceReductions: FileReductionRecord[];
   beginningBalance: FileZevUnitRecord[];
   credits: FileZevUnitRecord[];
+  pendingSupplyCredits: FileMyrPendingSupplyCredit[];
+  adjustments: FileZevUnitRecord[];
+  suggestedAdjustments: FileZevUnitRecord[];
   offsetsAndTransfersAway: FileZevUnitRecord[];
   prelimEndingBalance: FileZevUnitRecord[];
 };
@@ -87,31 +133,23 @@ export type ParsedMyr = {
 export const parseMyr = (workbook: Workbook): ParsedMyr => {
   const sheets = getMyrSheets(workbook);
   return {
-    details: parseMyrDetails(sheets.detailsSheet),
     supplierDetails: parseSupplierDetails(sheets.supplierDetailsSheet),
+    previousVolumes: parsePreviousVolumes(sheets.previousVolumesSheet),
     vehicleStatistics: parseVehicleStatistics(sheets.vehicleStatisticsSheet),
     complianceReductions: parseComplianceReductions(
       sheets.complianceReductionsSheet,
     ),
     beginningBalance: parseZevUnitRecords(sheets.beginningBalanceSheet),
     credits: parseZevUnitRecords(sheets.creditsSheet),
+    pendingSupplyCredits: parsePendingSupplyCredits(
+      sheets.pendingSupplyCreditsSheet,
+    ),
+    adjustments: parseZevUnitRecords(sheets.adjustmentsSheet),
+    suggestedAdjustments: parseZevUnitRecords(sheets.suggestedAdjustmentsSheet),
     offsetsAndTransfersAway: parseZevUnitRecords(
       sheets.offsetsAndTransfersAwaySheet,
     ),
     prelimEndingBalance: parseZevUnitRecords(sheets.prelimEndingBalanceSheet),
-  };
-};
-
-type FileMyrDetails = {
-  modelYear: string;
-  zevClassOrdering: string;
-};
-
-const parseMyrDetails = (sheet: Excel.Worksheet): FileMyrDetails => {
-  const row = sheet.getRow(2);
-  return {
-    modelYear: row.getCell(1).toString(),
-    zevClassOrdering: row.getCell(2).toString(),
   };
 };
 
@@ -121,6 +159,7 @@ type FileMyrSupplierDetails = {
   classification: string;
   serviceAddress: string;
   recordsAddress: string;
+  zevClassOrdering: string;
 };
 
 const parseSupplierDetails = (
@@ -133,7 +172,46 @@ const parseSupplierDetails = (
     classification: supplierDetailsRow.getCell(3).toString(),
     serviceAddress: supplierDetailsRow.getCell(4).toString(),
     recordsAddress: supplierDetailsRow.getCell(5).toString(),
+    zevClassOrdering: supplierDetailsRow.getCell(6).toString(),
   };
+};
+
+export const getZevClassChoice = (
+  zevClassOrdering: string,
+): SupplierZevClassChoice => {
+  const zevClassesMap = getStringsToZevClassEnumsMap();
+  const orderingOfEnums = zevClassOrdering
+    .split(",")
+    .map((s) => zevClassesMap[s.trim()])
+    .filter((zc) => !!zc);
+  const zevClassChoices: ZevClass[] = Object.values(supplierZevClasses);
+  const choice = orderingOfEnums.filter((zc) =>
+    zevClassChoices.includes(zc),
+  )[0];
+  if (choice === supplierZevClasses.A || choice === supplierZevClasses.B) {
+    return choice;
+  }
+  return ZevClass.B;
+};
+
+type FileMyrPreviousVolumes = {
+  modelYear: string;
+  vehicleClass: string;
+  volume: string;
+};
+
+const parsePreviousVolumes = (sheet: Excel.Worksheet) => {
+  const result: FileMyrPreviousVolumes[] = [];
+  sheet.eachRow((row, rowNumber) => {
+    if (rowNumber > 1) {
+      result.push({
+        modelYear: row.getCell(1).toString(),
+        vehicleClass: row.getCell(2).toString(),
+        volume: row.getCell(3).toString(),
+      });
+    }
+  });
+  return result;
 };
 
 type FileVehicleStatistic = {
@@ -183,6 +261,40 @@ const parseComplianceReductions = (
         zevClass: row.getCell(4).toString(),
         modelYear: row.getCell(5).toString(),
         numberOfUnits: row.getCell(6).toString(),
+      });
+    }
+  });
+  return result;
+};
+
+export const getNvValues = (reductions: FileReductionRecord[]) => {
+  const result: NvValues = {};
+  const vehicleClassesMap = getStringsToVehicleClassEnumsMap();
+  for (const reduction of reductions) {
+    const vehicleClass = vehicleClassesMap[reduction.vehicleClass];
+    if (vehicleClass) {
+      result[vehicleClass] = reduction.nv;
+    }
+  }
+  return result;
+};
+
+type FileMyrPendingSupplyCredit = {
+  vehicleClass: string;
+  zevClass: string;
+  modelYear: string;
+  numberOfUnits: string;
+};
+
+const parsePendingSupplyCredits = (sheet: Excel.Worksheet) => {
+  const result: FileMyrPendingSupplyCredit[] = [];
+  sheet.eachRow((row, rowNumber) => {
+    if (rowNumber > 1) {
+      result.push({
+        vehicleClass: row.getCell(1).toString(),
+        zevClass: row.getCell(2).toString(),
+        modelYear: row.getCell(3).toString(),
+        numberOfUnits: row.getCell(4).toString(),
       });
     }
   });
@@ -272,11 +384,9 @@ export type ParsedAssmnt = {
 };
 
 export type FileAssessmentDetails = {
-  supplierName: string;
-  modelYear: string;
   classification: string;
-  zevClassOrdering: string;
   isCompliant: string;
+  zevClassOrdering: string;
 };
 
 export const parseAssessment = (workbook: Workbook): ParsedAssmnt => {
@@ -303,11 +413,9 @@ const parseAssessmentDetails = (
 ): FileAssessmentDetails => {
   const row = sheet.getRow(2);
   return {
-    supplierName: row.getCell(1).toString(),
-    modelYear: row.getCell(2).toString(),
-    classification: row.getCell(3).toString(),
-    zevClassOrdering: row.getCell(4).toString(),
-    isCompliant: row.getCell(5).toString(),
+    classification: row.getCell(1).toString(),
+    isCompliant: row.getCell(2).toString(),
+    zevClassOrdering: row.getCell(3).toString(),
   };
 };
 
@@ -470,4 +578,53 @@ export const parseForecast = (
     zevRecords,
     statistics,
   };
+};
+
+export type MyrHelpingMaps = {
+  transactionTypesMap: Partial<Record<TransactionType, string>>;
+  balanceTypesMap: Partial<Record<TransactionType, string>>;
+  referenceTypesMap: Partial<Record<ReferenceType, string>>;
+  vehicleClassesMap: Partial<Record<VehicleClass, string>>;
+  zevClassesMap: Partial<Record<ZevClass, string>>;
+  modelYearsMap: Partial<Record<ModelYear, string>>;
+  supplierClassesMap: Partial<Record<SupplierClass, string>>;
+};
+
+export const getHelpingMaps = (): MyrHelpingMaps => {
+  return {
+    transactionTypesMap: getTransactionTypeEnumsToStringMap(),
+    balanceTypesMap: getBalanceTypeEnumsToStringsMap(),
+    referenceTypesMap: getReferenceTypeEnumsToStringsMap(),
+    vehicleClassesMap: getVehicleClassEnumsToStringsMap(),
+    zevClassesMap: getZevClassEnumsToStringsMap(),
+    modelYearsMap: getModelYearEnumsToStringsMap(),
+    supplierClassesMap: getSupplierClassEnumsToStringsMap(),
+  };
+};
+
+export type VehicleStatString = Partial<Record<keyof VehicleStatistic, string>>;
+
+export const getVehicleStatsAsStrings = (
+  vehicleStats: VehicleStatistic[],
+): VehicleStatString[] => {
+  const result: VehicleStatString[] = [];
+  const helpingMaps = getHelpingMaps();
+  for (const vehicle of vehicleStats) {
+    result.push({
+      vehicleClass: helpingMaps.vehicleClassesMap[vehicle.vehicleClass],
+      zevClass: helpingMaps.zevClassesMap[vehicle.zevClass],
+      make: vehicle.make,
+      modelName: vehicle.modelName,
+      modelYear: helpingMaps.modelYearsMap[vehicle.modelYear],
+      zevType: vehicle.zevType,
+      range: vehicle.range.toString(),
+      submittedCount: vehicle.submittedCount.toString(),
+      issuedCount: vehicle.issuedCount.toString(),
+    });
+  }
+  return result;
+};
+
+export const getAddressAsString = (address: OrganizationAddress) => {
+  return `${address.addressLines}, ${address.city}, ${address.state}, ${address.postalCode}, ${address.country}`;
 };

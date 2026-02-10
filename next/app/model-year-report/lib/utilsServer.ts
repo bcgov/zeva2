@@ -47,7 +47,6 @@ import {
   FileReductionRecord,
   FileZevUnitRecord,
   parseAssessment,
-  parseMyr,
 } from "./utils";
 
 export const validatePrevBalanceTransactions = (
@@ -552,30 +551,6 @@ const parseReductionsForData = (
     } catch (e) {
       throw error;
     }
-  });
-  return result;
-};
-
-export const parseMyrForAssessmentData = (workbook: Workbook) => {
-  const result: { zevClassOrdering: ZevClass[]; nvValues: NvValues } = {
-    zevClassOrdering: [],
-    nvValues: {},
-  };
-  const zevClassMap = getStringsToZevClassEnumsMap();
-  const parsedMyr = parseMyr(workbook);
-  const zevClassOrdering = parsedMyr.details.zevClassOrdering;
-  const complianceReductions = parsedMyr.complianceReductions;
-  const zevClassOrderingSplit = zevClassOrdering.replaceAll(" ", "").split(",");
-  zevClassOrderingSplit.forEach((s) => {
-    const zevClass = zevClassMap[s];
-    if (!zevClass) {
-      throw new Error("Invalid value in ZEV Class Ordering!");
-    }
-    result.zevClassOrdering.push(zevClass);
-  });
-  const reductionsData = parseReductionsForData(complianceReductions);
-  reductionsData.nvValues.forEach(([vehicleClass, nv]) => {
-    result.nvValues[vehicleClass] = nv.toFixed();
   });
   return result;
 };

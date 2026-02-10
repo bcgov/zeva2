@@ -31,7 +31,6 @@ const Page = async (props: { params: Promise<{ id: string }> }) => {
         orgName={report.organization.name}
         modelYear={report.modelYear}
         orgId={report.organizationId}
-        myrId={report.id}
       />
     </div>
   );
