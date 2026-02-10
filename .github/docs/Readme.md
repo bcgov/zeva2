@@ -1,4 +1,4 @@
-# Zeva2 Continuous Delivery Structure
+# Zeva2 CI/CD Model
 
 ![alt text](CICD-diagram.png)
 
