@@ -99,109 +99,122 @@ export const Adjustments = (props: {
   );
 
   return (
-    <div>
-      {props.adjustments.map((adjustment, index) => {
-        return (
-          <div key={index} className="flex flex-row">
-            <span key="type" className="flex flex-col">
-              <label htmlFor="type">Type</label>
-              <select
-                id="type"
-                value={adjustment.type}
-                onChange={(e) => {
-                  handleAdjustmentChange(index, "type", e.target.value);
-                }}
-                disabled={props.disabled}
-              >
-                {Object.keys(balanceTypesMaps.stringsToEnums).map(
-                  (balanceType) => (
-                    <option key={balanceType} value={balanceType}>
-                      {balanceType}
-                    </option>
-                  ),
-                )}
-              </select>
-            </span>
-            <span key="vehicleClass" className="flex flex-col">
-              <label htmlFor="vehicleClass">Vehicle Class</label>
-              <select
-                id="vehicleClass"
-                value={adjustment.vehicleClass}
-                onChange={(e) =>
-                  handleAdjustmentChange(index, "vehicleClass", e.target.value)
-                }
-                disabled={props.disabled}
-              >
-                {Object.keys(vehicleClassesMaps.stringsToEnums).map((vc) => (
-                  <option key={vc} value={vc}>
-                    {vc}
-                  </option>
-                ))}
-              </select>
-            </span>
-            <span key="zevClass" className="flex flex-col">
-              <label htmlFor="zevClass">ZEV Class</label>
-              <select
-                id="zevClass"
-                value={adjustment.zevClass}
-                onChange={(e) =>
-                  handleAdjustmentChange(index, "zevClass", e.target.value)
-                }
-                disabled={props.disabled}
-              >
-                {Object.keys(zevClassesMaps.stringsToEnums).map((zc) => (
-                  <option key={zc} value={zc}>
-                    {zc}
-                  </option>
-                ))}
-              </select>
-            </span>
-            <span key="modelYear" className="flex flex-col">
-              <label htmlFor="modelYear">Model Year</label>
-              <select
-                id="modelYear"
-                value={adjustment.modelYear}
-                onChange={(e) =>
-                  handleAdjustmentChange(index, "modelYear", e.target.value)
-                }
-                disabled={props.disabled}
-              >
-                {Object.keys(modelYearsMaps.stringsToEnums).map((my) => {
-                  if (my >= "2019" && my <= "2035") {
-                    return (
-                      <option key={my} value={my}>
-                        {my}
+    <>
+      <table>
+        <thead>
+          <tr>
+            <th className="border border-gray-300">Type</th>
+            <th className="border border-gray-300">Vehicle Class</th>
+            <th className="border border-gray-300">ZEV Class</th>
+            <th className="border border-gray-300">Model Year</th>
+            <th className="border border-gray-300">Number of Units</th>
+          </tr>
+        </thead>
+        <tbody>
+          {props.adjustments.map((adjustment, index) => (
+            <tr key={index}>
+              <td className="border border-gray-300">
+                <select
+                  id="type"
+                  value={adjustment.type}
+                  onChange={(e) => {
+                    handleAdjustmentChange(index, "type", e.target.value);
+                  }}
+                  disabled={props.disabled}
+                >
+                  {Object.keys(balanceTypesMaps.stringsToEnums).map(
+                    (balanceType) => (
+                      <option key={balanceType} value={balanceType}>
+                        {balanceType}
                       </option>
-                    );
+                    ),
+                  )}
+                </select>
+              </td>
+              <td className="border border-gray-300">
+                <select
+                  id="vehicleClass"
+                  value={adjustment.vehicleClass}
+                  onChange={(e) =>
+                    handleAdjustmentChange(
+                      index,
+                      "vehicleClass",
+                      e.target.value,
+                    )
                   }
-                })}
-              </select>
-            </span>
-            <span key="numberOfUnits" className="flex flex-col">
-              <label htmlFor="numberOfUnits">Number of Units</label>
-              <input
-                type="text"
-                id="numberOfUnits"
-                value={adjustment.numberOfUnits}
-                onChange={(e) =>
-                  handleAdjustmentChange(index, "numberOfUnits", e.target.value)
-                }
-                disabled={props.disabled}
-              />
-            </span>
-            <span>
-              <Button
-                variant="danger"
-                size="small"
-                onClick={() => removeAdjustment(index)}
-                disabled={props.disabled}
-              >
-                Remove
-              </Button>
-            </span>
-          </div>
-        );
-      })}
+                  disabled={props.disabled}
+                >
+                  {Object.keys(vehicleClassesMaps.stringsToEnums).map((vc) => (
+                    <option key={vc} value={vc}>
+                      {vc}
+                    </option>
+                  ))}
+                </select>
+              </td>
+              <td className="border border-gray-300">
+                <select
+                  id="zevClass"
+                  value={adjustment.zevClass}
+                  onChange={(e) =>
+                    handleAdjustmentChange(index, "zevClass", e.target.value)
+                  }
+                  disabled={props.disabled}
+                >
+                  {Object.keys(zevClassesMaps.stringsToEnums).map((zc) => (
+                    <option key={zc} value={zc}>
+                      {zc}
+                    </option>
+                  ))}
+                </select>
+              </td>
+              <td className="border border-gray-300">
+                <select
+                  id="modelYear"
+                  value={adjustment.modelYear}
+                  onChange={(e) =>
+                    handleAdjustmentChange(index, "modelYear", e.target.value)
+                  }
+                  disabled={props.disabled}
+                >
+                  {Object.keys(modelYearsMaps.stringsToEnums).map((my) => {
+                    if (my >= "2019" && my <= "2035") {
+                      return (
+                        <option key={my} value={my}>
+                          {my}
+                        </option>
+                      );
+                    }
+                  })}
+                </select>
+              </td>
+              <td className="border border-gray-300">
+                <input
+                  type="text"
+                  id="numberOfUnits"
+                  value={adjustment.numberOfUnits}
+                  onChange={(e) =>
+                    handleAdjustmentChange(
+                      index,
+                      "numberOfUnits",
+                      e.target.value,
+                    )
+                  }
+                  disabled={props.disabled}
+                />
+              </td>
+              <td>
+                <Button
+                  variant="danger"
+                  onClick={() => removeAdjustment(index)}
+                  disabled={props.disabled}
+                >
+                  Delete
+                </Button>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
       <Button
         variant="secondary"
         onClick={addAdjustment}
@@ -209,6 +222,6 @@ export const Adjustments = (props: {
       >
         {props.type === "myr" ? "Add Suggested Adjustment" : "Add Adjustment"}
       </Button>
-    </div>
+    </>
   );
 };

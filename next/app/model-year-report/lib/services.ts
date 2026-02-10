@@ -446,10 +446,9 @@ export const createReassessmentHistory = async (
   });
 };
 
-// returns {sequenceNumber, myrId} if non-legacy reassessment,
-// {sequenceNumber, null} if legacy reassessment,
-// throws error if creating a reassessment is not allowed.
-export const getDataForReassessment = async (
+// returns a (non-legacy) myrId if (orgId, modelYear) can be associated with
+// such a myrId
+export const validateReassesmentTimeLimit = async (
   organizationId: number,
   modelYear: ModelYear,
 ) => {
@@ -497,6 +496,20 @@ export const getDataForReassessment = async (
   if ((!myr && !legacyMyr) || (myr && legacyMyr)) {
     throw new Error();
   }
+  if (myr?.id) {
+    return myr.id;
+  }
+  return null;
+};
+
+// returns {sequenceNumber, myrId} if non-legacy reassessment,
+// {sequenceNumber, null} if legacy reassessment,
+// throws error if creating a reassessment is not allowed.
+export const getDataForReassessment = async (
+  organizationId: number,
+  modelYear: ModelYear,
+) => {
+  const myrId = await validateReassesmentTimeLimit(organizationId, modelYear);
   let sequenceNumber = 0;
   const latestReassessment = await prisma.reassessment.findFirst({
     where: {
@@ -522,7 +535,7 @@ export const getDataForReassessment = async (
   }
   return {
     sequenceNumber,
-    myrId: myr ? myr.id : null,
+    myrId,
   };
 };
 

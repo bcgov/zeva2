@@ -381,6 +381,7 @@ export const getWhereClause = (
   userIsGov: boolean,
 ): Omit<Prisma.ModelYearReportWhereInput, "NOT"> => {
   const result: Omit<Prisma.ModelYearReportWhereInput, "NOT"> = {};
+  const orClausesToAnd: { OR: Prisma.ModelYearReportWhereInput[] }[] = [];
   const modelYearsMap = getStringsToModelYearsEnumsMap();
   const statusMap = getStringsToMyrStatusEnumsMap();
   const supplierStatusMap = getStringsToMyrSupplierStatusEnumsMap();
@@ -421,26 +422,28 @@ export const getWhereClause = (
       } else {
         const matchingTerms = getMatchingTerms(reassessmentStatusMap, value);
         if (value === "--") {
-          result[key] = {
-            not: ReassessmentStatus.ISSUED,
-          };
+          orClausesToAnd.push({
+            OR: [
+              { [key]: null },
+              { [key]: { not: ReassessmentStatus.ISSUED } },
+            ],
+          });
         } else if (
           matchingTerms.length === 1 &&
           matchingTerms[0] === ReassessmentStatus.ISSUED
         ) {
           result[key] = ReassessmentStatus.ISSUED;
+        } else {
+          result.id = -1;
         }
       }
     } else if (key === "supplementaryReportStatus") {
       if (userIsGov) {
         const matchingTerms = getMatchingTerms(supplementaryStatusMap, value);
         if (value === "--") {
-          result[key] = {
-            notIn: [
-              SupplementaryReportStatus.ACKNOWLEDGED,
-              SupplementaryReportStatus.SUBMITTED,
-            ],
-          };
+          orClausesToAnd.push({
+            OR: [{ [key]: null }, { [key]: SupplementaryReportStatus.DRAFT }],
+          });
         } else if (
           matchingTerms.length === 2 &&
           matchingTerms.includes(SupplementaryReportStatus.ACKNOWLEDGED) &&
@@ -449,6 +452,8 @@ export const getWhereClause = (
           result[key] = {
             in: matchingTerms,
           };
+        } else {
+          result.id = -1;
         }
       } else {
         if (value === "--") {
@@ -461,7 +466,9 @@ export const getWhereClause = (
       }
     } else if (key === "compliant") {
       const lowerCasedValue = value.toLowerCase();
-      if (IsCompliant.No.toLowerCase().includes(lowerCasedValue)) {
+      if (lowerCasedValue === "--") {
+        result[key] = null;
+      } else if (IsCompliant.No.toLowerCase().includes(lowerCasedValue)) {
         result[key] = false;
       } else if (IsCompliant.Yes.toLowerCase().includes(lowerCasedValue)) {
         result[key] = true;
@@ -470,6 +477,7 @@ export const getWhereClause = (
       }
     }
   }
+  result.AND = orClausesToAnd;
   return result;
 };
 
