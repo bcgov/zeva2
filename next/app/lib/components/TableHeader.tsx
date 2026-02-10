@@ -15,8 +15,6 @@ interface ITableHeaderProps<T> {
   onFilterChange?: (columnId: string, value: string) => void;
   sortState?: { [key: string]: "asc" | "desc" | null };
   filterState?: { [key: string]: string };
-  filterOnApply?: boolean;
-  onFilterApply?: () => void;
 }
 
 const renderSortIcon = (sortState: "asc" | "desc" | null) => {
@@ -54,16 +52,12 @@ const HeaderFilterInput = ({
   columnId,
   canFilter,
   value,
-  filterOnApply,
   onFilterChange,
-  onFilterApply,
 }: {
   columnId: string;
   canFilter: boolean;
   value: string;
-  filterOnApply: boolean;
   onFilterChange?: (columnId: string, value: string) => void;
-  onFilterApply?: () => void;
 }) => {
   if (!canFilter) return null;
 
@@ -74,12 +68,7 @@ const HeaderFilterInput = ({
         onChange={(event) => {
           onFilterChange?.(columnId, event.target.value);
         }}
-        onKeyDown={(event) => {
-          if (filterOnApply && event.key === "Enter") {
-            onFilterApply?.();
-          }
-        }}
-        placeholder={filterOnApply ? "Press Enter to Search" : "Filter..."}
+        placeholder="Filter..."
         type="text"
         value={value}
       />
@@ -97,8 +86,6 @@ export const TableHeader = <T,>({
   onFilterChange,
   sortState = {},
   filterState = {},
-  filterOnApply = false,
-  onFilterApply,
 }: ITableHeaderProps<T>) => {
   return (
     <thead className="bg-gray-50">
@@ -152,9 +139,7 @@ export const TableHeader = <T,>({
                         columnId={header.id}
                         canFilter={header.column.getCanFilter()}
                         value={filterState[header.id] ?? ""}
-                        filterOnApply={filterOnApply}
                         onFilterChange={onFilterChange}
-                        onFilterApply={onFilterApply}
                       />
                     )}
                   </>

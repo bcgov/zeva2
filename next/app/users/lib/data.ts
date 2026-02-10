@@ -10,6 +10,7 @@ export async function fetchUsers(
   pageSize: number,
   filters: Record<string, string>,
   sorts: Record<string, string>,
+  options?: { paginate?: boolean },
 ): Promise<{ users: UserWithOrgName[]; totalCount: number }> {
   const isAdmin = await userIsAdmin();
   if (!isAdmin) {
@@ -19,8 +20,9 @@ export async function fetchUsers(
     };
   }
   const { userIsGov, userOrgId } = await getUserInfo();
-  const skip = (page - 1) * pageSize;
-  const take = pageSize;
+  const paginate = options?.paginate ?? true;
+  const skip = paginate ? (page - 1) * pageSize : undefined;
+  const take = paginate ? pageSize : undefined;
   let where = getWhereClause(filters, userIsGov);
   const orderBy = getOrderByClause(sorts, true, userIsGov);
   if (!userIsGov) {
