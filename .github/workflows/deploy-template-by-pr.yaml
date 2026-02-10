@@ -25,6 +25,7 @@ on:
 
 permissions:
   contents: read
+  issues: write
 
 jobs:
   deploy:
@@ -47,23 +48,29 @@ jobs:
           token: ${{ secrets.manifest-repo-token }}
 
       - name: Check if the tag has been released
-        id: check_tag
+        id: check_version
         shell: bash
         run: |
           set -euo pipefail
-          current_tag=$(yq -r '.image.tag' "zeva2/zeva2-next/${{ inputs.values_file }}")
-          echo "current_tag=$current_tag" >> "$GITHUB_OUTPUT"
-          if [ "$current_tag" = "${{ inputs.version }}" ]; then
-            echo "The tag ${{ inputs.version }} has been deployed"
+          current_version=$(yq -r '.image.tag' "zeva2/zeva2-next/${{ inputs.values_file }}")
+          echo "current_version=$current_version" >> "$GITHUB_OUTPUT"
+          if [ "$current_version" = "${{ inputs.version }}" ]; then
+            echo "The version ${{ inputs.version }} has been deployed"
             exit 1
           fi
 
-      - name: Update tags
-        uses: mikefarah/yq@v4.40.5
-        with:
-          cmd: |
-            yq -i '.image.tag = "${{ inputs.version}}"' zeva2/zeva2-next/${{ inputs.values_file }}
-            yq -i '.image.tag = "${{ inputs.version}}"' zeva2/zeva2-bullmq/${{ inputs.values_file }}
+      - name: Check for backward deployment
+        id: backward_check
+        shell: bash
+        run: |
+          set -euo pipefail
+          current_version="${{ steps.check_version.outputs.current_version }}"
+          input_version="${{ inputs.version }}"
+          if [ "$input_version" != "$current_version" ] && [ "$(printf '%s\n' "$input_version" "$current_version" | sort -V | head -n1)" = "$input_version" ]; then
+            echo "is_backward=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "is_backward=false" >> "$GITHUB_OUTPUT"
+          fi
 
       - name: Set pull request info
         id: pr_info
@@ -88,16 +95,39 @@ jobs:
               ;;
           esac
           title="${env_name} Release - Update zeva2 image tags to ${{ inputs.version }}"
+          echo "env_name=$env_name" >> "$GITHUB_OUTPUT"
           echo "title=$title" >> "$GITHUB_OUTPUT"
           echo "branch=$branch" >> "$GITHUB_OUTPUT"
           {
             echo "body<<EOF"
             echo "Environment: ${env_name}"
             echo ""
-            echo "- Current version: ${{ steps.check_tag.outputs.current_tag }}"
+            echo "- Current version: ${{ steps.check_version.outputs.current_version }}"
             echo "- Target version: **${{ inputs.version }}**"
             echo "EOF"
           } >> "$GITHUB_OUTPUT"
+
+      - name: Require approval for backward deployment
+        if: steps.backward_check.outputs.is_backward == 'true'
+        uses: trstringer/manual-approval@v1.10.0
+        with:
+          secret: ${{ secrets.GITHUB_TOKEN }}
+          approvers: emi-hi,tim738745,kuanfandevops,JulianForeman,dallascrichmond,ArawuSamuel1,danclancy85
+          minimum-approvals: 1
+          issue-title: "${{ steps.pr_info.outputs.env_name }} Release - backward deployment needs to be approved"
+          issue-body: |
+            A backward deployment was detected on ${{ steps.pr_info.outputs.env_name }}.
+            - Current version: ${{ steps.check_version.outputs.current_version }}
+            - Target version: ${{ inputs.version }}
+            Please review and approve the deployment if the change is expected.
+            If you think this is a mistake, please reach out to the team to investigate.
+
+      - name: Update tags
+        uses: mikefarah/yq@v4.40.5
+        with:
+          cmd: |
+            yq -i '.image.tag = "${{ inputs.version}}"' zeva2/zeva2-next/${{ inputs.values_file }}
+            yq -i '.image.tag = "${{ inputs.version}}"' zeva2/zeva2-bullmq/${{ inputs.values_file }}
 
       - name: Create pull request to main
         uses: peter-evans/create-pull-request@v6
