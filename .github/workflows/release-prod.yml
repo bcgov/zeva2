@@ -9,6 +9,7 @@ on:
 
 permissions:
   contents: read
+  issues: write
 
 env:
   TOOLS_NAMESPACE: ${{ secrets.OPENSHIFT_NAMESPACE_PLATE }}-tools
