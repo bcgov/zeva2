@@ -6,13 +6,14 @@ import {
   ModelYearReportSupplierStatus,
   Prisma,
   ReassessmentStatus,
-  SupplierReassessmentStatus,
   Role,
   SupplierClass,
   SupplementaryReportStatus,
 } from "@/prisma/generated/client";
 import { getOrderByClause, getWhereClause } from "./utilsServer";
 import { getObject } from "@/app/lib/minio";
+import { getSupplierDetails, getVehicleStatistics } from "./services";
+import { getAddressAsString } from "./utils";
 
 export const modelYearReportExists = async (modelYear: ModelYear) => {
   const { userOrgId } = await getUserInfo();
@@ -170,7 +171,7 @@ export type MyrSparse = {
   status: ModelYearReportStatus;
   supplierStatus: ModelYearReportSupplierStatus;
   reassessmentStatus: ReassessmentStatus | null;
-  supplierReassessmentStatus: SupplierReassessmentStatus | null;
+  supplementaryReportStatus: SupplementaryReportStatus | null;
   organization?: {
     name: string;
   };
@@ -200,7 +201,7 @@ export const getModelYearReports = async (
     status: true,
     supplierStatus: true,
     reassessmentStatus: true,
-    supplierReassessmentStatus: true,
+    supplementaryReportStatus: true,
     compliant: true,
     reportableNvValue: true,
     supplierClass: true,
@@ -378,6 +379,13 @@ export const getSupplementaryReport = async (suppId: number) => {
   }
   return await prisma.supplementaryReport.findUnique({
     where: whereClause,
+    include: {
+      organization: {
+        select: {
+          name: true,
+        },
+      },
+    },
   });
 };
 
@@ -436,4 +444,28 @@ export const getSupplementaries = async (myrId: number) => {
       sequenceNumber: "asc",
     },
   });
+};
+
+export type SupplierData = {
+  legalName: string;
+  makes: string;
+  recordsAddress: string;
+  serviceAddress: string;
+};
+
+export const getSupplierOwnData = async (): Promise<SupplierData> => {
+  const { userOrgId } = await getUserInfo();
+  const { legalName, makes, recordsAddress, serviceAddress } =
+    await getSupplierDetails(userOrgId);
+  return {
+    legalName,
+    makes: makes.join(", "),
+    recordsAddress: recordsAddress ? getAddressAsString(recordsAddress) : "",
+    serviceAddress: serviceAddress ? getAddressAsString(serviceAddress) : "",
+  };
+};
+
+export const getSupplierOwnVehicleStats = async (modelYear: ModelYear) => {
+  const { userOrgId } = await getUserInfo();
+  return await getVehicleStatistics(userOrgId, modelYear);
 };

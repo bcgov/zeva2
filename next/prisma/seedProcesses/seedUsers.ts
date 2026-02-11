@@ -57,10 +57,11 @@ export const seedUsers = async (
         }
       }
     });
-    if (roles.includes(Role.ZEVA_IDIR_USER) && roles.includes(Role.DIRECTOR)) {
-      roles = roles.filter((role) => role !== Role.DIRECTOR);
+    try {
+      validateRoles(roles, userIsGov);
+    } catch {
+      throw new Error("user " + userOld.id + " with invalid roles!");
     }
-    validateRoles(roles, userIsGov);
     const userNew = await tx.user.create({
       data: {
         contactEmail: userOld.email,

@@ -7,7 +7,9 @@ import {
   BalanceType,
   ModelYear,
   Prisma,
+  ReassessmentStatus,
   ReferenceType,
+  SupplementaryReportStatus,
   SupplierClass,
   TransactionType,
   VehicleClass,
@@ -34,8 +36,8 @@ import {
   getStringsToMyrStatusEnumsMap,
   getStringsToMyrSupplierStatusEnumsMap,
   getStringsToReassessmentStatusEnumsMap,
+  getStringsToSupplementaryReportStatusEnumsMap,
   getStringsToSupplierClassEnumsMap,
-  getStringsToSupplierReassessmentStatusEnumsMap,
   getStringsToVehicleClassEnumsMap,
   getStringsToZevClassEnumsMap,
 } from "@/app/lib/utils/enumMaps";
@@ -47,7 +49,6 @@ import {
   FileReductionRecord,
   FileZevUnitRecord,
   parseAssessment,
-  parseMyr,
 } from "./utils";
 
 export const validatePrevBalanceTransactions = (
@@ -380,12 +381,13 @@ export const getWhereClause = (
   userIsGov: boolean,
 ): Omit<Prisma.ModelYearReportWhereInput, "NOT"> => {
   const result: Omit<Prisma.ModelYearReportWhereInput, "NOT"> = {};
+  const orClausesToAnd: { OR: Prisma.ModelYearReportWhereInput[] }[] = [];
   const modelYearsMap = getStringsToModelYearsEnumsMap();
   const statusMap = getStringsToMyrStatusEnumsMap();
   const supplierStatusMap = getStringsToMyrSupplierStatusEnumsMap();
   const reassessmentStatusMap = getStringsToReassessmentStatusEnumsMap();
-  const supplierReassessmentStatusMap =
-    getStringsToSupplierReassessmentStatusEnumsMap();
+  const supplementaryStatusMap =
+    getStringsToSupplementaryReportStatusEnumsMap();
   for (const [key, rawValue] of Object.entries(filters)) {
     const value = rawValue.trim();
     if (key === "id") {
@@ -418,17 +420,55 @@ export const getWhereClause = (
           };
         }
       } else {
+        const matchingTerms = getMatchingTerms(reassessmentStatusMap, value);
         if (value === "--") {
-          result["supplierReassessmentStatus"] = null;
+          orClausesToAnd.push({
+            OR: [
+              { [key]: null },
+              { [key]: { not: ReassessmentStatus.ISSUED } },
+            ],
+          });
+        } else if (
+          matchingTerms.length === 1 &&
+          matchingTerms[0] === ReassessmentStatus.ISSUED
+        ) {
+          result[key] = ReassessmentStatus.ISSUED;
         } else {
-          result["supplierReassessmentStatus"] = {
-            in: getMatchingTerms(supplierReassessmentStatusMap, value),
+          result.id = -1;
+        }
+      }
+    } else if (key === "supplementaryReportStatus") {
+      if (userIsGov) {
+        const matchingTerms = getMatchingTerms(supplementaryStatusMap, value);
+        if (value === "--") {
+          orClausesToAnd.push({
+            OR: [{ [key]: null }, { [key]: SupplementaryReportStatus.DRAFT }],
+          });
+        } else if (
+          matchingTerms.length === 2 &&
+          matchingTerms.includes(SupplementaryReportStatus.ACKNOWLEDGED) &&
+          matchingTerms.includes(SupplementaryReportStatus.SUBMITTED)
+        ) {
+          result[key] = {
+            in: matchingTerms,
+          };
+        } else {
+          result.id = -1;
+        }
+      } else {
+        if (value === "--") {
+          result[key] = null;
+        } else {
+          result[key] = {
+            in: getMatchingTerms(supplementaryStatusMap, value),
           };
         }
       }
     } else if (key === "compliant") {
       const lowerCasedValue = value.toLowerCase();
-      if (IsCompliant.No.toLowerCase().includes(lowerCasedValue)) {
+      if (lowerCasedValue === "--") {
+        result[key] = null;
+      } else if (IsCompliant.No.toLowerCase().includes(lowerCasedValue)) {
         result[key] = false;
       } else if (IsCompliant.Yes.toLowerCase().includes(lowerCasedValue)) {
         result[key] = true;
@@ -437,6 +477,7 @@ export const getWhereClause = (
       }
     }
   }
+  result.AND = orClausesToAnd;
   return result;
 };
 
@@ -470,8 +511,10 @@ export const getOrderByClause = (
       } else if (key === "reassessmentStatus") {
         if (userIsGov) {
           orderBy[key] = value;
-        } else {
-          orderBy["supplierReassessmentStatus"] = value;
+        }
+      } else if (key === "supplementaryReportStatus") {
+        if (!userIsGov) {
+          orderBy[key] = value;
         }
       }
     }
@@ -485,20 +528,23 @@ export const getOrderByClause = (
   return result;
 };
 
-export type MyrSparseSerialized = Omit<
-  MyrSparse,
-  "supplierStatus" | "supplierReassessmentStatus"
->;
+export type MyrSparseSerialized = Omit<MyrSparse, "supplierStatus">;
 
 export const getSerializedMyrs = (
   myrs: MyrSparse[],
   userIsGov: boolean,
 ): MyrSparseSerialized[] => {
   return myrs.map((myr) => {
-    const { supplierStatus, supplierReassessmentStatus, ...result } = myr;
+    const { supplierStatus, ...result } = myr;
     if (!userIsGov) {
       result.status = supplierStatus;
-      result.reassessmentStatus = supplierReassessmentStatus;
+      if (result.reassessmentStatus !== ReassessmentStatus.ISSUED) {
+        result.reassessmentStatus = null;
+      }
+    } else if (
+      result.supplementaryReportStatus === SupplementaryReportStatus.DRAFT
+    ) {
+      result.supplementaryReportStatus = null;
     }
     return result;
   });
@@ -552,30 +598,6 @@ const parseReductionsForData = (
     } catch (e) {
       throw error;
     }
-  });
-  return result;
-};
-
-export const parseMyrForAssessmentData = (workbook: Workbook) => {
-  const result: { zevClassOrdering: ZevClass[]; nvValues: NvValues } = {
-    zevClassOrdering: [],
-    nvValues: {},
-  };
-  const zevClassMap = getStringsToZevClassEnumsMap();
-  const parsedMyr = parseMyr(workbook);
-  const zevClassOrdering = parsedMyr.details.zevClassOrdering;
-  const complianceReductions = parsedMyr.complianceReductions;
-  const zevClassOrderingSplit = zevClassOrdering.replaceAll(" ", "").split(",");
-  zevClassOrderingSplit.forEach((s) => {
-    const zevClass = zevClassMap[s];
-    if (!zevClass) {
-      throw new Error("Invalid value in ZEV Class Ordering!");
-    }
-    result.zevClassOrdering.push(zevClass);
-  });
-  const reductionsData = parseReductionsForData(complianceReductions);
-  reductionsData.nvValues.forEach(([vehicleClass, nv]) => {
-    result.nvValues[vehicleClass] = nv.toFixed();
   });
   return result;
 };

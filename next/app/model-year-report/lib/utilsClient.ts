@@ -18,7 +18,6 @@ import {
   MyrOffsets,
   MyrEndingBalance,
   NvValues,
-  SupplierData,
   AdjustmentPayload,
   AssessmentData,
 } from "./actions";
@@ -28,30 +27,24 @@ import {
   IsCompliant,
   SupplierZevClassChoice,
 } from "./constants";
-import {
-  getBalanceTypeEnumsToStringsMap,
-  getModelYearEnumsToStringsMap,
-  getReferenceTypeEnumsToStringsMap,
-  getSupplierClassEnumsToStringsMap,
-  getTransactionTypeEnumsToStringMap,
-  getVehicleClassEnumsToStringsMap,
-  getZevClassEnumsToStringsMap,
-} from "@/app/lib/utils/enumMaps";
 import { Adjustment } from "./components/Adjustments";
-import {
-  isModelYear,
-  isTransactionType,
-  isVehicleClass,
-  isZevClass,
-} from "@/app/lib/utils/typeGuards";
-import { ComplianceInfo } from "./utilsServer";
+import { ComplianceInfo, UnitsAsString } from "./utilsServer";
 import {
   getAssessmentSheets,
   getForecastSheets,
+  getHelpingMaps,
   getMyrSheets,
   getNextThreeModelYears,
+  MyrHelpingMaps,
+  VehicleStatString,
 } from "./utils";
-import { VehicleStatistics } from "./services";
+import { ZevUnitRecord } from "@/lib/utils/zevUnit";
+import {
+  getStringsToBalanceTypeEnumsMap,
+  getStringsToModelYearsEnumsMap,
+  getStringsToVehicleClassEnumsMap,
+  getStringsToZevClassEnumsMap,
+} from "@/app/lib/utils/enumMaps";
 
 export const getZevClassOrdering = (
   priorityZevClass: SupplierZevClassChoice,
@@ -80,49 +73,71 @@ export const validateNvValues = (nvValues: NvValues) => {
   });
 };
 
-export type MyrHelpingMaps = {
-  transactionTypesMap: Partial<Record<TransactionType, string>>;
-  balanceTypesMap: Partial<Record<TransactionType, string>>;
-  referenceTypesMap: Partial<Record<ReferenceType, string>>;
-  vehicleClassesMap: Partial<Record<VehicleClass, string>>;
-  zevClassesMap: Partial<Record<ZevClass, string>>;
-  modelYearsMap: Partial<Record<ModelYear, string>>;
-  supplierClassesMap: Partial<Record<SupplierClass, string>>;
+export const getAdjustmentsPayload = (
+  adjustments: Adjustment[],
+): AdjustmentPayload[] => {
+  const result: AdjustmentPayload[] = [];
+  const balanceTypesMap = getStringsToBalanceTypeEnumsMap();
+  const vehicleClassesMap = getStringsToVehicleClassEnumsMap();
+  const zevClassesMap = getStringsToZevClassEnumsMap();
+  const modelYearsMap = getStringsToModelYearsEnumsMap();
+  for (const adjustment of adjustments) {
+    const type = balanceTypesMap[adjustment.type];
+    const vehicleClass = vehicleClassesMap[adjustment.vehicleClass];
+    const zevClass = zevClassesMap[adjustment.zevClass];
+    const modelYear = modelYearsMap[adjustment.modelYear];
+    const numberOfUnits = adjustment.numberOfUnits;
+    if (!type || !vehicleClass || !zevClass || !modelYear || !numberOfUnits) {
+      throw new Error("Invalid adjustment detected!");
+    }
+    const numberOfUnitsDec = new Decimal(numberOfUnits);
+    if (numberOfUnitsDec.lte(0) || numberOfUnitsDec.decimalPlaces() > 2) {
+      throw new Error(
+        "An adjustment's Number of Units must be greater than zero and must be rounded to no more than the second decimal place!",
+      );
+    }
+    result.push({
+      type,
+      vehicleClass,
+      zevClass,
+      modelYear,
+      numberOfUnits,
+    });
+  }
+  return result;
 };
 
-export const getHelpingMaps = (): MyrHelpingMaps => {
-  return {
-    transactionTypesMap: getTransactionTypeEnumsToStringMap(),
-    balanceTypesMap: getBalanceTypeEnumsToStringsMap(),
-    referenceTypesMap: getReferenceTypeEnumsToStringsMap(),
-    vehicleClassesMap: getVehicleClassEnumsToStringsMap(),
-    zevClassesMap: getZevClassEnumsToStringsMap(),
-    modelYearsMap: getModelYearEnumsToStringsMap(),
-    supplierClassesMap: getSupplierClassEnumsToStringsMap(),
-  };
-};
-
-export const generateMyr = async (template: Excel.Buffer, myrData: MyrData) => {
+export const generateMyr = async (
+  template: Excel.Buffer,
+  myrData: MyrData,
+  zevClassOrdering: ZevClass[],
+  legalName: string,
+  makes: string,
+  recordsAddress: string,
+  serviceAddress: string,
+  vehicleStatistics: VehicleStatString[],
+  suggestedAdjustments: AdjustmentPayload[],
+) => {
   const workbook = new Excel.Workbook();
   await workbook.xlsx.load(template);
   const sheets = getMyrSheets(workbook);
   const helpingMaps = getHelpingMaps();
-  writeMyrDetails(
-    sheets.detailsSheet,
-    myrData.modelYear,
-    myrData.zevClassOrdering,
-    helpingMaps,
-  );
   writeSupplierDetails(
     sheets.supplierDetailsSheet,
-    myrData.supplierData,
+    legalName,
+    makes,
+    myrData.supplierClass,
+    serviceAddress,
+    recordsAddress,
+    zevClassOrdering,
     helpingMaps,
   );
-  writeVehicleStatistics(
-    sheets.vehicleStatisticsSheet,
-    myrData.vehicleStatistics,
+  writePreviousVolumes(
+    sheets.previousVolumesSheet,
+    myrData.volumes,
     helpingMaps,
   );
+  writeVehicleStatistics(sheets.vehicleStatisticsSheet, vehicleStatistics);
   writeComplianceReductions(
     sheets.complianceReductionsSheet,
     myrData.complianceReductions,
@@ -139,6 +154,21 @@ export const generateMyr = async (template: Excel.Buffer, myrData: MyrData) => {
     helpingMaps,
     new Set(),
   );
+  writePendingSupplyCredits(
+    sheets.pendingSupplyCreditsSheet,
+    myrData.pendingSupplyCredits,
+    helpingMaps,
+  );
+  writePreviousAdjustments(
+    sheets.adjustmentsSheet,
+    myrData.currentTransactions,
+    helpingMaps,
+  );
+  writeAdjustments(
+    sheets.suggestedAdjustmentsSheet,
+    suggestedAdjustments,
+    helpingMaps,
+  );
   writeOffsetsAndTransfersAway(
     sheets.offsetsAndTransfersAwaySheet,
     myrData.offsets,
@@ -153,53 +183,53 @@ export const generateMyr = async (template: Excel.Buffer, myrData: MyrData) => {
   return workbook;
 };
 
-const writeMyrDetails = (
+const writeSupplierDetails = (
   sheet: Excel.Worksheet,
-  modelYear: ModelYear,
+  legalName: string,
+  makes: string,
+  classification: SupplierClass,
+  serviceAddress: string,
+  recordsAddress: string,
   zevClassOrdering: ZevClass[],
   helpingMaps: MyrHelpingMaps,
 ) => {
-  const finalOrdering = zevClassOrdering.map(
-    (zevClass) => helpingMaps.zevClassesMap[zevClass],
-  );
   sheet.addRow([
-    helpingMaps.modelYearsMap[modelYear],
-    finalOrdering.join(", "),
+    legalName,
+    makes,
+    helpingMaps.supplierClassesMap[classification],
+    serviceAddress,
+    recordsAddress,
+    zevClassOrdering
+      .map((zevClass) => helpingMaps.zevClassesMap[zevClass])
+      .join(", "),
   ]);
 };
 
-const writeSupplierDetails = (
+const writePreviousVolumes = (
   sheet: Excel.Worksheet,
-  supplierDetails: SupplierData,
+  volumes: [ModelYear, VehicleClass, number][],
   helpingMaps: MyrHelpingMaps,
 ) => {
-  const { name, makes, recordsAddress, serviceAddress, supplierClass } =
-    supplierDetails;
-  sheet.addRow([
-    name,
-    makes.join(", "),
-    helpingMaps.supplierClassesMap[supplierClass],
-    serviceAddress
-      ? `${serviceAddress.addressLines}, ${serviceAddress.city}, ${serviceAddress.state}, ${serviceAddress.postalCode}, ${serviceAddress.country}`
-      : "",
-    recordsAddress
-      ? `${recordsAddress.addressLines}, ${recordsAddress.city}, ${recordsAddress.state}, ${recordsAddress.postalCode}, ${recordsAddress.country}`
-      : "",
-  ]);
+  for (const volume of volumes) {
+    sheet.addRow([
+      helpingMaps.modelYearsMap[volume[0]],
+      helpingMaps.vehicleClassesMap[volume[1]],
+      volume[2],
+    ]);
+  }
 };
 
 const writeVehicleStatistics = (
   sheet: Excel.Worksheet,
-  vehicleStatistics: VehicleStatistics,
-  helpingMaps: MyrHelpingMaps,
+  vehicleStatistics: VehicleStatString[],
 ) => {
   for (const vehicle of vehicleStatistics) {
     sheet.addRow([
-      helpingMaps.vehicleClassesMap[vehicle.vehicleClass],
-      helpingMaps.zevClassesMap[vehicle.zevClass],
+      vehicle.vehicleClass,
+      vehicle.zevClass,
       vehicle.make,
       vehicle.modelName,
-      helpingMaps.modelYearsMap[vehicle.modelYear],
+      vehicle.modelYear,
       vehicle.zevType,
       vehicle.range,
       vehicle.submittedCount,
@@ -291,49 +321,26 @@ const writeCredits = (
   });
 };
 
-export const getAdjustmentsPayload = (
-  adjustments: Adjustment[],
-): AdjustmentPayload[] => {
-  const result: AdjustmentPayload[] = [];
-  adjustments.forEach((adjustment) => {
-    const type = adjustment.type;
-    const vehicleClass = adjustment.vehicleClass;
-    const zevClass = adjustment.zevClass;
-    const modelYear = adjustment.modelYear;
-    const numberOfUnits = adjustment.numberOfUnits;
-    if (
-      !type ||
-      !vehicleClass ||
-      !zevClass ||
-      !modelYear ||
-      !numberOfUnits ||
-      !isTransactionType(type) ||
-      !isVehicleClass(vehicleClass) ||
-      !isZevClass(zevClass) ||
-      !isModelYear(modelYear)
-    ) {
-      throw new Error("Invalid adjustment detected!");
-    }
-    const numberOfUnitsDec = new Decimal(numberOfUnits);
-    if (numberOfUnitsDec.lte(0) || numberOfUnitsDec.decimalPlaces() > 2) {
-      throw new Error(
-        "An adjustment's Number of Units must be greater than zero and must be rounded to no more than the second decimal place!",
-      );
-    }
-    result.push({
-      type,
-      vehicleClass,
-      zevClass,
-      modelYear,
-      numberOfUnits,
-    });
-  });
-  return result;
+const writePendingSupplyCredits = (
+  sheet: Excel.Worksheet,
+  records: UnitsAsString<ZevUnitRecord>[],
+  helpingMaps: MyrHelpingMaps,
+) => {
+  for (const record of records) {
+    sheet.addRow([
+      helpingMaps.vehicleClassesMap[record.vehicleClass],
+      helpingMaps.zevClassesMap[record.zevClass],
+      helpingMaps.modelYearsMap[record.modelYear],
+      record.numberOfUnits,
+    ]);
+  }
 };
 
 export const generateAssessment = async (
   template: Excel.Buffer,
   assessmentData: AssessmentData,
+  modelYear: ModelYear,
+  zevClassOrdering: ZevClass[],
   adjustments: AdjustmentPayload[],
 ) => {
   const workbook = new Excel.Workbook();
@@ -342,11 +349,9 @@ export const generateAssessment = async (
   const helpingMaps = getHelpingMaps();
   writeAssessmentDetails(
     sheets.detailsSheet,
-    assessmentData.orgName,
-    assessmentData.modelYear,
     assessmentData.supplierClass,
-    assessmentData.zevClassOrdering,
     assessmentData.complianceInfo,
+    zevClassOrdering,
     helpingMaps,
   );
   writeComplianceReductions(
@@ -379,14 +384,13 @@ export const generateAssessment = async (
   );
   writeFinalEndingBalance(
     sheets.finalEndingBalanceSheet,
-    assessmentData.modelYear,
+    modelYear,
     assessmentData.endingBalance,
     assessmentData.complianceInfo,
     helpingMaps,
   );
   writeComplianceStatements(
     sheets.statementsSheet,
-    assessmentData.orgName,
     assessmentData.complianceInfo,
     helpingMaps,
   );
@@ -395,11 +399,9 @@ export const generateAssessment = async (
 
 const writeAssessmentDetails = (
   sheet: Excel.Worksheet,
-  supplierName: string,
-  modelYear: ModelYear,
   classification: SupplierClass,
-  zevClassOrdering: ZevClass[],
   complianceInfo: ComplianceInfo,
+  zevClassOrdering: ZevClass[],
   helpingMaps: MyrHelpingMaps,
 ) => {
   let isCompliant: IsCompliant = IsCompliant.Yes;
@@ -410,19 +412,16 @@ const writeAssessmentDetails = (
     }
   }
   sheet.addRow([
-    supplierName,
-    helpingMaps.modelYearsMap[modelYear],
     helpingMaps.supplierClassesMap[classification],
+    isCompliant,
     zevClassOrdering
       .map((zevClass) => helpingMaps.zevClassesMap[zevClass])
       .join(", "),
-    isCompliant,
   ]);
 };
 
 const writeComplianceStatements = (
   sheet: Excel.Worksheet,
-  orgName: string,
   complianceInfo: ComplianceInfo,
   helpingMaps: MyrHelpingMaps,
 ) => {
@@ -430,16 +429,16 @@ const writeComplianceStatements = (
     const vehicleClass = helpingMaps.vehicleClassesMap[vehicleClassEnum];
     if (data.isCompliant) {
       sheet.addRow([
-        `With respect to the ${vehicleClass} vehicle class, ${orgName} has complied with section 10 (2) of the Zero-Emission Vehicles Act.`,
+        `With respect to the ${vehicleClass} vehicle class, the supplier in question has complied with section 10 (2) of the Zero-Emission Vehicles Act.`,
       ]);
     } else {
       sheet.addRow([
-        `With respect to the ${vehicleClass} vehicle class, ${orgName} has not complied with section 10 (2) of the Zero-Emission Vehicles Act.`,
+        `With respect to the ${vehicleClass} vehicle class, the supplier in question has not complied with section 10 (2) of the Zero-Emission Vehicles Act.`,
       ]);
       const penalty = new Decimal(data.penalty);
       if (penalty.gt(0)) {
         sheet.addRow([
-          `With respect to the ${vehicleClass} vehicle class, section 10 (3) of the Zero-Emission Vehicles Act applies to ${orgName} and they are required to pay a penalty amount of $${penalty.toString()}.`,
+          `With respect to the ${vehicleClass} vehicle class, section 10 (3) of the Zero-Emission Vehicles Act applies to the supplier in question and they are required to pay a penalty amount of $${penalty.toString()}.`,
         ]);
       }
     }
@@ -451,14 +450,8 @@ const writePreviousAdjustments = (
   records: MyrCurrentTransactions,
   helpingMaps: MyrHelpingMaps,
 ) => {
-  records.forEach((record) => {
-    const isLegacyDebitAdjustment =
-      record.referenceType === ReferenceType.AGREEMENT &&
-      record.type === TransactionType.DEBIT;
-    if (
-      record.referenceType === ReferenceType.ASSESSMENT_ADJUSTMENT ||
-      isLegacyDebitAdjustment
-    ) {
+  for (const record of records) {
+    if (record.referenceType === ReferenceType.ASSESSMENT_ADJUSTMENT) {
       sheet.addRow([
         helpingMaps.transactionTypesMap[record.type],
         helpingMaps.vehicleClassesMap[record.vehicleClass],
@@ -467,7 +460,7 @@ const writePreviousAdjustments = (
         record.numberOfUnits,
       ]);
     }
-  });
+  }
 };
 
 const writeAdjustments = writeBalance;

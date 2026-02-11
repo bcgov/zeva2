@@ -7,6 +7,7 @@ import {
   getModelYearEnumsToStringsMap,
   getMyrStatusEnumsToStringsMap,
   getReassessmentStatusEnumsToStringsMap,
+  getSupplementaryReportStatusEnumsToStringsMap,
   getSupplierClassEnumsToStringsMap,
 } from "@/app/lib/utils/enumMaps";
 import { MyrSparseSerialized } from "../utilsServer";
@@ -33,6 +34,9 @@ export const ReportsTable = (props: {
   const reassessmentStatusMap = useMemo(() => {
     return getReassessmentStatusEnumsToStringsMap();
   }, []);
+  const supplementaryStatusMap = useMemo(() => {
+    return getSupplementaryReportStatusEnumsToStringsMap();
+  }, []);
   const supplierClassesMap = useMemo(() => {
     return getSupplierClassEnumsToStringsMap();
   }, []);
@@ -57,9 +61,21 @@ export const ReportsTable = (props: {
             : "--",
         {
           id: "reassessmentStatus",
-          enableSorting: true,
+          enableSorting: props.userIsGov,
           enableColumnFilter: true,
           header: () => <span>Reassessment Status</span>,
+        },
+      ),
+      columnHelper.accessor(
+        (row) =>
+          row.supplementaryReportStatus
+            ? supplementaryStatusMap[row.supplementaryReportStatus]
+            : "--",
+        {
+          id: "supplementaryReportStatus",
+          enableSorting: !props.userIsGov,
+          enableColumnFilter: true,
+          header: () => <span>Supplementary Report Status</span>,
         },
       ),
       columnHelper.accessor((row) => row.compliant, {

@@ -1,8 +1,12 @@
 import { getUserInfo } from "@/auth";
-import { getModelYearReport } from "../../lib/data";
-import { SupplementaryForm } from "../../lib/components/SupplementaryForm";
+import {
+  getModelYearReport,
+  getSupplierOwnData,
+  getSupplierOwnVehicleStats,
+} from "../../lib/data";
+import { ModelYearReportForm } from "../../lib/components/ModelYearReportForm";
 import { ModelYearReportStatus } from "@/prisma/generated/client";
-import { canCreateSupplementary } from "../../lib/services";
+import { getDataForSupplementary } from "../../lib/services";
 
 const Page = async (props: { params: Promise<{ id: string }> }) => {
   const { userIsGov } = await getUserInfo();
@@ -19,17 +23,26 @@ const Page = async (props: { params: Promise<{ id: string }> }) => {
   ) {
     return null;
   }
-  const createSupplementaryPossible = await canCreateSupplementary(
-    myrId,
-    userIsGov,
-  );
+  let createSupplementaryPossible = true;
+  try {
+    await getDataForSupplementary(report.organizationId, report.modelYear);
+  } catch {
+    createSupplementaryPossible = false;
+  }
   if (!createSupplementaryPossible) {
     return null;
   }
+  const supplierData = await getSupplierOwnData();
+  const vehicleStats = await getSupplierOwnVehicleStats(report.modelYear);
   return (
     <div className="max-w-xl mx-auto p-4">
       <h1 className="text-xl font-bold mb-4">Create a Supplementary Report</h1>
-      <SupplementaryForm type="nonLegacyNew" modelYear={report.modelYear} />
+      <ModelYearReportForm
+        type="nonLegacyNewSupp"
+        modelYear={report.modelYear}
+        supplierData={supplierData}
+        vehicleStatistics={vehicleStats}
+      />
     </div>
   );
 };

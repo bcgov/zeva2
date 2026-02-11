@@ -3,18 +3,23 @@ import { LoadingSkeleton } from "@/app/lib/components/skeletons";
 import { getUserInfo } from "@/auth";
 import { JSX, Suspense } from "react";
 import { AssessmentDetails } from "./AssessmentDetails";
-import { ReassessmentStatus, Role } from "@/prisma/generated/client";
+import { ModelYear, ReassessmentStatus, Role } from "@/prisma/generated/client";
 import { ReassessmentHistory } from "./ReassessmentHistory";
 import { ReassessmentAnalystActions } from "./ReassessmentAnalystActions";
 import { ReassessmentDirectorActions } from "./ReassessmentDirectorActions";
+import { SystemDetails } from "./SystemDetails";
+import { getReassessmentStatusEnumsToStringsMap } from "@/app/lib/utils/enumMaps";
 
 // used for both legacy and non-legacy reassessments
 export const Reassessment = async (props: {
   reassessmentId: number;
+  orgName: string;
+  modelYear: ModelYear;
   status: ReassessmentStatus;
+  sequenceNumber: number;
   myrId?: number;
 }) => {
-  const { userRoles } = await getUserInfo();
+  const { userIsGov, userRoles } = await getUserInfo();
   let actionComponent: JSX.Element | null = null;
   if (userRoles.includes(Role.ZEVA_IDIR_USER)) {
     actionComponent = (
@@ -32,6 +37,7 @@ export const Reassessment = async (props: {
       />
     );
   }
+  const statusMap = getReassessmentStatusEnumsToStringsMap();
   return (
     <div className="flex flex-col w-1/3">
       <ContentCard title="Reassessment History">
@@ -39,7 +45,16 @@ export const Reassessment = async (props: {
           <ReassessmentHistory reassessmentId={props.reassessmentId} />
         </Suspense>
       </ContentCard>
-      <ContentCard title="Reassessment Details">
+      <ContentCard title="System Details">
+        <SystemDetails
+          userIsGov={userIsGov}
+          orgName={props.orgName}
+          modelYear={props.modelYear}
+          status={statusMap[props.status] ?? ""}
+          sequenceNumber={props.sequenceNumber}
+        />
+      </ContentCard>
+      <ContentCard title="The Reassessment">
         <Suspense fallback={<LoadingSkeleton />}>
           <AssessmentDetails type="reassessment" id={props.reassessmentId} />
         </Suspense>

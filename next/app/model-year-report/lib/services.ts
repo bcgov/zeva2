@@ -13,9 +13,9 @@ import {
 } from "@/lib/utils/zevUnit";
 import {
   AddressType,
+  CreditApplicationStatus,
   ModelYear,
   ModelYearReportStatus,
-  OrganizationAddress,
   Prisma,
   ReassessmentStatus,
   ReferenceType,
@@ -23,6 +23,7 @@ import {
   SupplementaryReportStatus,
   SupplierClass,
   SupplyVolume,
+  TransactionType,
   VehicleClass,
   VehicleStatus,
   ZevClass,
@@ -34,7 +35,6 @@ import {
   getZevUnitRecordsOrderByClause,
   getComplianceRatioReductions,
   getTransformedAdjustments,
-  parseMyrForAssessmentData,
   parseAssesmentForData,
 } from "./utilsServer";
 import { TransactionClient } from "@/types/prisma";
@@ -42,27 +42,14 @@ import { AdjustmentPayload, NvValues } from "./actions";
 import { getObject } from "@/app/lib/minio";
 import { getArrayBuffer } from "@/app/lib/utils/parseReadable";
 
-export type OrgNameAndAddresses = {
-  name: string;
-  makes: string[];
-  recordsAddress: Omit<OrganizationAddress, "organizationId"> | undefined;
-  serviceAddress: Omit<OrganizationAddress, "organizationId"> | undefined;
-};
-
-export const getOrgDetails = async (
-  organizationId: number,
-): Promise<OrgNameAndAddresses> => {
+export const getSupplierDetails = async (organizationId: number) => {
   const organization = await prisma.organization.findUniqueOrThrow({
     where: {
       id: organizationId,
     },
     select: {
       name: true,
-      organizationAddress: {
-        omit: {
-          organizationId: true,
-        },
-      },
+      organizationAddress: true,
       Vehicle: {
         select: {
           make: true,
@@ -70,29 +57,28 @@ export const getOrgDetails = async (
       },
     },
   });
-
   const makes = new Set<string>();
-  organization.Vehicle.forEach((vehicle) => {
+  for (const vehicle of organization.Vehicle) {
     makes.add(vehicle.make);
-  });
-  let recordsAddress: Omit<OrganizationAddress, "organizationId"> | undefined;
-  let serviceAddress: Omit<OrganizationAddress, "organizationId"> | undefined;
-  organization.organizationAddress.forEach((address) => {
+  }
+  let recordsAddress;
+  let serviceAddress;
+  for (const address of organization.organizationAddress) {
     if (address.addressType === AddressType.RECORDS) {
       recordsAddress = address;
     } else if (address.addressType === AddressType.SERVICE) {
       serviceAddress = address;
     }
-  });
+  }
   return {
-    name: organization.name,
+    legalName: organization.name,
     makes: Array.from(makes),
     recordsAddress,
     serviceAddress,
   };
 };
 
-export type VehicleStatistics = {
+export type VehicleStatistic = {
   vehicleClass: VehicleClass;
   zevClass: ZevClass;
   make: string;
@@ -102,12 +88,12 @@ export type VehicleStatistics = {
   range: number;
   submittedCount: number;
   issuedCount: number;
-}[];
+};
 
 export const getVehicleStatistics = async (
   organizationId: number,
   modelYear: ModelYear,
-): Promise<VehicleStatistics> => {
+): Promise<VehicleStatistic[]> => {
   return await prisma.vehicle.findMany({
     where: {
       organizationId,
@@ -128,17 +114,26 @@ export const getVehicleStatistics = async (
   });
 };
 
-export const getSupplierClass = async (
+export const getSupplierClassAndVolumes = async (
   organizationId: number,
   modelYear: ModelYear,
   reportableNvValue: string,
-): Promise<SupplierClass> => {
+): Promise<{
+  supplierClass: SupplierClass;
+  volumes: [ModelYear, VehicleClass, number][];
+}> => {
+  const vehicleClassToUse = VehicleClass.REPORTABLE;
   const modelYearsArray = Object.values(ModelYear);
   const myIndex = modelYearsArray.findIndex((my) => my === modelYear);
-  const precedingMys: (ModelYear | undefined)[] = [];
+  const precedingMys: ModelYear[] = [];
   for (let i = 1; i <= 3; i++) {
     const precedingMy = modelYearsArray[myIndex - i];
-    precedingMys.push(precedingMy);
+    if (precedingMy) {
+      precedingMys.push(precedingMy);
+    }
+  }
+  if (precedingMys.length !== 3) {
+    throw new Error("Error getting supplier class!");
   }
   const whereClause = {
     OR: [
@@ -147,17 +142,22 @@ export const getSupplierClass = async (
       { modelYear: precedingMys[2] },
     ],
     organizationId,
-    vehicleClass: VehicleClass.REPORTABLE,
+    vehicleClass: vehicleClassToUse,
     volume: { gt: 0 },
+  };
+  const orderBy: { modelYear: "asc" | "desc" } = {
+    modelYear: "desc",
   };
   let volumes: SupplyVolume[] = [];
   if (modelYear < ModelYear.MY_2024) {
     volumes = await prisma.legacySalesVolume.findMany({
       where: whereClause,
+      orderBy,
     });
   } else {
     volumes = await prisma.supplyVolume.findMany({
       where: whereClause,
+      orderBy,
     });
   }
   let average = new Decimal(0);
@@ -170,13 +170,27 @@ export const getSupplierClass = async (
     // will throw on invalid reportableNvValue
     average = new Decimal(reportableNvValue);
   }
+  let supplierClass;
   if (average.lt(1000)) {
-    return SupplierClass.SMALL_VOLUME_SUPPLIER;
+    supplierClass = SupplierClass.SMALL_VOLUME_SUPPLIER;
+  } else if (average.gte(1000) && average.lt(5000)) {
+    supplierClass = SupplierClass.MEDIUM_VOLUME_SUPPLIER;
+  } else {
+    supplierClass = SupplierClass.LARGE_VOLUME_SUPPLIER;
   }
-  if (average.gte(1000) && average.lt(5000)) {
-    return SupplierClass.MEDIUM_VOLUME_SUPPLIER;
+  const volumesResult: [ModelYear, VehicleClass, number][] = [];
+  for (const my of precedingMys) {
+    const volume = volumes.find((v) => v.modelYear === my);
+    if (volume) {
+      volumesResult.push([my, volume.vehicleClass, volume.volume]);
+    } else {
+      volumesResult.push([my, vehicleClassToUse, 0]);
+    }
   }
-  return SupplierClass.LARGE_VOLUME_SUPPLIER;
+  return {
+    supplierClass,
+    volumes: volumesResult,
+  };
 };
 
 export const getPrevEndingBalance = async (
@@ -268,7 +282,6 @@ export type MyrZevUnitTransaction = ZevUnitRecord & {
 export const getTransactionsForModelYear = async (
   organizationId: number,
   modelYear: ModelYear,
-  excludeReductions: boolean,
 ): Promise<MyrZevUnitTransaction[]> => {
   const result: MyrZevUnitTransaction[] = [];
   const { closedLowerBound, openUpperBound } = getCompliancePeriod(modelYear);
@@ -278,12 +291,10 @@ export const getTransactionsForModelYear = async (
       gte: closedLowerBound,
       lt: openUpperBound,
     },
-  };
-  if (excludeReductions) {
-    whereClause.NOT = {
+    NOT: {
       referenceType: ReferenceType.COMPLIANCE_RATIO_REDUCTION,
-    };
-  }
+    },
+  };
   const transactions = await prisma.zevUnitTransaction.findMany({
     where: whereClause,
     omit: {
@@ -314,23 +325,54 @@ export const getTransactionsForModelYear = async (
   return result;
 };
 
+export const getPendingSupplyCredits = async (
+  organizationId: number,
+  modelYear: ModelYear,
+): Promise<ZevUnitRecord[]> => {
+  const result: ZevUnitRecord[] = [];
+  const groupBy = await prisma.creditApplicationRecord.groupBy({
+    where: {
+      creditApplication: {
+        organizationId,
+        status: {
+          in: [
+            CreditApplicationStatus.SUBMITTED,
+            CreditApplicationStatus.RECOMMEND_APPROVAL,
+            CreditApplicationStatus.RETURNED_TO_ANALYST,
+          ],
+        },
+      },
+      modelYear,
+    },
+    by: ["vehicleClass", "zevClass"],
+    _sum: {
+      numberOfUnits: true,
+    },
+  });
+  for (const record of groupBy) {
+    const numberOfUnits = record._sum.numberOfUnits;
+    if (numberOfUnits) {
+      result.push({
+        numberOfUnits,
+        vehicleClass: record.vehicleClass,
+        zevClass: record.zevClass,
+        modelYear,
+        type: TransactionType.CREDIT,
+      });
+    }
+  }
+  return result;
+};
+
 export const getZevUnitData = async (
   orgId: number,
   modelYear: ModelYear,
+  supplierClass: SupplierClass,
   nvValues: NvValues,
   zevClassOrdering: ZevClass[],
   adjustments: AdjustmentPayload[],
-  excludeReductions: boolean,
+  includePendingSupplyCredits: boolean,
 ) => {
-  const reportableNvValue = nvValues[VehicleClass.REPORTABLE];
-  if (!reportableNvValue) {
-    throw new Error("No Reportable NV Value!");
-  }
-  const supplierClass = await getSupplierClass(
-    orgId,
-    modelYear,
-    reportableNvValue,
-  );
   const prevEndingBalance = await getPrevEndingBalance(orgId, modelYear);
   const complianceReductions = getComplianceRatioReductions(
     nvValues,
@@ -340,13 +382,17 @@ export const getZevUnitData = async (
   const currentTransactions = await getTransactionsForModelYear(
     orgId,
     modelYear,
-    excludeReductions,
   );
+  let pendingSupplyCredits: ZevUnitRecord[] = [];
+  if (includePendingSupplyCredits) {
+    pendingSupplyCredits = await getPendingSupplyCredits(orgId, modelYear);
+  }
   const transformedAdjustments = getTransformedAdjustments(adjustments);
   const [endingBalance, offsettedCredits] = calculateBalance(
     [
       ...prevEndingBalance,
       ...currentTransactions,
+      ...pendingSupplyCredits,
       ...complianceReductions,
       ...transformedAdjustments,
     ],
@@ -354,10 +400,10 @@ export const getZevUnitData = async (
     modelYear,
   );
   return {
-    supplierClass,
     prevEndingBalance,
     complianceReductions,
     currentTransactions,
+    pendingSupplyCredits,
     endingBalance,
     offsettedCredits,
   };
@@ -400,10 +446,9 @@ export const createReassessmentHistory = async (
   });
 };
 
-// returns {sequenceNumber, myrId} if non-legacy reassessment,
-// {sequenceNumber, null} if legacy reassessment,
-// throws error if creating a reassessment is not allowed.
-export const getDataForReassessment = async (
+// returns a (non-legacy) myrId if (orgId, modelYear) can be associated with
+// such a myrId
+export const validateReassesmentTimeLimit = async (
   organizationId: number,
   modelYear: ModelYear,
 ) => {
@@ -451,6 +496,20 @@ export const getDataForReassessment = async (
   if ((!myr && !legacyMyr) || (myr && legacyMyr)) {
     throw new Error();
   }
+  if (myr?.id) {
+    return myr.id;
+  }
+  return null;
+};
+
+// returns {sequenceNumber, myrId} if non-legacy reassessment,
+// {sequenceNumber, null} if legacy reassessment,
+// throws error if creating a reassessment is not allowed.
+export const getDataForReassessment = async (
+  organizationId: number,
+  modelYear: ModelYear,
+) => {
+  const myrId = await validateReassesmentTimeLimit(organizationId, modelYear);
   let sequenceNumber = 0;
   const latestReassessment = await prisma.reassessment.findFirst({
     where: {
@@ -476,44 +535,13 @@ export const getDataForReassessment = async (
   }
   return {
     sequenceNumber,
-    myrId: myr ? myr.id : null,
+    myrId,
   };
 };
 
 export type MyrDataForAssessment = {
   nvValues: NvValues;
   zevClassOrdering: ZevClass[];
-};
-
-export const getMyrDataForAssessment = async (
-  organizationId: number,
-  modelYear: ModelYear,
-): Promise<MyrDataForAssessment> => {
-  const myr = await prisma.modelYearReport.findUnique({
-    where: {
-      organizationId_modelYear: {
-        organizationId,
-        modelYear,
-      },
-    },
-    select: {
-      organization: {
-        select: {
-          id: true,
-          name: true,
-        },
-      },
-      objectName: true,
-    },
-  });
-  if (!myr) {
-    throw new Error("Model Year Report not found!");
-  }
-  const myrFile = await getObject(myr.objectName);
-  const myrBuf = await getArrayBuffer(myrFile);
-  const myrWorkbook = new Excel.Workbook();
-  await myrWorkbook.xlsx.load(myrBuf);
-  return parseMyrForAssessmentData(myrWorkbook);
 };
 
 export const getAssessmentSystemData = async (object: string | ArrayBuffer) => {
@@ -558,8 +586,6 @@ export const updateMyrReassessmentStatus = async (
     },
     data: {
       reassessmentStatus: status,
-      supplierReassessmentStatus:
-        status === ReassessmentStatus.ISSUED ? ReassessmentStatus.ISSUED : null,
     },
   });
 };
@@ -636,7 +662,7 @@ export const getDataForSupplementary = async (
   });
   if (
     latestSupplementary &&
-    latestSupplementary.status !== SupplementaryReportStatus.ACKNOWLEDGED
+    latestSupplementary.status === SupplementaryReportStatus.DRAFT
   ) {
     throw new Error();
   }
@@ -649,81 +675,20 @@ export const getDataForSupplementary = async (
   };
 };
 
-export const canCreateReassessment = async (
+export const updateMyrSupplementaryStatus = async (
   myrId: number,
-  userIsGov: boolean,
-  userRoles: Role[],
+  status: SupplementaryReportStatus | null,
+  transactionClient?: TransactionClient,
 ) => {
-  if (!userIsGov || !userRoles.includes(Role.ZEVA_IDIR_USER)) {
-    return false;
-  }
-  const myr = await prisma.modelYearReport.findUnique({
+  const client = transactionClient ?? prisma;
+  await client.modelYearReport.update({
     where: {
       id: myrId,
-      status: ModelYearReportStatus.ASSESSED,
     },
-    select: {
-      Reassessment: {
-        select: {
-          status: true,
-        },
-        orderBy: {
-          sequenceNumber: "desc",
-        },
-      },
+    data: {
+      supplementaryReportStatus: status,
     },
   });
-  if (!myr) {
-    return false;
-  }
-  if (
-    myr.Reassessment.length > 0 &&
-    myr.Reassessment[0].status !== ReassessmentStatus.ISSUED
-  ) {
-    return false;
-  }
-  return true;
-};
-
-export const canCreateSupplementary = async (
-  myrId: number,
-  userIsGov: boolean,
-) => {
-  if (userIsGov) {
-    return false;
-  }
-  const myr = await prisma.modelYearReport.findUnique({
-    where: {
-      id: myrId,
-      status: {
-        notIn: [
-          ModelYearReportStatus.DRAFT,
-          ModelYearReportStatus.RETURNED_TO_SUPPLIER,
-        ],
-      },
-    },
-    select: {
-      supplementaryReports: {
-        select: {
-          status: true,
-        },
-        orderBy: {
-          sequenceNumber: "desc",
-        },
-      },
-    },
-  });
-  if (!myr) {
-    return false;
-  }
-  if (
-    myr.supplementaryReports.length > 0 &&
-    myr.supplementaryReports[0].status !==
-      SupplementaryReportStatus.ACKNOWLEDGED
-  ) {
-    return false;
-  }
-  return true;
 };
 
 // upon issuance of an assessment or reassessment,

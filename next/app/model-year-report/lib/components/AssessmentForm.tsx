@@ -1,12 +1,7 @@
 "use client";
 
 import axios from "axios";
-import {
-  ModelYear,
-  TransactionType,
-  VehicleClass,
-  ZevClass,
-} from "@/prisma/generated/client";
+import { ModelYear, VehicleClass, ZevClass } from "@/prisma/generated/client";
 import { useRouter } from "next/navigation";
 import {
   JSX,
@@ -38,12 +33,25 @@ import { bytesToBase64 } from "@/app/lib/utils/base64";
 import { Adjustment, Adjustments } from "./Adjustments";
 import { Routes } from "@/app/lib/constants";
 import { Workbook } from "exceljs";
-import { parseAssessment, ParsedAssmnt } from "../utils";
+import {
+  getNvValues,
+  getZevClassChoice,
+  parseAssessment,
+  ParsedAssmnt,
+} from "../utils";
 import { ParsedAssessment } from "./ParsedAssessment";
 import { isModelYear } from "@/app/lib/utils/typeGuards";
 import { legacyModelYearsMap, SupplierZevClassChoice } from "../constants";
 import { ZevClassSelect } from "./ZevClassSelect";
 import { getFiles } from "@/app/lib/utils/download";
+
+type NewAssessmentProps = {
+  type: "newAssessment";
+  orgName: string;
+  modelYear: ModelYear;
+  orgId: number;
+  myrId: number;
+};
 
 type SavedAssessmentProps = {
   type: "savedAssessment";
@@ -59,6 +67,13 @@ type LegacyNewReassessmentProps = {
   orgsMap: Partial<Record<number, string>>;
 };
 
+type NonLegacyNewReassessmentProps = {
+  type: "nonLegacyNewReassment";
+  orgName: string;
+  modelYear: ModelYear;
+  orgId: number;
+};
+
 // for both legacy and non-legacy saved reassessments
 type SavedReassessmentProps = {
   type: "savedReassessment";
@@ -69,26 +84,24 @@ type SavedReassessmentProps = {
   url: string;
 };
 
-type OtherProps = {
-  type: "newAssessment" | "nonLegacyNewReassment";
-  orgName: string;
-  modelYear: ModelYear;
-  orgId: number;
-  myrId: number;
-};
-
 export const AssessmentForm = (
   props:
+    | NewAssessmentProps
     | SavedAssessmentProps
     | LegacyNewReassessmentProps
-    | SavedReassessmentProps
-    | OtherProps,
+    | NonLegacyNewReassessmentProps
+    | SavedReassessmentProps,
 ) => {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
-  const [error, setError] = useState<string>("");
+  const [generationError, setGenerationError] = useState<string>("");
+  const [saveError, setSaveError] = useState<string>("");
+  const [orgsMap, setOrgsMap] = useState<Partial<Record<number, string>>>();
   const [orgId, setOrgId] = useState<number>();
   const [modelYear, setModelYear] = useState<ModelYear>();
+  const [myrId, setMyrId] = useState<number>();
+  const [orgName, setOrgName] = useState<string>();
+  const [reassessmentId, setReassessmentId] = useState<number>();
   const [nvValues, setNvValues] = useState<NvValues>({});
   const [zevClassSelection, setZevClassSelection] =
     useState<SupplierZevClassChoice>(ZevClass.B);
@@ -96,6 +109,21 @@ export const AssessmentForm = (
   const [assessment, setAssessment] = useState<[Workbook, ParsedAssmnt] | null>(
     null,
   );
+
+  useEffect(() => {
+    if (props.type !== "legacyNewReassessment") {
+      setOrgId(props.orgId);
+      setModelYear(props.modelYear);
+      setOrgName(props.orgName);
+      if (props.type === "newAssessment" || props.type === "savedAssessment") {
+        setMyrId(props.myrId);
+      } else if (props.type === "savedReassessment") {
+        setReassessmentId(props.reassessmentId);
+      }
+    } else {
+      setOrgsMap(props.orgsMap);
+    }
+  }, []);
 
   useEffect(() => {
     if (
@@ -108,59 +136,21 @@ export const AssessmentForm = (
           const assmnt = files[0];
           const assmntWorkbook = await getWorkbook(assmnt.data);
           const parsedAssmnt = parseAssessment(assmntWorkbook);
+          setNvValues(getNvValues(parsedAssmnt.complianceReductions));
+          setZevClassSelection(
+            getZevClassChoice(parsedAssmnt.details.zevClassOrdering),
+          );
+          setAdjustments(parsedAssmnt.currentAdjustments);
           setAssessment([assmntWorkbook, parsedAssmnt]);
         }
       };
       loadAssessment();
     }
-  }, [props]);
-
-  useEffect(() => {
-    if (props.type !== "legacyNewReassessment") {
-      setOrgId(props.orgId);
-      setModelYear(props.modelYear);
-    }
-  }, [props]);
+  }, []);
 
   const modelYearsMap = useMemo(() => {
     return getModelYearEnumsToStringsMap();
   }, []);
-
-  const addAdjustment = useCallback(() => {
-    setAdjustments((prev) => {
-      return [
-        ...prev,
-        {
-          id: crypto.randomUUID(),
-          type: TransactionType.CREDIT,
-          vehicleClass: VehicleClass.REPORTABLE,
-          zevClass: ZevClass.A,
-          modelYear,
-          numberOfUnits: "0",
-        },
-      ];
-    });
-  }, [modelYear]);
-
-  const removeAdjustment = useCallback((id: string) => {
-    setAdjustments((prev) => {
-      return prev.filter((adjustment) => adjustment.id !== id);
-    });
-  }, []);
-
-  const handleAdjustmentChange = useCallback(
-    (id: string, key: string, value: string) => {
-      setAdjustments((prev) => {
-        return prev.map((adjustment) => {
-          if (adjustment.id === id) {
-            return { ...adjustment, [key]: value };
-          }
-          return adjustment;
-        });
-      });
-    },
-    [],
-  );
 
   const handleNvValuesChange = useCallback(
     (key: VehicleClass, value: string) => {
@@ -179,33 +169,22 @@ export const AssessmentForm = (
   );
 
   const handleGenerateAssessment = useCallback(() => {
-    setError("");
+    setGenerationError("");
     startTransition(async () => {
       try {
         if (!orgId || !modelYear) {
           throw new Error("Supplier and Model Year are required!");
         }
-        let nvValuesToUse;
-        let zevClassOrdering;
-        if (
-          props.type !== "newAssessment" &&
-          props.type !== "savedAssessment"
-        ) {
-          validateNvValues(nvValues);
-          nvValuesToUse = nvValues;
-          zevClassOrdering = getZevClassOrdering(zevClassSelection);
-        }
+        validateNvValues(nvValues);
+        const zevClassOrdering = getZevClassOrdering(zevClassSelection);
         const adjustmentsPayload = getAdjustmentsPayload(adjustments);
         const [templateUrl, assessmentResponse] = await Promise.all([
           getAssessmentTemplateUrl(),
           getAssessmentData(
-            props.type === "newAssessment" || props.type === "savedAssessment"
-              ? "assessment"
-              : "reassessment",
             orgId,
             modelYear,
             adjustmentsPayload,
-            nvValuesToUse,
+            nvValues,
             zevClassOrdering,
           ),
         ]);
@@ -219,27 +198,32 @@ export const AssessmentForm = (
         const assessment = await generateAssessment(
           template,
           assessmentResponse.data,
+          modelYear,
+          zevClassOrdering,
           adjustmentsPayload,
         );
         const parsedAssessment = parseAssessment(assessment);
         setAssessment([assessment, parsedAssessment]);
       } catch (e) {
         if (e instanceof Error) {
-          setError(e.message);
+          setGenerationError(e.message);
         }
       }
     });
   }, [props.type, orgId, modelYear, nvValues, zevClassSelection, adjustments]);
 
   const handleClearAssessment = useCallback(() => {
-    setError("");
+    setSaveError("");
     setAssessment(null);
   }, []);
 
   const handleSave = useCallback(() => {
-    setError("");
+    setSaveError("");
     startTransition(async () => {
       try {
+        if (!orgId || !modelYear) {
+          throw new Error("Invalid supplier or model year!");
+        }
         if (assessment === null) {
           throw new Error("Exactly 1 valid Assessment/Reassessment expected!");
         }
@@ -248,78 +232,64 @@ export const AssessmentForm = (
           await assessment[0].xlsx.writeBuffer(),
         );
         if (
-          props.type === "newAssessment" ||
-          props.type === "savedAssessment"
+          myrId &&
+          (props.type === "newAssessment" || props.type === "savedAssessment")
         ) {
-          response = await createOrSaveAssessment(
-            props.myrId,
-            assessmentBase64,
-          );
+          response = await createOrSaveAssessment(myrId, assessmentBase64);
         } else if (
           props.type === "legacyNewReassessment" ||
           props.type === "nonLegacyNewReassment"
         ) {
-          if (!orgId || !modelYear) {
-            throw new Error("Invalid supplier or model year!");
-          }
           response = await createReassessment(
             orgId,
             modelYear,
             assessmentBase64,
           );
-        } else if (props.type === "savedReassessment") {
-          response = await saveReassessment(
-            props.reassessmentId,
-            assessmentBase64,
-          );
+        } else if (reassessmentId && props.type === "savedReassessment") {
+          response = await saveReassessment(reassessmentId, assessmentBase64);
         }
-        if (!response) {
-          throw new Error("Unexpected Error!");
-        }
-        if (response.responseType === "error") {
+        if (response && response.responseType === "error") {
           throw new Error(response.message);
-        }
-        if (
-          props.type === "newAssessment" ||
-          props.type === "savedAssessment"
-        ) {
-          router.push(`${Routes.ComplianceReporting}/${props.myrId}`);
-        } else if (response.responseType === "data") {
-          const reassessmentId = response.data.reassessmentId;
-          const myrId = response.data.myrId;
-          if (myrId) {
-            router.push(
-              `${Routes.ComplianceReporting}/${myrId}/reassessment/${reassessmentId}`,
-            );
+        } else if (response && response.responseType === "data") {
+          const responseData = response.data;
+          if (typeof responseData === "number") {
+            router.push(`${Routes.ComplianceReporting}/${responseData}`);
           } else {
-            router.push(`${Routes.LegacyReassessments}/${reassessmentId}`);
+            const { reassessmentId, myrId } = responseData;
+            if (myrId) {
+              router.push(
+                `${Routes.ComplianceReporting}/${myrId}/reassessment/${reassessmentId}`,
+              );
+            } else {
+              router.push(`${Routes.LegacyReassessments}/${reassessmentId}`);
+            }
           }
         }
       } catch (e) {
         if (e instanceof Error) {
-          setError(e.message);
+          setSaveError(e.message);
         }
       }
     });
-  }, [props, orgId, modelYear, assessment]);
+  }, [props.type, orgId, modelYear, assessment, myrId, reassessmentId]);
 
   const handleOrgSelect = useCallback(
     (selectedOrgId: string) => {
-      if (props.type === "legacyNewReassessment") {
+      if (props.type === "legacyNewReassessment" && orgsMap) {
         const orgIdNumber = Number.parseInt(selectedOrgId, 10);
-        if (props.orgsMap[orgIdNumber]) {
+        if (orgsMap[orgIdNumber]) {
           setOrgId(orgIdNumber);
         } else {
           setOrgId(undefined);
         }
       }
     },
-    [props],
+    [props.type, orgsMap],
   );
 
   const orgsComponent: JSX.Element | null = useMemo(() => {
     let innerComponent;
-    if (!assessment && props.type === "legacyNewReassessment") {
+    if (orgsMap && props.type === "legacyNewReassessment") {
       innerComponent = (
         <select
           name="org"
@@ -328,22 +298,23 @@ export const AssessmentForm = (
           onChange={(e) => {
             handleOrgSelect(e.target.value);
           }}
+          disabled={!!assessment}
         >
           <option key={undefined}>--</option>
-          {Object.entries(props.orgsMap).map(([key, value]) => (
+          {Object.entries(orgsMap).map(([key, value]) => (
             <option key={key} value={key}>
               {value}
             </option>
           ))}
         </select>
       );
-    } else if (!assessment && props.type !== "legacyNewReassessment") {
+    } else if (orgName && props.type !== "legacyNewReassessment") {
       innerComponent = (
         <input
           disabled={true}
           name="org"
           type="text"
-          value={props.orgName}
+          value={orgName}
           className="border p-2 w-full"
         />
       );
@@ -359,11 +330,11 @@ export const AssessmentForm = (
       );
     }
     return null;
-  }, [props, orgId, assessment, handleOrgSelect]);
+  }, [props.type, orgName, orgId, orgsMap, assessment, handleOrgSelect]);
 
   const modelYearComponent: JSX.Element | null = useMemo(() => {
     let innerComponent;
-    if (!assessment && props.type === "legacyNewReassessment") {
+    if (props.type === "legacyNewReassessment") {
       innerComponent = (
         <select
           name="modelYear"
@@ -373,6 +344,7 @@ export const AssessmentForm = (
             const value = e.target.value;
             setModelYear(isModelYear(value) ? value : undefined);
           }}
+          disabled={!!assessment}
         >
           <option key={undefined}>--</option>
           {Object.entries(legacyModelYearsMap).map(([key, value]) => (
@@ -382,11 +354,7 @@ export const AssessmentForm = (
           ))}
         </select>
       );
-    } else if (
-      !assessment &&
-      modelYear &&
-      props.type !== "legacyNewReassessment"
-    ) {
+    } else if (modelYear) {
       innerComponent = (
         <input
           disabled={true}
@@ -408,50 +376,41 @@ export const AssessmentForm = (
       );
     }
     return null;
-  }, [props, modelYear, modelYearsMap, legacyModelYearsMap, assessment]);
+  }, [props.type, modelYear, modelYearsMap, legacyModelYearsMap, assessment]);
 
   return (
     <div>
       {orgsComponent}
       {modelYearComponent}
-      {props.type !== "newAssessment" &&
-        props.type !== "savedAssessment" &&
-        !assessment && (
-          <>
-            <MyrNvValues
-              nvValues={nvValues}
-              handleChange={handleNvValuesChange}
-              disabled={isPending}
-            />
-            <div className="flex items-center py-2 my-2">
-              <p>
-                Select the ZEV class of credits that should be used first when
-                offsetting debits of the unspecified ZEV class:
-              </p>
-            </div>
-            <div className="flex items-center py-2 my-2 space-x-4">
-              <ZevClassSelect
-                zevClassSelection={zevClassSelection}
-                handleChange={handleZevClassSelect}
-                disabled={isPending}
-              />
-            </div>
-          </>
-        )}
-      {!assessment && (
-        <Adjustments
-          adjustments={adjustments}
-          addAdjustment={addAdjustment}
-          removeAdjustment={removeAdjustment}
-          handleAdjustmentChange={handleAdjustmentChange}
-          disabled={isPending}
+      <MyrNvValues
+        nvValues={nvValues}
+        handleChange={handleNvValuesChange}
+        disabled={!!assessment || isPending}
+      />
+      <div className="flex items-center py-2 my-2">
+        <p>
+          Select the ZEV class of credits that should be used first when
+          offsetting debits of the unspecified ZEV class:
+        </p>
+      </div>
+      <div className="flex items-center py-2 my-2 space-x-4">
+        <ZevClassSelect
+          zevClassSelection={zevClassSelection}
+          handleChange={handleZevClassSelect}
+          disabled={!!assessment || isPending}
         />
-      )}
+      </div>
+      <Adjustments
+        type="assessment"
+        adjustments={adjustments}
+        setAdjustments={setAdjustments}
+        disabled={!!assessment || isPending}
+      />
+      {generationError && <p className="text-red-600">{generationError}</p>}
       <div className="flex space-x-2">
         {assessment ? (
           <Button
-            variant="tertiary"
-            size="small"
+            variant="secondary"
             onClick={handleClearAssessment}
             disabled={isPending}
           >
@@ -472,7 +431,7 @@ export const AssessmentForm = (
         )}
       </div>
       {assessment && <ParsedAssessment assessment={assessment[1]} />}
-      {error && <p className="text-red-600">{error}</p>}
+      {saveError && <p className="text-red-600">{saveError}</p>}
       <div className="flex space-x-2">
         <Button variant="primary" onClick={handleSave} disabled={isPending}>
           {isPending ? "..." : "Save"}

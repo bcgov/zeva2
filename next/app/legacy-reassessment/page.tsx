@@ -24,7 +24,7 @@ const Page = async (props: { searchParams?: Promise<pageStringParams> }) => {
     <Suspense key={Date.now()} fallback={<LoadingSkeleton />}>
       {canSubmitReassessment && (
         <Link href={`${Routes.LegacyReassessments}/new`}>
-          <Button>Submit a Legacy Reassessment</Button>
+          <Button>Create a Legacy Reassessment</Button>
         </Link>
       )}
       <LegacyReassessmentsList page={page} pageSize={pageSize} />

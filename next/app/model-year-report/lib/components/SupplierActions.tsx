@@ -6,7 +6,7 @@ import { Routes } from "@/app/lib/constants";
 import { ModelYearReportSupplierStatus } from "@/prisma/generated/client";
 import { useRouter } from "next/navigation";
 import { useCallback, useState, useTransition } from "react";
-import { submitReports } from "../actions";
+import { deleteReports, submitReports } from "../actions";
 import { getNormalizedComment } from "@/app/lib/utils/comment";
 
 export const SupplierActions = (props: {
@@ -18,6 +18,23 @@ export const SupplierActions = (props: {
   const [isPending, startTransition] = useTransition();
   const [comment, setComment] = useState<string>("");
   const [error, setError] = useState<string>("");
+
+  const handleDelete = useCallback(() => {
+    setError("");
+    startTransition(async () => {
+      try {
+        const response = await deleteReports(props.myrId);
+        if (response.responseType === "error") {
+          throw new Error(response.message);
+        }
+        router.push(Routes.ComplianceReporting);
+      } catch (e) {
+        if (e instanceof Error) {
+          setError(e.message);
+        }
+      }
+    });
+  }, [props.myrId]);
 
   const handleGoToEdit = useCallback(() => {
     router.push(`${Routes.ComplianceReporting}/${props.myrId}/edit`);
@@ -59,6 +76,9 @@ export const SupplierActions = (props: {
           setComment={setComment}
           disabled={isPending}
         />
+        <Button variant="secondary" onClick={handleDelete}>
+          Delete
+        </Button>
         <Button variant="secondary" onClick={handleGoToEdit}>
           Edit
         </Button>

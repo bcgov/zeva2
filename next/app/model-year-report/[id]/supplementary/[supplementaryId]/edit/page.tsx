@@ -1,6 +1,10 @@
 import { getUserInfo } from "@/auth";
-import { SupplementaryForm } from "@/app/model-year-report/lib/components/SupplementaryForm";
-import { getSupplementaryReport } from "@/app/model-year-report/lib/data";
+import { ModelYearReportForm } from "@/app/model-year-report/lib/components/ModelYearReportForm";
+import {
+  getSupplementaryReport,
+  getSupplierOwnData,
+  getSupplierOwnVehicleStats,
+} from "@/app/model-year-report/lib/data";
 import { SupplementaryReportStatus } from "@/prisma/generated/client";
 import { getPresignedGetObjectUrl } from "@/app/lib/minio";
 
@@ -18,14 +22,18 @@ const Page = async (props: {
   ) {
     return null;
   }
+  const supplierData = await getSupplierOwnData();
+  const vehicleStats = await getSupplierOwnVehicleStats(report.modelYear);
   return (
     <div className="max-w-xl mx-auto p-4">
       <h1 className="text-xl font-bold mb-4">Edit a Supplementary Report</h1>
-      <SupplementaryForm
-        type="saved"
+      <ModelYearReportForm
+        type="nonLegacySavedSupp"
         modelYear={report.modelYear}
         supplementaryId={suppId}
         url={await getPresignedGetObjectUrl(report.objectName)}
+        supplierData={supplierData}
+        vehicleStatistics={vehicleStats}
       />
     </div>
   );

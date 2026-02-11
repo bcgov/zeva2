@@ -11,7 +11,10 @@ const Page = async (props: { params: Promise<{ id: string }> }) => {
   return (
     <Reassessment
       reassessmentId={reassessment.id}
+      orgName={reassessment.organization.name}
+      modelYear={reassessment.modelYear}
       status={reassessment.status}
+      sequenceNumber={reassessment.sequenceNumber}
     />
   );
 };

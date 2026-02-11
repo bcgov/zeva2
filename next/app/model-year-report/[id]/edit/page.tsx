@@ -1,6 +1,10 @@
 import { getUserInfo } from "@/auth";
 import { ModelYearReportForm } from "../../lib/components/ModelYearReportForm";
-import { getModelYearReport } from "../../lib/data";
+import {
+  getModelYearReport,
+  getSupplierOwnData,
+  getSupplierOwnVehicleStats,
+} from "../../lib/data";
 import { ModelYearReportStatus } from "@/prisma/generated/client";
 import { getPresignedGetObjectUrl } from "@/app/lib/minio";
 
@@ -19,20 +23,23 @@ const Page = async (props: { params: Promise<{ id: string }> }) => {
   ) {
     return null;
   }
+  const supplierData = await getSupplierOwnData();
+  const vehicleStats = await getSupplierOwnVehicleStats(myr.modelYear);
   return (
     <div className="max-w-xl mx-auto p-4">
       <h1 className="text-xl font-bold mb-4">
         Edit a Model Year Report and Forecast Report
       </h1>
       <ModelYearReportForm
+        type="savedMyr"
         modelYear={myr.modelYear}
-        reports={{
-          myrUrl: await getPresignedGetObjectUrl(myr.objectName),
-          forecast: {
-            fileName: myr.forecastReportFileName,
-            url: await getPresignedGetObjectUrl(myr.forecastReportObjectName),
-          },
+        myrUrl={await getPresignedGetObjectUrl(myr.objectName)}
+        forecast={{
+          fileName: myr.forecastReportFileName,
+          url: await getPresignedGetObjectUrl(myr.forecastReportObjectName),
         }}
+        supplierData={supplierData}
+        vehicleStatistics={vehicleStats}
       />
     </div>
   );

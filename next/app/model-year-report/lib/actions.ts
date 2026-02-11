@@ -24,16 +24,15 @@ import {
   getAssessmentSystemData,
   getDataForSupplementary,
   getLegacyAssessedMyr,
-  getMyrDataForAssessment,
-  getOrgDetails,
   getDataForReassessment,
-  getVehicleStatistics,
   getZevUnitData,
   MyrZevUnitTransaction,
-  OrgNameAndAddresses,
   updateMyrReassessmentStatus,
-  VehicleStatistics,
   areTransfersCovered,
+  getSupplierClassAndVolumes,
+  getVehicleStatistics,
+  updateMyrSupplementaryStatus,
+  validateReassesmentTimeLimit,
 } from "./services";
 import {
   DataOrErrorActionResponse,
@@ -65,10 +64,6 @@ import { getModelYearEnumsToStringsMap } from "@/app/lib/utils/enumMaps";
 
 export type NvValues = Partial<Record<VehicleClass, string>>;
 
-export type SupplierData = OrgNameAndAddresses & {
-  supplierClass: SupplierClass;
-};
-
 export type MyrEndingBalance = UnitsAsString<ZevUnitRecord>[];
 
 export type MyrComplianceReductions = Omit<
@@ -81,15 +76,20 @@ export type MyrOffsets = Omit<UnitsAsString<ZevUnitRecord>, "type">[];
 export type MyrCurrentTransactions = UnitsAsString<MyrZevUnitTransaction>[];
 
 export type MyrData = {
-  modelYear: ModelYear;
-  zevClassOrdering: ZevClass[];
-  supplierData: SupplierData;
-  vehicleStatistics: VehicleStatistics;
+  supplierClass: SupplierClass;
+  volumes: [ModelYear, VehicleClass, number][];
   prevEndingBalance: MyrEndingBalance;
   complianceReductions: MyrComplianceReductions;
   offsets: MyrOffsets;
   currentTransactions: MyrCurrentTransactions;
+  pendingSupplyCredits: UnitsAsString<ZevUnitRecord>[];
   prelimEndingBalance: MyrEndingBalance;
+};
+
+export const retrieveVehicleStatistics = async (modelYear: ModelYear) => {
+  const { userOrgId } = await getUserInfo();
+  const vehicleStatistics = await getVehicleStatistics(userOrgId, modelYear);
+  return getDataActionResponse(vehicleStatistics);
 };
 
 export const getMyrTemplateUrl = async () => {
@@ -102,31 +102,38 @@ export const getMyrData = async (
   modelYear: ModelYear,
   nvValues: NvValues,
   zevClassOrdering: ZevClass[],
+  adjustments: AdjustmentPayload[],
 ): Promise<DataOrErrorActionResponse<MyrData>> => {
   const { userOrgId } = await getUserInfo();
-  const orgData = await getOrgDetails(userOrgId);
-  const vehicleStatistics = await getVehicleStatistics(userOrgId, modelYear);
+  const reportableNvValue = nvValues[VehicleClass.REPORTABLE];
+  if (!reportableNvValue) {
+    return getErrorActionResponse("Reportable NV Value not found!");
+  }
   try {
+    const { supplierClass, volumes } = await getSupplierClassAndVolumes(
+      userOrgId,
+      modelYear,
+      reportableNvValue,
+    );
     const {
-      supplierClass,
       prevEndingBalance,
       complianceReductions,
       offsettedCredits,
       currentTransactions,
+      pendingSupplyCredits,
       endingBalance,
     } = await getZevUnitData(
       userOrgId,
       modelYear,
+      supplierClass,
       nvValues,
       zevClassOrdering,
-      [],
+      adjustments,
       true,
     );
     return getDataActionResponse<MyrData>({
-      modelYear,
-      zevClassOrdering,
-      supplierData: { ...orgData, supplierClass },
-      vehicleStatistics,
+      supplierClass,
+      volumes,
       prevEndingBalance:
         getSerializedMyrRecords<ZevUnitRecord>(prevEndingBalance),
       complianceReductions: getSerializedMyrRecordsExcludeKey<
@@ -139,6 +146,8 @@ export const getMyrData = async (
       ),
       currentTransactions:
         getSerializedMyrRecords<MyrZevUnitTransaction>(currentTransactions),
+      pendingSupplyCredits:
+        getSerializedMyrRecords<ZevUnitRecord>(pendingSupplyCredits),
       prelimEndingBalance:
         getSerializedMyrRecords<ZevUnitRecord>(endingBalance),
     });
@@ -293,6 +302,58 @@ export const submitReports = async (
   return getSuccessActionResponse();
 };
 
+export const deleteReports = async (
+  myrId: number,
+): Promise<ErrorOrSuccessActionResponse> => {
+  const { userIsGov, userOrgId } = await getUserInfo();
+  if (userIsGov) {
+    return getErrorActionResponse("Unauthorized!");
+  }
+  const myr = await prisma.modelYearReport.findUnique({
+    where: {
+      id: myrId,
+      organizationId: userOrgId,
+      status: {
+        in: [
+          ModelYearReportStatus.DRAFT,
+          ModelYearReportStatus.RETURNED_TO_SUPPLIER,
+        ],
+      },
+    },
+    select: {
+      id: true,
+    },
+  });
+  if (!myr) {
+    return getErrorActionResponse("Invalid Action!");
+  }
+  await prisma.$transaction(async (tx) => {
+    await tx.supplementaryReportHistory.deleteMany({
+      where: {
+        supplementaryReport: {
+          modelYearReportId: myrId,
+        },
+      },
+    });
+    await tx.supplementaryReport.deleteMany({
+      where: {
+        modelYearReportId: myrId,
+      },
+    });
+    await tx.modelYearReportHistory.deleteMany({
+      where: {
+        modelYearReportId: myrId,
+      },
+    });
+    await tx.modelYearReport.delete({
+      where: {
+        id: myrId,
+      },
+    });
+  });
+  return getSuccessActionResponse();
+};
+
 export const getAssessmentTemplateUrl = async () => {
   return await getPresignedGetObjectUrl(
     `${Directory.Templates}/${AssessmentTemplate.Name}`,
@@ -304,9 +365,6 @@ export type AdjustmentPayload = Omit<ZevUnitRecord, "numberOfUnits"> & {
 };
 
 export type AssessmentData = {
-  orgName: string;
-  modelYear: ModelYear;
-  zevClassOrdering: ZevClass[];
   supplierClass: SupplierClass;
   complianceReductions: MyrComplianceReductions;
   beginningBalance: MyrEndingBalance;
@@ -317,32 +375,27 @@ export type AssessmentData = {
 };
 
 export const getAssessmentData = async (
-  type: "assessment" | "reassessment",
   orgId: number,
   modelYear: ModelYear,
   adjustments: AdjustmentPayload[],
-  nvValues?: NvValues,
-  zevClassOrdering?: ZevClass[],
+  nvValues: NvValues,
+  zevClassOrdering: ZevClass[],
 ): Promise<DataOrErrorActionResponse<AssessmentData>> => {
   const { userIsGov } = await getUserInfo();
   if (!userIsGov) {
     return getErrorActionResponse("Unauthorized!");
   }
+  const reportableNvValue = nvValues[VehicleClass.REPORTABLE];
+  if (!reportableNvValue) {
+    return getErrorActionResponse("Reportable NV Value not found!");
+  }
   try {
-    const { name: orgName } = await getOrgDetails(orgId);
-    let nvValuesToUse = nvValues;
-    let zevClassOrderingToUse = zevClassOrdering;
-    if (type === "assessment") {
-      const { nvValues: myrNvValues, zevClassOrdering: myrZevClassOrdering } =
-        await getMyrDataForAssessment(orgId, modelYear);
-      nvValuesToUse = myrNvValues;
-      zevClassOrderingToUse = myrZevClassOrdering;
-    }
-    if (!nvValuesToUse || !zevClassOrderingToUse) {
-      throw new Error("Unexpected Error!");
-    }
+    const { supplierClass } = await getSupplierClassAndVolumes(
+      orgId,
+      modelYear,
+      reportableNvValue,
+    );
     const {
-      supplierClass,
       prevEndingBalance,
       complianceReductions,
       endingBalance,
@@ -351,10 +404,11 @@ export const getAssessmentData = async (
     } = await getZevUnitData(
       orgId,
       modelYear,
-      nvValuesToUse,
-      zevClassOrderingToUse,
+      supplierClass,
+      nvValues,
+      zevClassOrdering,
       adjustments,
-      type === "reassessment",
+      false,
     );
     const complianceInfo = getComplianceInfo(
       supplierClass,
@@ -363,9 +417,6 @@ export const getAssessmentData = async (
       endingBalance,
     );
     return getDataActionResponse<AssessmentData>({
-      orgName,
-      modelYear,
-      zevClassOrdering: zevClassOrderingToUse,
       supplierClass,
       complianceInfo,
       beginningBalance:
@@ -393,7 +444,7 @@ export const getAssessmentData = async (
 export const createOrSaveAssessment = async (
   myrId: number,
   assessment: string,
-): Promise<ErrorOrSuccessActionResponse> => {
+): Promise<DataOrErrorActionResponse<number>> => {
   const { userIsGov, userRoles } = await getUserInfo();
   if (!userIsGov || !userRoles.includes(Role.ZEVA_IDIR_USER)) {
     return getErrorActionResponse("Unauthorized!");
@@ -429,7 +480,7 @@ export const createOrSaveAssessment = async (
     });
     await putObject(assessmentObjectName, assessmentObject);
   });
-  return getSuccessActionResponse();
+  return getDataActionResponse(myrId);
 };
 
 export const submitAssessment = async (
@@ -517,7 +568,8 @@ export const returnModelYearReport = async (
     (status === ModelYearReportStatus.SUBMITTED_TO_DIRECTOR &&
       returnType === ModelYearReportStatus.RETURNED_TO_ANALYST &&
       userRoles.includes(Role.DIRECTOR)) ||
-    (status === ModelYearReportStatus.SUBMITTED_TO_GOVERNMENT &&
+    ((status === ModelYearReportStatus.SUBMITTED_TO_GOVERNMENT ||
+      status === ModelYearReportStatus.RETURNED_TO_ANALYST) &&
       returnType === ModelYearReportStatus.RETURNED_TO_SUPPLIER &&
       userRoles.includes(Role.ZEVA_IDIR_USER))
   ) {
@@ -527,6 +579,19 @@ export const returnModelYearReport = async (
       };
       if (returnType === ModelYearReportStatus.RETURNED_TO_SUPPLIER) {
         updateData.supplierStatus = returnType;
+        updateData.supplementaryReportStatus = null;
+        await tx.supplementaryReportHistory.deleteMany({
+          where: {
+            supplementaryReport: {
+              modelYearReportId: myrId,
+            },
+          },
+        });
+        await tx.supplementaryReport.deleteMany({
+          where: {
+            modelYearReportId: myrId,
+          },
+        });
       }
       await tx.modelYearReport.update({
         where: {
@@ -810,10 +875,20 @@ export const submitReassessment = async (
     },
     select: {
       id: true,
+      organizationId: true,
+      modelYear: true,
       modelYearReportId: true,
     },
   });
   if (!reassessment) {
+    return getErrorActionResponse("Invalid Action!");
+  }
+  try {
+    await validateReassesmentTimeLimit(
+      reassessment.organizationId,
+      reassessment.modelYear,
+    );
+  } catch {
     return getErrorActionResponse("Invalid Action!");
   }
   const myrId = reassessment.modelYearReportId;
@@ -911,6 +986,11 @@ export const issueReassessment = async (
   }
   const organizationId = reassessment.organizationId;
   const modelYear = reassessment.modelYear;
+  try {
+    await validateReassesmentTimeLimit(organizationId, modelYear);
+  } catch {
+    return getErrorActionResponse("Invalid Action");
+  }
   const myrId = reassessment.modelYearReportId;
   const legacyMyr = await getLegacyAssessedMyr(organizationId, modelYear);
   const complianceDate = getComplianceDate(modelYear);
@@ -1060,6 +1140,13 @@ export const createSupplementary = async (
       },
     });
     supplementaryId = createdReport.id;
+    if (myrId) {
+      await updateMyrSupplementaryStatus(
+        myrId,
+        SupplementaryReportStatus.DRAFT,
+        tx,
+      );
+    }
     await putObject(reportObjectName, reportObject);
   });
   return getDataActionResponse({
@@ -1125,16 +1212,27 @@ export const deleteSupplementary = async (
     },
     select: {
       id: true,
+      modelYearReportId: true,
     },
   });
   if (!suppReport) {
     return getErrorActionResponse("Invalid Action!");
   }
-  await prisma.supplementaryReport.delete({
-    where: {
-      id: supplementaryId,
-    },
+  await prisma.$transaction(async (tx) => {
+    await tx.supplementaryReport.delete({
+      where: {
+        id: supplementaryId,
+      },
+    });
+    if (suppReport.modelYearReportId) {
+      await updateMyrSupplementaryStatus(
+        suppReport.modelYearReportId,
+        null,
+        tx,
+      );
+    }
   });
+
   return getSuccessActionResponse();
 };
 
@@ -1154,6 +1252,7 @@ export const submitSupplementary = async (
     },
     select: {
       id: true,
+      modelYearReportId: true,
     },
   });
   if (!suppReport) {
@@ -1175,6 +1274,13 @@ export const submitSupplementary = async (
       comment,
       tx,
     );
+    if (suppReport.modelYearReportId) {
+      await updateMyrSupplementaryStatus(
+        suppReport.modelYearReportId,
+        SupplementaryReportStatus.SUBMITTED,
+        tx,
+      );
+    }
   });
   return getSuccessActionResponse();
 };
@@ -1194,6 +1300,7 @@ export const acknowledgeSupplementary = async (
     },
     select: {
       id: true,
+      modelYearReportId: true,
     },
   });
   if (!suppReport) {
@@ -1215,6 +1322,13 @@ export const acknowledgeSupplementary = async (
       comment,
       tx,
     );
+    if (suppReport.modelYearReportId) {
+      await updateMyrSupplementaryStatus(
+        suppReport.modelYearReportId,
+        SupplementaryReportStatus.ACKNOWLEDGED,
+        tx,
+      );
+    }
   });
   return getSuccessActionResponse();
 };
