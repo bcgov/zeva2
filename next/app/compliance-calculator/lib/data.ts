@@ -27,8 +27,11 @@ export const getComplianceRatios = async (): Promise<ComplianceRatio[]> => {
 };
 
 export const getActiveVehicles = async (): Promise<VehicleModel[]> => {
+  const { userOrgId } = await getUserInfo();
+  
   const vehicles = await prisma.vehicle.findMany({
     where: {
+      organizationId: userOrgId,
       isActive: true,
       status: VehicleStatus.VALIDATED,
     },
