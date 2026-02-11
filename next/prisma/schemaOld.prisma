@@ -1699,3 +1699,20 @@ model weight_class_code {
 
   @@index([weight_class_code], map: "weight_class_code_weight_class_code_a4b62a39_like")
 }
+
+model icbc_upload_progress {
+  id               Int              @id @default(autoincrement())
+  create_timestamp DateTime?        @db.Timestamptz(6)
+  create_user      String           @db.VarChar(130)
+  update_timestamp DateTime?        @db.Timestamptz(6)
+  update_user      String?          @db.VarChar(130)
+  progress         Int
+  status_text      String           @db.VarChar(255)
+  current_page     Int
+  total_pages      Int
+  complete         Boolean
+  error            String?
+  results          Json?
+  upload_id        Int              @unique
+  icbc_upload_date icbc_upload_date @relation(fields: [upload_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "icbc_upload_progress_upload_id_86437fcb_fk_icbc_upload_date_id")
+}

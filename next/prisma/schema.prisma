@@ -209,6 +209,17 @@ model ZevUnitEndingBalance {
   @@map("zev_unit_ending_balance")
 }
 
+model ComplianceRatio {
+  id              Int       @id @default(autoincrement())
+  modelYear       ModelYear @unique @map("model_year")
+  complianceRatio Decimal   @map("compliance_ratio") @db.Decimal(5, 2)
+  zevClassA       Decimal   @map("zev_class_a") @db.Decimal(5, 2)
+  createTimestamp DateTime  @default(now()) @map("create_timestamp") @db.Timestamptz(6)
+  updateTimestamp DateTime  @updatedAt @map("update_timestamp") @db.Timestamptz(6)
+
+  @@map("compliance_ratio")
+}
+
 enum CreditTransferStatus {
   APPROVED_BY_GOV
   APPROVED_BY_TRANSFER_TO

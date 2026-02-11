@@ -13,6 +13,7 @@ import { seedVehicles } from "./seedProcesses/seedVehicles";
 import { seedLegacyAssessedMyrs } from "./seedProcesses/seedLegacyAssessedMyrs";
 import { seedEndingBalances } from "./seedProcesses/seedEndingBalances";
 import { seedLegacyVins } from "./seedProcesses/seedLegacyVins";
+import { seedComplianceRatios } from "./seedProcesses/seedComplianceRatios";
 
 // prismaOld to interact with old zeva db; prisma to interact with new zeva db
 const main = () => {
@@ -43,6 +44,9 @@ const main = () => {
         tx,
         mapOfModelYearIdsToModelYearEnum,
       );
+
+      // seed compliance ratios
+      await seedComplianceRatios(tx);
 
       // seed user tables
       const mapOfOldUserIdsToNewUserIds = await seedUsers(
