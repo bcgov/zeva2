@@ -5,6 +5,8 @@
 // so hopefully prisma addresses this soon!
 
 import {
+  AgreementStatus,
+  AgreementType,
   BalanceType,
   CreditApplicationStatus,
   CreditApplicationSupplierStatus,
@@ -23,6 +25,7 @@ import {
   SupplierClass,
   TransactionType,
   VehicleClass,
+  VehicleClassCode,
   VehicleStatus,
   ZevClass,
 } from "@/prisma/generated/client";
@@ -319,4 +322,65 @@ export const getSupplementaryReportStatusEnumsToStringsMap = () => {
     SupplementaryReportStatus,
     statusTransformer,
   );
+};
+
+export const getStringsToVehicleClassCodeEnumsMap = (): Partial<
+  Record<string, VehicleClassCode>
+> => {
+  return {
+    Compact: VehicleClassCode.COMPACT,
+    "Full-size": VehicleClassCode.FULL_SIZE,
+    "Mid-size": VehicleClassCode.MID_SIZE,
+    Minicompact: VehicleClassCode.MINICOMPACT,
+    Minivan: VehicleClassCode.MINIVAN,
+    "Pickup truck (Small)": VehicleClassCode.PICKUP_TRUCK_SMALL,
+    "Pickup truck (Standard)": VehicleClassCode.PICKUP_TRUCK_STANDARD,
+    "Special purpose vehicle": VehicleClassCode.SPECIAL_PURPOSE_VEHICLE,
+    "Sport utility vehicle (Small)":
+      VehicleClassCode.SPORT_UTILITY_VEHICLE_SMALL,
+    "Sport utility vehicle (Standard)":
+      VehicleClassCode.SPORT_UTILITY_VEHICLE_STANDARD,
+    "Station wagon (Mid-size)": VehicleClassCode.STATION_WAGON_MIDSIZE,
+    "Station wagon (Small)": VehicleClassCode.STATION_WAGON_SMALL,
+    Subcompact: VehicleClassCode.SUBCOMPACT,
+    "Two-seater": VehicleClassCode.TWO_SEATER,
+    "Van (Cargo)": VehicleClassCode.VAN_CARGO,
+    "Van (Passenger)": VehicleClassCode.VAN_PASSENGER,
+  };
+};
+
+export const getVehicleClassCodeEnumsToStringsMap = (): Partial<
+  Record<VehicleClassCode, string>
+> => {
+  const result: Partial<Record<VehicleClassCode, string>> = {};
+  for (const [key, value] of Object.entries(
+    getStringsToVehicleClassCodeEnumsMap(),
+  )) {
+    if (value) {
+      result[value] = key;
+    }
+  }
+  return result;
+};
+
+export const getAgreementStatusEnumsToStringsMap = () => {
+  return getEnumsToStringsMap<AgreementStatus>(
+    AgreementStatus,
+    statusTransformer,
+  );
+};
+
+export const getStringsToAgreementStatusEnumsMap = () => {
+  return getStringsToEnumsMap<AgreementStatus>(
+    AgreementStatus,
+    statusTransformer,
+  );
+};
+
+export const getAgreementTypeEnumsToStringsMap = () => {
+  return getEnumsToStringsMap<AgreementType>(AgreementType, statusTransformer);
+};
+
+export const getStringsToAgreementTypeEnumsMap = () => {
+  return getStringsToEnumsMap<AgreementType>(AgreementType, statusTransformer);
 };

@@ -3,6 +3,7 @@ import { getVehicle } from "../../lib/data";
 import { getAttachmentDownloadUrls } from "../../lib/actions";
 import { AttachmentDownload } from "@/app/lib/services/attachments";
 import { VehicleForm, VehicleFormData } from "../../lib/components/VehicleForm";
+import { getVehicleClassCodeEnumsToStringsMap } from "@/app/lib/utils/enumMaps";
 
 const Page = async (props: { params: Promise<{ id: string }> }) => {
   const args = await props.params;
@@ -16,6 +17,7 @@ const Page = async (props: { params: Promise<{ id: string }> }) => {
   if (attachmentsResp.responseType === "data") {
     attachments.push(...attachmentsResp.data);
   }
+  const classCodesMap = getVehicleClassCodeEnumsToStringsMap();
   const serializedVehicle: {
     id: number;
     attachments: AttachmentDownload[];
@@ -27,7 +29,7 @@ const Page = async (props: { params: Promise<{ id: string }> }) => {
     modelName: vehicle.modelName,
     zevType: vehicle.zevType,
     range: vehicle.range.toString(),
-    bodyType: vehicle.vehicleClassCode,
+    bodyType: classCodesMap[vehicle.vehicleClassCode],
     gvwr: vehicle.weight.toString(),
     us06: vehicle.us06RangeGte16.toString(),
   };

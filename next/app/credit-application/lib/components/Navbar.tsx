@@ -11,27 +11,21 @@ export const Navbar = (props: {
 }) => {
   const searchParams = useSearchParams();
   return (
-    <Row className="px-1 space-x-1">
+    <div className="mb-4 flex gap-2 border-b">
       <Link
         key={"records"}
-        className={
-          props.slug === "validated" ? "border-b-2 border-primaryYellow" : ""
-        }
+        className={`px-3 py-2 text-sm font-medium border-b-2 -mb-px ${props.slug === "validated" ? "border-blue-600 text-blue-700" : "border-transparent text-gray-600 hover:text-gray-900"}`}
         href={`${Routes.CreditApplication}/${props.creditApplicationId}/validated?${searchParams.toString()}`}
       >
         All Records
       </Link>
       <Link
         key={"mismatches"}
-        className={
-          props.slug === "model-name-mismatches"
-            ? "border-b-2 border-primaryYellow"
-            : ""
-        }
+        className={`px-3 py-2 text-sm font-medium border-b-2 -mb-px ${props.slug === "model-name-mismatches" ? "border-blue-600 text-blue-700" : "border-transparent text-gray-600 hover:text-gray-900"}`}
         href={`${Routes.CreditApplication}/${props.creditApplicationId}/model-name-mismatches?${searchParams.toString()}`}
       >
         Review Model Mismatches
       </Link>
-    </Row>
+    </div>
   );
 };

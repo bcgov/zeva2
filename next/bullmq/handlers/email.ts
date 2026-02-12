@@ -119,7 +119,7 @@ export const sendCreditApplicationEmails = async (historyId: number) => {
   let includeDirector: boolean = false;
   if (
     userAction === CreditApplicationStatus.SUBMITTED ||
-    userAction === CreditApplicationStatus.REJECTED ||
+    userAction === CreditApplicationStatus.RETURNED_TO_SUPPLIER ||
     userAction === CreditApplicationStatus.APPROVED
   ) {
     supplierOrgIds.push(history.creditApplication.organizationId);
@@ -214,7 +214,7 @@ export const sendZevModelEmails = async (historyId: number) => {
   let includeAnalysts: boolean = false;
   if (
     userAction === VehicleStatus.SUBMITTED ||
-    userAction === VehicleStatus.REJECTED ||
+    userAction === VehicleStatus.RETURNED_TO_SUPPLIER ||
     userAction === VehicleStatus.VALIDATED
   ) {
     supplierOrgIds.push(history.vehicle.organizationId);

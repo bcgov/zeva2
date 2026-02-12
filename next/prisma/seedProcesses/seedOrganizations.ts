@@ -1,16 +1,10 @@
 import { TransactionClient } from "@/types/prisma";
 import { prismaOld } from "@/lib/prismaOld";
-import { ModelYear } from "../generated/client";
 import { isEmptyAddress } from "@/app/organizations/lib/utils";
 import { getAddressTypeEnum } from "@/lib/utils/getEnums";
 import { cleanupStringData } from "@/lib/utils/dataCleanup";
 
-export const seedOrganizations = async (
-  tx: TransactionClient,
-  mapOfModelYearIdsToModelYearEnum: {
-    [id: number]: ModelYear | undefined;
-  },
-) => {
+export const seedOrganizations = async (tx: TransactionClient) => {
   const mapOfOldOrgIdsToNewOrgIds: Partial<Record<number, number>> = {};
 
   // add orgs:
@@ -77,30 +71,6 @@ export const seedOrganizations = async (
         },
       });
     }
-  }
-
-  // add orgs LDV supplied volumes (from old LDV sales table):
-  const orgLDVSalesOld = await prismaOld.organization_ldv_sales.findMany({
-    where: { is_supplied: true },
-  });
-  for (const orgLDVSaleOld of orgLDVSalesOld) {
-    const orgIdNew = mapOfOldOrgIdsToNewOrgIds[orgLDVSaleOld.organization_id];
-    if (!orgIdNew) {
-      throw new Error(
-        "organization_ldv_sales " +
-          orgLDVSaleOld.id +
-          " with unknown organization id!",
-      );
-    }
-    await tx.organizationLDVSupplied.create({
-      data: {
-        organizationId: orgIdNew,
-        modelYear:
-          mapOfModelYearIdsToModelYearEnum[orgLDVSaleOld.model_year_id] ??
-          ModelYear.MY_2019,
-        volume: orgLDVSaleOld.ldv_sales,
-      },
-    });
   }
 
   return {

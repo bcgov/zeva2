@@ -1,86 +1,84 @@
 import { getUserInfo } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import {
-  AgreementType,
   AgreementStatus,
-  ZevClass,
+  Prisma,
+  Role,
+  Agreement,
 } from "@/prisma/generated/client";
-import { Decimal } from "@/prisma/generated/client/runtime/index-browser";
-import { getWhereClause, getOrderByClause } from "./utils";
+import { getWhereClause, getOrderByClause } from "./utilsServer";
 
-export type AgreementSparse = {
-  id: number;
-  referenceId: string | null;
+export type AgreementWithOrgName = Agreement & {
   organization: {
-    shortName: string;
+    name: string;
   };
-  agreementType: AgreementType;
-  status: AgreementStatus;
-  effectiveDate: Date | null;
-  creditA: number;
-  creditB: number;
 };
 
-// page is 1-based
 export const getAgreements = async (
   page: number,
   pageSize: number,
-  filters: { [key: string]: string },
-  sorts: { [key: string]: string },
-): Promise<[AgreementSparse[], number]> => {
-  const { userIsGov } = await getUserInfo();
-  if (!userIsGov) {
-    return [[], 0];
+  filters: Record<string, string>,
+  sorts: Record<string, string>,
+): Promise<[AgreementWithOrgName[], number]> => {
+  const { userIsGov, userOrgId, userRoles } = await getUserInfo();
+  const skip = (page - 1) * pageSize;
+  const take = pageSize;
+  const orderByClause = getOrderByClause(sorts, true);
+  const whereClause: Prisma.AgreementWhereInput = getWhereClause(filters);
+  if (userIsGov && userRoles.includes(Role.DIRECTOR)) {
+    whereClause.NOT = {
+      status: {
+        in: [AgreementStatus.DRAFT, AgreementStatus.RETURNED_TO_ANALYST],
+      },
+    };
+  } else if (!userIsGov) {
+    whereClause.organizationId = userOrgId;
+    whereClause.status = AgreementStatus.ISSUED;
   }
-
-  const where = getWhereClause(filters);
-  const orderBy = getOrderByClause(sorts, true);
-  const [agreementsRaw, numberOfAgreements] = await prisma.$transaction([
+  return await prisma.$transaction([
     prisma.agreement.findMany({
-      skip: (page - 1) * pageSize,
-      take: pageSize,
-      where,
-      select: {
-        id: true,
-        referenceId: true,
+      skip,
+      take,
+      orderBy: orderByClause,
+      where: whereClause,
+      include: {
         organization: {
-          select: { shortName: true },
-        },
-        agreementType: true,
-        status: true,
-        effectiveDate: true,
-        agreementContent: {
           select: {
-            zevClass: true,
-            numberOfUnits: true,
+            name: true,
           },
         },
       },
-      orderBy,
     }),
-    prisma.agreement.count({ where }),
+    prisma.agreement.count({
+      where: whereClause,
+    }),
   ]);
+};
 
-  const agreements: AgreementSparse[] = agreementsRaw.map((agreementRaw) => {
-    const { agreementContent, ...agreement } = agreementRaw;
-    return {
-      ...agreement,
-      creditA: agreementContent
-        .filter((content) => content.zevClass === ZevClass.A)
-        .reduce(
-          (acc, content) => acc.add(new Decimal(content.numberOfUnits)),
-          new Decimal(0),
-        )
-        .toNumber(),
-      creditB: agreementContent
-        .filter((content) => content.zevClass === ZevClass.B)
-        .reduce(
-          (acc, content) => acc.add(new Decimal(content.numberOfUnits)),
-          new Decimal(0),
-        )
-        .toNumber(),
+export const getAgreement = async (agreementId: number) => {
+  const { userIsGov, userOrgId, userRoles } = await getUserInfo();
+  const whereClause: Prisma.AgreementWhereUniqueInput = { id: agreementId };
+  if (userIsGov && userRoles.includes(Role.DIRECTOR)) {
+    whereClause.status = {
+      in: [AgreementStatus.RECOMMEND_APPROVAL, AgreementStatus.ISSUED],
     };
+  } else if (!userIsGov) {
+    whereClause.organizationId = userOrgId;
+    whereClause.status = AgreementStatus.ISSUED;
+  }
+  return await prisma.agreement.findUnique({
+    where: whereClause,
+    include: {
+      organization: {
+        select: {
+          name: true,
+        },
+      },
+      agreementAttachment: {
+        select: {
+          fileName: true,
+        },
+      },
+    },
   });
-
-  return [agreements, numberOfAgreements];
 };

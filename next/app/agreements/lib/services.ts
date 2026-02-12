@@ -1,12 +1,7 @@
-import { getCurrentComplianceYear } from "@/app/lib/utils/complianceYear";
-import { getUserInfo } from "@/auth";
 import { prisma } from "@/lib/prisma";
-import {
-  AgreementStatus,
-  AgreementUserAction,
-  ModelYear,
-} from "@/prisma/generated/client";
-import { historySelectClause } from "./utils";
+import { AgreementHistoryStatus } from "@/prisma/generated/client";
+import { TransactionClient } from "@/types/prisma";
+import { Attachment } from "@/app/lib/services/attachments";
 
 export const getSupplierSelections = async () => {
   return await prisma.organization.findMany({
@@ -24,77 +19,40 @@ export const getSupplierSelections = async () => {
   });
 };
 
-export const getModelYearSelections = () => {
-  const currentComplianceYear = getCurrentComplianceYear();
-  const modelYearSelections = Object.values(ModelYear).filter(
-    (year) => year <= currentComplianceYear,
-  );
-  return modelYearSelections;
-};
-
-export const getAgreementDetails = async (id: number) => {
-  const { userIsGov, userOrgId } = await getUserInfo();
-
-  const [basicInfo, agreementHistory] = await prisma.$transaction(
-    async (tx) => {
-      const basicInfo = tx.agreement.findUnique({
-        where: {
-          id,
-          organizationId: userIsGov ? undefined : userOrgId,
-          status: userIsGov ? undefined : AgreementStatus.ISSUED,
-        },
-        include: {
-          organization: true,
-          agreementContent: {
-            select: {
-              zevClass: true,
-              modelYear: true,
-              numberOfUnits: true,
-            },
-          },
-          agreementAttachment: {
-            select: {
-              fileName: true,
-              objectName: true,
-            },
-          },
-        },
-      });
-
-      const history = userIsGov
-        ? tx.agreementHistory.findMany({
-            where: {
-              agreementId: id,
-              userAction: { not: AgreementUserAction.SAVED },
-            },
-            select: historySelectClause,
-          })
-        : undefined;
-
-      return await Promise.all([basicInfo, history]);
+export const createHistory = async (
+  agreementId: number,
+  userId: number,
+  userAction: AgreementHistoryStatus,
+  comment?: string,
+  transactionClient?: TransactionClient,
+) => {
+  const client = transactionClient ?? prisma;
+  await client.agreementHistory.create({
+    data: {
+      agreementId,
+      userId,
+      userAction,
+      comment,
     },
-  );
-
-  if (!basicInfo) {
-    return null; // Agreement not found
-  }
-
-  return {
-    ...basicInfo,
-    agreementContent: basicInfo.agreementContent.map((content) => ({
-      ...content,
-      numberOfUnits: content.numberOfUnits.toNumber(),
-    })),
-    agreementHistory,
-  };
+  });
 };
 
-export type AgreementDetailsType = Exclude<
-  Awaited<ReturnType<typeof getAgreementDetails>>,
-  null
->;
-
-export type AgreementHistoryType = Exclude<
-  AgreementDetailsType["agreementHistory"],
-  undefined
->[number];
+export const updateAttachments = async (
+  agreementId: number,
+  attachments: Attachment[],
+  transactionClient?: TransactionClient,
+) => {
+  const client = transactionClient ?? prisma;
+  for (const attachment of attachments) {
+    // throws if record to update does not exist in table
+    await client.agreementAttachment.update({
+      where: {
+        objectName: attachment.objectName,
+      },
+      data: {
+        agreementId,
+        fileName: attachment.fileName,
+      },
+    });
+  }
+};

@@ -193,11 +193,7 @@ export const supplierDelete = async (
       id: vehicleId,
       organizationId: userOrgId,
       status: {
-        in: [
-          VehicleStatus.DRAFT,
-          VehicleStatus.REJECTED,
-          VehicleStatus.RETURNED_TO_SUPPLIER,
-        ],
+        in: [VehicleStatus.DRAFT, VehicleStatus.RETURNED_TO_SUPPLIER],
       },
     },
   });
@@ -205,12 +201,19 @@ export const supplierDelete = async (
     return getErrorActionResponse("Invalid Action!");
   }
   await prisma.$transaction(async (tx) => {
-    await tx.vehicle.update({
+    await tx.vehicleAttachment.deleteMany({
+      where: {
+        vehicleId,
+      },
+    });
+    await tx.vehicleHistory.deleteMany({
+      where: {
+        vehicleId,
+      },
+    });
+    await tx.vehicle.delete({
       where: {
         id: vehicleId,
-      },
-      data: {
-        status: VehicleStatus.DELETED,
       },
     });
   });
@@ -315,7 +318,6 @@ export const supplierDeactivate = async (
 export const analystUpdate = async (
   vehicleId: number,
   newStatus:
-    | typeof VehicleStatus.REJECTED
     | typeof VehicleStatus.RETURNED_TO_SUPPLIER
     | typeof VehicleStatus.VALIDATED,
   comment?: string,
@@ -382,19 +384,11 @@ export const getAttachmentDownloadUrls = async (
   if (!userIsGov) {
     whereClause.vehicle = {
       organizationId: userOrgId,
-      status: {
-        not: VehicleStatus.DELETED,
-      },
     };
   } else {
     whereClause.vehicle = {
       status: {
-        notIn: [
-          VehicleStatus.DELETED,
-          VehicleStatus.DRAFT,
-          VehicleStatus.REJECTED,
-          VehicleStatus.RETURNED_TO_SUPPLIER,
-        ],
+        notIn: [VehicleStatus.DRAFT, VehicleStatus.RETURNED_TO_SUPPLIER],
       },
     };
   }

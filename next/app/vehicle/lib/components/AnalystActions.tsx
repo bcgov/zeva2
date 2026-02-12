@@ -21,16 +21,11 @@ export const AnalystActions = (props: {
   const handleUpdate = useCallback(
     (
       newStatus:
-        | typeof VehicleStatus.REJECTED
         | typeof VehicleStatus.RETURNED_TO_SUPPLIER
         | typeof VehicleStatus.VALIDATED,
     ) => {
       setError("");
-      if (
-        (newStatus === VehicleStatus.REJECTED ||
-          newStatus === VehicleStatus.RETURNED_TO_SUPPLIER) &&
-        !comment.trim()
-      ) {
+      if (newStatus === VehicleStatus.RETURNED_TO_SUPPLIER && !comment.trim()) {
         setError("Comment required!");
         return;
       }
@@ -66,13 +61,6 @@ export const AnalystActions = (props: {
         disabled={isPending}
         placeholder="Comment"
       />
-      <Button
-        variant="primary"
-        onClick={() => handleUpdate(VehicleStatus.REJECTED)}
-        disabled={isPending}
-      >
-        {isPending ? "..." : "Reject"}
-      </Button>
       <Button
         variant="primary"
         onClick={() => {

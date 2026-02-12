@@ -17,7 +17,6 @@ const fieldWithBoarderClass = "p-2 border border-gray-300 rounded bg-white";
 const buttonStyle = "px-2 py-1 min-w-16 self-center text-center";
 const secondaryButtonClass =
   "bg-white border border-primaryBlue text-primaryBlue";
-const warningButtonClass = "bg-white border border-red-500 text-red-500";
 
 export const AgreementDetails = (props: {
   agreement: AgreementDetailsType;

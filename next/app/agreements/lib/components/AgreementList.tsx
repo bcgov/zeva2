@@ -1,14 +1,15 @@
-import React from "react";
 import { redirect } from "next/navigation";
 import { Routes } from "@/app/lib/constants";
 import { getAgreements } from "../data";
 import { AgreementTable } from "./AgreementTable";
+import { getSerializedAgreements } from "../utilsServer";
 
 export const AgreementList = async (props: {
   page: number;
   pageSize: number;
-  filters: { [key: string]: string };
-  sorts: { [key: string]: string };
+  filters: Record<string, string>;
+  sorts: Record<string, string>;
+  userIsGov: boolean;
 }) => {
   const navigationAction = async (id: number) => {
     "use server";
@@ -20,12 +21,14 @@ export const AgreementList = async (props: {
     props.filters,
     props.sorts,
   );
+  const serializedAgreements = getSerializedAgreements(agreements);
 
   return (
     <AgreementTable
-      agreements={agreements}
+      agreements={serializedAgreements}
       totalNumberOfAgreements={totalNumberOfAgreements}
       navigationAction={navigationAction}
+      userIsGov={props.userIsGov}
     />
   );
 };
