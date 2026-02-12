@@ -73,4 +73,74 @@ Manually triggered pipelin to deploy the images to Openshift Test
 
 ## release-prod.yaml
 
-Manually triggered pipelin to deploy the images to Openshift Prod. Same logic as the test deployment.
+This workflow is manually triggered to promote a specific version to the Prod environment.
+It follows the same approach as Test, tagging images and opening a deployment PR to the CD repo.
+
+## 3.4 pr-test.yaml
+
+This workflow runs tests for pull requests to validate changes before merging. It executes
+the Next.js test suite and uploads coverage artifacts. The workflow result is attached to each pull request as a required status check.
+
+## 3.5 pr-title-lint.yml
+
+This workflow enforces Conventional Commit-style pull request titles. It runs on PR events and
+blocks merges if the title does not follow the required format.
+
+## 3.6 pr-build.yaml
+
+This workflow builds and deploys a pull request to the Dev environment when the PR has the
+required label. It builds images, tags them, and updates deployment values for the PR.
+
+## 3.7 pr-teardown.yaml
+
+This workflow tears down the PR environment when a PR is closed or its build label is removed.
+It removes PR-specific resources from the Dev namespace.
+
+## 3.8 cron-cleanup-workflow-runs.yaml
+
+This scheduled workflow cleans up old workflow runs to keep the repository tidy and reduce
+storage usage for Actions artifacts and logs.
+
+## 3.9 hotfix-test.yaml
+
+This workflow is manually triggered to create and deploy an emergency hotfix to the Test environment.
+It is designed for fixes that must be released from a hotfix branch without pulling in unrelated main branch changes.
+
+- create a hotfix branch from the Test baseline tag (example: `hotfix/1.1.0` from `v1.1.0`)
+- run semantic-release with hotfix rules to generate a hotfix pre-release version (example: `1.1.1-hotfix.1`)
+- build images from the generated release tag in the Tools namespace
+- tag images to the Test namespace
+- create a deployment pull request in the CD repo for Test values
+
+# 4. Reuseable Workflows
+
+## 4.1 install-oc-template.yaml
+
+Reusable workflow that installs and caches the OpenShift CLI (`oc`) for other workflows to use.
+
+## 4.2 build-template.yaml
+
+Reusable workflow that builds Zeva2 images in OpenShift using the provided git ref and version.
+
+## 4.3 deploy-template.yaml
+
+Reusable workflow that deploys a specified version to an environment by updating the CD repo
+values file directly.
+
+## 4.4 deploy-template-by-pr.yaml
+
+Reusable workflow that updates the CD repo values file and creates a PR for review instead of
+pushing directly to main.
+
+# 5. Hotfix release to Test
+
+Here is a sample process for how to release a host fix to Test environment.
+
+The version deployed on Test is 1.1.0, business team found a bug and need to emergency fix.
+
+- Create branch from tag
+  - git checkout -b hotfix/1.1.0 v1.1.0
+  - git push -u origin hotfix/1.1.0
+- Add fix commit(s) on that branch with conventional commit (e.g. fix: ...) and push.
+- Manually start the "Hotfix to Test (Emergency Release)" workflow using branch hotfix/1.1.0.
+- Expected version from semantic-release: 1.1.1-hotfix.1 (then .2, .3 on further hotfix commits).

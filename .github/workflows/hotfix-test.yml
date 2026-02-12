@@ -1,0 +1,197 @@
+name: Hotfix to Test (Emergency Release)
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  issues: write
+  pull-requests: write
+
+env:
+  TOOLS_NAMESPACE: ${{ secrets.OPENSHIFT_NAMESPACE_PLATE }}-tools
+  TEST_NAMESPACE: ${{ secrets.OPENSHIFT_NAMESPACE_PLATE }}-test
+
+concurrency:
+  group: hotfix-test-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate-hotfix-branch:
+    name: Validate hotfix branch name
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ensure workflow runs from maintenance branch
+        run: |
+          BRANCH="${{ github.ref_name }}"
+          if [[ ! "$BRANCH" =~ ^hotfix/[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "Hotfix workflow must run from a branch like hotfix/1.1.0."
+            echo "Current ref: $BRANCH"
+            exit 1
+          fi
+
+  run-jest-tests:
+    name: Run Jest Tests
+    needs: validate-hotfix-branch
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./next
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: ./next/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run tests
+        run: npm run test
+
+      - name: Upload coverage reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report-hotfix
+          path: ./next/coverage
+          retention-days: 30
+
+  install-oc:
+    needs: run-jest-tests
+    uses: ./.github/workflows/install-oc-template.yaml
+
+  release:
+    name: Create hotfix release tag
+    needs: run-jest-tests
+    runs-on: ubuntu-latest
+    outputs:
+      release_version: ${{ steps.release_version.outputs.version }}
+      release_is_new: ${{ steps.release_version.outputs.is_new }}
+      release_tag: ${{ steps.release_version.outputs.tag }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+          cache-dependency-path: ./package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Get previous release tag
+        id: prev_tag
+        run: |
+          git fetch --tags
+          echo "tag=$(git describe --tags --abbrev=0 2>/dev/null || true)" >> "$GITHUB_OUTPUT"
+
+      - name: Setup release config
+        run: cp .releaserc.hotfix.cjs .releaserc.cjs
+
+      - name: Run semantic-release for hotfix
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GIT_AUTHOR_NAME: Zelda Team
+          GIT_COMMITTER_NAME: Zelda Team
+          HUSKY: 0
+        run: npx semantic-release
+
+      - name: Determine release version
+        id: release_version
+        run: |
+          git fetch --tags
+          NEW_TAG=$(git describe --tags --abbrev=0 2>/dev/null || true)
+          PREV_TAG="${{ steps.prev_tag.outputs.tag }}"
+          if [ -n "$NEW_TAG" ] && [ "$NEW_TAG" != "$PREV_TAG" ]; then
+            echo "Release created: $NEW_TAG"
+            echo "is_new=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "No new release tag created; using latest tag."
+            echo "is_new=false" >> "$GITHUB_OUTPUT"
+          fi
+          VERSION="${NEW_TAG#v}"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "tag=$NEW_TAG" >> "$GITHUB_OUTPUT"
+
+  ensure-release-created:
+    name: Validate hotfix tag creation
+    needs: release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Fail if no new release was created
+        run: |
+          if [ "${{ needs.release.outputs.release_is_new }}" != "true" ]; then
+            echo "No new semantic-release version was created."
+            echo "Create a hotfix commit on this hotfix branch using conventional commits (for example: fix: ...), then run this workflow again."
+            exit 1
+          fi
+          echo "Hotfix release version: ${{ needs.release.outputs.release_version }}"
+          echo "Hotfix release tag: ${{ needs.release.outputs.release_tag }}"
+
+  build-hotfix:
+    name: Build Zeva2 hotfix images
+    needs: [install-oc, release, ensure-release-created]
+    uses: ./.github/workflows/build-template.yaml
+    with:
+      git_ref: ${{ needs.release.outputs.release_tag }}
+      version: ${{ needs.release.outputs.release_version }}
+    secrets:
+      tools-namespace: ${{ secrets.OPENSHIFT_NAMESPACE_PLATE }}-tools
+      openshift-server: ${{ secrets.OPENSHIFT_SERVER }}
+      openshift-token: ${{ secrets.OPENSHIFT_TOKEN }}
+
+  tag-images-test:
+    name: Tag hotfix images to Test
+    needs: [release, build-hotfix]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Restore oc command from Cache
+        uses: actions/cache@v4.2.0
+        with:
+          path: /usr/local/bin/oc
+          key: oc-cli-${{ runner.os }}
+
+      - name: Log in to Openshift
+        uses: redhat-actions/oc-login@v1.3
+        with:
+          openshift_server_url: ${{ secrets.OPENSHIFT_SERVER }}
+          openshift_token: ${{ secrets.OPENSHIFT_TOKEN }}
+          insecure_skip_tls_verify: true
+          namespace: ${{ env.TOOLS_NAMESPACE }}
+
+      - name: Tag images to Test namespace
+        run: |
+          set -euo pipefail
+          for image in zeva2-next zeva2-bullmq; do
+            if ! oc -n ${{ env.TOOLS_NAMESPACE }} get istag ${image}:${{ needs.release.outputs.release_version }} >/dev/null 2>&1; then
+              echo "Image tag not found: ${{ env.TOOLS_NAMESPACE }}/${image}:${{ needs.release.outputs.release_version }}"
+              exit 1
+            fi
+          done
+          oc tag ${{ env.TOOLS_NAMESPACE }}/zeva2-next:${{ needs.release.outputs.release_version }} ${{ env.TEST_NAMESPACE }}/zeva2-next:${{ needs.release.outputs.release_version }}
+          oc tag ${{ env.TOOLS_NAMESPACE }}/zeva2-bullmq:${{ needs.release.outputs.release_version }} ${{ env.TEST_NAMESPACE }}/zeva2-bullmq:${{ needs.release.outputs.release_version }}
+
+  deploy-test:
+    name: Deploy hotfix to Test
+    needs: [release, tag-images-test]
+    uses: ./.github/workflows/deploy-template-by-pr.yaml
+    with:
+      git_ref: ${{ github.ref_name }}
+      version: ${{ needs.release.outputs.release_version }}
+      values_file: values-test.yaml
+    secrets:
+      manifest-repo-token: ${{ secrets.MANIFEST_REPO_TOKEN }}
