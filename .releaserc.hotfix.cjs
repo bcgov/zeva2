@@ -1,5 +1,6 @@
 module.exports = {
   branches: [
+    "main",
     {
       name: "hotfix/*",
       prerelease: "hotfix",
