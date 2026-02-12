@@ -104,24 +104,14 @@ jobs:
             echo ""
             echo "- Current version: ${{ steps.check_version.outputs.current_version }}"
             echo "- Target version: **${{ inputs.version }}**"
+            if [ "${{ steps.backward_check.outputs.is_backward }}" = "true" ]; then
+              echo ""
+              echo "**A backward deployment has been detected.**"
+              echo "Please reject this pull request and contact DevOps or Developers if you have any questions."
+              echo "If this backward deployment is what is expected, the pull request can be merged."
+            fi
             echo "EOF"
           } >> "$GITHUB_OUTPUT"
-
-      # if it's a backward deployment, the PR will require manual approval before merging
-      - name: Require approval for backward deployment
-        if: steps.backward_check.outputs.is_backward == 'true'
-        uses: trstringer/manual-approval@v1.10.0
-        with:
-          secret: ${{ github.TOKEN }}
-          approvers: emi-hi,tim738745,kuanfandevops,JulianForeman,dallascrichmond,ArawuSamuel1,danclancy85
-          minimum-approvals: 1
-          issue-title: "${{ steps.pr_info.outputs.env_name }} Release - backward deployment needs to be approved"
-          issue-body: |
-            A backward deployment was detected on ${{ steps.pr_info.outputs.env_name }}.
-            - Current version: ${{ steps.check_version.outputs.current_version }}
-            - Target version: ${{ inputs.version }}
-            Please review and approve the deployment if the change is expected.
-            If you think this is a mistake, please reach out to the team to investigate.
 
       - name: Update tags
         uses: mikefarah/yq@v4.40.5
