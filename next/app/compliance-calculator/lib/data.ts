@@ -8,8 +8,25 @@ import {
 import { ComplianceRatio, VehicleModel, CreditBalance } from "./types";
 
 export const getModelYears = async (): Promise<ModelYear[]> => {
-  // Return all model years from the enum
-  return Object.values(ModelYear);
+  const { userOrgId } = await getUserInfo();
+  
+  // Get distinct model years from the organization's validated vehicles
+  const vehicles = await prisma.vehicle.findMany({
+    where: {
+      organizationId: userOrgId,
+      isActive: true,
+      status: VehicleStatus.VALIDATED,
+    },
+    select: {
+      modelYear: true,
+    },
+    distinct: ['modelYear'],
+    orderBy: {
+      modelYear: 'asc',
+    },
+  });
+
+  return vehicles.map((v) => v.modelYear);
 };
 
 export const getComplianceRatios = async (): Promise<ComplianceRatio[]> => {
@@ -65,27 +82,47 @@ export const getUserCreditBalance = async (): Promise<CreditBalance> => {
     return { A: 0, B: 0 };
   }
 
-  // Get the latest ending balance for the organization
-  const balances = await prisma.zevUnitEndingBalance.findMany({
+  // Get the most recent compliance year's ending balance for the organization
+  const latestBalance = await prisma.zevUnitEndingBalance.findFirst({
     where: {
       organizationId: userOrgId,
     },
     orderBy: {
       complianceYear: "desc",
     },
-    take: 1,
+    select: {
+      complianceYear: true,
+    },
   });
 
-  if (balances.length === 0) {
+  if (!latestBalance) {
     return { A: 0, B: 0 };
   }
 
-  const balance = balances[0];
-  const classABalance = parseFloat(balance.finalNumberOfUnits.toString());
-  const classBBalance = 0;
+  // Get all ending balances for the most recent compliance year, grouped by ZEV class
+  const balances = await prisma.zevUnitEndingBalance.findMany({
+    where: {
+      organizationId: userOrgId,
+      complianceYear: latestBalance.complianceYear,
+    },
+    select: {
+      finalNumberOfUnits: true,
+      zevClass: true,
+    },
+  });
+
+  // Sum balances by ZEV class
+  const classBalances = balances.reduce((acc, balance) => {
+    const className = balance.zevClass;
+    if (!acc[className]) {
+      acc[className] = 0;
+    }
+    acc[className] += parseFloat(balance.finalNumberOfUnits.toString());
+    return acc;
+  }, {} as Record<string, number>);
 
   return {
-    A: classABalance,
-    B: classBBalance,
+    A: classBalances.A || 0,
+    B: classBalances.B || 0,
   };
 };
