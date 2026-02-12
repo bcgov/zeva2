@@ -133,6 +133,17 @@ It removes PR-specific resources from the Dev namespace.
 This scheduled workflow cleans up old workflow runs to keep the repository tidy and reduce
 storage usage for Actions artifacts and logs.
 
+## 3.9 hotfix-test.yaml
+
+This workflow is manually triggered to create and deploy an emergency hotfix to the Test environment.
+It is designed for fixes that must be released from a hotfix branch without pulling in unrelated main branch changes.
+
+- create a hotfix branch from the Test baseline tag (example: `hotfix/1.1.0` from `v1.1.0`)
+- run semantic-release with hotfix rules to generate a hotfix pre-release version (example: `1.1.1-hotfix.1`)
+- build images from the generated release tag in the Tools namespace
+- tag images to the Test namespace
+- create a deployment pull request in the CD repo for Test values
+
 # 4. Reuseable Workflows
 
 ## 4.1 install-oc-template.yaml
@@ -152,3 +163,16 @@ values file directly.
 
 Reusable workflow that updates the CD repo values file and creates a PR for review instead of
 pushing directly to main.
+
+# 5. Hotfix release to Test
+
+Here is a sample process for how to release a host fix to Test environment.
+
+The version deployed on Test is 1.1.0, business team found a bug and need to emergency fix.
+
+- Create branch from tag
+  - git checkout -b hotfix/1.1.0 v1.1.0
+  - git push -u origin hotfix/1.1.0
+- Add fix commit(s) on that branch with conventional commit (e.g. fix: ...) and push.
+- Manually start the "Hotfix to Test (Emergency Release)" workflow using branch hotfix/1.1.0.
+- Expected version from semantic-release: 1.1.1-hotfix.1 (then .2, .3 on further hotfix commits).
