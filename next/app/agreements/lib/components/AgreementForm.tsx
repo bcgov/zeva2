@@ -31,6 +31,7 @@ import { getFiles } from "@/app/lib/utils/download";
 import { AgreementContent } from "./AgreementContent";
 import { validateDate } from "@/app/lib/utils/date";
 import { validateNumberOfUnits } from "../utilsClient";
+import { isAgreementType } from "@/app/lib/utils/typeGuards";
 
 const mainDivClass = "grid grid-cols-[220px_1fr]";
 const fieldLabelClass = "py-1 font-semibold text-primaryBlue";
@@ -81,7 +82,7 @@ export const AgreementForm = (props: NewProps | SavedProps) => {
       setAgreementType(props.agreementType);
       setDate(props.date);
       setContent(props.content);
-      const initializeForm = async () => {
+      const getAndSetAttachments = async () => {
         const attachments = props.attachments;
         if (attachments.length > 0) {
           const downloadedFiles = await getFiles(attachments);
@@ -91,7 +92,7 @@ export const AgreementForm = (props: NewProps | SavedProps) => {
           setFiles(filesToSet);
         }
       };
-      initializeForm();
+      getAndSetAttachments();
     }
   }, []);
 
@@ -111,13 +112,17 @@ export const AgreementForm = (props: NewProps | SavedProps) => {
 
   const handleChange = useCallback(
     (key: "agreementType" | "date", value: string) => {
-      if (key === "agreementType" && props.type === "new") {
-        setAgreementType(typesMap[value]);
+      if (
+        key === "agreementType" &&
+        props.type === "new" &&
+        isAgreementType(value)
+      ) {
+        setAgreementType(value);
       } else if (key === "date") {
         setDate(value);
       }
     },
-    [props.type, typesMap],
+    [props.type],
   );
 
   const handleSubmit = useCallback(() => {
@@ -126,7 +131,7 @@ export const AgreementForm = (props: NewProps | SavedProps) => {
       try {
         if (!orgId || !agreementType || !date) {
           throw new Error(
-            "Supplier, Agreement Type, and Date fields required!",
+            "Supplier, Agreement Type, and Date fields are required!",
           );
         }
         const [dateIsValid] = validateDate(date);
@@ -134,7 +139,7 @@ export const AgreementForm = (props: NewProps | SavedProps) => {
           throw new Error("Date must be of the YYYY-MM-DD format!");
         }
         if (content.length === 0) {
-          throw new Error("");
+          throw new Error("You must add at least one ZEV Unit record!");
         }
         for (const record of content) {
           validateNumberOfUnits(record.numberOfUnits);
@@ -196,11 +201,11 @@ export const AgreementForm = (props: NewProps | SavedProps) => {
           <select
             name="supplier"
             className={fieldContentClass + " w-60"}
-            value={orgId}
+            value={orgId ?? ""}
             onChange={(e) => handleOrgSelect(e.target.value)}
             disabled={props.type === "saved" || isPending}
           >
-            <option value={undefined}></option>
+            <option value={""}>--</option>
             {Object.entries(orgsMap).map(([key, value]) => (
               <option key={key} value={key}>
                 {value}
@@ -221,12 +226,11 @@ export const AgreementForm = (props: NewProps | SavedProps) => {
         <select
           name="agreementType"
           className={fieldContentClass + " w-60"}
-          value={agreementType}
-          required
+          value={agreementType ?? ""}
           onChange={(e) => handleChange("agreementType", e.target.value)}
           disabled={props.type === "saved" || isPending}
         >
-          <option value={undefined}>--</option>
+          <option value={""}>--</option>
           {Object.entries(typesMap).map(([key, value]) => (
             <option key={key} value={value}>
               {key}
@@ -235,11 +239,11 @@ export const AgreementForm = (props: NewProps | SavedProps) => {
         </select>
       </div>
       <div className={mainDivClass}>
-        <span className={fieldLabelClass}>Effective Date</span>
+        <span className={fieldLabelClass}>Date</span>
         <input
           className={fieldContentClass + " w-60"}
           type="date"
-          value={date}
+          value={date ?? ""}
           placeholder="YYYY-MM-DD"
           onChange={(e) => handleChange("date", e.target.value)}
           disabled={isPending}

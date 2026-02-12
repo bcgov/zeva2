@@ -73,7 +73,5 @@ export const seedOrganizations = async (tx: TransactionClient) => {
     }
   }
 
-  return {
-    mapOfOldOrgIdsToNewOrgIds,
-  };
+  return mapOfOldOrgIdsToNewOrgIds;
 };

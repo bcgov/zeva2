@@ -3,7 +3,6 @@
 import { getUserInfo } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import {
-  Agreement,
   AgreementStatus,
   AgreementType,
   ModelYear,
@@ -37,13 +36,6 @@ export type AgreementContentPayload = {
   zevClass: ZevClass;
   modelYear: ModelYear;
   numberOfUnits: string;
-};
-
-export type AgreementPayload = Omit<
-  Agreement,
-  "id" | "aCredits" | "bCredits"
-> & {
-  agreementContent: AgreementContentPayload[];
 };
 
 export type AgreementPutObjectData = {
@@ -226,6 +218,11 @@ export const deleteAgreement = async (
       },
     });
     await tx.agreementHistory.deleteMany({
+      where: {
+        agreementId,
+      },
+    });
+    await tx.agreementContent.deleteMany({
       where: {
         agreementId,
       },

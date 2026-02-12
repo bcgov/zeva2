@@ -1,56 +1,22 @@
 import { getUserInfo } from "@/auth";
-import { redirect } from "next/navigation";
-import { Routes } from "@/app/lib/constants";
-import { Role, ZevClass } from "@/prisma/generated/client";
-import { AgreementEditForm } from "../lib/components/AgreementEditForm";
-import { AgreementPayload, saveAgreement } from "../lib/action";
-import { Attachment } from "@/app/lib/services/attachments";
-import { getModelYearSelections, getSupplierSelections } from "../lib/services";
+import { Role } from "@/prisma/generated/client";
+import { getOrgsMap } from "@/app/lib/data/orgs";
+import { AgreementForm } from "../lib/components/AgreementForm";
 
 const Page = async () => {
-  const { userRoles } = await getUserInfo();
-  if (!userRoles.includes(Role.ZEVA_IDIR_USER)) {
-    return (
-      <div className="p-6 font-semibold">
-        You do not have access to this page.
-      </div>
-    );
+  const { userIsGov, userRoles } = await getUserInfo();
+  if (!userIsGov || !userRoles.includes(Role.ZEVA_IDIR_USER)) {
+    return null;
   }
-
-  const supplierSelectionsPromise = getSupplierSelections();
-  const modelYearSelections = getModelYearSelections();
-
-  const createAgreement = async (
-    data: AgreementPayload,
-    files: Attachment[],
-  ) => {
-    "use server";
-    const savedAgreement = await saveAgreement(data, files);
-    if (savedAgreement) {
-      redirect(`${Routes.CreditAgreements}/${savedAgreement.id}`);
-    } else {
-      redirect(`${Routes.CreditAgreements}/error`);
-    }
-  };
-
-  const handleCancel = async () => {
-    "use server";
-    redirect(Routes.CreditAgreements);
-  };
+  const orgsMap = await getOrgsMap(null, true);
 
   return (
     <div className="p-6">
       <h2 className="text-xl font-semibold text-primaryBlue pb-4">
-        New Agreement
+        Create an Agreement
       </h2>
       <div className="bg-white rounded-lg shadow-level-1 p-6">
-        <AgreementEditForm
-          supplierSelections={await supplierSelectionsPromise}
-          modelYearSelections={modelYearSelections}
-          zevClassSelections={[ZevClass.A, ZevClass.B]}
-          upsertAgreement={createAgreement}
-          handleCancel={handleCancel}
-        />
+        <AgreementForm type="new" orgsMap={orgsMap} />
       </div>
     </div>
   );

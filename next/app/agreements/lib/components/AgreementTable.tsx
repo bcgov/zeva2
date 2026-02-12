@@ -26,8 +26,8 @@ export const AgreementTable = (props: {
     const result: ColumnDef<AgreementWithOrgNameSerialized, any>[] = [
       columnHelper.accessor((row) => statusMap[row.status], {
         id: "status",
-        enableSorting: true,
-        enableColumnFilter: true,
+        enableSorting: props.userIsGov,
+        enableColumnFilter: props.userIsGov,
         header: "Status",
       }),
       columnHelper.accessor((row) => row.date, {
@@ -44,14 +44,14 @@ export const AgreementTable = (props: {
       }),
       columnHelper.accessor((row) => row.aCredits, {
         id: "aCredits",
-        enableSorting: false,
-        enableColumnFilter: false,
+        enableSorting: true,
+        enableColumnFilter: true,
         header: "A-Credits",
       }),
       columnHelper.accessor((row) => row.bCredits, {
         id: "bCredits",
-        enableSorting: false,
-        enableColumnFilter: false,
+        enableSorting: true,
+        enableColumnFilter: true,
         header: "B-Credits",
       }),
     ];

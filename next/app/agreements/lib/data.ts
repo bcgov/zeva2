@@ -68,10 +68,22 @@ export const getAgreement = async (agreementId: number) => {
   }
   return await prisma.agreement.findUnique({
     where: whereClause,
+    omit: {
+      aCredits: true,
+      bCredits: true,
+    },
     include: {
       organization: {
         select: {
           name: true,
+        },
+      },
+      agreementContent: {
+        select: {
+          vehicleClass: true,
+          zevClass: true,
+          modelYear: true,
+          numberOfUnits: true,
         },
       },
       agreementAttachment: {
@@ -79,6 +91,36 @@ export const getAgreement = async (agreementId: number) => {
           fileName: true,
         },
       },
+    },
+  });
+};
+
+export const getAgreementHistories = async (agreementId: number) => {
+  const { userIsGov, userOrgId } = await getUserInfo();
+  const whereClause: Prisma.AgreementHistoryWhereInput = { agreementId };
+  if (!userIsGov) {
+    whereClause.agreement = {
+      organizationId: userOrgId,
+    };
+    whereClause.userAction = AgreementStatus.ISSUED;
+  }
+  return await prisma.agreementHistory.findMany({
+    where: whereClause,
+    include: {
+      user: {
+        select: {
+          firstName: true,
+          lastName: true,
+          organization: {
+            select: {
+              isGovernment: true,
+            },
+          },
+        },
+      },
+    },
+    orderBy: {
+      timestamp: "asc",
     },
   });
 };

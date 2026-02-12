@@ -93,7 +93,7 @@ export const AgreementContent = (props: {
             <span className="py-1">Vehicle Class</span>
             <select
               className={fieldContentClass}
-              value={record.zevClass}
+              value={record.vehicleClass}
               onChange={(e) =>
                 handleRecordChange(index, "vehicleClass", e.target.value)
               }
@@ -132,11 +132,19 @@ export const AgreementContent = (props: {
               }
               disabled={props.disabled}
             >
-              {Object.entries(modelYearsMaps).map(([key, value]) => (
-                <option key={key} value={value}>
-                  {key}
-                </option>
-              ))}
+              {Object.entries(modelYearsMaps).map(([key, value]) => {
+                if (
+                  value &&
+                  value >= ModelYear.MY_2019 &&
+                  value <= ModelYear.MY_2035
+                ) {
+                  return (
+                    <option key={key} value={value}>
+                      {key}
+                    </option>
+                  );
+                }
+              })}
             </select>
           </div>
           <div className="grid grid-cols-[150px_80px]">

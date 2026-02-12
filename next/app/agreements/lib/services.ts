@@ -3,22 +3,6 @@ import { AgreementHistoryStatus } from "@/prisma/generated/client";
 import { TransactionClient } from "@/types/prisma";
 import { Attachment } from "@/app/lib/services/attachments";
 
-export const getSupplierSelections = async () => {
-  return await prisma.organization.findMany({
-    select: {
-      id: true,
-      name: true,
-    },
-    where: {
-      isGovernment: false,
-      isActive: true,
-    },
-    orderBy: {
-      name: "asc",
-    },
-  });
-};
-
 export const createHistory = async (
   agreementId: number,
   userId: number,

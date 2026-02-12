@@ -7,6 +7,7 @@ import { useCallback, useState, useTransition } from "react";
 import { issueAgreement, returnToAnalyst } from "../actions";
 import { getNormalizedComment } from "@/app/lib/utils/comment";
 import { CommentBox } from "@/app/lib/components/inputs/CommentBox";
+import { Routes } from "@/app/lib/constants";
 
 export const DirectorActions = (props: {
   agreementId: number;
@@ -28,7 +29,7 @@ export const DirectorActions = (props: {
         if (response.responseType === "error") {
           throw new Error(response.message);
         }
-        router.refresh();
+        router.push(Routes.CreditAgreements);
       } catch (e) {
         if (e instanceof Error) {
           setError(e.message);
@@ -62,7 +63,7 @@ export const DirectorActions = (props: {
   }
 
   return (
-    <div>
+    <>
       <div className="mt-4">
         <p className="py-1 font-semibold text-primaryBlue">Optional Comment</p>
         <CommentBox
@@ -73,13 +74,17 @@ export const DirectorActions = (props: {
       </div>
       <div className="flex flex-row gap-12 my-4">
         {error && <p className="text-red-600">{error}</p>}
-        <Button variant="secondary" onClick={handleReturnToAnalyst}>
+        <Button
+          variant="secondary"
+          onClick={handleReturnToAnalyst}
+          disabled={isPending}
+        >
           Return to Analyst
         </Button>
-        <Button variant="primary" onClick={handleIssue}>
+        <Button variant="primary" onClick={handleIssue} disabled={isPending}>
           Issue
         </Button>
       </div>
-    </div>
+    </>
   );
 };

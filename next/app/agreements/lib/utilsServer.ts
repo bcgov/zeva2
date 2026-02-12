@@ -7,6 +7,7 @@ import {
   getStringsToAgreementTypeEnumsMap,
 } from "@/app/lib/utils/enumMaps";
 import { AgreementWithOrgName } from "./data";
+import { ZevUnitRecord } from "@/lib/utils/zevUnit";
 
 export const getCreditsSum = (content: AgreementContentPayload[]) => {
   let aCredits = new Decimal(0);
@@ -100,6 +101,21 @@ export const getSerializedAgreements = (agreements: AgreementWithOrgName[]) => {
       ...agreement,
       aCredits: agreement.aCredits.toFixed(2),
       bCredits: agreement.bCredits.toFixed(2),
+    });
+  }
+  return result;
+};
+
+export const getSerializedAgreementContent = (
+  content: Omit<ZevUnitRecord, "type">[],
+) => {
+  const result: (Omit<ZevUnitRecord, "type" | "numberOfUnits"> & {
+    numberOfUnits: string;
+  })[] = [];
+  for (const record of content) {
+    result.push({
+      ...record,
+      numberOfUnits: record.numberOfUnits.toFixed(2),
     });
   }
   return result;

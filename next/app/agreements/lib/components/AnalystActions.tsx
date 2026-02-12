@@ -67,7 +67,7 @@ export const AnalystActions = (props: {
   }
 
   return (
-    <div>
+    <>
       <div className="mt-4">
         <p className="py-1 font-semibold text-primaryBlue">Optional Comment</p>
         <CommentBox
@@ -78,16 +78,24 @@ export const AnalystActions = (props: {
       </div>
       <div className="flex flex-row gap-12 my-4">
         {error && <p className="text-red-600">{error}</p>}
-        <Button variant="secondary" onClick={handleGoToEditAgreement}>
+        <Button
+          variant="secondary"
+          onClick={handleGoToEditAgreement}
+          disabled={isPending}
+        >
           Edit
         </Button>
-        <Button variant="primary" onClick={handleRecommend}>
+        <Button
+          variant="primary"
+          onClick={handleRecommend}
+          disabled={isPending}
+        >
           Submit to Director
         </Button>
-        <Button variant="danger" onClick={handleDelete}>
+        <Button variant="danger" onClick={handleDelete} disabled={isPending}>
           Delete
         </Button>
       </div>
-    </div>
+    </>
   );
 };

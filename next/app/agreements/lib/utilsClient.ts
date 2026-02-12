@@ -8,7 +8,7 @@ export const validateNumberOfUnits = (numberOfUnits: string) => {
     }
   } catch (e) {
     throw new Error(
-      "Number of Units and must be strictly positive numbers rounded to 2 decimal places or less!",
+      "Number of Units must be a strictly positive number rounded to 2 decimal places or less!",
     );
   }
 };
