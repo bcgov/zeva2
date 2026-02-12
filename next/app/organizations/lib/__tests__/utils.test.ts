@@ -1,7 +1,6 @@
 import { describe, it, expect, beforeEach } from "@jest/globals";
 import { OrganizationSparse } from "../data";
 import {
-  getSupplierClass,
   filterOrganizations,
   sortOrganzations,
   cleanupAddressData,
@@ -9,92 +8,6 @@ import {
 } from "../utils";
 import { testOrganizations } from "./__test-utilities__/utils-test-data";
 import { cleanupStringData } from "@/lib/utils/dataCleanup";
-
-describe("Organization utils: getSupplierClass", () => {
-  // The pre-condition of this function assumes the model years are
-  //  in descending order.
-
-  it("returns N/A when last 3 years have no volumes", () => {
-    expect(getSupplierClass([])).toBe("N/A");
-
-    expect(getSupplierClass([{ volume: 0 }, { volume: 0 }])).toBe("N/A");
-
-    expect(
-      getSupplierClass([{ volume: 0 }, { volume: 0 }, { volume: 0 }]),
-    ).toBe("N/A");
-
-    expect(
-      getSupplierClass([
-        { volume: 0 },
-        { volume: 0 },
-        { volume: 0 },
-        { volume: 500 },
-        { volume: 2000 },
-        { volume: 900 },
-      ]),
-    ).toBe("N/A");
-  });
-
-  it("returns SMALL for last 3 year's average < 1000", () => {
-    expect(
-      getSupplierClass([{ volume: 500 }, { volume: 800 }, { volume: 900 }]),
-    ).toBe("SMALL");
-
-    expect(
-      getSupplierClass([
-        { volume: 500 },
-        { volume: 800 },
-        { volume: 900 },
-        { volume: 80000 },
-        { volume: 20000 },
-      ]),
-    ).toBe("SMALL");
-
-    expect(
-      getSupplierClass([{ volume: 999 }, { volume: 999 }, { volume: 999 }]),
-    ).toBe("SMALL");
-  });
-
-  it("returns MEDIUM for last 3 year's average >= 1000 and < 5000", () => {
-    expect(
-      getSupplierClass([{ volume: 2000 }, { volume: 3000 }, { volume: 4000 }]),
-    ).toBe("MEDIUM");
-
-    expect(
-      getSupplierClass([{ volume: 1000 }, { volume: 1000 }, { volume: 1000 }]),
-    ).toBe("MEDIUM");
-
-    expect(
-      getSupplierClass([
-        { volume: 4999 },
-        { volume: 4999 },
-        { volume: 4999 },
-        { volume: 10000 },
-      ]),
-    ).toBe("MEDIUM");
-  });
-
-  it("returns LARGE for last 3 year's average >= 5000", () => {
-    expect(
-      getSupplierClass([{ volume: 6000 }, { volume: 7000 }, { volume: 8000 }]),
-    ).toBe("LARGE");
-
-    expect(
-      getSupplierClass([
-        { volume: 5000 },
-        { volume: 5000 },
-        { volume: 5000 },
-        { volume: 1000 },
-        { volume: 400 },
-      ]),
-    ).toBe("LARGE");
-  });
-
-  it("returns correct class if less than 3 years of data", () => {
-    expect(getSupplierClass([{ volume: 4500 }])).toBe("MEDIUM");
-    expect(getSupplierClass([{ volume: 9000 }])).toBe("LARGE");
-  });
-});
 
 describe("Organization utils: filterOrganizations", () => {
   let orgs: OrganizationSparse[];

@@ -19,7 +19,6 @@ import {
   Prisma,
   ReassessmentStatus,
   ReferenceType,
-  Role,
   SupplementaryReportStatus,
   SupplierClass,
   SupplyVolume,
@@ -41,6 +40,7 @@ import { TransactionClient } from "@/types/prisma";
 import { AdjustmentPayload, NvValues } from "./actions";
 import { getObject } from "@/app/lib/minio";
 import { getArrayBuffer } from "@/app/lib/utils/parseReadable";
+import { getPrevSupplierVolumes } from "@/app/lib/services/volumes";
 
 export const getSupplierDetails = async (organizationId: number) => {
   const organization = await prisma.organization.findUniqueOrThrow({
@@ -123,43 +123,11 @@ export const getSupplierClassAndVolumes = async (
   volumes: [ModelYear, VehicleClass, number][];
 }> => {
   const vehicleClassToUse = VehicleClass.REPORTABLE;
-  const modelYearsArray = Object.values(ModelYear);
-  const myIndex = modelYearsArray.findIndex((my) => my === modelYear);
-  const precedingMys: ModelYear[] = [];
-  for (let i = 1; i <= 3; i++) {
-    const precedingMy = modelYearsArray[myIndex - i];
-    if (precedingMy) {
-      precedingMys.push(precedingMy);
-    }
-  }
-  if (precedingMys.length !== 3) {
-    throw new Error("Error getting supplier class!");
-  }
-  const whereClause = {
-    OR: [
-      { modelYear: precedingMys[0] },
-      { modelYear: precedingMys[1] },
-      { modelYear: precedingMys[2] },
-    ],
+  const { precedingMys, volumes } = await getPrevSupplierVolumes(
+    vehicleClassToUse,
+    modelYear,
     organizationId,
-    vehicleClass: vehicleClassToUse,
-    volume: { gt: 0 },
-  };
-  const orderBy: { modelYear: "asc" | "desc" } = {
-    modelYear: "desc",
-  };
-  let volumes: SupplyVolume[] = [];
-  if (modelYear < ModelYear.MY_2024) {
-    volumes = await prisma.legacySalesVolume.findMany({
-      where: whereClause,
-      orderBy,
-    });
-  } else {
-    volumes = await prisma.supplyVolume.findMany({
-      where: whereClause,
-      orderBy,
-    });
-  }
+  );
   let average = new Decimal(0);
   if (volumes.length === 3) {
     const total = volumes.reduce((acc, cv) => {
