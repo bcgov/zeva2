@@ -222,6 +222,7 @@ jobs:
             const headBranch = context.ref.replace("refs/heads/", "");
             const baseBranch = "main";
             const version = "${{ needs.release.outputs.release_version }}";
+            const teamReviewers = ["zelda-tech"];
 
             const existing = await github.rest.pulls.list({
               owner,
@@ -233,7 +234,19 @@ jobs:
             });
 
             if (existing.data.length > 0) {
+              const prNumber = existing.data[0].number;
               core.info(`Open PR already exists: ${existing.data[0].html_url}`);
+              try {
+                await github.rest.pulls.requestReviewers({
+                  owner,
+                  repo,
+                  pull_number: prNumber,
+                  team_reviewers: teamReviewers,
+                });
+                core.info(`Requested reviewers on existing PR #${prNumber}.`);
+              } catch (err) {
+                core.warning(`Could not request reviewers on existing PR #${prNumber}: ${err.message}`);
+              }
               return;
             }
 
@@ -254,3 +267,14 @@ jobs:
             });
 
             core.info(`Created PR: ${pr.data.html_url}`);
+            try {
+              await github.rest.pulls.requestReviewers({
+                owner,
+                repo,
+                pull_number: pr.data.number,
+                team_reviewers: teamReviewers,
+              });
+              core.info(`Requested reviewers on PR #${pr.data.number}.`);
+            } catch (err) {
+              core.warning(`Could not request reviewers on PR #${pr.data.number}: ${err.message}`);
+            }
