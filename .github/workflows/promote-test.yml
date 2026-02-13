@@ -1,3 +1,8 @@
+# Manually promotes a specific version to the Test environment:
+# - provide the image version to deploy
+# - create a deployment pull request in the CD repository
+# - after PR approval/merge, the version is deployed to OpenShift Test
+
 name: Promote to Test (RC Release)
 
 on:

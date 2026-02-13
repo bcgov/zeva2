@@ -1,4 +1,7 @@
-# This workflow tears down the pull request deployment on development environment
+# Tears down the PR environment when a PR is closed or its build label is removed.
+# Removes PR-specific resources from the Dev namespace.
+# This workflow tears down the pull request deployment on development environment.
+
 name: PR Teardown on Dev
 
 on:

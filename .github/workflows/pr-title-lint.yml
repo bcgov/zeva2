@@ -1,3 +1,6 @@
+# Enforces Conventional Commit-style PR titles on pull request events.
+# Merges are blocked if the title format is invalid.
+
 name: PR Title Lint
 
 on:

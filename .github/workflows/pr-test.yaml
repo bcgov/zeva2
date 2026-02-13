@@ -1,3 +1,8 @@
+# Runs tests for pull requests before merge:
+# - execute the Next.js test suite
+# - upload coverage artifacts
+# - provide a required PR status check
+
 name: PR Test
 
 on:

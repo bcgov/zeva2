@@ -1,4 +1,4 @@
-# Reusable workflow to install and cache OpenShift CLI (oc)
+# Installs and caches the OpenShift CLI (`oc`) for caller workflows.
 
 name: Install OpenShift CLI Template
 

@@ -1,3 +1,6 @@
+# Validates that all commits in a pull request follow Conventional Commits format.
+# Lints commits from PR base SHA to head SHA and fails the check when messages are invalid.
+
 name: PR Commit Lint
 
 on:
