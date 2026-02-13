@@ -102,22 +102,6 @@ export const Table = <T extends ZevaObject>({
     return Math.ceil(totalNumberOfRecords / currentPageSize);
   }, [currentPageSize, totalNumberOfRecords]);
 
-  const applyFilters = React.useCallback(
-    (newFilters: Record<string, string>) => {
-      const params = new URLSearchParams(searchParams);
-      const legalFilters = getLegalPairs(newFilters);
-      const filtersString = getString(legalFilters);
-      if (filtersString) {
-        params.set("filters", filtersString);
-      } else {
-        params.delete("filters");
-      }
-      params.set("page", "1");
-      replaceUrl(params);
-    },
-    [searchParams, replaceUrl],
-  );
-
   const handlePageChange = React.useCallback(
     (page: string) => {
       const params = new URLSearchParams(searchParams);
@@ -150,30 +134,32 @@ export const Table = <T extends ZevaObject>({
     return result;
   }, [numberOfPages]);
 
-  const handleFilterChange = React.useCallback(
-    (key: string, value: string) => {
-      setFilters((prev) => {
-        const updatedFilters = { ...prev };
-        if (value) {
-          updatedFilters[key] = value;
-        } else {
-          delete updatedFilters[key];
-        }
-        return updatedFilters;
-      });
-    },
-    [],
-  );
+  const handleFilterChange = React.useCallback((key: string, value: string) => {
+    setFilters((prev) => {
+      if (value) {
+        return {
+          ...prev,
+          [key]: value,
+        };
+      }
+      const prevCopy = { ...prev };
+      delete prevCopy[key];
+      return prevCopy;
+    });
+  }, []);
 
-  const hasAppliedInitialFilters = React.useRef(false);
-
-  React.useEffect(() => {
-    if (!hasAppliedInitialFilters.current) {
-      hasAppliedInitialFilters.current = true;
-      return;
+  const handleFilterApply = React.useCallback(() => {
+    const params = new URLSearchParams(searchParams);
+    const legalFilters = getLegalPairs(filters);
+    const filtersString = getString(legalFilters);
+    if (filtersString) {
+      params.set("filters", filtersString);
+    } else {
+      params.delete("filters");
     }
-    applyFilters(filters);
-  }, [filters, applyFilters]);
+    params.set("page", "1");
+    replaceUrl(params);
+  }, [searchParams, filters, replaceUrl]);
 
   const sortsMap = React.useMemo(() => {
     const sorts = searchParams.get("sorts");
@@ -240,6 +226,8 @@ export const Table = <T extends ZevaObject>({
             onFilterChange={handleFilterChange}
             sortState={sortsMap}
             filterState={filters}
+            filterOnApply={true}
+            onFilterApply={handleFilterApply}
           />
           <tbody className="bg-white divide-y divide-gray-200">
             {table.getRowModel().rows.map((row) => (
