@@ -1,5 +1,4 @@
-
-# This workflow is a template for deploying the Zeva2 application in OpenShift.
+# Deploys a specified version by updating the CD repository values file directly.
 
 name: Deploy Template
 
@@ -28,7 +27,6 @@ permissions:
   contents: read
 
 jobs:
-
   deploy:
     name: Deploy Zeva2
     runs-on: ubuntu-latest

@@ -1,3 +1,10 @@
+# Manually creates and deploys an emergency hotfix to Test without pulling in unrelated main changes:
+# - create/use a hotfix branch from the Test baseline tag (example: hotfix/1.1.0 from v1.1.0)
+# - run semantic-release with hotfix rules to generate a hotfix pre-release (example: 1.1.1-hotfix.1)
+# - build images from the generated release tag in the Tools namespace
+# - tag images to the Test namespace
+# - create a deployment pull request in the CD repository for Test values
+
 name: Hotfix to Test (Emergency Release)
 
 on:

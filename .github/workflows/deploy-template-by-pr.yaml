@@ -1,4 +1,4 @@
-# This workflow is a template for deploying the Zeva2 application in OpenShift.
+# Updates CD repository values and creates a pull request for review instead of pushing directly to main.
 
 name: Deploy Template By Pull Request
 

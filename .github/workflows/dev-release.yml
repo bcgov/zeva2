@@ -1,3 +1,9 @@
+# Runs on push to main (or manual dispatch) and handles the Dev release flow:
+# - run the Jest test suite
+# - run semantic-release versioning
+# - if a new release is created, build images in the OpenShift Tools namespace
+# - deploy the released version to the OpenShift Dev environment
+
 name: Dev Release
 
 on:

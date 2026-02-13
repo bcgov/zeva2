@@ -1,3 +1,8 @@
+# Manually promotes a specific version to the Prod environment.
+# It follows the same promotion pattern as Test:
+# - tag images to the target namespace
+# - create a deployment pull request in the CD repository
+
 name: Release to Prod (Stable Release)
 
 on:

@@ -1,6 +1,6 @@
-# This workflow is triggered on a schedule and manually to delete old workflow runs.
-# It uses the Mattraks/delete-workflow-runs action to delete workflow runs older than 5 days,
-# while keeping a minimum of 10 runs.
+# Scheduled/manual cleanup for old workflow runs to reduce Actions storage use.
+# Uses Mattraks/delete-workflow-runs and keeps a minimum number of runs.
+
 name: Cleanup Workflow Runs
 on:
   workflow_dispatch:

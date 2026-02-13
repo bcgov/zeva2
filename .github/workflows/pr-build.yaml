@@ -1,4 +1,8 @@
-# this workflow builds and deploys pull requests to the development environment in OpenShift.
+# Builds and deploys a pull request to the Dev environment when required labels are present:
+# - build images for the PR
+# - tag images to Dev
+# - update deployment values for the PR environment
+# This workflow builds and deploys pull requests to the development environment in OpenShift.
 
 name: PR Build on Dev
 
