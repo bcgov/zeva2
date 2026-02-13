@@ -178,3 +178,5 @@ The version deployed on Test is 1.1.0, business team found a bug and need to eme
 - Expected version from semantic-release: 1.1.1-hotfix.1 (then .2, .3 on further hotfix commits).
 
 change2
+
+change3
