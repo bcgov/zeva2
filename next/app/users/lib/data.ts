@@ -3,7 +3,9 @@ import { prisma } from "@/lib/prisma";
 import { Idp, Prisma, Role, User } from "@/prisma/generated/client";
 import { userIsAdmin } from "./utilsServer";
 
-export type UserWithOrgName = User & { organization: { name: string } };
+export type UserWithOrgName = Omit<User, "idpSub"> & {
+  organization: { name: string };
+};
 
 export type GovUserCategory = "bceid" | "idir" | "inactive";
 
@@ -45,6 +47,9 @@ export const fetchUsers = async (
   }
   return await prisma.user.findMany({
     where: whereClause,
+    omit: {
+      idpSub: true,
+    },
     include: {
       organization: {
         select: {
