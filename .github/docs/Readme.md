@@ -176,3 +176,5 @@ The version deployed on Test is 1.1.0, business team found a bug and need to eme
 - Add fix commit(s) on that branch with conventional commit (e.g. fix: ...) and push.
 - Manually start the "Hotfix to Test (Emergency Release)" workflow using branch hotfix/1.1.0.
 - Expected version from semantic-release: 1.1.1-hotfix.1 (then .2, .3 on further hotfix commits).
+
+change2
