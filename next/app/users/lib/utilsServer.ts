@@ -2,7 +2,7 @@ import { UserActiveFilter } from "@/app/lib/constants/filter";
 import { getStringsToRoleEnumsMap } from "@/app/lib/utils/enumMaps";
 import { getUserInfo } from "@/auth";
 import { UserWithOrg } from "@/lib/data/user";
-import { Prisma, Role } from "@/prisma/generated/client";
+import { Prisma, Role, Idp } from "@/prisma/generated/client";
 import { validateRoles } from "./utils";
 
 export const userConfiguredCorrectly = (user: UserWithOrg) => {
@@ -21,6 +21,18 @@ export const getWhereClause = (
   userIsGov: boolean,
 ): Prisma.UserWhereInput => {
   const result: Prisma.UserWhereInput = {};
+  const getIdpFilterValue = (value: string): Idp | undefined => {
+    const trimmedValue = value.trim().toLowerCase();
+    if (trimmedValue.includes("idir")) {
+      return Idp.AZURE_IDIR;
+    }
+    if (trimmedValue.includes("bceid")) {
+      return Idp.BCEID_BUSINESS;
+    }
+    return Object.values(Idp).find(
+      (idp) => idp.toLowerCase() === trimmedValue,
+    );
+  };
   Object.entries(filters).forEach(([key, value]) => {
     if (
       key === "firstName" ||
@@ -33,6 +45,13 @@ export const getWhereClause = (
         contains: newValue,
         mode: "insensitive",
       };
+    } else if (key === "idp") {
+      const idpFilter = getIdpFilterValue(value);
+      if (idpFilter) {
+        result[key] = idpFilter;
+      } else {
+        result["id"] = -1;
+      }
     } else if (key === UserActiveFilter.key) {
       const newValue = value.toLowerCase().trim();
       if (newValue === UserActiveFilter.activeValue) {
@@ -82,7 +101,8 @@ export const getOrderByClause = (
         key === "firstName" ||
         key === "lastName" ||
         key === "contactEmail" ||
-        key === "idpUsername"
+        key === "idpUsername" ||
+        key === "idp"
       ) {
         result.push({ [key]: value });
       } else if (key === "organization" && userIsGov) {
