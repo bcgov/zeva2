@@ -34,12 +34,19 @@ enum ModelYear {
   MY_2036
 }
 
+enum SupplierClass {
+  LARGE_VOLUME_SUPPLIER
+  MEDIUM_VOLUME_SUPPLIER
+  SMALL_VOLUME_SUPPLIER
+}
+
 model Organization {
   id                            Int                             @id @default(autoincrement())
   name                          String
   isGovernment                  Boolean                         @default(false) @map("is_government")
   isActive                      Boolean                         @default(true) @map("is_active")
   shortName                     String                          @map("short_name")
+  supplierClass                 SupplierClass?                  @map("supplier_class")
   users                         User[]
   zevUnitTransactions           ZevUnitTransaction[]
   zevUnitEndingBalances         ZevUnitEndingBalance[]
@@ -639,16 +646,9 @@ enum ReassessmentStatus {
 }
 
 enum SupplementaryReportStatus {
+  ACKNOWLEDGED
   DRAFT
-  RETURNED_TO_SUPPLIER
   SUBMITTED
-  VALIDATED
-}
-
-enum SupplierClass {
-  LARGE_VOLUME_SUPPLIER
-  MEDIUM_VOLUME_SUPPLIER
-  SMALL_VOLUME_SUPPLIER
 }
 
 model ModelYearReport {

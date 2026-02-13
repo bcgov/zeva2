@@ -3,6 +3,7 @@ import { prismaOld } from "@/lib/prismaOld";
 import { isEmptyAddress } from "@/app/organizations/lib/utils";
 import { getAddressTypeEnum } from "@/lib/utils/getEnums";
 import { cleanupStringData } from "@/lib/utils/dataCleanup";
+import { SupplierClass } from "../generated/client";
 
 export const seedOrganizations = async (tx: TransactionClient) => {
   const mapOfOldOrgIdsToNewOrgIds: Partial<Record<number, number>> = {};
@@ -70,6 +71,44 @@ export const seedOrganizations = async (tx: TransactionClient) => {
           ...newAddressSparse,
         },
       });
+    }
+  }
+
+  // update orgs with supplier class:
+  const oldMyrs = await prismaOld.model_year_report.findMany({
+    orderBy: {
+      model_year: {
+        description: "asc",
+      },
+    },
+  });
+  for (const oldMyr of oldMyrs) {
+    const oldOrgId = oldMyr.organization_id;
+    const supplierClass = oldMyr.supplier_class;
+    const newOrgId = mapOfOldOrgIdsToNewOrgIds[oldOrgId];
+    if (supplierClass && newOrgId) {
+      let newSupplierClass;
+      switch (supplierClass) {
+        case "S":
+          newSupplierClass = SupplierClass.SMALL_VOLUME_SUPPLIER;
+          break;
+        case "M":
+          newSupplierClass = SupplierClass.MEDIUM_VOLUME_SUPPLIER;
+          break;
+        case "L":
+          newSupplierClass = SupplierClass.LARGE_VOLUME_SUPPLIER;
+          break;
+      }
+      if (newSupplierClass) {
+        await tx.organization.update({
+          where: {
+            id: newOrgId,
+          },
+          data: {
+            supplierClass: newSupplierClass,
+          },
+        });
+      }
     }
   }
 

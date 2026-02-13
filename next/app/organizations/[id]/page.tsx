@@ -1,6 +1,6 @@
 import { Suspense } from "react";
 import { LoadingSkeleton } from "@/app/lib/components/skeletons";
-import { getOrganizationDetails, getSupplierClassesMap } from "../lib/services";
+import { getOrganizationDetails } from "../lib/services";
 import OrganizationDetails from "../lib/components/OrganizationDetails";
 import { OrganizationPayload, saveOrganization } from "../lib/action";
 import { getUserInfo } from "@/auth";
@@ -23,12 +23,10 @@ const Page = async (props: { params: Promise<{ id: string }> }) => {
       </div>
     );
   }
-  const helpingMap = getSupplierClassEnumsToStringsMap();
-  const supplierClassesMap = await getSupplierClassesMap(organization.id);
-  let supplierClassResult = "N/A";
-  const supplierClass = supplierClassesMap[organization.id];
-  if (supplierClass && helpingMap[supplierClass]) {
-    supplierClassResult = helpingMap[supplierClass];
+  const supplierClassesMap = getSupplierClassEnumsToStringsMap();
+  let supplierClass = "N/A";
+  if (organization.supplierClass) {
+    supplierClass = supplierClassesMap[organization.supplierClass] ?? "N/A";
   }
 
   const canEdit = userRoles.includes("ADMINISTRATOR");
@@ -52,7 +50,7 @@ const Page = async (props: { params: Promise<{ id: string }> }) => {
           isActive={organization.isActive}
           serviceAddress={organization.serviceAddress}
           recordsAddress={organization.recordsAddress}
-          supplierClass={supplierClassResult}
+          supplierClass={supplierClass}
           saleVolumes={organization.LegacySalesVolume}
           supplyVolumes={organization.SupplyVolume}
           users={organization.users}

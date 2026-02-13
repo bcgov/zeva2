@@ -1,6 +1,7 @@
 import Excel from "exceljs";
 import {
   getCompliancePeriod,
+  getCurrentComplianceYear,
   getDominatedComplianceYears,
 } from "@/app/lib/utils/complianceYear";
 import { prisma } from "@/lib/prisma";
@@ -40,7 +41,6 @@ import { TransactionClient } from "@/types/prisma";
 import { AdjustmentPayload, NvValues } from "./actions";
 import { getObject } from "@/app/lib/minio";
 import { getArrayBuffer } from "@/app/lib/utils/parseReadable";
-import { getPrevSupplierVolumes } from "@/app/lib/services/volumes";
 
 export const getSupplierDetails = async (organizationId: number) => {
   const organization = await prisma.organization.findUniqueOrThrow({
@@ -123,11 +123,43 @@ export const getSupplierClassAndVolumes = async (
   volumes: [ModelYear, VehicleClass, number][];
 }> => {
   const vehicleClassToUse = VehicleClass.REPORTABLE;
-  const { precedingMys, volumes } = await getPrevSupplierVolumes(
-    vehicleClassToUse,
-    modelYear,
+  const modelYearsArray = Object.values(ModelYear);
+  const myIndex = modelYearsArray.findIndex((my) => my === modelYear);
+  const precedingMys: ModelYear[] = [];
+  for (let i = 1; i <= 3; i++) {
+    const precedingMy = modelYearsArray[myIndex - i];
+    if (precedingMy) {
+      precedingMys.push(precedingMy);
+    }
+  }
+  if (precedingMys.length !== 3) {
+    throw new Error("Error getting supplier class!");
+  }
+  const whereClause = {
+    OR: [
+      { modelYear: precedingMys[0] },
+      { modelYear: precedingMys[1] },
+      { modelYear: precedingMys[2] },
+    ],
     organizationId,
-  );
+    vehicleClass: vehicleClassToUse,
+    volume: { gt: 0 },
+  };
+  const orderBy: { modelYear: "asc" | "desc" } = {
+    modelYear: "desc",
+  };
+  let volumes: SupplyVolume[] = [];
+  if (modelYear < ModelYear.MY_2024) {
+    volumes = await prisma.legacySalesVolume.findMany({
+      where: whereClause,
+      orderBy,
+    });
+  } else {
+    volumes = await prisma.supplyVolume.findMany({
+      where: whereClause,
+      orderBy,
+    });
+  }
   let average = new Decimal(0);
   if (volumes.length === 3) {
     const total = volumes.reduce((acc, cv) => {
@@ -694,4 +726,41 @@ export const areTransfersCovered = async (
     }
   }
   return true;
+};
+
+export const updateOrgSupplierClass = async (
+  organizationId: number,
+  modelYear: ModelYear,
+  supplierClass: SupplierClass,
+  transactionClient?: TransactionClient,
+) => {
+  const updateClass = async () => {
+    const client = transactionClient ?? prisma;
+    await client.organization.update({
+      where: {
+        id: organizationId,
+      },
+      data: {
+        supplierClass,
+      },
+    });
+  };
+  const currentComplianceYear = getCurrentComplianceYear();
+  if (modelYear < currentComplianceYear) {
+    const dominatedYears = getDominatedComplianceYears(currentComplianceYear);
+    const betweenYears = dominatedYears.filter((y) => y > modelYear);
+    if (betweenYears.length > 0) {
+      const supplyGuard = await prisma.supplyVolume.findFirst({
+        where: { organizationId, modelYear: { in: betweenYears } },
+      });
+      const salesGuard = await prisma.legacySalesVolume.findFirst({
+        where: { organizationId, modelYear: { in: betweenYears } },
+      });
+      if (!supplyGuard && !salesGuard) {
+        await updateClass();
+      }
+    } else {
+      await updateClass();
+    }
+  }
 };

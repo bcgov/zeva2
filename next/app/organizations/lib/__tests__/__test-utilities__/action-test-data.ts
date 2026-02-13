@@ -91,7 +91,7 @@ export const mockFunctions = (opt: {
   mockGetUserInfo(userInfo ?? baseGovUserInfo);
 
   // Create mock data for organization and addresses.
-  const createdOrg: Organization | undefined = orgWithId
+  const createdOrg: Omit<Organization, "supplierClass"> | undefined = orgWithId
     ? {
         ...orgWithId,
       }

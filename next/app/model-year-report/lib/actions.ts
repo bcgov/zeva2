@@ -33,6 +33,7 @@ import {
   getVehicleStatistics,
   updateMyrSupplementaryStatus,
   validateReassesmentTimeLimit,
+  updateOrgSupplierClass,
 } from "./services";
 import {
   DataOrErrorActionResponse,
@@ -679,6 +680,12 @@ export const assessModelYearReport = async (
       await tx.supplyVolume.createMany({
         data: nvData,
       });
+      await updateOrgSupplierClass(
+        organizationId,
+        modelYear,
+        assessmentData.supplierClass,
+        tx,
+      );
       await tx.zevUnitTransaction.createMany({
         data: assessmentData.transactions.map((transaction) => {
           return {
@@ -1041,6 +1048,12 @@ export const issueReassessment = async (
         await tx.supplyVolume.upsert(clause);
       }
     }
+    await updateOrgSupplierClass(
+      organizationId,
+      modelYear,
+      reassessmentData.supplierClass,
+      tx,
+    );
     await tx.zevUnitTransaction.deleteMany({
       where: {
         organizationId,
