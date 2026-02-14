@@ -1,6 +1,5 @@
 import { JSX } from "react";
 import { getModelMismatchesMap } from "../data";
-import { randomUUID } from "crypto";
 
 export const ModelNameMismatches = async (props: {
   creditApplicationId: number;
@@ -11,19 +10,19 @@ export const ModelNameMismatches = async (props: {
     if (map) {
       rows.push(
         <tr key={modelName}>
-          <td key="rowNumber">{index + 1}</td>
-          <td key="submittedModelName">{modelName}</td>
-          <td key="icbcModelName">
+          <td className="border border-gray-300">{index + 1}</td>
+          <td className="border border-gray-300">{modelName}</td>
+          <td className="border border-gray-300">
             <ul>
               {Object.keys(map).map((icbcModelName) => (
                 <li key={icbcModelName}>{icbcModelName}</li>
               ))}
             </ul>
           </td>
-          <td key="count">
+          <td className="border border-gray-300">
             <ul>
-              {Object.values(map).map((count) => (
-                <li key={randomUUID()}>{count}</li>
+              {Object.values(map).map((count, index) => (
+                <li key={index}>{count}</li>
               ))}
             </ul>
           </td>
@@ -35,10 +34,10 @@ export const ModelNameMismatches = async (props: {
     <table>
       <thead>
         <tr>
-          <th></th>
-          <th>Submitted Model Name</th>
-          <th>ICBC Model Name</th>
-          <th>Count</th>
+          <th className="border border-gray-300">Index</th>
+          <th className="border border-gray-300">Submitted Model Name</th>
+          <th className="border border-gray-300">ICBC Model Name</th>
+          <th className="border border-gray-300">Count</th>
         </tr>
       </thead>
       <tbody>{rows}</tbody>

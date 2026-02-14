@@ -1,6 +1,5 @@
 import { getUserInfo } from "@/auth";
 import { prisma } from "@/lib/prisma";
-import { organizationLDVSuppliedClause } from "./utils";
 import { AddressType } from "@/prisma/generated/client";
 import { OrganizationAddressSparse } from "./data";
 
@@ -42,7 +41,22 @@ export const getOrganizationDetails = async (id: number) => {
           isActive: true, // Only get active users
         },
       },
-      ldvSupplied: organizationLDVSuppliedClause,
+      SupplyVolume: {
+        select: {
+          vehicleClass: true,
+          modelYear: true,
+          volume: true,
+        },
+        orderBy: [{ vehicleClass: "asc" }, { modelYear: "asc" }],
+      },
+      LegacySalesVolume: {
+        select: {
+          vehicleClass: true,
+          modelYear: true,
+          volume: true,
+        },
+        orderBy: [{ vehicleClass: "asc" }, { modelYear: "asc" }],
+      },
     },
   });
 

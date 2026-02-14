@@ -14,13 +14,13 @@ export const mapOfStatusToSupplierStatus: Readonly<
   Record<CreditApplicationStatus, CreditApplicationSupplierStatus>
 > = {
   [CreditApplicationStatus.APPROVED]: CreditApplicationSupplierStatus.APPROVED,
-  [CreditApplicationStatus.DELETED]: CreditApplicationStatus.DELETED,
   [CreditApplicationStatus.DRAFT]: CreditApplicationStatus.DRAFT,
   [CreditApplicationStatus.RECOMMEND_APPROVAL]:
     CreditApplicationSupplierStatus.SUBMITTED,
-  [CreditApplicationStatus.REJECTED]: CreditApplicationSupplierStatus.REJECTED,
   [CreditApplicationStatus.RETURNED_TO_ANALYST]:
     CreditApplicationSupplierStatus.SUBMITTED,
+  [CreditApplicationStatus.RETURNED_TO_SUPPLIER]:
+    CreditApplicationSupplierStatus.RETURNED_TO_SUPPLIER,
   [CreditApplicationStatus.SUBMITTED]:
     CreditApplicationSupplierStatus.SUBMITTED,
 };

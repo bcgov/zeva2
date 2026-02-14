@@ -24,7 +24,7 @@ export enum Directory {
 
 export const getPutObjectData = async (
   numberOfFiles: number,
-  type: "creditApplication" | "vehicle",
+  type: "creditApplication" | "vehicle" | "agreement",
   orgId: number,
 ) => {
   const result: { objectName: string; url: string }[] = [];
@@ -35,6 +35,9 @@ export const getPutObjectData = async (
       break;
     case "vehicle":
       directory = Directory.Vehicle;
+      break;
+    case "agreement":
+      directory = Directory.Agreement;
       break;
   }
   for (let i = 0; i < numberOfFiles; i++) {
@@ -60,13 +63,18 @@ export const getPutObjectData = async (
         data: toCreate,
       });
       break;
+    case "agreement":
+      await prisma.agreementAttachment.createMany({
+        data: toCreate,
+      });
+      break;
   }
   return result;
 };
 
 export const checkAttachments = async (
   attachments: Attachment[],
-  type: "creditApplication" | "vehicle",
+  type: "creditApplication" | "vehicle" | "agreement",
   orgId: number,
 ) => {
   if (attachments.length === 0) {
@@ -95,6 +103,15 @@ export const checkAttachments = async (
         },
       });
       break;
+    case "agreement":
+      attachmentsFound = await prisma.agreementAttachment.findMany({
+        where: {
+          objectName: {
+            in: objectNames,
+          },
+          organizationId: orgId,
+        },
+      });
   }
   if (attachments.length !== attachmentsFound.length) {
     throw new Error("Invalid Attachments!");

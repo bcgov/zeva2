@@ -53,28 +53,39 @@ export const SupplierActions = (props: {
     });
   }, [props.creditApplicationId, comment]);
 
-  if (props.status !== CreditApplicationSupplierStatus.DRAFT) {
-    return null;
-  }
-  return (
-    <>
-      {error && <p className="text-red-600">{error}</p>}
-      <CommentBox
-        comment={comment}
-        setComment={setComment}
-        disabled={isPending}
-      />
-      <Button variant="secondary" onClick={handleDelete} disabled={isPending}>
-        {isPending ? "..." : "Delete"}
-      </Button>
-      <Button variant="secondary" onClick={handleGoToEdit} disabled={isPending}>
-        {isPending ? "..." : "Edit"}
-      </Button>
-      {props.userRoles.includes(Role.SIGNING_AUTHORITY) && (
-        <Button variant="secondary" onClick={handleSubmit} disabled={isPending}>
-          {isPending ? "..." : "Submit"}
+  if (
+    props.status === CreditApplicationSupplierStatus.DRAFT ||
+    props.status === CreditApplicationSupplierStatus.RETURNED_TO_SUPPLIER
+  ) {
+    return (
+      <>
+        {error && <p className="text-red-600">{error}</p>}
+        <CommentBox
+          comment={comment}
+          setComment={setComment}
+          disabled={isPending}
+        />
+        <Button variant="secondary" onClick={handleDelete} disabled={isPending}>
+          {isPending ? "..." : "Delete"}
         </Button>
-      )}
-    </>
-  );
+        <Button
+          variant="secondary"
+          onClick={handleGoToEdit}
+          disabled={isPending}
+        >
+          {isPending ? "..." : "Edit"}
+        </Button>
+        {props.userRoles.includes(Role.SIGNING_AUTHORITY) && (
+          <Button
+            variant="secondary"
+            onClick={handleSubmit}
+            disabled={isPending}
+          >
+            {isPending ? "..." : "Submit"}
+          </Button>
+        )}
+      </>
+    );
+  }
+  return null;
 };

@@ -8,6 +8,8 @@ import {
   ZevClass,
 } from "../generated/client";
 import { prismaOld } from "@/lib/prismaOld";
+import { isZevType } from "@/app/lib/utils/typeGuards";
+import { getStringsToVehicleClassCodeEnumsMap } from "@/app/lib/utils/enumMaps";
 
 export const seedVehicles = async (
   tx: TransactionClient,
@@ -15,13 +17,24 @@ export const seedVehicles = async (
   mapOfOldOrgIdsToNewOrgIds: Partial<Record<number, number>>,
   mapOfOldCreditClassIdsToZevClasses: Partial<Record<number, ZevClass>>,
 ) => {
+  const classCodesMap = getStringsToVehicleClassCodeEnumsMap();
   const vClassIdToEnum: Record<number, VehicleClassCode> = {};
   for (const r of await prismaOld.vehicle_class_code.findMany()) {
-    vClassIdToEnum[r.id] = r.vehicle_class_code as VehicleClassCode;
+    const classCodeEnum = classCodesMap[r.description];
+    if (classCodeEnum) {
+      vClassIdToEnum[r.id] = classCodeEnum;
+    } else {
+      throw new Error(`unknown vehicle class code with id ${r.id}`);
+    }
   }
   const vZevIdToEnum: Record<number, ZevType> = {};
   for (const r of await prismaOld.vehicle_zev_type.findMany()) {
-    vZevIdToEnum[r.id] = r.vehicle_zev_code as ZevType;
+    const zevCode = r.vehicle_zev_code;
+    if (isZevType(zevCode)) {
+      vZevIdToEnum[r.id] = zevCode;
+    } else {
+      throw new Error(`unknown vehicle zev type with id ${r.id}`);
+    }
   }
   const vehiclesOld = await prismaOld.vehicle.findMany({
     where: {

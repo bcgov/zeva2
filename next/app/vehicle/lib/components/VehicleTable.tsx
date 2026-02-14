@@ -13,6 +13,7 @@ export const VehicleTable = (props: {
   vehicles: VehicleSparseSerialized[];
   totalNumbeOfVehicles: number;
   navigationAction: (id: number) => Promise<void>;
+  userIsGov: boolean;
 }) => {
   const columnHelper = createColumnHelper<VehicleSparseSerialized>();
   const modelYearEnumMap = useMemo(() => {
@@ -84,11 +85,7 @@ export const VehicleTable = (props: {
         header: () => <span>Issued Count</span>,
       }),
     ];
-    if (
-      props.vehicles.some((vehicle) => {
-        return vehicle.organization ? true : false;
-      })
-    ) {
+    if (props.userIsGov) {
       result.unshift(
         columnHelper.accessor((row) => row.organization?.name, {
           id: "organization",

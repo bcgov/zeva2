@@ -97,16 +97,16 @@ export const getDocumentDownloadUrls = async (
   if (userIsGov) {
     whereClause.creditApplication = {
       status: {
-        notIn: [CreditApplicationStatus.DELETED, CreditApplicationStatus.DRAFT],
+        notIn: [
+          CreditApplicationStatus.DRAFT,
+          CreditApplicationStatus.RETURNED_TO_SUPPLIER,
+        ],
       },
     };
   }
   if (!userIsGov) {
     whereClause.creditApplication = {
       organizationId: userOrgId,
-      status: {
-        not: CreditApplicationStatus.DELETED,
-      },
     };
   }
   const attachments = await prisma.creditApplicationAttachment.findMany({
@@ -280,13 +280,39 @@ export const supplierDelete = async (
     where: {
       id: creditApplicationId,
       organizationId: userOrgId,
-      status: CreditApplicationStatus.DRAFT,
+      status: {
+        in: [
+          CreditApplicationStatus.DRAFT,
+          CreditApplicationStatus.RETURNED_TO_SUPPLIER,
+        ],
+      },
     },
   });
   if (!creditApplication) {
     return getErrorActionResponse("Invalid Action!");
   }
-  await updateStatus(creditApplicationId, CreditApplicationStatus.DELETED);
+  await prisma.$transaction(async (tx) => {
+    await tx.creditApplicationAttachment.deleteMany({
+      where: {
+        creditApplicationId,
+      },
+    });
+    await tx.creditApplicationHistory.deleteMany({
+      where: {
+        creditApplicationId,
+      },
+    });
+    await tx.creditApplicationRecord.deleteMany({
+      where: {
+        creditApplicationId,
+      },
+    });
+    await tx.creditApplication.delete({
+      where: {
+        id: creditApplicationId,
+      },
+    });
+  });
   return getSuccessActionResponse();
 };
 
@@ -645,7 +671,7 @@ export const analystRecommend = async (
   return getSuccessActionResponse();
 };
 
-export const analystReject = async (
+export const analystReturn = async (
   creditApplicationId: number,
   comment?: string,
 ): Promise<ErrorOrSuccessActionResponse> => {
@@ -692,14 +718,14 @@ export const analystReject = async (
   await prisma.$transaction(async (tx) => {
     await updateStatus(
       creditApplicationId,
-      CreditApplicationStatus.REJECTED,
+      CreditApplicationStatus.RETURNED_TO_SUPPLIER,
       tx,
     );
     await unreserveVins(vinsToUnreserve, tx);
     const historyId = await createHistory(
       userId,
       creditApplicationId,
-      CreditApplicationStatus.REJECTED,
+      CreditApplicationStatus.RETURNED_TO_SUPPLIER,
       comment,
       tx,
     );

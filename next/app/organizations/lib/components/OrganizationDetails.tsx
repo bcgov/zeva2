@@ -1,11 +1,20 @@
 "use client";
-import { $Enums } from "@/prisma/generated/client";
+import {
+  $Enums,
+  ModelYear,
+  Vehicle,
+  VehicleClass,
+} from "@/prisma/generated/client";
 import { enumToTitleString } from "@/lib/utils/convertEnums";
 import { Button } from "@/app/lib/components";
 import { useState } from "react";
 import OrganizationEditForm from "./OrganizationEditForm";
 import { OrganizationPayload } from "../action";
 import { OrganizationAddressSparse } from "../data";
+import {
+  getModelYearEnumsToStringsMap,
+  getVehicleClassEnumsToStringsMap,
+} from "@/app/lib/utils/enumMaps";
 
 type OrganizationUser = {
   id: number;
@@ -56,6 +65,12 @@ const organizationUsers = (users: OrganizationUser[]) => {
   );
 };
 
+type Volume = {
+  vehicleClass: VehicleClass;
+  modelYear: ModelYear;
+  volume: number;
+};
+
 const OrganizationDetails = (props: {
   organizationName: string;
   shortName?: string;
@@ -63,6 +78,8 @@ const OrganizationDetails = (props: {
   serviceAddress?: OrganizationAddressSparse;
   recordsAddress?: OrganizationAddressSparse;
   supplierClass: string;
+  saleVolumes: Volume[];
+  supplyVolumes: Volume[];
   users: OrganizationUser[];
   update?: (data: OrganizationPayload) => Promise<void>;
 }) => {
@@ -83,6 +100,9 @@ const OrganizationDetails = (props: {
       />
     );
   }
+
+  const vehicleClassMap = getVehicleClassEnumsToStringsMap();
+  const modelYearsMap = getModelYearEnumsToStringsMap();
 
   return (
     <div className="space-y-4">
@@ -114,13 +134,66 @@ const OrganizationDetails = (props: {
       </div>
 
       <div>
-        <span className="font-semibold mr-2">Vehicle Supplier Class:</span>
-        {props.supplierClass}
+        <h3 className="font-semibold mr-2">User(s):</h3>
+        {organizationUsers(props.users)}
       </div>
 
       <div>
-        <h3 className="font-semibold mr-2">User(s):</h3>
-        {organizationUsers(props.users)}
+        <span className="font-semibold mr-2">Class:</span>
+        {props.supplierClass}
+      </div>
+
+      <div className="flex flex-row">
+        <div className="w-1/3">
+          <h3 className="font-semibold">Legacy Sales Volumes</h3>
+          <table>
+            <thead>
+              <tr>
+                <th className="border border-gray-300">Vehicle Class</th>
+                <th className="border border-gray-300">Model Year</th>
+                <th className="border border-gray-300">Volume</th>
+              </tr>
+            </thead>
+            <tbody>
+              {props.saleVolumes.map((volume, index) => (
+                <tr key={index}>
+                  <td className="border border-gray-300">
+                    {vehicleClassMap[volume.vehicleClass]}
+                  </td>
+                  <td className="border border-gray-300">
+                    {modelYearsMap[volume.modelYear]}
+                  </td>
+                  <td className="border border-gray-300">{volume.volume}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <div className="w-1/3">
+          <h3 className="font-semibold">Supply Volumes</h3>
+          <table>
+            <thead>
+              <tr>
+                <th className="border border-gray-300">Vehicle Class</th>
+                <th className="border border-gray-300">Model Year</th>
+                <th className="border border-gray-300">Volume</th>
+              </tr>
+            </thead>
+            <tbody>
+              {props.supplyVolumes.map((volume, index) => (
+                <tr key={index}>
+                  <td className="border border-gray-300">
+                    {vehicleClassMap[volume.vehicleClass]}
+                  </td>
+                  <td className="border border-gray-300">
+                    {modelYearsMap[volume.modelYear]}
+                  </td>
+                  <td className="border border-gray-300">{volume.volume}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   );

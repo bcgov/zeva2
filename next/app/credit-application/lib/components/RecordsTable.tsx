@@ -141,13 +141,6 @@ export const RecordsTable = (props: {
         header: () => <span>Model Year</span>,
         size: 100,
       }),
-      columnHelper.accessor((row) => row.icbcTimestamp, {
-        id: "icbcTimestamp",
-        enableSorting: true,
-        enableColumnFilter: true,
-        header: () => <span>ICBC File Date</span>,
-        size: 150,
-      }),
       columnHelper.accessor((row) => row.icbcMake, {
         id: "icbcMake",
         enableSorting: true,

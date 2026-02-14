@@ -12,26 +12,32 @@ datasource db {
 // prisma doesn't allow enum values to start with a number
 // this enum must be in ascending lexicographical order, as well as ascending logical order
 enum ModelYear {
-  MY_2017 @map("2017")
-  MY_2018 @map("2018")
-  MY_2019 @map("2019")
-  MY_2020 @map("2020")
-  MY_2021 @map("2021")
-  MY_2022 @map("2022")
-  MY_2023 @map("2023")
-  MY_2024 @map("2024")
-  MY_2025 @map("2025")
-  MY_2026 @map("2026")
-  MY_2027 @map("2027")
-  MY_2028 @map("2028")
-  MY_2029 @map("2029")
-  MY_2030 @map("2030")
-  MY_2031 @map("2031")
-  MY_2032 @map("2032")
-  MY_2033 @map("2033")
-  MY_2034 @map("2034")
-  MY_2035 @map("2035")
-  MY_2036 @map("2036")
+  MY_2017
+  MY_2018
+  MY_2019
+  MY_2020
+  MY_2021
+  MY_2022
+  MY_2023
+  MY_2024
+  MY_2025
+  MY_2026
+  MY_2027
+  MY_2028
+  MY_2029
+  MY_2030
+  MY_2031
+  MY_2032
+  MY_2033
+  MY_2034
+  MY_2035
+  MY_2036
+}
+
+enum SupplierClass {
+  LARGE_VOLUME_SUPPLIER
+  MEDIUM_VOLUME_SUPPLIER
+  SMALL_VOLUME_SUPPLIER
 }
 
 model Organization {
@@ -40,6 +46,7 @@ model Organization {
   isGovernment                  Boolean                         @default(false) @map("is_government")
   isActive                      Boolean                         @default(true) @map("is_active")
   shortName                     String                          @map("short_name")
+  supplierClass                 SupplierClass?                  @map("supplier_class")
   users                         User[]
   zevUnitTransactions           ZevUnitTransaction[]
   zevUnitEndingBalances         ZevUnitEndingBalance[]
@@ -47,7 +54,6 @@ model Organization {
   creditTransferFrom            CreditTransfer[]                @relation("creditTransferFrom")
   Vehicle                       Vehicle[]
   organizationAddress           OrganizationAddress[]
-  ldvSupplied                   OrganizationLDVSupplied[]
   CreditApplication             CreditApplication[]
   PenaltyCredit                 PenaltyCredit[]
   agreements                    Agreement[]
@@ -59,6 +65,7 @@ model Organization {
   LegacyAssessedModelYearReport LegacyAssessedModelYearReport[]
   vehicleAttachments            VehicleAttachment[]
   creditApplicationAttachments  CreditApplicationAttachment[]
+  agreementAttachments          AgreementAttachment[]
 
   @@map("organization")
 }
@@ -81,35 +88,24 @@ model OrganizationAddress {
   @@map("organization_address")
 }
 
-model OrganizationLDVSupplied {
-  id             Int          @id @default(autoincrement())
-  organization   Organization @relation(fields: [organizationId], references: [id])
-  organizationId Int          @map("organization_id")
-  volume         Int
-  modelYear      ModelYear    @map("model_year")
-
-  @@index([organizationId, modelYear], map: "organization_id_model_year")
-  @@map("organization_ldv_supplied")
-}
-
 enum AddressType {
   RECORDS
   SERVICE
 }
 
 enum Role {
-  ADMINISTRATOR              @map("Administrator")
-  DIRECTOR                   @map("Director")
-  ORGANIZATION_ADMINISTRATOR @map("Organization Administrator")
-  SIGNING_AUTHORITY          @map("Signing Authority")
-  ZEVA_BCEID_USER            @map("ZEVA BCeID User")
-  ZEVA_IDIR_USER             @map("ZEVA IDIR User")
-  ZEVA_IDIR_USER_READ_ONLY   @map("ZEVA IDIR User (read-only)")
+  ADMINISTRATOR
+  DIRECTOR
+  ORGANIZATION_ADMINISTRATOR
+  SIGNING_AUTHORITY
+  ZEVA_BCEID_USER
+  ZEVA_IDIR_USER
+  ZEVA_IDIR_USER_READ_ONLY
 }
 
 enum Idp {
-  AZURE_IDIR     @map("azureidir")
-  BCEID_BUSINESS @map("bceidbusiness")
+  AZURE_IDIR
+  BCEID_BUSINESS
 }
 
 enum Notification {
@@ -278,28 +274,26 @@ enum ZevType {
 }
 
 enum VehicleClassCode {
-  T
-  I
-  S
-  C
-  M
-  L
-  WS
-  WM
-  PS
-  PL
-  US
-  UL
-  V
-  VC
-  VP
-  SP
+  COMPACT
+  FULL_SIZE
+  MID_SIZE
+  MINICOMPACT
+  MINIVAN
+  PICKUP_TRUCK_SMALL
+  PICKUP_TRUCK_STANDARD
+  SPECIAL_PURPOSE_VEHICLE
+  SPORT_UTILITY_VEHICLE_SMALL
+  SPORT_UTILITY_VEHICLE_STANDARD
+  STATION_WAGON_MIDSIZE
+  STATION_WAGON_SMALL
+  SUBCOMPACT
+  TWO_SEATER
+  VAN_CARGO
+  VAN_PASSENGER
 }
 
 enum VehicleStatus {
-  DELETED
   DRAFT
-  REJECTED
   RETURNED_TO_SUPPLIER
   SUBMITTED
   VALIDATED
@@ -332,7 +326,6 @@ model Vehicle {
 }
 
 enum VehicleHistoryStatus {
-  REJECTED
   RETURNED_TO_SUPPLIER
   SUBMITTED
   VALIDATED
@@ -396,19 +389,17 @@ model IcbcRecord {
 
 enum CreditApplicationStatus {
   APPROVED
-  DELETED
   DRAFT
   RECOMMEND_APPROVAL
-  REJECTED
   RETURNED_TO_ANALYST
+  RETURNED_TO_SUPPLIER
   SUBMITTED
 }
 
 enum CreditApplicationSupplierStatus {
   APPROVED
-  DELETED
   DRAFT
-  REJECTED
+  RETURNED_TO_SUPPLIER
   SUBMITTED
 }
 
@@ -440,8 +431,8 @@ model CreditApplication {
 enum CreditApplicationHistoryStatus {
   APPROVED
   RECOMMEND_APPROVAL
-  REJECTED
   RETURNED_TO_ANALYST
+  RETURNED_TO_SUPPLIER
   SUBMITTED
 }
 
@@ -475,7 +466,6 @@ model CreditApplicationRecord {
   icbcMake            String?           @map("icbc_make")
   icbcModelName       String?           @map("icbc_model_name")
   icbcModelYear       ModelYear?        @map("icbc_model_year")
-  icbcTimestamp       DateTime?         @map("icbc_timestamp") @db.Timestamptz(6)
   validated           Boolean
   reason              String?
   warnings            String[]
@@ -544,30 +534,20 @@ enum AgreementType {
 
 enum AgreementStatus {
   DRAFT
+  ISSUED
   RECOMMEND_APPROVAL
   RETURNED_TO_ANALYST
-  ISSUED
-  DELETED
-}
-
-enum AgreementUserAction {
-  SAVED
-  RECOMMEND_APPROVAL
-  RETURNED_TO_ANALYST
-  ISSUED
-  DELETED
-  ADDED_COMMENT_GOV_INTERNAL
 }
 
 model Agreement {
   id                  Int                   @id @default(autoincrement())
-  referenceId         String?               @map("reference_id")
   organization        Organization          @relation(fields: [organizationId], references: [id])
   organizationId      Int                   @map("organization_id")
   agreementType       AgreementType         @map("agreement_type")
   status              AgreementStatus
-  effectiveDate       DateTime?             @map("effective_date") @db.Date
-  comment             String?
+  date                String
+  aCredits            Decimal               @map("a_credits") @db.Decimal(65, 2)
+  bCredits            Decimal               @map("b_credits") @db.Decimal(65, 2)
   agreementContent    AgreementContent[]
   agreementHistory    AgreementHistory[]
   agreementAttachment AgreementAttachment[]
@@ -576,46 +556,45 @@ model Agreement {
 }
 
 model AgreementContent {
-  id            Int       @id @default(autoincrement())
-  agreement     Agreement @relation(fields: [agreementId], references: [id])
-  agreementId   Int       @map("agreement_id")
-  zevClass      ZevClass  @map("zev_class")
-  modelYear     ModelYear @map("model_year")
-  numberOfUnits Decimal   @map("number_of_units") @db.Decimal(65, 2)
+  id            Int          @id @default(autoincrement())
+  agreement     Agreement    @relation(fields: [agreementId], references: [id])
+  agreementId   Int          @map("agreement_id")
+  vehicleClass  VehicleClass @map("vehicle_class")
+  zevClass      ZevClass     @map("zev_class")
+  modelYear     ModelYear    @map("model_year")
+  numberOfUnits Decimal      @map("number_of_units") @db.Decimal(65, 2)
 
   @@map("agreement_content")
 }
 
+enum AgreementHistoryStatus {
+  ISSUED
+  RECOMMEND_APPROVAL
+  RETURNED_TO_ANALYST
+}
+
 model AgreementHistory {
-  id               Int                 @id @default(autoincrement())
-  agreementId      Int                 @map("agreement_id")
-  agreement        Agreement           @relation(fields: [agreementId], references: [id])
-  userId           Int                 @map("user_id")
-  user             User                @relation(fields: [userId], references: [id])
-  timestamp        DateTime            @default(now()) @db.Timestamptz(6)
-  userAction       AgreementUserAction @map("user_action")
-  agreementComment AgreementComment?
+  id          Int                    @id @default(autoincrement())
+  agreementId Int                    @map("agreement_id")
+  agreement   Agreement              @relation(fields: [agreementId], references: [id])
+  userId      Int                    @map("user_id")
+  user        User                   @relation(fields: [userId], references: [id])
+  timestamp   DateTime               @default(now()) @db.Timestamptz(6)
+  userAction  AgreementHistoryStatus @map("user_action")
+  comment     String?
 
   @@map("agreement_history")
 }
 
-model AgreementComment {
-  id                 Int              @id @default(autoincrement())
-  agreementHistoryId Int              @unique @map("agreement_history_id")
-  agreementHistory   AgreementHistory @relation(fields: [agreementHistoryId], references: [id])
-  comment            String
-
-  @@map("agreement_comment")
-}
-
 model AgreementAttachment {
-  id          Int       @id @default(autoincrement())
-  agreementId Int       @map("agreement_id")
-  agreement   Agreement @relation(fields: [agreementId], references: [id])
-  fileName    String    @map("file_name")
-  objectName  String    @map("object_name")
+  id             Int          @id @default(autoincrement())
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  organizationId Int          @map("organization_id")
+  agreementId    Int?         @map("agreement_id")
+  agreement      Agreement?   @relation(fields: [agreementId], references: [id])
+  fileName       String?      @map("file_name")
+  objectName     String       @unique @map("object_name")
 
-  @@index([objectName], map: "object_name")
   @@map("agreement_attachment")
 }
 
@@ -670,12 +649,6 @@ enum SupplementaryReportStatus {
   ACKNOWLEDGED
   DRAFT
   SUBMITTED
-}
-
-enum SupplierClass {
-  LARGE_VOLUME_SUPPLIER
-  MEDIUM_VOLUME_SUPPLIER
-  SMALL_VOLUME_SUPPLIER
 }
 
 model ModelYearReport {

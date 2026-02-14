@@ -125,7 +125,7 @@ export const getRecordsWhereClause = (
       result[key] = {
         in: getMatchingTerms(modelYearsMap, value),
       };
-    } else if (key === "timestamp" || key === "icbcTimestamp") {
+    } else if (key === "timestamp") {
       const [isValidDate, date] = validateDate(value);
       if (isValidDate) {
         result[key] = date;
@@ -193,7 +193,6 @@ export const getRecordsOrderByClause = (
         key === "make" ||
         key === "modelName" ||
         key === "modelYear" ||
-        key === "icbcTimestamp" ||
         key === "icbcMake" ||
         key === "icbcModelName" ||
         key === "icbcModelYear" ||
@@ -215,8 +214,8 @@ export const getRecordsOrderByClause = (
 
 export type CreditApplicationRecordSparseSerialized = Omit<
   CreditApplicationRecordSparse,
-  "timestamp" | "icbcTimestamp"
-> & { timestamp: string; icbcTimestamp: string | null };
+  "timestamp"
+> & { timestamp: string };
 
 export const getSerializedRecords = (
   records: CreditApplicationRecordSparse[],
@@ -226,9 +225,6 @@ export const getSerializedRecords = (
     result.push({
       ...record,
       timestamp: getIsoYmdString(record.timestamp),
-      icbcTimestamp: record.icbcTimestamp
-        ? getIsoYmdString(record.icbcTimestamp)
-        : null,
     });
   });
   return result;
