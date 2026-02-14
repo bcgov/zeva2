@@ -7,6 +7,7 @@ import {
   VehicleStatus,
   ZevType,
   ZevClass,
+  AgreementType,
 } from "@/prisma/generated/client";
 
 export const isTransactionType = (s: string): s is TransactionType => {
@@ -54,5 +55,11 @@ export const isVehicleStatus = (s: string): s is VehicleStatus => {
 export const isVehicleClassCode = (s: string): s is VehicleClassCode => {
   return Object.keys(VehicleClassCode).some((classCode) => {
     return classCode === s;
+  });
+};
+
+export const isAgreementType = (s: string): s is AgreementType => {
+  return Object.keys(AgreementType).some((type) => {
+    return type === s;
   });
 };

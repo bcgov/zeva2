@@ -10,7 +10,7 @@ import { OrganizationAddressSparse } from "./data";
 
 export type OrganizationPayload = Omit<
   Organization,
-  "id" | "firstModelYear"
+  "id" | "firstModelYear" | "supplierClass"
 > & {
   serviceAddress?: OrganizationAddressSparse;
   recordsAddress?: OrganizationAddressSparse;

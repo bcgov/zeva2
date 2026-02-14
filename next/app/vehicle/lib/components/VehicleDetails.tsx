@@ -6,6 +6,7 @@ type VehicleProps = {
 };
 import {
   getModelYearEnumsToStringsMap,
+  getVehicleClassCodeEnumsToStringsMap,
   getVehicleClassEnumsToStringsMap,
   getVehicleStatusEnumsToStringsMap,
   getZevClassEnumsToStringsMap,
@@ -15,6 +16,7 @@ export const VehicleDetails = async ({ vehicle }: VehicleProps) => {
   const zevClassesMap = getZevClassEnumsToStringsMap();
   const modelYearsMap = getModelYearEnumsToStringsMap();
   const statusMap = getVehicleStatusEnumsToStringsMap();
+  const classCodesMap = getVehicleClassCodeEnumsToStringsMap();
   if (vehicle) {
     const { userIsGov } = await getUserInfo();
     return (
@@ -36,7 +38,9 @@ export const VehicleDetails = async ({ vehicle }: VehicleProps) => {
           US06 Range at least 16 km:{" "}
           {vehicle?.us06RangeGte16 ? "Yes" : "No or Unknown"}
         </li>
-        <li key="bodyType">Body Type: {vehicle.vehicleClassCode}</li>
+        <li key="bodyType">
+          Body Type: {classCodesMap[vehicle.vehicleClassCode]}
+        </li>
         <li key="range">Electric EPA Range (km): {vehicle.range}</li>
         <li key="weigt=ht"> Weight (kg): {vehicle.weight}</li>
         <li key="vehicleClass">

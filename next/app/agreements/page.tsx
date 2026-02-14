@@ -6,34 +6,28 @@ import { AgreementList } from "./lib/components/AgreementList";
 import { Button } from "@/app/lib/components";
 import { Routes } from "@/app/lib/constants";
 import { Role } from "@/prisma/generated/client";
+import Link from "next/link";
 
 const Page = async (props: { searchParams?: Promise<pageStringParams> }) => {
   const searchParams = await props.searchParams;
   const { page, pageSize, filters, sorts } = getPageParams(searchParams, 1, 10);
   const { userIsGov, userRoles } = await getUserInfo();
-
-  if (!userIsGov) {
-    return (
-      <div className="p-6 font-semibold">
-        You do not have access to this page.
-      </div>
-    );
-  }
-
-  const canCreateNewAgreement = userRoles.includes(Role.ZEVA_IDIR_USER);
+  const canCreateNewAgreement =
+    userIsGov && userRoles.includes(Role.ZEVA_IDIR_USER);
 
   return (
     <Suspense key={Date.now()} fallback={<LoadingSkeleton />}>
       {canCreateNewAgreement && (
-        <a href={`${Routes.CreditAgreements}/new`}>
-          <Button variant="primary">New Agreement</Button>
-        </a>
+        <Link href={`${Routes.CreditAgreements}/new`}>
+          <Button variant="primary">Create a New Agreement</Button>
+        </Link>
       )}
       <AgreementList
         page={page}
         pageSize={pageSize}
         filters={filters}
         sorts={sorts}
+        userIsGov={userIsGov}
       />
     </Suspense>
   );

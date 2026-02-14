@@ -2,6 +2,7 @@ import { getVehicles, VehicleSparse } from "../data";
 import { redirect } from "next/navigation";
 import { Routes } from "@/app/lib/constants";
 import { VehicleTable } from "./VehicleTable";
+import { getUserInfo } from "@/auth";
 
 export type VehicleSparseSerialized = Omit<
   VehicleSparse,
@@ -17,6 +18,7 @@ export const VehicleList = async (props: {
   filters: Record<string, string>;
   sorts: Record<string, string>;
 }) => {
+  const { userIsGov } = await getUserInfo();
   const navigationAction = async (id: number) => {
     "use server";
     redirect(`${Routes.Vehicle}/${id}`);
@@ -42,6 +44,7 @@ export const VehicleList = async (props: {
       vehicles={serializedVehicles}
       totalNumbeOfVehicles={totalNumberOfVehicles}
       navigationAction={navigationAction}
+      userIsGov={userIsGov}
     />
   );
 };

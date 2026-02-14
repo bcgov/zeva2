@@ -11,9 +11,12 @@ import {
 import { useRouter } from "next/navigation";
 import { getVehicleAttachmentsPutData, supplierSave } from "../actions";
 import { Routes } from "@/app/lib/constants";
-import { VehicleClassCode, ZevType } from "@/prisma/generated/client";
+import { ZevType } from "@/prisma/generated/client";
 import { getVehiclePayload } from "../utilsClient";
-import { getStringsToModelYearsEnumsMap } from "@/app/lib/utils/enumMaps";
+import {
+  getStringsToModelYearsEnumsMap,
+  getStringsToVehicleClassCodeEnumsMap,
+} from "@/app/lib/utils/enumMaps";
 import { Dropzone } from "@/app/lib/components/Dropzone";
 import { FileWithPath } from "react-dropzone";
 import { Button } from "@/app/lib/components";
@@ -74,6 +77,10 @@ export const VehicleForm = (props: {
     };
     initializeForm();
   }, [props.vehicle]);
+
+  const classCodesMap = useMemo(() => {
+    return getStringsToVehicleClassCodeEnumsMap();
+  }, []);
 
   const handleChange = useCallback((key: string, value: string) => {
     if (key === "us06" && value === "false") {
@@ -216,7 +223,7 @@ export const VehicleForm = (props: {
           }}
         >
           <option value="">--</option>
-          {Object.keys(VehicleClassCode).map((classCode) => (
+          {Object.keys(classCodesMap).map((classCode) => (
             <option key={classCode} value={classCode}>
               {classCode}
             </option>

@@ -2,12 +2,8 @@ import { getUserInfo } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { OrganizationAddress } from "@/prisma/generated/client";
 import { getCurrentBalance, sumBalance } from "@/lib/utils/zevUnit";
-import {
-  filterOrganizations,
-  getSupplierClass,
-  organizationLDVSuppliedClause,
-  sortOrganzations,
-} from "./utils";
+import { filterOrganizations, sortOrganzations } from "./utils";
+import { getSupplierClassEnumsToStringsMap } from "@/app/lib/utils/enumMaps";
 
 export type OrganizationSparse = {
   id: number;
@@ -35,9 +31,9 @@ export const getAllSuppliers = async (
       name: true,
       isActive: true,
       shortName: true,
+      supplierClass: true,
       zevUnitTransactions: true,
       zevUnitEndingBalances: true,
-      ldvSupplied: organizationLDVSuppliedClause,
     },
     where: {
       isGovernment: false,
@@ -47,8 +43,13 @@ export const getAllSuppliers = async (
       name: "asc",
     },
   });
+  const supplierClassesMap = getSupplierClassEnumsToStringsMap();
 
   const supplierInfo = organizations.map((org) => {
+    let supplierClass = "N/A";
+    if (org.supplierClass) {
+      supplierClass = supplierClassesMap[org.supplierClass] ?? "N/A";
+    }
     const balance = getCurrentBalance(
       org.zevUnitEndingBalances,
       org.zevUnitTransactions,
@@ -56,7 +57,7 @@ export const getAllSuppliers = async (
     return {
       id: org.id,
       name: org.name,
-      supplierClass: getSupplierClass(org.ldvSupplied),
+      supplierClass,
       zevUnitBalanceA:
         balance === "deficit"
           ? "DEFICIT"

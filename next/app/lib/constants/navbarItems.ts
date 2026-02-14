@@ -53,6 +53,10 @@ export const navbarMainItems: MenuItem[] = [
 export const navbarSubItems: NavbarSubItems = {
   "Credit Transactions": [
     {
+      label: "Credit Agreements",
+      route: Routes.CreditAgreements,
+    },
+    {
       label: "Credit Applications",
       route: Routes.CreditApplication,
     },
@@ -64,11 +68,6 @@ export const navbarSubItems: NavbarSubItems = {
     {
       label: "Credit Transfers",
       route: Routes.CreditTransfers,
-    },
-    {
-      label: "Credit Agreements",
-      route: Routes.CreditAgreements,
-      roles: govRoles,
     },
     {
       label: "Penalty Credits",

@@ -38,9 +38,8 @@ export const getCreditApplication = async (
       {
         status: {
           in: [
-            CreditApplicationStatus.DELETED,
             CreditApplicationStatus.DRAFT,
-            CreditApplicationStatus.REJECTED,
+            CreditApplicationStatus.RETURNED_TO_SUPPLIER,
           ],
         },
       },
@@ -60,9 +59,6 @@ export const getCreditApplication = async (
     whereClause = {
       ...whereClause,
       organizationId: userOrgId,
-      NOT: {
-        status: CreditApplicationStatus.DELETED,
-      },
     };
   }
   return await prisma.creditApplication.findUnique({
@@ -192,9 +188,8 @@ export const getCreditApplications = async (
       {
         status: {
           in: [
-            CreditApplicationStatus.DELETED,
             CreditApplicationStatus.DRAFT,
-            CreditApplicationStatus.REJECTED,
+            CreditApplicationStatus.RETURNED_TO_SUPPLIER,
           ],
         },
       },
@@ -211,9 +206,6 @@ export const getCreditApplications = async (
     }
   } else {
     where.organizationId = userOrgId;
-    where.NOT = {
-      status: CreditApplicationStatus.DELETED,
-    };
   }
   return await prisma.$transaction([
     prisma.creditApplication.findMany({
@@ -261,7 +253,7 @@ export const getApplicationHistories = async (
     where.userAction = {
       in: [
         CreditApplicationStatus.APPROVED,
-        CreditApplicationStatus.REJECTED,
+        CreditApplicationStatus.RETURNED_TO_SUPPLIER,
         CreditApplicationStatus.SUBMITTED,
       ],
     };
@@ -330,13 +322,13 @@ export const getApplicationStatistics = async (creditApplicationId: number) => {
   const { userIsGov, userOrgId } = await getUserInfo();
   const whereClause: Prisma.CreditApplicationWhereUniqueInput = {
     id: creditApplicationId,
-    NOT: {
-      status: CreditApplicationStatus.DELETED,
-    },
   };
   if (userIsGov) {
     whereClause.status = {
-      not: CreditApplicationStatus.DRAFT,
+      notIn: [
+        CreditApplicationStatus.DRAFT,
+        CreditApplicationStatus.RETURNED_TO_SUPPLIER,
+      ],
     };
   } else {
     whereClause.organizationId = userOrgId;

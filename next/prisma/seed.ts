@@ -39,10 +39,7 @@ const main = () => {
       }
 
       // seed organization tables
-      const { mapOfOldOrgIdsToNewOrgIds } = await seedOrganizations(
-        tx,
-        mapOfModelYearIdsToModelYearEnum,
-      );
+      const mapOfOldOrgIdsToNewOrgIds = await seedOrganizations(tx);
 
       // seed user tables
       const mapOfOldUserIdsToNewUserIds = await seedUsers(

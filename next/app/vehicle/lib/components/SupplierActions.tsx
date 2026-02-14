@@ -104,13 +104,6 @@ export const SupplierActions = (props: {
       </Button>
     );
   }
-  if (props.status === VehicleStatus.REJECTED) {
-    return (
-      <Button variant="secondary" onClick={handleDelete} disabled={isPending}>
-        {isPending ? "..." : "Delete"}
-      </Button>
-    );
-  }
   if (
     props.status === VehicleStatus.DRAFT ||
     props.status === VehicleStatus.RETURNED_TO_SUPPLIER

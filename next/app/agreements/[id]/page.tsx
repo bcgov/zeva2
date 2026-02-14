@@ -1,82 +1,72 @@
 import { getUserInfo } from "@/auth";
 import { AgreementDetails } from "../lib/components/AgreementDetails";
-import { getAgreementDetails } from "../lib/services";
-import { AgreementStatus, Role } from "@/prisma/generated/client";
-import { addComment, updateStatus } from "../lib/action";
-import { redirect } from "next/navigation";
-import { Routes } from "@/app/lib/constants/Routes";
+import { Role } from "@/prisma/generated/client";
+import { getAgreement } from "../lib/data";
+import { AnalystActions } from "../lib/components/AnalystActions";
+import { DirectorActions } from "../lib/components/DirectorActions";
+import { AttachmentsList } from "@/app/lib/components/AttachmentsList";
+import { AttachmentsDownload } from "@/app/lib/components/AttachmentsDownload";
+import { getAgreementAttachmentDownloadUrls } from "../lib/actions";
+import { Attachment } from "@/app/lib/services/attachments";
+import { AgreementHistory } from "../lib/components/AgreementHistory";
 
 const Page = async (props: { params: Promise<{ id: string }> }) => {
-  const [{ id }, { userRoles }] = await Promise.all([
+  const [{ id }, { userIsGov, userRoles }] = await Promise.all([
     props.params,
     getUserInfo(),
   ]);
-  const agreementId = parseInt(id);
-  const agreement = isNaN(agreementId)
-    ? null
-    : await getAgreementDetails(agreementId);
+  const agreementId = Number.parseInt(id, 10);
+  const agreement = await getAgreement(agreementId);
   if (!agreement) {
-    return (
-      <div className="p-6 font-semibold">
-        Invalid agreement ID or you do not have access to it.
-      </div>
-    );
+    return null;
   }
-
-  const forAnalyst =
-    userRoles.includes(Role.ZEVA_IDIR_USER) &&
-    (agreement.status === AgreementStatus.DRAFT ||
-      agreement.status === AgreementStatus.RETURNED_TO_ANALYST);
-
-  const forDirector =
-    userRoles.includes(Role.DIRECTOR) &&
-    agreement.status === AgreementStatus.RECOMMEND_APPROVAL;
-
-  const handleStatusChange = (newStatus: AgreementStatus, enabled: boolean) => {
-    if (enabled) {
-      return async () => {
-        "use server";
-        if (await updateStatus(agreementId, newStatus)) {
-          redirect(Routes.CreditAgreements);
-        } else {
-          redirect(`${Routes.CreditAgreements}/error`);
-        }
-      };
+  const status = agreement.status;
+  let actions;
+  if (userIsGov && userRoles.includes(Role.ZEVA_IDIR_USER)) {
+    actions = <AnalystActions agreementId={agreementId} status={status} />;
+  } else if (userIsGov && userRoles.includes(Role.DIRECTOR)) {
+    actions = <DirectorActions agreementId={agreementId} status={status} />;
+  }
+  const attachments: Attachment[] = [];
+  for (const att of agreement.agreementAttachment) {
+    if (att.fileName) {
+      attachments.push({
+        fileName: att.fileName,
+        objectName: crypto.randomUUID(),
+      });
     }
-    return undefined;
-  };
-
-  const handleAddComment = async (comment: string) => {
+  }
+  const download = async () => {
     "use server";
-    return await addComment(agreementId, comment);
+    return getAgreementAttachmentDownloadUrls(agreementId);
   };
 
   return (
     <div className="p-6">
+      <AgreementHistory agreementId={agreementId} />
       <AgreementDetails
-        agreement={agreement}
-        backLink={Routes.CreditAgreements}
-        editLink={
-          forAnalyst ? `${Routes.CreditAgreements}/${id}/edit` : undefined
-        }
-        handleRecommendApproval={handleStatusChange(
-          AgreementStatus.RECOMMEND_APPROVAL,
-          forAnalyst,
-        )}
-        handleReturnToAnalyst={handleStatusChange(
-          AgreementStatus.RETURNED_TO_ANALYST,
-          forDirector,
-        )}
-        handleIssueAgreement={handleStatusChange(
-          AgreementStatus.ISSUED,
-          forDirector,
-        )}
-        handleDeleteAgreement={handleStatusChange(
-          AgreementStatus.DELETED,
-          forAnalyst,
-        )}
-        handleAddComment={handleAddComment}
+        id={agreement.id}
+        supplier={agreement.organization.name}
+        type={agreement.agreementType}
+        status={status}
+        date={agreement.date}
+        content={agreement.agreementContent}
       />
+      <div className="mt-4">
+        <p className={"py-1 font-semibold text-primaryBlue"}>
+          Supporting Documents
+        </p>
+        <div className={"p-2 border border-gray-300 rounded bg-white"}>
+          <AttachmentsList className="mb-3" attachments={attachments} />
+          {attachments.length > 0 && (
+            <AttachmentsDownload
+              download={download}
+              zipName={`agreement_${agreementId}_attachments.zip`}
+            />
+          )}
+        </div>
+      </div>
+      {actions}
     </div>
   );
 };

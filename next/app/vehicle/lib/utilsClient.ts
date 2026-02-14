@@ -1,12 +1,9 @@
 import { VehiclePayload } from "./actions";
 import { Decimal } from "@prisma/client/runtime/index-browser.js";
-import {
-  isModelYear,
-  isVehicleClassCode,
-  isZevType,
-} from "@/app/lib/utils/typeGuards";
+import { isModelYear, isZevType } from "@/app/lib/utils/typeGuards";
 import { ModelYear } from "@/prisma/generated/client";
 import { VehicleFormData } from "./components/VehicleForm";
+import { getStringsToVehicleClassCodeEnumsMap } from "@/app/lib/utils/enumMaps";
 
 export const getVehiclePayload = (data: VehicleFormData): VehiclePayload => {
   if (
@@ -26,7 +23,9 @@ export const getVehiclePayload = (data: VehicleFormData): VehiclePayload => {
   if (!isZevType(data.zevType)) {
     throw new Error("Invalid ZEV Type!");
   }
-  if (!isVehicleClassCode(data.bodyType)) {
+  const classCodesMap = getStringsToVehicleClassCodeEnumsMap();
+  const classCode = classCodesMap[data.bodyType];
+  if (!classCode) {
     throw new Error("Invalid Body type!");
   }
   try {
@@ -53,7 +52,7 @@ export const getVehiclePayload = (data: VehicleFormData): VehiclePayload => {
     modelName: data.modelName,
     us06RangeGte16: data.us06 === "true",
     range,
-    vehicleClassCode: data.bodyType,
+    vehicleClassCode: classCode,
     zevType: data.zevType,
     weight,
   };

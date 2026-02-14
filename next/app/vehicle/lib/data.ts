@@ -45,19 +45,11 @@ export const getVehicles = async (
     select = { ...select, organization: { select: { name: true } } };
     where.NOT = {
       status: {
-        in: [
-          VehicleStatus.DELETED,
-          VehicleStatus.DRAFT,
-          VehicleStatus.REJECTED,
-          VehicleStatus.RETURNED_TO_SUPPLIER,
-        ],
+        in: [VehicleStatus.DRAFT, VehicleStatus.RETURNED_TO_SUPPLIER],
       },
     };
   } else {
     where.organizationId = userOrgId;
-    where.NOT = {
-      status: VehicleStatus.DELETED,
-    };
   }
   return await prisma.$transaction([
     prisma.vehicle.findMany({
@@ -84,20 +76,13 @@ export const getVehicle = async (
   const { userIsGov, userOrgId } = await getUserInfo();
   let whereClause: Prisma.VehicleWhereUniqueInput = {
     id: vehicleId,
-    status: {
-      not: VehicleStatus.DELETED,
-    },
   };
   if (!userIsGov) {
     whereClause.organizationId = userOrgId;
   } else {
     whereClause.NOT = {
       status: {
-        in: [
-          VehicleStatus.DRAFT,
-          VehicleStatus.REJECTED,
-          VehicleStatus.RETURNED_TO_SUPPLIER,
-        ],
+        in: [VehicleStatus.DRAFT, VehicleStatus.RETURNED_TO_SUPPLIER],
       },
     };
   }
@@ -118,11 +103,6 @@ export const getVehicleHistories = async (vehicleId: number) => {
   const { userIsGov, userOrgId } = await getUserInfo();
   let whereClause: Prisma.VehicleHistoryWhereInput = {
     vehicleId: vehicleId,
-    vehicle: {
-      status: {
-        not: VehicleStatus.DELETED,
-      },
-    },
   };
   if (!userIsGov) {
     whereClause.vehicle = {
@@ -132,11 +112,7 @@ export const getVehicleHistories = async (vehicleId: number) => {
     whereClause.NOT = {
       vehicle: {
         status: {
-          in: [
-            VehicleStatus.DRAFT,
-            VehicleStatus.REJECTED,
-            VehicleStatus.RETURNED_TO_SUPPLIER,
-          ],
+          in: [VehicleStatus.DRAFT, VehicleStatus.RETURNED_TO_SUPPLIER],
         },
       },
     };

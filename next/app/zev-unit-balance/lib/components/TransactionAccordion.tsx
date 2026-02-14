@@ -64,6 +64,9 @@ export const TransactionAccordion = ({
       ) {
         return `${Routes.ComplianceReporting}/${referenceId}`;
       }
+      if (referenceType === ReferenceType.AGREEMENT) {
+        return `${Routes.CreditAgreements}/${referenceId}`;
+      }
     },
     [userIsGov],
   );

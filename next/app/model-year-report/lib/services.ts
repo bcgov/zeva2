@@ -1,6 +1,7 @@
 import Excel from "exceljs";
 import {
   getCompliancePeriod,
+  getCurrentComplianceYear,
   getDominatedComplianceYears,
 } from "@/app/lib/utils/complianceYear";
 import { prisma } from "@/lib/prisma";
@@ -19,7 +20,6 @@ import {
   Prisma,
   ReassessmentStatus,
   ReferenceType,
-  Role,
   SupplementaryReportStatus,
   SupplierClass,
   SupplyVolume,
@@ -726,4 +726,41 @@ export const areTransfersCovered = async (
     }
   }
   return true;
+};
+
+export const updateOrgSupplierClass = async (
+  organizationId: number,
+  modelYear: ModelYear,
+  supplierClass: SupplierClass,
+  transactionClient?: TransactionClient,
+) => {
+  const updateClass = async () => {
+    const client = transactionClient ?? prisma;
+    await client.organization.update({
+      where: {
+        id: organizationId,
+      },
+      data: {
+        supplierClass,
+      },
+    });
+  };
+  const currentComplianceYear = getCurrentComplianceYear();
+  if (modelYear < currentComplianceYear) {
+    const dominatedYears = getDominatedComplianceYears(currentComplianceYear);
+    const betweenYears = dominatedYears.filter((y) => y > modelYear);
+    if (betweenYears.length > 0) {
+      const supplyGuard = await prisma.supplyVolume.findFirst({
+        where: { organizationId, modelYear: { in: betweenYears } },
+      });
+      const salesGuard = await prisma.legacySalesVolume.findFirst({
+        where: { organizationId, modelYear: { in: betweenYears } },
+      });
+      if (!supplyGuard && !salesGuard) {
+        await updateClass();
+      }
+    } else {
+      await updateClass();
+    }
+  }
 };
