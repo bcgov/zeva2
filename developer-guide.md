@@ -22,7 +22,7 @@ Please note:
 
 ## Prisma
 
-Prisma is an ORM; we use it with PostgreSQL.
+Prisma is an ORM, and we use it with PostgreSQL.
 
 Documentation: https://www.prisma.io/docs/orm
 
