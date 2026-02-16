@@ -1,7 +1,7 @@
 "use client";
 
 import { Button } from "@/app/lib/components";
-import { ReassessmentStatus } from "@/prisma/generated/client";
+import { ReassessmentStatus } from "@/prisma/generated/enums";
 import { useRouter } from "next/navigation";
 import { useCallback, useState, useTransition } from "react";
 import { issueReassessment, returnReassessment } from "../actions";

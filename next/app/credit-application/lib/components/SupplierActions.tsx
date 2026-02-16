@@ -4,7 +4,7 @@ import { Button } from "@/app/lib/components";
 import {
   CreditApplicationSupplierStatus,
   Role,
-} from "@/prisma/generated/client";
+} from "@/prisma/generated/enums";
 import { useRouter } from "next/navigation";
 import { useCallback, useState, useTransition } from "react";
 import { supplierDelete, supplierSubmit } from "../actions";

@@ -8,7 +8,6 @@ import {
   ModelYear,
   ModelYearReportStatus,
   Notification,
-  Prisma,
   ReassessmentStatus,
   ReferenceType,
   Role,
@@ -16,7 +15,11 @@ import {
   SupplierClass,
   VehicleClass,
   ZevClass,
-} from "@/prisma/generated/client";
+} from "@/prisma/generated/enums";
+import {
+  ModelYearReportUpdateInput,
+  SupplyVolumeCreateManyInput,
+} from "@/prisma/generated/models";
 import {
   createHistory,
   createReassessmentHistory,
@@ -575,7 +578,7 @@ export const returnModelYearReport = async (
       userRoles.includes(Role.ZEVA_IDIR_USER))
   ) {
     await prisma.$transaction(async (tx) => {
-      const updateData: Prisma.ModelYearReportUpdateInput = {
+      const updateData: ModelYearReportUpdateInput = {
         status: returnType,
       };
       if (returnType === ModelYearReportStatus.RETURNED_TO_SUPPLIER) {
@@ -667,7 +670,7 @@ export const assessModelYearReport = async (
         "Issuing this assessment would cause a transfer to become uncovered!",
       );
     }
-    const nvData: Prisma.SupplyVolumeCreateManyInput[] = [];
+    const nvData: SupplyVolumeCreateManyInput[] = [];
     assessmentData.nvValues.forEach(([vehicleClass, volume]) => {
       nvData.push({
         organizationId,

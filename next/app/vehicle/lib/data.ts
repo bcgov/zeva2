@@ -1,15 +1,17 @@
 import { getUserInfo } from "@/auth";
 import { getOrderByClause, getWhereClause } from "./utilsServer";
 import { prisma } from "@/lib/prisma";
+import { VehicleStatus } from "@/prisma/generated/enums";
 import {
-  Organization,
-  Prisma,
-  Vehicle,
-  VehicleStatus,
-} from "@/prisma/generated/client";
+  OrganizationModel,
+  VehicleModel,
+  VehicleSelect,
+  VehicleWhereUniqueInput,
+  VehicleHistoryWhereInput,
+} from "@/prisma/generated/models";
 
 export type VehicleSparse = Omit<
-  Vehicle,
+  VehicleModel,
   "vehicleClassCode" | "weight" | "organizationId" | "us06RangeGte16"
 > & { organization?: { name: string } };
 
@@ -24,7 +26,7 @@ export const getVehicles = async (
   const { userIsGov, userOrgId } = await getUserInfo();
   const skip = (page - 1) * pageSize;
   const take = pageSize;
-  let select: Prisma.VehicleSelect = {
+  let select: VehicleSelect = {
     id: true,
     legacyId: true,
     status: true,
@@ -65,8 +67,8 @@ export const getVehicles = async (
   ]);
 };
 
-export type VehicleWithOrg = Vehicle & {
-  organization: Organization;
+export type VehicleWithOrg = VehicleModel & {
+  organization: OrganizationModel;
   _count: { VehicleAttachment: number };
 };
 
@@ -74,7 +76,7 @@ export const getVehicle = async (
   vehicleId: number,
 ): Promise<VehicleWithOrg | null> => {
   const { userIsGov, userOrgId } = await getUserInfo();
-  let whereClause: Prisma.VehicleWhereUniqueInput = {
+  let whereClause: VehicleWhereUniqueInput = {
     id: vehicleId,
   };
   if (!userIsGov) {
@@ -101,7 +103,7 @@ export const getVehicle = async (
 
 export const getVehicleHistories = async (vehicleId: number) => {
   const { userIsGov, userOrgId } = await getUserInfo();
-  let whereClause: Prisma.VehicleHistoryWhereInput = {
+  let whereClause: VehicleHistoryWhereInput = {
     vehicleId: vehicleId,
   };
   if (!userIsGov) {

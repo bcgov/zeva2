@@ -6,7 +6,7 @@ import {
   VehicleStatus,
   ZevType,
   ZevClass,
-} from "../generated/client";
+} from "../generated/enums";
 import { prismaOld } from "@/lib/prismaOld";
 import { isZevType } from "@/app/lib/utils/typeGuards";
 import { getStringsToVehicleClassCodeEnumsMap } from "@/app/lib/utils/enumMaps";

@@ -4,10 +4,11 @@ import { getCompliancePeriod } from "@/app/lib/utils/complianceYear";
 import { getIsoYmdString } from "@/app/lib/utils/date";
 import { getUserInfo } from "@/auth";
 import { prisma } from "@/lib/prisma";
-import { ModelYear, ZevUnitTransaction } from "@/prisma/generated/client";
+import { ModelYear } from "@/prisma/generated/enums";
+import { ZevUnitTransactionModel } from "@/prisma/generated/models";
 
 export type SerializedZevUnitTransaction = Omit<
-  ZevUnitTransaction,
+  ZevUnitTransactionModel,
   "numberOfUnits" | "timestamp"
 > & { numberOfUnits: string; timestamp: string };
 

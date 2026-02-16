@@ -28,7 +28,7 @@ import {
   VehicleClassCode,
   VehicleStatus,
   ZevClass,
-} from "@/prisma/generated/client";
+} from "@/prisma/generated/enums";
 
 export const getMatchingTerms = <Term>(
   map: Partial<Record<string, Term>>,

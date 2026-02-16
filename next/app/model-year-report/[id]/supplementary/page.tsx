@@ -5,7 +5,7 @@ import {
   getSupplierOwnVehicleStats,
 } from "../../lib/data";
 import { ModelYearReportForm } from "../../lib/components/ModelYearReportForm";
-import { ModelYearReportStatus } from "@/prisma/generated/client";
+import { ModelYearReportStatus } from "@/prisma/generated/enums";
 import { getDataForSupplementary } from "../../lib/services";
 
 const Page = async (props: { params: Promise<{ id: string }> }) => {

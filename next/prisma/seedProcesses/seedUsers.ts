@@ -1,7 +1,7 @@
 import { getStringsToRoleEnumsMap } from "@/app/lib/utils/enumMaps";
 import { prismaOld } from "@/lib/prismaOld";
 import { TransactionClient } from "@/types/prisma";
-import { Idp, Role } from "../generated/client";
+import { Idp, Role } from "../generated/enums";
 import { validateRoles } from "@/app/users/lib/utils";
 
 export const seedUsers = async (

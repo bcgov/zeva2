@@ -2,7 +2,7 @@
 
 import { Modal } from "@/app/lib/components/Modal";
 import { getRoleEnumsToStringsMap } from "@/app/lib/utils/enumMaps";
-import { Role } from "@/prisma/generated/client";
+import { Role } from "@/prisma/generated/enums";
 import {
   Dispatch,
   SetStateAction,

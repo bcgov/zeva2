@@ -1,7 +1,7 @@
 "use client";
 
 import { Button } from "@/app/lib/components";
-import { ModelYearReportStatus } from "@/prisma/generated/client";
+import { ModelYearReportStatus } from "@/prisma/generated/enums";
 import { useRouter } from "next/navigation";
 import { useCallback, useState, useTransition } from "react";
 import { assessModelYearReport, returnModelYearReport } from "../actions";

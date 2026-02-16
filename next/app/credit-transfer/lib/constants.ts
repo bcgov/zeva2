@@ -1,4 +1,4 @@
-import { CreditTransferStatus } from "@/prisma/generated/client";
+import { CreditTransferStatus } from "@/prisma/generated/enums";
 
 export const transferFromSupplierRescindableStatuses: readonly CreditTransferStatus[] =
   [

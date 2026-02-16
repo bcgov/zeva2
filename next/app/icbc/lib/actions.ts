@@ -12,7 +12,7 @@ import { validateDate } from "@/app/lib/utils/date";
 import { getUserInfo } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { addJobToIcbcQueue } from "@/app/lib/services/queue";
-import { IcbcFileStatus } from "@/prisma/generated/client";
+import { IcbcFileStatus } from "@/prisma/generated/enums";
 import { randomUUID } from "crypto";
 import { getIcbcFileFullObjectName } from "./utils";
 

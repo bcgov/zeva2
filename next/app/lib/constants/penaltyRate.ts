@@ -1,4 +1,4 @@
-import { ModelYear } from "@/prisma/generated/client";
+import { ModelYear } from "@/prisma/generated/enums";
 
 export const penaltyRates: Readonly<Partial<Record<ModelYear, string>>> = {
   MY_2019: "5000",

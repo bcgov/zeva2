@@ -10,7 +10,7 @@ import {
 } from "@/app/lib/utils/enumMaps";
 import { Button } from "@/app/lib/components";
 import { getPenaltyCreditPayload } from "../utilsClient";
-import { ZevClass } from "@/prisma/generated/client";
+import { ZevClass } from "@/prisma/generated/enums";
 import { useRouter } from "next/navigation";
 import { Routes } from "@/app/lib/constants";
 

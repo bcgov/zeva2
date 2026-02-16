@@ -1,6 +1,6 @@
-import { Decimal } from "@/prisma/generated/client/runtime/library";
+import { Decimal } from "decimal.js";
 import { AgreementContentPayload } from "./actions";
-import { Prisma, ZevClass } from "@/prisma/generated/client";
+import { ZevClass } from "@/prisma/generated/enums";
 import {
   getMatchingTerms,
   getStringsToAgreementStatusEnumsMap,
@@ -8,6 +8,10 @@ import {
 } from "@/app/lib/utils/enumMaps";
 import { AgreementWithOrgName } from "./data";
 import { ZevUnitRecord } from "@/lib/utils/zevUnit";
+import {
+  AgreementWhereInput,
+  AgreementOrderByWithRelationInput,
+} from "@/prisma/generated/models";
 
 export const getCreditsSum = (content: AgreementContentPayload[]) => {
   let aCredits = new Decimal(0);
@@ -29,8 +33,8 @@ export const getCreditsSum = (content: AgreementContentPayload[]) => {
 
 export const getWhereClause = (
   filters: Record<string, string>,
-): Omit<Prisma.AgreementWhereInput, "NOT"> => {
-  const result: Omit<Prisma.AgreementWhereInput, "NOT"> = {};
+): Omit<AgreementWhereInput, "NOT"> => {
+  const result: Omit<AgreementWhereInput, "NOT"> = {};
   const statusMap = getStringsToAgreementStatusEnumsMap();
   const typeMap = getStringsToAgreementTypeEnumsMap();
   for (const [key, rawValue] of Object.entries(filters)) {
@@ -59,10 +63,10 @@ export const getWhereClause = (
 export const getOrderByClause = (
   sorts: Record<string, string>,
   defaultSortById: boolean,
-): Prisma.AgreementOrderByWithRelationInput[] => {
-  const result: Prisma.AgreementOrderByWithRelationInput[] = [];
+): AgreementOrderByWithRelationInput[] => {
+  const result: AgreementOrderByWithRelationInput[] = [];
   for (const [key, value] of Object.entries(sorts)) {
-    const orderBy: Prisma.AgreementOrderByWithRelationInput = {};
+    const orderBy: AgreementOrderByWithRelationInput = {};
     if (value === "asc" || value === "desc") {
       if (
         key === "id" ||

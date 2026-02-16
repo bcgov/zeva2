@@ -1,6 +1,6 @@
 import { getUserInfo } from "@/auth";
 import { AgreementDetails } from "../lib/components/AgreementDetails";
-import { Role } from "@/prisma/generated/client";
+import { Role } from "@/prisma/generated/enums";
 import { getAgreement } from "../lib/data";
 import { AnalystActions } from "../lib/components/AnalystActions";
 import { DirectorActions } from "../lib/components/DirectorActions";

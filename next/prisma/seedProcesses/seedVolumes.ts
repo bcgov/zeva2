@@ -1,5 +1,5 @@
 import { TransactionClient } from "@/types/prisma";
-import { ModelYear, VehicleClass } from "../generated/client";
+import { ModelYear, VehicleClass } from "../generated/enums";
 import { prismaOld } from "@/lib/prismaOld";
 
 export const seedVolumes = async (

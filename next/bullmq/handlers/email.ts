@@ -4,16 +4,15 @@ import { prisma } from "@/lib/prisma";
 import validator from "validator";
 import {
   CreditApplicationStatus,
-  CreditApplicationSupplierStatus,
   CreditTransferStatus,
   CreditTransferSupplierStatus,
   ModelYearReportStatus,
   ModelYearReportSupplierStatus,
   Notification,
-  Prisma,
   Role,
   VehicleStatus,
-} from "@/prisma/generated/client";
+} from "@/prisma/generated/enums";
+import { UserWhereInput } from "@/prisma/generated/models";
 import { Job } from "bullmq";
 
 export type EmailJobData = {
@@ -240,7 +239,7 @@ export const sendNotificationEmails = async (
   includeAnalysts: boolean,
   includeDirector: boolean,
 ) => {
-  const orClause: Prisma.UserWhereInput[] = [
+  const orClause: UserWhereInput[] = [
     {
       organizationId: {
         in: supplierOrgIds,

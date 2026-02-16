@@ -5,7 +5,7 @@ import { JSX, Suspense } from "react";
 import { VehicleHistories } from "../lib/components/VehicleHistories";
 import { VehicleDetails } from "../lib/components/VehicleDetails";
 import { getVehicle } from "../lib/data";
-import { Role } from "@/prisma/generated/client";
+import { Role } from "@/prisma/generated/enums";
 import { getAttachmentDownloadUrls } from "../lib/actions";
 import { AttachmentsDownload } from "@/app/lib/components/AttachmentsDownload";
 import { SupplierActions } from "../lib/components/SupplierActions";

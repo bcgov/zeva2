@@ -2,7 +2,8 @@
 
 import { getUserInfo } from "@/auth";
 import { prisma } from "@/lib/prisma";
-import { Idp, Role, User } from "@/prisma/generated/client";
+import { Idp, Role } from "@/prisma/generated/enums";
+import { UserModel } from "@/prisma/generated/models";
 import { userIsAdmin } from "./utilsServer";
 import {
   DataOrErrorActionResponse,
@@ -14,7 +15,10 @@ import {
 import { orgIsGovernment } from "./services";
 import { validateRoles } from "./utils";
 
-export type UserPayload = Omit<User, "id" | "idp" | "idpSub" | "notifications">;
+export type UserPayload = Omit<
+  UserModel,
+  "id" | "idp" | "idpSub" | "notifications"
+>;
 
 export const updateUser = async (
   id: number,

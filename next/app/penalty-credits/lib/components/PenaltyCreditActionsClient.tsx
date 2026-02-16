@@ -1,7 +1,7 @@
 "use client";
 
 import { Button } from "@/app/lib/components";
-import { PenaltyCreditStatus } from "@/prisma/generated/client";
+import { PenaltyCreditStatus } from "@/prisma/generated/enums";
 import { useCallback, useState, useTransition } from "react";
 import { directorUpdate } from "../actions";
 import { useRouter } from "next/navigation";

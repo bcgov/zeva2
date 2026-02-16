@@ -2,7 +2,7 @@
 
 import { Button } from "@/app/lib/components";
 import { CommentBox } from "@/app/lib/components/inputs/CommentBox";
-import { CreditTransferStatus } from "@/prisma/generated/client";
+import { CreditTransferStatus } from "@/prisma/generated/enums";
 import { useRouter } from "next/navigation";
 import { useCallback, useState, useTransition } from "react";
 import { rescindTransfer } from "../actions";

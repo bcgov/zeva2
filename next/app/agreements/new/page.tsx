@@ -1,5 +1,5 @@
 import { getUserInfo } from "@/auth";
-import { Role } from "@/prisma/generated/client";
+import { Role } from "@/prisma/generated/enums";
 import { getOrgsMap } from "@/app/lib/data/orgs";
 import { AgreementForm } from "../lib/components/AgreementForm";
 

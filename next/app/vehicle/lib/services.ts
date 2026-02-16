@@ -4,7 +4,7 @@ import {
   ModelYear,
   VehicleHistoryStatus,
   VehicleStatus,
-} from "@/prisma/generated/client";
+} from "@/prisma/generated/enums";
 import { Attachment } from "@/app/lib/services/attachments";
 
 export const createHistory = async (

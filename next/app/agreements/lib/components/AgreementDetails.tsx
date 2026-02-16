@@ -1,4 +1,4 @@
-import { AgreementStatus, AgreementType } from "@/prisma/generated/client";
+import { AgreementStatus, AgreementType } from "@/prisma/generated/enums";
 import { ZevUnitRecord } from "@/lib/utils/zevUnit";
 import {
   getAgreementStatusEnumsToStringsMap,
