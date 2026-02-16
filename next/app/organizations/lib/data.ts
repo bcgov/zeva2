@@ -1,6 +1,6 @@
 import { getUserInfo } from "@/auth";
 import { prisma } from "@/lib/prisma";
-import { OrganizationAddress } from "@/prisma/generated/client";
+import { OrganizationAddressModel } from "@/prisma/generated/models";
 import { getCurrentBalance, sumBalance } from "@/lib/utils/zevUnit";
 import { filterOrganizations, sortOrganzations } from "./utils";
 import { getSupplierClassEnumsToStringsMap } from "@/app/lib/utils/enumMaps";
@@ -14,7 +14,7 @@ export type OrganizationSparse = {
 };
 
 export type OrganizationAddressSparse = Omit<
-  OrganizationAddress,
+  OrganizationAddressModel,
   "id" | "organizationId" | "expirationDate" | "addressType"
 >;
 

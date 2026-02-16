@@ -11,7 +11,7 @@ import {
 import { useRouter } from "next/navigation";
 import { getVehicleAttachmentsPutData, supplierSave } from "../actions";
 import { Routes } from "@/app/lib/constants";
-import { ZevType } from "@/prisma/generated/client";
+import { ModelYear, ZevType } from "@/prisma/generated/enums";
 import { getVehiclePayload } from "../utilsClient";
 import {
   getStringsToModelYearsEnumsMap,
@@ -141,11 +141,19 @@ export const VehicleForm = (props: {
           }}
         >
           <option value="">--</option>
-          {Object.entries(modelYearsMap).map(([key, value]) => (
-            <option key={value} value={value}>
-              {key}
-            </option>
-          ))}
+          {Object.entries(modelYearsMap).map(([key, value]) => {
+            if (
+              value &&
+              value >= ModelYear.MY_2019 &&
+              value <= ModelYear.MY_2035
+            ) {
+              return (
+                <option key={value} value={value}>
+                  {key}
+                </option>
+              );
+            }
+          })}
         </select>
       </div>
       <div className="flex items-center py-2 my-2">

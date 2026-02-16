@@ -3,9 +3,12 @@ import { prisma } from "@/lib/prisma";
 import {
   CreditTransferStatus,
   CreditTransferSupplierStatus,
-  Prisma,
   Role,
-} from "@/prisma/generated/client";
+} from "@/prisma/generated/enums";
+import {
+  CreditTransferWhereUniqueInput,
+  CreditTransferHistoryWhereInput,
+} from "@/prisma/generated/models";
 import { getOrderByClause, getWhereClause } from "./utils";
 
 export type CreditTransferSparse = {
@@ -84,7 +87,7 @@ export const getCreditTransfers = async (
 
 export const getCreditTransfer = async (id: number) => {
   const { userIsGov, userOrgId } = await getUserInfo();
-  const whereClause: Prisma.CreditTransferWhereUniqueInput = { id };
+  const whereClause: CreditTransferWhereUniqueInput = { id };
   if (userIsGov) {
     whereClause.creditTransferHistory = {
       some: {
@@ -109,7 +112,7 @@ export const getCreditTransfer = async (id: number) => {
 
 export const getCreditTransferHistories = async (transferId: number) => {
   const { userIsGov, userOrgId } = await getUserInfo();
-  const whereClause: Prisma.CreditTransferHistoryWhereInput = {
+  const whereClause: CreditTransferHistoryWhereInput = {
     creditTransferId: transferId,
   };
   if (!userIsGov) {

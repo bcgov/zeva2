@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import { AgreementHistoryStatus } from "@/prisma/generated/client";
+import { AgreementHistoryStatus } from "@/prisma/generated/enums";
 import { TransactionClient } from "@/types/prisma";
 import { Attachment } from "@/app/lib/services/attachments";
 

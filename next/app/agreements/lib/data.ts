@@ -1,14 +1,15 @@
 import { getUserInfo } from "@/auth";
 import { prisma } from "@/lib/prisma";
-import {
-  AgreementStatus,
-  Prisma,
-  Role,
-  Agreement,
-} from "@/prisma/generated/client";
+import { AgreementStatus, Role } from "@/prisma/generated/enums";
 import { getWhereClause, getOrderByClause } from "./utilsServer";
+import {
+  AgreementModel,
+  AgreementWhereInput,
+  AgreementWhereUniqueInput,
+  AgreementHistoryWhereInput,
+} from "@/prisma/generated/models";
 
-export type AgreementWithOrgName = Agreement & {
+export type AgreementWithOrgName = AgreementModel & {
   organization: {
     name: string;
   };
@@ -24,7 +25,7 @@ export const getAgreements = async (
   const skip = (page - 1) * pageSize;
   const take = pageSize;
   const orderByClause = getOrderByClause(sorts, true);
-  const whereClause: Prisma.AgreementWhereInput = getWhereClause(filters);
+  const whereClause: AgreementWhereInput = getWhereClause(filters);
   if (userIsGov && userRoles.includes(Role.DIRECTOR)) {
     whereClause.NOT = {
       status: {
@@ -57,7 +58,7 @@ export const getAgreements = async (
 
 export const getAgreement = async (agreementId: number) => {
   const { userIsGov, userOrgId, userRoles } = await getUserInfo();
-  const whereClause: Prisma.AgreementWhereUniqueInput = { id: agreementId };
+  const whereClause: AgreementWhereUniqueInput = { id: agreementId };
   if (userIsGov && userRoles.includes(Role.DIRECTOR)) {
     whereClause.status = {
       in: [AgreementStatus.RECOMMEND_APPROVAL, AgreementStatus.ISSUED],
@@ -97,7 +98,7 @@ export const getAgreement = async (agreementId: number) => {
 
 export const getAgreementHistories = async (agreementId: number) => {
   const { userIsGov, userOrgId } = await getUserInfo();
-  const whereClause: Prisma.AgreementHistoryWhereInput = { agreementId };
+  const whereClause: AgreementHistoryWhereInput = { agreementId };
   if (!userIsGov) {
     whereClause.agreement = {
       organizationId: userOrgId,

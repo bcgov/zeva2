@@ -1,4 +1,4 @@
-import { Role } from "@/prisma/generated/client";
+import { Role } from "@/prisma/generated/enums";
 import { govRoles, supplierRoles } from "./constants";
 
 export const validateRoles = (roles: Role[], rolesAreForGovUser: boolean) => {

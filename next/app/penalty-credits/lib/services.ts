@@ -5,7 +5,7 @@ import {
   BalanceType,
   ModelYear,
   PenaltyCreditStatus,
-} from "@/prisma/generated/client";
+} from "@/prisma/generated/enums";
 import { TransactionClient } from "@/types/prisma";
 import { parseComplianceYear } from "./utils";
 

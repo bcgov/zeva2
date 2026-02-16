@@ -2,8 +2,12 @@ import { UserActiveFilter } from "@/app/lib/constants/filter";
 import { getStringsToRoleEnumsMap } from "@/app/lib/utils/enumMaps";
 import { getUserInfo } from "@/auth";
 import { UserWithOrg } from "@/lib/data/user";
-import { Prisma, Role } from "@/prisma/generated/client";
+import { Role } from "@/prisma/generated/enums";
 import { validateRoles } from "./utils";
+import {
+  UserWhereInput,
+  UserOrderByWithRelationInput,
+} from "@/prisma/generated/models";
 
 export const userConfiguredCorrectly = (user: UserWithOrg) => {
   const userIsGov = user.organization.isGovernment;
@@ -19,8 +23,8 @@ export const userConfiguredCorrectly = (user: UserWithOrg) => {
 export const getWhereClause = (
   filters: Record<string, string>,
   userIsGov: boolean,
-): Prisma.UserWhereInput => {
-  const result: Prisma.UserWhereInput = {};
+): UserWhereInput => {
+  const result: UserWhereInput = {};
   Object.entries(filters).forEach(([key, value]) => {
     if (
       key === "firstName" ||
@@ -74,8 +78,8 @@ export const getOrderByClause = (
   sorts: Record<string, string>,
   defaultSortById: boolean,
   userIsGov: boolean,
-): Prisma.UserOrderByWithRelationInput[] => {
-  const result: Prisma.UserOrderByWithRelationInput[] = [];
+): UserOrderByWithRelationInput[] => {
+  const result: UserOrderByWithRelationInput[] = [];
   Object.entries(sorts).forEach(([key, value]) => {
     if (value === "asc" || value === "desc") {
       if (

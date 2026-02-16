@@ -1,4 +1,4 @@
-import { Role } from "@/prisma/generated/client";
+import { Role } from "@/prisma/generated/enums";
 
 declare module "@auth/core/types" {
   interface User {

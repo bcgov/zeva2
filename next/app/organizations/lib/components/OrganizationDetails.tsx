@@ -1,11 +1,6 @@
 "use client";
-import {
-  $Enums,
-  ModelYear,
-  Vehicle,
-  VehicleClass,
-} from "@/prisma/generated/client";
-import { enumToTitleString } from "@/lib/utils/convertEnums";
+
+import { ModelYear, Role, VehicleClass } from "@/prisma/generated/enums";
 import { Button } from "@/app/lib/components";
 import { useState } from "react";
 import OrganizationEditForm from "./OrganizationEditForm";
@@ -14,13 +9,14 @@ import { OrganizationAddressSparse } from "../data";
 import {
   getModelYearEnumsToStringsMap,
   getVehicleClassEnumsToStringsMap,
+  getRoleEnumsToStringsMap,
 } from "@/app/lib/utils/enumMaps";
 
 type OrganizationUser = {
   id: number;
   firstName: string;
   lastName: string;
-  roles: $Enums.Role[];
+  roles: Role[];
 };
 
 const formattedAddress = (address: OrganizationAddressSparse | undefined) => {
@@ -48,6 +44,7 @@ const organizationUsers = (users: OrganizationUser[]) => {
   if (users.length === 0) {
     return <span>N/A</span>;
   }
+  const rolesMap = getRoleEnumsToStringsMap();
   return (
     <ul>
       {users.map((user) => (
@@ -57,7 +54,7 @@ const organizationUsers = (users: OrganizationUser[]) => {
             className="text-primaryBlue hover:underline"
           >
             {user.firstName} {user.lastName} [
-            {user.roles.map((role) => enumToTitleString(role)).join(" | ")}]
+            {user.roles.map((role) => rolesMap[role]).join(" | ")}]
           </a>
         </li>
       ))}

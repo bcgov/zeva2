@@ -3,14 +3,14 @@
 import { getUserInfo } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import {
-  PenaltyCredit,
   PenaltyCreditStatus,
   ReferenceType,
   Role,
   TransactionType,
-} from "@/prisma/generated/client";
+} from "@/prisma/generated/enums";
+import { PenaltyCreditModel } from "@/prisma/generated/models";
 import { createHistory, validatePenaltyCredit } from "./services";
-import { Decimal } from "@/prisma/generated/client/runtime/library";
+import { Decimal } from "decimal.js";
 import { getPenaltyCreditTransactionDate } from "./utils";
 import {
   DataOrErrorActionResponse,
@@ -21,7 +21,7 @@ import {
 } from "@/app/lib/utils/actionResponse";
 
 export type PenaltyCreditPayload = Omit<
-  PenaltyCredit,
+  PenaltyCreditModel,
   "id" | "status" | "numberOfUnits"
 > & { numberOfUnits: Decimal | string; comment?: string };
 

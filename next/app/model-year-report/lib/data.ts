@@ -4,12 +4,23 @@ import {
   ModelYear,
   ModelYearReportStatus,
   ModelYearReportSupplierStatus,
-  Prisma,
   ReassessmentStatus,
   Role,
   SupplierClass,
   SupplementaryReportStatus,
-} from "@/prisma/generated/client";
+} from "@/prisma/generated/enums";
+import {
+  ModelYearReportWhereUniqueInput,
+  ModelYearReportHistoryWhereInput,
+  ModelYearReportWhereInput,
+  ModelYearReportSelect,
+  ReassessmentWhereUniqueInput,
+  ReassessmentHistoryWhereInput,
+  ReassessmentWhereInput,
+  SupplementaryReportWhereUniqueInput,
+  SupplementaryReportHistoryWhereInput,
+  SupplementaryReportWhereInput,
+} from "@/prisma/generated/models";
 import { getOrderByClause, getWhereClause } from "./utilsServer";
 import { getObject } from "@/app/lib/minio";
 import { getSupplierDetails, getVehicleStatistics } from "./services";
@@ -51,7 +62,7 @@ export const modelYearReportExists = async (modelYear: ModelYear) => {
 
 export const getModelYearReport = async (myrId: number) => {
   const { userIsGov, userOrgId } = await getUserInfo();
-  const whereClause: Prisma.ModelYearReportWhereUniqueInput = { id: myrId };
+  const whereClause: ModelYearReportWhereUniqueInput = { id: myrId };
   if (userIsGov) {
     whereClause.status = {
       notIn: [
@@ -77,7 +88,7 @@ export const getModelYearReport = async (myrId: number) => {
 
 export const getMyrHistory = async (myrId: number) => {
   const { userIsGov, userOrgId } = await getUserInfo();
-  const whereClause: Prisma.ModelYearReportHistoryWhereInput = {
+  const whereClause: ModelYearReportHistoryWhereInput = {
     modelYearReportId: myrId,
   };
   if (!userIsGov) {
@@ -111,7 +122,7 @@ export const getMyrHistory = async (myrId: number) => {
 
 export const getModelYearReportDetails = async (id: number) => {
   const { userIsGov, userOrgId, userRoles } = await getUserInfo();
-  let whereClause: Prisma.ModelYearReportWhereUniqueInput = {
+  let whereClause: ModelYearReportWhereUniqueInput = {
     id,
   };
   if (!userIsGov) {
@@ -190,12 +201,9 @@ export const getModelYearReports = async (
   const skip = (page - 1) * pageSize;
   const take = pageSize;
 
-  const where: Prisma.ModelYearReportWhereInput = getWhereClause(
-    filters,
-    userIsGov,
-  );
+  const where: ModelYearReportWhereInput = getWhereClause(filters, userIsGov);
   const orderBy = getOrderByClause(sorts, true, userIsGov);
-  const select: Prisma.ModelYearReportSelect = {
+  const select: ModelYearReportSelect = {
     id: true,
     modelYear: true,
     status: true,
@@ -252,7 +260,7 @@ export const getModelYearReports = async (
 
 export const getAssessment = async (myrId: number) => {
   const { userIsGov, userOrgId, userRoles } = await getUserInfo();
-  let whereClause: Prisma.ModelYearReportWhereInput = {};
+  let whereClause: ModelYearReportWhereInput = {};
   if (!userIsGov) {
     whereClause.organizationId = userOrgId;
     whereClause.status = ModelYearReportStatus.ASSESSED;
@@ -289,7 +297,7 @@ export const getAssessment = async (myrId: number) => {
 
 export const getReassessment = async (reassessmentId: number) => {
   const { userIsGov, userOrgId, userRoles } = await getUserInfo();
-  const whereClause: Prisma.ReassessmentWhereUniqueInput = {
+  const whereClause: ReassessmentWhereUniqueInput = {
     id: reassessmentId,
   };
   if (userIsGov && userRoles.includes(Role.DIRECTOR)) {
@@ -314,7 +322,7 @@ export const getReassessment = async (reassessmentId: number) => {
 
 export const getReassessmentHistory = async (reassessmentId: number) => {
   const { userIsGov, userOrgId } = await getUserInfo();
-  const whereClause: Prisma.ReassessmentHistoryWhereInput = {
+  const whereClause: ReassessmentHistoryWhereInput = {
     reassessmentId,
   };
   if (!userIsGov) {
@@ -346,7 +354,7 @@ export const getReassessmentHistory = async (reassessmentId: number) => {
 
 export const getReassessments = async (myrId: number) => {
   const { userIsGov, userOrgId, userRoles } = await getUserInfo();
-  const whereClause: Prisma.ReassessmentWhereInput = {
+  const whereClause: ReassessmentWhereInput = {
     modelYearReportId: myrId,
   };
   if (userIsGov && userRoles.includes(Role.DIRECTOR)) {
@@ -367,7 +375,7 @@ export const getReassessments = async (myrId: number) => {
 
 export const getSupplementaryReport = async (suppId: number) => {
   const { userIsGov, userOrgId } = await getUserInfo();
-  const whereClause: Prisma.SupplementaryReportWhereUniqueInput = {
+  const whereClause: SupplementaryReportWhereUniqueInput = {
     id: suppId,
   };
   if (userIsGov) {
@@ -391,7 +399,7 @@ export const getSupplementaryReport = async (suppId: number) => {
 
 export const getSupplementaryHistories = async (suppId: number) => {
   const { userIsGov, userOrgId } = await getUserInfo();
-  const whereClause: Prisma.SupplementaryReportHistoryWhereInput = {
+  const whereClause: SupplementaryReportHistoryWhereInput = {
     supplementaryReportId: suppId,
   };
   if (userIsGov) {
@@ -423,7 +431,7 @@ export const getSupplementaryHistories = async (suppId: number) => {
 
 export const getSupplementaries = async (myrId: number) => {
   const { userIsGov, userOrgId } = await getUserInfo();
-  const whereClause: Prisma.SupplementaryReportWhereInput = {
+  const whereClause: SupplementaryReportWhereInput = {
     modelYearReportId: myrId,
   };
   if (userIsGov) {

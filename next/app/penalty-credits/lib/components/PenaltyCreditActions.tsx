@@ -1,5 +1,5 @@
 import { getUserInfo } from "@/auth";
-import { PenaltyCreditStatus, Role } from "@/prisma/generated/client";
+import { PenaltyCreditStatus, Role } from "@/prisma/generated/enums";
 import { getPenaltyCredit } from "../data";
 import { PenaltyCreditActionsClient } from "./PenaltyCreditActionsClient";
 

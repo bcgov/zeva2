@@ -1,4 +1,4 @@
-import { Decimal } from "@/prisma/generated/client/runtime/index-browser";
+import { Decimal } from "decimal.js";
 
 export const validateNumberOfUnits = (numberOfUnits: string) => {
   try {

@@ -3,7 +3,7 @@ import { LoadingSkeleton } from "@/app/lib/components/skeletons";
 import { getUserInfo } from "@/auth";
 import { JSX, Suspense } from "react";
 import { AssessmentDetails } from "./AssessmentDetails";
-import { ModelYear, ReassessmentStatus, Role } from "@/prisma/generated/client";
+import { ModelYear, ReassessmentStatus, Role } from "@/prisma/generated/enums";
 import { ReassessmentHistory } from "./ReassessmentHistory";
 import { ReassessmentAnalystActions } from "./ReassessmentAnalystActions";
 import { ReassessmentDirectorActions } from "./ReassessmentDirectorActions";

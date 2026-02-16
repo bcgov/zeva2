@@ -1,9 +1,10 @@
 import { getUserInfo } from "@/auth";
 import { prisma } from "@/lib/prisma";
-import { Prisma, Role, User } from "@/prisma/generated/client";
+import { Role } from "@/prisma/generated/enums";
+import { UserModel, UserInclude } from "@/prisma/generated/models";
 import { getOrderByClause, getWhereClause, userIsAdmin } from "./utilsServer";
 
-export type UserWithOrgName = User & { organization?: { name: string } };
+export type UserWithOrgName = UserModel & { organization?: { name: string } };
 
 export async function fetchUsers(
   page: number,
@@ -26,7 +27,7 @@ export async function fetchUsers(
   if (!userIsGov) {
     where = { ...where, organizationId: userOrgId };
   }
-  const include: Prisma.UserInclude = {};
+  const include: UserInclude = {};
   if (userIsGov) {
     include["organization"] = {
       select: {

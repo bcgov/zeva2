@@ -2,11 +2,11 @@ import {
   getModelYearEnumsToStringsMap,
   getStringsToModelYearsEnumsMap,
 } from "@/app/lib/utils/enumMaps";
+import { ModelYear, PenaltyCreditStatus } from "@/prisma/generated/enums";
 import {
-  ModelYear,
-  PenaltyCreditStatus,
-  Prisma,
-} from "@/prisma/generated/client";
+  PenaltyCreditWhereInput,
+  PenaltyCreditOrderByWithRelationInput,
+} from "@/prisma/generated/models";
 
 export const parseComplianceYear = (
   complianceYear: ModelYear,
@@ -32,8 +32,8 @@ export const getPenaltyCreditTransactionDate = (complianceYear: ModelYear) => {
 
 export const getWhereClause = (
   filters: Record<string, string>,
-): Prisma.PenaltyCreditWhereInput => {
-  const result: Prisma.PenaltyCreditWhereInput = {};
+): PenaltyCreditWhereInput => {
+  const result: PenaltyCreditWhereInput = {};
   const modelYearsMap = getStringsToModelYearsEnumsMap();
   Object.entries(filters).forEach(([key, value]) => {
     if (key === "id") {
@@ -77,8 +77,8 @@ export const getWhereClause = (
 export const getOrderByClause = (
   sorts: Record<string, string>,
   defaultSortById: boolean,
-): Prisma.PenaltyCreditOrderByWithRelationInput[] => {
-  const result: Prisma.PenaltyCreditOrderByWithRelationInput[] = [];
+): PenaltyCreditOrderByWithRelationInput[] => {
+  const result: PenaltyCreditOrderByWithRelationInput[] = [];
   Object.entries(sorts).forEach(([key, value]) => {
     if (value === "asc" || value === "desc") {
       if (key === "id" || key === "status" || key === "complianceYear") {

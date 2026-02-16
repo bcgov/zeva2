@@ -1,6 +1,6 @@
 import { prismaOld } from "@/lib/prismaOld";
 import { TransactionClient } from "@/types/prisma";
-import { Decimal } from "../generated/client/runtime/library";
+import { Decimal } from "decimal.js";
 import {
   ModelYear,
   ReferenceType,
@@ -8,7 +8,7 @@ import {
   TransactionType,
   VehicleClass,
   ZevClass,
-} from "../generated/client";
+} from "../generated/enums";
 import {
   ComplianceReduction,
   getComplianceRatioReductions,

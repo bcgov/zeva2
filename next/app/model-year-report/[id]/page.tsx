@@ -6,7 +6,7 @@ import { ModelYearReportDetails } from "../lib/components/ModelYearReportDetails
 import { ModelYearReportHistory } from "../lib/components/ModelYearReportHistory";
 import { getModelYearReport } from "../lib/data";
 import { SupplierActions } from "../lib/components/SupplierActions";
-import { Role } from "@/prisma/generated/client";
+import { Role } from "@/prisma/generated/enums";
 import { DirectorActions } from "../lib/components/DirectorActions";
 import { AnalystActions } from "../lib/components/AnalystActions";
 import { AssessmentDetails } from "../lib/components/AssessmentDetails";

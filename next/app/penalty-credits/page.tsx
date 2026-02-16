@@ -6,7 +6,7 @@ import Link from "next/link";
 import { Routes } from "../lib/constants";
 import { Button } from "../lib/components";
 import { getUserInfo } from "@/auth";
-import { Role } from "@/prisma/generated/client";
+import { Role } from "@/prisma/generated/enums";
 
 const Page = async (props: { searchParams?: Promise<pageStringParams> }) => {
   const searchParams = await props.searchParams;

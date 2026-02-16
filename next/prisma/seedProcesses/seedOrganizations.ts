@@ -1,9 +1,8 @@
 import { TransactionClient } from "@/types/prisma";
 import { prismaOld } from "@/lib/prismaOld";
 import { isEmptyAddress } from "@/app/organizations/lib/utils";
-import { getAddressTypeEnum } from "@/lib/utils/getEnums";
 import { cleanupStringData } from "@/lib/utils/dataCleanup";
-import { SupplierClass } from "../generated/client";
+import { AddressType, SupplierClass } from "../generated/enums";
 
 export const seedOrganizations = async (tx: TransactionClient) => {
   const mapOfOldOrgIdsToNewOrgIds: Partial<Record<number, number>> = {};
@@ -33,6 +32,11 @@ export const seedOrganizations = async (tx: TransactionClient) => {
     },
   });
 
+  const addressTypesMap: Partial<Record<string, AddressType>> = {
+    Records: AddressType.RECORDS,
+    Service: AddressType.SERVICE,
+  };
+
   for (const orgAddressOld of orgAddressesOld) {
     const orgIdNew = mapOfOldOrgIdsToNewOrgIds[orgAddressOld.organization_id];
     if (!orgIdNew) {
@@ -61,13 +65,20 @@ export const seedOrganizations = async (tx: TransactionClient) => {
 
     // Create the address record only if it has non-empty fields
     if (!isEmptyAddress(newAddressSparse)) {
+      const addressType =
+        addressTypesMap[orgAddressOld.address_type.address_type];
+      if (!addressType) {
+        throw new Error(
+          "organization_address " +
+            orgAddressOld.id +
+            " with unknown address type!",
+        );
+      }
       await tx.organizationAddress.create({
         data: {
           organizationId: orgIdNew,
           expirationDate: orgAddressOld.expiration_date,
-          addressType: getAddressTypeEnum(
-            orgAddressOld.address_type.address_type,
-          ),
+          addressType,
           ...newAddressSparse,
         },
       });

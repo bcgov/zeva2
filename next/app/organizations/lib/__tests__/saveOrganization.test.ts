@@ -6,7 +6,7 @@ import {
   beforeEach,
   afterEach,
 } from "@jest/globals";
-import { Role, AddressType } from "@/prisma/generated/client";
+import { Role, AddressType } from "@/prisma/generated/enums";
 import { saveOrganization } from "../action";
 import { prisma } from "@/lib/prisma";
 import {

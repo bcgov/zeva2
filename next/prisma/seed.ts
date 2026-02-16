@@ -1,8 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { prismaOld } from "@/lib/prismaOld";
-import { ModelYear, ZevClass } from "./generated/client";
+import { ModelYear, ZevClass, Notification } from "./generated/enums";
 import { getStringsToModelYearsEnumsMap } from "@/app/lib/utils/enumMaps";
-import { Notification } from "./generated/client";
 import { isNotification } from "@/app/lib/utils/typeGuards";
 import { seedOrganizations } from "./seedProcesses/seedOrganizations";
 import { seedTransactions } from "./seedProcesses/seedTransactions";

@@ -1,5 +1,5 @@
 import { getModelYearEnumsToStringsMap } from "@/app/lib/utils/enumMaps";
-import { ModelYear } from "@/prisma/generated/client";
+import { ModelYear } from "@/prisma/generated/enums";
 
 export const SystemDetails = (props: {
   userIsGov: boolean;

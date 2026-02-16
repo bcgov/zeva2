@@ -7,7 +7,7 @@ import {
   getStringsToVehicleClassEnumsMap,
   getStringsToZevClassEnumsMap,
 } from "@/app/lib/utils/enumMaps";
-import { ModelYear, VehicleClass, ZevClass } from "@/prisma/generated/client";
+import { ModelYear, VehicleClass, ZevClass } from "@/prisma/generated/enums";
 import { ZevUnitRecord } from "@/lib/utils/zevUnit";
 import {
   isModelYear,

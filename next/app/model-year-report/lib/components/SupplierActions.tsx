@@ -3,7 +3,7 @@
 import { Button } from "@/app/lib/components";
 import { CommentBox } from "@/app/lib/components/inputs/CommentBox";
 import { Routes } from "@/app/lib/constants";
-import { ModelYearReportSupplierStatus } from "@/prisma/generated/client";
+import { ModelYearReportSupplierStatus } from "@/prisma/generated/enums";
 import { useRouter } from "next/navigation";
 import { useCallback, useState, useTransition } from "react";
 import { deleteReports, submitReports } from "../actions";

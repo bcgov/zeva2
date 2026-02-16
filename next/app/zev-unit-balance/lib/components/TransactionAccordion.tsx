@@ -13,7 +13,7 @@ import {
   getVehicleClassEnumsToStringsMap,
   getZevClassEnumsToStringsMap,
 } from "@/app/lib/utils/enumMaps";
-import { ModelYear, ReferenceType } from "@/prisma/generated/client";
+import { ModelYear, ReferenceType } from "@/prisma/generated/enums";
 import { Routes } from "@/app/lib/constants";
 
 export const TransactionAccordion = ({

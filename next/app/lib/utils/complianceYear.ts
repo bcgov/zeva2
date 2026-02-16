@@ -1,4 +1,4 @@
-import { ModelYear } from "@/prisma/generated/client";
+import { ModelYear } from "@/prisma/generated/enums";
 import {
   getModelYearEnumsToStringsMap,
   getStringsToModelYearsEnumsMap,

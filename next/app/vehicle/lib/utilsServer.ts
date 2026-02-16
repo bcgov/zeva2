@@ -1,11 +1,14 @@
 import {
   ModelYear,
-  Prisma,
   VehicleClass,
   ZevType,
   ZevClass,
-} from "@/prisma/generated/client";
-import { Decimal } from "@/prisma/generated/client/runtime/library";
+} from "@/prisma/generated/enums";
+import {
+  VehicleWhereInput,
+  VehicleOrderByWithRelationInput,
+} from "@/prisma/generated/models";
+import { Decimal } from "decimal.js";
 import {
   getMatchingTerms,
   getStringsToModelYearsEnumsMap,
@@ -16,8 +19,8 @@ import { VehicleActiveFilter } from "@/app/lib/constants/filter";
 
 export const getWhereClause = (filters: {
   [key: string]: string;
-}): Prisma.VehicleWhereInput => {
-  const result: Prisma.VehicleWhereInput = {};
+}): VehicleWhereInput => {
+  const result: VehicleWhereInput = {};
   const statusMap = getStringsToVehicleStatusEnumsMap();
   const zevClassMap = getStringsToZevClassEnumsMap();
   const modelYearsMap = getStringsToModelYearsEnumsMap();
@@ -74,10 +77,10 @@ export const getWhereClause = (filters: {
 export const getOrderByClause = (
   sorts: { [key: string]: string },
   defaultSortById: boolean,
-): Prisma.VehicleOrderByWithRelationInput[] => {
-  const result: Prisma.VehicleOrderByWithRelationInput[] = [];
+): VehicleOrderByWithRelationInput[] => {
+  const result: VehicleOrderByWithRelationInput[] = [];
   for (const [key, value] of Object.entries(sorts)) {
-    const orderBy: Prisma.VehicleOrderByWithRelationInput = {};
+    const orderBy: VehicleOrderByWithRelationInput = {};
     if (value === "asc" || value === "desc") {
       if (
         key === "id" ||

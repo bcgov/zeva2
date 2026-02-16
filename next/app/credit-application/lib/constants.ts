@@ -1,7 +1,7 @@
 import {
   CreditApplicationStatus,
   CreditApplicationSupplierStatus,
-} from "@/prisma/generated/client";
+} from "@/prisma/generated/enums";
 
 export enum SupplierTemplate {
   Name = "credit_application_supplier_template.xlsx",
