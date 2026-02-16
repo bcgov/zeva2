@@ -82,42 +82,36 @@ export const getUserCreditBalance = async (): Promise<CreditBalance> => {
     return { A: 0, B: 0 };
   }
 
-  // Get the most recent compliance year's ending balance for the organization
-  const latestBalance = await prisma.zevUnitEndingBalance.findFirst({
+  const transactions = await prisma.zevUnitTransaction.findMany({
     where: {
       organizationId: userOrgId,
     },
-    orderBy: {
-      complianceYear: "desc",
-    },
     select: {
-      complianceYear: true,
-    },
-  });
-
-  if (!latestBalance) {
-    return { A: 0, B: 0 };
-  }
-
-  // Get all ending balances for the most recent compliance year, grouped by ZEV class
-  const balances = await prisma.zevUnitEndingBalance.findMany({
-    where: {
-      organizationId: userOrgId,
-      complianceYear: latestBalance.complianceYear,
-    },
-    select: {
-      finalNumberOfUnits: true,
+      type: true,
+      numberOfUnits: true,
       zevClass: true,
     },
   });
 
-  // Sum balances by ZEV class
-  const classBalances = balances.reduce((acc, balance) => {
-    const className = balance.zevClass;
+  const classBalances = transactions.reduce((acc, transaction) => {
+    const className = transaction.zevClass;
+    
+    if (className !== 'A' && className !== 'B') {
+      return acc;
+    }
+
     if (!acc[className]) {
       acc[className] = 0;
     }
-    acc[className] += parseFloat(balance.finalNumberOfUnits.toString());
+
+    const units = parseFloat(transaction.numberOfUnits.toString());
+
+    if (transaction.type === 'CREDIT') {
+      acc[className] += units;
+    } else if (transaction.type === 'DEBIT' || transaction.type === 'TRANSFER_AWAY') {
+      acc[className] -= units;
+    }
+
     return acc;
   }, {} as Record<string, number>);
 
