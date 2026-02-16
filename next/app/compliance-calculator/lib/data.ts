@@ -93,9 +93,18 @@ export const getUserCreditBalance = async (): Promise<CreditBalance> => {
     },
   });
 
+  let unspecifiedDebits = 0;
   const classBalances = transactions.reduce((acc, transaction) => {
     const className = transaction.zevClass;
-    
+    const units = parseFloat(transaction.numberOfUnits.toString());
+
+    if (className === 'UNSPECIFIED') {
+      if (transaction.type === 'DEBIT' || transaction.type === 'TRANSFER_AWAY') {
+        unspecifiedDebits += units;
+      }
+      return acc;
+    }
+
     if (className !== 'A' && className !== 'B') {
       return acc;
     }
@@ -103,8 +112,6 @@ export const getUserCreditBalance = async (): Promise<CreditBalance> => {
     if (!acc[className]) {
       acc[className] = 0;
     }
-
-    const units = parseFloat(transaction.numberOfUnits.toString());
 
     if (transaction.type === 'CREDIT') {
       acc[className] += units;
@@ -114,6 +121,18 @@ export const getUserCreditBalance = async (): Promise<CreditBalance> => {
 
     return acc;
   }, {} as Record<string, number>);
+
+  if (unspecifiedDebits > 0) {
+    const balanceB = classBalances.B || 0;
+    
+    if (balanceB >= unspecifiedDebits) {
+      classBalances.B = balanceB - unspecifiedDebits;
+    } else {
+      classBalances.B = 0;
+      const remainingDebit = unspecifiedDebits - balanceB;
+      classBalances.A = (classBalances.A || 0) - remainingDebit;
+    }
+  }
 
   return {
     A: classBalances.A || 0,
