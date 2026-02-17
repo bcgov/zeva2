@@ -103,14 +103,20 @@ export const seedTransactions = async (
       );
     }
     const totalValueOld = transaction.total_value;
-    const numberOfUnits = totalValueOld.lessThan(new Decimal(0))
+    const isNegative = totalValueOld.lessThan(new Decimal(0));
+    const numberOfUnits = isNegative
       ? totalValueOld.times(new Decimal(-1))
       : totalValueOld;
+    
     if (transaction.credit_to_id && !transaction.debit_from_id) {
       transactionType = TransactionType.CREDIT;
       organizationId = transaction.credit_to_id;
     } else if (!transaction.credit_to_id && transaction.debit_from_id) {
-      transactionType = TransactionType.DEBIT;
+      if (isNegative) {
+        transactionType = TransactionType.CREDIT;
+      } else {
+        transactionType = TransactionType.DEBIT;
+      }
       organizationId = transaction.debit_from_id;
     }
     if (transactionType && organizationId) {
@@ -121,9 +127,10 @@ export const seedTransactions = async (
           "credit transaction " + transaction.id + " with unknown org id!",
         );
       }
-      if (referenceTypeAndId[0] === ReferenceType.COMPLIANCE_RATIO_REDUCTION) {
-        continue;
-      }
+      // Keep compliance ratio reductions from original data instead of recalculating
+      // if (referenceTypeAndId[0] === ReferenceType.COMPLIANCE_RATIO_REDUCTION) {
+      //   continue;
+      // }
       if (
         referenceTypeAndId[0] === ReferenceType.AGREEMENT &&
         transactionType === TransactionType.DEBIT &&
@@ -201,6 +208,8 @@ export const seedTransactions = async (
     }
   }
 
+  // COMMENTED OUT: Recalculation logic - Using original data from credit_transaction instead (For Testing. I assume this is on purpose)
+  /*
   const mapOfVolumes: Partial<
     Record<number, Partial<Record<ModelYear, number>>>
   > = {};
@@ -299,4 +308,5 @@ export const seedTransactions = async (
       }
     }
   }
+  */
 };
