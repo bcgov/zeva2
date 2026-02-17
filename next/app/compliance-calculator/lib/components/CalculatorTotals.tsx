@@ -30,58 +30,64 @@ export const CalculatorTotals = ({
     .filter((sale) => sale.creditClass === "B")
     .reduce((sum, sale) => sum + sale.value, 0);
 
+  const hasEstimates = complianceNumbers.total !== "";
+
   return (
-    <div className="col-span-1 lg:col-span-4 bg-white border border-gray-200 p-4 rounded">
-      <table className="w-full">
-        <tbody>
-          <tr>
-            <td className="font-bold text-primaryBlue pt-4 pb-2">
-              Estimated Compliance Ratio Reduction:
-            </td>
-            <td className="pl-3 font-bold pt-4 pb-2 text-right">
-              {complianceNumbers.total}
-            </td>
-          </tr>
-          {supplierSize === "large" && (
-            <>
-              <tr>
-                <td className="text-primaryBlue">-ZEV Class A Debit:</td>
-                <td className="pl-3 text-right">{complianceNumbers.classA}</td>
-              </tr>
-              <tr>
-                <td className="text-primaryBlue">-Unspecified ZEV Class Debit:</td>
-                <td className="pl-3 text-right">{complianceNumbers.remaining}</td>
-              </tr>
-            </>
+    <div className="col-span-1 lg:col-span-4 bg-white border border-dividerMedium rounded shadow-level-1 p-6">
+      <div className="space-y-4">
+        <div>
+          <h3 className="text-base font-semibold text-primaryText mb-2">
+            Estimated Compliance Ratio Reduction:
+          </h3>
+          <div className="text-right text-primaryText">
+            {hasEstimates ? complianceNumbers.total : "..."}
+          </div>
+          {supplierSize === "large" && hasEstimates && (
+            <div className="mt-2 space-y-1 text-sm text-secondaryText">
+              <div className="flex justify-between">
+                <span>-ZEV Class A Debit:</span>
+                <span className="text-right">{complianceNumbers.classA}</span>
+              </div>
+              <div className="flex justify-between">
+                <span>-Unspecified ZEV Class Debit:</span>
+                <span className="text-right">{complianceNumbers.remaining}</span>
+              </div>
+            </div>
           )}
-          <tr>
-            <td className="font-bold text-primaryBlue pt-4 pb-2" colSpan={2}>
-              Current Credit Balance:
-            </td>
-          </tr>
-          <tr>
-            <td className="text-primaryBlue">Class A Credit Total:</td>
-            <td className="pl-3 text-right">{formatNumeric(creditBalance.A)}</td>
-          </tr>
-          <tr>
-            <td className="text-primaryBlue">Class B Credit Total:</td>
-            <td className="pl-3 text-right">{formatNumeric(creditBalance.B)}</td>
-          </tr>
-          <tr>
-            <td className="text-primaryBlue pt-4 pb-2" colSpan={2}>
-              <strong>Estimated Annual ZEVs Supplied</strong> (from below):
-            </td>
-          </tr>
-          <tr>
-            <td className="text-primaryBlue">Estimated Class A Credit Total:</td>
-            <td className="pl-3 text-right">{formatNumeric(estimatedClassATotal)}</td>
-          </tr>
-          <tr>
-            <td className="text-primaryBlue">Estimated Class B Credit Total:</td>
-            <td className="pl-3 text-right">{formatNumeric(estimatedClassBTotal)}</td>
-          </tr>
-        </tbody>
-      </table>
+        </div>
+
+        <div className="border-t border-dividerMedium pt-4">
+          <h3 className="text-base font-semibold text-primaryText mb-2">
+            Current credit balance:
+          </h3>
+          <div className="space-y-1 text-sm text-primaryText">
+            <div className="flex justify-between">
+              <span>Class A Credit Total:</span>
+              <span className="text-right">{formatNumeric(creditBalance.A)}</span>
+            </div>
+            <div className="flex justify-between">
+              <span>Class B Credit Total:</span>
+              <span className="text-right">{formatNumeric(creditBalance.B)}</span>
+            </div>
+          </div>
+        </div>
+
+        <div className="border-t border-dividerMedium pt-4">
+          <h3 className="text-base font-semibold text-primaryText mb-2">
+            Estimated Annual ZEVs Supplied (from below):
+          </h3>
+          <div className="space-y-1 text-sm text-primaryText">
+            <div className="flex justify-between">
+              <span>Estimated Class A Credit Total:</span>
+              <span className="text-right">{formatNumeric(estimatedClassATotal)}</span>
+            </div>
+            <div className="flex justify-between">
+              <span>Estimated Class B Credit Total:</span>
+              <span className="text-right">{formatNumeric(estimatedClassBTotal)}</span>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 };

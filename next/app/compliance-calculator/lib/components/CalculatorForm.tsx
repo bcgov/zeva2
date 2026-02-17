@@ -137,6 +137,7 @@ export const CalculatorForm = ({
       </div>
       <CalculatorModelTable
         models={vehicleModels}
+        selectedModelYear={selectedYearOption}
         estimatedModelSales={estimatedModelSales}
         onModelSaleChange={handleModelSaleChange}
       />
