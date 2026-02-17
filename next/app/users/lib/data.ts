@@ -4,7 +4,9 @@ import { userIsAdmin } from "./utilsServer";
 import { Role, Idp } from "@/prisma/generated/enums";
 import { UserModel, UserWhereInput } from "@/prisma/generated/models";
 
-export type UserWithOrgName = Omit<UserModel, "idpSub"> & { organization: { name: string } };
+export type UserWithOrgName = Omit<UserModel, "idpSub"> & {
+  organization: { name: string };
+};
 
 export type GovUserCategory = "bceid" | "idir" | "inactive";
 
