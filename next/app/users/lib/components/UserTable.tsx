@@ -3,21 +3,25 @@
 import { useCallback, useMemo } from "react";
 import { ColumnDef, createColumnHelper } from "@tanstack/react-table";
 import { ClientSideTable } from "@/app/lib/components";
-import type { UserWithOrgName } from "../data";
+import {
+  GovUserCategory,
+  SupplierUserCategory,
+  UserWithOrgName,
+} from "../data";
 import { getRoleEnumsToStringsMap } from "@/app/lib/utils/enumMaps";
 import { useRouter } from "next/navigation";
 import { Routes } from "@/app/lib/constants";
-import { UserTabKey, getUserTypeLabel } from "../userTabs";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faCopy } from "@fortawesome/free-solid-svg-icons";
+import { Idp } from "@/prisma/generated/client";
 
 export interface UserTableProps {
   users: UserWithOrgName[];
   userIsGov: boolean;
-  tab: UserTabKey;
+  category: GovUserCategory | SupplierUserCategory;
 }
 
-export default function UserTable({ users, userIsGov, tab }: UserTableProps) {
+export const UserTable = ({ users, userIsGov, category }: UserTableProps) => {
   const router = useRouter();
   const navigationAction = useCallback((id: number) => {
     router.push(`${Routes.Users}/${id}`);
@@ -26,6 +30,13 @@ export default function UserTable({ users, userIsGov, tab }: UserTableProps) {
 
   const rolesMap = useMemo(() => {
     return getRoleEnumsToStringsMap();
+  }, []);
+
+  const idpMap = useMemo(() => {
+    return {
+      [Idp.AZURE_IDIR]: "IDIR",
+      [Idp.BCEID_BUSINESS]: "BCeID",
+    };
   }, []);
 
   const columns = useMemo<ColumnDef<UserWithOrgName, any>[]>(() => {
@@ -87,31 +98,30 @@ export default function UserTable({ users, userIsGov, tab }: UserTableProps) {
       ),
     ];
 
-    if (tab === "inactive") {
-      base.push(
-        columnHelper.accessor("idp", {
-          id: "idp",
-          header: () => <span>User Type</span>,
-          cell: (info) => getUserTypeLabel(info.getValue()),
-          enableSorting: true,
-          enableColumnFilter: true,
-        }),
-      );
-    }
-
     if (userIsGov) {
-      base.unshift(
-        columnHelper.accessor((row) => row.organization?.name, {
-          id: "organization",
-          header: () => <span>Organization</span>,
-          cell: (info) => info.getValue(),
-          enableSorting: true,
-          enableColumnFilter: true,
-        }),
-      );
+      if (category === "inactive") {
+        base.unshift(
+          columnHelper.accessor((row) => idpMap[row.idp], {
+            id: "idp",
+            header: () => <span>User Type</span>,
+            enableSorting: true,
+            enableColumnFilter: true,
+          }),
+        );
+      }
+      if (category === "bceid" || category === "inactive") {
+        base.unshift(
+          columnHelper.accessor((row) => row.organization.name, {
+            id: "organization",
+            header: () => <span>Organization</span>,
+            enableSorting: true,
+            enableColumnFilter: true,
+          }),
+        );
+      }
     }
     return base;
-  }, [columnHelper, rolesMap, tab, userIsGov]);
+  }, [columnHelper, rolesMap, userIsGov, category]);
 
   return (
     <ClientSideTable<UserWithOrgName>
@@ -123,4 +133,4 @@ export default function UserTable({ users, userIsGov, tab }: UserTableProps) {
       enableSorting={true}
     />
   );
-}
+};
