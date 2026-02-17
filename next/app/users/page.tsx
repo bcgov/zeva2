@@ -1,80 +1,74 @@
 import { Suspense } from "react";
-import { getPageParams, pageStringParams } from "@/app/lib/utils/nextPage";
-import { fetchUsers } from "./lib/data";
+import { fetchUsers, GovUserCategory, SupplierUserCategory } from "./lib/data";
 import { LoadingSkeleton } from "@/app/lib/components/skeletons";
 import Link from "next/link";
 import { Routes } from "../lib/constants";
 import { Button } from "../lib/components";
 import { getUserInfo } from "@/auth";
-import UserTable from "./lib/components/UserTable";
+import { UserTable } from "./lib/components/UserTable";
 import { userIsAdmin } from "./lib/utilsServer";
-import {
-  getFilterStringWithActiveFilter,
-  getTransformedFilters,
-} from "../lib/utils/filter";
+import { categoriesToTabsMap } from "./lib/constants";
 
 export default async function Page(props: {
-  searchParams?: Promise<pageStringParams>;
+  searchParams?: Promise<{ tab?: string }>;
 }) {
   const { userIsGov } = await getUserInfo();
   const isAdmin = await userIsAdmin();
   const searchParams = await props.searchParams;
-  const { page, pageSize, filters, sorts } = getPageParams(searchParams, 1, 10);
-  const { filters: transformedFilters, isActive } = getTransformedFilters(
-    "user",
-    filters,
-  );
-  const { users, totalCount } = await fetchUsers(
-    page,
-    pageSize,
-    transformedFilters,
-    sorts,
-  );
+  const tab = searchParams?.tab;
+  let currentCategory: GovUserCategory | SupplierUserCategory | null = null;
+  if (!tab && userIsGov) {
+    currentCategory = "idir";
+  } else if (!tab && !userIsGov) {
+    currentCategory = "active";
+  } else if (
+    userIsGov &&
+    (tab === "idir" || tab === "bceid" || tab === "inactive")
+  ) {
+    currentCategory = tab;
+  } else if (!userIsGov && (tab === "active" || tab === "inactive")) {
+    currentCategory = tab;
+  }
+  if (!currentCategory) {
+    return null;
+  }
+  const users = await fetchUsers(currentCategory);
+  const categoriesToUse: (GovUserCategory | SupplierUserCategory)[] = userIsGov
+    ? ["idir", "bceid", "inactive"]
+    : ["active", "inactive"];
 
   return (
-    <Suspense key={Date.now()} fallback={<LoadingSkeleton />}>
+    <Suspense fallback={<LoadingSkeleton />}>
       {isAdmin && (
         <Link href={`${Routes.Users}/new`}>
           <Button variant="primary">Create New User</Button>
         </Link>
       )}
       <div className="mb-4 flex gap-2 border-b">
-        <Link
-          href={{
-            pathname: Routes.Users,
-            query: {
-              ...searchParams,
-              page: "1",
-              filters: getFilterStringWithActiveFilter("user", filters, true),
-            },
-          }}
-          className={`px-3 py-2 text-sm font-medium border-b-2 -mb-px ${
-            isActive
-              ? "border-blue-600 text-blue-700"
-              : "border-transparent text-gray-600 hover:text-gray-900"
-          }`}
-        >
-          Active users
-        </Link>
-        <Link
-          href={{
-            pathname: Routes.Users,
-            query: {
-              ...searchParams,
-              page: "1",
-              filters: getFilterStringWithActiveFilter("user", filters, false),
-            },
-          }}
-          className={`px-3 py-2 text-sm font-medium border-b-2 -mb-px ${
-            !isActive
-              ? "border-blue-600 text-blue-700"
-              : "border-transparent text-gray-600 hover:text-gray-900"
-          }`}
-        >
-          Inactive users
-        </Link>
+        {categoriesToUse.map((category) => (
+          <Link
+            key={category}
+            href={{
+              pathname: Routes.Users,
+              query: {
+                tab: category,
+              },
+            }}
+            className={`px-3 py-2 text-sm font-medium border-b-2 -mb-px ${
+              currentCategory === category
+                ? "border-blue-600 text-blue-700"
+                : "border-transparent text-gray-600 hover:text-gray-900"
+            }`}
+          >
+            {categoriesToTabsMap[category]}
+          </Link>
+        ))}
       </div>
-      <UserTable users={users} totalCount={totalCount} userIsGov={userIsGov} />
+      <UserTable
+        users={users}
+        userIsGov={userIsGov}
+        category={currentCategory}
+      />
     </Suspense>
   );
 }

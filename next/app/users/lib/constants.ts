@@ -1,4 +1,5 @@
 import { Role } from "@/prisma/generated/client";
+import { GovUserCategory, SupplierUserCategory } from "./data";
 
 export const govRoles: readonly Role[] = [
   Role.ADMINISTRATOR,
@@ -12,3 +13,12 @@ export const supplierRoles: readonly Role[] = [
   Role.SIGNING_AUTHORITY,
   Role.ZEVA_BCEID_USER,
 ];
+
+export const categoriesToTabsMap: Readonly<
+  Record<GovUserCategory | SupplierUserCategory, string>
+> = {
+  active: "Active",
+  bceid: "BCeID",
+  idir: "IDIR",
+  inactive: "Inactive",
+};
