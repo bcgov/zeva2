@@ -8,7 +8,7 @@ Please read the following texts:
 
 (1) https://nextjs.org/learn/react-foundations/what-is-react-and-nextjs (currently, 10 chapters)
 
-(2) https://nextjs.org/learn/dashboard-app/getting-started (currently, 16 chapters)
+(2) https://nextjs.org/learn/dashboard-app/getting-started (currently, 15 chapters)
 
 Documentation: https://nextjs.org/docs
 
