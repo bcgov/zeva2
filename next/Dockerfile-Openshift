@@ -23,5 +23,5 @@ CMD ["/bin/sh", "-c", "\
       . /vault/secrets/$cfg; \
     fi; \
   done; \
-  npm run migrate && npm run start\
+  npm run migrate && npm run seed && npm run start\
 "]
