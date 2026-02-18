@@ -1,8 +1,10 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useMemo } from "react";
 import { EstimatedModelSale, VehicleModel } from "../types";
 import { ModelYear } from "@/prisma/generated/client";
+import { ClientSideTable } from "@/app/lib/components";
+import { ColumnDef, createColumnHelper } from "@tanstack/react-table";
 
 type CalculatorModelTableProps = {
   models: VehicleModel[];
@@ -18,131 +20,150 @@ const formatNumeric = (value: number): string => {
   });
 };
 
+type TableVehicleModel = VehicleModel & {
+  estimatedSale?: EstimatedModelSale;
+  displayName: string;
+};
+
 export const CalculatorModelTable = ({
   models,
   selectedModelYear,
   estimatedModelSales,
   onModelSaleChange,
 }: CalculatorModelTableProps) => {
-  const [searchTerm, setSearchTerm] = useState("");
-
-  // Filter models based on selected model year and search term
   const filteredModels = useMemo(() => {
     let filtered = models;
 
-    // Filter by selected model year
     if (selectedModelYear) {
       filtered = filtered.filter((model) => model.modelYear === selectedModelYear);
     }
 
-    // Filter by search term
-    if (searchTerm) {
-      const searchLower = searchTerm.toLowerCase();
-      filtered = filtered.filter((model) => {
-        const modelYearStr = model.modelYear.replace("MY_", "");
-        const fullName = `${modelYearStr} ${model.make} ${model.modelName}`.toLowerCase();
-        return fullName.includes(searchLower);
-      });
-    }
-
     return filtered;
-  }, [models, selectedModelYear, searchTerm]);
+  }, [models, selectedModelYear]);
 
-  const findEstimatedSale = (modelId: number) =>
-    estimatedModelSales.find((sale) => sale.id === modelId);
+  const tableData = useMemo<TableVehicleModel[]>(() => {
+    return filteredModels.map((model) => {
+      const modelYearStr = model.modelYear.replace("MY_", "");
+      const estimatedSale = estimatedModelSales.find((sale) => sale.id === model.id);
+      return {
+        ...model,
+        displayName: `${modelYearStr} ${model.make} ${model.modelName}`,
+        estimatedSale,
+      };
+    });
+  }, [filteredModels, estimatedModelSales]);
+
+  // Define columns
+  const columnHelper = createColumnHelper<TableVehicleModel>();
+  const columns = useMemo<ColumnDef<TableVehicleModel, any>[]>(
+    () => [
+      columnHelper.accessor("displayName", {
+        id: "displayName",
+        header: "ZEV Model",
+        enableColumnFilter: true,
+        enableSorting: true,
+        cell: (info) => (
+          <span className="text-sm text-primaryText">{info.getValue()}</span>
+        ),
+      }),
+      columnHelper.accessor("creditClass", {
+        id: "creditClass",
+        header: "ZEV Class",
+        enableColumnFilter: true,
+        enableSorting: true,
+        cell: (info) => (
+          <span className="text-sm text-primaryText">{info.getValue()}</span>
+        ),
+      }),
+      columnHelper.accessor("creditValue", {
+        id: "creditValue",
+        header: "Credit Entitlement",
+        enableColumnFilter: true,
+        enableSorting: true,
+        cell: (info) => (
+          <span className="text-sm text-primaryText">{info.getValue()}</span>
+        ),
+      }),
+      columnHelper.display({
+        id: "estimatedSales",
+        header: "Estimated annual ZEVs supplied",
+        cell: (info) => (
+          <input
+            className="w-32 px-3 py-2 border border-dividerMedium rounded text-left text-primaryText bg-white focus:outline-none focus:ring-2 focus:ring-primaryBlue focus:border-primaryBlue"
+            id={`input-sales-${info.row.original.id}`}
+            name="input-sales"
+            step="1"
+            type="number"
+            min="0"
+            placeholder="Text"
+            defaultValue=""
+            onChange={(e) => {
+              const value = parseInt(e.target.value) || 0;
+              onModelSaleChange(
+                info.row.original.id,
+                value,
+                info.row.original.creditValue,
+                info.row.original.creditClass
+              );
+            }}
+          />
+        ),
+      }),
+      columnHelper.display({
+        id: "estimatedCreditsTotal",
+        header: "Estimated Credits Total",
+        cell: (info) => {
+          const estimatedSale = info.row.original.estimatedSale;
+          return (
+            <span className="text-sm text-primaryText">
+              {estimatedSale
+                ? `${formatNumeric(estimatedSale.value)}-${estimatedSale.creditClass}`
+                : "Result"}
+            </span>
+          );
+        },
+      }),
+    ],
+    [columnHelper, onModelSaleChange]
+  );
 
   return (
-    <div className="mt-6 bg-white border border-dividerMedium rounded shadow-level-1">
-      <div className="p-4 border-b border-dividerMedium">
-        <h3 className="text-base font-semibold text-primaryText mb-3">
-          Estimated annual ZEVs supplied
-        </h3>
-        <input
-          type="text"
-          placeholder="Search by model..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          className="w-full lg:w-1/3 px-3 py-2 border border-dividerMedium rounded bg-white text-primaryText placeholder:text-placeholder focus:outline-none focus:ring-2 focus:ring-primaryBlue focus:border-primaryBlue"
-        />
-      </div>
-      <div className="overflow-x-auto">
-        <table className="w-full border-collapse">
-          <thead>
-            <tr className="bg-lightGrey border-b border-dividerMedium">
-              <th className="px-4 py-3 text-left text-sm font-semibold text-primaryText">
-                ZEV Model
-              </th>
-              <th className="px-4 py-3 text-center text-sm font-semibold text-primaryText">
-                ZEV Class
-              </th>
-              <th className="px-4 py-3 text-right text-sm font-semibold text-primaryText">
-                Credit Entitlement
-              </th>
-              <th className="px-4 py-3 text-center text-sm font-semibold text-primaryText">
+    <div className="mt-6">
+      {!selectedModelYear ? (
+        <div className="bg-white border border-dividerMedium rounded shadow-level-1 p-8">
+          <div className="text-center text-secondaryText">
+            Please select a model year to view available models.
+          </div>
+        </div>
+      ) : (
+        <ClientSideTable<TableVehicleModel>
+          columns={columns}
+          data={tableData}
+          enableFiltering={true}
+          enableSorting={true}
+          initialPageSize={10}
+          hideResetButton={true}
+          headerContent={
+            <div className="p-4 border-b border-dividerMedium">
+              <h3 className="text-base font-semibold text-primaryText mb-3">
                 Estimated annual ZEVs supplied
-              </th>
-              <th className="px-4 py-3 text-right text-sm font-semibold text-primaryText">
-                Estimated Credits Total
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {filteredModels.length === 0 ? (
-              <tr>
-                <td colSpan={5} className="px-4 py-8 text-center text-secondaryText">
-                  {selectedModelYear
-                    ? "No models found for the selected criteria."
-                    : "Please select a model year to view available models."}
-                </td>
-              </tr>
-            ) : (
-              filteredModels.map((model) => {
-                const estimatedSale = findEstimatedSale(model.id);
-                const modelYearStr = model.modelYear.replace("MY_", "");
-                return (
-                  <tr key={model.id} className="border-b border-dividerMedium hover:bg-lightGrey">
-                    <td className="px-4 py-3 text-left text-sm text-primaryText">
-                      {modelYearStr} {model.make} {model.modelName}
-                    </td>
-                    <td className="px-4 py-3 text-center text-sm text-primaryText">
-                      {model.creditClass}
-                    </td>
-                    <td className="px-4 py-3 text-right text-sm text-primaryText">
-                      {model.creditValue}
-                    </td>
-                    <td className="px-4 py-3 text-center">
-                      <input
-                        className="w-32 px-3 py-2 border border-dividerMedium rounded text-right text-primaryText bg-white focus:outline-none focus:ring-2 focus:ring-primaryBlue focus:border-primaryBlue"
-                        id={`input-sales-${model.id}`}
-                        name="input-sales"
-                        step="1"
-                        type="number"
-                        min="0"
-                        placeholder="Text"
-                        defaultValue=""
-                        onChange={(e) => {
-                          const value = parseInt(e.target.value) || 0;
-                          onModelSaleChange(
-                            model.id,
-                            value,
-                            model.creditValue,
-                            model.creditClass
-                          );
-                        }}
-                      />
-                    </td>
-                    <td className="px-4 py-3 text-right text-sm text-primaryText">
-                      {estimatedSale
-                        ? `${formatNumeric(estimatedSale.value)}-${estimatedSale.creditClass}`
-                        : "Result"}
-                    </td>
-                  </tr>
-                );
-              })
-            )}
-          </tbody>
-        </table>
-      </div>
+              </h3>
+            </div>
+          }
+          customStyles={{
+            container: "bg-white border border-dividerMedium rounded shadow-level-1",
+            tableWrapper: "overflow-x-auto",
+            table: "w-full border-collapse",
+            thead: "bg-lightGrey border-b border-dividerMedium",
+            theadTr: "bg-lightGrey border-b border-dividerMedium",
+            theadTh: "px-4 py-3 text-sm font-semibold text-primaryText align-top",
+            tbody: "bg-white",
+            tbodyTr: "border-b border-dividerMedium hover:bg-lightGrey",
+            tbodyTd: "px-4 py-3",
+            pagination: "flex items-center justify-center bg-lightGrey w-full rounded p-2 border-t border-dividerMedium",
+          }}
+        />
+      )}
     </div>
   );
 };
