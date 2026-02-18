@@ -2,7 +2,8 @@
 
 import { useCallback, useEffect, useState, useTransition } from "react";
 import { Button } from "@/app/lib/components";
-import { Role, User } from "@/prisma/generated/client";
+import { Role } from "@/prisma/generated/enums";
+import { UserModel } from "@/prisma/generated/models";
 import { createUser, updateUser } from "../actions";
 import { UserFormFields } from "./UserFormFields";
 import { getUserPayload } from "../utilsClient";
@@ -23,7 +24,7 @@ export const UserForm = ({
   userOrgId,
   govOrgId,
 }: {
-  user?: User;
+  user?: UserModel;
   orgsMap?: Record<number, string>;
   userOrgId: string;
   govOrgId: string;

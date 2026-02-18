@@ -1,7 +1,7 @@
 import { VehiclePayload } from "./actions";
-import { Decimal } from "@prisma/client/runtime/index-browser.js";
+import { Decimal } from "decimal.js";
 import { isModelYear, isZevType } from "@/app/lib/utils/typeGuards";
-import { ModelYear } from "@/prisma/generated/client";
+import { ModelYear } from "@/prisma/generated/enums";
 import { VehicleFormData } from "./components/VehicleForm";
 import { getStringsToVehicleClassCodeEnumsMap } from "@/app/lib/utils/enumMaps";
 

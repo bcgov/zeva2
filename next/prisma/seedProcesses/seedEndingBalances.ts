@@ -4,8 +4,8 @@ import {
   ModelYear,
   VehicleClass,
   ZevClass,
-} from "../generated/client";
-import { Decimal } from "../generated/client/runtime/library";
+} from "../generated/enums";
+import { Decimal } from "decimal.js";
 import { TransactionClient } from "@/types/prisma";
 
 const isAllZero = (

@@ -1,5 +1,3 @@
-// do not import, directly or indirectly, any Prisma versions of Decimal here!
-
 import Excel, { Workbook } from "exceljs";
 import {
   AssessmentTemplate,
@@ -10,13 +8,12 @@ import {
 } from "./constants";
 import {
   ModelYear,
-  OrganizationAddress,
   ReferenceType,
   SupplierClass,
   TransactionType,
   VehicleClass,
   ZevClass,
-} from "@/prisma/generated/client";
+} from "@/prisma/generated/enums";
 import {
   getBalanceTypeEnumsToStringsMap,
   getModelYearEnumsToStringsMap,
@@ -30,6 +27,7 @@ import {
 } from "@/app/lib/utils/enumMaps";
 import { VehicleStatistic } from "./services";
 import { NvValues } from "./actions";
+import { OrganizationAddressModel } from "@/prisma/generated/models";
 
 export const getMyrSheets = (workbook: Workbook) => {
   const supplierDetailsSheet = workbook.getWorksheet(
@@ -625,6 +623,6 @@ export const getVehicleStatsAsStrings = (
   return result;
 };
 
-export const getAddressAsString = (address: OrganizationAddress) => {
+export const getAddressAsString = (address: OrganizationAddressModel) => {
   return `${address.addressLines}, ${address.city}, ${address.state}, ${address.postalCode}, ${address.country}`;
 };

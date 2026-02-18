@@ -8,7 +8,7 @@ import {
   ZevType,
   ZevClass,
   AgreementType,
-} from "@/prisma/generated/client";
+} from "@/prisma/generated/enums";
 
 export const isTransactionType = (s: string): s is TransactionType => {
   return Object.keys(TransactionType).some((transactionType) => {

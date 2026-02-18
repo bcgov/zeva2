@@ -1,5 +1,5 @@
 import { TransactionClient } from "@/types/prisma";
-import { ModelYear, ZevClass } from "../generated/client";
+import { ModelYear, ZevClass } from "../generated/enums";
 import { prismaOld } from "@/lib/prismaOld";
 
 export const seedLegacyAssessedMyrs = async (

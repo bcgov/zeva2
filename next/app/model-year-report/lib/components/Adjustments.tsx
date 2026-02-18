@@ -17,7 +17,7 @@ import {
   TransactionType,
   VehicleClass,
   ZevClass,
-} from "@/prisma/generated/client";
+} from "@/prisma/generated/enums";
 import { ZevUnitRecord } from "@/lib/utils/zevUnit";
 
 export type Adjustment = Record<keyof ZevUnitRecord, string>;

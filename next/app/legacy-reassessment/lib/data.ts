@@ -1,11 +1,7 @@
 import { getUserInfo } from "@/auth";
 import { prisma } from "@/lib/prisma";
-import {
-  ModelYear,
-  Prisma,
-  ReassessmentStatus,
-  Role,
-} from "@/prisma/generated/client";
+import { ModelYear, ReassessmentStatus, Role } from "@/prisma/generated/enums";
+import { ReassessmentWhereInput } from "@/prisma/generated/models";
 
 export type LegacyReassessment = {
   id: number;
@@ -24,7 +20,7 @@ export const getLegacyReassessments = async (
   const { userIsGov, userOrgId, userRoles } = await getUserInfo();
   const skip = (page - 1) * pageSize;
   const take = pageSize;
-  const whereClause: Prisma.ReassessmentWhereInput = {
+  const whereClause: ReassessmentWhereInput = {
     modelYearReportId: null,
   };
   if (userIsGov && userRoles.includes(Role.DIRECTOR)) {

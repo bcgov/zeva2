@@ -1,9 +1,8 @@
+import { AddressType, Role } from "@/prisma/generated/enums";
 import {
-  AddressType,
-  Organization,
-  OrganizationAddress,
-  Role,
-} from "@/prisma/generated/client";
+  OrganizationModel,
+  OrganizationAddressModel,
+} from "@/prisma/generated/models";
 import { OrganizationAddressSparse } from "../../data";
 import { UserInfo } from "@/auth";
 import { expect, jest } from "@jest/globals";
@@ -91,12 +90,13 @@ export const mockFunctions = (opt: {
   mockGetUserInfo(userInfo ?? baseGovUserInfo);
 
   // Create mock data for organization and addresses.
-  const createdOrg: Omit<Organization, "supplierClass"> | undefined = orgWithId
-    ? {
-        ...orgWithId,
-      }
-    : undefined;
-  const createdServiceAddress: OrganizationAddress | undefined =
+  const createdOrg: Omit<OrganizationModel, "supplierClass"> | undefined =
+    orgWithId
+      ? {
+          ...orgWithId,
+        }
+      : undefined;
+  const createdServiceAddress: OrganizationAddressModel | undefined =
     serviceAddressWithId
       ? {
           ...serviceAddressWithId,
@@ -105,7 +105,7 @@ export const mockFunctions = (opt: {
           organizationId: orgWithId?.id ?? 1, // Use org ID or default to 1
         }
       : undefined;
-  const createdRecordsAddress: OrganizationAddress | undefined =
+  const createdRecordsAddress: OrganizationAddressModel | undefined =
     recordsAddressWithId
       ? {
           ...recordsAddressWithId,

@@ -2,7 +2,7 @@ import { getPresignedGetObjectUrl } from "@/app/lib/minio";
 import { AssessmentForm } from "@/app/model-year-report/lib/components/AssessmentForm";
 import { getModelYearReport } from "@/app/model-year-report/lib/data";
 import { getUserInfo } from "@/auth";
-import { ModelYearReportStatus } from "@/prisma/generated/client";
+import { ModelYearReportStatus } from "@/prisma/generated/enums";
 
 const Page = async (props: { params: Promise<{ id: string }> }) => {
   const { userIsGov } = await getUserInfo();

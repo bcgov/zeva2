@@ -48,7 +48,7 @@ jobs:
         run: npm ci
 
       - name: Generate Prisma Client
-        run: npm run generate-prisma-client --if-present
+        run: npm run generate-prisma-client
 
       - name: Run tests
         run: npm run test

@@ -1,5 +1,5 @@
-import { Role } from "@/prisma/generated/client";
 import { GovUserCategory, SupplierUserCategory } from "./data";
+import { Role } from "@/prisma/generated/enums";
 
 export const govRoles: readonly Role[] = [
   Role.ADMINISTRATOR,

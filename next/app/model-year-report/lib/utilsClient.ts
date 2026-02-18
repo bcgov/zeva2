@@ -1,7 +1,4 @@
-// Do not import, directly or indirectly, Prisma's node version of Decimal here;
-// use its browser version instead!
-
-import { Decimal } from "@/prisma/generated/client/runtime/index-browser";
+import { Decimal } from "decimal.js";
 import Excel, { Workbook } from "exceljs";
 import {
   ModelYear,
@@ -10,7 +7,7 @@ import {
   TransactionType,
   VehicleClass,
   ZevClass,
-} from "@/prisma/generated/client";
+} from "@/prisma/generated/enums";
 import {
   MyrComplianceReductions,
   MyrCurrentTransactions,

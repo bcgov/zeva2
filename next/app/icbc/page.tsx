@@ -2,7 +2,7 @@ import { getUserInfo } from "@/auth";
 import { getPageParams, pageStringParams } from "../lib/utils/nextPage";
 import { Suspense } from "react";
 import { LoadingSkeleton } from "../lib/components/skeletons";
-import { Role } from "@/prisma/generated/client";
+import { Role } from "@/prisma/generated/enums";
 import Link from "next/link";
 import { Routes } from "../lib/constants";
 import { Button } from "../lib/components";

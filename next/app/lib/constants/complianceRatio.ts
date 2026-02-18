@@ -1,4 +1,4 @@
-import { ModelYear, VehicleClass, ZevClass } from "@/prisma/generated/client";
+import { ModelYear, VehicleClass, ZevClass } from "@/prisma/generated/enums";
 
 export const unspecifiedComplianceRatios: Readonly<
   Partial<Record<VehicleClass, Partial<Record<ModelYear, string>>>>

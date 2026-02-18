@@ -1,9 +1,10 @@
 import { getUserInfo } from "@/auth";
 import { prisma } from "@/lib/prisma";
-import { Idp, Prisma, Role, User } from "@/prisma/generated/client";
 import { userIsAdmin } from "./utilsServer";
+import { Role, Idp } from "@/prisma/generated/enums";
+import { UserModel, UserWhereInput } from "@/prisma/generated/models";
 
-export type UserWithOrgName = Omit<User, "idpSub"> & {
+export type UserWithOrgName = Omit<UserModel, "idpSub"> & {
   organization: { name: string };
 };
 
@@ -19,7 +20,7 @@ export const fetchUsers = async (
     return [];
   }
   const { userIsGov, userOrgId } = await getUserInfo();
-  const whereClause: Prisma.UserWhereInput = {};
+  const whereClause: UserWhereInput = {};
   if (userIsGov) {
     switch (category) {
       case "bceid":

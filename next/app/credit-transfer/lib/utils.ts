@@ -3,14 +3,17 @@ import {
   getStringsToCreditTransferStatusEnumsMap,
   getStringsToCreditTransferSupplierStatusEnumsMap,
 } from "@/app/lib/utils/enumMaps";
-import { Prisma } from "@/prisma/generated/client";
+import {
+  CreditTransferWhereInput,
+  CreditTransferOrderByWithRelationInput,
+} from "@/prisma/generated/models";
 import { CreditTransferSparse } from "./data";
 
 export const getWhereClause = (
   filters: Record<string, string>,
   userIsGov: boolean,
-): Prisma.CreditTransferWhereInput => {
-  const result: Prisma.CreditTransferWhereInput = {};
+): CreditTransferWhereInput => {
+  const result: CreditTransferWhereInput = {};
   const statusMap = getStringsToCreditTransferStatusEnumsMap();
   const supplierStatusMap = getStringsToCreditTransferSupplierStatusEnumsMap();
   for (const [key, rawValue] of Object.entries(filters)) {
@@ -40,10 +43,10 @@ export const getOrderByClause = (
   sorts: { [key: string]: string },
   defaultSortById: boolean,
   userIsGov: boolean,
-): Prisma.CreditTransferOrderByWithRelationInput[] => {
-  const result: Prisma.CreditTransferOrderByWithRelationInput[] = [];
+): CreditTransferOrderByWithRelationInput[] => {
+  const result: CreditTransferOrderByWithRelationInput[] = [];
   Object.entries(sorts).forEach(([key, value]) => {
-    const orderBy: Prisma.CreditTransferOrderByWithRelationInput = {};
+    const orderBy: CreditTransferOrderByWithRelationInput = {};
     if (value === "asc" || value === "desc") {
       if (key === "id") {
         orderBy[key] = value;

@@ -21,7 +21,7 @@ import {
   ModelYear,
   VehicleClass,
   ZevClass,
-} from "@/prisma/generated/client";
+} from "@/prisma/generated/enums";
 import { getStringsToAgreementTypeEnumsMap } from "@/app/lib/utils/enumMaps";
 import { Dropzone } from "@/app/lib/components/Dropzone";
 import { FileWithPath } from "react-dropzone";

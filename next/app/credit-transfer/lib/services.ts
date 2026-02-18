@@ -2,11 +2,13 @@ import { prisma } from "@/lib/prisma";
 import {
   TransactionType,
   CreditTransferStatus,
-  Prisma,
-  CreditTransfer,
-  CreditTransferContent,
   CreditTransferSupplierStatus,
-} from "@/prisma/generated/client";
+} from "@/prisma/generated/enums";
+import {
+  CreditTransferModel,
+  CreditTransferContentModel,
+  CreditTransferHistoryUncheckedCreateInput,
+} from "@/prisma/generated/models";
 import {
   applyTransfersAway,
   getZevUnitRecords,
@@ -25,7 +27,7 @@ export const getTransfer = async (transferId: number) => {
 };
 
 export type CreditTransferHistoryCreateData = Omit<
-  Prisma.CreditTransferHistoryUncheckedCreateInput,
+  CreditTransferHistoryUncheckedCreateInput,
   "id" | "timestamp"
 >;
 
@@ -80,8 +82,8 @@ export const updateTransferStatusAndCreateHistory = async (
   return historyId;
 };
 
-export type CreditTransferWithContent = CreditTransfer & {
-  creditTransferContent: CreditTransferContent[];
+export type CreditTransferWithContent = CreditTransferModel & {
+  creditTransferContent: CreditTransferContentModel[];
 };
 
 export const transferIsCovered = async (

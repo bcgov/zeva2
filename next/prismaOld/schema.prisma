@@ -1,12 +1,11 @@
 generator client {
-  provider        = "prisma-client-js"
-  output          = "./generated/clientOld"
-  previewFeatures = ["relationJoins"]
+  provider        = "prisma-client"
+  output          = "./generated"
+  previewFeatures = ["partialIndexes", "relationJoins"]
 }
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL_OLD")
 }
 
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
@@ -555,6 +554,26 @@ model icbc_upload_date {
   upload_date            DateTime                 @db.Date
   filename               String?                  @db.VarChar(500)
   icbc_registration_data icbc_registration_data[]
+  icbc_upload_progress   icbc_upload_progress?
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+/// This model has constraints using non-default deferring rules and requires additional setup for migrations. Visit https://pris.ly/d/constraint-deferring for more info.
+model icbc_upload_progress {
+  id               Int              @id @default(autoincrement())
+  create_timestamp DateTime?        @db.Timestamptz(6)
+  create_user      String           @db.VarChar(130)
+  update_timestamp DateTime?        @db.Timestamptz(6)
+  update_user      String?          @db.VarChar(130)
+  progress         Int
+  status_text      String           @db.VarChar(255)
+  current_page     Int
+  total_pages      Int
+  complete         Boolean
+  error            String?
+  results          Json?
+  upload_id        Int              @unique
+  icbc_upload_date icbc_upload_date @relation(fields: [upload_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "icbc_upload_progress_upload_id_86437fcb_fk_icbc_upload_date_id")
 }
 
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
@@ -1587,6 +1606,7 @@ model vehicle {
   vehicle_comment         vehicle_comment[]
   vehicle_file_attachment vehicle_file_attachment[]
 
+  @@unique([make, model_name, vehicle_zev_type_id, model_year_id], map: "unique_non_deleted_vehicles", where: raw("(NOT ((validation_status)::text = 'DELETED'::text))"))
   @@index([credit_class_id], map: "vehicle_credit_class_id_a258b312")
   @@index([model_year_id], map: "vehicle_model_year_id_8cc080d2")
   @@index([organization_id], map: "vehicle_organization_id_8f346c5f")

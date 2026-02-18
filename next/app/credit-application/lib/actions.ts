@@ -7,12 +7,11 @@ import {
   CreditApplicationStatus,
   Role,
   TransactionType,
-  Prisma,
   ReferenceType,
   Notification,
   ModelYear,
   ZevClass,
-} from "@/prisma/generated/client";
+} from "@/prisma/generated/enums";
 import Excel from "exceljs";
 import {
   getTransactionTimestamp,
@@ -54,10 +53,15 @@ import {
   getIsInReportingPeriod,
   getPreviousComplianceYear,
 } from "@/app/lib/utils/complianceYear";
-import { Decimal } from "@/prisma/generated/client/runtime/library";
+import { Decimal } from "decimal.js";
 import { getModelYearEnumsToStringsMap } from "@/app/lib/utils/enumMaps";
 import { getLatestSuccessfulFileTimestamp } from "@/app/icbc/lib/services";
 import { getArrayBuffer } from "@/app/lib/utils/parseReadable";
+import {
+  CreditApplicationAttachmentWhereInput,
+  CreditApplicationRecordCreateManyInput,
+  ZevUnitTransactionCreateManyInput,
+} from "@/prisma/generated/models";
 
 export const getSupplierTemplateDownloadUrl = async () => {
   return await getPresignedGetObjectUrl(
@@ -90,7 +94,7 @@ export const getDocumentDownloadUrls = async (
 > => {
   const result: (AttachmentDownload & { isApplication: boolean })[] = [];
   const { userIsGov, userOrgId } = await getUserInfo();
-  const whereClause: Prisma.CreditApplicationAttachmentWhereInput = {
+  const whereClause: CreditApplicationAttachmentWhereInput = {
     creditApplicationId,
     fileName: { not: null },
   };
@@ -165,7 +169,7 @@ export const supplierSave = async (
     const workbook = new Excel.Workbook();
     await workbook.xlsx.load(applicationBuf);
     const recordsToCreatePrelim: Omit<
-      Prisma.CreditApplicationRecordCreateManyInput,
+      CreditApplicationRecordCreateManyInput,
       "creditApplicationId"
     >[] = [];
     const modelYears: Set<ModelYear> = new Set();
@@ -249,8 +253,7 @@ export const supplierSave = async (
         });
         applicationId = newApplication.id;
       }
-      const recordsToCreate: Prisma.CreditApplicationRecordCreateManyInput[] =
-        [];
+      const recordsToCreate: CreditApplicationRecordCreateManyInput[] = [];
       for (const record of recordsToCreatePrelim) {
         recordsToCreate.push({ ...record, creditApplicationId: applicationId });
       }
@@ -820,7 +823,7 @@ export const directorApprove = async (
   const invalidVins = invalidVinRecords.map((record) => {
     return record.vin;
   });
-  const transactionsToCreate: Prisma.ZevUnitTransactionCreateManyInput[] = [];
+  const transactionsToCreate: ZevUnitTransactionCreateManyInput[] = [];
   const creditRecords =
     await getApplicationFlattenedCreditRecords(creditApplicationId);
   const issuanceTimestamp = new Date();

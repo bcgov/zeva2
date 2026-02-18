@@ -13,7 +13,7 @@ import { useRouter } from "next/navigation";
 import { Routes } from "@/app/lib/constants";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faCopy } from "@fortawesome/free-solid-svg-icons";
-import { Idp } from "@/prisma/generated/client";
+import { Idp } from "@/prisma/generated/enums";
 
 export interface UserTableProps {
   users: UserWithOrgName[];

@@ -3,10 +3,12 @@ import {
   TransactionType,
   ZevClass,
   ModelYear,
-  ZevUnitEndingBalance,
-  ZevUnitTransaction,
-} from "@/prisma/generated/client";
-import { Decimal } from "@/prisma/generated/client/runtime/library";
+} from "@/prisma/generated/enums";
+import {
+  ZevUnitEndingBalanceModel,
+  ZevUnitTransactionModel,
+} from "@/prisma/generated/models";
+import { Decimal } from "decimal.js";
 import { getCompliancePeriod } from "../../app/lib/utils/complianceYear";
 import {
   isModelYear,
@@ -102,8 +104,8 @@ export const calculateBalance = (
 // else if there exists debit amongst endingBalances, return "deficit"
 // else, collect ending balances and transactions into a list of ZevUnitRecords, apply transfers away, and return the result
 export const getBalance = (
-  endingBalances: ZevUnitEndingBalance[],
-  transactions: ZevUnitTransaction[],
+  endingBalances: ZevUnitEndingBalanceModel[],
+  transactions: ZevUnitTransactionModel[],
 ) => {
   for (const transaction of transactions) {
     if (transaction.type === TransactionType.DEBIT) {
@@ -131,8 +133,8 @@ export const getBalance = (
  * the supplier has a deficit.
  */
 export const getCurrentBalance = (
-  endingBalances: ZevUnitEndingBalance[],
-  transactions: ZevUnitTransaction[],
+  endingBalances: ZevUnitEndingBalanceModel[],
+  transactions: ZevUnitTransactionModel[],
 ) => {
   let finalComplianceYear: ModelYear | undefined;
   for (const balance of endingBalances) {
@@ -182,7 +184,7 @@ export const sumBalance = (
 };
 
 export const getZevUnitRecords = (
-  endingBalances: ZevUnitEndingBalance[],
+  endingBalances: ZevUnitEndingBalanceModel[],
 ): ZevUnitRecord[] => {
   const result = [];
   for (const balance of endingBalances) {

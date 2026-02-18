@@ -11,7 +11,7 @@ import {
   TransactionType,
   VehicleClass,
   ZevClass,
-} from "@/prisma/generated/client";
+} from "@/prisma/generated/enums";
 import {
   createTransferHistory,
   transferIsCovered,
@@ -25,7 +25,7 @@ import {
   getErrorActionResponse,
   getSuccessActionResponse,
 } from "@/app/lib/utils/actionResponse";
-import { Decimal } from "@/prisma/generated/client/runtime/library";
+import { Decimal } from "decimal.js";
 import { addJobToEmailQueue } from "@/app/lib/services/queue";
 
 export type CreditTransferPayload = {

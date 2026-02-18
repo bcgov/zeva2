@@ -1,7 +1,7 @@
 import { getUserInfo } from "@/auth";
 import { AssessmentForm } from "../../lib/components/AssessmentForm";
 import { getModelYearReport } from "../../lib/data";
-import { ModelYearReportStatus } from "@/prisma/generated/client";
+import { ModelYearReportStatus } from "@/prisma/generated/enums";
 
 const Page = async (props: { params: Promise<{ id: string }> }) => {
   const args = await props.params;

@@ -1,11 +1,10 @@
 import { getUserInfo } from "@/auth";
 import { prisma } from "@/lib/prisma";
+import { ModelYear, PenaltyCreditStatus } from "@/prisma/generated/enums";
 import {
-  ModelYear,
-  PenaltyCredit,
-  PenaltyCreditHistory,
-  PenaltyCreditStatus,
-} from "@/prisma/generated/client";
+  PenaltyCreditModel,
+  PenaltyCreditHistoryModel,
+} from "@/prisma/generated/models";
 import { getOrderByClause, getWhereClause } from "./utils";
 
 export type OrgNamesAndIds = {
@@ -29,7 +28,7 @@ export const getOrgNamesAndIds = async (): Promise<OrgNamesAndIds[]> => {
   });
 };
 
-export type PenaltyCreditWithOrgName = PenaltyCredit & {
+export type PenaltyCreditWithOrgName = PenaltyCreditModel & {
   organization: { name: string };
 };
 
@@ -54,7 +53,7 @@ export const getPenaltyCredit = async (
   });
 };
 
-export type PenaltyCreditHistoryWithUser = PenaltyCreditHistory & {
+export type PenaltyCreditHistoryWithUser = PenaltyCreditHistoryModel & {
   user: { firstName: string; lastName: string };
 };
 

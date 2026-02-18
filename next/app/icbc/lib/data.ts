@@ -1,9 +1,9 @@
 import { getUserInfo } from "@/auth";
 import { prisma } from "@/lib/prisma";
-import { IcbcFile } from "@/prisma/generated/client";
+import { IcbcFileModel } from "@/prisma/generated/models";
 import { getOrderByClause, getWhereClause } from "./utils";
 
-export type IcbcFileSparse = Omit<IcbcFile, "name">;
+export type IcbcFileSparse = Omit<IcbcFileModel, "name">;
 
 export const getIcbcFiles = async (
   page: number,

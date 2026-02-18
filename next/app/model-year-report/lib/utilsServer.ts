@@ -1,12 +1,7 @@
-// For the sake of consistency, do not import,
-// directly or indirectly, Prisma's browser version of Decimal here;
-// use its node version instead!
-
-import { Decimal } from "@/prisma/generated/client/runtime/library";
+import { Decimal } from "decimal.js";
 import {
   BalanceType,
   ModelYear,
-  Prisma,
   ReassessmentStatus,
   ReferenceType,
   SupplementaryReportStatus,
@@ -14,7 +9,12 @@ import {
   TransactionType,
   VehicleClass,
   ZevClass,
-} from "@/prisma/generated/client";
+} from "@/prisma/generated/enums";
+import { SortOrderInput } from "@/prisma/generated/commonInputTypes";
+import {
+  ModelYearReportWhereInput,
+  ModelYearReportOrderByWithRelationInput,
+} from "@/prisma/generated/models";
 import { AdjustmentPayload, NvValues } from "./actions";
 import {
   specialComplianceRatios,
@@ -201,10 +201,10 @@ export const getSerializedMyrRecordsExcludeKey = <
 };
 
 export const getZevUnitRecordsOrderByClause = (): [
-  { type: Prisma.SortOrder },
-  { vehicleClass: Prisma.SortOrder },
-  { zevClass: Prisma.SortOrder },
-  { modelYear: Prisma.SortOrder },
+  { type: SortOrderInput["sort"] },
+  { vehicleClass: SortOrderInput["sort"] },
+  { zevClass: SortOrderInput["sort"] },
+  { modelYear: SortOrderInput["sort"] },
 ] => {
   return [
     { type: "asc" },
@@ -379,9 +379,9 @@ export const getPenalty = (
 export const getWhereClause = (
   filters: Record<string, string>,
   userIsGov: boolean,
-): Omit<Prisma.ModelYearReportWhereInput, "NOT"> => {
-  const result: Omit<Prisma.ModelYearReportWhereInput, "NOT"> = {};
-  const orClausesToAnd: { OR: Prisma.ModelYearReportWhereInput[] }[] = [];
+): Omit<ModelYearReportWhereInput, "NOT"> => {
+  const result: Omit<ModelYearReportWhereInput, "NOT"> = {};
+  const orClausesToAnd: { OR: ModelYearReportWhereInput[] }[] = [];
   const modelYearsMap = getStringsToModelYearsEnumsMap();
   const statusMap = getStringsToMyrStatusEnumsMap();
   const supplierStatusMap = getStringsToMyrSupplierStatusEnumsMap();
@@ -485,10 +485,10 @@ export const getOrderByClause = (
   sorts: Record<string, string>,
   defaultSortById: boolean,
   userIsGov: boolean,
-): Prisma.ModelYearReportOrderByWithRelationInput[] => {
-  const result: Prisma.ModelYearReportOrderByWithRelationInput[] = [];
+): ModelYearReportOrderByWithRelationInput[] => {
+  const result: ModelYearReportOrderByWithRelationInput[] = [];
   Object.entries(sorts).forEach(([key, value]) => {
-    const orderBy: Prisma.ModelYearReportOrderByWithRelationInput = {};
+    const orderBy: ModelYearReportOrderByWithRelationInput = {};
     if (value === "asc" || value === "desc") {
       if (
         key === "id" ||

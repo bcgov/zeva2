@@ -4,7 +4,7 @@ import {
   getSupplierOwnData,
   getSupplierOwnVehicleStats,
 } from "@/app/model-year-report/lib/data";
-import { SupplementaryReportStatus } from "@/prisma/generated/client";
+import { SupplementaryReportStatus } from "@/prisma/generated/enums";
 import { getPresignedGetObjectUrl } from "@/app/lib/minio";
 import { ModelYearReportForm } from "@/app/model-year-report/lib/components/ModelYearReportForm";
 

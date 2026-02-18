@@ -1,6 +1,6 @@
 import { getUserInfo } from "@/auth";
 import { UserWithOrg } from "@/lib/data/user";
-import { Role } from "@/prisma/generated/client";
+import { Role } from "@/prisma/generated/enums";
 import { validateRoles } from "./utils";
 
 export const userConfiguredCorrectly = (user: UserWithOrg) => {

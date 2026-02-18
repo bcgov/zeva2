@@ -1,11 +1,12 @@
 import { prisma } from "@/lib/prisma";
+import { ModelYear } from "@/prisma/generated/enums";
 import {
-  ZevUnitTransaction,
-  ZevUnitEndingBalance,
-  ModelYear,
-  Prisma,
-  Organization,
-} from "@/prisma/generated/client";
+  OrganizationModel,
+  ZevUnitEndingBalanceModel,
+  ZevUnitTransactionModel,
+  ZevUnitTransactionWhereInput,
+  ZevUnitEndingBalanceWhereInput,
+} from "@/prisma/generated/models";
 import { getBalance, ZevUnitRecordsObj } from "../../../lib/utils/zevUnit";
 import { getUserInfo } from "@/auth";
 import { getCompliancePeriod } from "@/app/lib/utils/complianceYear";
@@ -14,10 +15,10 @@ import { getStringsToModelYearsEnumsMap } from "@/app/lib/utils/enumMaps";
 export async function fetchTransactions(
   orgId: number,
   gteDate?: Date,
-): Promise<ZevUnitTransaction[]> {
+): Promise<ZevUnitTransactionModel[]> {
   const { userIsGov, userOrgId } = await getUserInfo();
   if (userIsGov || userOrgId === orgId) {
-    const where: Prisma.ZevUnitTransactionWhereInput = {
+    const where: ZevUnitTransactionWhereInput = {
       organizationId: orgId,
     };
     if (gteDate) {
@@ -34,10 +35,10 @@ export async function fetchTransactions(
 export async function fetchEndingBalances(
   orgId: number,
   complianceYear: ModelYear,
-): Promise<ZevUnitEndingBalance[]> {
+): Promise<ZevUnitEndingBalanceModel[]> {
   const { userIsGov, userOrgId } = await getUserInfo();
   if (userIsGov || userOrgId === orgId) {
-    const where: Prisma.ZevUnitEndingBalanceWhereInput = {
+    const where: ZevUnitEndingBalanceWhereInput = {
       organizationId: orgId,
       complianceYear: complianceYear,
     };
@@ -77,7 +78,7 @@ export async function fetchBalance(
 
 export async function getOrg(
   orgId: number,
-): Promise<Organization | null | undefined> {
+): Promise<OrganizationModel | null | undefined> {
   const { userIsGov, userOrgId } = await getUserInfo();
   if (userIsGov || userOrgId === orgId) {
     return await prisma.organization.findUnique({

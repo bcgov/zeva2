@@ -6,13 +6,12 @@ import {
   AgreementStatus,
   AgreementType,
   ModelYear,
-  Prisma,
   ReferenceType,
   Role,
   TransactionType,
   VehicleClass,
   ZevClass,
-} from "@/prisma/generated/client";
+} from "@/prisma/generated/enums";
 import { getPresignedGetObjectUrl } from "@/app/lib/minio";
 import {
   Attachment,
@@ -30,6 +29,10 @@ import {
 import { createHistory, updateAttachments } from "./services";
 import { getCreditsSum } from "./utilsServer";
 import { validateDate } from "@/app/lib/utils/date";
+import {
+  AgreementAttachmentWhereInput,
+  ZevUnitTransactionCreateManyInput,
+} from "@/prisma/generated/models";
 
 export type AgreementContentPayload = {
   vehicleClass: VehicleClass;
@@ -63,7 +66,7 @@ export const getAgreementAttachmentDownloadUrls = async (
   agreementId: number,
 ): Promise<DataOrErrorActionResponse<AttachmentDownload[]>> => {
   const { userIsGov, userOrgId } = await getUserInfo();
-  const whereClause: Prisma.AgreementAttachmentWhereInput = {
+  const whereClause: AgreementAttachmentWhereInput = {
     agreementId,
     fileName: { not: null },
   };
@@ -330,7 +333,7 @@ export const issueAgreement = async (
   if (!dateIsValid) {
     return getErrorActionResponse("Invalid Date!");
   }
-  const transactionsToCreate: Prisma.ZevUnitTransactionCreateManyInput[] = [];
+  const transactionsToCreate: ZevUnitTransactionCreateManyInput[] = [];
   for (const record of agreement.agreementContent) {
     transactionsToCreate.push({
       organizationId: agreement.organizationId,

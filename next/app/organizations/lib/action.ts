@@ -1,15 +1,15 @@
 import { getUserInfo } from "@/auth";
 import { prisma } from "@/lib/prisma";
+import { AddressType } from "@/prisma/generated/enums";
 import {
-  AddressType,
-  Organization,
-  OrganizationAddress,
-} from "@/prisma/generated/client";
+  OrganizationModel,
+  OrganizationAddressModel,
+} from "@/prisma/generated/models";
 import { isEmptyAddress } from "./utils";
 import { OrganizationAddressSparse } from "./data";
 
 export type OrganizationPayload = Omit<
-  Organization,
+  OrganizationModel,
   "id" | "firstModelYear" | "supplierClass"
 > & {
   serviceAddress?: OrganizationAddressSparse;
@@ -38,7 +38,7 @@ export const createOrganization = async (data: OrganizationPayload) => {
       });
 
       // Create service address if provided and not empty.
-      let createdServiceAddress: OrganizationAddress | undefined;
+      let createdServiceAddress: OrganizationAddressModel | undefined;
       if (data.serviceAddress && !isEmptyAddress(data.serviceAddress)) {
         createdServiceAddress = await tx.organizationAddress.create({
           data: {
@@ -50,7 +50,7 @@ export const createOrganization = async (data: OrganizationPayload) => {
       }
 
       // Create records address if provided and not empty.
-      let createdRecordsAddress: OrganizationAddress | undefined;
+      let createdRecordsAddress: OrganizationAddressModel | undefined;
       if (data.recordsAddress && !isEmptyAddress(data.recordsAddress)) {
         createdRecordsAddress = await tx.organizationAddress.create({
           data: {
@@ -65,7 +65,7 @@ export const createOrganization = async (data: OrganizationPayload) => {
         ...createdOrganization,
         serviceAddress: createdServiceAddress,
         recordsAddress: createdRecordsAddress,
-      } as Organization;
+      } as OrganizationModel;
     });
   } catch (error) {
     console.error("Error creating organization:", (error as Error).message);

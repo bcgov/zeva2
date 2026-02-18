@@ -1,10 +1,7 @@
 import { getUserInfo } from "@/auth";
-import { Role } from "@/prisma/generated/client";
+import { Role } from "@/prisma/generated/enums";
 import { getOrgNamesAndIds } from "../lib/data";
 import { PenaltyCreditCreateForm } from "../lib/components/PenaltyCreditCreateForm";
-import { analystSubmit, PenaltyCreditPayload } from "../lib/actions";
-import { redirect } from "next/navigation";
-import { Routes } from "@/app/lib/constants";
 
 const Page = async () => {
   const { userIsGov, userRoles } = await getUserInfo();

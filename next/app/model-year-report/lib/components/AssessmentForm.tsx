@@ -1,7 +1,7 @@
 "use client";
 
 import axios from "axios";
-import { ModelYear, VehicleClass, ZevClass } from "@/prisma/generated/client";
+import { ModelYear, VehicleClass, ZevClass } from "@/prisma/generated/enums";
 import { useRouter } from "next/navigation";
 import {
   JSX,
