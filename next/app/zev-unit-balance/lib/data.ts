@@ -9,7 +9,6 @@ export {
   fetchTransactions,
 } from "@/app/lib/services/balance";
 
-
 export async function getOrg(
   orgId: number,
 ): Promise<OrganizationModel | null | undefined> {
