@@ -1,6 +1,6 @@
 import { getUserInfo } from "@/auth";
 import { prisma } from "@/lib/prisma";
-import { AddressType } from "@/prisma/generated/client";
+import { AddressType } from "@/prisma/generated/enums";
 import { OrganizationAddressSparse } from "./data";
 
 export const getOrganizationDetails = async (id: number) => {

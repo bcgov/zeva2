@@ -6,10 +6,7 @@ import { SupplementaryGovernmentActions } from "./SupplementaryGovernmentActions
 import { SupplementarySupplierActions } from "./SupplementarySupplierActions";
 import { SupplementaryReportHistory } from "./SupplementaryReportHistory";
 import { SupplementaryReportDetails } from "./SupplementaryReportDetails";
-import {
-  ModelYear,
-  SupplementaryReportStatus,
-} from "@/prisma/generated/client";
+import { ModelYear, SupplementaryReportStatus } from "@/prisma/generated/enums";
 import { SystemDetails } from "./SystemDetails";
 import { getSupplementaryReportStatusEnumsToStringsMap } from "@/app/lib/utils/enumMaps";
 

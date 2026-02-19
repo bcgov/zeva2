@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import { IcbcFileStatus } from "@/prisma/generated/client";
+import { IcbcFileStatus } from "@/prisma/generated/enums";
 
 export const getLatestSuccessfulFileTimestamp = async () => {
   const icbcFile = await prisma.icbcFile.findFirst({

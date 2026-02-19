@@ -7,7 +7,7 @@ import { CreditTransferDetails } from "../lib/components/CreditTransferDetails";
 import { getTransfer } from "../lib/services";
 import { TransferFromActions } from "../lib/components/TransferFromActions";
 import { TransferToActions } from "../lib/components/TransferToActions";
-import { Role } from "@/prisma/generated/client";
+import { Role } from "@/prisma/generated/enums";
 import { DirectorActions } from "../lib/components/DirectorActions";
 import { AnalystActions } from "../lib/components/AnalystActions";
 

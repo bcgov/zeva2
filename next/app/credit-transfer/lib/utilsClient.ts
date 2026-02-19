@@ -1,4 +1,4 @@
-import { Decimal } from "@/prisma/generated/client/runtime/index-browser";
+import { Decimal } from "decimal.js";
 import { CreditTransferPayload } from "./actions";
 import {
   isModelYear,

@@ -5,7 +5,7 @@ import { getUserInfo } from "@/auth";
 import Link from "next/link";
 import { Button } from "../lib/components";
 import { Routes } from "../lib/constants";
-import { Role } from "@/prisma/generated/client";
+import { Role } from "@/prisma/generated/enums";
 import { LegacyReassessmentsList } from "./lib/components/LegacyReassessmentsLists";
 
 // todo: since there should be a minimal number of legacy reassessments over time, we will

@@ -4,7 +4,7 @@ import {
   getStringsToZevClassEnumsMap,
 } from "@/app/lib/utils/enumMaps";
 import { PenaltyCreditPayload } from "./actions";
-import { Decimal } from "@/prisma/generated/client/runtime/index-browser";
+import { Decimal } from "decimal.js";
 
 const MissingInputError = new Error(
   "All fields, except for the comment field, are required!",

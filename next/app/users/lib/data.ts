@@ -1,51 +1,65 @@
 import { getUserInfo } from "@/auth";
 import { prisma } from "@/lib/prisma";
-import { Prisma, Role, User } from "@/prisma/generated/client";
-import { getOrderByClause, getWhereClause, userIsAdmin } from "./utilsServer";
+import { userIsAdmin } from "./utilsServer";
+import { Role, Idp } from "@/prisma/generated/enums";
+import { UserModel, UserWhereInput } from "@/prisma/generated/models";
 
-export type UserWithOrgName = User & { organization?: { name: string } };
+export type UserWithOrgName = Omit<UserModel, "idpSub"> & {
+  organization: { name: string };
+};
 
-export async function fetchUsers(
-  page: number,
-  pageSize: number,
-  filters: Record<string, string>,
-  sorts: Record<string, string>,
-): Promise<{ users: UserWithOrgName[]; totalCount: number }> {
+export type GovUserCategory = "bceid" | "idir" | "inactive";
+
+export type SupplierUserCategory = "active" | "inactive";
+
+export const fetchUsers = async (
+  category: GovUserCategory | SupplierUserCategory,
+): Promise<UserWithOrgName[]> => {
   const isAdmin = await userIsAdmin();
   if (!isAdmin) {
-    return {
-      users: [],
-      totalCount: 0,
-    };
+    return [];
   }
   const { userIsGov, userOrgId } = await getUserInfo();
-  const skip = (page - 1) * pageSize;
-  const take = pageSize;
-  let where = getWhereClause(filters, userIsGov);
-  const orderBy = getOrderByClause(sorts, true, userIsGov);
-  if (!userIsGov) {
-    where = { ...where, organizationId: userOrgId };
-  }
-  const include: Prisma.UserInclude = {};
+  const whereClause: UserWhereInput = {};
   if (userIsGov) {
-    include["organization"] = {
-      select: {
-        name: true,
-      },
-    };
+    switch (category) {
+      case "bceid":
+        whereClause.idp = Idp.BCEID_BUSINESS;
+        whereClause.isActive = true;
+        break;
+      case "idir":
+        whereClause.idp = Idp.AZURE_IDIR;
+        whereClause.isActive = true;
+        break;
+      case "inactive":
+        whereClause.isActive = false;
+        break;
+    }
+  } else {
+    whereClause.organizationId = userOrgId;
+    switch (category) {
+      case "active":
+        whereClause.isActive = true;
+        break;
+      case "inactive":
+        whereClause.isActive = false;
+        break;
+    }
   }
-  const [users, totalCount] = await prisma.$transaction([
-    prisma.user.findMany({
-      where,
-      orderBy,
-      include,
-      skip,
-      take,
-    }),
-    prisma.user.count({ where }),
-  ]);
-  return { users, totalCount };
-}
+  return await prisma.user.findMany({
+    where: whereClause,
+    omit: {
+      idpSub: true,
+    },
+    include: {
+      organization: {
+        select: {
+          name: true,
+        },
+      },
+    },
+  });
+};
 
 export async function getUser(id: number) {
   const { userIsGov, userOrgId, userRoles } = await getUserInfo();

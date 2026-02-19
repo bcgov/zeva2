@@ -17,6 +17,11 @@ interface ITableHeaderProps<T> {
   filterState?: { [key: string]: string };
   filterOnApply?: boolean;
   onFilterApply?: () => void;
+  customStyles?: {
+    thead?: string;
+    theadTr?: string;
+    theadTh?: string;
+  };
 }
 
 const renderSortIcon = (sortState: "asc" | "desc" | null) => {
@@ -70,7 +75,7 @@ const HeaderFilterInput = ({
   return (
     <div>
       <input
-        className="w-36 border shadow-level-1 rounded"
+        className="w-full max-w-[200px] px-2 py-1 text-xs border border-dividerMedium rounded bg-white text-primaryText placeholder:text-placeholder focus:outline-none focus:ring-1 focus:ring-primaryBlue focus:border-primaryBlue"
         onChange={(event) => {
           onFilterChange?.(columnId, event.target.value);
         }}
@@ -87,7 +92,7 @@ const HeaderFilterInput = ({
   );
 };
 
-export const TableHeader = <T,>({
+export const TableHeader = <T extends unknown>({
   table,
   explicitSizing,
   stackHeaderContents,
@@ -99,33 +104,34 @@ export const TableHeader = <T,>({
   filterState = {},
   filterOnApply = false,
   onFilterApply,
+  customStyles,
 }: ITableHeaderProps<T>) => {
   return (
-    <thead className="bg-gray-50">
+    <thead className={customStyles?.thead || "bg-gray-50"}>
       {explicitSizing && getSizingHeaders(table, explicitSizing)}
       {table.getHeaderGroups().map((headerGroup) => (
-        <tr key={headerGroup.id}>
-          {headerGroup.headers.map((header) => (
-            <th
-              key={header.id}
-              className={`px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider ${
-                explicitSizing ? "truncate" : ""
-              }`}
-              style={explicitSizing ? { width: header.getSize() } : undefined}
-            >
-              <span
-                className={`inline-flex gap-1 ${
-                  stackHeaderContents ? "flex-col items-start" : "items-center"
-                }`}
+        <tr key={headerGroup.id} className={customStyles?.theadTr || ""}>
+          {headerGroup.headers.map((header) => {
+            const thClassName = customStyles?.theadTh 
+              ? customStyles.theadTh
+              : `px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider ${
+                  explicitSizing ? "truncate" : ""
+                }`.trim();
+            
+            return (
+              <th
+                key={header.id}
+                className={thClassName}
+                style={explicitSizing ? { width: header.getSize() } : undefined}
               >
                 {header.isPlaceholder ? null : (
-                  <>
+                  <div className="flex flex-col gap-2 items-start">
                     <button
                       type="button"
-                      className={getButtonClassName(
+                      className={`${getButtonClassName(
                         enableSorting,
                         header.column.getCanSort(),
-                      )}
+                      )} flex items-center gap-1`}
                       onClick={() => {
                         if (enableSorting && header.column.getCanSort()) {
                           onSortChange?.(header.id);
@@ -157,11 +163,11 @@ export const TableHeader = <T,>({
                         onFilterApply={onFilterApply}
                       />
                     )}
-                  </>
+                  </div>
                 )}
-              </span>
-            </th>
-          ))}
+              </th>
+          );
+        })}
         </tr>
       ))}
     </thead>

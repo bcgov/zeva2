@@ -4,13 +4,15 @@ import { getUserInfo } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import {
   VehicleStatus,
-  Vehicle,
-  Prisma,
   Notification,
   ZevClass,
   Role,
   CreditApplicationStatus,
-} from "@/prisma/generated/client";
+} from "@/prisma/generated/enums";
+import {
+  VehicleModel,
+  VehicleAttachmentWhereInput,
+} from "@/prisma/generated/models";
 import {
   createHistory,
   getConflictingVehicle,
@@ -40,7 +42,7 @@ export const getVehicleAttachmentsPutData = async (numberOfFiles: number) => {
 };
 
 export type VehiclePayload = Omit<
-  Vehicle,
+  VehicleModel,
   | "id"
   | "legacyId"
   | "organizationId"
@@ -377,7 +379,7 @@ export const getAttachmentDownloadUrls = async (
   id: number,
 ): Promise<DataOrErrorActionResponse<AttachmentDownload[]>> => {
   const { userIsGov, userOrgId } = await getUserInfo();
-  const whereClause: Prisma.VehicleAttachmentWhereInput = {
+  const whereClause: VehicleAttachmentWhereInput = {
     vehicleId: id,
     fileName: { not: null },
   };

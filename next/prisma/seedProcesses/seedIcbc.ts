@@ -1,5 +1,6 @@
 import { TransactionClient } from "@/types/prisma";
-import { IcbcFileStatus, IcbcRecord, ModelYear } from "../generated/client";
+import { IcbcFileStatus, ModelYear } from "../generated/enums";
+import { IcbcRecordModel } from "../generated/models";
 import { prismaOld } from "@/lib/prismaOld";
 import { randomUUID } from "crypto";
 import { getIsoYmdString, validateDate } from "@/app/lib/utils/date";
@@ -47,7 +48,7 @@ export const seedIcbc = async (
         icbc_vehicle: true,
       },
     });
-    const toCreate: Omit<IcbcRecord, "id">[] = [];
+    const toCreate: Omit<IcbcRecordModel, "id">[] = [];
     recordsOld.forEach((recordOld) => {
       const modelYear =
         mapOfModelYearIdsToModelYearEnum[recordOld.icbc_vehicle.model_year_id];

@@ -1,7 +1,6 @@
 import { getModelYearEnumsToStringsMap } from "@/app/lib/utils/enumMaps";
 import { ZevUnitRecordsObj } from "@/lib/utils/zevUnit";
-import { ModelYear } from "@/prisma/generated/client";
-import React from "react";
+import { ModelYear } from "@/prisma/generated/enums";
 
 export default function BalanceTable({
   balance,

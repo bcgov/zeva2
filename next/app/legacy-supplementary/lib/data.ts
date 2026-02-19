@@ -1,10 +1,7 @@
 import { getUserInfo } from "@/auth";
 import { prisma } from "@/lib/prisma";
-import {
-  ModelYear,
-  Prisma,
-  SupplementaryReportStatus,
-} from "@/prisma/generated/client";
+import { ModelYear, SupplementaryReportStatus } from "@/prisma/generated/enums";
+import { SupplementaryReportWhereInput } from "@/prisma/generated/models";
 
 export type LegacySupplementary = {
   id: number;
@@ -23,7 +20,7 @@ export const getLegacySupplementaries = async (
   const { userIsGov, userOrgId } = await getUserInfo();
   const skip = (page - 1) * pageSize;
   const take = pageSize;
-  const whereClause: Prisma.SupplementaryReportWhereInput = {
+  const whereClause: SupplementaryReportWhereInput = {
     modelYearReportId: null,
   };
   if (userIsGov) {

@@ -2,10 +2,7 @@
 
 import { Button } from "@/app/lib/components";
 import { Routes } from "@/app/lib/constants";
-import {
-  ModelYearReportStatus,
-  ReassessmentStatus,
-} from "@/prisma/generated/client";
+import { ModelYearReportStatus } from "@/prisma/generated/enums";
 import { useRouter } from "next/navigation";
 import { useCallback, useState, useTransition } from "react";
 import { returnModelYearReport, submitAssessment } from "../actions";

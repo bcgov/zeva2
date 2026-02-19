@@ -17,19 +17,21 @@ import {
   CreditApplicationStatus,
   ModelYear,
   ModelYearReportStatus,
-  Prisma,
   ReassessmentStatus,
   ReferenceType,
   SupplementaryReportStatus,
   SupplierClass,
-  SupplyVolume,
   TransactionType,
   VehicleClass,
   VehicleStatus,
   ZevClass,
   ZevType,
-} from "@/prisma/generated/client";
-import { Decimal } from "@/prisma/generated/client/runtime/library";
+} from "@/prisma/generated/enums";
+import {
+  SupplyVolumeModel,
+  ZevUnitTransactionWhereInput,
+} from "@/prisma/generated/models";
+import { Decimal } from "decimal.js";
 import {
   validatePrevBalanceTransactions,
   getZevUnitRecordsOrderByClause,
@@ -148,7 +150,7 @@ export const getSupplierClassAndVolumes = async (
   const orderBy: { modelYear: "asc" | "desc" } = {
     modelYear: "desc",
   };
-  let volumes: SupplyVolume[] = [];
+  let volumes: SupplyVolumeModel[] = [];
   if (modelYear < ModelYear.MY_2024) {
     volumes = await prisma.legacySalesVolume.findMany({
       where: whereClause,
@@ -285,7 +287,7 @@ export const getTransactionsForModelYear = async (
 ): Promise<MyrZevUnitTransaction[]> => {
   const result: MyrZevUnitTransaction[] = [];
   const { closedLowerBound, openUpperBound } = getCompliancePeriod(modelYear);
-  const whereClause: Prisma.ZevUnitTransactionWhereInput = {
+  const whereClause: ZevUnitTransactionWhereInput = {
     organizationId,
     timestamp: {
       gte: closedLowerBound,

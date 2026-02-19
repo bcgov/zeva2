@@ -4,17 +4,17 @@ import {
   CreditApplicationHistoryStatus,
   CreditApplicationStatus,
   ModelYear,
-  Prisma,
   TransactionType,
   VehicleClass,
   VehicleStatus,
   ZevType,
   ZevClass,
-} from "@/prisma/generated/client";
+} from "@/prisma/generated/enums";
+import { CreditApplicationRecordWhereInput } from "@/prisma/generated/models";
 import { mapOfStatusToSupplierStatus } from "./constants";
 import { Attachment } from "@/app/lib/services/attachments";
 import { TransactionClient } from "@/types/prisma";
-import { Decimal } from "@/prisma/generated/client/runtime/library";
+import { Decimal } from "decimal.js";
 import { flattenZevUnitRecords, ZevUnitRecord } from "@/lib/utils/zevUnit";
 
 export const getOrgInfo = async (orgId: number) => {
@@ -373,7 +373,7 @@ export const getRecordStats = async (
   creditApplicationId: number,
   type: "all" | "validated",
 ) => {
-  const whereClause: Prisma.CreditApplicationRecordWhereInput = {
+  const whereClause: CreditApplicationRecordWhereInput = {
     creditApplicationId,
   };
   if (type === "validated") {
@@ -401,7 +401,7 @@ export const getCreditStats = async (
   creditApplicationId: number,
   type: "all" | "validated",
 ) => {
-  const whereClause: Prisma.CreditApplicationRecordWhereInput = {
+  const whereClause: CreditApplicationRecordWhereInput = {
     creditApplicationId,
   };
   if (type === "validated") {

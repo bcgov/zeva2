@@ -1,9 +1,25 @@
-import { PrismaClient as PrismaClientOld } from "@/prisma/generated/clientOld";
+import { PrismaClient } from "@/prismaOld/generated/client";
+import { PrismaPg } from "@prisma/adapter-pg";
 
-const globalForPrisma = globalThis as unknown as { prismaOld: PrismaClientOld };
+const adapter = new PrismaPg({
+  connectionString: process.env.DATABASE_URL_OLD,
+  ssl:
+    process.env.NODE_ENV === "production"
+      ? { rejectUnauthorized: false }
+      : undefined,
+});
 
-export const prismaOld = globalForPrisma.prismaOld || new PrismaClientOld();
+const getPrisma = () =>
+  new PrismaClient({
+    adapter,
+  });
+
+const globalForPrismaOld = global as unknown as {
+  prismaClientOld: ReturnType<typeof getPrisma>;
+};
+
+export const prismaOld = globalForPrismaOld.prismaClientOld || getPrisma();
 
 if (process.env.NODE_ENV !== "production") {
-  globalForPrisma.prismaOld = prismaOld;
+  globalForPrismaOld.prismaClientOld = prismaOld;
 }

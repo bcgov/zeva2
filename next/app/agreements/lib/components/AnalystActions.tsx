@@ -2,7 +2,7 @@
 
 import { Button } from "@/app/lib/components";
 import { Routes } from "@/app/lib/constants";
-import { AgreementStatus } from "@/prisma/generated/client";
+import { AgreementStatus } from "@/prisma/generated/enums";
 import { useRouter } from "next/navigation";
 import { useCallback, useState, useTransition } from "react";
 import { deleteAgreement, recommendApproval } from "../actions";

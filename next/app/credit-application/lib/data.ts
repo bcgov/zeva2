@@ -1,15 +1,17 @@
 import { getUserInfo } from "@/auth";
 import { prisma } from "@/lib/prisma";
+import { CreditApplicationStatus, Role } from "@/prisma/generated/enums";
 import {
-  CreditApplication,
-  CreditApplicationHistory,
-  CreditApplicationRecord,
-  CreditApplicationStatus,
-  Organization,
-  Prisma,
-  Role,
-  User,
-} from "@/prisma/generated/client";
+  CreditApplicationModel,
+  CreditApplicationHistoryModel,
+  CreditApplicationRecordModel,
+  OrganizationModel,
+  UserModel,
+  CreditApplicationWhereUniqueInput,
+  CreditApplicationWhereInput,
+  CreditApplicationHistoryWhereInput,
+  CreditApplicationAttachmentWhereInput,
+} from "@/prisma/generated/models";
 import {
   getOrderByClause,
   getRecordsOrderByClause,
@@ -19,22 +21,23 @@ import {
 import { ZevUnitRecord } from "@/lib/utils/zevUnit";
 import { getCreditStats, getRecordStats } from "./services";
 
-export type CreditApplicationWithOrgAndAttachmentsCount = CreditApplication & {
-  organization: Organization;
-  _count: {
-    CreditApplicationAttachment: number;
+export type CreditApplicationWithOrgAndAttachmentsCount =
+  CreditApplicationModel & {
+    organization: OrganizationModel;
+    _count: {
+      CreditApplicationAttachment: number;
+    };
   };
-};
 
 export const getCreditApplication = async (
   creditApplicationId: number,
 ): Promise<CreditApplicationWithOrgAndAttachmentsCount | null> => {
   const { userIsGov, userOrgId, userRoles } = await getUserInfo();
-  let whereClause: Prisma.CreditApplicationWhereUniqueInput = {
+  let whereClause: CreditApplicationWhereUniqueInput = {
     id: creditApplicationId,
   };
   if (userIsGov) {
-    const notClause: Prisma.CreditApplicationWhereInput[] = [
+    const notClause: CreditApplicationWhereInput[] = [
       {
         status: {
           in: [
@@ -75,7 +78,7 @@ export const getCreditApplication = async (
 };
 
 export type CreditApplicationRecordSparse = Omit<
-  CreditApplicationRecord,
+  CreditApplicationRecordModel,
   "vehicleClass" | "zevClass" | "numberOfUnits"
 >;
 
@@ -160,7 +163,7 @@ export const getData = async (
 };
 
 export type CreditApplicationSparse = Pick<
-  CreditApplication,
+  CreditApplicationModel,
   | "id"
   | "status"
   | "submissionTimestamp"
@@ -178,10 +181,7 @@ export const getCreditApplications = async (
   const { userIsGov, userOrgId, userRoles } = await getUserInfo();
   const skip = (page - 1) * pageSize;
   const take = pageSize;
-  const where: Prisma.CreditApplicationWhereInput = getWhereClause(
-    filters,
-    userIsGov,
-  );
+  const where: CreditApplicationWhereInput = getWhereClause(filters, userIsGov);
   const orderBy = getOrderByClause(sorts, true, userIsGov);
   if (userIsGov) {
     where.NOT = [
@@ -233,9 +233,9 @@ export const getCreditApplications = async (
   ]);
 };
 
-export type CreditApplicationHistoryWithUser = CreditApplicationHistory & {
-  user: Pick<User, "firstName" | "lastName"> & {
-    organization: Pick<Organization, "isGovernment">;
+export type CreditApplicationHistoryWithUser = CreditApplicationHistoryModel & {
+  user: Pick<UserModel, "firstName" | "lastName"> & {
+    organization: Pick<OrganizationModel, "isGovernment">;
   };
 };
 
@@ -243,7 +243,7 @@ export const getApplicationHistories = async (
   creditApplicationId: number,
 ): Promise<CreditApplicationHistoryWithUser[]> => {
   const { userIsGov, userOrgId } = await getUserInfo();
-  const where: Prisma.CreditApplicationHistoryWhereInput = {
+  const where: CreditApplicationHistoryWhereInput = {
     creditApplicationId,
   };
   if (!userIsGov) {
@@ -320,7 +320,7 @@ export const getModelMismatchesMap = async (
 
 export const getApplicationStatistics = async (creditApplicationId: number) => {
   const { userIsGov, userOrgId } = await getUserInfo();
-  const whereClause: Prisma.CreditApplicationWhereUniqueInput = {
+  const whereClause: CreditApplicationWhereUniqueInput = {
     id: creditApplicationId,
   };
   if (userIsGov) {
@@ -360,7 +360,7 @@ export const getApplicationStatistics = async (creditApplicationId: number) => {
 
 export const getAttachmentsCount = async (creditApplicationId: number) => {
   const { userIsGov, userOrgId } = await getUserInfo();
-  const whereClause: Prisma.CreditApplicationAttachmentWhereInput = {
+  const whereClause: CreditApplicationAttachmentWhereInput = {
     creditApplicationId,
   };
   if (!userIsGov) {

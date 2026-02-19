@@ -7,7 +7,7 @@ import { Routes } from "@/app/lib/constants";
 import { CommentBox } from "@/app/lib/components/inputs/CommentBox";
 import { getNormalizedComment } from "@/app/lib/utils/comment";
 import { CreditTransferLine, CreditTransferLines } from "./CreditTransferLines";
-import { ModelYear, VehicleClass, ZevClass } from "@/prisma/generated/client";
+import { ModelYear, VehicleClass, ZevClass } from "@/prisma/generated/enums";
 import { submitTransfer } from "../actions";
 import { getCreditTransferPayload } from "../utilsClient";
 

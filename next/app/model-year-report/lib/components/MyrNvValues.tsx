@@ -1,7 +1,7 @@
 "use client";
 
 import { getVehicleClassEnumsToStringsMap } from "@/app/lib/utils/enumMaps";
-import { VehicleClass } from "@/prisma/generated/client";
+import { VehicleClass } from "@/prisma/generated/enums";
 import { NvValues } from "../actions";
 import { useMemo } from "react";
 

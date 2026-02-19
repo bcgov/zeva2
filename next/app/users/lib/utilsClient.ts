@@ -1,4 +1,4 @@
-import { Role } from "@/prisma/generated/client";
+import { Role } from "@/prisma/generated/enums";
 import { UserPayload } from "./actions";
 import { validateRoles } from "./utils";
 

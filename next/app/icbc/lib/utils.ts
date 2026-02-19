@@ -1,12 +1,16 @@
-import { IcbcFileStatus, Prisma } from "@/prisma/generated/client";
+import { IcbcFileStatus } from "@/prisma/generated/enums";
+import {
+  IcbcFileWhereInput,
+  IcbcFileOrderByWithRelationInput,
+} from "@/prisma/generated/models";
 import { IcbcFileSparse } from "./data";
 import { getIsoYmdString, validateDate } from "@/app/lib/utils/date";
 import { IcbcFileSubDirectory } from "./constants";
 
 export const getWhereClause = (
   filters: Record<string, string>,
-): Prisma.IcbcFileWhereInput => {
-  const result: Prisma.IcbcFileWhereInput = {};
+): IcbcFileWhereInput => {
+  const result: IcbcFileWhereInput = {};
   Object.entries(filters).forEach(([key, value]) => {
     if (key === "id") {
       result[key] = parseInt(value, 10);
@@ -44,8 +48,8 @@ export const getWhereClause = (
 export const getOrderByClause = (
   sorts: Record<string, string>,
   defaultSortById: boolean,
-): Prisma.IcbcFileOrderByWithRelationInput[] => {
-  const result: Prisma.IcbcFileOrderByWithRelationInput[] = [];
+): IcbcFileOrderByWithRelationInput[] => {
+  const result: IcbcFileOrderByWithRelationInput[] = [];
   Object.entries(sorts).forEach(([key, value]) => {
     if (value === "asc" || value === "desc") {
       if (

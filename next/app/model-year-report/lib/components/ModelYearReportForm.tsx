@@ -3,7 +3,7 @@
 import axios from "axios";
 import { Button } from "@/app/lib/components";
 import { getModelYearEnumsToStringsMap } from "@/app/lib/utils/enumMaps";
-import { ModelYear, VehicleClass, ZevClass } from "@/prisma/generated/client";
+import { ModelYear, VehicleClass, ZevClass } from "@/prisma/generated/enums";
 import { useRouter } from "next/navigation";
 import {
   JSX,
@@ -140,12 +140,16 @@ export const ModelYearReportForm = (
   }, []);
 
   useEffect(() => {
-    if (props.type === "legacyNewSupp" && modelYear) {
-      startTransition(async () => {
-        const response = await retrieveVehicleStatistics(modelYear);
-        const vehicleStats = getVehicleStatsAsStrings(response.data);
-        setVehicleStats(vehicleStats);
-      });
+    if (props.type === "legacyNewSupp") {
+      if (modelYear) {
+        startTransition(async () => {
+          const response = await retrieveVehicleStatistics(modelYear);
+          const vehicleStats = getVehicleStatsAsStrings(response.data);
+          setVehicleStats(vehicleStats);
+        });
+      } else {
+        setVehicleStats([]);
+      }
     }
   }, [props.type, modelYear]);
 

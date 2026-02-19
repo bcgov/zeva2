@@ -1,4 +1,4 @@
-import { Role } from "@/prisma/generated/client";
+import { Role } from "@/prisma/generated/enums";
 import { Routes } from "./Routes";
 import { govRoles, supplierRoles } from "@/app/users/lib/constants";
 
@@ -96,6 +96,11 @@ export const navbarSubItems: NavbarSubItems = {
     {
       label: "Model Year Reports",
       route: Routes.ComplianceReporting,
+    },
+    {
+      label: "Compliance Calculator",
+      route: Routes.ComplianceCalculator,
+      roles: supplierRoles,
     },
     {
       label: "Legacy Reassessments",

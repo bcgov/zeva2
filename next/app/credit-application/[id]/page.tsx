@@ -1,5 +1,5 @@
 import { getUserInfo } from "@/auth";
-import { Role } from "@/prisma/generated/client";
+import { Role } from "@/prisma/generated/enums";
 import { getCreditApplication } from "../lib/data";
 import { ContentCard } from "@/app/lib/components";
 import { Suspense } from "react";

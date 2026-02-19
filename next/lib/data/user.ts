@@ -1,9 +1,10 @@
 import { getStringsToIdpEnumsMap } from "@/app/lib/utils/enumMaps";
 import { prisma } from "@/lib/prisma";
-import { Idp, Organization, User } from "@/prisma/generated/client";
+import { Idp } from "@/prisma/generated/enums";
+import { OrganizationModel, UserModel } from "@/prisma/generated/models";
 import { Profile } from "next-auth";
 
-export type UserWithOrg = User & { organization: Organization };
+export type UserWithOrg = UserModel & { organization: OrganizationModel };
 
 export const getActiveUserByProfile = async (
   profile: Profile,

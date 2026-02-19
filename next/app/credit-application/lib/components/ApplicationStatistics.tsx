@@ -1,4 +1,4 @@
-import { CreditApplicationStatus } from "@/prisma/generated/client";
+import { CreditApplicationStatus } from "@/prisma/generated/enums";
 import { getApplicationStatistics } from "../data";
 import {
   getModelYearEnumsToStringsMap,

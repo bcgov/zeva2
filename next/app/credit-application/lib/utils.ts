@@ -1,5 +1,11 @@
 import Excel from "exceljs";
-import { ModelYear, Prisma } from "@/prisma/generated/client";
+import { ModelYear } from "@/prisma/generated/enums";
+import {
+  CreditApplicationWhereInput,
+  CreditApplicationOrderByWithRelationInput,
+  CreditApplicationRecordWhereInput,
+  CreditApplicationRecordOrderByWithRelationInput,
+} from "@/prisma/generated/models";
 import {
   getMatchingTerms,
   getStringsToCreditApplicationStatusEnumsMap,
@@ -24,8 +30,8 @@ import {
 export const getWhereClause = (
   filters: Record<string, string>,
   userIsGov: boolean,
-): Omit<Prisma.CreditApplicationWhereInput, "NOT"> => {
-  const result: Omit<Prisma.CreditApplicationWhereInput, "NOT"> = {};
+): Omit<CreditApplicationWhereInput, "NOT"> => {
+  const result: Omit<CreditApplicationWhereInput, "NOT"> = {};
   const statusMap = getStringsToCreditApplicationStatusEnumsMap();
   const supplierStatusMap =
     getStringsToCreditApplicationSupplierStatusEnumsMap();
@@ -78,10 +84,10 @@ export const getOrderByClause = (
   sorts: Record<string, string>,
   defaultSortById: boolean,
   userIsGov: boolean,
-): Prisma.CreditApplicationOrderByWithRelationInput[] => {
-  const result: Prisma.CreditApplicationOrderByWithRelationInput[] = [];
+): CreditApplicationOrderByWithRelationInput[] => {
+  const result: CreditApplicationOrderByWithRelationInput[] = [];
   for (const [key, value] of Object.entries(sorts)) {
-    const orderBy: Prisma.CreditApplicationOrderByWithRelationInput = {};
+    const orderBy: CreditApplicationOrderByWithRelationInput = {};
     if (value === "asc" || value === "desc") {
       if (key === "id" || key === "submissionTimestamp") {
         orderBy[key] = value;
@@ -109,8 +115,8 @@ export const getOrderByClause = (
 
 export const getRecordsWhereClause = (
   filters: Record<string, string>,
-): Prisma.CreditApplicationRecordWhereInput => {
-  const result: Prisma.CreditApplicationRecordWhereInput = {};
+): CreditApplicationRecordWhereInput => {
+  const result: CreditApplicationRecordWhereInput = {};
   const modelYearsMap = getStringsToModelYearsEnumsMap();
   Object.entries(filters).forEach(([key, rawValue]) => {
     const value = rawValue.trim();
@@ -182,10 +188,10 @@ export const getRecordsWhereClause = (
 export const getRecordsOrderByClause = (
   sorts: Record<string, string>,
   defaultSortById: boolean,
-): Prisma.CreditApplicationRecordOrderByWithRelationInput[] => {
-  const result: Prisma.CreditApplicationRecordOrderByWithRelationInput[] = [];
+): CreditApplicationRecordOrderByWithRelationInput[] => {
+  const result: CreditApplicationRecordOrderByWithRelationInput[] = [];
   Object.entries(sorts).forEach(([key, value]) => {
-    const orderBy: Prisma.CreditApplicationRecordOrderByWithRelationInput = {};
+    const orderBy: CreditApplicationRecordOrderByWithRelationInput = {};
     if (
       (value === "asc" || value === "desc") &&
       (key === "vin" ||
