@@ -45,7 +45,7 @@ jobs:
           cache-dependency-path: ./next/package-lock.json
 
       - name: Install dependencies
-        run: npm ci
+        run: npm install
 
       - name: Generate Prisma Client
         run: npm run generate-prisma-client
@@ -86,7 +86,7 @@ jobs:
           cache-dependency-path: ./package-lock.json
 
       - name: Install dependencies
-        run: npm ci
+        run: npm install
 
       # This step captures the latest tag reachable from the current commit before the release runs.
       # sample output us v1.2.3
