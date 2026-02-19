@@ -72,6 +72,7 @@ export const CalculatorForm = ({
         setSelectedYearOption(value as ModelYear);
         const yearInfo = complianceRatios.find((ratio) => ratio.modelYear === value);
         setComplianceYearInfo(yearInfo || null);
+        setEstimatedModelSales([]);
       } else if (id === "supplier-size") {
         setSupplierSize(value as SupplierSize);
       } else if (id === "total-sales-number") {

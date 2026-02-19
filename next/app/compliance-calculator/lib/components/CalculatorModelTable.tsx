@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState, useCallback, useRef, useEffect } from "react";
 import { EstimatedModelSale, VehicleModel } from "../types";
 import { ModelYear } from "@/prisma/generated/client";
 import { ClientSideTable } from "@/app/lib/components";
@@ -25,12 +25,29 @@ type TableVehicleModel = VehicleModel & {
   displayName: string;
 };
 
+const columnHelper = createColumnHelper<TableVehicleModel>();
+
 export const CalculatorModelTable = ({
   models,
   selectedModelYear,
   estimatedModelSales,
   onModelSaleChange,
 }: CalculatorModelTableProps) => {
+  const inputValuesRef = useRef<Record<number, string>>({});
+  const [, setUpdateCounter] = useState(0);
+
+  useEffect(() => {
+    inputValuesRef.current = {};
+    setUpdateCounter(0);
+  }, [selectedModelYear]);
+
+  const handleInputChange = useCallback((modelId: number, value: string, creditValue: number, creditClass: string) => {
+    inputValuesRef.current[modelId] = value;
+    const numValue = parseInt(value) || 0;
+    onModelSaleChange(modelId, numValue, creditValue, creditClass);
+    setUpdateCounter(c => c + 1);
+  }, [onModelSaleChange]);
+
   const filteredModels = useMemo(() => {
     let filtered = models;
 
@@ -44,17 +61,14 @@ export const CalculatorModelTable = ({
   const tableData = useMemo<TableVehicleModel[]>(() => {
     return filteredModels.map((model) => {
       const modelYearStr = model.modelYear.replace("MY_", "");
-      const estimatedSale = estimatedModelSales.find((sale) => sale.id === model.id);
       return {
         ...model,
         displayName: `${modelYearStr} ${model.make} ${model.modelName}`,
-        estimatedSale,
       };
     });
-  }, [filteredModels, estimatedModelSales]);
+  }, [filteredModels]);
 
   // Define columns
-  const columnHelper = createColumnHelper<TableVehicleModel>();
   const columns = useMemo<ColumnDef<TableVehicleModel, any>[]>(
     () => [
       columnHelper.accessor("displayName", {
@@ -87,44 +101,55 @@ export const CalculatorModelTable = ({
       columnHelper.display({
         id: "estimatedSales",
         header: "Estimated annual ZEVs supplied",
-        cell: (info) => (
-          <input
-            className="w-32 px-3 py-2 border border-dividerMedium rounded text-left text-primaryText bg-white focus:outline-none focus:ring-2 focus:ring-primaryBlue focus:border-primaryBlue"
-            id={`input-sales-${info.row.original.id}`}
-            name="input-sales"
-            step="1"
-            type="number"
-            min="0"
-            placeholder="Text"
-            defaultValue=""
-            onChange={(e) => {
-              const value = parseInt(e.target.value) || 0;
-              onModelSaleChange(
-                info.row.original.id,
-                value,
-                info.row.original.creditValue,
-                info.row.original.creditClass
-              );
-            }}
-          />
-        ),
+        cell: (info) => {
+          const modelId = info.row.original.id;
+          return (
+            <input
+              className="w-32 px-3 py-2 border border-dividerMedium rounded text-left text-primaryText bg-white focus:outline-none focus:ring-2 focus:ring-primaryBlue focus:border-primaryBlue"
+              id={`input-sales-${modelId}`}
+              name="input-sales"
+              step="1"
+              type="number"
+              min="0"
+              placeholder="Text"
+              defaultValue={inputValuesRef.current[modelId] || ""}
+              onChange={(e) => {
+                handleInputChange(
+                  modelId,
+                  e.target.value,
+                  info.row.original.creditValue,
+                  info.row.original.creditClass
+                );
+              }}
+            />
+          );
+        },
       }),
       columnHelper.display({
         id: "estimatedCreditsTotal",
         header: "Estimated Credits Total",
         cell: (info) => {
-          const estimatedSale = info.row.original.estimatedSale;
+          const modelId = info.row.original.id;
+          const inputValue = inputValuesRef.current[modelId];
+          const creditValue = info.row.original.creditValue;
+          const creditClass = info.row.original.creditClass;
+          
+          if (inputValue && parseInt(inputValue) > 0) {
+            const totalCredits = parseInt(inputValue) * creditValue;
+            return (
+              <span className="text-sm text-primaryText">
+                {formatNumeric(totalCredits)}-{creditClass}
+              </span>
+            );
+          }
+          
           return (
-            <span className="text-sm text-primaryText">
-              {estimatedSale
-                ? `${formatNumeric(estimatedSale.value)}-${estimatedSale.creditClass}`
-                : "Result"}
-            </span>
+            <span className="text-sm text-primaryText">Result</span>
           );
         },
       }),
     ],
-    [columnHelper, onModelSaleChange]
+    [handleInputChange]
   );
 
   return (
