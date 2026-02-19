@@ -98,6 +98,11 @@ export const navbarSubItems: NavbarSubItems = {
       route: Routes.ComplianceReporting,
     },
     {
+      label: "Compliance Calculator",
+      route: Routes.ComplianceCalculator,
+      roles: supplierRoles,
+    },
+    {
       label: "Legacy Reassessments",
       route: Routes.LegacyReassessments,
     },
