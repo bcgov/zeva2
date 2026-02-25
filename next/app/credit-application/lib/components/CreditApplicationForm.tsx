@@ -24,7 +24,7 @@ import { getModelYearEnumsToStringsMap } from "@/app/lib/utils/enumMaps";
 import { downloadBuffer, getFiles } from "@/app/lib/utils/download";
 import { Routes } from "@/app/lib/constants";
 import { getDefaultAttchmentTypes } from "@/app/lib/utils/attachments";
-import { Attachment, AttachmentDownload } from "@/app/lib/services/attachments";
+import { Attachment, AttachmentDownload } from "@/app/lib/constants/attachment";
 
 export const CreditApplicationForm = (props: {
   creditApplication?: {
@@ -114,7 +114,9 @@ export const CreditApplicationForm = (props: {
         );
         for (const [index, attachment] of allAttachments.entries()) {
           const putDatum = putData[index];
-          await axios.put(putDatum.url, attachment);
+          await axios.put(putDatum.url, attachment, {
+            headers: { "if-none-match": "*" },
+          });
           attachmentsPayload.push({
             objectName: putDatum.objectName,
             fileName: attachment.name,

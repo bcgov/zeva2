@@ -1,9 +1,8 @@
 import Excel from "exceljs";
-import { getArrayBuffer } from "@/app/lib/utils/parseReadable";
 import { parseAssessment } from "../utils";
 import { ParsedAssessment } from "./ParsedAssessment";
 import { getAssessment, getReassessment } from "../data";
-import { getObject } from "@/app/lib/minio";
+import { getObjectAsBuffer } from "@/app/lib/services/s3";
 
 // used by both assessments and reassessments; id is either a myrId or a reassessmentId
 export const AssessmentDetails = async (props: {
@@ -28,8 +27,7 @@ export const AssessmentDetails = async (props: {
   if (!objectName) {
     return null;
   }
-  const file = await getObject(objectName);
-  const assmntBuf = await getArrayBuffer(file);
+  const assmntBuf = await getObjectAsBuffer(objectName);
   const assmntWorkbook = new Excel.Workbook();
   await assmntWorkbook.xlsx.load(assmntBuf);
   const parsedAssessment = parseAssessment(assmntWorkbook);

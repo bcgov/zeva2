@@ -5,7 +5,6 @@ import {
 } from "@/prisma/generated/models";
 import { IcbcFileSparse } from "./data";
 import { getIsoYmdString, validateDate } from "@/app/lib/utils/date";
-import { IcbcFileSubDirectory } from "./constants";
 
 export const getWhereClause = (
   filters: Record<string, string>,
@@ -83,8 +82,4 @@ export const getSerializedIcbcFiles = (
     });
   });
   return result;
-};
-
-export const getIcbcFileFullObjectName = (objectName: string) => {
-  return `${IcbcFileSubDirectory.IcbcFiles}/${objectName}`;
 };

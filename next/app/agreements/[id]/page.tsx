@@ -4,10 +4,8 @@ import { Role } from "@/prisma/generated/enums";
 import { getAgreement } from "../lib/data";
 import { AnalystActions } from "../lib/components/AnalystActions";
 import { DirectorActions } from "../lib/components/DirectorActions";
-import { AttachmentsList } from "@/app/lib/components/AttachmentsList";
-import { AttachmentsDownload } from "@/app/lib/components/AttachmentsDownload";
 import { getAgreementAttachmentDownloadUrls } from "../lib/actions";
-import { Attachment } from "@/app/lib/services/attachments";
+import { Attachments } from "@/app/lib/components/Attachments";
 import { AgreementHistory } from "../lib/components/AgreementHistory";
 
 const Page = async (props: { params: Promise<{ id: string }> }) => {
@@ -26,15 +24,6 @@ const Page = async (props: { params: Promise<{ id: string }> }) => {
     actions = <AnalystActions agreementId={agreementId} status={status} />;
   } else if (userIsGov && userRoles.includes(Role.DIRECTOR)) {
     actions = <DirectorActions agreementId={agreementId} status={status} />;
-  }
-  const attachments: Attachment[] = [];
-  for (const att of agreement.agreementAttachment) {
-    if (att.fileName) {
-      attachments.push({
-        fileName: att.fileName,
-        objectName: crypto.randomUUID(),
-      });
-    }
   }
   const download = async () => {
     "use server";
@@ -57,13 +46,12 @@ const Page = async (props: { params: Promise<{ id: string }> }) => {
           Supporting Documents
         </p>
         <div className={"p-2 border border-gray-300 rounded bg-white"}>
-          <AttachmentsList className="mb-3" attachments={attachments} />
-          {attachments.length > 0 && (
-            <AttachmentsDownload
-              download={download}
-              zipName={`agreement_${agreementId}_attachments.zip`}
-            />
-          )}
+          <Attachments
+            className="mb-3"
+            attachments={agreement.agreementAttachment}
+            download={download}
+            zipName={`agreement_${agreementId}_attachments.zip`}
+          />
         </div>
       </div>
       {actions}

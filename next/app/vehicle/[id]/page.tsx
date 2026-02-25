@@ -7,7 +7,7 @@ import { VehicleDetails } from "../lib/components/VehicleDetails";
 import { getVehicle } from "../lib/data";
 import { Role } from "@/prisma/generated/enums";
 import { getAttachmentDownloadUrls } from "../lib/actions";
-import { AttachmentsDownload } from "@/app/lib/components/AttachmentsDownload";
+import { Attachments } from "@/app/lib/components/Attachments";
 import { SupplierActions } from "../lib/components/SupplierActions";
 import { AnalystActions } from "../lib/components/AnalystActions";
 
@@ -49,14 +49,13 @@ const Page = async (props: { params: Promise<{ id: string }> }) => {
           <VehicleDetails vehicle={vehicle} />
         </Suspense>
       </ContentCard>
-      {vehicle._count.VehicleAttachment > 0 && (
-        <ContentCard title="Download Additional Documents">
-          <AttachmentsDownload
-            download={download}
-            zipName={`zev-model-attachments-${id}`}
-          />
-        </ContentCard>
-      )}
+      <ContentCard title="Download Additional Documents">
+        <Attachments
+          attachments={vehicle.VehicleAttachment}
+          download={download}
+          zipName={`zev-model-attachments-${id}`}
+        />
+      </ContentCard>
       {actions && <ContentCard title="Actions">{actions}</ContentCard>}
     </div>
   );

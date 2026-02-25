@@ -20,12 +20,6 @@ import {
   CreditApplicationSparse,
 } from "./data";
 import { getIsoYmdString, validateDate } from "@/app/lib/utils/date";
-import {
-  getComplianceDate,
-  getComplianceYear,
-  getIsInReportingPeriod,
-  getPreviousComplianceYear,
-} from "@/app/lib/utils/complianceYear";
 
 export const getWhereClause = (
   filters: Record<string, string>,
@@ -131,7 +125,7 @@ export const getRecordsWhereClause = (
       result[key] = {
         in: getMatchingTerms(modelYearsMap, value),
       };
-    } else if (key === "timestamp") {
+    } else if (key === "timestamp" || key === "icbcTimestamp") {
       const [isValidDate, date] = validateDate(value);
       if (isValidDate) {
         result[key] = date;
@@ -241,11 +235,11 @@ export type CreditApplicationSparseSerialized = Omit<
   | "submissionTimestamp"
   | "supplierStatus"
   | "organization"
-  | "transactionTimestamps"
+  | "transactionTimestamp"
 > & {
   submissionTimestamp?: string;
   organization?: string;
-  transactionTimestamps: string[];
+  transactionTimestamp?: string;
 };
 
 export const getSerializedApplications = (
@@ -260,9 +254,9 @@ export const getSerializedApplications = (
       submissionTimestamp: record.submissionTimestamp
         ? getIsoYmdString(record.submissionTimestamp)
         : undefined,
-      transactionTimestamps: record.transactionTimestamps.map((ts) => {
-        return getIsoYmdString(ts);
-      }),
+      transactionTimestamp: record.transactionTimestamp
+        ? getIsoYmdString(record.transactionTimestamp)
+        : undefined,
       modelYears: record.modelYears,
     };
     if (userIsGov) {
@@ -342,8 +336,10 @@ export const getWarningsMap = (
     make: string;
     modelName: string;
     modelYear: ModelYear;
+    timestamp: Date;
   }[],
   icbcMap: IcbcRecordsMap,
+  partOfMyrComplianceDate: Date | null,
 ) => {
   const result: Partial<Record<string, string[]>> = {};
   for (const record of records) {
@@ -359,6 +355,13 @@ export const getWarningsMap = (
     }
     if (icbcRecord.modelYear !== record.modelYear) {
       warnings.push("3");
+    }
+    if (
+      partOfMyrComplianceDate &&
+      (partOfMyrComplianceDate < record.timestamp ||
+        partOfMyrComplianceDate < icbcRecord.timestamp)
+    ) {
+      warnings.push("4");
     }
     if (warnings.length > 0) {
       result[vin] = warnings;
@@ -407,26 +410,4 @@ export const serializeCredits = (
   return credits.map((credit) => {
     return { ...credit, numberOfUnits: credit.numberOfUnits.toString() };
   });
-};
-
-export const getTransactionTimestamp = (
-  submissionTimestamp: Date,
-  issuanceTimestamp: Date,
-  modelYear: ModelYear,
-) => {
-  const submittedDuringReportingPeriod =
-    getIsInReportingPeriod(submissionTimestamp);
-  if (submittedDuringReportingPeriod) {
-    const complianceYear = getPreviousComplianceYear(submissionTimestamp);
-    return getComplianceDate(complianceYear);
-  }
-  const submissionComplianceYear = getComplianceYear(submissionTimestamp);
-  const issuanceComplianceYear = getComplianceYear(issuanceTimestamp);
-  if (
-    submissionComplianceYear !== issuanceComplianceYear &&
-    modelYear <= submissionComplianceYear
-  ) {
-    return getComplianceDate(submissionComplianceYear);
-  }
-  return issuanceTimestamp;
 };

@@ -20,7 +20,7 @@ import {
 import { Dropzone } from "@/app/lib/components/Dropzone";
 import { FileWithPath } from "react-dropzone";
 import { Button } from "@/app/lib/components";
-import { Attachment, AttachmentDownload } from "@/app/lib/services/attachments";
+import { Attachment, AttachmentDownload } from "@/app/lib/constants/attachment";
 import { getDefaultAttchmentTypes } from "@/app/lib/utils/attachments";
 import { getFiles } from "@/app/lib/utils/download";
 
@@ -101,7 +101,9 @@ export const VehicleForm = (props: {
           const putData = await getVehicleAttachmentsPutData(files.length);
           for (const [index, file] of files.entries()) {
             const putDatum = putData[index];
-            await axios.put(putDatum.url, file);
+            await axios.put(putDatum.url, file, {
+              headers: { "if-none-match": "*" },
+            });
             attachments.push({
               fileName: file.name,
               objectName: putDatum.objectName,

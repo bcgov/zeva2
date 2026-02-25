@@ -1,7 +1,7 @@
 "use server";
 
-import { Directory } from "@/app/lib/constants/minio";
-import { getPresignedGetObjectUrl, putObject } from "@/app/lib/minio";
+import { Directory } from "@/app/lib/services/s3";
+import { getPresignedGetObjectUrl, putObject } from "@/app/lib/services/s3";
 import { AssessmentTemplate, ForecastTemplate, MyrTemplate } from "./constants";
 import { getUserInfo } from "@/auth";
 import {

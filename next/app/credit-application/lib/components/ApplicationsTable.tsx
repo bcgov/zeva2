@@ -42,15 +42,11 @@ export const ApplicationsTable = (props: {
         enableColumnFilter: true,
         header: () => <span>Status</span>,
       }),
-      columnHelper.accessor((row) => row.transactionTimestamps, {
-        id: "transactionTimestamps",
-        enableSorting: false,
-        enableColumnFilter: false,
-        cell: (cellProps) => {
-          const dates = cellProps.row.original.transactionTimestamps;
-          return dates.join(", ");
-        },
-        header: () => <span>Transaction Date(s)</span>,
+      columnHelper.accessor((row) => row.transactionTimestamp, {
+        id: "transactionTimestamp",
+        enableSorting: true,
+        enableColumnFilter: true,
+        header: () => <span>Transaction Date</span>,
       }),
       columnHelper.accessor((row) => row.modelYears, {
         id: "modelYears",

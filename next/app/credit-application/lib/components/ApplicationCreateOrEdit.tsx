@@ -1,7 +1,7 @@
 import { getUserInfo } from "@/auth";
 import { CreditApplicationForm } from "./CreditApplicationForm";
 import { getDocumentDownloadUrls } from "../actions";
-import { AttachmentDownload } from "@/app/lib/services/attachments";
+import { AttachmentDownload } from "@/app/lib/constants/attachment";
 
 export const ApplicationCreateOrEdit = async (props: {
   creditApplicationId?: number;

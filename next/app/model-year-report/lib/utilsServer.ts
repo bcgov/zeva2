@@ -26,7 +26,7 @@ import {
   UnexpectedDebit,
   ZevUnitRecord,
 } from "@/lib/utils/zevUnit";
-import { IsCompliant, ReportSubDirectory } from "./constants";
+import { IsCompliant } from "./constants";
 import { penaltyRates } from "@/app/lib/constants/penaltyRate";
 import { isVehicleClass, isZevClass } from "@/app/lib/utils/typeGuards";
 import {
@@ -50,6 +50,7 @@ import {
   FileZevUnitRecord,
   parseAssessment,
 } from "./utils";
+import { Directory } from "@/app/lib/services/s3";
 
 export const validatePrevBalanceTransactions = (
   transactions: ZevUnitRecord[],
@@ -226,15 +227,15 @@ export const getReportFullObjectName = (
   const objectName = randomUUID();
   switch (type) {
     case "myr":
-      return `${ReportSubDirectory.ModelYearReport}/${objectName}`;
+      return `${Directory.ModelYearReport}/${objectName}`;
     case "forecast":
-      return `${ReportSubDirectory.Forecast}/${objectName}`;
+      return `${Directory.Forecast}/${objectName}`;
     case "assessment":
-      return `${ReportSubDirectory.Assessment}/${objectName}`;
+      return `${Directory.Assessment}/${objectName}`;
     case "reassessment":
-      return `${ReportSubDirectory.Reassessment}/${objectName}`;
+      return `${Directory.Reassessment}/${objectName}`;
     case "supplementary":
-      return `${ReportSubDirectory.Supplementary}/${objectName}`;
+      return `${Directory.Supplementary}/${objectName}`;
   }
 };
 

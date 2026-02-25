@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { useCallback, useState, useTransition } from "react";
 import {
   analystRecommend,
-  analystReturn,
+  analystReject,
   validateCreditApplication,
 } from "../actions";
 import { Routes } from "@/app/lib/constants";
@@ -59,9 +59,9 @@ export const AnalystActions = (props: {
     });
   }, [props.id, comment]);
 
-  const handleReturn = useCallback(() => {
+  const handleReject = useCallback(() => {
     startTransition(async () => {
-      const response = await analystReturn(
+      const response = await analystReject(
         props.id,
         getNormalizedComment(comment),
       );
@@ -75,7 +75,7 @@ export const AnalystActions = (props: {
 
   if (
     props.status === CreditApplicationStatus.DRAFT ||
-    props.status === CreditApplicationStatus.RETURNED_TO_SUPPLIER
+    props.status === CreditApplicationStatus.REJECTED
   ) {
     return null;
   }
@@ -106,7 +106,7 @@ export const AnalystActions = (props: {
       <Button variant="primary" onClick={handleValidate} disabled={isPending}>
         {isPending ? "..." : "Validate"}
       </Button>
-      <Button variant="primary" onClick={handleReturn} disabled={isPending}>
+      <Button variant="primary" onClick={handleReject} disabled={isPending}>
         {isPending ? "..." : "Reject"}
       </Button>
       {props.validatedBefore && (

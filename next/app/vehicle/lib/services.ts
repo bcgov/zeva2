@@ -5,7 +5,7 @@ import {
   VehicleHistoryStatus,
   VehicleStatus,
 } from "@/prisma/generated/enums";
-import { Attachment } from "@/app/lib/services/attachments";
+import { Attachment } from "@/app/lib/constants/attachment";
 
 export const createHistory = async (
   vehicleId: number,
@@ -48,24 +48,23 @@ export const getConflictingVehicle = async (
   return conflictingVehicle;
 };
 
-export const updateAttachments = async (
+export const createAttachments = async (
   vehicleId: number,
   attachments: Attachment[],
   transactionClient?: TransactionClient,
 ) => {
   const client = transactionClient ?? prisma;
+  const toCreate = [];
   for (const attachment of attachments) {
-    // throws if record to update does not exist in table
-    await client.vehicleAttachment.update({
-      where: {
-        objectName: attachment.objectName,
-      },
-      data: {
-        vehicleId,
-        fileName: attachment.fileName,
-      },
+    toCreate.push({
+      vehicleId,
+      objectName: attachment.objectName,
+      fileName: attachment.fileName,
     });
   }
+  await client.vehicleAttachment.createMany({
+    data: toCreate,
+  });
 };
 
 export const deleteAttachments = async (

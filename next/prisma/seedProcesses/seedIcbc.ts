@@ -49,7 +49,7 @@ export const seedIcbc = async (
       },
     });
     const toCreate: Omit<IcbcRecordModel, "id">[] = [];
-    recordsOld.forEach((recordOld) => {
+    for (const recordOld of recordsOld) {
       const modelYear =
         mapOfModelYearIdsToModelYearEnum[recordOld.icbc_vehicle.model_year_id];
       if (!modelYear) {
@@ -73,7 +73,7 @@ export const seedIcbc = async (
         model: recordOld.icbc_vehicle.model_name,
         year: modelYear,
       });
-    });
+    }
     await tx.icbcRecord.createMany({
       data: toCreate,
     });

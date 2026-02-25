@@ -19,8 +19,7 @@ export const mapOfStatusToSupplierStatus: Readonly<
     CreditApplicationSupplierStatus.SUBMITTED,
   [CreditApplicationStatus.RETURNED_TO_ANALYST]:
     CreditApplicationSupplierStatus.SUBMITTED,
-  [CreditApplicationStatus.RETURNED_TO_SUPPLIER]:
-    CreditApplicationSupplierStatus.RETURNED_TO_SUPPLIER,
+  [CreditApplicationStatus.REJECTED]: CreditApplicationSupplierStatus.REJECTED,
   [CreditApplicationStatus.SUBMITTED]:
     CreditApplicationSupplierStatus.SUBMITTED,
 };

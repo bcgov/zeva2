@@ -118,7 +118,7 @@ export const sendCreditApplicationEmails = async (historyId: number) => {
   let includeDirector: boolean = false;
   if (
     userAction === CreditApplicationStatus.SUBMITTED ||
-    userAction === CreditApplicationStatus.RETURNED_TO_SUPPLIER ||
+    userAction === CreditApplicationStatus.REJECTED ||
     userAction === CreditApplicationStatus.APPROVED
   ) {
     supplierOrgIds.push(history.creditApplication.organizationId);

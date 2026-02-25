@@ -41,8 +41,7 @@ import {
 } from "./utilsServer";
 import { TransactionClient } from "@/types/prisma";
 import { AdjustmentPayload, NvValues } from "./actions";
-import { getObject } from "@/app/lib/minio";
-import { getArrayBuffer } from "@/app/lib/utils/parseReadable";
+import { getObjectAsBuffer } from "@/app/lib/services/s3";
 
 export const getSupplierDetails = async (organizationId: number) => {
   const organization = await prisma.organization.findUniqueOrThrow({
@@ -546,14 +545,8 @@ export type MyrDataForAssessment = {
   zevClassOrdering: ZevClass[];
 };
 
-export const getAssessmentSystemData = async (object: string | ArrayBuffer) => {
-  let assessmentBuf: ArrayBuffer;
-  if (typeof object === "string") {
-    const assessmentFile = await getObject(object);
-    assessmentBuf = await getArrayBuffer(assessmentFile);
-  } else {
-    assessmentBuf = object;
-  }
+export const getAssessmentSystemData = async (objectName: string) => {
+  const assessmentBuf = await getObjectAsBuffer(objectName);
   const assessmentWorkbook = new Excel.Workbook();
   await assessmentWorkbook.xlsx.load(assessmentBuf);
   return parseAssesmentForData(assessmentWorkbook);

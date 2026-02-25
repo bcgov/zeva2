@@ -34,14 +34,6 @@ export enum AssessmentTemplate {
   StatementsSheetName = "Statement(s)",
 }
 
-export enum ReportSubDirectory {
-  ModelYearReport = "modelYearReport",
-  Forecast = "forecast",
-  Assessment = "assessment",
-  Reassessment = "reassessment",
-  Supplementary = "supplementary",
-}
-
 export const supplierZevClasses = {
   [ZevClass.A]: ZevClass.A,
   [ZevClass.B]: ZevClass.B,

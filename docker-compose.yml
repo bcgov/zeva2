@@ -49,7 +49,7 @@ services:
     ports:
       - 3000:3000
     env_file:
-      - minio.env
+      - s3.env
     environment:
       - AUTH_SECRET=Ils7nkPcqmp+RHvx2uX8Nwl/MUI8cHnNfmeZS7F8M7k=
       - AUTH_KEYCLOAK_ID=zeva-2-5981
@@ -79,7 +79,7 @@ services:
       - ./next:/next
       - /next/node_modules
     env_file:
-      - minio.env
+      - s3.env
     environment:
       - DATABASE_URL=postgresql://postgres:postgres@db:5432/zeva?schema=public
       - CHECKPOINT_DISABLE=1

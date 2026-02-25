@@ -12,7 +12,7 @@ import {
 import { useRouter } from "next/navigation";
 import {
   createAgreement,
-  getVehicleAttachmentsPutData,
+  getAgreementAttachmentsPutData,
   saveAgreement,
 } from "../actions";
 import { Routes } from "@/app/lib/constants";
@@ -26,7 +26,7 @@ import { getStringsToAgreementTypeEnumsMap } from "@/app/lib/utils/enumMaps";
 import { Dropzone } from "@/app/lib/components/Dropzone";
 import { FileWithPath } from "react-dropzone";
 import { Button } from "@/app/lib/components";
-import { Attachment, AttachmentDownload } from "@/app/lib/services/attachments";
+import { Attachment, AttachmentDownload } from "@/app/lib/constants/attachment";
 import { getFiles } from "@/app/lib/utils/download";
 import { AgreementContent } from "./AgreementContent";
 import { validateDate } from "@/app/lib/utils/date";
@@ -146,16 +146,14 @@ export const AgreementForm = (props: NewProps | SavedProps) => {
         }
         const attachments: Attachment[] = [];
         if (files.length > 0) {
-          const putDataResponse = await getVehicleAttachmentsPutData(
+          const putDataResponse = await getAgreementAttachmentsPutData(
             files.length,
-            orgId,
           );
-          if (putDataResponse.responseType === "error") {
-            throw new Error(putDataResponse.message);
-          }
           for (const [index, file] of files.entries()) {
-            const putDatum = putDataResponse.data[index];
-            await axios.put(putDatum.url, file);
+            const putDatum = putDataResponse[index];
+            await axios.put(putDatum.url, file, {
+              headers: { "if-none-match": "*" },
+            });
             attachments.push({
               fileName: file.name,
               objectName: putDatum.objectName,

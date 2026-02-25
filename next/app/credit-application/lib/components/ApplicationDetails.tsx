@@ -1,9 +1,9 @@
 import { getIsoYmdString } from "@/app/lib/utils/date";
-import { CreditApplicationWithOrgAndAttachmentsCount } from "../data";
+import { CreditApplicationWithOrgAndAttachmentNames } from "../data";
 import { getCreditApplicationStatusEnumsToStringsMap } from "@/app/lib/utils/enumMaps";
 
 export const ApplicationDetails = async (props: {
-  application: CreditApplicationWithOrgAndAttachmentsCount;
+  application: CreditApplicationWithOrgAndAttachmentNames;
   userIsGov: boolean;
 }) => {
   let status = props.application.status;
@@ -18,10 +18,10 @@ export const ApplicationDetails = async (props: {
       <li>Service Address: {props.application.serviceAddress}</li>
       <li>Records Address: {props.application.recordsAddress}</li>
       <li>Status: {statusMap[status]}</li>
-      {props.userIsGov && props.application.icbcTimestamp && (
+      {props.userIsGov && props.application.validatedUpToIcbcTimestamp && (
         <li>
-          Validated using ICBC file with date:{" "}
-          {getIsoYmdString(props.application.icbcTimestamp)}
+          Validated using ICBC data up to and including:{" "}
+          {getIsoYmdString(props.application.validatedUpToIcbcTimestamp)}
         </li>
       )}
     </ul>

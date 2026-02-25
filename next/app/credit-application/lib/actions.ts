@@ -1,6 +1,5 @@
 "use server";
 
-import { getObject, getPresignedGetObjectUrl } from "@/app/lib/minio";
 import { getUserInfo } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import {
@@ -13,11 +12,7 @@ import {
   ZevClass,
 } from "@/prisma/generated/enums";
 import Excel from "exceljs";
-import {
-  getTransactionTimestamp,
-  getWarningsMap,
-  parseSupplierSubmission,
-} from "./utils";
+import { getWarningsMap, parseSupplierSubmission } from "./utils";
 import {
   createHistory,
   deleteAttachments,
@@ -30,10 +25,16 @@ import {
   getVehicleCounts,
   unreserveVins,
   updateStatus,
-  updateAttachments,
+  createAttachments,
+  getPartOfMyrData,
 } from "./services";
 import { SupplierTemplate } from "./constants";
-import { Directory } from "@/app/lib/constants/minio";
+import {
+  Directory,
+  getAttachmentPutData,
+  getObjectAsBuffer,
+  getTemplateDownloadUrl,
+} from "@/app/lib/services/s3";
 import {
   DataOrErrorActionResponse,
   ErrorOrSuccessActionResponse,
@@ -41,39 +42,29 @@ import {
   getErrorActionResponse,
   getSuccessActionResponse,
 } from "@/app/lib/utils/actionResponse";
-import {
-  Attachment,
-  AttachmentDownload,
-  checkAttachments,
-  getPutObjectData,
-} from "@/app/lib/services/attachments";
+import { Attachment, AttachmentDownload } from "@/app/lib/constants/attachment";
 import { addJobToEmailQueue } from "@/app/lib/services/queue";
 import {
-  getComplianceDate,
   getIsInReportingPeriod,
   getPreviousComplianceYear,
 } from "@/app/lib/utils/complianceYear";
 import { Decimal } from "decimal.js";
-import { getModelYearEnumsToStringsMap } from "@/app/lib/utils/enumMaps";
 import { getLatestSuccessfulFileTimestamp } from "@/app/icbc/lib/services";
-import { getArrayBuffer } from "@/app/lib/utils/parseReadable";
 import {
   CreditApplicationAttachmentWhereInput,
   CreditApplicationRecordCreateManyInput,
   ZevUnitTransactionCreateManyInput,
 } from "@/prisma/generated/models";
+import { getPresignedGetObjectUrl } from "@/app/lib/services/s3";
 
 export const getSupplierTemplateDownloadUrl = async () => {
-  return await getPresignedGetObjectUrl(
-    `${Directory.Templates}/${SupplierTemplate.Name}`,
-  );
+  return await getTemplateDownloadUrl(SupplierTemplate.Name);
 };
 
 export const getCreditApplicationAttachmentPutData = async (
   numberOfFiles: number,
 ) => {
-  const { userOrgId } = await getUserInfo();
-  return await getPutObjectData(numberOfFiles, "creditApplication", userOrgId);
+  return await getAttachmentPutData(Directory.CreditApplication, numberOfFiles);
 };
 
 export const getSupplierEligibleVehicles = async () => {
@@ -96,14 +87,13 @@ export const getDocumentDownloadUrls = async (
   const { userIsGov, userOrgId } = await getUserInfo();
   const whereClause: CreditApplicationAttachmentWhereInput = {
     creditApplicationId,
-    fileName: { not: null },
   };
   if (userIsGov) {
     whereClause.creditApplication = {
       status: {
         notIn: [
           CreditApplicationStatus.DRAFT,
-          CreditApplicationStatus.RETURNED_TO_SUPPLIER,
+          CreditApplicationStatus.REJECTED,
         ],
       },
     };
@@ -163,9 +153,7 @@ export const supplierSave = async (
   }
   let applicationId = creditApplicationId ?? Number.NaN;
   try {
-    await checkAttachments(attachments, "creditApplication", userOrgId);
-    const applicationObject = await getObject(application.objectName);
-    const applicationBuf = await getArrayBuffer(applicationObject);
+    const applicationBuf = await getObjectAsBuffer(application.objectName);
     const workbook = new Excel.Workbook();
     await workbook.xlsx.load(applicationBuf);
     const recordsToCreatePrelim: Omit<
@@ -261,7 +249,7 @@ export const supplierSave = async (
         data: recordsToCreate,
       });
       await deleteAttachments(applicationId, tx);
-      await updateAttachments(applicationId, attachments, 0, tx);
+      await createAttachments(applicationId, attachments, 0, tx);
     });
   } catch (e) {
     if (e instanceof Error) {
@@ -284,10 +272,7 @@ export const supplierDelete = async (
       id: creditApplicationId,
       organizationId: userOrgId,
       status: {
-        in: [
-          CreditApplicationStatus.DRAFT,
-          CreditApplicationStatus.RETURNED_TO_SUPPLIER,
-        ],
+        in: [CreditApplicationStatus.DRAFT, CreditApplicationStatus.REJECTED],
       },
     },
   });
@@ -321,6 +306,7 @@ export const supplierDelete = async (
 
 export const supplierSubmit = async (
   creditApplicationId: number,
+  partOfMyr: boolean,
   comment?: string,
 ): Promise<ErrorOrSuccessActionResponse> => {
   const { userIsGov, userOrgId, userId, userRoles } = await getUserInfo();
@@ -353,32 +339,17 @@ export const supplierSubmit = async (
   ) {
     return getErrorActionResponse("Invalid Action!");
   }
-  const now = new Date();
-  const isInReportingPeriod = getIsInReportingPeriod(now);
-  const records = application.CreditApplicationRecord;
-  const modelYearsMap = getModelYearEnumsToStringsMap();
-  try {
-    if (isInReportingPeriod) {
-      const complianceYear = getPreviousComplianceYear(now);
-      const complianceDate = getComplianceDate(complianceYear);
-      const invalidReportingPeriodVins: string[] = [];
-      for (const record of records) {
-        if (
-          record.modelYear !== complianceYear ||
-          record.timestamp > complianceDate
-        ) {
-          invalidReportingPeriodVins.push(record.vin);
-        }
-      }
-      if (invalidReportingPeriodVins.length > 0) {
-        const modelYear = modelYearsMap[complianceYear];
-        throw new Error(
-          `Between Oct. 1st and Oct. 20th, you can only submit 
-          VINs with a model year of ${modelYear}, and with a date before Sept. 30th, ${modelYear}.
-          These are the invalid VINs: ${invalidReportingPeriodVins.join(", ")}`,
-        );
-      }
+  let partOfMyrComplianceDate: Date | null = null;
+  if (partOfMyr) {
+    const partOfMyrData = await getPartOfMyrData(userOrgId);
+    if (!partOfMyrData) {
+      return getErrorActionResponse("Invalid Action!");
+    } else {
+      partOfMyrComplianceDate = partOfMyrData[1];
     }
+  }
+  const records = application.CreditApplicationRecord;
+  try {
     const invalidDateVins: string[] = [];
     for (const record of records) {
       if (record.timestamp > new Date()) {
@@ -405,6 +376,7 @@ export const supplierSubmit = async (
           status: CreditApplicationStatus.SUBMITTED,
           supplierStatus: CreditApplicationStatus.SUBMITTED,
           submissionTimestamp: new Date(),
+          partOfMyrComplianceDate,
         },
       });
       await tx.reservedVin.createMany({
@@ -475,7 +447,11 @@ export const validateCreditApplication = async (
     return [...acc, cv.vin];
   }, []);
   const icbcMap = await getIcbcRecordsMap(vins);
-  const warningsMap = getWarningsMap(records, icbcMap);
+  const warningsMap = getWarningsMap(
+    records,
+    icbcMap,
+    creditApplication.partOfMyrComplianceDate,
+  );
   let eligibleVinsCount = 0;
   let ineligibleVinsCount = 0;
   let aCredits = new Decimal(0);
@@ -498,9 +474,13 @@ export const validateCreditApplication = async (
         bCredits = bCredits.plus(numberOfUnits);
       }
     }
-    record.icbcMake = icbcMap[vin]?.make ?? null;
-    record.icbcModelName = icbcMap[vin]?.modelName ?? null;
-    record.icbcModelYear = icbcMap[vin]?.modelYear ?? null;
+    const icbcRecord = icbcMap[vin];
+    if (icbcRecord) {
+      record.icbcMake = icbcRecord.make;
+      record.icbcModelName = icbcRecord.modelName;
+      record.icbcModelYear = icbcRecord.modelYear;
+      record.icbcTimestamp = icbcRecord.timestamp;
+    }
     record.validated = validated;
     record.warnings = warnings ? warnings : [];
   }
@@ -518,11 +498,12 @@ export const validateCreditApplication = async (
         id: creditApplicationId,
       },
       data: {
-        icbcTimestamp: latestIcbcFileTimestamp,
+        validatedUpToIcbcTimestamp: latestIcbcFileTimestamp,
         eligibleVinsCount,
         ineligibleVinsCount,
         aCredits,
         bCredits,
+        mustRevalidate: false,
       },
     });
   });
@@ -653,6 +634,9 @@ export const analystRecommend = async (
   ) {
     return getErrorActionResponse("Invalid Action!");
   }
+  if (creditApplication.mustRevalidate) {
+    return getErrorActionResponse("You must revalidate the application!");
+  }
   await prisma.$transaction(async (tx) => {
     await updateStatus(
       creditApplicationId,
@@ -674,7 +658,7 @@ export const analystRecommend = async (
   return getSuccessActionResponse();
 };
 
-export const analystReturn = async (
+export const analystReject = async (
   creditApplicationId: number,
   comment?: string,
 ): Promise<ErrorOrSuccessActionResponse> => {
@@ -721,14 +705,14 @@ export const analystReturn = async (
   await prisma.$transaction(async (tx) => {
     await updateStatus(
       creditApplicationId,
-      CreditApplicationStatus.RETURNED_TO_SUPPLIER,
+      CreditApplicationStatus.REJECTED,
       tx,
     );
     await unreserveVins(vinsToUnreserve, tx);
     const historyId = await createHistory(
       userId,
       creditApplicationId,
-      CreditApplicationStatus.RETURNED_TO_SUPPLIER,
+      CreditApplicationStatus.REJECTED,
       comment,
       tx,
     );
@@ -805,11 +789,15 @@ export const directorApprove = async (
     },
     select: {
       organizationId: true,
-      submissionTimestamp: true,
+      partOfMyrComplianceDate: true,
+      mustRevalidate: true,
     },
   });
-  if (!creditApplication || !creditApplication.submissionTimestamp) {
+  if (!creditApplication) {
     return getErrorActionResponse("Invalid Action!");
+  }
+  if (creditApplication.mustRevalidate) {
+    return getErrorActionResponse("The application must be revalidated!");
   }
   const invalidVinRecords = await prisma.creditApplicationRecord.findMany({
     where: {
@@ -826,25 +814,18 @@ export const directorApprove = async (
   const transactionsToCreate: ZevUnitTransactionCreateManyInput[] = [];
   const creditRecords =
     await getApplicationFlattenedCreditRecords(creditApplicationId);
-  const issuanceTimestamp = new Date();
-  const transactionTimestamps: Set<Date> = new Set();
+  const transactionTimestamp =
+    creditApplication.partOfMyrComplianceDate ?? new Date();
   for (const record of creditRecords) {
-    const modelYear = record.modelYear;
-    const timestamp = getTransactionTimestamp(
-      creditApplication.submissionTimestamp,
-      issuanceTimestamp,
-      modelYear,
-    );
-    transactionTimestamps.add(timestamp);
     transactionsToCreate.push({
       organizationId: creditApplication.organizationId,
-      timestamp,
+      timestamp: transactionTimestamp,
       type: TransactionType.CREDIT,
       referenceType: ReferenceType.SUPPLY_CREDITS,
       referenceId: creditApplicationId,
       vehicleClass: record.vehicleClass,
       zevClass: record.zevClass,
-      modelYear: modelYear,
+      modelYear: record.modelYear,
       numberOfUnits: record.numberOfUnits,
     });
   }
@@ -863,7 +844,7 @@ export const directorApprove = async (
         id: creditApplicationId,
       },
       data: {
-        transactionTimestamps: Array.from(transactionTimestamps),
+        transactionTimestamp,
         status: CreditApplicationStatus.APPROVED,
         supplierStatus: CreditApplicationStatus.APPROVED,
       },

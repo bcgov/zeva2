@@ -21,17 +21,17 @@ import {
 import { ZevUnitRecord } from "@/lib/utils/zevUnit";
 import { getCreditStats, getRecordStats } from "./services";
 
-export type CreditApplicationWithOrgAndAttachmentsCount =
+export type CreditApplicationWithOrgAndAttachmentNames =
   CreditApplicationModel & {
     organization: OrganizationModel;
-    _count: {
-      CreditApplicationAttachment: number;
-    };
+    CreditApplicationAttachment: {
+      fileName: string;
+    }[];
   };
 
 export const getCreditApplication = async (
   creditApplicationId: number,
-): Promise<CreditApplicationWithOrgAndAttachmentsCount | null> => {
+): Promise<CreditApplicationWithOrgAndAttachmentNames | null> => {
   const { userIsGov, userOrgId, userRoles } = await getUserInfo();
   let whereClause: CreditApplicationWhereUniqueInput = {
     id: creditApplicationId,
@@ -40,10 +40,7 @@ export const getCreditApplication = async (
     const notClause: CreditApplicationWhereInput[] = [
       {
         status: {
-          in: [
-            CreditApplicationStatus.DRAFT,
-            CreditApplicationStatus.RETURNED_TO_SUPPLIER,
-          ],
+          in: [CreditApplicationStatus.DRAFT, CreditApplicationStatus.REJECTED],
         },
       },
     ];
@@ -68,9 +65,9 @@ export const getCreditApplication = async (
     where: whereClause,
     include: {
       organization: true,
-      _count: {
+      CreditApplicationAttachment: {
         select: {
-          CreditApplicationAttachment: true,
+          fileName: true,
         },
       },
     },
@@ -168,7 +165,7 @@ export type CreditApplicationSparse = Pick<
   | "status"
   | "submissionTimestamp"
   | "supplierStatus"
-  | "transactionTimestamps"
+  | "transactionTimestamp"
   | "modelYears"
 > & { organization: { name: string } };
 
@@ -187,10 +184,7 @@ export const getCreditApplications = async (
     where.NOT = [
       {
         status: {
-          in: [
-            CreditApplicationStatus.DRAFT,
-            CreditApplicationStatus.RETURNED_TO_SUPPLIER,
-          ],
+          in: [CreditApplicationStatus.DRAFT, CreditApplicationStatus.REJECTED],
         },
       },
     ];
@@ -216,7 +210,7 @@ export const getCreditApplications = async (
         id: true,
         status: true,
         submissionTimestamp: true,
-        transactionTimestamps: true,
+        transactionTimestamp: true,
         supplierStatus: true,
         organization: {
           select: {
@@ -253,7 +247,7 @@ export const getApplicationHistories = async (
     where.userAction = {
       in: [
         CreditApplicationStatus.APPROVED,
-        CreditApplicationStatus.RETURNED_TO_SUPPLIER,
+        CreditApplicationStatus.REJECTED,
         CreditApplicationStatus.SUBMITTED,
       ],
     };
@@ -325,10 +319,7 @@ export const getApplicationStatistics = async (creditApplicationId: number) => {
   };
   if (userIsGov) {
     whereClause.status = {
-      notIn: [
-        CreditApplicationStatus.DRAFT,
-        CreditApplicationStatus.RETURNED_TO_SUPPLIER,
-      ],
+      notIn: [CreditApplicationStatus.DRAFT, CreditApplicationStatus.REJECTED],
     };
   } else {
     whereClause.organizationId = userOrgId;

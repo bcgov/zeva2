@@ -22,7 +22,7 @@ import {
   SupplementaryReportWhereInput,
 } from "@/prisma/generated/models";
 import { getOrderByClause, getWhereClause } from "./utilsServer";
-import { getObject } from "@/app/lib/minio";
+import { getObjectAsBuffer } from "@/app/lib/services/s3";
 import { getSupplierDetails, getVehicleStatistics } from "./services";
 import { getAddressAsString } from "./utils";
 
@@ -165,8 +165,8 @@ export const getModelYearReportDetails = async (id: number) => {
   if (!myr) {
     return null;
   }
-  const myrFile = await getObject(myr.objectName);
-  const forecastFile = await getObject(myr.forecastReportObjectName);
+  const myrFile = await getObjectAsBuffer(myr.objectName);
+  const forecastFile = await getObjectAsBuffer(myr.forecastReportObjectName);
   return {
     status: myr.status,
     supplierStatus: myr.supplierStatus,

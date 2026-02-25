@@ -62,9 +62,6 @@ model Organization {
   Reassessment                  Reassessment[]
   SupplementaryReport           SupplementaryReport[]
   LegacyAssessedModelYearReport LegacyAssessedModelYearReport[]
-  vehicleAttachments            VehicleAttachment[]
-  creditApplicationAttachments  CreditApplicationAttachment[]
-  agreementAttachments          AgreementAttachment[]
 
   @@map("organization")
 }
@@ -344,13 +341,11 @@ model VehicleHistory {
 }
 
 model VehicleAttachment {
-  id             Int          @id @default(autoincrement())
-  organization   Organization @relation(fields: [organizationId], references: [id])
-  organizationId Int          @map("organization_id")
-  vehicleId      Int?         @map("vehicle_id")
-  vehicle        Vehicle?     @relation(fields: [vehicleId], references: [id])
-  fileName       String?      @map("file_name")
-  objectName     String       @unique @map("object_name")
+  id         Int     @id @default(autoincrement())
+  vehicleId  Int     @map("vehicle_id")
+  vehicle    Vehicle @relation(fields: [vehicleId], references: [id])
+  fileName   String  @map("file_name")
+  objectName String  @unique @map("object_name")
 
   @@map("vehicle_attachment")
 }
@@ -374,6 +369,8 @@ model IcbcFile {
   @@map("icbc_file")
 }
 
+// icbcFileId should point to the first file that contains the record, 
+// not the most recent file that contains the record
 model IcbcRecord {
   id         Int       @id @default(autoincrement())
   icbcFileId Int       @map("icbc_file_id")
@@ -390,15 +387,15 @@ enum CreditApplicationStatus {
   APPROVED
   DRAFT
   RECOMMEND_APPROVAL
+  REJECTED
   RETURNED_TO_ANALYST
-  RETURNED_TO_SUPPLIER
   SUBMITTED
 }
 
 enum CreditApplicationSupplierStatus {
   APPROVED
   DRAFT
-  RETURNED_TO_SUPPLIER
+  REJECTED
   SUBMITTED
 }
 
@@ -407,7 +404,7 @@ model CreditApplication {
   organization                Organization                    @relation(fields: [organizationId], references: [id])
   organizationId              Int                             @map("organization_id")
   submissionTimestamp         DateTime?                       @map("submission_timestamp") @db.Timestamptz(6)
-  transactionTimestamps       DateTime[]                      @map("transaction_timestamps") @db.Timestamptz(6)
+  transactionTimestamp        DateTime?                       @map("transaction_timestamp") @db.Timestamptz(6)
   status                      CreditApplicationStatus         @map("status")
   supplierStatus              CreditApplicationSupplierStatus @map("supplier_status")
   modelYears                  ModelYear[]                     @map("model_years")
@@ -419,7 +416,9 @@ model CreditApplication {
   ineligibleVinsCount         Int?                            @map("ineligible_vins_count")
   aCredits                    Decimal?                        @map("a_credits") @db.Decimal(65, 2)
   bCredits                    Decimal?                        @map("b_credits") @db.Decimal(65, 2)
-  icbcTimestamp               DateTime?                       @map("icbc_timestamp") @db.Timestamptz(6)
+  validatedUpToIcbcTimestamp  DateTime?                       @map("validated_up_to_icbc_timestamp") @db.Timestamptz(6)
+  partOfMyrComplianceDate     DateTime?                       @map("part_of_myr_compliance_date") @db.Timestamptz(6)
+  mustRevalidate              Boolean                         @default(false) @map("must_revalidate")
   CreditApplicationHistory    CreditApplicationHistory[]
   CreditApplicationRecord     CreditApplicationRecord[]
   CreditApplicationAttachment CreditApplicationAttachment[]
@@ -430,8 +429,8 @@ model CreditApplication {
 enum CreditApplicationHistoryStatus {
   APPROVED
   RECOMMEND_APPROVAL
+  REJECTED
   RETURNED_TO_ANALYST
-  RETURNED_TO_SUPPLIER
   SUBMITTED
 }
 
@@ -465,6 +464,7 @@ model CreditApplicationRecord {
   icbcMake            String?           @map("icbc_make")
   icbcModelName       String?           @map("icbc_model_name")
   icbcModelYear       ModelYear?        @map("icbc_model_year")
+  icbcTimestamp       DateTime?         @map("icbc_timestamp") @db.Timestamptz(6)
   validated           Boolean
   reason              String?
   warnings            String[]
@@ -473,14 +473,12 @@ model CreditApplicationRecord {
 }
 
 model CreditApplicationAttachment {
-  id                  Int                @id @default(autoincrement())
-  organization        Organization       @relation(fields: [organizationId], references: [id])
-  organizationId      Int                @map("organization_id")
-  creditApplicationId Int?               @map("credit_application_id")
-  creditApplication   CreditApplication? @relation(fields: [creditApplicationId], references: [id])
-  fileName            String?            @map("file_name")
-  objectName          String             @unique @map("object_name")
-  isApplication       Boolean            @default(false) @map("is_application")
+  id                  Int               @id @default(autoincrement())
+  creditApplicationId Int               @map("credit_application_id")
+  creditApplication   CreditApplication @relation(fields: [creditApplicationId], references: [id])
+  fileName            String            @map("file_name")
+  objectName          String            @unique @map("object_name")
+  isApplication       Boolean           @default(false) @map("is_application")
 
   @@map("credit_application_attachment")
 }
@@ -586,13 +584,11 @@ model AgreementHistory {
 }
 
 model AgreementAttachment {
-  id             Int          @id @default(autoincrement())
-  organization   Organization @relation(fields: [organizationId], references: [id])
-  organizationId Int          @map("organization_id")
-  agreementId    Int?         @map("agreement_id")
-  agreement      Agreement?   @relation(fields: [agreementId], references: [id])
-  fileName       String?      @map("file_name")
-  objectName     String       @unique @map("object_name")
+  id          Int       @id @default(autoincrement())
+  agreementId Int       @map("agreement_id")
+  agreement   Agreement @relation(fields: [agreementId], references: [id])
+  fileName    String    @map("file_name")
+  objectName  String    @unique @map("object_name")
 
   @@map("agreement_attachment")
 }
