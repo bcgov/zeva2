@@ -6,15 +6,12 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { keycloakSignOut } from "../actions/keycloak";
 import { Row } from "./layout";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faAngleDown, faAngleUp } from "@fortawesome/free-solid-svg-icons";
 
 /** Client Component used for navigation */
 export const Navbar: React.FC<{
-  userName: string;
   mainItems: MenuItem[];
   subItems: NavbarSubItems;
-}> = ({ userName, mainItems, subItems }) => {
+}> = ({ mainItems, subItems }) => {
   const pathname = usePathname();
 
   /**
@@ -51,7 +48,6 @@ export const Navbar: React.FC<{
   const [activeSubMenu, setActiveSubMenu] = React.useState<
     MenuItem[] | undefined
   >(undefined);
-  const [showUserDropDown, setShowUserDropDown] = React.useState(false);
 
   /**
    * Find the first sub-menu with at least one item having a route matching
@@ -94,43 +90,29 @@ export const Navbar: React.FC<{
 
   return (
     <>
-      <Row className="w-full bg-primaryBlueHover border-t-2 border-primaryGold mr-[16rem] px-1 mb-3 text-white">
-        {mainItems.map((item) => (
-          <Link
-            key={item.label}
-            className={
-              "cursor-pointer px-2" +
-              (activeLabel === item.label
-                ? " border-b-2 border-primaryYellow"
-                : "")
-            }
-            href={item.route}
-          >
-            {item.label}
-          </Link>
-        ))}
-
-        <div className="ml-auto relative">
-          <div
-            onClick={() => setShowUserDropDown(!showUserDropDown)}
-            className="cursor-pointer flex flex-row items-center"
-          >
-            {userName}
-            {!showUserDropDown ? (
-              <FontAwesomeIcon icon={faAngleDown} className="mt-[0.5px] ml-1" />
-            ) : (
-              <FontAwesomeIcon icon={faAngleUp} className="mt-[0.5px] ml-1" />
-            )}
-          </div>
-          {showUserDropDown && (
-            <div
-              onClick={keycloakSignOut}
-              className="absolute right-0 bg-primaryBlue hover:bg-primaryBlueHover border mt-[0.5px] p-2 shadow-level-3 cursor-pointer"
+      <Row className="w-full items-center bg-primaryBlueHover border-t-2 border-primaryGold mr-[16rem] px-4 py-0.5 mb-3 text-white">
+        <div className="flex items-center gap-6">
+          {mainItems.map((item) => (
+            <Link
+              key={item.label}
+              className={`cursor-pointer px-3 py-0.5 border-b-2 font-semibold ${
+                activeLabel === item.label
+                  ? "border-primaryGold"
+                  : "border-transparent hover:border-white/70"
+              }`}
+              href={item.route}
             >
-              Sign Out
-            </div>
-          )}
+              {item.label}
+            </Link>
+          ))}
         </div>
+
+        <button
+          onClick={keycloakSignOut}
+          className="ml-auto px-3 py-1 font-semibold hover:underline focus:outline-none bg-transparent border-0"
+        >
+          Log Out
+        </button>
       </Row>
 
       {activeSubMenu && (
