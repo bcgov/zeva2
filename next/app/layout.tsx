@@ -1,7 +1,7 @@
 import { auth } from "@/auth";
 import type { Metadata } from "next";
 import "./globals.css";
-import { Header } from "./lib/components";
+import { Header } from "./lib/components/Header";
 import { NavigationGuardProvider } from "next-navigation-guard";
 
 export const metadata: Metadata = {
