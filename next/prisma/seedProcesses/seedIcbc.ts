@@ -31,6 +31,7 @@ export const seedIcbc = async (
         isLegacy: true,
         status: IcbcFileStatus.SUCCESS,
         timestamp: newTs,
+        createTimestamp: fileOld.create_timestamp ?? newTs,
       },
     });
     mapOfOldFileIdsToNewFileIds[fileOld.id] = newFile.id;

@@ -116,7 +116,7 @@ export const SupplierActions = (props: {
           setComment={setComment}
           disabled={isPending}
         />
-        <Button variant="secondary" onClick={handleDelete} disabled={isPending}>
+        <Button variant="danger" onClick={handleDelete} disabled={isPending}>
           {isPending ? "..." : "Delete"}
         </Button>
         <Button
@@ -127,11 +127,7 @@ export const SupplierActions = (props: {
           {isPending ? "..." : "Edit"}
         </Button>
         {props.userRoles.includes(Role.SIGNING_AUTHORITY) && (
-          <Button
-            variant="secondary"
-            onClick={handleSubmit}
-            disabled={isPending}
-          >
+          <Button variant="primary" onClick={handleSubmit} disabled={isPending}>
             {isPending ? "..." : "Submit"}
           </Button>
         )}

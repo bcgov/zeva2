@@ -20,15 +20,14 @@ import {
   getEligibleVehicles,
   getEligibleVehiclesMap,
   getIcbcRecordsMap,
-  getOrgInfo,
   getReservedVins,
   getVehicleCounts,
   unreserveVins,
   updateStatus,
   createAttachments,
-  getPartOfMyrData,
+  getPartOfMyrModelYear,
 } from "./services";
-import { SupplierTemplate } from "./constants";
+import { ErrorsTemplate, SupplierTemplate } from "./constants";
 import {
   Directory,
   getAttachmentPutData,
@@ -45,6 +44,7 @@ import {
 import { Attachment, AttachmentDownload } from "@/app/lib/constants/attachment";
 import { addJobToEmailQueue } from "@/app/lib/services/queue";
 import {
+  getComplianceDate,
   getIsInReportingPeriod,
   getPreviousComplianceYear,
 } from "@/app/lib/utils/complianceYear";
@@ -56,6 +56,8 @@ import {
   ZevUnitTransactionCreateManyInput,
 } from "@/prisma/generated/models";
 import { getPresignedGetObjectUrl } from "@/app/lib/services/s3";
+import { getModelYearEnumsToStringsMap } from "@/app/lib/utils/enumMaps";
+import { getIsoYmdString } from "@/app/lib/utils/date";
 
 export const getSupplierTemplateDownloadUrl = async () => {
   return await getTemplateDownloadUrl(SupplierTemplate.Name);
@@ -125,6 +127,10 @@ export const getDocumentDownloadUrls = async (
 
 // first attachment must be the CA file
 export const supplierSave = async (
+  legalName: string,
+  serviceAddress: string,
+  recordsAddress: string,
+  makes: string,
   attachments: Attachment[],
   creditApplicationId?: number,
 ): Promise<DataOrErrorActionResponse<number>> => {
@@ -161,7 +167,6 @@ export const supplierSave = async (
       "creditApplicationId"
     >[] = [];
     const modelYears: Set<ModelYear> = new Set();
-    const orgInfo = await getOrgInfo(userOrgId);
     const dataSheet = workbook.getWorksheet(
       SupplierTemplate.ZEVsSuppliedSheetName,
     );
@@ -212,10 +217,10 @@ export const supplierSave = async (
           },
           data: {
             modelYears: Array.from(modelYears),
-            supplierName: orgInfo.name,
-            makes: orgInfo.makes,
-            serviceAddress: orgInfo.serviceAddress,
-            recordsAddress: orgInfo.recordsAddress,
+            legalName,
+            makes,
+            serviceAddress,
+            recordsAddress,
           },
         });
         await tx.creditApplicationRecord.deleteMany({
@@ -230,10 +235,10 @@ export const supplierSave = async (
             status: CreditApplicationStatus.DRAFT,
             supplierStatus: CreditApplicationStatus.DRAFT,
             modelYears: Array.from(modelYears),
-            supplierName: orgInfo.name,
-            makes: orgInfo.makes,
-            serviceAddress: orgInfo.serviceAddress,
-            recordsAddress: orgInfo.recordsAddress,
+            legalName,
+            makes,
+            serviceAddress,
+            recordsAddress,
           },
           select: {
             id: true,
@@ -339,13 +344,13 @@ export const supplierSubmit = async (
   ) {
     return getErrorActionResponse("Invalid Action!");
   }
-  let partOfMyrComplianceDate: Date | null = null;
+  let partOfMyrModelYear: ModelYear | null = null;
   if (partOfMyr) {
-    const partOfMyrData = await getPartOfMyrData(userOrgId);
-    if (!partOfMyrData) {
+    const myrModelYear = await getPartOfMyrModelYear(userOrgId);
+    if (!myrModelYear) {
       return getErrorActionResponse("Invalid Action!");
     } else {
-      partOfMyrComplianceDate = partOfMyrData[1];
+      partOfMyrModelYear = myrModelYear;
     }
   }
   const records = application.CreditApplicationRecord;
@@ -376,7 +381,7 @@ export const supplierSubmit = async (
           status: CreditApplicationStatus.SUBMITTED,
           supplierStatus: CreditApplicationStatus.SUBMITTED,
           submissionTimestamp: new Date(),
-          partOfMyrComplianceDate,
+          partOfMyrModelYear,
         },
       });
       await tx.reservedVin.createMany({
@@ -450,7 +455,7 @@ export const validateCreditApplication = async (
   const warningsMap = getWarningsMap(
     records,
     icbcMap,
-    creditApplication.partOfMyrComplianceDate,
+    creditApplication.partOfMyrModelYear,
   );
   let eligibleVinsCount = 0;
   let ineligibleVinsCount = 0;
@@ -789,7 +794,7 @@ export const directorApprove = async (
     },
     select: {
       organizationId: true,
-      partOfMyrComplianceDate: true,
+      partOfMyrModelYear: true,
       mustRevalidate: true,
     },
   });
@@ -814,8 +819,9 @@ export const directorApprove = async (
   const transactionsToCreate: ZevUnitTransactionCreateManyInput[] = [];
   const creditRecords =
     await getApplicationFlattenedCreditRecords(creditApplicationId);
-  const transactionTimestamp =
-    creditApplication.partOfMyrComplianceDate ?? new Date();
+  const transactionTimestamp = creditApplication.partOfMyrModelYear
+    ? getComplianceDate(creditApplication.partOfMyrModelYear)
+    : new Date();
   for (const record of creditRecords) {
     transactionsToCreate.push({
       organizationId: creditApplication.organizationId,
@@ -881,4 +887,58 @@ export const directorApprove = async (
     });
   });
   return getSuccessActionResponse();
+};
+
+export const getErrorsTemplateDownloadUrl = async () => {
+  return await getTemplateDownloadUrl(ErrorsTemplate.Name);
+};
+
+export const getNotValidatedRecords = async (
+  creditApplicationId: number,
+): Promise<
+  DataOrErrorActionResponse<
+    {
+      vin: string;
+      make: string;
+      modelName: string;
+      modelYear: string;
+      date: string;
+      error: string;
+    }[]
+  >
+> => {
+  const { userIsGov, userOrgId } = await getUserInfo();
+  if (userIsGov) {
+    return getErrorActionResponse("Unauthorized!");
+  }
+  const records = await prisma.creditApplicationRecord.findMany({
+    where: {
+      creditApplicationId,
+      creditApplication: {
+        organizationId: userOrgId,
+      },
+      validated: false,
+    },
+    select: {
+      vin: true,
+      make: true,
+      modelName: true,
+      modelYear: true,
+      timestamp: true,
+      reason: true,
+    },
+  });
+  const modelYearsMap = getModelYearEnumsToStringsMap();
+  return getDataActionResponse(
+    records.map((record) => {
+      return {
+        vin: record.vin,
+        make: record.make,
+        modelName: record.modelName,
+        modelYear: modelYearsMap[record.modelYear] ?? "",
+        date: getIsoYmdString(record.timestamp),
+        error: record.reason ?? "",
+      };
+    }),
+  );
 };

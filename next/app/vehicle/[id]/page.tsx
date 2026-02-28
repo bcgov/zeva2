@@ -49,7 +49,7 @@ const Page = async (props: { params: Promise<{ id: string }> }) => {
           <VehicleDetails vehicle={vehicle} />
         </Suspense>
       </ContentCard>
-      <ContentCard title="Download Additional Documents">
+      <ContentCard title="Additional Documents">
         <Attachments
           attachments={vehicle.VehicleAttachment}
           download={download}

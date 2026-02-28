@@ -49,8 +49,8 @@ export const getOrgInfo = async (orgId: number) => {
   for (const vehicle of orgInfo.Vehicle) {
     makes.add(vehicle.make);
   }
-  let serviceAddress: string | null = null;
-  let recordsAddress: string | null = null;
+  let serviceAddress: string = "";
+  let recordsAddress: string = "";
   for (const address of orgInfo.organizationAddress) {
     const addressType = address.addressType;
     const addressString = `${address.addressLines}, ${address.city}, ${address.state}, ${address.postalCode}, ${address.country}`;
@@ -60,12 +60,9 @@ export const getOrgInfo = async (orgId: number) => {
       recordsAddress = addressString;
     }
   }
-  if (!serviceAddress || !recordsAddress) {
-    throw new Error("Service or Records Address not found!");
-  }
   return {
     name: orgInfo.name,
-    makes: Array.from(makes),
+    makes: Array.from(makes).join(", "),
     serviceAddress,
     recordsAddress,
   };
@@ -421,9 +418,9 @@ export const getCreditStats = async (
   });
 };
 
-export const getPartOfMyrData = async (
+export const getPartOfMyrModelYear = async (
   orgId: number,
-): Promise<[ModelYear, Date] | null> => {
+): Promise<ModelYear | null> => {
   const currentCy = getCurrentComplianceYear();
   const previousCy = getAdjacentYear("prev", currentCy);
   const myr = await prisma.modelYearReport.findUnique({
@@ -439,7 +436,7 @@ export const getPartOfMyrData = async (
     myr.status === ModelYearReportStatus.DRAFT ||
     myr.status === ModelYearReportStatus.RETURNED_TO_SUPPLIER
   ) {
-    return [previousCy, getComplianceDate(previousCy)];
+    return previousCy;
   }
   return null;
 };

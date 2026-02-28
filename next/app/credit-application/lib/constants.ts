@@ -10,6 +10,11 @@ export enum SupplierTemplate {
   ZEVsSuppliedSheetNumberOfRows = 2001,
 }
 
+export enum ErrorsTemplate {
+  Name = "vin_errors_template.xlsx",
+  ErrorsSheetName = "VIN Errors",
+}
+
 export const mapOfStatusToSupplierStatus: Readonly<
   Record<CreditApplicationStatus, CreditApplicationSupplierStatus>
 > = {

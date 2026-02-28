@@ -342,8 +342,8 @@ export const getPendingSupplyCredits = async (
             CreditApplicationStatus.RETURNED_TO_ANALYST,
           ],
         },
+        partOfMyrModelYear: modelYear,
       },
-      modelYear,
     },
     by: ["vehicleClass", "zevClass"],
     _sum: {

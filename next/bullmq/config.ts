@@ -4,9 +4,9 @@ import {
   handleConsumeIcbcFileJobCompleted,
   handleConsumeIcbcFileJobFailed,
 } from "./handlers/icbc";
-import { handleCreateDefaultBucket } from "./handlers/runOnce";
 import { ConnectionOptions } from "bullmq";
 import { QueueNames } from "@/app/lib/constants/queue";
+import { handleFlagInProcessCAsJob } from "./handlers/flagCAs";
 
 const connection: ConnectionOptions = {
   host: process.env.REDIS_HOST ?? "redis",
@@ -44,6 +44,11 @@ export const bullmqConfig = {
       completedHandler: handleConsumeIcbcFileJobCompleted,
       failedHandler: handleConsumeIcbcFileJobFailed,
     },
+    {
+      queueName: QueueNames.FlagInProcessCAs,
+      numberOfWorkers: 1,
+      handler: handleFlagInProcessCAsJob,
+    },
   ],
   queueDefaultJobOptions: {
     attempts: 10,
@@ -54,12 +59,4 @@ export const bullmqConfig = {
     removeOnComplete: 100,
     removeOnFail: 5000,
   },
-  // any 2 run once job names should be distinct from each other
-  runOnceJobDefns: [
-    {
-      name: "create-minio-bucket",
-      handler: handleCreateDefaultBucket,
-      data: {},
-    },
-  ],
 };

@@ -132,6 +132,7 @@ model User {
   ReassessmentHistory        ReassessmentHistory[]
   CreditTransferHistory      CreditTransferHistory[]
   SupplementaryReportHistory SupplementaryReportHistory[]
+  icbcFiles                  IcbcFile[]
 
   @@unique([idp, idpUsername])
   @@map("user")
@@ -362,6 +363,9 @@ model IcbcFile {
   name                          String         @unique
   status                        IcbcFileStatus
   timestamp                     DateTime       @db.Timestamptz(6)
+  createTimestamp               DateTime       @default(now()) @map("create_timestamp") @db.Timestamptz(6)
+  uploadedById                  Int?           @map("uploaded_by_id")
+  uploadedBy                    User?          @relation(fields: [uploadedById], references: [id])
   numberOfRecordsPreProcessing  Int?           @map("number_of_records_pre_processing")
   numberOfRecordsPostProcessing Int?           @map("number_of_records_post_processing")
   icbcRecords                   IcbcRecord[]
@@ -408,8 +412,8 @@ model CreditApplication {
   status                      CreditApplicationStatus         @map("status")
   supplierStatus              CreditApplicationSupplierStatus @map("supplier_status")
   modelYears                  ModelYear[]                     @map("model_years")
-  supplierName                String                          @map("supplier_name")
-  makes                       String[]
+  legalName                   String                          @map("legal_name")
+  makes                       String
   serviceAddress              String                          @map("service_address")
   recordsAddress              String                          @map("records_address")
   eligibleVinsCount           Int?                            @map("eligible_vins_count")
@@ -417,7 +421,7 @@ model CreditApplication {
   aCredits                    Decimal?                        @map("a_credits") @db.Decimal(65, 2)
   bCredits                    Decimal?                        @map("b_credits") @db.Decimal(65, 2)
   validatedUpToIcbcTimestamp  DateTime?                       @map("validated_up_to_icbc_timestamp") @db.Timestamptz(6)
-  partOfMyrComplianceDate     DateTime?                       @map("part_of_myr_compliance_date") @db.Timestamptz(6)
+  partOfMyrModelYear          ModelYear?                      @map("part_of_myr_model_year")
   mustRevalidate              Boolean                         @default(false) @map("must_revalidate")
   CreditApplicationHistory    CreditApplicationHistory[]
   CreditApplicationRecord     CreditApplicationRecord[]

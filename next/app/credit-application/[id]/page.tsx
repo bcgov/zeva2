@@ -12,7 +12,7 @@ import { SupplierActions } from "../lib/components/SupplierActions";
 import { DirectorActions } from "../lib/components/DirectorActions";
 import { AnalystActions } from "../lib/components/AnalystActions";
 import { ApplicationStatistics } from "../lib/components/ApplicationStatistics";
-import { getPartOfMyrData } from "../lib/services";
+import { getPartOfMyrModelYear } from "../lib/services";
 
 const Page = async (props: { params: Promise<{ id: string }> }) => {
   const args = await props.params;
@@ -87,7 +87,7 @@ const Page = async (props: { params: Promise<{ id: string }> }) => {
       );
     }
   }
-  const partOfMyrData = await getPartOfMyrData(userOrgId);
+  const partOfMyrModelYear = await getPartOfMyrModelYear(userOrgId);
   return (
     <div className="flex flex-col w-1/3">
       {applicationData}
@@ -96,7 +96,7 @@ const Page = async (props: { params: Promise<{ id: string }> }) => {
           creditApplicationId={id}
           status={applicationSupplierStatus}
           userRoles={userRoles}
-          partOfMyrModelYear={partOfMyrData ? partOfMyrData[0] : null}
+          partOfMyrModelYear={partOfMyrModelYear}
         />
       </ContentCard>
     </div>

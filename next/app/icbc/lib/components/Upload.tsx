@@ -52,7 +52,7 @@ export const Upload = () => {
         </label>
         <input
           name="date"
-          type="text"
+          type="date"
           placeholder="YYYY-MM-DD"
           onChange={(e) => {
             setDatestring(e.target.value);

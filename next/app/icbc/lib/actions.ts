@@ -21,7 +21,7 @@ export const createIcbcFile = async (
   objectName: string,
   datestring: string,
 ): Promise<ErrorOrSuccessActionResponse> => {
-  const { userIsGov } = await getUserInfo();
+  const { userIsGov, userId } = await getUserInfo();
   if (!userIsGov) {
     return getErrorActionResponse("Unauthorized!");
   }
@@ -35,6 +35,7 @@ export const createIcbcFile = async (
         name: objectName,
         status: IcbcFileStatus.PROCESSING,
         timestamp: date,
+        uploadedById: userId,
       },
     });
     await addJobToIcbcQueue(icbcFile.id);

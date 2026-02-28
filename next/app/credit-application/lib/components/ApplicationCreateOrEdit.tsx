@@ -2,20 +2,34 @@ import { getUserInfo } from "@/auth";
 import { CreditApplicationForm } from "./CreditApplicationForm";
 import { getDocumentDownloadUrls } from "../actions";
 import { AttachmentDownload } from "@/app/lib/constants/attachment";
+import { getOrgInfo } from "../services";
+import { getCreditApplication } from "../data";
 
 export const ApplicationCreateOrEdit = async (props: {
   creditApplicationId?: number;
 }) => {
-  const { userIsGov } = await getUserInfo();
+  const { userIsGov, userOrgId } = await getUserInfo();
   if (userIsGov) {
     return null;
   }
+  let legalName;
+  let serviceAddress;
+  let recordsAddress;
+  let makes;
   let applicationFile: AttachmentDownload | null = null;
   const attachments: AttachmentDownload[] = [];
   if (props.creditApplicationId) {
-    const attachmentsResp = await getDocumentDownloadUrls(
-      props.creditApplicationId,
-    );
+    const [application, attachmentsResp] = await Promise.all([
+      getCreditApplication(props.creditApplicationId),
+      getDocumentDownloadUrls(props.creditApplicationId),
+    ]);
+    if (!application) {
+      return null;
+    }
+    legalName = application.legalName;
+    recordsAddress = application.recordsAddress;
+    serviceAddress = application.serviceAddress;
+    makes = application.makes;
     if (attachmentsResp.responseType === "data") {
       const data = attachmentsResp.data;
       for (const datum of data) {
@@ -26,6 +40,12 @@ export const ApplicationCreateOrEdit = async (props: {
         }
       }
     }
+  } else {
+    const orgInfo = await getOrgInfo(userOrgId);
+    legalName = orgInfo.name;
+    recordsAddress = orgInfo.recordsAddress;
+    serviceAddress = orgInfo.serviceAddress;
+    makes = orgInfo.makes;
   }
   return (
     <div className="max-w-xl mx-auto p-4">
@@ -35,6 +55,10 @@ export const ApplicationCreateOrEdit = async (props: {
       <div className="bg-white rounded-lg shadow-level-1 p-6">
         {props.creditApplicationId && applicationFile ? (
           <CreditApplicationForm
+            legalName={legalName}
+            recordsAddress={recordsAddress}
+            serviceAddress={serviceAddress}
+            makes={makes}
             creditApplication={{
               id: props.creditApplicationId,
               applicationFile,
@@ -42,7 +66,12 @@ export const ApplicationCreateOrEdit = async (props: {
             }}
           />
         ) : (
-          <CreditApplicationForm />
+          <CreditApplicationForm
+            legalName={legalName}
+            recordsAddress={recordsAddress}
+            serviceAddress={serviceAddress}
+            makes={makes}
+          />
         )}
       </div>
     </div>

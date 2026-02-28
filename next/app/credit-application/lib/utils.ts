@@ -20,6 +20,7 @@ import {
   CreditApplicationSparse,
 } from "./data";
 import { getIsoYmdString, validateDate } from "@/app/lib/utils/date";
+import { getComplianceDate } from "@/app/lib/utils/complianceYear";
 
 export const getWhereClause = (
   filters: Record<string, string>,
@@ -44,7 +45,10 @@ export const getWhereClause = (
           in: getMatchingTerms(supplierStatusMap, value),
         };
       }
-    } else if (key === "submissionTimestamp") {
+    } else if (
+      key === "submissionTimestamp" ||
+      key === "transactionTimestamp"
+    ) {
       const [isValidDate, date] = validateDate(value);
       if (isValidDate) {
         const datePlusOneDay = new Date(date);
@@ -83,7 +87,11 @@ export const getOrderByClause = (
   for (const [key, value] of Object.entries(sorts)) {
     const orderBy: CreditApplicationOrderByWithRelationInput = {};
     if (value === "asc" || value === "desc") {
-      if (key === "id" || key === "submissionTimestamp") {
+      if (
+        key === "id" ||
+        key === "submissionTimestamp" ||
+        key === "transactionTimestamp"
+      ) {
         orderBy[key] = value;
       } else if (key === "status") {
         if (userIsGov) {
@@ -214,8 +222,8 @@ export const getRecordsOrderByClause = (
 
 export type CreditApplicationRecordSparseSerialized = Omit<
   CreditApplicationRecordSparse,
-  "timestamp"
-> & { timestamp: string };
+  "timestamp" | "icbcTimestamp"
+> & { timestamp: string; icbcTimestamp: string };
 
 export const getSerializedRecords = (
   records: CreditApplicationRecordSparse[],
@@ -225,6 +233,9 @@ export const getSerializedRecords = (
     result.push({
       ...record,
       timestamp: getIsoYmdString(record.timestamp),
+      icbcTimestamp: record.icbcTimestamp
+        ? getIsoYmdString(record.icbcTimestamp)
+        : "",
     });
   });
   return result;
@@ -339,9 +350,13 @@ export const getWarningsMap = (
     timestamp: Date;
   }[],
   icbcMap: IcbcRecordsMap,
-  partOfMyrComplianceDate: Date | null,
+  partOfMyrModelYear: ModelYear | null,
 ) => {
   const result: Partial<Record<string, string[]>> = {};
+  let partOfMyrComplianceDate: Date | null = null;
+  if (partOfMyrModelYear) {
+    partOfMyrComplianceDate = getComplianceDate(partOfMyrModelYear);
+  }
   for (const record of records) {
     const vin = record.vin;
     const icbcRecord = icbcMap[record.vin];
@@ -358,8 +373,7 @@ export const getWarningsMap = (
     }
     if (
       partOfMyrComplianceDate &&
-      (partOfMyrComplianceDate < record.timestamp ||
-        partOfMyrComplianceDate < icbcRecord.timestamp)
+      partOfMyrComplianceDate < icbcRecord.timestamp
     ) {
       warnings.push("4");
     }

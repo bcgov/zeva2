@@ -5,13 +5,7 @@ import Excel from "exceljs";
 import { Button } from "@/app/lib/components";
 import { Dropzone } from "@/app/lib/components/Dropzone";
 import { useRouter } from "next/navigation";
-import {
-  useCallback,
-  useEffect,
-  useMemo,
-  useState,
-  useTransition,
-} from "react";
+import { useCallback, useEffect, useState, useTransition } from "react";
 import { FileWithPath } from "react-dropzone";
 import {
   getCreditApplicationAttachmentPutData,
@@ -23,10 +17,13 @@ import { SupplierTemplate } from "../constants";
 import { getModelYearEnumsToStringsMap } from "@/app/lib/utils/enumMaps";
 import { downloadBuffer, getFiles } from "@/app/lib/utils/download";
 import { Routes } from "@/app/lib/constants";
-import { getDefaultAttchmentTypes } from "@/app/lib/utils/attachments";
 import { Attachment, AttachmentDownload } from "@/app/lib/constants/attachment";
 
 export const CreditApplicationForm = (props: {
+  legalName: string;
+  recordsAddress: string;
+  serviceAddress: string;
+  makes: string;
   creditApplication?: {
     id: number;
     applicationFile: AttachmentDownload;
@@ -35,6 +32,10 @@ export const CreditApplicationForm = (props: {
 }) => {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
+  const [legalName, setLegalName] = useState<string>();
+  const [serviceAddress, setServiceAddress] = useState<string>();
+  const [recordsAddress, setRecordsAddress] = useState<string>();
+  const [makes, setMakes] = useState<string>();
   const [files, setFiles] = useState<FileWithPath[]>([]);
   const [attachments, setAttachments] = useState<FileWithPath[]>([]);
   const [error, setError] = useState<string>("");
@@ -60,9 +61,17 @@ export const CreditApplicationForm = (props: {
     loadPrev();
   }, [props.creditApplication]);
 
-  const allowedFileTypes = useMemo(() => {
-    return getDefaultAttchmentTypes();
-  }, []);
+  useEffect(() => {
+    setLegalName(props.legalName);
+    setRecordsAddress(props.recordsAddress);
+    setServiceAddress(props.serviceAddress);
+    setMakes(props.makes);
+  }, [
+    props.legalName,
+    props.recordsAddress,
+    props.serviceAddress,
+    props.makes,
+  ]);
 
   const handleDownload = useCallback(() => {
     setError("");
@@ -104,6 +113,9 @@ export const CreditApplicationForm = (props: {
     setError("");
     startTransition(async () => {
       try {
+        if (!legalName || !recordsAddress || !serviceAddress || !makes) {
+          throw new Error("No field may be empty!");
+        }
         if (files.length !== 1) {
           throw new Error("Exactly 1 Credit Application file expected!");
         }
@@ -123,6 +135,10 @@ export const CreditApplicationForm = (props: {
           });
         }
         const response = await supplierSave(
+          legalName,
+          recordsAddress,
+          serviceAddress,
+          makes,
           attachmentsPayload,
           props.creditApplication?.id,
         );
@@ -137,11 +153,71 @@ export const CreditApplicationForm = (props: {
         }
       }
     });
-  }, [props.creditApplication, files, attachments]);
+  }, [
+    props.creditApplication,
+    legalName,
+    recordsAddress,
+    serviceAddress,
+    makes,
+    files,
+    attachments,
+  ]);
 
   return (
     <div>
       {error && <p className="text-red-600">{error}</p>}
+      <div className="flex items-center py-2 my-2">
+        <label className="w-72" htmlFor="legalName">
+          Legal Name
+        </label>
+        <input
+          className="border p-2 w-full"
+          name="legalName"
+          type="text"
+          value={legalName ?? ""}
+          onChange={(e) => setLegalName(e.target.value)}
+          disabled={isPending}
+        />
+      </div>
+      <div className="flex items-center py-2 my-2">
+        <label className="w-72" htmlFor="recordsAddress">
+          Records Address
+        </label>
+        <input
+          className="border p-2 w-full"
+          name="recordsAddress"
+          type="text"
+          value={recordsAddress ?? ""}
+          onChange={(e) => setRecordsAddress(e.target.value)}
+          disabled={isPending}
+        />
+      </div>
+      <div className="flex items-center py-2 my-2">
+        <label className="w-72" htmlFor="serviceAddress">
+          Service Address
+        </label>
+        <input
+          className="border p-2 w-full"
+          name="serviceAddress"
+          type="text"
+          value={serviceAddress ?? ""}
+          onChange={(e) => setServiceAddress(e.target.value)}
+          disabled={isPending}
+        />
+      </div>
+      <div className="flex items-center py-2 my-2">
+        <label className="w-72" htmlFor="makes">
+          Makes
+        </label>
+        <input
+          className="border p-2 w-full"
+          name="makes"
+          type="text"
+          value={makes ?? ""}
+          onChange={(e) => setMakes(e.target.value)}
+          disabled={isPending}
+        />
+      </div>
       <div className="flex space-x-2">
         <Button
           variant="secondary"
@@ -171,7 +247,6 @@ export const CreditApplicationForm = (props: {
           setFiles={setAttachments}
           disabled={isPending}
           maxNumberOfFiles={10}
-          allowedFileTypes={allowedFileTypes}
         />
       </div>
       <div className="flex space-x-2">
