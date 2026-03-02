@@ -10,7 +10,12 @@ type CalculatorModelTableProps = {
   models: VehicleModel[];
   selectedModelYear: ModelYear | "";
   estimatedModelSales: EstimatedModelSale[];
-  onModelSaleChange: (modelId: number, value: number, creditValue: number, creditClass: string) => void;
+  onModelSaleChange: (
+    modelId: number,
+    value: number,
+    creditValue: number,
+    creditClass: string,
+  ) => void;
 };
 
 const formatNumeric = (value: number): string => {
@@ -41,18 +46,28 @@ export const CalculatorModelTable = ({
     setUpdateCounter(0);
   }, [selectedModelYear]);
 
-  const handleInputChange = useCallback((modelId: number, value: string, creditValue: number, creditClass: string) => {
-    inputValuesRef.current[modelId] = value;
-    const numValue = parseInt(value) || 0;
-    onModelSaleChange(modelId, numValue, creditValue, creditClass);
-    setUpdateCounter(c => c + 1);
-  }, [onModelSaleChange]);
+  const handleInputChange = useCallback(
+    (
+      modelId: number,
+      value: string,
+      creditValue: number,
+      creditClass: string,
+    ) => {
+      inputValuesRef.current[modelId] = value;
+      const numValue = parseInt(value) || 0;
+      onModelSaleChange(modelId, numValue, creditValue, creditClass);
+      setUpdateCounter((c) => c + 1);
+    },
+    [onModelSaleChange],
+  );
 
   const filteredModels = useMemo(() => {
     let filtered = models;
 
     if (selectedModelYear) {
-      filtered = filtered.filter((model) => model.modelYear === selectedModelYear);
+      filtered = filtered.filter(
+        (model) => model.modelYear === selectedModelYear,
+      );
     }
 
     return filtered;
@@ -117,7 +132,7 @@ export const CalculatorModelTable = ({
                   modelId,
                   e.target.value,
                   info.row.original.creditValue,
-                  info.row.original.creditClass
+                  info.row.original.creditClass,
                 );
               }}
             />
@@ -132,7 +147,7 @@ export const CalculatorModelTable = ({
           const inputValue = inputValuesRef.current[modelId];
           const creditValue = info.row.original.creditValue;
           const creditClass = info.row.original.creditClass;
-          
+
           if (inputValue && parseInt(inputValue) > 0) {
             const totalCredits = parseInt(inputValue) * creditValue;
             return (
@@ -141,14 +156,12 @@ export const CalculatorModelTable = ({
               </span>
             );
           }
-          
-          return (
-            <span className="text-sm text-primaryText">Result</span>
-          );
+
+          return <span className="text-sm text-primaryText">Result</span>;
         },
       }),
     ],
-    [handleInputChange]
+    [handleInputChange],
   );
 
   return (
@@ -175,16 +188,19 @@ export const CalculatorModelTable = ({
             </div>
           }
           customStyles={{
-            container: "bg-white border border-dividerMedium rounded shadow-level-1",
+            container:
+              "bg-white border border-dividerMedium rounded shadow-level-1",
             tableWrapper: "overflow-x-auto",
             table: "w-full border-collapse",
             thead: "bg-lightGrey border-b border-dividerMedium",
             theadTr: "bg-lightGrey border-b border-dividerMedium",
-            theadTh: "px-4 py-3 text-sm font-semibold text-primaryText align-top",
+            theadTh:
+              "px-4 py-3 text-sm font-semibold text-primaryText align-top",
             tbody: "bg-white",
             tbodyTr: "border-b border-dividerMedium hover:bg-lightGrey",
             tbodyTd: "px-4 py-3",
-            pagination: "flex items-center justify-center bg-lightGrey w-full rounded p-2 border-t border-dividerMedium",
+            pagination:
+              "flex items-center justify-center bg-lightGrey w-full rounded p-2 border-t border-dividerMedium",
           }}
         />
       )}

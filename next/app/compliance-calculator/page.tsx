@@ -40,10 +40,16 @@ const Page = async () => {
   return (
     <div className="p-6">
       <div className="mb-6">
-        <h2 className="text-2xl font-semibold text-primaryText mb-4">Compliance Calculator</h2>
+        <h2 className="text-2xl font-semibold text-primaryText mb-4">
+          Compliance Calculator
+        </h2>
         <div className="text-primaryText space-y-1">
           <p>
-            The compliance calculator is to assist in estimating your compliance obligation. Enter your estimated total vehicle sales for a model year to see an estimated ratio reduction. Enter your estimated total ZEVs supplied by model to see an estimate of credits generated from these sales.
+            The compliance calculator is to assist in estimating your compliance
+            obligation. Enter your estimated total vehicle sales for a model
+            year to see an estimated ratio reduction. Enter your estimated total
+            ZEVs supplied by model to see an estimate of credits generated from
+            these sales.
           </p>
         </div>
       </div>

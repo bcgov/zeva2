@@ -112,12 +112,12 @@ export const TableHeader = <T extends unknown>({
       {table.getHeaderGroups().map((headerGroup) => (
         <tr key={headerGroup.id} className={customStyles?.theadTr || ""}>
           {headerGroup.headers.map((header) => {
-            const thClassName = customStyles?.theadTh 
+            const thClassName = customStyles?.theadTh
               ? customStyles.theadTh
               : `px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider ${
                   explicitSizing ? "truncate" : ""
                 }`.trim();
-            
+
             return (
               <th
                 key={header.id}
@@ -166,8 +166,8 @@ export const TableHeader = <T extends unknown>({
                   </div>
                 )}
               </th>
-          );
-        })}
+            );
+          })}
         </tr>
       ))}
     </thead>

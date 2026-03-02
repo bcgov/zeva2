@@ -102,11 +102,13 @@ export const ClientSideTable = <T extends ZevaObject>({
   };
 
   return (
-    <div className={customStyles?.container || "bg-white rounded-lg shadow-level-1 p-4"}>
+    <div
+      className={
+        customStyles?.container || "bg-white rounded-lg shadow-level-1 p-4"
+      }
+    >
       {headerContent && (
-        <div className={customStyles?.headerSection || ""}>
-          {headerContent}
-        </div>
+        <div className={customStyles?.headerSection || ""}>{headerContent}</div>
       )}
       {!hideResetButton && (
         <div className="flex flex-row-reverse">
@@ -117,7 +119,10 @@ export const ClientSideTable = <T extends ZevaObject>({
       )}
       <div className={customStyles?.tableWrapper || "overflow-x-scroll"}>
         <table
-          className={customStyles?.table || `w-full divide-y divide-gray-200 rounded border-t border-l border-r border-navBorder ${explicitSizing ? "table-fixed" : ""}`}
+          className={
+            customStyles?.table ||
+            `w-full divide-y divide-gray-200 rounded border-t border-l border-r border-navBorder ${explicitSizing ? "table-fixed" : ""}`
+          }
         >
           <TableHeader
             table={table}
@@ -157,11 +162,17 @@ export const ClientSideTable = <T extends ZevaObject>({
               theadTh: customStyles?.theadTh,
             }}
           />
-          <tbody className={customStyles?.tbody || "bg-white divide-y divide-gray-200"}>
+          <tbody
+            className={
+              customStyles?.tbody || "bg-white divide-y divide-gray-200"
+            }
+          >
             {table.getRowModel().rows.map((row) => {
-              const rowClassName = customStyles?.tbodyTr || (navigationAction
-                ? "hover:bg-gray-200 transition-colors cursor-pointer"
-                : "");
+              const rowClassName =
+                customStyles?.tbodyTr ||
+                (navigationAction
+                  ? "hover:bg-gray-200 transition-colors cursor-pointer"
+                  : "");
 
               return (
                 <tr
@@ -173,7 +184,10 @@ export const ClientSideTable = <T extends ZevaObject>({
                     return (
                       <td
                         key={cell.id}
-                        className={customStyles?.tbodyTd || `px-6 py-4 whitespace-nowrap ${explicitSizing ? "truncate" : ""}`}
+                        className={
+                          customStyles?.tbodyTd ||
+                          `px-6 py-4 whitespace-nowrap ${explicitSizing ? "truncate" : ""}`
+                        }
                         style={
                           explicitSizing
                             ? { width: cell.column.getSize() }
@@ -193,7 +207,12 @@ export const ClientSideTable = <T extends ZevaObject>({
           </tbody>
         </table>
       </div>
-      <div className={customStyles?.pagination || "flex items-center justify-center bg-navBorder w-full rounded p-2"}>
+      <div
+        className={
+          customStyles?.pagination ||
+          "flex items-center justify-center bg-navBorder w-full rounded p-2"
+        }
+      >
         <FontAwesomeIcon
           icon={faAngleLeft}
           onClick={() => table.previousPage()}
@@ -257,4 +276,3 @@ export const ClientSideTable = <T extends ZevaObject>({
     </div>
   );
 };
-

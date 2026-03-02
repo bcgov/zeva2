@@ -24,7 +24,10 @@ export const CalculatorInputs = ({
     <div className="col-span-1 lg:col-span-5 bg-lightGrey border border-dividerMedium p-6 rounded">
       <fieldset>
         <div className="mb-6">
-          <label className="block text-sm font-medium text-primaryText mb-2" htmlFor="model-year">
+          <label
+            className="block text-sm font-medium text-primaryText mb-2"
+            htmlFor="model-year"
+          >
             Model Year
           </label>
           <select
@@ -67,7 +70,10 @@ export const CalculatorInputs = ({
                 onChange={(e) => onInputChange("supplier-size", e.target.value)}
                 className="mt-0.5 mr-2 h-4 w-4 text-primaryBlue focus:ring-primaryBlue border-dividerMedium"
               />
-              <label htmlFor="supplier-size-small" className="text-sm text-primaryText">
+              <label
+                htmlFor="supplier-size-small"
+                className="text-sm text-primaryText"
+              >
                 Small Volume Supplier (Less than 1,000 total vehicles supplied)
               </label>
             </div>
@@ -81,7 +87,10 @@ export const CalculatorInputs = ({
                 onChange={(e) => onInputChange("supplier-size", e.target.value)}
                 className="mt-0.5 mr-2 h-4 w-4 text-primaryBlue focus:ring-primaryBlue border-dividerMedium"
               />
-              <label htmlFor="supplier-size-medium" className="text-sm text-primaryText">
+              <label
+                htmlFor="supplier-size-medium"
+                className="text-sm text-primaryText"
+              >
                 Medium Volume Supplier (1,000 to 4,999 total vehicles supplied)
               </label>
             </div>
@@ -95,7 +104,10 @@ export const CalculatorInputs = ({
                 onChange={(e) => onInputChange("supplier-size", e.target.value)}
                 className="mt-0.5 mr-2 h-4 w-4 text-primaryBlue focus:ring-primaryBlue border-dividerMedium"
               />
-              <label htmlFor="supplier-size-large" className="text-sm text-primaryText">
+              <label
+                htmlFor="supplier-size-large"
+                className="text-sm text-primaryText"
+              >
                 Large Volume Supplier (5,000 or more total vehicles supplied)
               </label>
             </div>
@@ -131,7 +143,9 @@ export const CalculatorInputs = ({
             placeholder="Example: 5000"
             id="total-sales-number"
             className="w-full lg:w-1/2 px-3 py-2 border border-dividerMedium rounded bg-white text-right text-primaryText placeholder:text-placeholder focus:outline-none focus:ring-2 focus:ring-primaryBlue focus:border-primaryBlue"
-            onChange={(e) => onInputChange("total-sales-number", e.target.value)}
+            onChange={(e) =>
+              onInputChange("total-sales-number", e.target.value)
+            }
           />
         </div>
       </fieldset>

@@ -1,7 +1,12 @@
 "use client";
 
 import Decimal from "decimal.js";
-import { ComplianceNumbers, CreditBalance, EstimatedModelSale, SupplierSize } from "../types";
+import {
+  ComplianceNumbers,
+  CreditBalance,
+  EstimatedModelSale,
+  SupplierSize,
+} from "../types";
 
 type CalculatorTotalsProps = {
   complianceNumbers: ComplianceNumbers;
@@ -53,7 +58,9 @@ export const CalculatorTotals = ({
               </div>
               <div className="flex justify-between">
                 <span>-Unspecified ZEV Class Debit:</span>
-                <span className="text-right">{complianceNumbers.remaining}</span>
+                <span className="text-right">
+                  {complianceNumbers.remaining}
+                </span>
               </div>
             </div>
           )}
@@ -66,11 +73,15 @@ export const CalculatorTotals = ({
           <div className="space-y-1 text-sm text-primaryText">
             <div className="flex justify-between">
               <span>Class A Credit Total:</span>
-              <span className="text-right">{formatNumeric(creditBalance.A)}</span>
+              <span className="text-right">
+                {formatNumeric(creditBalance.A)}
+              </span>
             </div>
             <div className="flex justify-between">
               <span>Class B Credit Total:</span>
-              <span className="text-right">{formatNumeric(creditBalance.B)}</span>
+              <span className="text-right">
+                {formatNumeric(creditBalance.B)}
+              </span>
             </div>
           </div>
         </div>
@@ -82,11 +93,15 @@ export const CalculatorTotals = ({
           <div className="space-y-1 text-sm text-primaryText">
             <div className="flex justify-between">
               <span>Estimated Class A Credit Total:</span>
-              <span className="text-right">{formatNumeric(estimatedClassATotal)}</span>
+              <span className="text-right">
+                {formatNumeric(estimatedClassATotal)}
+              </span>
             </div>
             <div className="flex justify-between">
               <span>Estimated Class B Credit Total:</span>
-              <span className="text-right">{formatNumeric(estimatedClassBTotal)}</span>
+              <span className="text-right">
+                {formatNumeric(estimatedClassBTotal)}
+              </span>
             </div>
           </div>
         </div>

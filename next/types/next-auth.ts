@@ -8,6 +8,7 @@ declare module "@auth/core/types" {
     isGovernment?: boolean;
     organizationId?: number;
     organizationName?: string;
+    userName?: string;
   }
 }
 
@@ -27,5 +28,6 @@ declare module "@auth/core/jwt" {
     isGovernment?: boolean;
     organizationId?: number;
     organizationName?: string;
+    userName?: string;
   }
 }

@@ -1,4 +1,4 @@
-import { auth } from "@/auth";
+import { getUserInfo } from "@/auth";
 import type { Metadata } from "next";
 import "./globals.css";
 import { Header } from "./lib/components/Header";
@@ -14,14 +14,14 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const session = await auth();
-  if (session?.user) {
+  const { userId } = await getUserInfo();
+  if (userId !== -1) {
     // Authenticated layout
     return (
       <html lang="en">
         <body className="antialiased h-screen flex flex-col">
           <NavigationGuardProvider>
-            <Header session={session} />
+            <Header />
             <main className="flex-1 overflow-auto">{children}</main>
           </NavigationGuardProvider>
         </body>

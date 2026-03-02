@@ -28,20 +28,23 @@ export const CalculatorForm = ({
   vehicleModels,
   creditBalance,
 }: CalculatorFormProps) => {
-  const [selectedYearOption, setSelectedYearOption] = useState<ModelYear | "">("");
+  const [selectedYearOption, setSelectedYearOption] = useState<ModelYear | "">(
+    "",
+  );
   const [supplierSize, setSupplierSize] = useState<SupplierSize>("");
   const [totalSales, setTotalSales] = useState<string>("");
-  const [complianceYearInfo, setComplianceYearInfo] = useState<ComplianceRatio | null>(
-    null
+  const [complianceYearInfo, setComplianceYearInfo] =
+    useState<ComplianceRatio | null>(null);
+  const [complianceNumbers, setComplianceNumbers] = useState<ComplianceNumbers>(
+    {
+      total: "",
+      classA: "",
+      remaining: "",
+    },
   );
-  const [complianceNumbers, setComplianceNumbers] = useState<ComplianceNumbers>({
-    total: "",
-    classA: "",
-    remaining: "",
-  });
-  const [estimatedModelSales, setEstimatedModelSales] = useState<EstimatedModelSale[]>(
-    []
-  );
+  const [estimatedModelSales, setEstimatedModelSales] = useState<
+    EstimatedModelSale[]
+  >([]);
 
   const calculateNumbers = useCallback(() => {
     if (totalSales && supplierSize && complianceYearInfo) {
@@ -76,7 +79,9 @@ export const CalculatorForm = ({
     (id: string, value: string) => {
       if (id === "model-year") {
         setSelectedYearOption(value as ModelYear);
-        const yearInfo = complianceRatios.find((ratio) => ratio.modelYear === value);
+        const yearInfo = complianceRatios.find(
+          (ratio) => ratio.modelYear === value,
+        );
         setComplianceYearInfo(yearInfo || null);
         setEstimatedModelSales([]);
       } else if (id === "supplier-size") {
@@ -85,12 +90,20 @@ export const CalculatorForm = ({
         setTotalSales(value);
       }
     },
-    [complianceRatios]
+    [complianceRatios],
   );
 
   const handleModelSaleChange = useCallback(
-    (modelId: number, salesNum: number, creditValue: number, creditClass: string) => {
-      const totalValue = new Decimal(creditValue).times(salesNum).toDecimalPlaces(2).toNumber();
+    (
+      modelId: number,
+      salesNum: number,
+      creditValue: number,
+      creditClass: string,
+    ) => {
+      const totalValue = new Decimal(creditValue)
+        .times(salesNum)
+        .toDecimalPlaces(2)
+        .toNumber();
       setEstimatedModelSales((prev) => {
         const existingIndex = prev.findIndex((sale) => sale.id === modelId);
         if (salesNum === 0 && existingIndex >= 0) {
@@ -119,7 +132,7 @@ export const CalculatorForm = ({
         return prev;
       });
     },
-    []
+    [],
   );
 
   return (

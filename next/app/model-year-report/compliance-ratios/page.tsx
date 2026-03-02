@@ -4,6 +4,7 @@ import {
 } from "@/app/lib/constants/complianceRatio";
 import { ModelYear, VehicleClass, ZevClass } from "@/prisma/generated/client";
 import { getModelYearEnumsToStringsMap } from "@/app/lib/utils/enumMaps";
+import Decimal from "decimal.js";
 
 const getComplianceRatiosTable = () => {
   const ratios = unspecifiedComplianceRatios[VehicleClass.REPORTABLE] ?? {};
@@ -13,13 +14,13 @@ const getComplianceRatiosTable = () => {
   return (Object.entries(ratios) as [ModelYear, string][]).map(
     ([modelYear, ratio]) => ({
       modelYear,
-      complianceRatio: parseFloat(ratio) * 100,
-      zevClassA: parseFloat(zevClassAData[modelYear] ?? "0") * 100,
+      complianceRatio: new Decimal(ratio).times(100).toFixed(2),
+      zevClassA: new Decimal(zevClassAData[modelYear] ?? 0)
+        .times(100)
+        .toFixed(2),
     }),
   );
 };
-
-const formatRatio = (value: number) => `${value.toFixed(2)}%`;
 
 const Page = async () => {
   const modelYearsMap = getModelYearEnumsToStringsMap();
@@ -54,10 +55,10 @@ const Page = async () => {
                 {modelYearsMap[row.modelYear]}
               </td>
               <td className="px-4 py-3 border border-gray-200">
-                {formatRatio(row.complianceRatio)}
+                {row.complianceRatio}
               </td>
               <td className="px-4 py-3 border border-gray-200">
-                {formatRatio(row.zevClassA)}
+                {row.zevClassA}
               </td>
             </tr>
           ))}
