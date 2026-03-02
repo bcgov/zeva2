@@ -17,7 +17,7 @@ import { ComplianceRatio, VehicleModel, CreditBalance } from "./types";
 
 export const getModelYears = async (): Promise<ModelYear[]> => {
   const { userOrgId } = await getUserInfo();
-  
+
   const vehicles = await prisma.vehicle.findMany({
     where: {
       organizationId: userOrgId,
@@ -27,9 +27,9 @@ export const getModelYears = async (): Promise<ModelYear[]> => {
     select: {
       modelYear: true,
     },
-    distinct: ['modelYear'],
+    distinct: ["modelYear"],
     orderBy: {
-      modelYear: 'asc',
+      modelYear: "asc",
     },
   });
 
@@ -52,7 +52,7 @@ export const getComplianceRatios = (): ComplianceRatio[] => {
 
 export const getActiveVehicles = async (): Promise<VehicleModel[]> => {
   const { userOrgId } = await getUserInfo();
-  
+
   const vehicles = await prisma.vehicle.findMany({
     where: {
       organizationId: userOrgId,
@@ -76,7 +76,10 @@ export const getActiveVehicles = async (): Promise<VehicleModel[]> => {
     make: v.make,
     modelName: v.modelName,
     modelYear: v.modelYear,
-    creditValue: typeof v.numberOfUnits === 'number' ? v.numberOfUnits : parseFloat(v.numberOfUnits.toString()),
+    creditValue:
+      typeof v.numberOfUnits === "number"
+        ? v.numberOfUnits
+        : parseFloat(v.numberOfUnits.toString()),
     creditClass: v.zevClass,
     isActive: v.isActive,
   }));
@@ -96,7 +99,17 @@ export const getUserCreditBalance = async (): Promise<CreditBalance> => {
   }
 
   return {
-    A: sumBalance(balance, TransactionType.CREDIT, VehicleClass.REPORTABLE, ZevClass.A).toNumber(),
-    B: sumBalance(balance, TransactionType.CREDIT, VehicleClass.REPORTABLE, ZevClass.B).toNumber(),
+    A: sumBalance(
+      balance,
+      TransactionType.CREDIT,
+      VehicleClass.REPORTABLE,
+      ZevClass.A,
+    ).toNumber(),
+    B: sumBalance(
+      balance,
+      TransactionType.CREDIT,
+      VehicleClass.REPORTABLE,
+      ZevClass.B,
+    ).toNumber(),
   };
 };

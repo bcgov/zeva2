@@ -16,6 +16,7 @@ export const baseGovUserInfo = {
   userRoles: [Role.ADMINISTRATOR],
   userOrgName: "BC Government",
   userIdToken: "",
+  userName: "Gov User",
 };
 
 export const baseNonGovUserInfo = {
@@ -25,6 +26,7 @@ export const baseNonGovUserInfo = {
   userRoles: [],
   userOrgName: "Test Organization",
   userIdToken: "",
+  userName: "Test User",
 };
 
 export const emptyAddress: OrganizationAddressSparse = {
