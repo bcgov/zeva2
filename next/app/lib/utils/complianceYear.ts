@@ -72,12 +72,3 @@ export const getComplianceDate = (modelYear: ModelYear): Date => {
 export const getDominatedComplianceYears = (complianceYear: ModelYear) => {
   return Object.values(ModelYear).filter((cy) => cy < complianceYear);
 };
-
-export const getIsInReportingPeriod = (date: Date) => {
-  const month = date.getMonth();
-  const day = date.getDate();
-  if (month === 9 && day >= 1 && day <= 20) {
-    return true;
-  }
-  return false;
-};

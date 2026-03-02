@@ -56,7 +56,6 @@ services:
       - AUTH_KEYCLOAK_ISSUER=https://dev.loginproxy.gov.bc.ca/auth/realms/standard
       - DATABASE_URL=postgresql://postgres:postgres@db:5432/zeva?schema=public
       - DATABASE_URL_OLD=postgresql://postgres:postgres@host.docker.internal:5432/zeva?schema=public
-      - CHECKPOINT_DISABLE=1
       - START_WORKERS=false
       - TZ=America/Vancouver
     depends_on:
@@ -82,7 +81,6 @@ services:
       - s3.env
     environment:
       - DATABASE_URL=postgresql://postgres:postgres@db:5432/zeva?schema=public
-      - CHECKPOINT_DISABLE=1
       - START_WORKERS=true
       - TZ=America/Vancouver
       - CHES_AUTH_URL

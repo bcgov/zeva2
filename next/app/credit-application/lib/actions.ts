@@ -45,8 +45,6 @@ import { Attachment, AttachmentDownload } from "@/app/lib/constants/attachment";
 import { addJobToEmailQueue } from "@/app/lib/services/queue";
 import {
   getComplianceDate,
-  getIsInReportingPeriod,
-  getPreviousComplianceYear,
 } from "@/app/lib/utils/complianceYear";
 import { Decimal } from "decimal.js";
 import { getLatestSuccessfulFileTimestamp } from "@/app/icbc/lib/services";
@@ -72,11 +70,6 @@ export const getCreditApplicationAttachmentPutData = async (
 export const getSupplierEligibleVehicles = async () => {
   const { userOrgId } = await getUserInfo();
   const now = new Date();
-  const isInReportingPeriod = getIsInReportingPeriod(now);
-  if (isInReportingPeriod) {
-    const complianceYear = getPreviousComplianceYear(now);
-    return await getEligibleVehicles(userOrgId, [complianceYear], false);
-  }
   return await getEligibleVehicles(userOrgId, "all", false);
 };
 
