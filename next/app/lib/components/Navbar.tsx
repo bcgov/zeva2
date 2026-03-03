@@ -116,15 +116,15 @@ export const Navbar: React.FC<{
       </Row>
 
       {activeSubMenu && (
-        <Row className="m-2 border-b border-dividerMedium">
+        <Row className="m-2 gap-2 border-b border-gray-400">
           {activeSubMenu.map((item, index) => (
             <Link
               key={index}
               className={
-                "p-3 border border-dividerMedium hover:bg-primaryBlueHover" +
+                "px-4 py-2.5 text-sm -mb-px rounded-t" +
                 (checkRoute(item.route)
-                  ? " bg-blue-50 font-semibold text-primaryText border-dividerDark hover:bg-primaryBlueHover"
-                  : "")
+                  ? " border-t border-l border-r border-gray-400 border-b-white bg-white text-black"
+                  : " border-t border-l border-r border-gray-300 border-b-gray-400 text-blue-700 hover:bg-gray-100")
               }
               href={item.route}
             >
