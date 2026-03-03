@@ -44,7 +44,7 @@ const Page = async (props: { searchParams?: Promise<pageStringParams> }) => {
           className={`px-4 py-2.5 text-sm -mb-px rounded-t ${
             isActive
               ? "border-t border-l border-r border-gray-400 border-b-white bg-white text-black"
-              : "border-t border-l border-r border-gray-300 border-b-gray-400 text-blue-700 hover:bg-gray-100"
+              : "border-t border-l border-r border-gray-300 border-b-gray-400 text-[#255A90] hover:bg-[#F7F9FC]"
           }`}
         >
           Active Vehicles
@@ -65,7 +65,7 @@ const Page = async (props: { searchParams?: Promise<pageStringParams> }) => {
           className={`px-4 py-2.5 text-sm -mb-px rounded-t ${
             !isActive
               ? "border-t border-l border-r border-gray-400 border-b-white bg-white text-black"
-              : "border-t border-l border-r border-gray-300 border-b-gray-400 text-blue-700 hover:bg-gray-100"
+              : "border-t border-l border-r border-gray-300 border-b-gray-400 text-[#255A90] hover:bg-[#F7F9FC]"
           }`}
         >
           Inactive Vehicles
