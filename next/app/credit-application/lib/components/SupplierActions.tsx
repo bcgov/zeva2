@@ -91,12 +91,13 @@ export const SupplierActions = (props: {
         );
         if (errorsSheet && recordsResponse.responseType === "data") {
           for (const [index, record] of recordsResponse.data.entries()) {
-            const row = errorsSheet.getRow(index + 1);
+            const row = errorsSheet.getRow(index + 2);
             row.getCell(1).value = record.vin;
             row.getCell(2).value = record.make;
             row.getCell(3).value = record.modelName;
             row.getCell(4).value = record.modelYear;
-            row.getCell(5).value = record.error;
+            row.getCell(5).value = record.date;
+            row.getCell(6).value = record.error;
           }
           const buffer = await workbook.xlsx.writeBuffer();
           const fileName = `credit-application-VIN-errors-${props.creditApplicationId}.xlsx`;
