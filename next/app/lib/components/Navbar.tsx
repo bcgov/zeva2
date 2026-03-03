@@ -25,7 +25,7 @@ export const Navbar: React.FC<{
     const params: Record<string, string> = {};
     const pathnameParts = pathname.split("/");
     const routeParts = route.split("/");
-    if (pathnameParts.length < routeParts.length) {
+    if (pathnameParts.length !== routeParts.length) {
       return undefined;
     }
     for (let i = 0; i < routeParts.length; i++) {
