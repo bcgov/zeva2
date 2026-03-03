@@ -1,25 +1,13 @@
 import { getUserInfo } from "@/auth";
 import { prisma } from "@/lib/prisma";
-import { ModelYear, SupplementaryReportStatus } from "@/prisma/generated/enums";
+import { SupplementaryReportStatus } from "@/prisma/generated/enums";
 import { SupplementaryReportWhereInput } from "@/prisma/generated/models";
+import { LegacySupplementary } from "./constants";
 
-export type LegacySupplementary = {
-  id: number;
-  modelYear: ModelYear;
-  status: SupplementaryReportStatus;
-  sequenceNumber: number;
-  organization?: {
-    name: string;
-  };
-};
-
-export const getLegacySupplementaries = async (
-  page: number,
-  pageSize: number,
-): Promise<[LegacySupplementary[], number]> => {
+export const getLegacySupplementaries = async (): Promise<
+  LegacySupplementary[]
+> => {
   const { userIsGov, userOrgId } = await getUserInfo();
-  const skip = (page - 1) * pageSize;
-  const take = pageSize;
   const whereClause: SupplementaryReportWhereInput = {
     modelYearReportId: null,
   };
@@ -30,22 +18,19 @@ export const getLegacySupplementaries = async (
   } else {
     whereClause.organizationId = userOrgId;
   }
-  return await prisma.$transaction([
-    prisma.supplementaryReport.findMany({
-      skip,
-      take,
-      where: whereClause,
-      select: {
-        id: true,
-        modelYear: true,
-        status: true,
-        sequenceNumber: true,
-        ...(userIsGov && { organization: { select: { name: true } } }),
+  return await prisma.supplementaryReport.findMany({
+    where: whereClause,
+    select: {
+      id: true,
+      modelYear: true,
+      status: true,
+      sequenceNumber: true,
+      organization: {
+        select: {
+          name: true,
+        },
       },
-      orderBy: [{ organizationId: "asc" }, { sequenceNumber: "asc" }],
-    }),
-    prisma.supplementaryReport.count({
-      where: whereClause,
-    }),
-  ]);
+    },
+    orderBy: [{ organizationId: "asc" }, { sequenceNumber: "asc" }],
+  });
 };

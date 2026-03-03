@@ -1,7 +1,6 @@
 /*
   Warnings:
 
-  - The values [RETURNED_TO_SUPPLIER] on the enum `CreditApplicationHistoryStatus` will be removed. If these variants are still used in the database, this will fail.
   - The values [RETURNED_TO_SUPPLIER] on the enum `CreditApplicationStatus` will be removed. If these variants are still used in the database, this will fail.
   - The values [RETURNED_TO_SUPPLIER] on the enum `CreditApplicationSupplierStatus` will be removed. If these variants are still used in the database, this will fail.
   - You are about to drop the column `organization_id` on the `agreement_attachment` table. All the data in the column will be lost.
@@ -9,29 +8,27 @@
   - You are about to drop the column `supplier_name` on the `credit_application` table. All the data in the column will be lost.
   - You are about to drop the column `transaction_timestamps` on the `credit_application` table. All the data in the column will be lost.
   - You are about to drop the column `organization_id` on the `credit_application_attachment` table. All the data in the column will be lost.
+  - You are about to drop the column `reassessment_status` on the `model_year_report` table. All the data in the column will be lost.
+  - You are about to drop the column `supplementary_report_status` on the `model_year_report` table. All the data in the column will be lost.
+  - You are about to drop the column `supplier_status` on the `model_year_report` table. All the data in the column will be lost.
   - You are about to drop the column `organization_id` on the `vehicle_attachment` table. All the data in the column will be lost.
   - Made the column `agreement_id` on table `agreement_attachment` required. This step will fail if there are existing NULL values in that column.
   - Made the column `file_name` on table `agreement_attachment` required. This step will fail if there are existing NULL values in that column.
+  - Changed the type of `user_action` on the `agreement_history` table. No cast exists, the column would be dropped and recreated, which cannot be done if there is data, since the column is required.
   - Added the required column `legal_name` to the `credit_application` table without a default value. This is not possible if the table is not empty.
   - Made the column `credit_application_id` on table `credit_application_attachment` required. This step will fail if there are existing NULL values in that column.
   - Made the column `file_name` on table `credit_application_attachment` required. This step will fail if there are existing NULL values in that column.
+  - Changed the type of `user_action` on the `credit_application_history` table. No cast exists, the column would be dropped and recreated, which cannot be done if there is data, since the column is required.
   - Made the column `vehicle_id` on table `vehicle_attachment` required. This step will fail if there are existing NULL values in that column.
   - Made the column `file_name` on table `vehicle_attachment` required. This step will fail if there are existing NULL values in that column.
+  - Changed the type of `user_action` on the `vehicle_history` table. No cast exists, the column would be dropped and recreated, which cannot be done if there is data, since the column is required.
 
 */
 -- AlterEnum
 BEGIN;
-CREATE TYPE "CreditApplicationHistoryStatus_new" AS ENUM ('APPROVED', 'RECOMMEND_APPROVAL', 'REJECTED', 'RETURNED_TO_ANALYST', 'SUBMITTED');
-ALTER TABLE "credit_application_history" ALTER COLUMN "user_action" TYPE "CreditApplicationHistoryStatus_new" USING ("user_action"::text::"CreditApplicationHistoryStatus_new");
-ALTER TYPE "CreditApplicationHistoryStatus" RENAME TO "CreditApplicationHistoryStatus_old";
-ALTER TYPE "CreditApplicationHistoryStatus_new" RENAME TO "CreditApplicationHistoryStatus";
-DROP TYPE "public"."CreditApplicationHistoryStatus_old";
-COMMIT;
-
--- AlterEnum
-BEGIN;
 CREATE TYPE "CreditApplicationStatus_new" AS ENUM ('APPROVED', 'DRAFT', 'RECOMMEND_APPROVAL', 'REJECTED', 'RETURNED_TO_ANALYST', 'SUBMITTED');
 ALTER TABLE "credit_application" ALTER COLUMN "status" TYPE "CreditApplicationStatus_new" USING ("status"::text::"CreditApplicationStatus_new");
+ALTER TABLE "credit_application_history" ALTER COLUMN "user_action" TYPE "CreditApplicationStatus_new" USING ("user_action"::text::"CreditApplicationStatus_new");
 ALTER TYPE "CreditApplicationStatus" RENAME TO "CreditApplicationStatus_old";
 ALTER TYPE "CreditApplicationStatus_new" RENAME TO "CreditApplicationStatus";
 DROP TYPE "public"."CreditApplicationStatus_old";
@@ -70,6 +67,10 @@ ALTER COLUMN "agreement_id" SET NOT NULL,
 ALTER COLUMN "file_name" SET NOT NULL;
 
 -- AlterTable
+ALTER TABLE "agreement_history" DROP COLUMN "user_action",
+ADD COLUMN     "user_action" "AgreementStatus" NOT NULL;
+
+-- AlterTable
 ALTER TABLE "credit_application" DROP COLUMN "icbc_timestamp",
 DROP COLUMN "supplier_name",
 DROP COLUMN "transaction_timestamps",
@@ -87,6 +88,10 @@ ALTER COLUMN "credit_application_id" SET NOT NULL,
 ALTER COLUMN "file_name" SET NOT NULL;
 
 -- AlterTable
+ALTER TABLE "credit_application_history" DROP COLUMN "user_action",
+ADD COLUMN     "user_action" "CreditApplicationStatus" NOT NULL;
+
+-- AlterTable
 ALTER TABLE "credit_application_record" ADD COLUMN     "icbc_timestamp" TIMESTAMPTZ(6);
 
 -- AlterTable
@@ -94,9 +99,30 @@ ALTER TABLE "icbc_file" ADD COLUMN     "create_timestamp" TIMESTAMPTZ(6) NOT NUL
 ADD COLUMN     "uploaded_by_id" INTEGER;
 
 -- AlterTable
+ALTER TABLE "model_year_report" DROP COLUMN "reassessment_status",
+DROP COLUMN "supplementary_report_status",
+DROP COLUMN "supplier_status";
+
+-- AlterTable
 ALTER TABLE "vehicle_attachment" DROP COLUMN "organization_id",
 ALTER COLUMN "vehicle_id" SET NOT NULL,
 ALTER COLUMN "file_name" SET NOT NULL;
+
+-- AlterTable
+ALTER TABLE "vehicle_history" DROP COLUMN "user_action",
+ADD COLUMN     "user_action" "VehicleStatus" NOT NULL;
+
+-- DropEnum
+DROP TYPE "AgreementHistoryStatus";
+
+-- DropEnum
+DROP TYPE "CreditApplicationHistoryStatus";
+
+-- DropEnum
+DROP TYPE "ModelYearReportSupplierStatus";
+
+-- DropEnum
+DROP TYPE "VehicleHistoryStatus";
 
 -- AddForeignKey
 ALTER TABLE "vehicle_attachment" ADD CONSTRAINT "vehicle_attachment_vehicle_id_fkey" FOREIGN KEY ("vehicle_id") REFERENCES "vehicle"("id") ON DELETE RESTRICT ON UPDATE CASCADE;

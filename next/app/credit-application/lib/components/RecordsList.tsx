@@ -1,5 +1,5 @@
 import { getValidatedRecords } from "../data";
-import { getSerializedRecords } from "../utils";
+import { getSerializedRecords } from "../utilsServer";
 import { RecordsTable } from "./RecordsTable";
 
 export const RecordsList = async (props: {

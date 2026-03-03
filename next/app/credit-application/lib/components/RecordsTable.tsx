@@ -13,7 +13,7 @@ import { Button, ContentCard, Table } from "@/app/lib/components";
 import { MapOfValidatedAndReasons, updateValidatedRecords } from "../actions";
 import { useRouter } from "next/navigation";
 import { getModelYearEnumsToStringsMap } from "@/app/lib/utils/enumMaps";
-import { CreditApplicationRecordSparseSerialized } from "../utils";
+import { CreditApplicationRecordSparseSerialized } from "../constants";
 
 export const RecordsTable = (props: {
   id: number;

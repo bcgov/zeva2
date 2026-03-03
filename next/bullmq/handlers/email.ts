@@ -7,7 +7,6 @@ import {
   CreditTransferStatus,
   CreditTransferSupplierStatus,
   ModelYearReportStatus,
-  ModelYearReportSupplierStatus,
   Notification,
   Role,
   VehicleStatus,
@@ -165,9 +164,9 @@ export const sendModelYearReportEmails = async (historyId: number) => {
   let includeAnalysts: boolean = false;
   let includeDirector: boolean = false;
   if (
-    Object.values(ModelYearReportSupplierStatus).some(
-      (status) => status === userAction,
-    )
+    userAction === ModelYearReportStatus.ASSESSED ||
+    userAction === ModelYearReportStatus.RETURNED_TO_SUPPLIER ||
+    userAction === ModelYearReportStatus.SUBMITTED_TO_GOVERNMENT
   ) {
     supplierOrgIds.push(history.modelYearReport.organizationId);
   }

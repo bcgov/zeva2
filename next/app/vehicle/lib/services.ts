@@ -1,16 +1,12 @@
 import { prisma } from "@/lib/prisma";
 import { TransactionClient } from "@/types/prisma";
-import {
-  ModelYear,
-  VehicleHistoryStatus,
-  VehicleStatus,
-} from "@/prisma/generated/enums";
+import { ModelYear, VehicleStatus } from "@/prisma/generated/enums";
 import { Attachment } from "@/app/lib/constants/attachment";
 
 export const createHistory = async (
   vehicleId: number,
   userId: number,
-  userAction: VehicleHistoryStatus,
+  userAction: VehicleStatus,
   comment?: string,
   transactionClient?: TransactionClient,
 ): Promise<number> => {

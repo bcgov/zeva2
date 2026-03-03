@@ -123,7 +123,9 @@ export const getNumberOfUnits = (
   us06RangeGte16: boolean,
 ): Decimal => {
   const currentTs = new Date();
-  const threshold = new Date("2026-10-01T00:00:00");
+  const threshold = new Date(
+    `2026-${process.env.BEGINNING_OF_COMPLIANCE_YEAR}`,
+  );
   const rangeDec = new Decimal(range);
   if (currentTs < threshold) {
     if (zevClass === ZevClass.A) {

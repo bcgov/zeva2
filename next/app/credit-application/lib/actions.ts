@@ -12,7 +12,7 @@ import {
   ZevClass,
 } from "@/prisma/generated/enums";
 import Excel from "exceljs";
-import { getWarningsMap, parseSupplierSubmission } from "./utils";
+import { getWarningsMap, parseSupplierSubmission } from "./utilsServer";
 import {
   createHistory,
   deleteAttachments,
@@ -43,9 +43,7 @@ import {
 } from "@/app/lib/utils/actionResponse";
 import { Attachment, AttachmentDownload } from "@/app/lib/constants/attachment";
 import { addJobToEmailQueue } from "@/app/lib/services/queue";
-import {
-  getComplianceDate,
-} from "@/app/lib/utils/complianceYear";
+import { getComplianceDate } from "@/app/lib/utils/complianceYear";
 import { Decimal } from "decimal.js";
 import { getLatestSuccessfulFileTimestamp } from "@/app/icbc/lib/services";
 import {

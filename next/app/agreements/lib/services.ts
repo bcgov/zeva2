@@ -1,12 +1,12 @@
 import { prisma } from "@/lib/prisma";
-import { AgreementHistoryStatus } from "@/prisma/generated/enums";
 import { TransactionClient } from "@/types/prisma";
 import { Attachment } from "@/app/lib/constants/attachment";
+import { AgreementStatus } from "@/prisma/generated/enums";
 
 export const createHistory = async (
   agreementId: number,
   userId: number,
-  userAction: AgreementHistoryStatus,
+  userAction: AgreementStatus,
   comment?: string,
   transactionClient?: TransactionClient,
 ) => {

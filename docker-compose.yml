@@ -58,6 +58,8 @@ services:
       - DATABASE_URL_OLD=postgresql://postgres:postgres@host.docker.internal:5432/zeva?schema=public
       - START_WORKERS=false
       - TZ=America/Vancouver
+      - BEGINNING_OF_COMPLIANCE_YEAR=10-01T00:00:00.000
+      - END_OF_COMPLIANCE_YEAR=09-30T23:59:59.999
     depends_on:
       db:
         condition: service_healthy

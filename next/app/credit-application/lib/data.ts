@@ -4,7 +4,6 @@ import { CreditApplicationStatus, Role } from "@/prisma/generated/enums";
 import {
   CreditApplicationModel,
   CreditApplicationHistoryModel,
-  CreditApplicationRecordModel,
   OrganizationModel,
   UserModel,
   CreditApplicationWhereUniqueInput,
@@ -17,9 +16,13 @@ import {
   getRecordsOrderByClause,
   getRecordsWhereClause,
   getWhereClause,
-} from "./utils";
+} from "./utilsServer";
 import { ZevUnitRecord } from "@/lib/utils/zevUnit";
 import { getCreditStats, getRecordStats } from "./services";
+import {
+  CreditApplicationRecordSparse,
+  CreditApplicationSparse,
+} from "./constants";
 
 export type CreditApplicationWithOrgAndAttachmentNames =
   CreditApplicationModel & {
@@ -73,11 +76,6 @@ export const getCreditApplication = async (
     },
   });
 };
-
-export type CreditApplicationRecordSparse = Omit<
-  CreditApplicationRecordModel,
-  "vehicleClass" | "zevClass" | "numberOfUnits"
->;
 
 export const getValidatedRecords = async (
   creditApplicationId: number,
@@ -159,16 +157,6 @@ export const getData = async (
   };
 };
 
-export type CreditApplicationSparse = Pick<
-  CreditApplicationModel,
-  | "id"
-  | "status"
-  | "submissionTimestamp"
-  | "supplierStatus"
-  | "transactionTimestamp"
-  | "modelYears"
-> & { organization: { name: string } };
-
 export const getCreditApplications = async (
   page: number,
   pageSize: number,
@@ -218,6 +206,10 @@ export const getCreditApplications = async (
           },
         },
         modelYears: true,
+        eligibleVinsCount: true,
+        ineligibleVinsCount: true,
+        aCredits: true,
+        bCredits: true,
       },
       orderBy,
     }),

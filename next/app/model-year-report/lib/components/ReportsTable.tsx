@@ -2,7 +2,7 @@
 
 import { useCallback, useMemo } from "react";
 import { ColumnDef, createColumnHelper } from "@tanstack/react-table";
-import { Table } from "@/app/lib/components";
+import { ClientSideTable } from "@/app/lib/components";
 import {
   getModelYearEnumsToStringsMap,
   getMyrStatusEnumsToStringsMap,
@@ -10,21 +10,20 @@ import {
   getSupplementaryReportStatusEnumsToStringsMap,
   getSupplierClassEnumsToStringsMap,
 } from "@/app/lib/utils/enumMaps";
-import { MyrSparseSerialized } from "../utilsServer";
+import { MyrRecordSerialized } from "../constants";
 import { useRouter } from "next/navigation";
 import { Routes } from "@/app/lib/constants";
 import { IsCompliant } from "../constants";
 
 export const ReportsTable = (props: {
-  myrs: MyrSparseSerialized[];
-  totalNumbeOfMyrs: number;
+  myrs: MyrRecordSerialized[];
   userIsGov: boolean;
 }) => {
   const router = useRouter();
   const navigationAction = useCallback(async (id: number) => {
     router.push(`${Routes.ComplianceReporting}/${id}`);
   }, []);
-  const columnHelper = createColumnHelper<MyrSparseSerialized>();
+  const columnHelper = createColumnHelper<MyrRecordSerialized>();
   const modelYearEnumMap = useMemo(() => {
     return getModelYearEnumsToStringsMap();
   }, []);
@@ -41,7 +40,7 @@ export const ReportsTable = (props: {
     return getSupplierClassEnumsToStringsMap();
   }, []);
   const columns = useMemo(() => {
-    const result: ColumnDef<MyrSparseSerialized, any>[] = [
+    const result: ColumnDef<MyrRecordSerialized, any>[] = [
       columnHelper.accessor((row) => modelYearEnumMap[row.modelYear], {
         id: "modelYear",
         enableSorting: true,
@@ -78,42 +77,48 @@ export const ReportsTable = (props: {
           header: () => <span>Supplementary Report Status</span>,
         },
       ),
-      columnHelper.accessor((row) => row.compliant, {
-        id: "compliant",
-        enableSorting: true,
-        enableColumnFilter: true,
-        header: () => <span>Compliant</span>,
-        cell: (cellProps) => {
-          const value = cellProps.row.original.compliant;
+      columnHelper.accessor(
+        (row) => {
+          const value = row.compliant;
           if (value === null) {
             return "--";
+          } else if (value) {
+            return IsCompliant.Yes;
+          } else {
+            return IsCompliant.No;
           }
-          return value ? IsCompliant.Yes : IsCompliant.No;
         },
-      }),
+        {
+          id: "compliant",
+          enableSorting: true,
+          enableColumnFilter: true,
+          header: () => <span>Compliant</span>,
+        },
+      ),
       columnHelper.accessor(
         (row) =>
           row.supplierClass ? supplierClassesMap[row.supplierClass] : "--",
         {
           id: "supplierClass",
           enableSorting: true,
-          enableColumnFilter: false,
+          enableColumnFilter: true,
           header: () => <span>Supplier Class</span>,
         },
       ),
       columnHelper.accessor(
-        (row) => (row.reportableNvValue ? row.reportableNvValue : "--"),
+        (row) =>
+          row.reportableNvValue ? row.reportableNvValue.toString() : "--",
         {
           id: "reportableNvValue",
           enableSorting: true,
-          enableColumnFilter: false,
+          enableColumnFilter: true,
           header: () => <span>Reportable NV Value</span>,
         },
       ),
     ];
     if (props.userIsGov) {
       result.unshift(
-        columnHelper.accessor((row) => row.organization?.name, {
+        columnHelper.accessor((row) => row.orgName, {
           id: "organization",
           enableSorting: true,
           enableColumnFilter: true,
@@ -122,7 +127,7 @@ export const ReportsTable = (props: {
       );
     }
     result.unshift(
-      columnHelper.accessor((row) => row.id, {
+      columnHelper.accessor((row) => row.id.toString(), {
         id: "id",
         enableSorting: true,
         enableColumnFilter: true,
@@ -133,10 +138,11 @@ export const ReportsTable = (props: {
   }, [columnHelper, props.myrs, props.userIsGov]);
 
   return (
-    <Table<MyrSparseSerialized>
+    <ClientSideTable<MyrRecordSerialized>
       columns={columns}
       data={props.myrs}
-      totalNumberOfRecords={props.totalNumbeOfMyrs}
+      enableFiltering={true}
+      enableSorting={true}
       navigationAction={navigationAction}
     />
   );

@@ -1,7 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import {
   AddressType,
-  CreditApplicationHistoryStatus,
   CreditApplicationStatus,
   ModelYear,
   TransactionType,
@@ -19,7 +18,6 @@ import { Decimal } from "decimal.js";
 import { flattenZevUnitRecords, ZevUnitRecord } from "@/lib/utils/zevUnit";
 import {
   getAdjacentYear,
-  getComplianceDate,
   getCurrentComplianceYear,
 } from "@/app/lib/utils/complianceYear";
 
@@ -209,7 +207,7 @@ export const getIcbcRecordsMap = async (
 export const createHistory = async (
   userId: number,
   creditApplicationId: number,
-  userAction: CreditApplicationHistoryStatus,
+  userAction: CreditApplicationStatus,
   comment?: string,
   transactionClient?: TransactionClient,
 ): Promise<number> => {

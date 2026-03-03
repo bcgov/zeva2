@@ -1,4 +1,11 @@
-import { ModelYear, ZevClass } from "@/prisma/generated/enums";
+import {
+  ModelYear,
+  ModelYearReportStatus,
+  ReassessmentStatus,
+  SupplementaryReportStatus,
+  SupplierClass,
+  ZevClass,
+} from "@/prisma/generated/enums";
 
 export enum MyrTemplate {
   Name = "model_year_report_template.xlsx",
@@ -80,3 +87,48 @@ export const interiorVolumes: readonly string[] = [
   "Special purpose vehicle (less than 3856 kg)",
   "Other/TBD",
 ];
+
+export type MyrRecord = {
+  id: number;
+  modelYear: ModelYear;
+  status: ModelYearReportStatus;
+  organization: {
+    name: string;
+  };
+  compliant: boolean | null;
+  reportableNvValue: number | null;
+  supplierClass: SupplierClass | null;
+  reassessments: {
+    status: ReassessmentStatus;
+  }[];
+  supplementaryReports: {
+    status: SupplementaryReportStatus;
+  }[];
+};
+
+export type MyrRecordSerialized = {
+  id: number;
+  modelYear: ModelYear;
+  status: ModelYearReportStatus;
+  orgName: string;
+  compliant: boolean | null;
+  reportableNvValue: number | null;
+  supplierClass: SupplierClass | null;
+  reassessmentStatus: ReassessmentStatus | null;
+  supplementaryReportStatus: SupplementaryReportStatus | null;
+};
+
+export const mapOfStatusToSupplierStatus: Readonly<
+  Record<ModelYearReportStatus, ModelYearReportStatus>
+> = {
+  [ModelYearReportStatus.ASSESSED]: ModelYearReportStatus.ASSESSED,
+  [ModelYearReportStatus.DRAFT]: ModelYearReportStatus.DRAFT,
+  [ModelYearReportStatus.RETURNED_TO_ANALYST]:
+    ModelYearReportStatus.SUBMITTED_TO_GOVERNMENT,
+  [ModelYearReportStatus.RETURNED_TO_SUPPLIER]:
+    ModelYearReportStatus.RETURNED_TO_SUPPLIER,
+  [ModelYearReportStatus.SUBMITTED_TO_DIRECTOR]:
+    ModelYearReportStatus.SUBMITTED_TO_GOVERNMENT,
+  [ModelYearReportStatus.SUBMITTED_TO_GOVERNMENT]:
+    ModelYearReportStatus.SUBMITTED_TO_GOVERNMENT,
+};

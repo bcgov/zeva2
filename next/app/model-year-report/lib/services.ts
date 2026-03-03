@@ -569,22 +569,6 @@ export const getLegacyAssessedMyr = async (
   });
 };
 
-export const updateMyrReassessmentStatus = async (
-  myrId: number,
-  status: ReassessmentStatus | null,
-  transactionClient?: TransactionClient,
-) => {
-  const client = transactionClient ?? prisma;
-  await client.modelYearReport.update({
-    where: {
-      id: myrId,
-    },
-    data: {
-      reassessmentStatus: status,
-    },
-  });
-};
-
 export const createSupplementaryHistory = async (
   supplementaryReportId: number,
   userId: number,
@@ -668,22 +652,6 @@ export const getDataForSupplementary = async (
     sequenceNumber,
     myrId: myr ? myr.id : null,
   };
-};
-
-export const updateMyrSupplementaryStatus = async (
-  myrId: number,
-  status: SupplementaryReportStatus | null,
-  transactionClient?: TransactionClient,
-) => {
-  const client = transactionClient ?? prisma;
-  await client.modelYearReport.update({
-    where: {
-      id: myrId,
-    },
-    data: {
-      supplementaryReportStatus: status,
-    },
-  });
 };
 
 // upon issuance of an assessment or reassessment,

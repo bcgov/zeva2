@@ -2,6 +2,10 @@ import {
   CreditApplicationStatus,
   CreditApplicationSupplierStatus,
 } from "@/prisma/generated/enums";
+import {
+  CreditApplicationModel,
+  CreditApplicationRecordModel,
+} from "@/prisma/generated/models";
 
 export enum SupplierTemplate {
   Name = "credit_application_supplier_template.xlsx",
@@ -28,3 +32,43 @@ export const mapOfStatusToSupplierStatus: Readonly<
   [CreditApplicationStatus.SUBMITTED]:
     CreditApplicationSupplierStatus.SUBMITTED,
 };
+
+export type CreditApplicationSparse = Pick<
+  CreditApplicationModel,
+  | "id"
+  | "status"
+  | "submissionTimestamp"
+  | "supplierStatus"
+  | "transactionTimestamp"
+  | "modelYears"
+  | "eligibleVinsCount"
+  | "ineligibleVinsCount"
+  | "aCredits"
+  | "bCredits"
+> & { organization: { name: string } };
+
+export type CreditApplicationSparseSerialized = Omit<
+  CreditApplicationSparse,
+  | "submissionTimestamp"
+  | "supplierStatus"
+  | "organization"
+  | "transactionTimestamp"
+  | "aCredits"
+  | "bCredits"
+> & {
+  organization: string;
+  submissionTimestamp?: string;
+  transactionTimestamp?: string;
+  aCredits?: string;
+  bCredits?: string;
+};
+
+export type CreditApplicationRecordSparse = Omit<
+  CreditApplicationRecordModel,
+  "vehicleClass" | "zevClass" | "numberOfUnits"
+>;
+
+export type CreditApplicationRecordSparseSerialized = Omit<
+  CreditApplicationRecordSparse,
+  "timestamp" | "icbcTimestamp"
+> & { timestamp: string; icbcTimestamp: string };

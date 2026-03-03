@@ -1,25 +1,13 @@
 import { getUserInfo } from "@/auth";
 import { prisma } from "@/lib/prisma";
-import { ModelYear, ReassessmentStatus, Role } from "@/prisma/generated/enums";
+import { ReassessmentStatus, Role } from "@/prisma/generated/enums";
 import { ReassessmentWhereInput } from "@/prisma/generated/models";
+import { LegacyReassessment } from "./constants";
 
-export type LegacyReassessment = {
-  id: number;
-  modelYear: ModelYear;
-  status: ReassessmentStatus;
-  sequenceNumber: number;
-  organization?: {
-    name: string;
-  };
-};
-
-export const getLegacyReassessments = async (
-  page: number,
-  pageSize: number,
-): Promise<[LegacyReassessment[], number]> => {
+export const getLegacyReassessments = async (): Promise<
+  LegacyReassessment[]
+> => {
   const { userIsGov, userOrgId, userRoles } = await getUserInfo();
-  const skip = (page - 1) * pageSize;
-  const take = pageSize;
   const whereClause: ReassessmentWhereInput = {
     modelYearReportId: null,
   };
@@ -31,22 +19,15 @@ export const getLegacyReassessments = async (
     whereClause.organizationId = userOrgId;
     whereClause.status = ReassessmentStatus.ISSUED;
   }
-  return await prisma.$transaction([
-    prisma.reassessment.findMany({
-      skip,
-      take,
-      where: whereClause,
-      select: {
-        id: true,
-        modelYear: true,
-        status: true,
-        sequenceNumber: true,
-        ...(userIsGov && { organization: { select: { name: true } } }),
-      },
-      orderBy: [{ organizationId: "asc" }, { sequenceNumber: "asc" }],
-    }),
-    prisma.reassessment.count({
-      where: whereClause,
-    }),
-  ]);
+  return await prisma.reassessment.findMany({
+    where: whereClause,
+    select: {
+      id: true,
+      modelYear: true,
+      status: true,
+      sequenceNumber: true,
+      organization: { select: { name: true } },
+    },
+    orderBy: [{ organizationId: "asc" }, { sequenceNumber: "asc" }],
+  });
 };

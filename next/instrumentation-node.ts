@@ -22,7 +22,11 @@ export const createBucket = async () => {
 
 export const upsertJobScheduler = async () => {
   const queue = getFlagCAsQueue();
+  // any year works
+  const beginningOfCy = new Date(
+    `2019-${process.env.BEGINNING_OF_COMPLIANCE_YEAR}`,
+  );
   await queue.upsertJobScheduler("flag-in-process-CAs", {
-    pattern: "0 0 1 10 *",
+    pattern: `${beginningOfCy.getMinutes()} ${beginningOfCy.getHours()} ${beginningOfCy.getDate()} ${beginningOfCy.getMonth() + 1} *`,
   });
 };

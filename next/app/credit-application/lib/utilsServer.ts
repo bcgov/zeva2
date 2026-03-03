@@ -12,13 +12,15 @@ import {
   getStringsToCreditApplicationSupplierStatusEnumsMap,
   getStringsToModelYearsEnumsMap,
 } from "@/app/lib/utils/enumMaps";
-import { SupplierTemplate } from "./constants";
-import { IcbcRecordsMap } from "./services";
 import {
-  CreditApplicationCredit,
   CreditApplicationRecordSparse,
+  CreditApplicationRecordSparseSerialized,
   CreditApplicationSparse,
-} from "./data";
+  CreditApplicationSparseSerialized,
+  SupplierTemplate,
+} from "./constants";
+import { IcbcRecordsMap } from "./services";
+import { CreditApplicationCredit } from "./data";
 import { getIsoYmdString, validateDate } from "@/app/lib/utils/date";
 import { getComplianceDate } from "@/app/lib/utils/complianceYear";
 
@@ -49,16 +51,20 @@ export const getWhereClause = (
       key === "submissionTimestamp" ||
       key === "transactionTimestamp"
     ) {
-      const [isValidDate, date] = validateDate(value);
-      if (isValidDate) {
-        const datePlusOneDay = new Date(date);
-        datePlusOneDay.setDate(date.getDate() + 1);
-        result.AND = [
-          { [key]: { gte: date } },
-          { [key]: { lt: datePlusOneDay } },
-        ];
+      if ("--".includes(value)) {
+        result[key] = null;
       } else {
-        result.id = -1;
+        const [isValidDate, date] = validateDate(value);
+        if (isValidDate) {
+          const datePlusOneDay = new Date(date);
+          datePlusOneDay.setDate(date.getDate() + 1);
+          result.AND = [
+            { [key]: { gte: date } },
+            { [key]: { lt: datePlusOneDay } },
+          ];
+        } else {
+          result.id = -1;
+        }
       }
     } else if (key === "organization" && userIsGov) {
       result[key] = {
@@ -73,6 +79,17 @@ export const getWhereClause = (
       result[key] = {
         hasSome: getMatchingTerms(modelYearsMap, value),
       };
+    } else if (
+      key === "eligibleVinsCount" ||
+      key === "ineligibleVinsCount" ||
+      key === "aCredits" ||
+      key === "bCredits"
+    ) {
+      if ("--".includes(value)) {
+        result[key] = null;
+      } else {
+        result[key] = value;
+      }
     }
   });
   return result;
@@ -90,7 +107,11 @@ export const getOrderByClause = (
       if (
         key === "id" ||
         key === "submissionTimestamp" ||
-        key === "transactionTimestamp"
+        key === "transactionTimestamp" ||
+        key === "eligibleVinsCount" ||
+        key === "ineligibleVinsCount" ||
+        key === "aCredits" ||
+        key === "bCredits"
       ) {
         orderBy[key] = value;
       } else if (key === "status") {
@@ -220,11 +241,6 @@ export const getRecordsOrderByClause = (
   return result;
 };
 
-export type CreditApplicationRecordSparseSerialized = Omit<
-  CreditApplicationRecordSparse,
-  "timestamp" | "icbcTimestamp"
-> & { timestamp: string; icbcTimestamp: string };
-
 export const getSerializedRecords = (
   records: CreditApplicationRecordSparse[],
 ) => {
@@ -241,18 +257,6 @@ export const getSerializedRecords = (
   return result;
 };
 
-export type CreditApplicationSparseSerialized = Omit<
-  CreditApplicationSparse,
-  | "submissionTimestamp"
-  | "supplierStatus"
-  | "organization"
-  | "transactionTimestamp"
-> & {
-  submissionTimestamp?: string;
-  organization?: string;
-  transactionTimestamp?: string;
-};
-
 export const getSerializedApplications = (
   records: CreditApplicationSparse[],
   userIsGov: boolean,
@@ -261,6 +265,7 @@ export const getSerializedApplications = (
   records.forEach((record) => {
     const resultRecord: CreditApplicationSparseSerialized = {
       id: record.id,
+      organization: record.organization.name,
       status: userIsGov ? record.status : record.supplierStatus,
       submissionTimestamp: record.submissionTimestamp
         ? getIsoYmdString(record.submissionTimestamp)
@@ -269,10 +274,11 @@ export const getSerializedApplications = (
         ? getIsoYmdString(record.transactionTimestamp)
         : undefined,
       modelYears: record.modelYears,
+      eligibleVinsCount: record.eligibleVinsCount,
+      ineligibleVinsCount: record.ineligibleVinsCount,
+      aCredits: record.aCredits?.toFixed(2),
+      bCredits: record.bCredits?.toFixed(2),
     };
-    if (userIsGov) {
-      resultRecord.organization = record.organization.name;
-    }
     result.push(resultRecord);
   });
   return result;

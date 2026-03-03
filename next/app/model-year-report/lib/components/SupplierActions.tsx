@@ -3,15 +3,15 @@
 import { Button } from "@/app/lib/components";
 import { CommentBox } from "@/app/lib/components/inputs/CommentBox";
 import { Routes } from "@/app/lib/constants";
-import { ModelYearReportSupplierStatus } from "@/prisma/generated/enums";
 import { useRouter } from "next/navigation";
 import { useCallback, useState, useTransition } from "react";
 import { deleteReports, submitReports } from "../actions";
 import { getNormalizedComment } from "@/app/lib/utils/comment";
+import { ModelYearReportStatus } from "@/prisma/generated/enums";
 
 export const SupplierActions = (props: {
   myrId: number;
-  status: ModelYearReportSupplierStatus;
+  status: ModelYearReportStatus;
   canCreateSupplementary: boolean;
 }) => {
   const router = useRouter();
@@ -65,8 +65,8 @@ export const SupplierActions = (props: {
   }, [props.myrId]);
 
   if (
-    props.status === ModelYearReportSupplierStatus.DRAFT ||
-    props.status === ModelYearReportSupplierStatus.RETURNED_TO_SUPPLIER
+    props.status === ModelYearReportStatus.DRAFT ||
+    props.status === ModelYearReportStatus.RETURNED_TO_SUPPLIER
   ) {
     return (
       <div className="space-y-2">
