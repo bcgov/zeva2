@@ -1,10 +1,7 @@
 "use client";
 
 import { useCallback, useMemo, useState } from "react";
-import {
-  getTransactionsByComplianceYear,
-  SerializedZevUnitTransaction,
-} from "../actions";
+import { getEndingBalance, getTransactionsByComplianceYear } from "../actions";
 import { useRouter } from "next/navigation";
 import {
   getModelYearEnumsToStringsMap,
@@ -15,6 +12,10 @@ import {
 } from "@/app/lib/utils/enumMaps";
 import { ModelYear, ReferenceType } from "@/prisma/generated/enums";
 import { Routes } from "@/app/lib/constants";
+import {
+  SerializedZevUnitEndingBalanceRecord,
+  SerializedZevUnitTransaction,
+} from "../constants";
 
 export const TransactionAccordion = ({
   orgId,
@@ -27,7 +28,12 @@ export const TransactionAccordion = ({
 }) => {
   const [openYears, setOpenYears] = useState<ModelYear[]>([]);
   const [txCache, setTxCache] = useState<
-    Partial<Record<ModelYear, SerializedZevUnitTransaction[]>>
+    Partial<
+      Record<
+        ModelYear,
+        [SerializedZevUnitTransaction[], SerializedZevUnitEndingBalanceRecord[]]
+      >
+    >
   >({});
   const router = useRouter();
 
@@ -40,11 +46,22 @@ export const TransactionAccordion = ({
         return [...prev, year];
       });
       if (!txCache[year]) {
-        const tx = await getTransactionsByComplianceYear(orgId, year, "desc");
-        setTxCache((prev) => ({ ...prev, [year]: tx }));
+        const [txResponse, endingBalanceResponse] = await Promise.all([
+          getTransactionsByComplianceYear(orgId, year, "asc"),
+          getEndingBalance(orgId, year),
+        ]);
+        if (
+          txResponse.responseType === "data" &&
+          endingBalanceResponse.responseType === "data"
+        ) {
+          setTxCache((prev) => ({
+            ...prev,
+            [year]: [txResponse.data, endingBalanceResponse.data],
+          }));
+        }
       }
     },
-    [txCache],
+    [txCache, orgId],
   );
 
   const getLink = useCallback(
@@ -124,8 +141,8 @@ export const TransactionAccordion = ({
             <div style={{ padding: 8 }}>
               {!txCache[y] ? (
                 "Loading…"
-              ) : txCache[y].length === 0 ? (
-                "No transactions for this compliance year."
+              ) : txCache[y][0].length === 0 ? (
+                "No records for this compliance year."
               ) : (
                 <table
                   style={{
@@ -162,7 +179,7 @@ export const TransactionAccordion = ({
                     </tr>
                   </thead>
                   <tbody>
-                    {txCache[y].map((t) => {
+                    {txCache[y][0].map((t) => {
                       const className = t.referenceId ? "cursor-pointer" : "";
                       const onClick = () => {
                         if (t.referenceId) {
@@ -196,6 +213,37 @@ export const TransactionAccordion = ({
                           </td>
                           <td style={{ padding: "4px" }}>{t.numberOfUnits}</td>
                           <td style={{ padding: "4px" }}>{t.timestamp}</td>
+                        </tr>
+                      );
+                    })}
+                    {txCache[y][1].map((eb, index) => {
+                      return (
+                        <tr
+                          key={`eb=${eb.id}`}
+                          className={
+                            index === 0 ? "border-t border-gray-300" : ""
+                          }
+                        >
+                          <td style={{ padding: "4px" }}>--</td>
+                          <td style={{ padding: "4px" }}>
+                            {`Ending Balance ${transactionTypesMap[eb.type]}`}
+                          </td>
+                          <td style={{ padding: "4px" }}>--</td>
+                          <td style={{ padding: "4px" }}>--</td>
+                          <td style={{ padding: "4px" }}>--</td>
+                          <td style={{ padding: "4px" }}>
+                            {vehicleClassesMap[eb.vehicleClass]}
+                          </td>
+                          <td style={{ padding: "4px" }}>
+                            {zevClassesMap[eb.zevClass]}
+                          </td>
+                          <td style={{ padding: "4px" }}>
+                            {modelYearsMap[eb.modelYear]}
+                          </td>
+                          <td style={{ padding: "4px" }}>
+                            {eb.finalNumberOfUnits}
+                          </td>
+                          <td style={{ padding: "4px" }}>--</td>
                         </tr>
                       );
                     })}
