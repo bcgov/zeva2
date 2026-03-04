@@ -49,16 +49,17 @@ services:
     ports:
       - 3000:3000
     env_file:
-      - minio.env
+      - s3.env
     environment:
       - AUTH_SECRET=Ils7nkPcqmp+RHvx2uX8Nwl/MUI8cHnNfmeZS7F8M7k=
       - AUTH_KEYCLOAK_ID=zeva-2-5981
       - AUTH_KEYCLOAK_ISSUER=https://dev.loginproxy.gov.bc.ca/auth/realms/standard
       - DATABASE_URL=postgresql://postgres:postgres@db:5432/zeva?schema=public
       - DATABASE_URL_OLD=postgresql://postgres:postgres@host.docker.internal:5432/zeva?schema=public
-      - CHECKPOINT_DISABLE=1
       - START_WORKERS=false
       - TZ=America/Vancouver
+      - BEGINNING_OF_COMPLIANCE_YEAR=10-01T00:00:00.000
+      - END_OF_COMPLIANCE_YEAR=09-30T23:59:59.999
     depends_on:
       db:
         condition: service_healthy
@@ -79,10 +80,9 @@ services:
       - ./next:/next
       - /next/node_modules
     env_file:
-      - minio.env
+      - s3.env
     environment:
       - DATABASE_URL=postgresql://postgres:postgres@db:5432/zeva?schema=public
-      - CHECKPOINT_DISABLE=1
       - START_WORKERS=true
       - TZ=America/Vancouver
       - CHES_AUTH_URL

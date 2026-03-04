@@ -27,7 +27,7 @@ export const getPenaltyCreditTransactionDate = (complianceYear: ModelYear) => {
   const [_complianceYearString, complianceYearInt] =
     parseComplianceYear(complianceYear);
   const nextYear = (complianceYearInt + 1).toString();
-  return new Date(`${nextYear}-10-01T00:00:00`);
+  return new Date(`${nextYear}-${process.env.BEGINNING_OF_COMPLIANCE_YEAR}`);
 };
 
 export const getWhereClause = (

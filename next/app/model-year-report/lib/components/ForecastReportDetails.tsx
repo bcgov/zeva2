@@ -1,6 +1,5 @@
 import Excel from "exceljs";
 import { getModelYearReportDetails } from "../data";
-import { getArrayBuffer } from "@/app/lib/utils/parseReadable";
 import { parseForecast } from "../utils";
 import { ParsedForecastTables } from "./ParsedForecastReport";
 
@@ -9,9 +8,8 @@ export const ForecastReportDetails = async (props: { myrId: number }) => {
   if (!report) {
     return null;
   }
-  const forecastBuf = await getArrayBuffer(report.forecastFile);
   const forecastWorkbook = new Excel.Workbook();
-  await forecastWorkbook.xlsx.load(forecastBuf);
+  await forecastWorkbook.xlsx.load(report.forecastFile);
   const parsedForecast = parseForecast(forecastWorkbook, report.modelYear);
 
   return <ParsedForecastTables forecast={parsedForecast} />;

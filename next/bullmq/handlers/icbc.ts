@@ -1,12 +1,12 @@
 import { Job } from "bullmq";
 import { prisma } from "@/lib/prisma";
-import { getObject } from "@/app/lib/minio";
+import { getObject } from "@/app/lib/services/s3";
 import { IcbcFileStatus } from "@/prisma/generated/enums";
 import { IcbcRecordModel } from "@/prisma/generated/models";
 import { parse } from "fast-csv";
 import { getStringsToModelYearsEnumsMap } from "@/app/lib/utils/enumMaps";
 import { TransactionClient } from "@/types/prisma";
-import { getIcbcFileFullObjectName } from "@/app/icbc/lib/utils";
+import { NodeJsRuntimeStreamingBlobPayloadOutputTypes } from "@smithy/types";
 
 type Row = { [key: string]: string };
 
@@ -22,8 +22,16 @@ export const handleConsumeIcbcFileJob = async (job: Job<number>) => {
       id: icbcFileId,
     },
   });
-  const fileName = icbcFile.name;
-  const fileStream = await getObject(getIcbcFileFullObjectName(fileName));
+  const objectName = icbcFile.name;
+  const object = await getObject(objectName);
+  // in a node envrionment, the Body of a GetObjectCommandOutput, if it is defined,
+  // will be of type NodeJsRuntimeStreamingBlobPayloadOutputTypes
+  const fileStream = object.Body as
+    | NodeJsRuntimeStreamingBlobPayloadOutputTypes
+    | undefined;
+  if (!fileStream) {
+    throw new Error("ICBC file is empty!");
+  }
   const csvStream = fileStream.pipe(parse({ headers: true, delimiter: "|" }));
   const numberOfRecordsPreProcessing = await prisma.icbcRecord.count();
   await prisma.icbcFile.update({
@@ -104,6 +112,7 @@ const processRows = async (
 };
 
 // prisma doesn't have bulk upsert; will have to bulk delete, then bulk create
+//
 const deleteAndCreate = async (
   map: MapOfVinsToData,
   icbcFileId: number,
@@ -111,6 +120,28 @@ const deleteAndCreate = async (
 ) => {
   const modelYearsMap = getStringsToModelYearsEnumsMap();
   const vins = Object.keys(map);
+  const existingRecords = await tx.icbcRecord.findMany({
+    where: {
+      vin: {
+        in: vins,
+      },
+    },
+    select: {
+      vin: true,
+      icbcFileId: true,
+    },
+  });
+  const existingRecordsMap: Partial<Record<string, number>> = {};
+  for (const record of existingRecords) {
+    existingRecordsMap[record.vin] = record.icbcFileId;
+  }
+  await tx.icbcRecord.deleteMany({
+    where: {
+      vin: {
+        in: vins,
+      },
+    },
+  });
   const toCreate: Omit<IcbcRecordModel, "id">[] = [];
   for (const [vin, data] of Object.entries(map)) {
     const modelYearEnum = modelYearsMap[data.year];
@@ -120,17 +151,10 @@ const deleteAndCreate = async (
         make: data.make,
         model: data.model,
         year: modelYearEnum,
-        icbcFileId,
+        icbcFileId: existingRecordsMap[vin] ?? icbcFileId,
       });
     }
   }
-  await tx.icbcRecord.deleteMany({
-    where: {
-      vin: {
-        in: vins,
-      },
-    },
-  });
   await tx.icbcRecord.createMany({
     data: toCreate,
   });

@@ -6,7 +6,7 @@ import {
   getSupplierOwnVehicleStats,
 } from "../../lib/data";
 import { ModelYearReportStatus } from "@/prisma/generated/enums";
-import { getPresignedGetObjectUrl } from "@/app/lib/minio";
+import { getPresignedGetObjectUrl } from "@/app/lib/services/s3";
 
 const Page = async (props: { params: Promise<{ id: string }> }) => {
   const args = await props.params;

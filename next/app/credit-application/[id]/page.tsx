@@ -7,11 +7,12 @@ import { LoadingSkeleton } from "@/app/lib/components/skeletons";
 import { ApplicationHistories } from "../lib/components/ApplicationHistories";
 import { ApplicationDetails } from "../lib/components/ApplicationDetails";
 import { getDocumentDownloadUrls } from "../lib/actions";
-import { AttachmentsDownload } from "@/app/lib/components/AttachmentsDownload";
+import { Attachments } from "@/app/lib/components/Attachments";
 import { SupplierActions } from "../lib/components/SupplierActions";
 import { DirectorActions } from "../lib/components/DirectorActions";
 import { AnalystActions } from "../lib/components/AnalystActions";
 import { ApplicationStatistics } from "../lib/components/ApplicationStatistics";
+import { getPartOfMyrModelYear } from "../lib/services";
 
 const Page = async (props: { params: Promise<{ id: string }> }) => {
   const args = await props.params;
@@ -22,7 +23,7 @@ const Page = async (props: { params: Promise<{ id: string }> }) => {
   }
   const applicationStatus = creditApplication.status;
   const applicationSupplierStatus = creditApplication.supplierStatus;
-  const { userIsGov, userRoles } = await getUserInfo();
+  const { userIsGov, userOrgId, userRoles } = await getUserInfo();
   const download = async () => {
     "use server";
     return getDocumentDownloadUrls(id);
@@ -49,12 +50,9 @@ const Page = async (props: { params: Promise<{ id: string }> }) => {
           />
         </Suspense>
       </ContentCard>
-      <ContentCard title="Download Documents">
-        <span>
-          Number of Attachments:{" "}
-          {creditApplication._count.CreditApplicationAttachment}
-        </span>
-        <AttachmentsDownload
+      <ContentCard title="Attachments">
+        <Attachments
+          attachments={creditApplication.CreditApplicationAttachment}
           download={download}
           zipName={`credit-application-attachments-${id}`}
         />
@@ -71,7 +69,9 @@ const Page = async (props: { params: Promise<{ id: string }> }) => {
             <AnalystActions
               id={id}
               status={applicationStatus}
-              validatedBefore={creditApplication.icbcTimestamp !== null}
+              validatedBefore={
+                creditApplication.validatedUpToIcbcTimestamp !== null
+              }
             />
           </ContentCard>
         </div>
@@ -87,6 +87,7 @@ const Page = async (props: { params: Promise<{ id: string }> }) => {
       );
     }
   }
+  const partOfMyrModelYear = await getPartOfMyrModelYear(userOrgId);
   return (
     <div className="flex flex-col w-1/3">
       {applicationData}
@@ -95,6 +96,7 @@ const Page = async (props: { params: Promise<{ id: string }> }) => {
           creditApplicationId={id}
           status={applicationSupplierStatus}
           userRoles={userRoles}
+          partOfMyrModelYear={partOfMyrModelYear}
         />
       </ContentCard>
     </div>

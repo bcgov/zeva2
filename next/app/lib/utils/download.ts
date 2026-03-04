@@ -1,6 +1,6 @@
 import axios from "axios";
 import JSZip from "jszip";
-import { AttachmentDownload } from "../services/attachments";
+import { AttachmentDownload } from "../constants/attachment";
 
 const doDownload = (filename: string, data: ArrayBuffer) => {
   const objectURL = window.URL.createObjectURL(new Blob([data]));

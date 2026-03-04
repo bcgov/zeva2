@@ -1,27 +1,37 @@
 import { getIsoYmdString } from "@/app/lib/utils/date";
-import { CreditApplicationWithOrgAndAttachmentsCount } from "../data";
-import { getCreditApplicationStatusEnumsToStringsMap } from "@/app/lib/utils/enumMaps";
+import { CreditApplicationWithOrgAndAttachmentNames } from "../data";
+import {
+  getCreditApplicationStatusEnumsToStringsMap,
+  getModelYearEnumsToStringsMap,
+} from "@/app/lib/utils/enumMaps";
 
 export const ApplicationDetails = async (props: {
-  application: CreditApplicationWithOrgAndAttachmentsCount;
+  application: CreditApplicationWithOrgAndAttachmentNames;
   userIsGov: boolean;
 }) => {
   let status = props.application.status;
   if (!props.userIsGov) {
     status = props.application.supplierStatus;
   }
+  const modelYearsMap = getModelYearEnumsToStringsMap();
   const statusMap = getCreditApplicationStatusEnumsToStringsMap();
   return (
     <ul className="space-y-3">
       <li>Supplier: {props.application.organization.name}</li>
-      <li>Makes: {props.application.makes.join(", ")}</li>
+      <li>Makes: {props.application.makes}</li>
       <li>Service Address: {props.application.serviceAddress}</li>
       <li>Records Address: {props.application.recordsAddress}</li>
-      <li>Status: {statusMap[status]}</li>
-      {props.userIsGov && props.application.icbcTimestamp && (
+      {props.application.partOfMyrModelYear && (
         <li>
-          Validated using ICBC file with date:{" "}
-          {getIsoYmdString(props.application.icbcTimestamp)}
+          Model Year of Associated Model Year Report:{" "}
+          {modelYearsMap[props.application.partOfMyrModelYear]}
+        </li>
+      )}
+      <li>Status: {statusMap[status]}</li>
+      {props.userIsGov && props.application.validatedUpToIcbcTimestamp && (
+        <li>
+          Validated using ICBC data up to and including:{" "}
+          {getIsoYmdString(props.application.validatedUpToIcbcTimestamp)}
         </li>
       )}
     </ul>

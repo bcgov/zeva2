@@ -1,10 +1,8 @@
 "use server";
 
-import { getPresignedPutObjectUrl } from "@/app/lib/minio";
+import { Directory, getAttachmentPutData } from "@/app/lib/services/s3";
 import {
-  DataOrErrorActionResponse,
   ErrorOrSuccessActionResponse,
-  getDataActionResponse,
   getErrorActionResponse,
   getSuccessActionResponse,
 } from "@/app/lib/utils/actionResponse";
@@ -13,36 +11,17 @@ import { getUserInfo } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { addJobToIcbcQueue } from "@/app/lib/services/queue";
 import { IcbcFileStatus } from "@/prisma/generated/enums";
-import { randomUUID } from "crypto";
-import { getIcbcFileFullObjectName } from "./utils";
 
-export type PutData = {
-  objectName: string;
-  url: string;
-};
-
-export const getPutObjectData = async (): Promise<
-  DataOrErrorActionResponse<PutData>
-> => {
-  const { userIsGov } = await getUserInfo();
-  if (!userIsGov) {
-    return getErrorActionResponse("Unauthorized!");
-  }
-  const objectName = randomUUID();
-  const url = await getPresignedPutObjectUrl(
-    getIcbcFileFullObjectName(objectName),
-  );
-  return getDataActionResponse<PutData>({
-    objectName,
-    url,
-  });
+export const getPutObjectData = async () => {
+  const data = await getAttachmentPutData(Directory.Icbc, 1);
+  return data[0];
 };
 
 export const createIcbcFile = async (
   objectName: string,
   datestring: string,
 ): Promise<ErrorOrSuccessActionResponse> => {
-  const { userIsGov } = await getUserInfo();
+  const { userIsGov, userId } = await getUserInfo();
   if (!userIsGov) {
     return getErrorActionResponse("Unauthorized!");
   }
@@ -56,6 +35,7 @@ export const createIcbcFile = async (
         name: objectName,
         status: IcbcFileStatus.PROCESSING,
         timestamp: date,
+        uploadedById: userId,
       },
     });
     await addJobToIcbcQueue(icbcFile.id);

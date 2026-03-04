@@ -49,7 +49,7 @@ import {
   VehicleStatString,
 } from "../utils";
 import { ParsedModelYearReport } from "./ParsedModelYearReport";
-import { AttachmentDownload } from "@/app/lib/services/attachments";
+import { AttachmentDownload } from "@/app/lib/constants/attachment";
 import { VehicleStatistic } from "../services";
 import { Adjustment, Adjustments } from "./Adjustments";
 import { isModelYear } from "@/app/lib/utils/typeGuards";

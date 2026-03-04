@@ -6,9 +6,11 @@ import { QueueNames } from "../constants/queue";
 const queues: {
   [QueueNames.Email]: Readonly<Queue<EmailJobData>> | null;
   [QueueNames.Icbc]: Readonly<Queue<number>> | null;
+  [QueueNames.FlagInProcessCAs]: Readonly<Queue> | null;
 } = {
   [QueueNames.Email]: null,
   [QueueNames.Icbc]: null,
+  [QueueNames.FlagInProcessCAs]: null,
 };
 
 const getEmailQueue = () => {
@@ -32,6 +34,20 @@ const getIcbcQueue = () => {
     });
   }
   return queues[QueueNames.Icbc];
+};
+
+// for use by a job scheduler
+export const getFlagCAsQueue = () => {
+  if (!queues[QueueNames.FlagInProcessCAs]) {
+    queues[QueueNames.FlagInProcessCAs] = new Queue(
+      QueueNames.FlagInProcessCAs,
+      {
+        connection: bullmqConfig.queueConnection,
+        defaultJobOptions: bullmqConfig.queueDefaultJobOptions,
+      },
+    );
+  }
+  return queues[QueueNames.FlagInProcessCAs];
 };
 
 export const addJobToEmailQueue = async (

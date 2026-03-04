@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { getCreditApplications } from "../data";
-import { getSerializedApplications } from "../utils";
+import { getSerializedApplications } from "../utilsServer";
 import { ApplicationsTable } from "./ApplicationsTable";
 import { Routes } from "@/app/lib/constants";
 import { getUserInfo } from "@/auth";

@@ -4,7 +4,7 @@ import { AgreementForm } from "../../lib/components/AgreementForm";
 import { getAgreement } from "../../lib/data";
 import { getOrgsMap } from "@/app/lib/data/orgs";
 import { getSerializedAgreementContent } from "../../lib/utilsServer";
-import { AttachmentDownload } from "@/app/lib/services/attachments";
+import { AttachmentDownload } from "@/app/lib/constants/attachment";
 import { getAgreementAttachmentDownloadUrls } from "../../lib/actions";
 
 const Page = async (props: { params: Promise<{ id: string }> }) => {

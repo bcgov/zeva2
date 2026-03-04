@@ -1,7 +1,7 @@
 import { Suspense } from "react";
 import { getVehicle } from "../../lib/data";
 import { getAttachmentDownloadUrls } from "../../lib/actions";
-import { AttachmentDownload } from "@/app/lib/services/attachments";
+import { AttachmentDownload } from "@/app/lib/constants/attachment";
 import { VehicleForm, VehicleFormData } from "../../lib/components/VehicleForm";
 import { getVehicleClassCodeEnumsToStringsMap } from "@/app/lib/utils/enumMaps";
 

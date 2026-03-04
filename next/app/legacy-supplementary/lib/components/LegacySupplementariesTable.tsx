@@ -2,18 +2,17 @@
 
 import { useCallback, useMemo } from "react";
 import { ColumnDef, createColumnHelper } from "@tanstack/react-table";
-import { Table } from "@/app/lib/components";
+import { ClientSideTable } from "@/app/lib/components";
 import {
   getModelYearEnumsToStringsMap,
   getSupplementaryReportStatusEnumsToStringsMap,
 } from "@/app/lib/utils/enumMaps";
 import { useRouter } from "next/navigation";
 import { Routes } from "@/app/lib/constants";
-import { LegacySupplementary } from "../data";
+import { LegacySupplementary } from "../constants";
 
 export const LegacySupplementariesTable = (props: {
   supplementaries: LegacySupplementary[];
-  totalNumbeOfSupplementaries: number;
   userIsGov: boolean;
 }) => {
   const router = useRouter();
@@ -31,20 +30,20 @@ export const LegacySupplementariesTable = (props: {
     const result: ColumnDef<LegacySupplementary, any>[] = [
       columnHelper.accessor((row) => modelYearEnumMap[row.modelYear], {
         id: "modelYear",
-        enableSorting: false,
-        enableColumnFilter: false,
+        enableSorting: true,
+        enableColumnFilter: true,
         header: () => <span>Model Year</span>,
       }),
       columnHelper.accessor((row) => statusMap[row.status], {
         id: "status",
-        enableSorting: false,
-        enableColumnFilter: false,
+        enableSorting: true,
+        enableColumnFilter: true,
         header: () => <span>Status</span>,
       }),
-      columnHelper.accessor((row) => row.sequenceNumber, {
+      columnHelper.accessor((row) => row.sequenceNumber.toString(), {
         id: "sequenceNumber",
-        enableSorting: false,
-        enableColumnFilter: false,
+        enableSorting: true,
+        enableColumnFilter: true,
         header: () => <span>Sequence Number</span>,
       }),
     ];
@@ -52,17 +51,17 @@ export const LegacySupplementariesTable = (props: {
       result.unshift(
         columnHelper.accessor((row) => row.organization?.name, {
           id: "organization",
-          enableSorting: false,
-          enableColumnFilter: false,
+          enableSorting: true,
+          enableColumnFilter: true,
           header: () => <span>Supplier</span>,
         }),
       );
     }
     result.unshift(
-      columnHelper.accessor((row) => row.id, {
+      columnHelper.accessor((row) => row.id.toString(), {
         id: "id",
-        enableSorting: false,
-        enableColumnFilter: false,
+        enableSorting: true,
+        enableColumnFilter: true,
         header: () => <span>ID</span>,
       }),
     );
@@ -70,11 +69,12 @@ export const LegacySupplementariesTable = (props: {
   }, [columnHelper, props.userIsGov]);
 
   return (
-    <Table<LegacySupplementary>
+    <ClientSideTable<LegacySupplementary>
       columns={columns}
       data={props.supplementaries}
-      totalNumberOfRecords={props.totalNumbeOfSupplementaries}
       navigationAction={navigationAction}
+      enableFiltering={true}
+      enableSorting={true}
     />
   );
 };

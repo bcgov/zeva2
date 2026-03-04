@@ -69,7 +69,7 @@ export const getVehicles = async (
 
 export type VehicleWithOrg = VehicleModel & {
   organization: OrganizationModel;
-  _count: { VehicleAttachment: number };
+  VehicleAttachment: { fileName: string }[];
 };
 
 export const getVehicle = async (
@@ -92,9 +92,9 @@ export const getVehicle = async (
     where: whereClause,
     include: {
       organization: true,
-      _count: {
+      VehicleAttachment: {
         select: {
-          VehicleAttachment: true,
+          fileName: true,
         },
       },
     },

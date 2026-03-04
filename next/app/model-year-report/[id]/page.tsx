@@ -19,6 +19,7 @@ import {
 } from "../lib/services";
 import { SystemDetails } from "../lib/components/SystemDetails";
 import { getMyrStatusEnumsToStringsMap } from "@/app/lib/utils/enumMaps";
+import { mapOfStatusToSupplierStatus } from "../lib/constants";
 
 const Page = async (props: { params: Promise<{ id: string }> }) => {
   const args = await props.params;
@@ -27,9 +28,10 @@ const Page = async (props: { params: Promise<{ id: string }> }) => {
   if (!myr) {
     return null;
   }
-  const status = myr.status;
-  const supplierStatus = myr.supplierStatus;
   const { userIsGov, userRoles } = await getUserInfo();
+  const status = userIsGov
+    ? myr.status
+    : mapOfStatusToSupplierStatus[myr.status];
   let actionComponent: JSX.Element | null = null;
   if (userIsGov) {
     if (userRoles.includes(Role.DIRECTOR)) {
@@ -60,7 +62,7 @@ const Page = async (props: { params: Promise<{ id: string }> }) => {
     actionComponent = (
       <SupplierActions
         myrId={myrId}
-        status={supplierStatus}
+        status={status}
         canCreateSupplementary={canCreateSupplementary}
       />
     );
@@ -88,11 +90,7 @@ const Page = async (props: { params: Promise<{ id: string }> }) => {
           userIsGov={userIsGov}
           orgName={myr.organization.name}
           modelYear={myr.modelYear}
-          status={
-            userIsGov
-              ? (statusMap[status] ?? "")
-              : (statusMap[supplierStatus] ?? "")
-          }
+          status={statusMap[status] ?? ""}
         />
       </ContentCard>
       <ContentCard title="The Model Year Report">

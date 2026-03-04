@@ -4,12 +4,14 @@ import {
   getStringsToModelYearsEnumsMap,
 } from "./enumMaps";
 
-// please only use these functions server-side, where the TZ is set to "America/Vancouver"
+// please only use these functions server-side, where the TZ is set to "America/Vancouver",
+// and where certain env vars are defined.
 
 export const getComplianceYear = (date: Date) => {
-  const month = date.getMonth();
+  // any year will do
+  const complianceDate = new Date(`2019-${process.env.END_OF_COMPLIANCE_YEAR}`);
   let year = date.getFullYear();
-  if (month < 9) {
+  if (date.getMonth() <= complianceDate.getMonth()) {
     year = year - 1;
   }
   const modelYearsMap = getStringsToModelYearsEnumsMap();
@@ -52,8 +54,12 @@ export const getCompliancePeriod = (complianceYear: ModelYear) => {
   const lowerYear = modelYearsMap[complianceYear];
   const upperYear = modelYearsMap[getAdjacentYear("next", complianceYear)];
   return {
-    closedLowerBound: new Date(`${lowerYear}-10-01T00:00:00`),
-    openUpperBound: new Date(`${upperYear}-10-01T00:00:00`),
+    closedLowerBound: new Date(
+      `${lowerYear}-${process.env.BEGINNING_OF_COMPLIANCE_YEAR}`,
+    ),
+    openUpperBound: new Date(
+      `${upperYear}-${process.env.BEGINNING_OF_COMPLIANCE_YEAR}`,
+    ),
   };
 };
 
@@ -66,18 +72,11 @@ export const getModelYearReportModelYear = () => {
 export const getComplianceDate = (modelYear: ModelYear): Date => {
   const modelYearsMap = getModelYearEnumsToStringsMap();
   const year = getAdjacentYear("next", modelYear);
-  return new Date(`${modelYearsMap[year]}-09-30T23:59:59`);
+  return new Date(
+    `${modelYearsMap[year]}-${process.env.END_OF_COMPLIANCE_YEAR}`,
+  );
 };
 
 export const getDominatedComplianceYears = (complianceYear: ModelYear) => {
   return Object.values(ModelYear).filter((cy) => cy < complianceYear);
-};
-
-export const getIsInReportingPeriod = (date: Date) => {
-  const month = date.getMonth();
-  const day = date.getDate();
-  if (month === 9 && day >= 1 && day <= 20) {
-    return true;
-  }
-  return false;
 };

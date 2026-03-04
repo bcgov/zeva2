@@ -117,11 +117,15 @@ export const getOrderByClause = (
 
 export const getNumberOfUnits = (
   zevClass: ZevClass,
+  zevType: ZevType,
+  modelYear: ModelYear,
   range: number,
   us06RangeGte16: boolean,
 ): Decimal => {
   const currentTs = new Date();
-  const threshold = new Date("2026-10-01T00:00:00");
+  const threshold = new Date(
+    `2026-${process.env.BEGINNING_OF_COMPLIANCE_YEAR}`,
+  );
   const rangeDec = new Decimal(range);
   if (currentTs < threshold) {
     if (zevClass === ZevClass.A) {
@@ -139,8 +143,32 @@ export const getNumberOfUnits = (
       return Decimal.min(numberOfUnits, "1.10");
     }
   }
-  if (zevClass === ZevClass.A || zevClass === ZevClass.B) {
+  if (zevClass === ZevClass.A) {
     return new Decimal(1);
+  }
+  if (zevClass === ZevClass.B) {
+    if (zevType === ZevType.EREV) {
+      return new Decimal(1);
+    }
+    if (zevType === ZevType.PHEV && modelYear === ModelYear.MY_2026) {
+      return new Decimal(1);
+    }
+    if (
+      zevType === ZevType.PHEV &&
+      (modelYear === ModelYear.MY_2027 || modelYear === ModelYear.MY_2028)
+    ) {
+      // whether it's 1/2 of a credit or 1 credit depends on the director (regulation - section 14.1(4))
+      if (modelYear === ModelYear.MY_2027 && rangeDec.gte(50)) {
+        return new Decimal(1);
+      }
+      if (modelYear === ModelYear.MY_2028 && rangeDec.gte(60)) {
+        return new Decimal(1);
+      }
+      return new Decimal("0.5");
+    }
+    if (zevType === ZevType.PHEV && modelYear >= ModelYear.MY_2029) {
+      return new Decimal(1);
+    }
   }
   throw new Error("Cannot calculate the credit value for this vehicle!");
 };
@@ -175,8 +203,8 @@ export const getZevClass = (
   }
   if (
     modelYear >= ModelYear.MY_2026 &&
-    ((zevType === ZevType.BEV && rangeDec.gte(241)) ||
-      (zevType === ZevType.FCEV && rangeDec.gte(241)))
+    ((zevType === ZevType.BEV && rangeDec.gte(150)) ||
+      (zevType === ZevType.FCEV && rangeDec.gte(150)))
   ) {
     return ZevClass.A;
   }
@@ -191,13 +219,10 @@ export const getZevClass = (
     modelYear >= ModelYear.MY_2026 &&
     ((zevType === ZevType.EREV && rangeDec.gte(80)) ||
       (zevType === ZevType.PHEV &&
-        modelYear === ModelYear.MY_2026 &&
-        rangeDec.gte(55)) ||
+        modelYear <= ModelYear.MY_2028 &&
+        rangeDec.gte(16)) ||
       (zevType === ZevType.PHEV &&
-        modelYear === ModelYear.MY_2027 &&
-        rangeDec.gte(65)) ||
-      (zevType === ZevType.PHEV &&
-        modelYear >= ModelYear.MY_2028 &&
+        modelYear >= ModelYear.MY_2029 &&
         rangeDec.gte(80)))
   ) {
     return ZevClass.B;

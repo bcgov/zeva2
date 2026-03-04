@@ -31,6 +31,7 @@ export const seedIcbc = async (
         isLegacy: true,
         status: IcbcFileStatus.SUCCESS,
         timestamp: newTs,
+        createTimestamp: fileOld.create_timestamp ?? newTs,
       },
     });
     mapOfOldFileIdsToNewFileIds[fileOld.id] = newFile.id;
@@ -49,7 +50,7 @@ export const seedIcbc = async (
       },
     });
     const toCreate: Omit<IcbcRecordModel, "id">[] = [];
-    recordsOld.forEach((recordOld) => {
+    for (const recordOld of recordsOld) {
       const modelYear =
         mapOfModelYearIdsToModelYearEnum[recordOld.icbc_vehicle.model_year_id];
       if (!modelYear) {
@@ -73,7 +74,7 @@ export const seedIcbc = async (
         model: recordOld.icbc_vehicle.model_name,
         year: modelYear,
       });
-    });
+    }
     await tx.icbcRecord.createMany({
       data: toCreate,
     });

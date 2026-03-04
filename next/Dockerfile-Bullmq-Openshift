@@ -9,7 +9,7 @@ RUN npm install
 RUN npm run generate-prisma-client
 
 CMD ["/bin/sh", "-c", "\
-  for cfg in database minio redis email; do \
+  for cfg in database s3 redis email; do \
     if [ -f /vault/secrets/$cfg ]; then \
       . /vault/secrets/$cfg; \
     fi; \
