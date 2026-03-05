@@ -11,6 +11,9 @@ datasource db {
 // prisma doesn't allow enum values to start with a number
 // this enum must be in ascending lexicographical order, as well as ascending logical order
 enum ModelYear {
+  MY_2014
+  MY_2015
+  MY_2016
   MY_2017
   MY_2018
   MY_2019
@@ -31,6 +34,10 @@ enum ModelYear {
   MY_2034
   MY_2035
   MY_2036
+  MY_2037
+  MY_2038
+  MY_2039
+  MY_2040
 }
 
 enum SupplierClass {
@@ -205,6 +212,7 @@ model ZevUnitEndingBalance {
 enum CreditTransferStatus {
   APPROVED_BY_GOV
   APPROVED_BY_TRANSFER_TO
+  DRAFT
   RECOMMEND_APPROVAL_GOV
   RECOMMEND_REJECTION_GOV
   REJECTED_BY_GOV
@@ -214,23 +222,13 @@ enum CreditTransferStatus {
   SUBMITTED_TO_TRANSFER_TO
 }
 
-enum CreditTransferSupplierStatus {
-  APPROVED_BY_GOV
-  APPROVED_BY_TRANSFER_TO
-  REJECTED_BY_GOV
-  REJECTED_BY_TRANSFER_TO
-  RESCINDED_BY_TRANSFER_FROM
-  SUBMITTED_TO_TRANSFER_TO
-}
-
 model CreditTransfer {
-  id                    Int                          @id @default(autoincrement())
-  transferToId          Int                          @map("transfer_to_id")
-  transferTo            Organization                 @relation("creditTransferTo", fields: [transferToId], references: [id])
-  transferFromId        Int                          @map("transfer_from_id")
-  transferFrom          Organization                 @relation("creditTransferFrom", fields: [transferFromId], references: [id])
+  id                    Int                     @id @default(autoincrement())
+  transferToId          Int                     @map("transfer_to_id")
+  transferTo            Organization            @relation("creditTransferTo", fields: [transferToId], references: [id])
+  transferFromId        Int                     @map("transfer_from_id")
+  transferFrom          Organization            @relation("creditTransferFrom", fields: [transferFromId], references: [id])
   status                CreditTransferStatus
-  supplierStatus        CreditTransferSupplierStatus
   creditTransferContent CreditTransferContent[]
   creditTransferHistory CreditTransferHistory[]
 

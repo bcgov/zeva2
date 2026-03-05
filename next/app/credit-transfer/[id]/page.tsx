@@ -7,13 +7,14 @@ import { CreditTransferDetails } from "../lib/components/CreditTransferDetails";
 import { getTransfer } from "../lib/services";
 import { TransferFromActions } from "../lib/components/TransferFromActions";
 import { TransferToActions } from "../lib/components/TransferToActions";
-import { Role } from "@/prisma/generated/enums";
+import { CreditTransferStatus, Role } from "@/prisma/generated/enums";
 import { DirectorActions } from "../lib/components/DirectorActions";
 import { AnalystActions } from "../lib/components/AnalystActions";
+import { transferFromSupplierRescindableStatuses } from "../lib/constants";
 
 const Page = async (props: { params: Promise<{ id: string }> }) => {
   const args = await props.params;
-  const id = parseInt(args.id, 10);
+  const id = Number.parseInt(args.id, 10);
   const { userIsGov, userOrgId, userRoles } = await getUserInfo();
   const transfer = await getTransfer(id);
   if (!transfer) {
@@ -22,9 +23,17 @@ const Page = async (props: { params: Promise<{ id: string }> }) => {
   const status = transfer.status;
   let actionComponent: JSX.Element | null = null;
   if (!userIsGov && userOrgId === transfer.transferFromId) {
-    actionComponent = <TransferFromActions id={id} status={status} />;
-  } else if (!userIsGov && userOrgId === transfer.transferToId) {
-    actionComponent = <TransferToActions id={id} status={status} />;
+    if (status === CreditTransferStatus.DRAFT) {
+      actionComponent = <TransferFromActions id={id} type="draft" />;
+    } else if (transferFromSupplierRescindableStatuses.includes(status)) {
+      actionComponent = <TransferFromActions id={id} type="rescindable" />;
+    }
+  } else if (
+    !userIsGov &&
+    userOrgId === transfer.transferToId &&
+    status === CreditTransferStatus.SUBMITTED_TO_TRANSFER_TO
+  ) {
+    actionComponent = <TransferToActions id={id} />;
   } else if (userIsGov && userRoles.includes(Role.DIRECTOR)) {
     actionComponent = <DirectorActions id={id} status={status} />;
   } else if (userIsGov && userRoles.includes(Role.ZEVA_IDIR_USER)) {

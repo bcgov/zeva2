@@ -176,21 +176,18 @@ export const Adjustments = (props: {
                   }
                   disabled={props.disabled}
                 >
-                  {Object.entries(modelYearsMaps.stringsToEnums).map(
-                    ([key, value]) => {
-                      if (
+                  {Object.entries(modelYearsMaps.stringsToEnums)
+                    .filter(
+                      ([_key, value]) =>
                         value &&
                         value >= ModelYear.MY_2019 &&
-                        value <= ModelYear.MY_2035
-                      ) {
-                        return (
-                          <option key={key} value={key}>
-                            {key}
-                          </option>
-                        );
-                      }
-                    },
-                  )}
+                        value <= ModelYear.MY_2035,
+                    )
+                    .map(([key, value]) => (
+                      <option key={value} value={value}>
+                        {key}
+                      </option>
+                    ))}
                 </select>
               </td>
               <td className="border border-gray-300">

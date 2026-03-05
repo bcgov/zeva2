@@ -1,58 +1,20 @@
 import { getUserInfo } from "@/auth";
 import { prisma } from "@/lib/prisma";
-import {
-  CreditTransferStatus,
-  CreditTransferSupplierStatus,
-  Role,
-} from "@/prisma/generated/enums";
+import { CreditTransferStatus, Role } from "@/prisma/generated/enums";
 import {
   CreditTransferWhereUniqueInput,
   CreditTransferHistoryWhereInput,
+  CreditTransferWhereInput,
 } from "@/prisma/generated/models";
-import { getOrderByClause, getWhereClause } from "./utils";
+import { CreditTransferWithRelated } from "./constants";
 
-export type CreditTransferSparse = {
-  id: number;
-  status: CreditTransferStatus;
-  supplierStatus: CreditTransferSupplierStatus;
-  transferFrom: {
-    name: string;
-  };
-  transferTo: {
-    name: string;
-  };
-};
-
-// page is 1-based
-// currently, this function is not used with SSR, so it is important to select only the data you need!
-export const getCreditTransfers = async (
-  page: number,
-  pageSize: number,
-  filters: Record<string, string>,
-  sorts: Record<string, string>,
-): Promise<[CreditTransferSparse[], number]> => {
+export const getCreditTransfers = async (): Promise<
+  CreditTransferWithRelated[]
+> => {
   const { userIsGov, userOrgId, userRoles } = await getUserInfo();
-  const skip = (page - 1) * pageSize;
-  const take = pageSize;
-  const select = {
-    id: true,
-    status: true,
-    supplierStatus: true,
-    transferFrom: {
-      select: {
-        name: true,
-      },
-    },
-    transferTo: {
-      select: {
-        name: true,
-      },
-    },
-  };
-  const where = getWhereClause(filters, userIsGov);
-  const orderBy = getOrderByClause(sorts, true, userIsGov);
+  const whereClause: CreditTransferWhereInput = {};
   if (userIsGov && userRoles.includes(Role.DIRECTOR)) {
-    where.creditTransferHistory = {
+    whereClause.creditTransferHistory = {
       some: {
         userAction: {
           in: [
@@ -63,26 +25,47 @@ export const getCreditTransfers = async (
       },
     };
   } else if (userIsGov && userRoles.includes(Role.ZEVA_IDIR_USER)) {
-    where.creditTransferHistory = {
+    whereClause.creditTransferHistory = {
       some: {
         userAction: CreditTransferStatus.APPROVED_BY_TRANSFER_TO,
       },
     };
   } else if (!userIsGov) {
-    where.OR = [{ transferFromId: userOrgId }, { transferToId: userOrgId }];
+    whereClause.OR = [
+      { transferFromId: userOrgId },
+      { transferToId: userOrgId, status: { not: CreditTransferStatus.DRAFT } },
+    ];
   }
-  return await prisma.$transaction([
-    prisma.creditTransfer.findMany({
-      skip,
-      take,
-      select,
-      where,
-      orderBy,
-    }),
-    prisma.creditTransfer.count({
-      where,
-    }),
-  ]);
+  return await prisma.creditTransfer.findMany({
+    where: whereClause,
+    select: {
+      id: true,
+      status: true,
+      transferFrom: {
+        select: {
+          name: true,
+        },
+      },
+      transferTo: {
+        select: {
+          name: true,
+        },
+      },
+      creditTransferContent: {
+        select: {
+          zevClass: true,
+          numberOfUnits: true,
+          dollarValuePerUnit: true,
+        },
+      },
+      creditTransferHistory: {
+        select: {
+          userAction: true,
+          timestamp: true,
+        },
+      },
+    },
+  });
 };
 
 export const getCreditTransfer = async (id: number) => {
@@ -97,7 +80,7 @@ export const getCreditTransfer = async (id: number) => {
   } else {
     whereClause.OR = [
       { transferFromId: userOrgId },
-      { transferToId: userOrgId },
+      { transferToId: userOrgId, status: { not: CreditTransferStatus.DRAFT } },
     ];
   }
   return await prisma.creditTransfer.findUnique({
@@ -115,13 +98,33 @@ export const getCreditTransferHistories = async (transferId: number) => {
   const whereClause: CreditTransferHistoryWhereInput = {
     creditTransferId: transferId,
   };
-  if (!userIsGov) {
+  if (userIsGov) {
+    whereClause.creditTransfer = {
+      creditTransferHistory: {
+        some: {
+          userAction: CreditTransferStatus.APPROVED_BY_TRANSFER_TO,
+        },
+      },
+    };
+  } else {
     whereClause.OR = [
       { creditTransfer: { transferFromId: userOrgId } },
-      { creditTransfer: { transferToId: userOrgId } },
+      {
+        creditTransfer: {
+          transferToId: userOrgId,
+          status: { not: CreditTransferStatus.DRAFT },
+        },
+      },
     ];
+    whereClause.userAction = {
+      notIn: [
+        CreditTransferStatus.RECOMMEND_APPROVAL_GOV,
+        CreditTransferStatus.RECOMMEND_REJECTION_GOV,
+        CreditTransferStatus.RETURNED_TO_ANALYST,
+      ],
+    };
   }
-  const histories = await prisma.creditTransferHistory.findMany({
+  return await prisma.creditTransferHistory.findMany({
     where: whereClause,
     include: {
       user: {
@@ -140,18 +143,4 @@ export const getCreditTransferHistories = async (transferId: number) => {
       timestamp: "asc",
     },
   });
-  if (!userIsGov) {
-    const supplierStatuses = Object.values(CreditTransferSupplierStatus);
-    return histories.filter((history) =>
-      supplierStatuses.some((status) => status === history.userAction),
-    );
-  }
-  const index = histories.findIndex(
-    (history) =>
-      history.userAction === CreditTransferStatus.APPROVED_BY_TRANSFER_TO,
-  );
-  if (index > -1) {
-    return histories.slice(index);
-  }
-  return [];
 };

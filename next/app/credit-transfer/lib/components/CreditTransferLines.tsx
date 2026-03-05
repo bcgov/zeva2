@@ -8,16 +8,25 @@ import {
   getStringsToVehicleClassEnumsMap,
   getStringsToZevClassEnumsMap,
 } from "@/app/lib/utils/enumMaps";
+import { ModelYear } from "@/prisma/generated/enums";
 
-export type CreditTransferLine = { id: string } & Partial<
-  Record<string, string>
->;
+export type CreditTransferLine = {
+  vehicleClass: string;
+  zevClass: string;
+  modelYear: string;
+  numberOfUnits: string;
+  dollarValuePerUnit: string;
+};
 
 export const CreditTransferLines = (props: {
   lines: CreditTransferLine[];
   addLine: () => void;
-  removeLine: (id: string) => void;
-  handleLineChange: (id: string, key: string, value: string) => void;
+  removeLine: (index: number) => void;
+  handleLineChange: (
+    index: number,
+    key: keyof CreditTransferLine,
+    value: string,
+  ) => void;
   disabled: boolean;
 }) => {
   const vehicleClassesMap = useMemo(() => {
@@ -37,20 +46,16 @@ export const CreditTransferLines = (props: {
   }
   return (
     <div className="flex flex-col space-y-2">
-      {props.lines.map((line) => {
+      {props.lines.map((line, index) => {
         return (
-          <div key={line.id} className="flex flex-row space-x-2">
+          <div key={index} className="flex flex-row space-x-2">
             <span key="vehicleClass" className="flex flex-col">
               <label htmlFor="vehicleClass">Vehicle Class</label>
               <select
                 id="vehicleClass"
                 value={line.vehicleClass}
                 onChange={(e) =>
-                  props.handleLineChange(
-                    line.id,
-                    "vehicleClass",
-                    e.target.value,
-                  )
+                  props.handleLineChange(index, "vehicleClass", e.target.value)
                 }
               >
                 {Object.entries(vehicleClassesMap).map(([key, value]) => (
@@ -66,7 +71,7 @@ export const CreditTransferLines = (props: {
                 id="zevClass"
                 value={line.zevClass}
                 onChange={(e) =>
-                  props.handleLineChange(line.id, "zevClass", e.target.value)
+                  props.handleLineChange(index, "zevClass", e.target.value)
                 }
               >
                 {Object.entries(zevClassesMap).map(([key, value]) => (
@@ -82,14 +87,21 @@ export const CreditTransferLines = (props: {
                 id="modelYear"
                 value={line.modelYear}
                 onChange={(e) =>
-                  props.handleLineChange(line.id, "modelYear", e.target.value)
+                  props.handleLineChange(index, "modelYear", e.target.value)
                 }
               >
-                {Object.entries(modelYearsMap).map(([key, value]) => (
-                  <option key={value} value={value}>
-                    {key}
-                  </option>
-                ))}
+                {Object.entries(modelYearsMap)
+                  .filter(
+                    ([_key, value]) =>
+                      value &&
+                      value >= ModelYear.MY_2019 &&
+                      value <= ModelYear.MY_2035,
+                  )
+                  .map(([key, value]) => (
+                    <option key={value} value={value}>
+                      {key}
+                    </option>
+                  ))}
               </select>
             </span>
             <span key="numberOfUnits" className="flex flex-col">
@@ -99,11 +111,7 @@ export const CreditTransferLines = (props: {
                 id="numberOfUnits"
                 value={line.numberOfUnits}
                 onChange={(e) =>
-                  props.handleLineChange(
-                    line.id,
-                    "numberOfUnits",
-                    e.target.value,
-                  )
+                  props.handleLineChange(index, "numberOfUnits", e.target.value)
                 }
               />
             </span>
@@ -115,7 +123,7 @@ export const CreditTransferLines = (props: {
                 value={line.dollarValuePerUnit}
                 onChange={(e) =>
                   props.handleLineChange(
-                    line.id,
+                    index,
                     "dollarValuePerUnit",
                     e.target.value,
                   )
@@ -126,7 +134,7 @@ export const CreditTransferLines = (props: {
               <Button
                 variant="danger"
                 size="small"
-                onClick={() => props.removeLine(line.id)}
+                onClick={() => props.removeLine(index)}
               >
                 Remove Line
               </Button>

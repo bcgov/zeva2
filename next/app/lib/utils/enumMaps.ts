@@ -11,7 +11,6 @@ import {
   CreditApplicationStatus,
   CreditApplicationSupplierStatus,
   CreditTransferStatus,
-  CreditTransferSupplierStatus,
   Idp,
   ModelYear,
   ModelYearReportStatus,
@@ -223,20 +222,6 @@ export const getCreditTransferStatusEnumsToStringsMap = () => {
 export const getStringsToCreditTransferStatusEnumsMap = () => {
   return getStringsToEnumsMap<CreditTransferStatus>(
     CreditTransferStatus,
-    statusTransformer,
-  );
-};
-
-export const getCreditTransferSupplierStatusEnumsToStringsMap = () => {
-  return getEnumsToStringsMap<CreditTransferSupplierStatus>(
-    CreditTransferSupplierStatus,
-    statusTransformer,
-  );
-};
-
-export const getStringsToCreditTransferSupplierStatusEnumsMap = () => {
-  return getStringsToEnumsMap<CreditTransferSupplierStatus>(
-    CreditTransferSupplierStatus,
     statusTransformer,
   );
 };

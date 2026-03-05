@@ -1,27 +1,11 @@
-import React from "react";
 import { getCreditTransfers } from "../data";
 import { CreditTransfersTable } from "./CreditTransfersTable";
-import { getSerializedTransfers } from "../utils";
+import { getSerializedTransfers } from "../utilsServer";
 import { getUserInfo } from "@/auth";
 
-export const CreditTransferList = async (props: {
-  page: number;
-  pageSize: number;
-  filters: Record<string, string>;
-  sorts: Record<string, string>;
-}) => {
+export const CreditTransferList = async () => {
   const { userIsGov } = await getUserInfo();
-  const [transfers, totalNumberOfTransfers] = await getCreditTransfers(
-    props.page,
-    props.pageSize,
-    props.filters,
-    props.sorts,
-  );
+  const transfers = await getCreditTransfers();
   const serializedTransfers = getSerializedTransfers(transfers, userIsGov);
-  return (
-    <CreditTransfersTable
-      transfers={serializedTransfers}
-      totalNumbeOfTransfers={totalNumberOfTransfers}
-    />
-  );
+  return <CreditTransfersTable transfers={serializedTransfers} />;
 };

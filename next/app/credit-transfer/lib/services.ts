@@ -2,7 +2,6 @@ import { prisma } from "@/lib/prisma";
 import {
   TransactionType,
   CreditTransferStatus,
-  CreditTransferSupplierStatus,
 } from "@/prisma/generated/enums";
 import {
   CreditTransferModel,
@@ -45,7 +44,6 @@ export const createTransferHistory = async (
 export const updateTransferStatus = async (
   transferId: number,
   status: CreditTransferStatus,
-  supplierStatus: CreditTransferSupplierStatus,
   transactionClient?: TransactionClient,
 ) => {
   const prismaClient = transactionClient ?? prisma;
@@ -55,7 +53,6 @@ export const updateTransferStatus = async (
     },
     data: {
       status,
-      supplierStatus,
     },
   });
 };
@@ -64,12 +61,11 @@ export const updateTransferStatusAndCreateHistory = async (
   transferId: number,
   userId: number,
   status: CreditTransferStatus,
-  supplierStatus: CreditTransferSupplierStatus,
   comment?: string,
   transactionClient?: TransactionClient,
 ): Promise<number> => {
   const prismaClient = transactionClient ?? prisma;
-  await updateTransferStatus(transferId, status, supplierStatus, prismaClient);
+  await updateTransferStatus(transferId, status, prismaClient);
   const historyId = await createTransferHistory(
     {
       creditTransferId: transferId,

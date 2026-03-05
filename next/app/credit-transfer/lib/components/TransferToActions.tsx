@@ -8,10 +8,7 @@ import { useCallback, useState, useTransition } from "react";
 import { transferToSupplierActionTransfer } from "../actions";
 import { getNormalizedComment } from "@/app/lib/utils/comment";
 
-export const TransferToActions = (props: {
-  id: number;
-  status: CreditTransferStatus;
-}) => {
+export const TransferToActions = (props: { id: number }) => {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [comment, setComment] = useState<string>("");
@@ -41,9 +38,6 @@ export const TransferToActions = (props: {
     [props.id, comment],
   );
 
-  if (props.status !== CreditTransferStatus.SUBMITTED_TO_TRANSFER_TO) {
-    return null;
-  }
   return (
     <div className="space-y-2">
       {error && <p className="text-red-600">{error}</p>}
