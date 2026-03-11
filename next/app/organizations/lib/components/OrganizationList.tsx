@@ -9,6 +9,7 @@ export const OrganizationList = async (props: {
   pageSize: number;
   filters: { [key: string]: string };
   sorts: { [key: string]: string };
+  canCreateNewOrg: boolean;
 }) => {
   const navigationAction = async (id: number) => {
     "use server";
@@ -26,6 +27,7 @@ export const OrganizationList = async (props: {
       organizations={organizations}
       totalNumberOfOrganizations={totalNumberOfOrganizations}
       navigationAction={navigationAction}
+      canCreateNewOrg={props.canCreateNewOrg}
     />
   );
 };

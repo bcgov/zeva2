@@ -3,7 +3,6 @@ import { fetchUsers, GovUserCategory, SupplierUserCategory } from "./lib/data";
 import { LoadingSkeleton } from "@/app/lib/components/skeletons";
 import Link from "next/link";
 import { Routes } from "../lib/constants";
-import { Button } from "../lib/components";
 import { getUserInfo } from "@/auth";
 import { UserTable } from "./lib/components/UserTable";
 import { userIsAdmin } from "./lib/utilsServer";
@@ -39,11 +38,6 @@ export default async function Page(props: {
 
   return (
     <Suspense fallback={<LoadingSkeleton />}>
-      {isAdmin && (
-        <Link href={`${Routes.Users}/new`}>
-          <Button variant="primary">Create New User</Button>
-        </Link>
-      )}
       <div className="mb-4 flex gap-2 border-b">
         {categoriesToUse.map((category) => (
           <Link
@@ -68,6 +62,7 @@ export default async function Page(props: {
         users={users}
         userIsGov={userIsGov}
         category={currentCategory}
+        isAdmin={isAdmin}
       />
     </Suspense>
   );

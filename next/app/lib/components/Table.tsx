@@ -17,7 +17,7 @@ import { LoadingSkeleton } from "./skeletons";
 import { Button } from "./inputs";
 import { TableHeader } from "./TableHeader";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faAngleLeft, faAngleRight } from "@fortawesome/free-solid-svg-icons";
+import { faAngleLeft, faAngleRight, faMagnifyingGlass } from "@fortawesome/free-solid-svg-icons";
 
 interface ITableProps<T> {
   columns: ColumnDef<T, any>[];
@@ -27,6 +27,9 @@ interface ITableProps<T> {
   explicitSizing?: boolean;
   paramsToPreserve?: string[];
   stackHeaderContents?: boolean;
+  enableGlobalSearch?: boolean;
+  title?: string;
+  headerContent?: React.ReactNode;
 }
 
 interface ZevaObject {
@@ -41,6 +44,9 @@ export const Table = <T extends ZevaObject>({
   explicitSizing,
   paramsToPreserve,
   stackHeaderContents,
+  enableGlobalSearch = false,
+  title,
+  headerContent,
 }: ITableProps<T>) => {
   const { replace } = useRouter();
   const table = useReactTable({
@@ -55,6 +61,9 @@ export const Table = <T extends ZevaObject>({
   const searchParams = useSearchParams();
   const [filters, setFilters] = React.useState<{ [key: string]: string }>(
     getObject(searchParams.get("filters")),
+  );
+  const [globalSearch, setGlobalSearch] = React.useState<string>(
+    searchParams.get("search") || "",
   );
 
   const replaceUrl = React.useCallback(
@@ -72,8 +81,24 @@ export const Table = <T extends ZevaObject>({
         newParams.set(param, paramValue);
       }
     });
+    setGlobalSearch("");
     replaceUrl(newParams);
   }, [paramsToPreserve, searchParams, replaceUrl]);
+
+  const handleGlobalSearchChange = React.useCallback(
+    (value: string) => {
+      setGlobalSearch(value);
+      const params = new URLSearchParams(searchParams);
+      if (value) {
+        params.set("search", value);
+      } else {
+        params.delete("search");
+      }
+      params.set("page", "1");
+      replaceUrl(params);
+    },
+    [searchParams, replaceUrl],
+  );
 
   const currentPageSize = React.useMemo(() => {
     const pageSize = searchParams.get("pageSize");
@@ -122,16 +147,8 @@ export const Table = <T extends ZevaObject>({
     [currentPage, numberOfPages, handlePageChange],
   );
 
-  const pageOptionsJSX = React.useMemo(() => {
-    const result: React.JSX.Element[] = [];
-    for (let i = 1; i <= numberOfPages; i++) {
-      result.push(
-        <option key={i} value={i}>
-          {i}
-        </option>,
-      );
-    }
-    return result;
+  const pageNumbers = React.useMemo(() => {
+    return Array.from({ length: numberOfPages }, (_, i) => i + 1);
   }, [numberOfPages]);
 
   const handleFilterChange = React.useCallback((key: string, value: string) => {
@@ -206,15 +223,34 @@ export const Table = <T extends ZevaObject>({
     return <LoadingSkeleton />;
   }
   return (
-    <div className="bg-white rounded-lg shadow-level-1 p-4">
-      <div className="flex flex-row-reverse">
+    <div>
+      <div className="mb-4 flex items-center justify-between gap-4">
+        <div className="flex items-center gap-4">
+          {headerContent && <div>{headerContent}</div>}
+          {enableGlobalSearch && (
+            <div className="relative w-80">
+              <FontAwesomeIcon
+                icon={faMagnifyingGlass}
+                className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
+              />
+              <input
+                type="text"
+                placeholder="Example text"
+                value={globalSearch}
+                onChange={(e) => handleGlobalSearchChange(e.target.value)}
+                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              />
+            </div>
+          )}
+        </div>
         <Button variant="secondary" size="small" onClick={handleReset}>
           Reset Table
         </Button>
       </div>
-      <div className="overflow-x-scroll">
+      <div className="bg-white rounded-lg border-2 border-gray-300">
+      <div className="overflow-x-auto">
         <table
-          className={`w-full divide-y divide-gray-200 rounded border-t border-l border-r border-navBorder ${explicitSizing ? "table-fixed" : ""}`}
+          className={`w-full ${explicitSizing ? "table-fixed" : ""}`}
         >
           <TableHeader
             table={table}
@@ -229,70 +265,78 @@ export const Table = <T extends ZevaObject>({
             filterOnApply={true}
             onFilterApply={handleFilterApply}
           />
-          <tbody className="bg-white divide-y divide-gray-200">
-            {table.getRowModel().rows.map((row) => (
-              <tr
-                key={row.id}
-                className={
-                  navigationAction
-                    ? "hover:bg-gray-200 transition-colors cursor-pointer"
-                    : ""
-                }
-                onClick={() => handleNavigation(row.original.id)}
-              >
-                {row.getVisibleCells().map((cell) => (
-                  <td
-                    key={cell.id}
-                    className={`px-6 py-4 whitespace-nowrap ${explicitSizing ? "truncate" : ""}`}
-                    style={
-                      explicitSizing
-                        ? { width: cell.column.getSize() }
-                        : undefined
-                    }
-                  >
-                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                  </td>
-                ))}
-              </tr>
-            ))}
+          <tbody className="bg-white divide-y divide-gray-100">
+            {table.getRowModel().rows.map((row, index) => {
+              const isEven = index % 2 === 0;
+              return (
+                <tr
+                  key={row.id}
+                  className={`${isEven ? "bg-white" : "bg-gray-50"} ${
+                    navigationAction
+                      ? "hover:bg-blue-50 transition-colors cursor-pointer"
+                      : ""
+                  }`}
+                  onClick={() => handleNavigation(row.original.id)}
+                >
+                  {row.getVisibleCells().map((cell) => (
+                    <td
+                      key={cell.id}
+                      className={`px-6 py-4 text-sm text-gray-900 ${explicitSizing ? "truncate" : ""}`}
+                      style={
+                        explicitSizing
+                          ? { width: cell.column.getSize() }
+                          : undefined
+                      }
+                    >
+                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                    </td>
+                  ))}
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>
-      <div className="flex items-center justify-center bg-navBorder w-full rounded p-2">
-        <FontAwesomeIcon
-          icon={faAngleLeft}
-          onClick={() => {
-            handlePageNav("prev");
-          }}
-          className="mr-2 text-defaultTextBlack cursor-pointer"
-        />
-        <span className="text-sm text-gray-700">
-          Page{" "}
-          {
-            <select
-              value={currentPage}
-              onChange={(event) => {
-                handlePageChange(event.target.value);
-              }}
-            >
-              {pageOptionsJSX}
-            </select>
-          }{" "}
-          of {numberOfPages}
-        </span>
-        <FontAwesomeIcon
-          icon={faAngleRight}
-          onClick={() => {
-            handlePageNav("next");
-          }}
-          className="ml-2 text-defaultTextBlack cursor-pointer"
-        />
-        <span className="ml-3">
+      <div className="flex items-center justify-between bg-gray-50 border-t border-gray-300 px-6 py-3">
+        <button
+          onClick={() => handlePageNav("prev")}
+          disabled={currentPage <= 1}
+          className={`flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-md ${
+            currentPage > 1
+              ? "text-white bg-primaryBlue hover:bg-primaryBlueHover"
+              : "text-gray-400 bg-gray-200 cursor-not-allowed"
+          }`}
+        >
+          <FontAwesomeIcon icon={faAngleLeft} />
+          Previous Page
+        </button>
+        
+        <div className="flex items-center gap-2">
+          {pageNumbers.map((page) => {
+            const isCurrentPage = currentPage === page;
+            return (
+              <button
+                key={page}
+                onClick={() => handlePageChange(page.toString())}
+                className={`min-w-[40px] h-[40px] px-3 py-2 text-sm font-semibold rounded-md ${
+                  isCurrentPage
+                    ? "bg-primaryBlue text-white"
+                    : "text-gray-700 bg-white hover:bg-gray-100 border border-gray-300"
+                }`}
+              >
+                {page}
+              </button>
+            );
+          })}
+        </div>
+
+        <div className="flex items-center gap-3">
           <select
             value={currentPageSize}
             onChange={(e) => {
               handlePageSizeChange(e.target.value);
             }}
+            className="px-3 py-2 text-sm font-medium bg-white border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
             {[5, 10, 25, 50, 100].map((pageSize) => {
               return (
@@ -302,8 +346,21 @@ export const Table = <T extends ZevaObject>({
               );
             })}
           </select>
-        </span>
+          <button
+            onClick={() => handlePageNav("next")}
+            disabled={currentPage >= numberOfPages}
+            className={`flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-md ${
+              currentPage < numberOfPages
+                ? "text-white bg-primaryBlue hover:bg-primaryBlueHover"
+                : "text-gray-400 bg-gray-200 cursor-not-allowed"
+            }`}
+          >
+            Next Page
+            <FontAwesomeIcon icon={faAngleRight} />
+          </button>
+        </div>
       </div>
     </div>
+  </div>
   );
 };

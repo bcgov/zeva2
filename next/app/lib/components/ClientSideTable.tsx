@@ -15,7 +15,7 @@ import {
 import { Button } from "./inputs";
 import { TableHeader } from "./TableHeader";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faAngleLeft, faAngleRight } from "@fortawesome/free-solid-svg-icons";
+import { faAngleLeft, faAngleRight, faMagnifyingGlass } from "@fortawesome/free-solid-svg-icons";
 
 interface IClientSideTableProps<T> {
   columns: ColumnDef<T, any>[];
@@ -25,10 +25,12 @@ interface IClientSideTableProps<T> {
   stackHeaderContents?: boolean;
   enableFiltering?: boolean;
   enableSorting?: boolean;
+  enableGlobalSearch?: boolean;
   initialPageSize?: number;
   customStyles?: {
     container?: string;
     headerSection?: string;
+    searchSection?: string;
     tableWrapper?: string;
     table?: string;
     thead?: string;
@@ -40,6 +42,7 @@ interface IClientSideTableProps<T> {
     pagination?: string;
   };
   hideResetButton?: boolean;
+  title?: string;
   headerContent?: React.ReactNode;
 }
 
@@ -55,15 +58,18 @@ export const ClientSideTable = <T extends ZevaObject>({
   stackHeaderContents,
   enableFiltering = false,
   enableSorting = false,
+  enableGlobalSearch = false,
   initialPageSize = 10,
   customStyles,
   hideResetButton = false,
+  title,
   headerContent,
 }: IClientSideTableProps<T>) => {
   const [sorting, setSorting] = React.useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
     [],
   );
+  const [globalFilter, setGlobalFilter] = React.useState("");
   const [pagination, setPagination] = React.useState({
     pageIndex: 0,
     pageSize: initialPageSize,
@@ -75,10 +81,12 @@ export const ClientSideTable = <T extends ZevaObject>({
     state: {
       sorting,
       columnFilters,
+      globalFilter,
       pagination,
     },
     onSortingChange: setSorting,
     onColumnFiltersChange: setColumnFilters,
+    onGlobalFilterChange: setGlobalFilter,
     onPaginationChange: setPagination,
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
@@ -95,6 +103,7 @@ export const ClientSideTable = <T extends ZevaObject>({
   const handleReset = () => {
     setSorting([]);
     setColumnFilters([]);
+    setGlobalFilter("");
     setPagination({
       pageIndex: 0,
       pageSize: initialPageSize,
@@ -102,26 +111,44 @@ export const ClientSideTable = <T extends ZevaObject>({
   };
 
   return (
-    <div
-      className={
-        customStyles?.container || "bg-white rounded-lg shadow-level-1 p-4"
-      }
-    >
-      {headerContent && (
-        <div className={customStyles?.headerSection || ""}>{headerContent}</div>
-      )}
-      {!hideResetButton && (
-        <div className="flex flex-row-reverse">
-          <Button variant="secondary" size="small" onClick={handleReset}>
-            Reset Table
-          </Button>
+    <div>
+      {(title || headerContent || enableGlobalSearch || !hideResetButton) && (
+        <div className="mb-4 flex items-center justify-between gap-4">
+          <div className="flex items-center gap-4">
+            {headerContent && <div>{headerContent}</div>}
+            {enableGlobalSearch && (
+              <div className="relative w-80">
+                <FontAwesomeIcon
+                  icon={faMagnifyingGlass}
+                  className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
+                />
+                <input
+                  type="text"
+                  placeholder="Example text"
+                  value={globalFilter}
+                  onChange={(e) => setGlobalFilter(e.target.value)}
+                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                />
+              </div>
+            )}
+          </div>
+          {!hideResetButton && (
+            <Button variant="secondary" size="small" onClick={handleReset}>
+              Reset Table
+            </Button>
+          )}
         </div>
       )}
-      <div className={customStyles?.tableWrapper || "overflow-x-scroll"}>
+      <div
+        className={
+          customStyles?.container || "bg-white rounded-lg border-2 border-gray-300"
+        }
+      >
+      <div className={customStyles?.tableWrapper || "overflow-x-auto"}>
         <table
           className={
             customStyles?.table ||
-            `w-full divide-y divide-gray-200 rounded border-t border-l border-r border-navBorder ${explicitSizing ? "table-fixed" : ""}`
+            `w-full ${explicitSizing ? "table-fixed" : ""}`
           }
         >
           <TableHeader
@@ -164,15 +191,18 @@ export const ClientSideTable = <T extends ZevaObject>({
           />
           <tbody
             className={
-              customStyles?.tbody || "bg-white divide-y divide-gray-200"
+              customStyles?.tbody || "bg-white divide-y divide-gray-100"
             }
           >
-            {table.getRowModel().rows.map((row) => {
+            {table.getRowModel().rows.map((row, index) => {
+              const isEven = index % 2 === 0;
               const rowClassName =
                 customStyles?.tbodyTr ||
-                (navigationAction
-                  ? "hover:bg-gray-200 transition-colors cursor-pointer"
-                  : "");
+                `${isEven ? "bg-white" : "bg-gray-50"} ${
+                  navigationAction
+                    ? "hover:bg-blue-50 transition-colors cursor-pointer"
+                    : ""
+                }`;
 
               return (
                 <tr
@@ -186,7 +216,7 @@ export const ClientSideTable = <T extends ZevaObject>({
                         key={cell.id}
                         className={
                           customStyles?.tbodyTd ||
-                          `px-6 py-4 whitespace-nowrap ${explicitSizing ? "truncate" : ""}`
+                          `px-6 py-4 text-sm text-gray-900 ${explicitSizing ? "truncate" : ""}`
                         }
                         style={
                           explicitSizing
@@ -210,58 +240,48 @@ export const ClientSideTable = <T extends ZevaObject>({
       <div
         className={
           customStyles?.pagination ||
-          "flex items-center justify-center bg-navBorder w-full rounded p-2"
+          "flex items-center justify-between bg-gray-50 border-t border-gray-300 px-6 py-3"
         }
       >
-        <FontAwesomeIcon
-          icon={faAngleLeft}
+        <button
           onClick={() => table.previousPage()}
-          className={`mr-2 cursor-pointer ${
+          disabled={!table.getCanPreviousPage()}
+          className={`flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-md ${
             table.getCanPreviousPage()
-              ? "text-defaultTextBlack"
-              : "text-gray-400"
+              ? "text-white bg-primaryBlue hover:bg-primaryBlueHover"
+              : "text-gray-400 bg-gray-200 cursor-not-allowed"
           }`}
-          style={{
-            pointerEvents: table.getCanPreviousPage() ? "auto" : "none",
-          }}
-        />
-        <span className="text-sm text-gray-700">
-          Page{" "}
-          {
-            <select
-              value={table.getState().pagination.pageIndex + 1}
-              onChange={(event) => {
-                table.setPageIndex(Number(event.target.value) - 1);
-              }}
-            >
-              {Array.from(
-                { length: table.getPageCount() },
-                (_, i) => i + 1,
-              ).map((page) => (
-                <option key={page} value={page}>
-                  {page}
-                </option>
-              ))}
-            </select>
-          }{" "}
-          of {table.getPageCount()}
-        </span>
-        <FontAwesomeIcon
-          icon={faAngleRight}
-          onClick={() => table.nextPage()}
-          className={`ml-2 cursor-pointer ${
-            table.getCanNextPage() ? "text-defaultTextBlack" : "text-gray-400"
-          }`}
-          style={{
-            pointerEvents: table.getCanNextPage() ? "auto" : "none",
-          }}
-        />
-        <span className="ml-3">
+        >
+          <FontAwesomeIcon icon={faAngleLeft} />
+          Previous Page
+        </button>
+        
+        <div className="flex items-center gap-2">
+          {Array.from({ length: table.getPageCount() }, (_, i) => i + 1).map((page) => {
+            const isCurrentPage = table.getState().pagination.pageIndex + 1 === page;
+            return (
+              <button
+                key={page}
+                onClick={() => table.setPageIndex(page - 1)}
+                className={`min-w-[40px] h-[40px] px-3 py-2 text-sm font-semibold rounded-md ${
+                  isCurrentPage
+                    ? "bg-primaryBlue text-white"
+                    : "text-gray-700 bg-white hover:bg-gray-100 border border-gray-300"
+                }`}
+              >
+                {page}
+              </button>
+            );
+          })}
+        </div>
+
+        <div className="flex items-center gap-3">
           <select
             value={table.getState().pagination.pageSize}
             onChange={(e) => {
               table.setPageSize(Number(e.target.value));
             }}
+            className="px-3 py-2 text-sm font-medium bg-white border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
             {[5, 10, 25, 50, 100].map((pageSize) => {
               return (
@@ -271,8 +291,21 @@ export const ClientSideTable = <T extends ZevaObject>({
               );
             })}
           </select>
-        </span>
+          <button
+            onClick={() => table.nextPage()}
+            disabled={!table.getCanNextPage()}
+            className={`flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-md ${
+              table.getCanNextPage()
+                ? "text-white bg-primaryBlue hover:bg-primaryBlueHover"
+                : "text-gray-400 bg-gray-200 cursor-not-allowed"
+            }`}
+          >
+            Next Page
+            <FontAwesomeIcon icon={faAngleRight} />
+          </button>
+        </div>
       </div>
     </div>
+  </div>
   );
 };
