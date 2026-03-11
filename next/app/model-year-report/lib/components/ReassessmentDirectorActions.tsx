@@ -12,6 +12,7 @@ import { Routes } from "@/app/lib/constants";
 export const ReassessmentDirectorActions = (props: {
   reassessmentId: number;
   status: ReassessmentStatus;
+  myrId?: number;
 }) => {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -29,14 +30,18 @@ export const ReassessmentDirectorActions = (props: {
         if (response.responseType === "error") {
           throw new Error(response.message);
         }
-        router.push(Routes.LegacyReassessments);
+        if (props.myrId) {
+          router.push(`${Routes.ComplianceReporting}/${props.myrId}`);
+        } else {
+          router.push(Routes.LegacyReassessments);
+        }
       } catch (e) {
         if (e instanceof Error) {
           setError(e.message);
         }
       }
     });
-  }, [props.reassessmentId, comment]);
+  }, [props.reassessmentId, props.myrId, comment]);
 
   const handleIssueReassessment = useCallback(() => {
     setError("");

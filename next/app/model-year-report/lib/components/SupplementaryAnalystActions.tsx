@@ -117,7 +117,7 @@ export const SupplementaryAnalystActions = (props: {
               onClick={handleGoToEditSuppReassessment}
               disabled={isPending}
             >
-              {isPending ? "..." : "Edit Supplementary Reassessment"}
+              {isPending ? "..." : "Edit Associated Reassessment"}
             </Button>
             <Button
               variant="primary"
@@ -133,7 +133,7 @@ export const SupplementaryAnalystActions = (props: {
             onClick={handleGoToCreateSuppReassessment}
             disabled={isPending}
           >
-            {isPending ? "..." : "Create Supplementary Reassessment"}
+            {isPending ? "..." : "Create Associated Reassessment"}
           </Button>
         )}
       </div>

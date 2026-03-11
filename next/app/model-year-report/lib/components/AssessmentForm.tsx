@@ -346,7 +346,7 @@ export const AssessmentForm = (
           break;
         case "legacyNewSuppReassessment":
           if (suppId) {
-            await createOrSaveSupplementaryReassessment(
+            response = await createOrSaveSupplementaryReassessment(
               suppId,
               assessmentBase64,
             );
@@ -354,7 +354,7 @@ export const AssessmentForm = (
           break;
         case "nonLegacyNewSuppReassessment":
           if (suppId) {
-            await createOrSaveSupplementaryReassessment(
+            response = await createOrSaveSupplementaryReassessment(
               suppId,
               assessmentBase64,
             );
@@ -362,7 +362,7 @@ export const AssessmentForm = (
           break;
         case "legacySavedSuppReassessment":
           if (suppId) {
-            await createOrSaveSupplementaryReassessment(
+            response = await createOrSaveSupplementaryReassessment(
               suppId,
               assessmentBase64,
             );
@@ -370,7 +370,7 @@ export const AssessmentForm = (
           break;
         case "nonLegacySavedSuppReassessment":
           if (suppId) {
-            await createOrSaveSupplementaryReassessment(
+            response = await createOrSaveSupplementaryReassessment(
               suppId,
               assessmentBase64,
             );

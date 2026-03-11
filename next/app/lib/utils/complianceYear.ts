@@ -8,10 +8,11 @@ import {
 // and where certain env vars are defined.
 
 export const getComplianceYear = (date: Date) => {
-  // any year will do
-  const complianceDate = new Date(`2019-${process.env.END_OF_COMPLIANCE_YEAR}`);
   let year = date.getFullYear();
-  if (date.getMonth() <= complianceDate.getMonth()) {
+  const complianceDate = new Date(
+    `${year.toString()}-${process.env.BEGINNING_OF_COMPLIANCE_YEAR}`,
+  );
+  if (date < complianceDate) {
     year = year - 1;
   }
   const modelYearsMap = getStringsToModelYearsEnumsMap();

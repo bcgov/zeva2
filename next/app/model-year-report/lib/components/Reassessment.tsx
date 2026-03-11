@@ -33,6 +33,7 @@ export const Reassessment = async (props: {
       <ReassessmentDirectorActions
         reassessmentId={props.reassessmentId}
         status={props.status}
+        myrId={props.myrId}
       />
     );
   }

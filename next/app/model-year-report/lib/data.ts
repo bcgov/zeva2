@@ -406,7 +406,7 @@ export const getSupplementaryReport = async (suppId: number) => {
       },
       supplementaryReportReassessment: {
         select: {
-          id: true,
+          objectName: true,
         },
       },
     },

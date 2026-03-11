@@ -183,8 +183,8 @@ export const Adjustments = (props: {
                         value >= ModelYear.MY_2019 &&
                         value <= ModelYear.MY_2035,
                     )
-                    .map(([key, value]) => (
-                      <option key={value} value={value}>
+                    .map(([key]) => (
+                      <option key={key} value={key}>
                         {key}
                       </option>
                     ))}

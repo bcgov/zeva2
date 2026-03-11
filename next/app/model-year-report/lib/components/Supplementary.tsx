@@ -15,6 +15,7 @@ import { SystemDetails } from "./SystemDetails";
 import { getMyrStatusEnumsToStringsMap } from "@/app/lib/utils/enumMaps";
 import { mapOfStatusToSupplierStatus } from "../constants";
 import { AssessmentDetails } from "./AssessmentDetails";
+import { SupplementaryDirectorActions } from "./SupplementaryDirectorActions";
 
 // used for both legacy and non-legacy supplementaries
 export const Supplementary = async (props: {
@@ -27,21 +28,29 @@ export const Supplementary = async (props: {
 }) => {
   const { userIsGov, userRoles } = await getUserInfo();
   let statusToUse = props.status;
+  if (!userIsGov) {
+    statusToUse = mapOfStatusToSupplierStatus[props.status];
+  }
   let actionComponent: JSX.Element | null = null;
   if (userIsGov) {
     if (userRoles.includes(Role.DIRECTOR)) {
+      actionComponent = (
+        <SupplementaryDirectorActions
+          suppId={props.suppId}
+          status={statusToUse}
+        />
+      );
     } else if (userRoles.includes(Role.ZEVA_IDIR_USER)) {
       actionComponent = (
         <SupplementaryAnalystActions
           suppId={props.suppId}
-          status={props.status}
+          status={statusToUse}
           suppReassessmentExists={props.suppReassessmentExists}
           myrId={props.myrId}
         />
       );
     }
   } else {
-    statusToUse = mapOfStatusToSupplierStatus[statusToUse];
     actionComponent = (
       <SupplementarySupplierActions
         suppId={props.suppId}
@@ -73,7 +82,7 @@ export const Supplementary = async (props: {
       </ContentCard>
       <ContentCard title="The Associated Reassessment">
         <Suspense fallback={<LoadingSkeleton />}>
-          <AssessmentDetails type="assessment" id={props.suppId} />
+          <AssessmentDetails type="suppReassessment" id={props.suppId} />
         </Suspense>
       </ContentCard>
       <ContentCard title="Actions">

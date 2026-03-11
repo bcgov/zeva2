@@ -52,13 +52,11 @@ import {
 } from "./utilsServer";
 import { prisma } from "@/lib/prisma";
 import {
-  getAdjacentYear,
   getComplianceDate,
   getModelYearReportModelYear,
 } from "@/app/lib/utils/complianceYear";
 import { addJobToEmailQueue } from "@/app/lib/services/queue";
 import { Buffer } from "node:buffer";
-import { getModelYearEnumsToStringsMap } from "@/app/lib/utils/enumMaps";
 
 export type NvValues = Partial<Record<VehicleClass, string>>;
 
@@ -324,6 +322,13 @@ export const deleteReports = async (
     return getErrorActionResponse("Invalid Action!");
   }
   await prisma.$transaction(async (tx) => {
+    await tx.supplementaryReportAttachment.deleteMany({
+      where: {
+        supplementaryReport: {
+          modelYearReportId: myrId,
+        }
+      }
+    });
     await tx.supplementaryReportHistory.deleteMany({
       where: {
         supplementaryReport: {
@@ -331,10 +336,22 @@ export const deleteReports = async (
         },
       },
     });
+    await tx.supplementaryReportReassessment.deleteMany({
+      where: {
+        supplementaryReport: {
+          modelYearReportId: myrId,
+        }
+      }
+    });
     await tx.supplementaryReport.deleteMany({
       where: {
         modelYearReportId: myrId,
       },
+    });
+    await tx.modelYearReportAttachment.deleteMany({
+      where: {
+        modelYearReportId: myrId,
+      }
     });
     await tx.modelYearReportHistory.deleteMany({
       where: {
@@ -502,14 +519,6 @@ export const submitAssessment = async (
     },
   });
   if (!myr) {
-    return getErrorActionResponse("Invalid Action!");
-  }
-  const modelYearsMap = getModelYearEnumsToStringsMap();
-  const year = modelYearsMap[getAdjacentYear("next", myr.modelYear)];
-  if (!year) {
-    return getErrorActionResponse("Unexpected Error!");
-  }
-  if (new Date() < new Date(`${year}-${10}-${21}T00:00:00`)) {
     return getErrorActionResponse("Invalid Action!");
   }
   await prisma.$transaction(async (tx) => {
@@ -1073,7 +1082,9 @@ export const deleteSupplementary = async (
     where: {
       id: supplementaryId,
       organizationId: userOrgId,
-      status: ModelYearReportStatus.DRAFT,
+      status: {
+        in: [ModelYearReportStatus.DRAFT, ModelYearReportStatus.RETURNED_TO_SUPPLIER]
+      }
     },
     select: {
       id: true,
