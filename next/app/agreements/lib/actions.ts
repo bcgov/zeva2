@@ -12,13 +12,7 @@ import {
   VehicleClass,
   ZevClass,
 } from "@/prisma/generated/enums";
-import { getPresignedGetObjectUrl } from "@/app/lib/minio";
-import {
-  Attachment,
-  AttachmentDownload,
-  checkAttachments,
-  getPutObjectData,
-} from "@/app/lib/services/attachments";
+import { getPresignedGetObjectUrl } from "@/app/lib/services/s3";
 import {
   DataOrErrorActionResponse,
   ErrorOrSuccessActionResponse,
@@ -26,13 +20,19 @@ import {
   getErrorActionResponse,
   getSuccessActionResponse,
 } from "@/app/lib/utils/actionResponse";
-import { createHistory, updateAttachments } from "./services";
+import {
+  createAttachments,
+  createHistory,
+  deleteAttachments,
+} from "./services";
 import { getCreditsSum } from "./utilsServer";
 import { validateDate } from "@/app/lib/utils/date";
 import {
   AgreementAttachmentWhereInput,
   ZevUnitTransactionCreateManyInput,
 } from "@/prisma/generated/models";
+import { Directory, getAttachmentPutData } from "@/app/lib/services/s3";
+import { Attachment, AttachmentDownload } from "@/app/lib/constants/attachment";
 
 export type AgreementContentPayload = {
   vehicleClass: VehicleClass;
@@ -46,20 +46,8 @@ export type AgreementPutObjectData = {
   url: string;
 };
 
-export const getVehicleAttachmentsPutData = async (
-  numberOfFiles: number,
-  organizationId: number,
-): Promise<DataOrErrorActionResponse<AgreementPutObjectData[]>> => {
-  const { userIsGov } = await getUserInfo();
-  if (!userIsGov) {
-    return getErrorActionResponse("Unauthorized!");
-  }
-  const putObjectData = await getPutObjectData(
-    numberOfFiles,
-    "agreement",
-    organizationId,
-  );
-  return getDataActionResponse(putObjectData);
+export const getAgreementAttachmentsPutData = async (numberOfFiles: number) => {
+  return await getAttachmentPutData(Directory.Agreement, numberOfFiles);
 };
 
 export const getAgreementAttachmentDownloadUrls = async (
@@ -68,7 +56,6 @@ export const getAgreementAttachmentDownloadUrls = async (
   const { userIsGov, userOrgId } = await getUserInfo();
   const whereClause: AgreementAttachmentWhereInput = {
     agreementId,
-    fileName: { not: null },
   };
   if (!userIsGov) {
     whereClause.agreement = {
@@ -107,11 +94,6 @@ export const createAgreement = async (
   if (!userIsGov || !userRoles.includes(Role.ZEVA_IDIR_USER)) {
     return getErrorActionResponse("Unauthorized!");
   }
-  try {
-    await checkAttachments(attachments, "agreement", organizationId);
-  } catch {
-    return getErrorActionResponse("Attachments Error!");
-  }
   const { aCredits, bCredits } = getCreditsSum(content);
   await prisma.agreementContent.createMany({
     data: [],
@@ -133,7 +115,7 @@ export const createAgreement = async (
         return { agreementId, ...record };
       }),
     });
-    await updateAttachments(agreementId, attachments);
+    await createAttachments(agreementId, attachments, tx);
   });
   return getDataActionResponse(agreementId);
 };
@@ -159,19 +141,10 @@ export const saveAgreement = async (
   if (!agreement) {
     return getErrorActionResponse("Invalid Action!");
   }
-  try {
-    await checkAttachments(attachments, "agreement", agreement.organizationId);
-  } catch {
-    return getErrorActionResponse("Attachments Error!");
-  }
   const { aCredits, bCredits } = getCreditsSum(content);
   await prisma.$transaction(async (tx) => {
-    await tx.agreementAttachment.deleteMany({
-      where: {
-        agreementId,
-      },
-    });
-    await updateAttachments(agreementId, attachments);
+    await deleteAttachments(agreementId, tx);
+    await createAttachments(agreementId, attachments, tx);
     await tx.agreementContent.deleteMany({
       where: {
         agreementId,

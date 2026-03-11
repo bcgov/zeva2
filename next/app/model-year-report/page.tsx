@@ -1,6 +1,5 @@
 import { Suspense } from "react";
 import { LoadingSkeleton } from "../lib/components/skeletons";
-import { getPageParams, pageStringParams } from "../lib/utils/nextPage";
 import { getUserInfo } from "@/auth";
 import Link from "next/link";
 import { Button } from "../lib/components";
@@ -9,11 +8,8 @@ import { getModelYearReportModelYear } from "../lib/utils/complianceYear";
 import { modelYearReportExists } from "./lib/data";
 import { ReportsList } from "./lib/components/ReportsList";
 
-const Page = async (props: { searchParams?: Promise<pageStringParams> }) => {
+const Page = async () => {
   const { userIsGov } = await getUserInfo();
-  const searchParams = await props.searchParams;
-  const { page, pageSize, filters, sorts } = getPageParams(searchParams, 1, 10);
-
   let canSubmitReport = false;
   if (!userIsGov) {
     const modelYear = getModelYearReportModelYear();
@@ -22,7 +18,6 @@ const Page = async (props: { searchParams?: Promise<pageStringParams> }) => {
       canSubmitReport = true;
     }
   }
-
   return (
     <Suspense key={Date.now()} fallback={<LoadingSkeleton />}>
       {canSubmitReport && (
@@ -30,12 +25,7 @@ const Page = async (props: { searchParams?: Promise<pageStringParams> }) => {
           <Button variant="primary">Submit a Model Year Report</Button>
         </Link>
       )}
-      <ReportsList
-        page={page}
-        pageSize={pageSize}
-        filters={filters}
-        sorts={sorts}
-      />
+      <ReportsList />
     </Suspense>
   );
 };

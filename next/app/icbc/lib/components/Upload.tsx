@@ -25,12 +25,11 @@ export const Upload = () => {
         }
         const file = files[0];
         const getPutResponse = await getPutObjectData();
-        if (getPutResponse.responseType === "error") {
-          throw new Error(getPutResponse.message);
-        }
-        const objectName = getPutResponse.data.objectName;
-        const url = getPutResponse.data.url;
-        await axios.put(url, file);
+        const objectName = getPutResponse.objectName;
+        const url = getPutResponse.url;
+        await axios.put(url, file, {
+          headers: { "if-none-match": "*" },
+        });
         const createResponse = await createIcbcFile(objectName, datestring);
         if (createResponse.responseType === "error") {
           throw new Error(createResponse.message);
@@ -53,7 +52,7 @@ export const Upload = () => {
         </label>
         <input
           name="date"
-          type="text"
+          type="date"
           placeholder="YYYY-MM-DD"
           onChange={(e) => {
             setDatestring(e.target.value);

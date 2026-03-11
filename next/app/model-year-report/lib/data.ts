@@ -3,7 +3,6 @@ import { prisma } from "@/lib/prisma";
 import {
   ModelYear,
   ModelYearReportStatus,
-  ModelYearReportSupplierStatus,
   ReassessmentStatus,
   Role,
   SupplierClass,
@@ -13,7 +12,6 @@ import {
   ModelYearReportWhereUniqueInput,
   ModelYearReportHistoryWhereInput,
   ModelYearReportWhereInput,
-  ModelYearReportSelect,
   ReassessmentWhereUniqueInput,
   ReassessmentHistoryWhereInput,
   ReassessmentWhereInput,
@@ -21,10 +19,10 @@ import {
   SupplementaryReportHistoryWhereInput,
   SupplementaryReportWhereInput,
 } from "@/prisma/generated/models";
-import { getOrderByClause, getWhereClause } from "./utilsServer";
-import { getObject } from "@/app/lib/minio";
+import { getObjectAsBuffer } from "@/app/lib/services/s3";
 import { getSupplierDetails, getVehicleStatistics } from "./services";
 import { getAddressAsString } from "./utils";
+import { MyrRecord } from "./constants";
 
 export const modelYearReportExists = async (modelYear: ModelYear) => {
   const { userOrgId } = await getUserInfo();
@@ -96,7 +94,11 @@ export const getMyrHistory = async (myrId: number) => {
       organizationId: userOrgId,
     };
     whereClause.userAction = {
-      in: Object.values(ModelYearReportSupplierStatus),
+      in: [
+        ModelYearReportStatus.ASSESSED,
+        ModelYearReportStatus.RETURNED_TO_SUPPLIER,
+        ModelYearReportStatus.SUBMITTED_TO_GOVERNMENT,
+      ],
     };
   }
   return await prisma.modelYearReportHistory.findMany({
@@ -156,7 +158,6 @@ export const getModelYearReportDetails = async (id: number) => {
         },
       },
       status: true,
-      supplierStatus: true,
       objectName: true,
       forecastReportObjectName: true,
       modelYear: true,
@@ -165,63 +166,22 @@ export const getModelYearReportDetails = async (id: number) => {
   if (!myr) {
     return null;
   }
-  const myrFile = await getObject(myr.objectName);
-  const forecastFile = await getObject(myr.forecastReportObjectName);
+  const myrFile = await getObjectAsBuffer(myr.objectName);
+  const forecastFile = await getObjectAsBuffer(myr.forecastReportObjectName);
   return {
     status: myr.status,
-    supplierStatus: myr.supplierStatus,
     myrFile,
     forecastFile,
     modelYear: myr.modelYear,
   };
 };
 
-export type MyrSparse = {
-  id: number;
-  modelYear: ModelYear;
-  status: ModelYearReportStatus;
-  supplierStatus: ModelYearReportSupplierStatus;
-  reassessmentStatus: ReassessmentStatus | null;
-  supplementaryReportStatus: SupplementaryReportStatus | null;
-  organization?: {
-    name: string;
-  };
-  compliant: boolean | null;
-  reportableNvValue: number | null;
-  supplierClass: SupplierClass | null;
-};
-
-export const getModelYearReports = async (
-  page: number,
-  pageSize: number,
-  filters: Record<string, string>,
-  sorts: Record<string, string>,
-): Promise<[MyrSparse[], number]> => {
+export const getModelYearReports = async (): Promise<MyrRecord[]> => {
   const { userIsGov, userOrgId, userRoles } = await getUserInfo();
-  const skip = (page - 1) * pageSize;
-  const take = pageSize;
-
-  const where: ModelYearReportWhereInput = getWhereClause(filters, userIsGov);
-  const orderBy = getOrderByClause(sorts, true, userIsGov);
-  const select: ModelYearReportSelect = {
-    id: true,
-    modelYear: true,
-    status: true,
-    supplierStatus: true,
-    reassessmentStatus: true,
-    supplementaryReportStatus: true,
-    compliant: true,
-    reportableNvValue: true,
-    supplierClass: true,
-  };
+  const whereClause: ModelYearReportWhereInput = {};
   if (userIsGov) {
-    select.organization = {
-      select: {
-        name: true,
-      },
-    };
     if (userRoles.includes(Role.DIRECTOR)) {
-      where.NOT = {
+      whereClause.NOT = {
         status: {
           in: [
             ModelYearReportStatus.DRAFT,
@@ -232,7 +192,7 @@ export const getModelYearReports = async (
         },
       };
     } else {
-      where.NOT = {
+      whereClause.NOT = {
         status: {
           in: [
             ModelYearReportStatus.DRAFT,
@@ -242,20 +202,43 @@ export const getModelYearReports = async (
       };
     }
   } else {
-    where.organizationId = userOrgId;
+    whereClause.organizationId = userOrgId;
   }
-  return await prisma.$transaction([
-    prisma.modelYearReport.findMany({
-      skip,
-      take,
-      select,
-      where,
-      orderBy,
-    }),
-    prisma.modelYearReport.count({
-      where,
-    }),
-  ]);
+  return await prisma.modelYearReport.findMany({
+    where: whereClause,
+    select: {
+      id: true,
+      modelYear: true,
+      status: true,
+      compliant: true,
+      reportableNvValue: true,
+      supplierClass: true,
+      organization: {
+        select: {
+          name: true,
+        },
+      },
+      reassessments: {
+        select: {
+          status: true,
+        },
+        orderBy: {
+          sequenceNumber: "desc",
+        },
+      },
+      supplementaryReports: {
+        select: {
+          status: true,
+        },
+        orderBy: {
+          sequenceNumber: "desc",
+        },
+      },
+    },
+    orderBy: {
+      id: "desc",
+    },
+  });
 };
 
 export const getAssessment = async (myrId: number) => {

@@ -11,10 +11,6 @@ import {
   ZevClass,
 } from "@/prisma/generated/enums";
 import { SortOrderInput } from "@/prisma/generated/commonInputTypes";
-import {
-  ModelYearReportWhereInput,
-  ModelYearReportOrderByWithRelationInput,
-} from "@/prisma/generated/models";
 import { AdjustmentPayload, NvValues } from "./actions";
 import {
   specialComplianceRatios,
@@ -26,22 +22,21 @@ import {
   UnexpectedDebit,
   ZevUnitRecord,
 } from "@/lib/utils/zevUnit";
-import { IsCompliant, ReportSubDirectory } from "./constants";
+import {
+  IsCompliant,
+  mapOfStatusToSupplierStatus,
+  MyrRecord,
+  MyrRecordSerialized,
+} from "./constants";
 import { penaltyRates } from "@/app/lib/constants/penaltyRate";
 import { isVehicleClass, isZevClass } from "@/app/lib/utils/typeGuards";
 import {
-  getMatchingTerms,
   getStringsToBalanceTypeEnumsMap,
   getStringsToModelYearsEnumsMap,
-  getStringsToMyrStatusEnumsMap,
-  getStringsToMyrSupplierStatusEnumsMap,
-  getStringsToReassessmentStatusEnumsMap,
-  getStringsToSupplementaryReportStatusEnumsMap,
   getStringsToSupplierClassEnumsMap,
   getStringsToVehicleClassEnumsMap,
   getStringsToZevClassEnumsMap,
 } from "@/app/lib/utils/enumMaps";
-import { MyrSparse } from "./data";
 import { randomUUID } from "crypto";
 import { Workbook } from "exceljs";
 import {
@@ -50,6 +45,7 @@ import {
   FileZevUnitRecord,
   parseAssessment,
 } from "./utils";
+import { Directory } from "@/app/lib/services/s3";
 
 export const validatePrevBalanceTransactions = (
   transactions: ZevUnitRecord[],
@@ -226,15 +222,15 @@ export const getReportFullObjectName = (
   const objectName = randomUUID();
   switch (type) {
     case "myr":
-      return `${ReportSubDirectory.ModelYearReport}/${objectName}`;
+      return `${Directory.ModelYearReport}/${objectName}`;
     case "forecast":
-      return `${ReportSubDirectory.Forecast}/${objectName}`;
+      return `${Directory.Forecast}/${objectName}`;
     case "assessment":
-      return `${ReportSubDirectory.Assessment}/${objectName}`;
+      return `${Directory.Assessment}/${objectName}`;
     case "reassessment":
-      return `${ReportSubDirectory.Reassessment}/${objectName}`;
+      return `${Directory.Reassessment}/${objectName}`;
     case "supplementary":
-      return `${ReportSubDirectory.Supplementary}/${objectName}`;
+      return `${Directory.Supplementary}/${objectName}`;
   }
 };
 
@@ -376,177 +372,38 @@ export const getPenalty = (
   return penalty.toFixed(2);
 };
 
-export const getWhereClause = (
-  filters: Record<string, string>,
-  userIsGov: boolean,
-): Omit<ModelYearReportWhereInput, "NOT"> => {
-  const result: Omit<ModelYearReportWhereInput, "NOT"> = {};
-  const orClausesToAnd: { OR: ModelYearReportWhereInput[] }[] = [];
-  const modelYearsMap = getStringsToModelYearsEnumsMap();
-  const statusMap = getStringsToMyrStatusEnumsMap();
-  const supplierStatusMap = getStringsToMyrSupplierStatusEnumsMap();
-  const reassessmentStatusMap = getStringsToReassessmentStatusEnumsMap();
-  const supplementaryStatusMap =
-    getStringsToSupplementaryReportStatusEnumsMap();
-  for (const [key, rawValue] of Object.entries(filters)) {
-    const value = rawValue.trim();
-    if (key === "id") {
-      result[key] = parseInt(value, 10);
-    } else if (key === "modelYear") {
-      result[key] = {
-        in: getMatchingTerms(modelYearsMap, value),
-      };
-    } else if (key === "organization" && userIsGov) {
-      result[key] = {
-        is: { name: { contains: value, mode: "insensitive" } },
-      };
-    } else if (key === "status") {
-      if (userIsGov) {
-        result[key] = {
-          in: getMatchingTerms(statusMap, value),
-        };
-      } else {
-        result["supplierStatus"] = {
-          in: getMatchingTerms(supplierStatusMap, value),
-        };
-      }
-    } else if (key === "reassessmentStatus") {
-      if (userIsGov) {
-        if (value === "--") {
-          result[key] = null;
-        } else {
-          result[key] = {
-            in: getMatchingTerms(reassessmentStatusMap, value),
-          };
-        }
-      } else {
-        const matchingTerms = getMatchingTerms(reassessmentStatusMap, value);
-        if (value === "--") {
-          orClausesToAnd.push({
-            OR: [
-              { [key]: null },
-              { [key]: { not: ReassessmentStatus.ISSUED } },
-            ],
-          });
-        } else if (
-          matchingTerms.length === 1 &&
-          matchingTerms[0] === ReassessmentStatus.ISSUED
-        ) {
-          result[key] = ReassessmentStatus.ISSUED;
-        } else {
-          result.id = -1;
-        }
-      }
-    } else if (key === "supplementaryReportStatus") {
-      if (userIsGov) {
-        const matchingTerms = getMatchingTerms(supplementaryStatusMap, value);
-        if (value === "--") {
-          orClausesToAnd.push({
-            OR: [{ [key]: null }, { [key]: SupplementaryReportStatus.DRAFT }],
-          });
-        } else if (
-          matchingTerms.length === 2 &&
-          matchingTerms.includes(SupplementaryReportStatus.ACKNOWLEDGED) &&
-          matchingTerms.includes(SupplementaryReportStatus.SUBMITTED)
-        ) {
-          result[key] = {
-            in: matchingTerms,
-          };
-        } else {
-          result.id = -1;
-        }
-      } else {
-        if (value === "--") {
-          result[key] = null;
-        } else {
-          result[key] = {
-            in: getMatchingTerms(supplementaryStatusMap, value),
-          };
-        }
-      }
-    } else if (key === "compliant") {
-      const lowerCasedValue = value.toLowerCase();
-      if (lowerCasedValue === "--") {
-        result[key] = null;
-      } else if (IsCompliant.No.toLowerCase().includes(lowerCasedValue)) {
-        result[key] = false;
-      } else if (IsCompliant.Yes.toLowerCase().includes(lowerCasedValue)) {
-        result[key] = true;
-      } else {
-        result.id = -1;
-      }
-    }
-  }
-  result.AND = orClausesToAnd;
-  return result;
-};
-
-export const getOrderByClause = (
-  sorts: Record<string, string>,
-  defaultSortById: boolean,
-  userIsGov: boolean,
-): ModelYearReportOrderByWithRelationInput[] => {
-  const result: ModelYearReportOrderByWithRelationInput[] = [];
-  Object.entries(sorts).forEach(([key, value]) => {
-    const orderBy: ModelYearReportOrderByWithRelationInput = {};
-    if (value === "asc" || value === "desc") {
-      if (
-        key === "id" ||
-        key === "modelYear" ||
-        key === "reportableNvValue" ||
-        key === "supplierClass" ||
-        key === "compliant"
-      ) {
-        orderBy[key] = value;
-      } else if (key === "organization" && userIsGov) {
-        orderBy[key] = {
-          name: value,
-        };
-      } else if (key === "status") {
-        if (userIsGov) {
-          orderBy[key] = value;
-        } else {
-          orderBy["supplierStatus"] = value;
-        }
-      } else if (key === "reassessmentStatus") {
-        if (userIsGov) {
-          orderBy[key] = value;
-        }
-      } else if (key === "supplementaryReportStatus") {
-        if (!userIsGov) {
-          orderBy[key] = value;
-        }
-      }
-    }
-    if (Object.keys(orderBy).length > 0) {
-      result.push(orderBy);
-    }
-  });
-  if (defaultSortById && result.length === 0) {
-    result.push({ id: "desc" });
-  }
-  return result;
-};
-
-export type MyrSparseSerialized = Omit<MyrSparse, "supplierStatus">;
-
+// assumes reassessments and supplementaryReports are ordered by sequence number (greatest -> least)
 export const getSerializedMyrs = (
-  myrs: MyrSparse[],
+  myrs: MyrRecord[],
   userIsGov: boolean,
-): MyrSparseSerialized[] => {
+): MyrRecordSerialized[] => {
   return myrs.map((myr) => {
-    const { supplierStatus, ...result } = myr;
+    const { organization, reassessments, supplementaryReports, ...result } =
+      myr;
     if (!userIsGov) {
-      result.status = supplierStatus;
-      if (result.reassessmentStatus !== ReassessmentStatus.ISSUED) {
-        result.reassessmentStatus = null;
-      }
-    } else if (
-      result.supplementaryReportStatus === SupplementaryReportStatus.DRAFT
-    ) {
-      result.supplementaryReportStatus = null;
+      result.status = mapOfStatusToSupplierStatus[result.status];
     }
-    return result;
+    let reassessmentStatus: ReassessmentStatus | null = null;
+    let supplementaryReportStatus: SupplementaryReportStatus | null = null;
+    if (
+      !userIsGov &&
+      reassessments.length > 0 &&
+      reassessments[0].status === ReassessmentStatus.ISSUED
+    ) {
+      reassessmentStatus = ReassessmentStatus.ISSUED;
+    } else if (
+      userIsGov &&
+      supplementaryReports.length > 0 &&
+      supplementaryReports[0].status === SupplementaryReportStatus.SUBMITTED
+    ) {
+      supplementaryReportStatus = SupplementaryReportStatus.SUBMITTED;
+    }
+    return {
+      ...result,
+      orgName: organization.name,
+      reassessmentStatus,
+      supplementaryReportStatus,
+    };
   });
 };
 

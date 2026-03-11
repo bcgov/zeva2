@@ -8,9 +8,7 @@ import { Routes } from "../lib/constants";
 import { Button } from "../lib/components";
 import { IcbcFilesList } from "./lib/components/IcbcFilesList";
 
-const Page = async (props: { searchParams?: Promise<pageStringParams> }) => {
-  const searchParams = await props.searchParams;
-  const { page, pageSize, filters, sorts } = getPageParams(searchParams, 1, 10);
+const Page = async () => {
   const { userIsGov, userRoles } = await getUserInfo();
   return (
     <Suspense key={Date.now()} fallback={<LoadingSkeleton />}>
@@ -19,12 +17,7 @@ const Page = async (props: { searchParams?: Promise<pageStringParams> }) => {
           <Button variant="primary">Upload ICBC File</Button>
         </Link>
       )}
-      <IcbcFilesList
-        page={page}
-        pageSize={pageSize}
-        filters={filters}
-        sorts={sorts}
-      />
+      <IcbcFilesList />
     </Suspense>
   );
 };

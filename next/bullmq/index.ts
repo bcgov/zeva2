@@ -1,5 +1,5 @@
 import { bullmqConfig } from "./config";
-import { Queue, Worker } from "bullmq";
+import { Worker } from "bullmq";
 
 if (bullmqConfig.startWorkers) {
   const defaultConnection = bullmqConfig.connection;
@@ -31,32 +31,5 @@ if (bullmqConfig.startWorkers) {
       }
       // can also listen to the "progress" event
     }
-  }
-  // for run once jobs:
-  for (const defn of bullmqConfig.runOnceJobDefns) {
-    const jobName = defn.name;
-    const queueName = "run-once-job-" + jobName;
-    const queue = new Queue(queueName, {
-      connection: defaultConnection,
-      defaultJobOptions: bullmqConfig.queueDefaultJobOptions,
-    });
-    const worker = new Worker(queueName, defn.handler, {
-      connection: defaultConnection,
-    });
-    const close = async () => {
-      await queue.close();
-      await worker.close();
-    };
-    worker.on("ready", async () => {
-      const completedCount = await queue.getCompletedCount();
-      if (completedCount >= 1) {
-        await close();
-      } else {
-        await queue.add(jobName, defn.data);
-      }
-    });
-    worker.on("completed", async () => {
-      await close();
-    });
   }
 }

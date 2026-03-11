@@ -13,7 +13,7 @@ import { Button, ContentCard, Table } from "@/app/lib/components";
 import { MapOfValidatedAndReasons, updateValidatedRecords } from "../actions";
 import { useRouter } from "next/navigation";
 import { getModelYearEnumsToStringsMap } from "@/app/lib/utils/enumMaps";
-import { CreditApplicationRecordSparseSerialized } from "../utils";
+import { CreditApplicationRecordSparseSerialized } from "../constants";
 
 export const RecordsTable = (props: {
   id: number;
@@ -139,6 +139,13 @@ export const RecordsTable = (props: {
         enableSorting: true,
         enableColumnFilter: true,
         header: () => <span>Model Year</span>,
+        size: 100,
+      }),
+      columnHelper.accessor((row) => row.icbcTimestamp, {
+        id: "icbcTimestamp",
+        enableSorting: true,
+        enableColumnFilter: true,
+        header: () => <span>ICBC Timestamp</span>,
         size: 100,
       }),
       columnHelper.accessor((row) => row.icbcMake, {

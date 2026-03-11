@@ -38,6 +38,11 @@ export default async function Page(props: {
 
   return (
     <Suspense fallback={<LoadingSkeleton />}>
+      {isAdmin && (
+        <Link href={`${Routes.Users}/new`}>
+          <Button variant="primary">Create New User</Button>
+        </Link>
+      )}
       <div className="mb-4 flex gap-2 border-b">
         {categoriesToUse.map((category) => (
           <Link
@@ -48,10 +53,10 @@ export default async function Page(props: {
                 tab: category,
               },
             }}
-            className={`px-3 py-2 text-sm font-medium border-b-2 -mb-px ${
+            className={`px-4 py-2.5 text-sm -mb-px rounded-t ${
               currentCategory === category
-                ? "border-blue-600 text-blue-700"
-                : "border-transparent text-gray-600 hover:text-gray-900"
+                ? "border-t border-l border-r border-gray-400 border-b-white bg-white text-black"
+                : "border-t border-l border-r border-gray-300 border-b-gray-400 text-[#255A90] hover:bg-[#F7F9FC]"
             }`}
           >
             {categoriesToTabsMap[category]}

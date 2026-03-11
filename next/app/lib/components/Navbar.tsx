@@ -25,7 +25,7 @@ export const Navbar: React.FC<{
     const params: Record<string, string> = {};
     const pathnameParts = pathname.split("/");
     const routeParts = route.split("/");
-    if (pathnameParts.length < routeParts.length) {
+    if (pathnameParts.length !== routeParts.length) {
       return undefined;
     }
     for (let i = 0; i < routeParts.length; i++) {
@@ -116,15 +116,15 @@ export const Navbar: React.FC<{
       </Row>
 
       {activeSubMenu && (
-        <Row className="m-2 border-b border-dividerMedium">
+        <Row className="m-2 gap-2 border-b border-gray-400">
           {activeSubMenu.map((item, index) => (
             <Link
               key={index}
               className={
-                "p-3 border border-dividerMedium hover:bg-primaryBlueHover" +
+                "px-4 py-2.5 text-sm -mb-px rounded-t" +
                 (checkRoute(item.route)
-                  ? " bg-blue-50 font-semibold text-primaryText border-dividerDark hover:bg-primaryBlueHover"
-                  : "")
+                  ? " border-t border-l border-r border-gray-400 border-b-white bg-white text-black"
+                  : " border-t border-l border-r border-gray-300 border-b-gray-400 text-[#255A90] hover:bg-[#F7F9FC]")
               }
               href={item.route}
             >

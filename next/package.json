@@ -19,6 +19,8 @@
     "test": "jest"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "3.997.0",
+    "@aws-sdk/s3-request-presigner": "3.997.0",
     "@fortawesome/fontawesome-svg-core": "7.1.0",
     "@fortawesome/free-brands-svg-icons": "7.1.0",
     "@fortawesome/free-regular-svg-icons": "7.1.0",
@@ -32,7 +34,6 @@
     "decimal.js": "10.6.0",
     "exceljs": "4.4.0",
     "jszip": "3.10.1",
-    "minio": "8.0.6",
     "next": "16.1.6",
     "next-auth": "5.0.0-beta.30",
     "next-navigation-guard": "0.2.0",

@@ -1,7 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import {
   AddressType,
-  CreditApplicationHistoryStatus,
   CreditApplicationStatus,
   ModelYear,
   TransactionType,
@@ -9,13 +8,18 @@ import {
   VehicleStatus,
   ZevType,
   ZevClass,
+  ModelYearReportStatus,
 } from "@/prisma/generated/enums";
 import { CreditApplicationRecordWhereInput } from "@/prisma/generated/models";
 import { mapOfStatusToSupplierStatus } from "./constants";
-import { Attachment } from "@/app/lib/services/attachments";
+import { Attachment } from "@/app/lib/constants/attachment";
 import { TransactionClient } from "@/types/prisma";
 import { Decimal } from "decimal.js";
 import { flattenZevUnitRecords, ZevUnitRecord } from "@/lib/utils/zevUnit";
+import {
+  getAdjacentYear,
+  getCurrentComplianceYear,
+} from "@/app/lib/utils/complianceYear";
 
 export const getOrgInfo = async (orgId: number) => {
   const orgInfo = await prisma.organization.findUnique({
@@ -43,8 +47,8 @@ export const getOrgInfo = async (orgId: number) => {
   for (const vehicle of orgInfo.Vehicle) {
     makes.add(vehicle.make);
   }
-  let serviceAddress: string | null = null;
-  let recordsAddress: string | null = null;
+  let serviceAddress: string = "";
+  let recordsAddress: string = "";
   for (const address of orgInfo.organizationAddress) {
     const addressType = address.addressType;
     const addressString = `${address.addressLines}, ${address.city}, ${address.state}, ${address.postalCode}, ${address.country}`;
@@ -54,12 +58,9 @@ export const getOrgInfo = async (orgId: number) => {
       recordsAddress = addressString;
     }
   }
-  if (!serviceAddress || !recordsAddress) {
-    throw new Error("Service or Records Address not found!");
-  }
   return {
     name: orgInfo.name,
-    makes: Array.from(makes),
+    makes: Array.from(makes).join(", "),
     serviceAddress,
     recordsAddress,
   };
@@ -206,7 +207,7 @@ export const getIcbcRecordsMap = async (
 export const createHistory = async (
   userId: number,
   creditApplicationId: number,
-  userAction: CreditApplicationHistoryStatus,
+  userAction: CreditApplicationStatus,
   comment?: string,
   transactionClient?: TransactionClient,
 ): Promise<number> => {
@@ -253,26 +254,25 @@ export const unreserveVins = async (
   });
 };
 
-export const updateAttachments = async (
+export const createAttachments = async (
   creditApplicationId: number,
   attachments: Attachment[],
   indexOfApplication: number,
   transactionClient?: TransactionClient,
 ) => {
   const client = transactionClient ?? prisma;
+  const toCreate = [];
   for (const [index, attachment] of attachments.entries()) {
-    // throws if record to update does not exist in table
-    await client.creditApplicationAttachment.update({
-      where: {
-        objectName: attachment.objectName,
-      },
-      data: {
-        creditApplicationId,
-        fileName: attachment.fileName,
-        ...(index === indexOfApplication && { isApplication: true }),
-      },
+    toCreate.push({
+      creditApplicationId,
+      objectName: attachment.objectName,
+      fileName: attachment.fileName,
+      ...(index === indexOfApplication && { isApplication: true }),
     });
   }
+  await client.creditApplicationAttachment.createMany({
+    data: toCreate,
+  });
 };
 
 export const deleteAttachments = async (
@@ -414,4 +414,27 @@ export const getCreditStats = async (
       numberOfUnits: true,
     },
   });
+};
+
+export const getPartOfMyrModelYear = async (
+  orgId: number,
+): Promise<ModelYear | null> => {
+  const currentCy = getCurrentComplianceYear();
+  const previousCy = getAdjacentYear("prev", currentCy);
+  const myr = await prisma.modelYearReport.findUnique({
+    where: {
+      organizationId_modelYear: {
+        organizationId: orgId,
+        modelYear: previousCy,
+      },
+    },
+  });
+  if (
+    !myr ||
+    myr.status === ModelYearReportStatus.DRAFT ||
+    myr.status === ModelYearReportStatus.RETURNED_TO_SUPPLIER
+  ) {
+    return previousCy;
+  }
+  return null;
 };

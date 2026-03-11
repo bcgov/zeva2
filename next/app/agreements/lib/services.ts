@@ -1,12 +1,12 @@
 import { prisma } from "@/lib/prisma";
-import { AgreementHistoryStatus } from "@/prisma/generated/enums";
 import { TransactionClient } from "@/types/prisma";
-import { Attachment } from "@/app/lib/services/attachments";
+import { Attachment } from "@/app/lib/constants/attachment";
+import { AgreementStatus } from "@/prisma/generated/enums";
 
 export const createHistory = async (
   agreementId: number,
   userId: number,
-  userAction: AgreementHistoryStatus,
+  userAction: AgreementStatus,
   comment?: string,
   transactionClient?: TransactionClient,
 ) => {
@@ -21,22 +21,33 @@ export const createHistory = async (
   });
 };
 
-export const updateAttachments = async (
+export const createAttachments = async (
   agreementId: number,
   attachments: Attachment[],
   transactionClient?: TransactionClient,
 ) => {
   const client = transactionClient ?? prisma;
+  const toCreate = [];
   for (const attachment of attachments) {
-    // throws if record to update does not exist in table
-    await client.agreementAttachment.update({
-      where: {
-        objectName: attachment.objectName,
-      },
-      data: {
-        agreementId,
-        fileName: attachment.fileName,
-      },
+    toCreate.push({
+      agreementId,
+      objectName: attachment.objectName,
+      fileName: attachment.fileName,
     });
   }
+  await client.agreementAttachment.createMany({
+    data: toCreate,
+  });
+};
+
+export const deleteAttachments = async (
+  agreementId: number,
+  transactionClient?: TransactionClient,
+) => {
+  const client = transactionClient ?? prisma;
+  await client.agreementAttachment.deleteMany({
+    where: {
+      agreementId,
+    },
+  });
 };

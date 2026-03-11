@@ -2,17 +2,12 @@ import { getUserInfo } from "@/auth";
 import { getLegacyReassessments } from "../data";
 import { LegacyReassessmentsTable } from "./LegacyReassessmentsTable";
 
-export const LegacyReassessmentsList = async (props: {
-  page: number;
-  pageSize: number;
-}) => {
+export const LegacyReassessmentsList = async () => {
   const { userIsGov } = await getUserInfo();
-  const [reassessments, totalNumberOfReassessments] =
-    await getLegacyReassessments(props.page, props.pageSize);
+  const reassessments = await getLegacyReassessments();
   return (
     <LegacyReassessmentsTable
       reassessments={reassessments}
-      totalNumbeOfReassessments={totalNumberOfReassessments}
       userIsGov={userIsGov}
     />
   );

@@ -41,8 +41,7 @@ import {
 } from "./utilsServer";
 import { TransactionClient } from "@/types/prisma";
 import { AdjustmentPayload, NvValues } from "./actions";
-import { getObject } from "@/app/lib/minio";
-import { getArrayBuffer } from "@/app/lib/utils/parseReadable";
+import { getObjectAsBuffer } from "@/app/lib/services/s3";
 
 export const getSupplierDetails = async (organizationId: number) => {
   const organization = await prisma.organization.findUniqueOrThrow({
@@ -343,8 +342,8 @@ export const getPendingSupplyCredits = async (
             CreditApplicationStatus.RETURNED_TO_ANALYST,
           ],
         },
+        partOfMyrModelYear: modelYear,
       },
-      modelYear,
     },
     by: ["vehicleClass", "zevClass"],
     _sum: {
@@ -546,14 +545,8 @@ export type MyrDataForAssessment = {
   zevClassOrdering: ZevClass[];
 };
 
-export const getAssessmentSystemData = async (object: string | ArrayBuffer) => {
-  let assessmentBuf: ArrayBuffer;
-  if (typeof object === "string") {
-    const assessmentFile = await getObject(object);
-    assessmentBuf = await getArrayBuffer(assessmentFile);
-  } else {
-    assessmentBuf = object;
-  }
+export const getAssessmentSystemData = async (objectName: string) => {
+  const assessmentBuf = await getObjectAsBuffer(objectName);
   const assessmentWorkbook = new Excel.Workbook();
   await assessmentWorkbook.xlsx.load(assessmentBuf);
   return parseAssesmentForData(assessmentWorkbook);
@@ -572,22 +565,6 @@ export const getLegacyAssessedMyr = async (
     },
     select: {
       legacyId: true,
-    },
-  });
-};
-
-export const updateMyrReassessmentStatus = async (
-  myrId: number,
-  status: ReassessmentStatus | null,
-  transactionClient?: TransactionClient,
-) => {
-  const client = transactionClient ?? prisma;
-  await client.modelYearReport.update({
-    where: {
-      id: myrId,
-    },
-    data: {
-      reassessmentStatus: status,
     },
   });
 };
@@ -675,22 +652,6 @@ export const getDataForSupplementary = async (
     sequenceNumber,
     myrId: myr ? myr.id : null,
   };
-};
-
-export const updateMyrSupplementaryStatus = async (
-  myrId: number,
-  status: SupplementaryReportStatus | null,
-  transactionClient?: TransactionClient,
-) => {
-  const client = transactionClient ?? prisma;
-  await client.modelYearReport.update({
-    where: {
-      id: myrId,
-    },
-    data: {
-      supplementaryReportStatus: status,
-    },
-  });
 };
 
 // upon issuance of an assessment or reassessment,

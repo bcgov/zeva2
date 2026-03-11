@@ -12,20 +12,17 @@ import {
   getStringsToCreditApplicationSupplierStatusEnumsMap,
   getStringsToModelYearsEnumsMap,
 } from "@/app/lib/utils/enumMaps";
-import { SupplierTemplate } from "./constants";
-import { IcbcRecordsMap } from "./services";
 import {
-  CreditApplicationCredit,
   CreditApplicationRecordSparse,
+  CreditApplicationRecordSparseSerialized,
   CreditApplicationSparse,
-} from "./data";
+  CreditApplicationSparseSerialized,
+  SupplierTemplate,
+} from "./constants";
+import { IcbcRecordsMap } from "./services";
+import { CreditApplicationCredit } from "./data";
 import { getIsoYmdString, validateDate } from "@/app/lib/utils/date";
-import {
-  getComplianceDate,
-  getComplianceYear,
-  getIsInReportingPeriod,
-  getPreviousComplianceYear,
-} from "@/app/lib/utils/complianceYear";
+import { getComplianceDate } from "@/app/lib/utils/complianceYear";
 
 export const getWhereClause = (
   filters: Record<string, string>,
@@ -50,17 +47,24 @@ export const getWhereClause = (
           in: getMatchingTerms(supplierStatusMap, value),
         };
       }
-    } else if (key === "submissionTimestamp") {
-      const [isValidDate, date] = validateDate(value);
-      if (isValidDate) {
-        const datePlusOneDay = new Date(date);
-        datePlusOneDay.setDate(date.getDate() + 1);
-        result.AND = [
-          { [key]: { gte: date } },
-          { [key]: { lt: datePlusOneDay } },
-        ];
+    } else if (
+      key === "submissionTimestamp" ||
+      key === "transactionTimestamp"
+    ) {
+      if ("--".includes(value)) {
+        result[key] = null;
       } else {
-        result.id = -1;
+        const [isValidDate, date] = validateDate(value);
+        if (isValidDate) {
+          const datePlusOneDay = new Date(date);
+          datePlusOneDay.setDate(date.getDate() + 1);
+          result.AND = [
+            { [key]: { gte: date } },
+            { [key]: { lt: datePlusOneDay } },
+          ];
+        } else {
+          result.id = -1;
+        }
       }
     } else if (key === "organization" && userIsGov) {
       result[key] = {
@@ -75,6 +79,17 @@ export const getWhereClause = (
       result[key] = {
         hasSome: getMatchingTerms(modelYearsMap, value),
       };
+    } else if (
+      key === "eligibleVinsCount" ||
+      key === "ineligibleVinsCount" ||
+      key === "aCredits" ||
+      key === "bCredits"
+    ) {
+      if ("--".includes(value)) {
+        result[key] = null;
+      } else {
+        result[key] = value;
+      }
     }
   });
   return result;
@@ -89,7 +104,15 @@ export const getOrderByClause = (
   for (const [key, value] of Object.entries(sorts)) {
     const orderBy: CreditApplicationOrderByWithRelationInput = {};
     if (value === "asc" || value === "desc") {
-      if (key === "id" || key === "submissionTimestamp") {
+      if (
+        key === "id" ||
+        key === "submissionTimestamp" ||
+        key === "transactionTimestamp" ||
+        key === "eligibleVinsCount" ||
+        key === "ineligibleVinsCount" ||
+        key === "aCredits" ||
+        key === "bCredits"
+      ) {
         orderBy[key] = value;
       } else if (key === "status") {
         if (userIsGov) {
@@ -131,7 +154,7 @@ export const getRecordsWhereClause = (
       result[key] = {
         in: getMatchingTerms(modelYearsMap, value),
       };
-    } else if (key === "timestamp") {
+    } else if (key === "timestamp" || key === "icbcTimestamp") {
       const [isValidDate, date] = validateDate(value);
       if (isValidDate) {
         result[key] = date;
@@ -218,11 +241,6 @@ export const getRecordsOrderByClause = (
   return result;
 };
 
-export type CreditApplicationRecordSparseSerialized = Omit<
-  CreditApplicationRecordSparse,
-  "timestamp"
-> & { timestamp: string };
-
 export const getSerializedRecords = (
   records: CreditApplicationRecordSparse[],
 ) => {
@@ -231,21 +249,12 @@ export const getSerializedRecords = (
     result.push({
       ...record,
       timestamp: getIsoYmdString(record.timestamp),
+      icbcTimestamp: record.icbcTimestamp
+        ? getIsoYmdString(record.icbcTimestamp)
+        : "",
     });
   });
   return result;
-};
-
-export type CreditApplicationSparseSerialized = Omit<
-  CreditApplicationSparse,
-  | "submissionTimestamp"
-  | "supplierStatus"
-  | "organization"
-  | "transactionTimestamps"
-> & {
-  submissionTimestamp?: string;
-  organization?: string;
-  transactionTimestamps: string[];
 };
 
 export const getSerializedApplications = (
@@ -256,18 +265,20 @@ export const getSerializedApplications = (
   records.forEach((record) => {
     const resultRecord: CreditApplicationSparseSerialized = {
       id: record.id,
+      organization: record.organization.name,
       status: userIsGov ? record.status : record.supplierStatus,
       submissionTimestamp: record.submissionTimestamp
         ? getIsoYmdString(record.submissionTimestamp)
         : undefined,
-      transactionTimestamps: record.transactionTimestamps.map((ts) => {
-        return getIsoYmdString(ts);
-      }),
+      transactionTimestamp: record.transactionTimestamp
+        ? getIsoYmdString(record.transactionTimestamp)
+        : undefined,
       modelYears: record.modelYears,
+      eligibleVinsCount: record.eligibleVinsCount,
+      ineligibleVinsCount: record.ineligibleVinsCount,
+      aCredits: record.aCredits?.toFixed(2),
+      bCredits: record.bCredits?.toFixed(2),
     };
-    if (userIsGov) {
-      resultRecord.organization = record.organization.name;
-    }
     result.push(resultRecord);
   });
   return result;
@@ -342,10 +353,16 @@ export const getWarningsMap = (
     make: string;
     modelName: string;
     modelYear: ModelYear;
+    timestamp: Date;
   }[],
   icbcMap: IcbcRecordsMap,
+  partOfMyrModelYear: ModelYear | null,
 ) => {
   const result: Partial<Record<string, string[]>> = {};
+  let partOfMyrComplianceDate: Date | null = null;
+  if (partOfMyrModelYear) {
+    partOfMyrComplianceDate = getComplianceDate(partOfMyrModelYear);
+  }
   for (const record of records) {
     const vin = record.vin;
     const icbcRecord = icbcMap[record.vin];
@@ -359,6 +376,12 @@ export const getWarningsMap = (
     }
     if (icbcRecord.modelYear !== record.modelYear) {
       warnings.push("3");
+    }
+    if (
+      partOfMyrComplianceDate &&
+      partOfMyrComplianceDate < icbcRecord.timestamp
+    ) {
+      warnings.push("4");
     }
     if (warnings.length > 0) {
       result[vin] = warnings;
@@ -407,26 +430,4 @@ export const serializeCredits = (
   return credits.map((credit) => {
     return { ...credit, numberOfUnits: credit.numberOfUnits.toString() };
   });
-};
-
-export const getTransactionTimestamp = (
-  submissionTimestamp: Date,
-  issuanceTimestamp: Date,
-  modelYear: ModelYear,
-) => {
-  const submittedDuringReportingPeriod =
-    getIsInReportingPeriod(submissionTimestamp);
-  if (submittedDuringReportingPeriod) {
-    const complianceYear = getPreviousComplianceYear(submissionTimestamp);
-    return getComplianceDate(complianceYear);
-  }
-  const submissionComplianceYear = getComplianceYear(submissionTimestamp);
-  const issuanceComplianceYear = getComplianceYear(issuanceTimestamp);
-  if (
-    submissionComplianceYear !== issuanceComplianceYear &&
-    modelYear <= submissionComplianceYear
-  ) {
-    return getComplianceDate(submissionComplianceYear);
-  }
-  return issuanceTimestamp;
 };

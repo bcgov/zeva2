@@ -1,6 +1,6 @@
 "use client";
 
-import { CreditApplicationSparseSerialized } from "../utils";
+import { CreditApplicationSparseSerialized } from "../constants";
 import { ColumnDef, createColumnHelper } from "@tanstack/react-table";
 import { Table } from "@/app/lib/components";
 import { useMemo } from "react";
@@ -30,7 +30,7 @@ export const ApplicationsTable = (props: {
         enableColumnFilter: true,
         header: () => <span>ID</span>,
       }),
-      columnHelper.accessor((row) => row.submissionTimestamp, {
+      columnHelper.accessor((row) => row.submissionTimestamp ?? "--", {
         id: "submissionTimestamp",
         enableSorting: true,
         enableColumnFilter: true,
@@ -42,15 +42,11 @@ export const ApplicationsTable = (props: {
         enableColumnFilter: true,
         header: () => <span>Status</span>,
       }),
-      columnHelper.accessor((row) => row.transactionTimestamps, {
-        id: "transactionTimestamps",
-        enableSorting: false,
-        enableColumnFilter: false,
-        cell: (cellProps) => {
-          const dates = cellProps.row.original.transactionTimestamps;
-          return dates.join(", ");
-        },
-        header: () => <span>Transaction Date(s)</span>,
+      columnHelper.accessor((row) => row.transactionTimestamp ?? "--", {
+        id: "transactionTimestamp",
+        enableSorting: true,
+        enableColumnFilter: true,
+        header: () => <span>Transaction Date</span>,
       }),
       columnHelper.accessor((row) => row.modelYears, {
         id: "modelYears",
@@ -63,6 +59,30 @@ export const ApplicationsTable = (props: {
           return mys.join(", ");
         },
         header: () => <span>Model Year(s)</span>,
+      }),
+      columnHelper.accessor((row) => row.eligibleVinsCount ?? "--", {
+        id: "eligibleVinsCount",
+        enableSorting: true,
+        enableColumnFilter: true,
+        header: () => <span>Eligible VINs</span>,
+      }),
+      columnHelper.accessor((row) => row.ineligibleVinsCount ?? "--", {
+        id: "ineligibleVinsCount",
+        enableSorting: true,
+        enableColumnFilter: true,
+        header: () => <span>Ineligible VINs</span>,
+      }),
+      columnHelper.accessor((row) => row.aCredits ?? "--", {
+        id: "aCredits",
+        enableSorting: true,
+        enableColumnFilter: true,
+        header: () => <span>A-credits</span>,
+      }),
+      columnHelper.accessor((row) => row.bCredits ?? "--", {
+        id: "bCredits",
+        enableSorting: true,
+        enableColumnFilter: true,
+        header: () => <span>B-credits</span>,
       }),
     ];
     if (props.userIsGov) {

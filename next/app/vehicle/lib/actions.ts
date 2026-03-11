@@ -16,8 +16,8 @@ import {
 import {
   createHistory,
   getConflictingVehicle,
+  createAttachments,
   deleteAttachments,
-  updateAttachments,
 } from "./services";
 import {
   DataOrErrorActionResponse,
@@ -26,19 +26,17 @@ import {
   getErrorActionResponse,
   getSuccessActionResponse,
 } from "@/app/lib/utils/actionResponse";
-import { getPresignedGetObjectUrl } from "@/app/lib/minio";
-import { getVehicleClass, getZevClass, getNumberOfUnits } from "./utilsServer";
 import {
-  Attachment,
-  AttachmentDownload,
-  checkAttachments,
-  getPutObjectData,
-} from "@/app/lib/services/attachments";
+  Directory,
+  getAttachmentPutData,
+  getPresignedGetObjectUrl,
+} from "@/app/lib/services/s3";
+import { getVehicleClass, getZevClass, getNumberOfUnits } from "./utilsServer";
 import { addJobToEmailQueue } from "@/app/lib/services/queue";
+import { Attachment, AttachmentDownload } from "@/app/lib/constants/attachment";
 
 export const getVehicleAttachmentsPutData = async (numberOfFiles: number) => {
-  const { userOrgId } = await getUserInfo();
-  return await getPutObjectData(numberOfFiles, "vehicle", userOrgId);
+  return await getAttachmentPutData(Directory.Vehicle, numberOfFiles);
 };
 
 export type VehiclePayload = Omit<
@@ -83,11 +81,11 @@ export const supplierSave = async (
   }
   const modelYear = data.modelYear;
   const range = data.range;
+  const zevType = data.zevType;
   let zevModelId = vehicleId ?? Number.NaN;
   try {
-    await checkAttachments(attachments, "vehicle", userOrgId);
     const vehicleClass = getVehicleClass(modelYear, data.weight);
-    const zevClass = getZevClass(modelYear, data.zevType, range);
+    const zevClass = getZevClass(modelYear, zevType, range);
     const us06RangeGte16 = data.us06RangeGte16;
     if (us06RangeGte16 && zevClass !== ZevClass.B) {
       throw new Error(
@@ -99,8 +97,10 @@ export const supplierSave = async (
     }
     const numberOfUnits = getNumberOfUnits(
       zevClass,
+      zevType,
+      modelYear,
       range,
-      data.us06RangeGte16,
+      us06RangeGte16,
     );
     const dataToSave = {
       ...data,
@@ -129,7 +129,7 @@ export const supplierSave = async (
         zevModelId = newVehicle.id;
       }
       await deleteAttachments(zevModelId, tx);
-      await updateAttachments(zevModelId, attachments, tx);
+      await createAttachments(zevModelId, attachments, tx);
     });
   } catch (e) {
     if (e instanceof Error) {
@@ -381,7 +381,6 @@ export const getAttachmentDownloadUrls = async (
   const { userIsGov, userOrgId } = await getUserInfo();
   const whereClause: VehicleAttachmentWhereInput = {
     vehicleId: id,
-    fileName: { not: null },
   };
   if (!userIsGov) {
     whereClause.vehicle = {

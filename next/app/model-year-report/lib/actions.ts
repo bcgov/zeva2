@@ -1,7 +1,7 @@
 "use server";
 
-import { Directory } from "@/app/lib/constants/minio";
-import { getPresignedGetObjectUrl, putObject } from "@/app/lib/minio";
+import { Directory } from "@/app/lib/services/s3";
+import { getPresignedGetObjectUrl, putObject } from "@/app/lib/services/s3";
 import { AssessmentTemplate, ForecastTemplate, MyrTemplate } from "./constants";
 import { getUserInfo } from "@/auth";
 import {
@@ -16,10 +16,7 @@ import {
   VehicleClass,
   ZevClass,
 } from "@/prisma/generated/enums";
-import {
-  ModelYearReportUpdateInput,
-  SupplyVolumeCreateManyInput,
-} from "@/prisma/generated/models";
+import { SupplyVolumeCreateManyInput } from "@/prisma/generated/models";
 import {
   createHistory,
   createReassessmentHistory,
@@ -30,11 +27,9 @@ import {
   getDataForReassessment,
   getZevUnitData,
   MyrZevUnitTransaction,
-  updateMyrReassessmentStatus,
   areTransfersCovered,
   getSupplierClassAndVolumes,
   getVehicleStatistics,
-  updateMyrSupplementaryStatus,
   validateReassesmentTimeLimit,
   updateOrgSupplierClass,
 } from "./services";
@@ -242,7 +237,6 @@ export const saveReports = async (
           forecastReportObjectName: forecastObjectName,
           forecastReportFileName,
           status: ModelYearReportStatus.DRAFT,
-          supplierStatus: ModelYearReportStatus.DRAFT,
           organizationId: userOrgId,
           modelYear,
         },
@@ -288,7 +282,6 @@ export const submitReports = async (
       },
       data: {
         status: ModelYearReportStatus.SUBMITTED_TO_GOVERNMENT,
-        supplierStatus: ModelYearReportStatus.SUBMITTED_TO_GOVERNMENT,
       },
     });
     const historyId = await createHistory(
@@ -578,12 +571,7 @@ export const returnModelYearReport = async (
       userRoles.includes(Role.ZEVA_IDIR_USER))
   ) {
     await prisma.$transaction(async (tx) => {
-      const updateData: ModelYearReportUpdateInput = {
-        status: returnType,
-      };
       if (returnType === ModelYearReportStatus.RETURNED_TO_SUPPLIER) {
-        updateData.supplierStatus = returnType;
-        updateData.supplementaryReportStatus = null;
         await tx.supplementaryReportHistory.deleteMany({
           where: {
             supplementaryReport: {
@@ -601,7 +589,9 @@ export const returnModelYearReport = async (
         where: {
           id: myrId,
         },
-        data: updateData,
+        data: {
+          status: returnType,
+        },
       });
       const historyId = await createHistory(
         myrId,
@@ -710,7 +700,6 @@ export const assessModelYearReport = async (
         },
         data: {
           status: ModelYearReportStatus.ASSESSED,
-          supplierStatus: ModelYearReportStatus.ASSESSED,
           compliant: assessmentData.compliant,
           reportableNvValue: assessmentData.reportableNvValue,
           supplierClass: assessmentData.supplierClass,
@@ -773,9 +762,6 @@ export const createReassessment = async (
       },
     });
     reassessmentId = createdReassessment.id;
-    if (myrId) {
-      await updateMyrReassessmentStatus(myrId, ReassessmentStatus.DRAFT, tx);
-    }
     await putObject(reassessmentObjectName, reassessmentObject);
   });
   return getDataActionResponse({
@@ -849,7 +835,6 @@ export const deleteReassessment = async (
   if (!reassessment) {
     return getErrorActionResponse("Valid Reassessment not found!");
   }
-  const myrId = reassessment.modelYearReportId;
   await prisma.$transaction(async (tx) => {
     await tx.reassessmentHistory.deleteMany({
       where: {
@@ -861,9 +846,6 @@ export const deleteReassessment = async (
         id: reassessmentId,
       },
     });
-    if (myrId) {
-      await updateMyrReassessmentStatus(myrId, null, tx);
-    }
   });
   return getSuccessActionResponse();
 };
@@ -887,7 +869,6 @@ export const submitReassessment = async (
       id: true,
       organizationId: true,
       modelYear: true,
-      modelYearReportId: true,
     },
   });
   if (!reassessment) {
@@ -901,7 +882,6 @@ export const submitReassessment = async (
   } catch {
     return getErrorActionResponse("Invalid Action!");
   }
-  const myrId = reassessment.modelYearReportId;
   await prisma.$transaction(async (tx) => {
     await tx.reassessment.update({
       where: {
@@ -918,13 +898,6 @@ export const submitReassessment = async (
       comment,
       tx,
     );
-    if (myrId) {
-      await updateMyrReassessmentStatus(
-        myrId,
-        ReassessmentStatus.SUBMITTED_TO_DIRECTOR,
-        tx,
-      );
-    }
   });
   return getSuccessActionResponse();
 };
@@ -943,13 +916,12 @@ export const returnReassessment = async (
       status: ReassessmentStatus.SUBMITTED_TO_DIRECTOR,
     },
     select: {
-      modelYearReportId: true,
+      id: true,
     },
   });
   if (!reassessment) {
     return getErrorActionResponse("Valid Reassessment not found!");
   }
-  const myrId = reassessment.modelYearReportId;
   await prisma.$transaction(async (tx) => {
     await tx.reassessment.update({
       where: {
@@ -966,13 +938,6 @@ export const returnReassessment = async (
       comment,
       tx,
     );
-    if (myrId) {
-      await updateMyrReassessmentStatus(
-        myrId,
-        ReassessmentStatus.RETURNED_TO_ANALYST,
-        tx,
-      );
-    }
   });
   return getSuccessActionResponse();
 };
@@ -1105,7 +1070,6 @@ export const issueReassessment = async (
       tx,
     );
     if (myrId) {
-      await updateMyrReassessmentStatus(myrId, ReassessmentStatus.ISSUED, tx);
       await tx.modelYearReport.update({
         where: {
           id: myrId,
@@ -1156,13 +1120,6 @@ export const createSupplementary = async (
       },
     });
     supplementaryId = createdReport.id;
-    if (myrId) {
-      await updateMyrSupplementaryStatus(
-        myrId,
-        SupplementaryReportStatus.DRAFT,
-        tx,
-      );
-    }
     await putObject(reportObjectName, reportObject);
   });
   return getDataActionResponse({
@@ -1228,27 +1185,16 @@ export const deleteSupplementary = async (
     },
     select: {
       id: true,
-      modelYearReportId: true,
     },
   });
   if (!suppReport) {
     return getErrorActionResponse("Invalid Action!");
   }
-  await prisma.$transaction(async (tx) => {
-    await tx.supplementaryReport.delete({
-      where: {
-        id: supplementaryId,
-      },
-    });
-    if (suppReport.modelYearReportId) {
-      await updateMyrSupplementaryStatus(
-        suppReport.modelYearReportId,
-        null,
-        tx,
-      );
-    }
+  await prisma.supplementaryReport.delete({
+    where: {
+      id: supplementaryId,
+    },
   });
-
   return getSuccessActionResponse();
 };
 
@@ -1268,7 +1214,6 @@ export const submitSupplementary = async (
     },
     select: {
       id: true,
-      modelYearReportId: true,
     },
   });
   if (!suppReport) {
@@ -1290,13 +1235,6 @@ export const submitSupplementary = async (
       comment,
       tx,
     );
-    if (suppReport.modelYearReportId) {
-      await updateMyrSupplementaryStatus(
-        suppReport.modelYearReportId,
-        SupplementaryReportStatus.SUBMITTED,
-        tx,
-      );
-    }
   });
   return getSuccessActionResponse();
 };
@@ -1316,7 +1254,6 @@ export const acknowledgeSupplementary = async (
     },
     select: {
       id: true,
-      modelYearReportId: true,
     },
   });
   if (!suppReport) {
@@ -1338,13 +1275,6 @@ export const acknowledgeSupplementary = async (
       comment,
       tx,
     );
-    if (suppReport.modelYearReportId) {
-      await updateMyrSupplementaryStatus(
-        suppReport.modelYearReportId,
-        SupplementaryReportStatus.ACKNOWLEDGED,
-        tx,
-      );
-    }
   });
   return getSuccessActionResponse();
 };
