@@ -41,7 +41,6 @@ A sample diagram illustrates this model:
 - Automate versioning and release notes with semantic-release.
 - Use hotfix branches only for urgent exceptions, then merge back to `main` quickly.
 - Keep deployment environments in sync by promoting versions forward.
-- Review and merge pull requests quickly, ideally within one to two business days.
 - Establish a team agreement for Conventional Commits (for example, when to use `feat`, `fix`, and other commit types).
 
 ## 2.2 Semantic Release
