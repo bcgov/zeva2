@@ -17,7 +17,7 @@ const Page = async (props: {
       orgName={report.organization.name}
       modelYear={report.modelYear}
       status={report.status}
-      sequenceNumber={report.sequenceNumber}
+      suppReassessmentExists={!!report.supplementaryReportReassessment}
       myrId={myrId}
     />
   );

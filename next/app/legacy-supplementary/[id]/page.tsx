@@ -14,7 +14,7 @@ const Page = async (props: { params: Promise<{ id: string }> }) => {
       orgName={report.organization.name}
       modelYear={report.modelYear}
       status={report.status}
-      sequenceNumber={report.sequenceNumber}
+      suppReassessmentExists={!!report.supplementaryReportReassessment}
     />
   );
 };

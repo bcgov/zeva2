@@ -6,7 +6,6 @@ export const SystemDetails = (props: {
   orgName: string;
   modelYear: ModelYear;
   status: string;
-  sequenceNumber?: number;
 }) => {
   const modelYearsMap = getModelYearEnumsToStringsMap();
   return (
@@ -14,9 +13,6 @@ export const SystemDetails = (props: {
       {props.userIsGov && <li>Supplier: {props.orgName}</li>}
       <li>Model Year: {modelYearsMap[props.modelYear]}</li>
       <li>Status: {props.status}</li>
-      {props.sequenceNumber !== undefined && (
-        <li>Sequence Number: {props.sequenceNumber}</li>
-      )}
     </ul>
   );
 };

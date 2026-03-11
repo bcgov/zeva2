@@ -2,7 +2,6 @@ import {
   ModelYear,
   ModelYearReportStatus,
   ReassessmentStatus,
-  SupplementaryReportStatus,
   SupplierClass,
   ZevClass,
 } from "@/prisma/generated/enums";
@@ -102,7 +101,7 @@ export type MyrRecord = {
     status: ReassessmentStatus;
   }[];
   supplementaryReports: {
-    status: SupplementaryReportStatus;
+    status: ModelYearReportStatus;
   }[];
 };
 
@@ -115,7 +114,7 @@ export type MyrRecordSerialized = {
   reportableNvValue: number | null;
   supplierClass: SupplierClass | null;
   reassessmentStatus: ReassessmentStatus | null;
-  supplementaryReportStatus: SupplementaryReportStatus | null;
+  supplementaryReportStatus: ModelYearReportStatus | null;
 };
 
 export const mapOfStatusToSupplierStatus: Readonly<

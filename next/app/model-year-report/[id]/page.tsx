@@ -23,7 +23,7 @@ import { mapOfStatusToSupplierStatus } from "../lib/constants";
 
 const Page = async (props: { params: Promise<{ id: string }> }) => {
   const args = await props.params;
-  const myrId = parseInt(args.id, 10);
+  const myrId = Number.parseInt(args.id, 10);
   const myr = await getModelYearReport(myrId);
   if (!myr) {
     return null;

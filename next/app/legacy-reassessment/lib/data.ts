@@ -25,9 +25,14 @@ export const getLegacyReassessments = async (): Promise<
       id: true,
       modelYear: true,
       status: true,
-      sequenceNumber: true,
       organization: { select: { name: true } },
+      ReassessmentHistory: {
+        select: {
+          userAction: true,
+          timestamp: true,
+        },
+      },
     },
-    orderBy: [{ organizationId: "asc" }, { sequenceNumber: "asc" }],
+    orderBy: { id: "asc" },
   });
 };

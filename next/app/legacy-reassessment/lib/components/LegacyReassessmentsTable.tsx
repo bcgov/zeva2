@@ -9,17 +9,17 @@ import {
 } from "@/app/lib/utils/enumMaps";
 import { useRouter } from "next/navigation";
 import { Routes } from "@/app/lib/constants";
-import { LegacyReassessment } from "../constants";
+import { LegacyReassessmentSerialized } from "../constants";
 
 export const LegacyReassessmentsTable = (props: {
-  reassessments: LegacyReassessment[];
+  reassessments: LegacyReassessmentSerialized[];
   userIsGov: boolean;
 }) => {
   const router = useRouter();
   const navigationAction = useCallback(async (id: number) => {
     router.push(`${Routes.LegacyReassessments}/${id}`);
   }, []);
-  const columnHelper = createColumnHelper<LegacyReassessment>();
+  const columnHelper = createColumnHelper<LegacyReassessmentSerialized>();
   const modelYearEnumMap = useMemo(() => {
     return getModelYearEnumsToStringsMap();
   }, []);
@@ -27,7 +27,7 @@ export const LegacyReassessmentsTable = (props: {
     return getReassessmentStatusEnumsToStringsMap();
   }, []);
   const columns = useMemo(() => {
-    const result: ColumnDef<LegacyReassessment, any>[] = [
+    const result: ColumnDef<LegacyReassessmentSerialized, any>[] = [
       columnHelper.accessor((row) => modelYearEnumMap[row.modelYear], {
         id: "modelYear",
         enableSorting: true,
@@ -40,20 +40,22 @@ export const LegacyReassessmentsTable = (props: {
         enableColumnFilter: true,
         header: () => <span>Status</span>,
       }),
-      columnHelper.accessor((row) => row.sequenceNumber.toString(), {
-        id: "sequenceNumber",
-        enableSorting: true,
-        enableColumnFilter: true,
-        header: () => <span>Sequence Number</span>,
-      }),
     ];
     if (props.userIsGov) {
       result.unshift(
-        columnHelper.accessor((row) => row.organization.name, {
+        columnHelper.accessor((row) => row.supplier, {
           id: "organization",
           enableSorting: true,
           enableColumnFilter: true,
           header: () => <span>Supplier</span>,
+        }),
+      );
+      result.push(
+        columnHelper.accessor((row) => row.submittedDate ?? "--", {
+          id: "submittedDate",
+          enableSorting: true,
+          enableColumnFilter: true,
+          header: () => <span>Submitted Date</span>,
         }),
       );
     }
@@ -65,11 +67,19 @@ export const LegacyReassessmentsTable = (props: {
         header: () => <span>ID</span>,
       }),
     );
+    result.push(
+      columnHelper.accessor((row) => row.issuedDate ?? "--", {
+        id: "issuedDate",
+        enableSorting: true,
+        enableColumnFilter: true,
+        header: () => <span>Issued Date</span>,
+      }),
+    );
     return result;
   }, [columnHelper, props.reassessments, props.userIsGov]);
 
   return (
-    <ClientSideTable<LegacyReassessment>
+    <ClientSideTable<LegacyReassessmentSerialized>
       columns={columns}
       data={props.reassessments}
       navigationAction={navigationAction}

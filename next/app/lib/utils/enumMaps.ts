@@ -19,7 +19,6 @@ import {
   ReassessmentStatus,
   ReferenceType,
   Role,
-  SupplementaryReportStatus,
   SupplierClass,
   TransactionType,
   VehicleClass,
@@ -278,20 +277,6 @@ export const getStringsToSupplierClassEnumsMap = () => {
 
 export const getSupplierClassEnumsToStringsMap = () => {
   return getEnumsToStringsMap<SupplierClass>(SupplierClass, statusTransformer);
-};
-
-export const getStringsToSupplementaryReportStatusEnumsMap = () => {
-  return getStringsToEnumsMap<SupplementaryReportStatus>(
-    SupplementaryReportStatus,
-    statusTransformer,
-  );
-};
-
-export const getSupplementaryReportStatusEnumsToStringsMap = () => {
-  return getEnumsToStringsMap<SupplementaryReportStatus>(
-    SupplementaryReportStatus,
-    statusTransformer,
-  );
 };
 
 export const getStringsToVehicleClassCodeEnumsMap = (): Partial<

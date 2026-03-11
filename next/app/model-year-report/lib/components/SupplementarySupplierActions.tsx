@@ -1,19 +1,22 @@
 "use client";
 
 import { Button } from "@/app/lib/components";
-import { SupplementaryReportStatus } from "@/prisma/generated/enums";
 import { useRouter } from "next/navigation";
 import { useCallback, useState, useTransition } from "react";
-import { deleteSupplementary, submitSupplementary } from "../actions";
+import {
+  deleteSupplementary,
+  submitSupplementaryToGovernment,
+} from "../actions";
 import { getNormalizedComment } from "@/app/lib/utils/comment";
 import { CommentBox } from "@/app/lib/components/inputs/CommentBox";
 import { Routes } from "@/app/lib/constants";
+import { ModelYearReportStatus } from "@/prisma/generated/enums";
 
 // if myrId is defined, then we're working with a non-legacy supplementary;
 // otherwise, it is a legacy supplementary
 export const SupplementarySupplierActions = (props: {
   suppId: number;
-  status: SupplementaryReportStatus;
+  status: ModelYearReportStatus;
   myrId?: number;
 }) => {
   const router = useRouter();
@@ -46,7 +49,7 @@ export const SupplementarySupplierActions = (props: {
     setError("");
     startTransition(async () => {
       try {
-        const response = await submitSupplementary(
+        const response = await submitSupplementaryToGovernment(
           props.suppId,
           getNormalizedComment(comment),
         );
@@ -72,7 +75,10 @@ export const SupplementarySupplierActions = (props: {
     }
   }, [props.myrId, props.suppId]);
 
-  if (props.status === SupplementaryReportStatus.DRAFT) {
+  if (
+    props.status === ModelYearReportStatus.DRAFT ||
+    props.status === ModelYearReportStatus.RETURNED_TO_SUPPLIER
+  ) {
     return (
       <div className="space-y-2">
         {error && <p className="text-red-600">{error}</p>}

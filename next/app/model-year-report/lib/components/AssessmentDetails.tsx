@@ -1,12 +1,13 @@
 import Excel from "exceljs";
 import { parseAssessment } from "../utils";
 import { ParsedAssessment } from "./ParsedAssessment";
-import { getAssessment, getReassessment } from "../data";
+import { getAssessment, getReassessment, getSuppReassessment } from "../data";
 import { getObjectAsBuffer } from "@/app/lib/services/s3";
 
-// used by both assessments and reassessments; id is either a myrId or a reassessmentId
+// used for assessments, reassessments and supplementary reassessments;
+// id is either a myrId, reassessmentId, or suppId
 export const AssessmentDetails = async (props: {
-  type: "assessment" | "reassessment";
+  type: "assessment" | "reassessment" | "suppReassessment";
   id: number;
 }) => {
   let objectName;
@@ -21,6 +22,12 @@ export const AssessmentDetails = async (props: {
       const reassessment = await getReassessment(props.id);
       if (reassessment) {
         objectName = reassessment.objectName;
+      }
+      break;
+    case "suppReassessment":
+      const suppReassessment = await getSuppReassessment(props.id);
+      if (suppReassessment) {
+        objectName = suppReassessment.objectName;
       }
       break;
   }

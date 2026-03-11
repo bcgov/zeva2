@@ -5,8 +5,8 @@ import {
   getSupplierOwnData,
   getSupplierOwnVehicleStats,
 } from "@/app/model-year-report/lib/data";
-import { SupplementaryReportStatus } from "@/prisma/generated/enums";
 import { getPresignedGetObjectUrl } from "@/app/lib/services/s3";
+import { ModelYearReportStatus } from "@/prisma/generated/enums";
 
 const Page = async (props: {
   params: Promise<{ id: string; supplementaryId: string }>;
@@ -18,7 +18,8 @@ const Page = async (props: {
   if (
     userIsGov ||
     !report ||
-    report.status !== SupplementaryReportStatus.DRAFT
+    (report.status !== ModelYearReportStatus.DRAFT &&
+      report.status !== ModelYearReportStatus.RETURNED_TO_SUPPLIER)
   ) {
     return null;
   }

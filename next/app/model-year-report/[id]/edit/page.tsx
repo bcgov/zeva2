@@ -10,7 +10,7 @@ import { getPresignedGetObjectUrl } from "@/app/lib/services/s3";
 
 const Page = async (props: { params: Promise<{ id: string }> }) => {
   const args = await props.params;
-  const myrId = parseInt(args.id, 10);
+  const myrId = Number.parseInt(args.id, 10);
   const { userIsGov } = await getUserInfo();
   if (userIsGov) {
     return null;

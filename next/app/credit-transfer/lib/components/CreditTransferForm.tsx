@@ -101,7 +101,7 @@ export const CreditTransferForm = (props: {
           onChange={(e) => {
             handleTransferToSelect(e.target.value);
           }}
-          disabled={isPending}
+          disabled={!!props.creditTransfer || isPending}
         >
           <option value="">--</option>
           {Object.entries(props.transferCandidatesMap).map(([id, name]) => (

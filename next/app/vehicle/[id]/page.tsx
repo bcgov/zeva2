@@ -14,7 +14,7 @@ import { AnalystActions } from "../lib/components/AnalystActions";
 const Page = async (props: { params: Promise<{ id: string }> }) => {
   const { userIsGov, userRoles } = await getUserInfo();
   const args = await props.params;
-  const id = parseInt(args.id);
+  const id = Number.parseInt(args.id);
   const vehicle = await getVehicle(id);
   if (!vehicle) {
     return null;

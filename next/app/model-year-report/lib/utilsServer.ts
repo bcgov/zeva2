@@ -2,9 +2,9 @@ import { Decimal } from "decimal.js";
 import {
   BalanceType,
   ModelYear,
+  ModelYearReportStatus,
   ReassessmentStatus,
   ReferenceType,
-  SupplementaryReportStatus,
   SupplierClass,
   TransactionType,
   VehicleClass,
@@ -372,7 +372,7 @@ export const getPenalty = (
   return penalty.toFixed(2);
 };
 
-// assumes reassessments and supplementaryReports are ordered by sequence number (greatest -> least)
+// assumes associated reassessments and supps are filtered and ordered by id, in descending order
 export const getSerializedMyrs = (
   myrs: MyrRecord[],
   userIsGov: boolean,
@@ -384,19 +384,16 @@ export const getSerializedMyrs = (
       result.status = mapOfStatusToSupplierStatus[result.status];
     }
     let reassessmentStatus: ReassessmentStatus | null = null;
-    let supplementaryReportStatus: SupplementaryReportStatus | null = null;
-    if (
-      !userIsGov &&
-      reassessments.length > 0 &&
-      reassessments[0].status === ReassessmentStatus.ISSUED
-    ) {
-      reassessmentStatus = ReassessmentStatus.ISSUED;
-    } else if (
-      userIsGov &&
-      supplementaryReports.length > 0 &&
-      supplementaryReports[0].status === SupplementaryReportStatus.SUBMITTED
-    ) {
-      supplementaryReportStatus = SupplementaryReportStatus.SUBMITTED;
+    let supplementaryReportStatus: ModelYearReportStatus | null = null;
+    if (reassessments.length > 0) {
+      reassessmentStatus = reassessments[0].status;
+    }
+    if (supplementaryReports.length > 0) {
+      supplementaryReportStatus = supplementaryReports[0].status;
+      if (!userIsGov) {
+        supplementaryReportStatus =
+          mapOfStatusToSupplierStatus[supplementaryReportStatus];
+      }
     }
     return {
       ...result,

@@ -1,15 +1,15 @@
 import { JSX } from "react";
-import { getSupplementaryReportStatusEnumsToStringsMap } from "@/app/lib/utils/enumMaps";
 import Link from "next/link";
 import { Routes } from "@/app/lib/constants";
 import { getSupplementaries } from "../data";
+import { getMyrStatusEnumsToStringsMap } from "@/app/lib/utils/enumMaps";
 
 export const SupplementaryList = async (props: { myrId: number }) => {
   const supplementaries = await getSupplementaries(props.myrId);
   if (supplementaries.length === 0) {
     return null;
   }
-  const statusMap = getSupplementaryReportStatusEnumsToStringsMap();
+  const statusMap = getMyrStatusEnumsToStringsMap();
   const entries: JSX.Element[] = [];
   for (const supp of supplementaries) {
     const id = supp.id;
@@ -18,7 +18,7 @@ export const SupplementaryList = async (props: { myrId: number }) => {
         <Link
           href={`${Routes.ComplianceReporting}/${props.myrId}/supplementary/${id}`}
         >
-          {`Supplementary Report ${supp.sequenceNumber} - ${statusMap[supp.status]}`}
+          {`Supplementary Report ${supp.id} - ${statusMap[supp.status]}`}
         </Link>
       </li>,
     );

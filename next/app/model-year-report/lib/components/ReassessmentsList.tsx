@@ -18,7 +18,7 @@ export const ReassessmentsList = async (props: { myrId: number }) => {
         <Link
           href={`${Routes.ComplianceReporting}/${props.myrId}/reassessment/${id}`}
         >
-          {`Reassessment ${reassessment.sequenceNumber} - ${statusMap[reassessment.status]}`}
+          {`Reassessment ${reassessment.id} - ${statusMap[reassessment.status]}`}
         </Link>
       </li>,
     );

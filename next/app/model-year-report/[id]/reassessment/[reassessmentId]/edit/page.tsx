@@ -11,6 +11,7 @@ const Page = async (props: {
     return null;
   }
   const args = await props.params;
+  const myrId = Number.parseInt(args.id, 10);
   const reassessmentId = Number.parseInt(args.reassessmentId, 10);
   const reassessment = await getReassessment(reassessmentId);
   if (!reassessment) {
@@ -20,11 +21,12 @@ const Page = async (props: {
     <div className="max-w-xl mx-auto p-4">
       <h1 className="text-xl font-bold mb-4">Edit a Reassessment</h1>
       <AssessmentForm
-        type="savedReassessment"
+        type="nonLegacySavedReassessment"
         reassessmentId={reassessment.id}
         orgName={reassessment.organization.name}
         modelYear={reassessment.modelYear}
         orgId={reassessment.organizationId}
+        myrId={myrId}
         url={await getPresignedGetObjectUrl(reassessment.objectName)}
       />
     </div>

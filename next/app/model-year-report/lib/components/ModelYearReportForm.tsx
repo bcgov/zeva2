@@ -48,7 +48,6 @@ import {
   parseMyr,
   VehicleStatString,
 } from "../utils";
-import { ParsedModelYearReport } from "./ParsedModelYearReport";
 import { AttachmentDownload } from "@/app/lib/constants/attachment";
 import { VehicleStatistic } from "../services";
 import { Adjustment, Adjustments } from "./Adjustments";
@@ -108,10 +107,8 @@ export const ModelYearReportForm = (
   const [suggestedAdjustments, setSuggestedAdjustments] = useState<
     Adjustment[]
   >([]);
-  const [report, setReport] = useState<[Workbook, ParsedMyr] | null>(null);
   const [forecasts, setForecasts] = useState<File[]>([]);
-  const [generationError, setGenerationError] = useState<string>("");
-  const [saveError, setSaveError] = useState<string>("");
+  const [error, setError] = useState<string>("");
 
   useEffect(() => {
     if (props.type !== "legacyNewSupp") {
@@ -198,7 +195,6 @@ export const ModelYearReportForm = (
           setZevClassSelection(
             getZevClassChoice(savedDetails.zevClassOrdering),
           );
-          setReport(report);
         }
       };
       loadReports();
@@ -225,52 +221,42 @@ export const ModelYearReportForm = (
     [],
   );
 
-  const handleGenerateReport = useCallback(() => {
-    setGenerationError("");
-    startTransition(async () => {
-      try {
-        if (
-          !modelYear ||
-          !legalName ||
-          !serviceAddress ||
-          !recordsAddress ||
-          !makes
-        ) {
-          throw new Error("Please ensure no field is empty!");
-        }
-        validateNvValues(nvValues);
-        const zevClassOrdering = getZevClassOrdering(zevClassSelection);
-        const adjustmentsPayload = getAdjustmentsPayload(suggestedAdjustments);
-        const [templateUrl, myrDataResponse] = await Promise.all([
-          getMyrTemplateUrl(),
-          getMyrData(modelYear, nvValues, zevClassOrdering, adjustmentsPayload),
-        ]);
-        if (myrDataResponse.responseType === "error") {
-          throw new Error(myrDataResponse.message);
-        }
-        const templateResponse = await axios.get(templateUrl, {
-          responseType: "arraybuffer",
-        });
-        const template = templateResponse.data;
-        const workbook = await generateMyr(
-          template,
-          myrDataResponse.data,
-          zevClassOrdering,
-          legalName,
-          makes,
-          recordsAddress,
-          serviceAddress,
-          vehicleStats,
-          adjustmentsPayload,
-        );
-        const parsedMyr = parseMyr(workbook);
-        setReport([workbook, parsedMyr]);
-      } catch (e) {
-        if (e instanceof Error) {
-          setGenerationError(e.message);
-        }
-      }
+  const generateReport = useCallback(async () => {
+    if (
+      !modelYear ||
+      !legalName ||
+      !serviceAddress ||
+      !recordsAddress ||
+      !makes
+    ) {
+      throw new Error("Please ensure no field is empty!");
+    }
+    validateNvValues(nvValues);
+    const zevClassOrdering = getZevClassOrdering(zevClassSelection);
+    const adjustmentsPayload = getAdjustmentsPayload(suggestedAdjustments);
+    const [templateUrl, myrDataResponse] = await Promise.all([
+      getMyrTemplateUrl(),
+      getMyrData(modelYear, nvValues, zevClassOrdering, adjustmentsPayload),
+    ]);
+    if (myrDataResponse.responseType === "error") {
+      throw new Error(myrDataResponse.message);
+    }
+    const templateResponse = await axios.get(templateUrl, {
+      responseType: "arraybuffer",
     });
+    const template = templateResponse.data;
+    const workbook = await generateMyr(
+      template,
+      myrDataResponse.data,
+      zevClassOrdering,
+      legalName,
+      makes,
+      recordsAddress,
+      serviceAddress,
+      vehicleStats,
+      adjustmentsPayload,
+    );
+    return workbook;
   }, [
     modelYear,
     legalName,
@@ -282,11 +268,6 @@ export const ModelYearReportForm = (
     zevClassSelection,
     suggestedAdjustments,
   ]);
-
-  const handleClearMyr = useCallback(() => {
-    setSaveError("");
-    setReport(null);
-  }, []);
 
   const handleDownloadForecastTemplate = useCallback(() => {
     if (modelYear && (props.type === "newMyr" || props.type === "savedMyr")) {
@@ -306,71 +287,74 @@ export const ModelYearReportForm = (
     }
   }, [props.type, modelYear]);
 
-  const handleSave = useCallback(() => {
-    setSaveError("");
+  const saveReport = useCallback(
+    async (report: Workbook) => {
+      if (!modelYear) {
+        throw new Error("You must select a Model Year!");
+      }
+      if (props.type === "newMyr" || props.type === "savedMyr") {
+        if (forecasts.length !== 1) {
+          throw new Error("Exactly 1 Forecast Report expected!");
+        }
+        const forecastBuf = await forecasts[0].arrayBuffer();
+        const forecastWorkbook = await getWorkbook(forecastBuf);
+        validateForecastReport(forecastWorkbook, modelYear);
+      }
+      const reportAsBase64 = bytesToBase64(await report.xlsx.writeBuffer());
+      let response;
+      if (props.type === "newMyr" || props.type === "savedMyr") {
+        response = await saveReports(
+          modelYear,
+          bytesToBase64(await report.xlsx.writeBuffer()),
+          bytesToBase64(await forecasts[0].arrayBuffer()),
+          forecasts[0].name,
+        );
+      } else if (
+        props.type === "legacyNewSupp" ||
+        props.type === "nonLegacyNewSupp"
+      ) {
+        response = await createSupplementary(modelYear, reportAsBase64);
+      } else if (
+        supplementaryId &&
+        (props.type === "legacySavedSupp" ||
+          props.type === "nonLegacySavedSupp")
+      ) {
+        response = await saveSupplementary(supplementaryId, reportAsBase64);
+      }
+      if (response && response.responseType === "error") {
+        throw new Error(response.message);
+      } else if (response && response.responseType === "data") {
+        const responseData = response.data;
+        if (typeof responseData === "number") {
+          router.push(`${Routes.ComplianceReporting}/${responseData}`);
+        } else {
+          const { supplementaryId, myrId } = responseData;
+          if (myrId) {
+            router.push(
+              `${Routes.ComplianceReporting}/${myrId}/supplementary/${supplementaryId}`,
+            );
+          } else {
+            router.push(`${Routes.LegacySupplementary}/${supplementaryId}`);
+          }
+        }
+      }
+    },
+    [props.type, supplementaryId, modelYear, forecasts],
+  );
+
+  const handleGenerateAndSaveReport = useCallback(() => {
+    setError("");
     startTransition(async () => {
       try {
-        if (!modelYear) {
-          throw new Error("You must select a Model Year!");
-        }
-        if (!report) {
-          throw new Error("You must generate a report!");
-        }
-        if (props.type === "newMyr" || props.type === "savedMyr") {
-          if (forecasts.length !== 1) {
-            throw new Error("Exactly 1 Forecast Report expected!");
-          }
-          const forecastBuf = await forecasts[0].arrayBuffer();
-          const forecastWorkbook = await getWorkbook(forecastBuf);
-          validateForecastReport(forecastWorkbook, modelYear);
-        }
-        const reportAsBase64 = bytesToBase64(
-          await report[0].xlsx.writeBuffer(),
-        );
-        let response;
-        if (props.type === "newMyr" || props.type === "savedMyr") {
-          response = await saveReports(
-            modelYear,
-            bytesToBase64(await report[0].xlsx.writeBuffer()),
-            bytesToBase64(await forecasts[0].arrayBuffer()),
-            forecasts[0].name,
-          );
-        } else if (
-          props.type === "legacyNewSupp" ||
-          props.type === "nonLegacyNewSupp"
-        ) {
-          response = await createSupplementary(modelYear, reportAsBase64);
-        } else if (
-          supplementaryId &&
-          (props.type === "legacySavedSupp" ||
-            props.type === "nonLegacySavedSupp")
-        ) {
-          response = await saveSupplementary(supplementaryId, reportAsBase64);
-        }
-        if (response && response.responseType === "error") {
-          throw new Error(response.message);
-        } else if (response && response.responseType === "data") {
-          const responseData = response.data;
-          if (typeof responseData === "number") {
-            router.push(`${Routes.ComplianceReporting}/${responseData}`);
-          } else {
-            const { supplementaryId, myrId } = responseData;
-            if (myrId) {
-              router.push(
-                `${Routes.ComplianceReporting}/${myrId}/supplementary/${supplementaryId}`,
-              );
-            } else {
-              router.push(`${Routes.LegacySupplementary}/${supplementaryId}`);
-            }
-          }
-        }
+        const report = await generateReport();
+        await saveReport(report);
       } catch (e) {
         if (e instanceof Error) {
-          setSaveError(e.message);
+          setError(e.message);
         }
       }
     });
-  }, [props.type, supplementaryId, modelYear, report, forecasts]);
+  }, [generateReport, saveReport]);
 
   const modelYearComponent: JSX.Element | null = useMemo(() => {
     let innerComponent;
@@ -384,7 +368,7 @@ export const ModelYearReportForm = (
             const value = e.target.value;
             setModelYear(isModelYear(value) ? value : undefined);
           }}
-          disabled={!!report}
+          disabled={isPending}
         >
           <option key={undefined}>--</option>
           {Object.entries(legacyModelYearsMap).map(([key, value]) => (
@@ -416,7 +400,7 @@ export const ModelYearReportForm = (
       );
     }
     return null;
-  }, [props.type, report, modelYear, modelYearsMap, legacyModelYearsMap]);
+  }, [props.type, modelYear, modelYearsMap, legacyModelYearsMap, isPending]);
 
   return (
     <div>
@@ -431,7 +415,7 @@ export const ModelYearReportForm = (
           type="text"
           value={legalName ?? ""}
           onChange={(e) => setLegalName(e.target.value)}
-          disabled={!!report || isPending}
+          disabled={isPending}
         />
       </div>
       <div className="flex items-center py-2 my-2">
@@ -444,7 +428,7 @@ export const ModelYearReportForm = (
           type="text"
           value={recordsAddress ?? ""}
           onChange={(e) => setRecordsAddress(e.target.value)}
-          disabled={!!report || isPending}
+          disabled={isPending}
         />
       </div>
       <div className="flex items-center py-2 my-2">
@@ -457,7 +441,7 @@ export const ModelYearReportForm = (
           type="text"
           value={serviceAddress ?? ""}
           onChange={(e) => setServiceAddress(e.target.value)}
-          disabled={!!report || isPending}
+          disabled={isPending}
         />
       </div>
       <div className="flex items-center py-2 my-2">
@@ -470,18 +454,18 @@ export const ModelYearReportForm = (
           type="text"
           value={makes ?? ""}
           onChange={(e) => setMakes(e.target.value)}
-          disabled={!!report || isPending}
+          disabled={isPending}
         />
       </div>
       <VehicleStatsInput
         stats={vehicleStats}
         setStats={setVehicleStats}
-        disabled={!!report || isPending}
+        disabled={isPending}
       />
       <MyrNvValues
         nvValues={nvValues}
         handleChange={handleNvValuesChange}
-        disabled={!!report || isPending}
+        disabled={isPending}
       />
       <div className="flex items-center py-2 my-2">
         <p>
@@ -493,36 +477,15 @@ export const ModelYearReportForm = (
         <ZevClassSelect
           zevClassSelection={zevClassSelection}
           handleChange={handleZevClassSelect}
-          disabled={!!report || isPending}
+          disabled={isPending}
         />
       </div>
       <Adjustments
         type="myr"
         adjustments={suggestedAdjustments}
         setAdjustments={setSuggestedAdjustments}
-        disabled={!!report || isPending}
+        disabled={isPending}
       />
-      {generationError && <p className="text-red-600">{generationError}</p>}
-      <div className="flex space-x-2">
-        {report ? (
-          <Button
-            variant="secondary"
-            onClick={handleClearMyr}
-            disabled={isPending}
-          >
-            {isPending ? "..." : "Clear Generated Report"}
-          </Button>
-        ) : (
-          <Button
-            variant="secondary"
-            onClick={handleGenerateReport}
-            disabled={isPending}
-          >
-            {isPending ? "..." : "Generate your Report"}
-          </Button>
-        )}
-      </div>
-      {report && <ParsedModelYearReport myr={report[1]} />}
       {(props.type === "newMyr" || props.type === "savedMyr") &&
         forecasts.length === 0 && (
           <div className="flex space-x-2">
@@ -550,10 +513,14 @@ export const ModelYearReportForm = (
           />
         </div>
       )}
-      {saveError && <p className="text-red-600">{saveError}</p>}
+      {error && <p className="text-red-600">{error}</p>}
       <div className="flex space-x-2">
-        <Button variant="primary" onClick={handleSave} disabled={isPending}>
-          {isPending ? "..." : "Save"}
+        <Button
+          variant="primary"
+          onClick={handleGenerateAndSaveReport}
+          disabled={isPending}
+        >
+          {isPending ? "..." : "Generate Report and Save"}
         </Button>
       </div>
     </div>

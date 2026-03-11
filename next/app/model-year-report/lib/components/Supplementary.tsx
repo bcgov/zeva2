@@ -2,42 +2,55 @@ import { ContentCard } from "@/app/lib/components";
 import { LoadingSkeleton } from "@/app/lib/components/skeletons";
 import { getUserInfo } from "@/auth";
 import { JSX, Suspense } from "react";
-import { SupplementaryGovernmentActions } from "./SupplementaryGovernmentActions";
+import { SupplementaryAnalystActions } from "./SupplementaryAnalystActions";
 import { SupplementarySupplierActions } from "./SupplementarySupplierActions";
 import { SupplementaryReportHistory } from "./SupplementaryReportHistory";
 import { SupplementaryReportDetails } from "./SupplementaryReportDetails";
-import { ModelYear, SupplementaryReportStatus } from "@/prisma/generated/enums";
+import {
+  ModelYear,
+  ModelYearReportStatus,
+  Role,
+} from "@/prisma/generated/enums";
 import { SystemDetails } from "./SystemDetails";
-import { getSupplementaryReportStatusEnumsToStringsMap } from "@/app/lib/utils/enumMaps";
+import { getMyrStatusEnumsToStringsMap } from "@/app/lib/utils/enumMaps";
+import { mapOfStatusToSupplierStatus } from "../constants";
+import { AssessmentDetails } from "./AssessmentDetails";
 
 // used for both legacy and non-legacy supplementaries
 export const Supplementary = async (props: {
   suppId: number;
   orgName: string;
   modelYear: ModelYear;
-  status: SupplementaryReportStatus;
-  sequenceNumber: number;
+  status: ModelYearReportStatus;
+  suppReassessmentExists: boolean;
   myrId?: number;
 }) => {
-  const { userIsGov } = await getUserInfo();
+  const { userIsGov, userRoles } = await getUserInfo();
+  let statusToUse = props.status;
   let actionComponent: JSX.Element | null = null;
   if (userIsGov) {
-    actionComponent = (
-      <SupplementaryGovernmentActions
-        suppId={props.suppId}
-        status={props.status}
-      />
-    );
+    if (userRoles.includes(Role.DIRECTOR)) {
+    } else if (userRoles.includes(Role.ZEVA_IDIR_USER)) {
+      actionComponent = (
+        <SupplementaryAnalystActions
+          suppId={props.suppId}
+          status={props.status}
+          suppReassessmentExists={props.suppReassessmentExists}
+          myrId={props.myrId}
+        />
+      );
+    }
   } else {
+    statusToUse = mapOfStatusToSupplierStatus[statusToUse];
     actionComponent = (
       <SupplementarySupplierActions
         suppId={props.suppId}
-        status={props.status}
+        status={statusToUse}
         myrId={props.myrId}
       />
     );
   }
-  const statusMap = getSupplementaryReportStatusEnumsToStringsMap();
+  const statusMap = getMyrStatusEnumsToStringsMap();
   return (
     <div className="flex flex-col w-1/3">
       <ContentCard title="Supplementary Report History">
@@ -50,13 +63,17 @@ export const Supplementary = async (props: {
           userIsGov={userIsGov}
           orgName={props.orgName}
           modelYear={props.modelYear}
-          status={statusMap[props.status] ?? ""}
-          sequenceNumber={props.sequenceNumber}
+          status={statusMap[statusToUse] ?? ""}
         />
       </ContentCard>
       <ContentCard title="The Supplementary Report">
         <Suspense fallback={<LoadingSkeleton />}>
           <SupplementaryReportDetails suppId={props.suppId} />
+        </Suspense>
+      </ContentCard>
+      <ContentCard title="The Associated Reassessment">
+        <Suspense fallback={<LoadingSkeleton />}>
+          <AssessmentDetails type="assessment" id={props.suppId} />
         </Suspense>
       </ContentCard>
       <ContentCard title="Actions">

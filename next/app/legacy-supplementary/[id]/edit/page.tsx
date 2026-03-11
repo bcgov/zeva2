@@ -4,20 +4,16 @@ import {
   getSupplierOwnData,
   getSupplierOwnVehicleStats,
 } from "@/app/model-year-report/lib/data";
-import { SupplementaryReportStatus } from "@/prisma/generated/enums";
 import { getPresignedGetObjectUrl } from "@/app/lib/services/s3";
 import { ModelYearReportForm } from "@/app/model-year-report/lib/components/ModelYearReportForm";
+import { ModelYearReportStatus } from "@/prisma/generated/enums";
 
 const Page = async (props: { params: Promise<{ id: string }> }) => {
   const args = await props.params;
   const suppId = Number.parseInt(args.id, 10);
   const { userIsGov } = await getUserInfo();
   const report = await getSupplementaryReport(suppId);
-  if (
-    userIsGov ||
-    !report ||
-    report.status !== SupplementaryReportStatus.DRAFT
-  ) {
+  if (userIsGov || !report || report.status !== ModelYearReportStatus.DRAFT) {
     return null;
   }
   const supplierData = await getSupplierOwnData();
