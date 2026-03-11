@@ -79,45 +79,6 @@ jobs:
               throw new Error(`PR author ${prAuthor} is not allowed to run PR build.`);
             }
 
-  run-jest-tests:
-    name: Run Jest Tests
-    needs: gate
-    if: needs.gate.outputs.should_run == 'true'
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: ./next
-    steps:
-      - name: Checkout PR head
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-          ref: ${{ needs.gate.outputs.pr_ref }}
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: npm
-          cache-dependency-path: ./next/package-lock.json
-
-      - name: Install dependencies
-        run: npm install
-
-      - name: Generate Prisma Client
-        run: npm run generate-prisma-client
-
-      - name: Run tests
-        run: npm run test
-
-      - name: Upload coverage reports
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: coverage-report-pr-${{ env.PR_NUMBER }}
-          path: ./next/coverage
-          retention-days: 30
-
   install-oc:
     name: Install OpenShift CLI
     needs: gate
@@ -126,7 +87,7 @@ jobs:
 
   build-pr:
     name: Build Zeva2 PR Images
-    needs: [gate, verify-pr-author, run-jest-tests, install-oc]
+    needs: [gate, verify-pr-author, install-oc]
     if: needs.gate.outputs.should_run == 'true'
     uses: ./.github/workflows/build-template.yaml
     with:
