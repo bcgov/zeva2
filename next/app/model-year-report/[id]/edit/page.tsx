@@ -3,6 +3,8 @@ import { ModelYearReportForm } from "../../lib/components/ModelYearReportForm";
 import { getModelYearReport } from "../../lib/data";
 import { ModelYearReportStatus } from "@/prisma/generated/enums";
 import { getPresignedGetObjectUrl } from "@/app/lib/services/s3";
+import { AttachmentDownload } from "@/app/lib/constants/attachment";
+import { getMyrAttachmentDownloadUrls } from "../../lib/actions";
 
 const Page = async (props: { params: Promise<{ id: string }> }) => {
   const args = await props.params;
@@ -19,6 +21,11 @@ const Page = async (props: { params: Promise<{ id: string }> }) => {
   ) {
     return null;
   }
+  const attachments: AttachmentDownload[] = [];
+  const attachmentsResp = await getMyrAttachmentDownloadUrls(myrId);
+  if (attachmentsResp.responseType === "data") {
+    attachments.push(...attachmentsResp.data);
+  }
   return (
     <div className="max-w-xl mx-auto p-4">
       <h1 className="text-xl font-bold mb-4">
@@ -33,6 +40,7 @@ const Page = async (props: { params: Promise<{ id: string }> }) => {
           fileName: myr.forecastReportFileName,
           url: await getPresignedGetObjectUrl(myr.forecastReportObjectName),
         }}
+        attachments={attachments}
       />
     </div>
   );

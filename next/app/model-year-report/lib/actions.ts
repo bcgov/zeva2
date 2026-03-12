@@ -14,7 +14,11 @@ import {
   VehicleClass,
   ZevClass,
 } from "@/prisma/generated/enums";
-import { SupplyVolumeCreateManyInput } from "@/prisma/generated/models";
+import {
+  ModelYearReportAttachmentWhereInput,
+  SupplementaryReportAttachmentWhereInput,
+  SupplyVolumeCreateManyInput,
+} from "@/prisma/generated/models";
 import {
   createHistory,
   createReassessmentHistory,
@@ -57,6 +61,7 @@ import {
 } from "@/app/lib/utils/complianceYear";
 import { addJobToEmailQueue } from "@/app/lib/services/queue";
 import { Buffer } from "node:buffer";
+import { Attachment, AttachmentDownload } from "@/app/lib/constants/attachment";
 
 export type NvValues = Partial<Record<VehicleClass, string>>;
 
@@ -169,11 +174,19 @@ export const getForecastPutData = async () => {
   return (await getAttachmentPutData(Directory.Forecast, 1))[0];
 };
 
+export const getMyrAttachmentsPutData = async (numberOfFiles: number) => {
+  return await getAttachmentPutData(
+    Directory.ModelYearReportAttachments,
+    numberOfFiles,
+  );
+};
+
 export const saveReports = async (
   modelYear: ModelYear,
   myrObjectName: string,
   forecastObjectName: string,
   forecastReportFileName: string,
+  attachments: Attachment[],
 ): Promise<DataOrErrorActionResponse<number>> => {
   let idOfReport = NaN;
   const { userIsGov, userOrgId } = await getUserInfo();
@@ -203,6 +216,11 @@ export const saveReports = async (
   }
   await prisma.$transaction(async (tx) => {
     if (existingMyr) {
+      await tx.modelYearReportAttachment.deleteMany({
+        where: {
+          modelYearReportId: existingMyr.id,
+        },
+      });
       await tx.modelYearReport.update({
         where: {
           id: existingMyr.id,
@@ -226,8 +244,60 @@ export const saveReports = async (
       });
       idOfReport = newId;
     }
+    await tx.modelYearReportAttachment.createMany({
+      data: attachments.map((attachment) => {
+        return {
+          modelYearReportId: idOfReport,
+          fileName: attachment.fileName,
+          objectName: attachment.objectName,
+        };
+      }),
+    });
   });
   return getDataActionResponse<number>(idOfReport);
+};
+
+export const getMyrAttachmentDownloadUrls = async (
+  myrId: number,
+): Promise<DataOrErrorActionResponse<AttachmentDownload[]>> => {
+  const { userIsGov, userOrgId } = await getUserInfo();
+  const whereClause: ModelYearReportAttachmentWhereInput = {
+    modelYearReportId: myrId,
+  };
+  if (userIsGov) {
+    whereClause.modelYearReport = {
+      status: {
+        notIn: [
+          ModelYearReportStatus.DRAFT,
+          ModelYearReportStatus.RETURNED_TO_SUPPLIER,
+        ],
+      },
+    };
+  } else {
+    whereClause.modelYearReport = {
+      organizationId: userOrgId,
+    };
+  }
+  const attachments = await prisma.modelYearReportAttachment.findMany({
+    where: whereClause,
+    select: {
+      fileName: true,
+      objectName: true,
+    },
+  });
+  if (attachments.length === 0) {
+    return getErrorActionResponse("No attachments found!");
+  }
+  const result: AttachmentDownload[] = [];
+  for (const attachment of attachments) {
+    if (attachment.fileName) {
+      result.push({
+        fileName: attachment.fileName,
+        url: await getPresignedGetObjectUrl(attachment.objectName),
+      });
+    }
+  }
+  return getDataActionResponse(result);
 };
 
 export const submitReports = async (
@@ -988,9 +1058,17 @@ export const getSuppPutData = async () => {
   return (await getAttachmentPutData(Directory.Supplementary, 1))[0];
 };
 
+export const getSuppAttachmentsPutData = async (numberOfFiles: number) => {
+  return await getAttachmentPutData(
+    Directory.SupplementaryAttachments,
+    numberOfFiles,
+  );
+};
+
 export const createSupplementary = async (
   modelYear: ModelYear,
   suppObjectName: string,
+  attachments: Attachment[],
 ): Promise<DataOrErrorActionResponse<number>> => {
   let supplementaryId = NaN;
   const { userIsGov, userOrgId } = await getUserInfo();
@@ -1003,22 +1081,77 @@ export const createSupplementary = async (
   } catch (e) {
     return getErrorActionResponse("Invalid Action!");
   }
-  const createdReport = await prisma.supplementaryReport.create({
-    data: {
+  await prisma.$transaction(async (tx) => {
+    const createdReport = await tx.supplementaryReport.create({
+      data: {
+        organizationId: userOrgId,
+        modelYear,
+        objectName: suppObjectName,
+        status: ModelYearReportStatus.DRAFT,
+        modelYearReportId: myrId,
+      },
+    });
+    supplementaryId = createdReport.id;
+    await tx.supplementaryReportAttachment.createMany({
+      data: attachments.map((attachment) => {
+        return {
+          supplementaryReportId: supplementaryId,
+          fileName: attachment.fileName,
+          objectName: attachment.objectName,
+        };
+      }),
+    });
+  });
+  return getDataActionResponse(supplementaryId);
+};
+
+export const getSuppAttachmentDownloadUrls = async (
+  suppId: number,
+): Promise<DataOrErrorActionResponse<AttachmentDownload[]>> => {
+  const { userIsGov, userOrgId } = await getUserInfo();
+  const whereClause: SupplementaryReportAttachmentWhereInput = {
+    supplementaryReportId: suppId,
+  };
+  if (userIsGov) {
+    whereClause.supplementaryReport = {
+      status: {
+        notIn: [
+          ModelYearReportStatus.DRAFT,
+          ModelYearReportStatus.RETURNED_TO_SUPPLIER,
+        ],
+      },
+    };
+  } else {
+    whereClause.supplementaryReport = {
       organizationId: userOrgId,
-      modelYear,
-      objectName: suppObjectName,
-      status: ModelYearReportStatus.DRAFT,
-      modelYearReportId: myrId,
+    };
+  }
+  const attachments = await prisma.supplementaryReportAttachment.findMany({
+    where: whereClause,
+    select: {
+      fileName: true,
+      objectName: true,
     },
   });
-  supplementaryId = createdReport.id;
-  return getDataActionResponse(supplementaryId);
+  if (attachments.length === 0) {
+    return getErrorActionResponse("No attachments found!");
+  }
+  const result: AttachmentDownload[] = [];
+  for (const attachment of attachments) {
+    if (attachment.fileName) {
+      result.push({
+        fileName: attachment.fileName,
+        url: await getPresignedGetObjectUrl(attachment.objectName),
+      });
+    }
+  }
+  return getDataActionResponse(result);
 };
 
 export const saveSupplementary = async (
   supplementaryId: number,
   suppObjectName: string,
+  attachments: Attachment[],
 ): Promise<ErrorOrSuccessActionResponse> => {
   const { userIsGov, userOrgId } = await getUserInfo();
   if (userIsGov) {
@@ -1037,13 +1170,29 @@ export const saveSupplementary = async (
   if (!suppReport) {
     return getErrorActionResponse("Invalid Action!");
   }
-  await prisma.supplementaryReport.update({
-    where: {
-      id: supplementaryId,
-    },
-    data: {
-      objectName: suppObjectName,
-    },
+  await prisma.$transaction(async (tx) => {
+    await tx.supplementaryReport.update({
+      where: {
+        id: supplementaryId,
+      },
+      data: {
+        objectName: suppObjectName,
+      },
+    });
+    await tx.supplementaryReportAttachment.deleteMany({
+      where: {
+        supplementaryReportId: supplementaryId,
+      },
+    });
+    await tx.supplementaryReportAttachment.createMany({
+      data: attachments.map((attachment) => {
+        return {
+          supplementaryReportId: supplementaryId,
+          fileName: attachment.fileName,
+          objectName: attachment.objectName,
+        };
+      }),
+    });
   });
   return getSuccessActionResponse();
 };

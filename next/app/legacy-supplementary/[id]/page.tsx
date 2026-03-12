@@ -15,6 +15,7 @@ const Page = async (props: { params: Promise<{ id: string }> }) => {
       modelYear={report.modelYear}
       status={report.status}
       suppReassessmentExists={!!report.supplementaryReportReassessment}
+      attachments={report.supplementaryReportAttachments}
     />
   );
 };

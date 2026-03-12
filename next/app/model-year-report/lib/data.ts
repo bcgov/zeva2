@@ -77,6 +77,11 @@ export const getModelYearReport = async (myrId: number) => {
           name: true,
         },
       },
+      modelYearReportAttachments: {
+        select: {
+          fileName: true,
+        },
+      },
       ...(userIsGov && { assessment: true }),
     },
   });
@@ -407,6 +412,11 @@ export const getSupplementaryReport = async (suppId: number) => {
       supplementaryReportReassessment: {
         select: {
           objectName: true,
+        },
+      },
+      supplementaryReportAttachments: {
+        select: {
+          fileName: true,
         },
       },
     },

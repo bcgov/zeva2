@@ -1,6 +1,6 @@
 "use client";
 
-import axios from "axios";
+import axios, { AxiosResponse } from "axios";
 import { Button } from "@/app/lib/components";
 import { getModelYearEnumsToStringsMap } from "@/app/lib/utils/enumMaps";
 import { ModelYear, VehicleClass, ZevClass } from "@/prisma/generated/enums";
@@ -17,9 +17,11 @@ import {
   createSupplementary,
   getForecastPutData,
   getForecastTemplateUrl,
+  getMyrAttachmentsPutData,
   getMyrData,
   getMyrPutData,
   getMyrTemplateUrl,
+  getSuppAttachmentsPutData,
   getSuppPutData,
   NvValues,
   retrieveVehicleStatistics,
@@ -50,7 +52,7 @@ import {
   parseMyr,
   VehicleStatString,
 } from "../utils";
-import { AttachmentDownload } from "@/app/lib/constants/attachment";
+import { Attachment, AttachmentDownload } from "@/app/lib/constants/attachment";
 import { VehicleStatistic } from "../services";
 import { Adjustment, Adjustments } from "./Adjustments";
 import { isModelYear } from "@/app/lib/utils/typeGuards";
@@ -70,6 +72,7 @@ type SavedMyrProps = {
   modelYear: ModelYear;
   forecast: AttachmentDownload;
   myrUrl: string;
+  attachments: AttachmentDownload[];
 };
 
 type NonLegacyNewSuppProps = {
@@ -86,6 +89,7 @@ type NonLegacySavedSuppProps = {
   supplementaryId: number;
   modelYear: ModelYear;
   url: string;
+  attachments: AttachmentDownload[];
 };
 
 type LegacyNewSuppProps = {
@@ -98,6 +102,7 @@ type LegacySavedSuppProps = {
   supplementaryId: number;
   modelYear: ModelYear;
   url: string;
+  attachments: AttachmentDownload[];
 };
 
 export const ModelYearReportForm = (
@@ -127,6 +132,7 @@ export const ModelYearReportForm = (
   >([]);
   const [forecasts, setForecasts] = useState<File[]>([]);
   const [error, setError] = useState<string>("");
+  const [attachments, setAttachments] = useState<File[]>([]);
 
   useEffect(() => {
     switch (props.type) {
@@ -215,7 +221,18 @@ export const ModelYearReportForm = (
           );
         }
       };
+      const loadAttachments = async () => {
+        const attachmentsToLoad = props.attachments;
+        if (attachmentsToLoad.length > 0) {
+          const downloadedFiles = await getFiles(attachmentsToLoad);
+          const attachmentsToSet = downloadedFiles.map((file) => {
+            return new File([file.data], file.fileName);
+          });
+          setAttachments(attachmentsToSet);
+        }
+      };
       loadReports();
+      loadAttachments();
     }
   }, []);
 
@@ -324,6 +341,35 @@ export const ModelYearReportForm = (
       if (!modelYear) {
         throw new Error("You must select a Model Year!");
       }
+      const attachmentsToSave: Attachment[] = [];
+      const numberOfAttachments = attachments.length;
+      if (numberOfAttachments > 0) {
+        let putData;
+        switch (props.type) {
+          case "newMyr":
+          case "savedMyr":
+            putData = await getMyrAttachmentsPutData(numberOfAttachments);
+          case "nonLegacyNewSupp":
+          case "nonLegacySavedSupp":
+          case "legacyNewSupp":
+          case "legacySavedSupp":
+            putData = await getSuppAttachmentsPutData(numberOfAttachments);
+        }
+        const calls: Promise<AxiosResponse>[] = [];
+        for (const [index, file] of attachments.entries()) {
+          calls.push(
+            axios.put(putData[index].url, file, {
+              headers: { "if-none-match": "*" },
+            }),
+          );
+          attachmentsToSave.push({
+            objectName: putData[index].objectName,
+            fileName: file.name,
+          });
+        }
+        // will throw if at least one call fails
+        await Promise.all(calls);
+      }
       const reportBuf = await report.xlsx.writeBuffer();
       let response;
       switch (props.type) {
@@ -352,6 +398,7 @@ export const ModelYearReportForm = (
             putData[0].objectName,
             putData[1].objectName,
             forecasts[0].name,
+            attachmentsToSave,
           );
           break;
         case "nonLegacyNewSupp":
@@ -360,7 +407,11 @@ export const ModelYearReportForm = (
           await axios.put(url, reportBuf, {
             headers: { "if-none-match": "*" },
           });
-          response = await createSupplementary(modelYear, objectName);
+          response = await createSupplementary(
+            modelYear,
+            objectName,
+            attachmentsToSave,
+          );
           break;
         case "nonLegacySavedSupp":
         case "legacySavedSupp":
@@ -369,7 +420,11 @@ export const ModelYearReportForm = (
             await axios.put(url, reportBuf, {
               headers: { "if-none-match": "*" },
             });
-            response = await saveSupplementary(supplementaryId, objectName);
+            response = await saveSupplementary(
+              supplementaryId,
+              objectName,
+              attachmentsToSave,
+            );
           }
           break;
       }
@@ -413,7 +468,7 @@ export const ModelYearReportForm = (
         }
       }
     },
-    [props.type, myrId, supplementaryId, modelYear, forecasts],
+    [props.type, myrId, supplementaryId, modelYear, forecasts, attachments],
   );
 
   const handleGenerateAndSaveReport = useCallback(() => {
@@ -586,6 +641,15 @@ export const ModelYearReportForm = (
           />
         </div>
       )}
+      <div className="flex items-center space-x-4">
+        <span>Upload supporting documents here (optional; max 10):</span>
+        <Dropzone
+          files={attachments}
+          setFiles={setAttachments}
+          disabled={isPending}
+          maxNumberOfFiles={10}
+        />
+      </div>
       {error && <p className="text-red-600">{error}</p>}
       <div className="flex space-x-2">
         <Button

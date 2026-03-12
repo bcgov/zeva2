@@ -16,6 +16,9 @@ import { getMyrStatusEnumsToStringsMap } from "@/app/lib/utils/enumMaps";
 import { mapOfStatusToSupplierStatus } from "../constants";
 import { AssessmentDetails } from "./AssessmentDetails";
 import { SupplementaryDirectorActions } from "./SupplementaryDirectorActions";
+import { Attachments } from "@/app/lib/components/Attachments";
+import { Attachment } from "@/app/lib/constants/attachment";
+import { getSuppAttachmentDownloadUrls } from "../actions";
 
 // used for both legacy and non-legacy supplementaries
 export const Supplementary = async (props: {
@@ -24,9 +27,14 @@ export const Supplementary = async (props: {
   modelYear: ModelYear;
   status: ModelYearReportStatus;
   suppReassessmentExists: boolean;
+  attachments: Omit<Attachment, "objectName">[];
   myrId?: number;
 }) => {
   const { userIsGov, userRoles } = await getUserInfo();
+  const download = async () => {
+    "use server";
+    return getSuppAttachmentDownloadUrls(props.suppId);
+  };
   let statusToUse = props.status;
   if (!userIsGov) {
     statusToUse = mapOfStatusToSupplierStatus[props.status];
@@ -79,6 +87,13 @@ export const Supplementary = async (props: {
         <Suspense fallback={<LoadingSkeleton />}>
           <SupplementaryReportDetails suppId={props.suppId} />
         </Suspense>
+      </ContentCard>
+      <ContentCard title="Supporting Documents">
+        <Attachments
+          attachments={props.attachments}
+          download={download}
+          zipName={`supplementary-report-attachments-${props.suppId}`}
+        />
       </ContentCard>
       <ContentCard title="The Associated Reassessment">
         <Suspense fallback={<LoadingSkeleton />}>

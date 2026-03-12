@@ -20,6 +20,8 @@ import {
 import { SystemDetails } from "../lib/components/SystemDetails";
 import { getMyrStatusEnumsToStringsMap } from "@/app/lib/utils/enumMaps";
 import { mapOfStatusToSupplierStatus } from "../lib/constants";
+import { Attachments } from "@/app/lib/components/Attachments";
+import { getMyrAttachmentDownloadUrls } from "../lib/actions";
 
 const Page = async (props: { params: Promise<{ id: string }> }) => {
   const args = await props.params;
@@ -28,6 +30,10 @@ const Page = async (props: { params: Promise<{ id: string }> }) => {
   if (!myr) {
     return null;
   }
+  const download = async () => {
+    "use server";
+    return getMyrAttachmentDownloadUrls(myrId);
+  };
   const { userIsGov, userRoles } = await getUserInfo();
   const status = userIsGov
     ? myr.status
@@ -102,6 +108,13 @@ const Page = async (props: { params: Promise<{ id: string }> }) => {
         <Suspense fallback={<LoadingSkeleton />}>
           <ForecastReportDetails myrId={myrId} />
         </Suspense>
+      </ContentCard>
+      <ContentCard title="Supporting Documents">
+        <Attachments
+          attachments={myr.modelYearReportAttachments}
+          download={download}
+          zipName={`model-year-report-attachments-${myrId}`}
+        />
       </ContentCard>
       <ContentCard title="The Assessment">
         <Suspense fallback={<LoadingSkeleton />}>
