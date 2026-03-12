@@ -1,9 +1,5 @@
 import { getUserInfo } from "@/auth";
-import {
-  getSupplementaryReport,
-  getSupplierOwnData,
-  getSupplierOwnVehicleStats,
-} from "@/app/model-year-report/lib/data";
+import { getSupplementaryReport } from "@/app/model-year-report/lib/data";
 import { getPresignedGetObjectUrl } from "@/app/lib/services/s3";
 import { ModelYearReportForm } from "@/app/model-year-report/lib/components/ModelYearReportForm";
 import { ModelYearReportStatus } from "@/prisma/generated/enums";
@@ -16,8 +12,6 @@ const Page = async (props: { params: Promise<{ id: string }> }) => {
   if (userIsGov || !report || report.status !== ModelYearReportStatus.DRAFT) {
     return null;
   }
-  const supplierData = await getSupplierOwnData();
-  const vehicleStats = await getSupplierOwnVehicleStats(report.modelYear);
   return (
     <div className="max-w-xl mx-auto p-4">
       <h1 className="text-xl font-bold mb-4">
@@ -28,8 +22,6 @@ const Page = async (props: { params: Promise<{ id: string }> }) => {
         modelYear={report.modelYear}
         supplementaryId={suppId}
         url={await getPresignedGetObjectUrl(report.objectName)}
-        supplierData={supplierData}
-        vehicleStatistics={vehicleStats}
       />
     </div>
   );

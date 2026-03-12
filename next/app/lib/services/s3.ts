@@ -5,7 +5,6 @@ import {
 } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { randomUUID } from "node:crypto";
-import { Readable } from "node:stream";
 
 export enum Directory {
   Agreement = "agreement",
@@ -16,6 +15,7 @@ export enum Directory {
   ModelYearReport = "modelYearReport",
   Reassessment = "reassessment",
   Supplementary = "supplementary",
+  SupplementaryReassessment = "supplementaryReassessment",
   Templates = "templates",
   Vehicle = "vehicle",
 }
@@ -59,21 +59,6 @@ export const getObjectAsBuffer = async (objectName: string) => {
   const byteArray = await body.transformToByteArray();
   const buffer = Buffer.from(byteArray).buffer;
   return buffer;
-};
-
-export const putObject = async (
-  objectName: string,
-  object: Readable | Buffer,
-) => {
-  const client = getClient();
-  const bucketName = process.env.S3_BUCKET_NAME ?? "";
-  const command = new PutObjectCommand({
-    Bucket: bucketName,
-    Key: getPrefixedObjectName(objectName),
-    Body: object,
-    IfNoneMatch: "*",
-  });
-  return await client.send(command);
 };
 
 export const getPresignedGetObjectUrl = async (objectName: string) => {

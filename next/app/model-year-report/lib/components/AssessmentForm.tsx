@@ -16,7 +16,10 @@ import {
   createOrSaveSupplementaryReassessment,
   createReassessment,
   getAssessmentData,
+  getAssessmentPutData,
   getAssessmentTemplateUrl,
+  getReassessmentPutData,
+  getSupplementaryReassessmentPutData,
   NvValues,
   saveReassessment,
 } from "../actions";
@@ -156,12 +159,8 @@ export const AssessmentForm = (
   useEffect(() => {
     switch (props.type) {
       case "newAssessment":
-        setOrgName(props.orgName);
-        setModelYear(props.modelYear);
-        setOrgId(props.orgId);
-        setMyrId(props.myrId);
-        break;
       case "savedAssessment":
+      case "nonLegacyNewReassessment":
         setOrgName(props.orgName);
         setModelYear(props.modelYear);
         setOrgId(props.orgId);
@@ -169,12 +168,6 @@ export const AssessmentForm = (
         break;
       case "legacyNewReassessment":
         setOrgsMap(props.orgsMap);
-        break;
-      case "nonLegacyNewReassessment":
-        setOrgName(props.orgName);
-        setModelYear(props.modelYear);
-        setOrgId(props.orgId);
-        setMyrId(props.myrId);
         break;
       case "legacySavedReassessment":
         setReassessmentId(props.reassessmentId);
@@ -190,24 +183,13 @@ export const AssessmentForm = (
         setMyrId(props.myrId);
         break;
       case "legacyNewSuppReassessment":
-        setSuppId(props.suppId);
-        setOrgName(props.orgName);
-        setModelYear(props.modelYear);
-        setOrgId(props.orgId);
-        break;
-      case "nonLegacyNewSuppReassessment":
-        setSuppId(props.suppId);
-        setOrgName(props.orgName);
-        setModelYear(props.modelYear);
-        setOrgId(props.orgId);
-        setMyrId(props.myrId);
-        break;
       case "legacySavedSuppReassessment":
         setSuppId(props.suppId);
         setOrgName(props.orgName);
         setModelYear(props.modelYear);
         setOrgId(props.orgId);
         break;
+      case "nonLegacyNewSuppReassessment":
       case "nonLegacySavedSuppReassessment":
         setSuppId(props.suppId);
         setOrgName(props.orgName);
@@ -302,140 +284,105 @@ export const AssessmentForm = (
       if (!orgId || !modelYear) {
         throw new Error("Invalid supplier or model year!");
       }
+      const assessmentBuf = await assessment.xlsx.writeBuffer();
       let response;
-      const assessmentBase64 = bytesToBase64(
-        await assessment.xlsx.writeBuffer(),
-      );
       switch (props.type) {
         case "newAssessment":
-          if (myrId) {
-            response = await createOrSaveAssessment(myrId, assessmentBase64);
-          }
-          break;
         case "savedAssessment":
           if (myrId) {
-            response = await createOrSaveAssessment(myrId, assessmentBase64);
+            const { url, objectName } = await getAssessmentPutData();
+            await axios.put(url, assessmentBuf, {
+              headers: { "if-none-match": "*" },
+            });
+            response = await createOrSaveAssessment(myrId, objectName);
           }
           break;
         case "legacyNewReassessment":
-          response = await createReassessment(
-            orgId,
-            modelYear,
-            assessmentBase64,
-          );
-          break;
         case "nonLegacyNewReassessment":
-          if (myrId) {
-            response = await createReassessment(
-              orgId,
-              modelYear,
-              assessmentBase64,
-              myrId,
-            );
-          }
+          const { url, objectName } = await getReassessmentPutData();
+          await axios.put(url, assessmentBuf, {
+            headers: { "if-none-match": "*" },
+          });
+          response = await createReassessment(orgId, modelYear, objectName);
           break;
         case "legacySavedReassessment":
-          if (reassessmentId) {
-            response = await saveReassessment(reassessmentId, assessmentBase64);
-          }
-          break;
         case "nonLegacySavedReassessment":
           if (reassessmentId) {
-            response = await saveReassessment(reassessmentId, assessmentBase64);
+            const { url, objectName } = await getReassessmentPutData();
+            await axios.put(url, assessmentBuf, {
+              headers: { "if-none-match": "*" },
+            });
+            response = await saveReassessment(reassessmentId, objectName);
           }
           break;
         case "legacyNewSuppReassessment":
-          if (suppId) {
-            response = await createOrSaveSupplementaryReassessment(
-              suppId,
-              assessmentBase64,
-            );
-          }
-          break;
         case "nonLegacyNewSuppReassessment":
-          if (suppId) {
-            response = await createOrSaveSupplementaryReassessment(
-              suppId,
-              assessmentBase64,
-            );
-          }
-          break;
         case "legacySavedSuppReassessment":
-          if (suppId) {
-            response = await createOrSaveSupplementaryReassessment(
-              suppId,
-              assessmentBase64,
-            );
-          }
-          break;
         case "nonLegacySavedSuppReassessment":
           if (suppId) {
+            const { url, objectName } =
+              await getSupplementaryReassessmentPutData();
+            await axios.put(url, assessmentBuf, {
+              headers: { "if-none-match": "*" },
+            });
             response = await createOrSaveSupplementaryReassessment(
               suppId,
-              assessmentBase64,
+              objectName,
             );
           }
           break;
       }
-      if (response && response.responseType === "error") {
-        throw new Error(response.message);
-      } else if (response && response.responseType === "data") {
-        const responseData = response.data;
-        switch (props.type) {
-          case "newAssessment":
-            if (myrId) {
-              router.push(`${Routes.ComplianceReporting}/${myrId}`);
-            }
-            break;
-          case "savedAssessment":
-            if (myrId) {
-              router.push(`${Routes.ComplianceReporting}/${myrId}`);
-            }
-            break;
-          case "legacyNewReassessment":
-            router.push(`${Routes.LegacyReassessments}/${responseData}`);
-            break;
-          case "nonLegacyNewReassessment":
-            if (myrId) {
-              router.push(
-                `${Routes.ComplianceReporting}/${myrId}/reassessment/${responseData}`,
-              );
-            }
-            break;
-          case "legacySavedReassessment":
-            router.push(`${Routes.LegacyReassessments}/${responseData}`);
-            break;
-          case "nonLegacySavedReassessment":
-            if (myrId) {
-              router.push(
-                `${Routes.ComplianceReporting}/${myrId}/reassessment/${responseData}`,
-              );
-            }
-            break;
-          case "legacyNewSuppReassessment":
-            if (suppId) {
-              router.push(`${Routes.LegacySupplementary}/${suppId}`);
-            }
-            break;
-          case "nonLegacyNewSuppReassessment":
-            if (myrId && suppId) {
-              router.push(
-                `${Routes.ComplianceReporting}/${myrId}/supplementary/${suppId}`,
-              );
-            }
-            break;
-          case "legacySavedSuppReassessment":
-            if (suppId) {
-              router.push(`${Routes.LegacySupplementary}/${suppId}`);
-            }
-            break;
-          case "nonLegacySavedSuppReassessment":
-            if (myrId && suppId) {
-              router.push(
-                `${Routes.ComplianceReporting}/${myrId}/supplementary/${suppId}`,
-              );
-            }
-            break;
+      if (response) {
+        const responseType = response.responseType;
+        if (responseType === "error") {
+          throw new Error(response.message);
+        } else {
+          switch (props.type) {
+            case "newAssessment":
+            case "savedAssessment":
+              if (myrId) {
+                router.push(`${Routes.ComplianceReporting}/${myrId}`);
+              }
+              break;
+            case "legacyNewReassessment":
+              if (responseType === "data") {
+                router.push(`${Routes.LegacyReassessments}/${response.data}`);
+              }
+              break;
+            case "nonLegacyNewReassessment":
+              if (myrId && responseType === "data") {
+                router.push(
+                  `${Routes.ComplianceReporting}/${myrId}/reassessment/${response.data}`,
+                );
+              }
+              break;
+            case "legacySavedReassessment":
+              if (reassessmentId) {
+                router.push(`${Routes.LegacyReassessments}/${reassessmentId}`);
+              }
+              break;
+            case "nonLegacySavedReassessment":
+              if (myrId && reassessmentId) {
+                router.push(
+                  `${Routes.ComplianceReporting}/${myrId}/reassessment/${reassessmentId}`,
+                );
+              }
+              break;
+            case "legacyNewSuppReassessment":
+            case "legacySavedSuppReassessment":
+              if (suppId) {
+                router.push(`${Routes.LegacySupplementary}/${suppId}`);
+              }
+              break;
+            case "nonLegacyNewSuppReassessment":
+            case "nonLegacySavedSuppReassessment":
+              if (myrId && suppId) {
+                router.push(
+                  `${Routes.ComplianceReporting}/${myrId}/supplementary/${suppId}`,
+                );
+              }
+              break;
+          }
         }
       }
     },
