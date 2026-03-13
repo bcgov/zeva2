@@ -2,7 +2,7 @@
 
 import { useCallback, useMemo } from "react";
 import { ColumnDef, createColumnHelper } from "@tanstack/react-table";
-import { ClientSideTable } from "@/app/lib/components";
+import { ClientSideTable, Button } from "@/app/lib/components";
 import {
   GovUserCategory,
   SupplierUserCategory,
@@ -12,16 +12,17 @@ import { getRoleEnumsToStringsMap } from "@/app/lib/utils/enumMaps";
 import { useRouter } from "next/navigation";
 import { Routes } from "@/app/lib/constants";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faCopy } from "@fortawesome/free-solid-svg-icons";
+import { faCopy, faPlus } from "@fortawesome/free-solid-svg-icons";
 import { Idp } from "@/prisma/generated/enums";
 
 export interface UserTableProps {
   users: UserWithOrgName[];
   userIsGov: boolean;
   category: GovUserCategory | SupplierUserCategory;
+  isAdmin?: boolean;
 }
 
-export const UserTable = ({ users, userIsGov, category }: UserTableProps) => {
+export const UserTable = ({ users, userIsGov, category, isAdmin }: UserTableProps) => {
   const router = useRouter();
   const navigationAction = useCallback((id: number) => {
     router.push(`${Routes.Users}/${id}`);
@@ -65,7 +66,7 @@ export const UserTable = ({ users, userIsGov, category }: UserTableProps) => {
                 <button
                   type="button"
                   aria-label="Copy email address"
-                  className="text-gray-500 hover:text-primaryBlue"
+                  className="text-gray-500 hover:text-gray-700 bg-transparent border-0 p-0 focus:outline-none focus:ring-0"
                   onClick={(event) => {
                     event.stopPropagation();
                     navigator.clipboard?.writeText(email);
@@ -131,6 +132,21 @@ export const UserTable = ({ users, userIsGov, category }: UserTableProps) => {
       stackHeaderContents={true}
       enableFiltering={true}
       enableSorting={true}
+      enableGlobalSearch={true}
+      headerContent={
+        isAdmin ? (
+          <div className="flex justify-start">
+            <Button
+              variant="primary"
+              size="medium"
+              onClick={() => router.push(`${Routes.Users}/new`)}
+            >
+              <FontAwesomeIcon icon={faPlus} className="mr-2" />
+              Create new user
+            </Button>
+          </div>
+        ) : undefined
+      }
     />
   );
 };
