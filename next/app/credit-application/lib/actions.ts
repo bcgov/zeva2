@@ -59,10 +59,17 @@ export const getSupplierTemplateDownloadUrl = async () => {
   return await getTemplateDownloadUrl(SupplierTemplate.Name);
 };
 
+export const getCreditApplicationPutData = async () => {
+  return (await getAttachmentPutData(Directory.CreditApplication, 1))[0];
+};
+
 export const getCreditApplicationAttachmentPutData = async (
   numberOfFiles: number,
 ) => {
-  return await getAttachmentPutData(Directory.CreditApplication, numberOfFiles);
+  return await getAttachmentPutData(
+    Directory.CreditApplicationAttachments,
+    numberOfFiles,
+  );
 };
 
 export const getSupplierEligibleVehicles = async () => {
@@ -71,12 +78,38 @@ export const getSupplierEligibleVehicles = async () => {
   return await getEligibleVehicles(userOrgId, "all", false);
 };
 
-export const getDocumentDownloadUrls = async (
+export const getCreditApplicationDownloadUrl = async (
   creditApplicationId: number,
-): Promise<
-  DataOrErrorActionResponse<(AttachmentDownload & { isApplication: boolean })[]>
-> => {
-  const result: (AttachmentDownload & { isApplication: boolean })[] = [];
+): Promise<DataOrErrorActionResponse<AttachmentDownload[]>> => {
+  const { userIsGov, userOrgId } = await getUserInfo();
+  if (userIsGov) {
+    return getErrorActionResponse("Unauthorized!");
+  }
+  const creditApplication = await prisma.creditApplication.findUnique({
+    where: {
+      id: creditApplicationId,
+      organizationId: userOrgId,
+    },
+    select: {
+      fileName: true,
+      objectName: true,
+    },
+  });
+  if (!creditApplication) {
+    return getErrorActionResponse("Invalid Action!");
+  }
+  return getDataActionResponse([
+    {
+      fileName: creditApplication.fileName,
+      url: await getPresignedGetObjectUrl(creditApplication.objectName),
+    },
+  ]);
+};
+
+export const getCreditApplicationAttachmentDownloadUrls = async (
+  creditApplicationId: number,
+): Promise<DataOrErrorActionResponse<AttachmentDownload[]>> => {
+  const result: AttachmentDownload[] = [];
   const { userIsGov, userOrgId } = await getUserInfo();
   const whereClause: CreditApplicationAttachmentWhereInput = {
     creditApplicationId,
@@ -101,7 +134,6 @@ export const getDocumentDownloadUrls = async (
     select: {
       objectName: true,
       fileName: true,
-      isApplication: true,
     },
   });
   for (const attachment of attachments) {
@@ -109,29 +141,25 @@ export const getDocumentDownloadUrls = async (
       result.push({
         url: await getPresignedGetObjectUrl(attachment.objectName),
         fileName: attachment.fileName,
-        isApplication: attachment.isApplication,
       });
     }
   }
   return getDataActionResponse(result);
 };
 
-// first attachment must be the CA file
 export const supplierSave = async (
   legalName: string,
   serviceAddress: string,
   recordsAddress: string,
   makes: string,
+  applicationObjectName: string,
+  applicationFileName: string,
   attachments: Attachment[],
   creditApplicationId?: number,
 ): Promise<DataOrErrorActionResponse<number>> => {
   const { userIsGov, userOrgId, userRoles } = await getUserInfo();
   if (userIsGov || !userRoles.includes(Role.ZEVA_BCEID_USER)) {
     return getErrorActionResponse("Unauthorized!");
-  }
-  const application = attachments[0];
-  if (!application) {
-    return getErrorActionResponse("Invalid Action!");
   }
   if (creditApplicationId) {
     const creditApplication = await prisma.creditApplication.findUnique({
@@ -150,7 +178,7 @@ export const supplierSave = async (
   }
   let applicationId = creditApplicationId ?? Number.NaN;
   try {
-    const applicationBuf = await getObjectAsBuffer(application.objectName);
+    const applicationBuf = await getObjectAsBuffer(applicationObjectName);
     const workbook = new Excel.Workbook();
     await workbook.xlsx.load(applicationBuf);
     const recordsToCreatePrelim: Omit<
@@ -207,6 +235,8 @@ export const supplierSave = async (
             id: creditApplicationId,
           },
           data: {
+            objectName: applicationObjectName,
+            fileName: applicationFileName,
             modelYears: Array.from(modelYears),
             legalName,
             makes,
@@ -223,6 +253,8 @@ export const supplierSave = async (
         const newApplication = await tx.creditApplication.create({
           data: {
             organizationId: userOrgId,
+            objectName: applicationObjectName,
+            fileName: applicationFileName,
             status: CreditApplicationStatus.DRAFT,
             supplierStatus: CreditApplicationStatus.DRAFT,
             modelYears: Array.from(modelYears),
@@ -245,7 +277,7 @@ export const supplierSave = async (
         data: recordsToCreate,
       });
       await deleteAttachments(applicationId, tx);
-      await createAttachments(applicationId, attachments, 0, tx);
+      await createAttachments(applicationId, attachments, tx);
     });
   } catch (e) {
     if (e instanceof Error) {

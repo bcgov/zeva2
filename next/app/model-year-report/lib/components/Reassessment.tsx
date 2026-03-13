@@ -16,7 +16,6 @@ export const Reassessment = async (props: {
   orgName: string;
   modelYear: ModelYear;
   status: ReassessmentStatus;
-  sequenceNumber: number;
   myrId?: number;
 }) => {
   const { userIsGov, userRoles } = await getUserInfo();
@@ -34,6 +33,7 @@ export const Reassessment = async (props: {
       <ReassessmentDirectorActions
         reassessmentId={props.reassessmentId}
         status={props.status}
+        myrId={props.myrId}
       />
     );
   }
@@ -51,7 +51,6 @@ export const Reassessment = async (props: {
           orgName={props.orgName}
           modelYear={props.modelYear}
           status={statusMap[props.status] ?? ""}
-          sequenceNumber={props.sequenceNumber}
         />
       </ContentCard>
       <ContentCard title="The Reassessment">

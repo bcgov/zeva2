@@ -5,7 +5,6 @@ import validator from "validator";
 import {
   CreditApplicationStatus,
   CreditTransferStatus,
-  CreditTransferSupplierStatus,
   ModelYearReportStatus,
   Notification,
   Role,
@@ -62,9 +61,12 @@ export const sendCreditTransferEmails = async (historyId: number) => {
   let includeAnalysts: boolean = false;
   let includeDirector: boolean = false;
   if (
-    Object.values(CreditTransferSupplierStatus).some(
-      (status) => status === userAction,
-    )
+    userAction === CreditTransferStatus.APPROVED_BY_GOV ||
+    userAction === CreditTransferStatus.APPROVED_BY_TRANSFER_TO ||
+    userAction === CreditTransferStatus.REJECTED_BY_GOV ||
+    userAction === CreditTransferStatus.REJECTED_BY_TRANSFER_TO ||
+    userAction === CreditTransferStatus.RESCINDED_BY_TRANSFER_FROM ||
+    userAction === CreditTransferStatus.SUBMITTED_TO_TRANSFER_TO
   ) {
     supplierOrgIds.push(
       history.creditTransfer.transferFromId,

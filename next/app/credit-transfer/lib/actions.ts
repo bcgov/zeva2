@@ -39,32 +39,54 @@ export type CreditTransferPayload = {
   }[];
 };
 
-export const submitTransfer = async (
+export const saveTransfer = async (
   payload: CreditTransferPayload,
-  comment?: string,
+  creditTransferId?: number,
 ): Promise<DataOrErrorActionResponse<number>> => {
-  let result = NaN;
-  const { userIsGov, userId, userOrgId } = await getUserInfo();
+  const { userIsGov, userOrgId } = await getUserInfo();
   if (userIsGov) {
     return getErrorActionResponse("Unauthorized!");
   }
   if (payload.transferContent.length === 0) {
-    throw new Error("No transfer content!");
+    return getErrorActionResponse("No transfer content!");
   }
-  await prisma.$transaction(async (tx) => {
-    const { id } = await tx.creditTransfer.create({
-      data: {
+  if (creditTransferId) {
+    const transfer = await prisma.creditTransfer.findUnique({
+      where: {
+        id: creditTransferId,
         transferFromId: userOrgId,
-        transferToId: payload.transferToId,
-        status: CreditTransferStatus.SUBMITTED_TO_TRANSFER_TO,
-        supplierStatus: CreditTransferStatus.SUBMITTED_TO_TRANSFER_TO,
+        status: CreditTransferStatus.DRAFT,
+      },
+      select: {
+        id: true,
       },
     });
-    result = id;
+    if (!transfer) {
+      return getErrorActionResponse("Invalid action!");
+    }
+  }
+  let transferId = creditTransferId ?? Number.NaN;
+  await prisma.$transaction(async (tx) => {
+    if (transferId) {
+      await tx.creditTransferContent.deleteMany({
+        where: {
+          creditTransferId,
+        },
+      });
+    } else {
+      const { id } = await tx.creditTransfer.create({
+        data: {
+          transferFromId: userOrgId,
+          transferToId: payload.transferToId,
+          status: CreditTransferStatus.DRAFT,
+        },
+      });
+      transferId = id;
+    }
     const contentToCreate = payload.transferContent.map((content) => {
       return {
         ...content,
-        creditTransferId: id,
+        creditTransferId: transferId,
         numberOfUnits: new Decimal(content.numberOfUnits),
         dollarValuePerUnit: new Decimal(content.dollarValuePerUnit),
       };
@@ -72,9 +94,43 @@ export const submitTransfer = async (
     await tx.creditTransferContent.createMany({
       data: contentToCreate,
     });
+  });
+  return getDataActionResponse(transferId);
+};
+
+export const submitTransfer = async (
+  creditTransferId: number,
+  comment?: string,
+): Promise<ErrorOrSuccessActionResponse> => {
+  const { userIsGov, userId, userOrgId } = await getUserInfo();
+  if (userIsGov) {
+    return getErrorActionResponse("Unauthorized!");
+  }
+  const transfer = await prisma.creditTransfer.findUnique({
+    where: {
+      id: creditTransferId,
+      transferFromId: userOrgId,
+      status: CreditTransferStatus.DRAFT,
+    },
+    select: {
+      id: true,
+    },
+  });
+  if (!transfer) {
+    return getErrorActionResponse("Invalid Action!");
+  }
+  await prisma.$transaction(async (tx) => {
+    await tx.creditTransfer.update({
+      where: {
+        id: creditTransferId,
+      },
+      data: {
+        status: CreditTransferStatus.SUBMITTED_TO_TRANSFER_TO,
+      },
+    });
     const historyId = await createTransferHistory(
       {
-        creditTransferId: id,
+        creditTransferId,
         userId,
         userAction: CreditTransferStatus.SUBMITTED_TO_TRANSFER_TO,
         comment,
@@ -86,7 +142,39 @@ export const submitTransfer = async (
       notificationType: Notification.CREDIT_TRANSFER,
     });
   });
-  return getDataActionResponse(result);
+  return getSuccessActionResponse();
+};
+
+export const deleteTransfer = async (
+  transferId: number,
+): Promise<ErrorOrSuccessActionResponse> => {
+  const { userOrgId } = await getUserInfo();
+  const transfer = await prisma.creditTransfer.findUnique({
+    where: {
+      id: transferId,
+      status: CreditTransferStatus.DRAFT,
+      transferFromId: userOrgId,
+    },
+    select: {
+      id: true,
+    },
+  });
+  if (!transfer) {
+    return getErrorActionResponse("Invalid Action!");
+  }
+  await prisma.$transaction(async (tx) => {
+    await tx.creditTransferContent.deleteMany({
+      where: {
+        creditTransferId: transferId,
+      },
+    });
+    await tx.creditTransfer.delete({
+      where: {
+        id: transferId,
+      },
+    });
+  });
+  return getSuccessActionResponse();
 };
 
 export const rescindTransfer = async (
@@ -110,7 +198,6 @@ export const rescindTransfer = async (
     const historyId = await updateTransferStatusAndCreateHistory(
       transferId,
       userId,
-      CreditTransferStatus.RESCINDED_BY_TRANSFER_FROM,
       CreditTransferStatus.RESCINDED_BY_TRANSFER_FROM,
       comment,
       tx,
@@ -149,7 +236,6 @@ export const transferToSupplierActionTransfer = async (
     const historyId = await updateTransferStatusAndCreateHistory(
       transferId,
       userId,
-      newStatus,
       newStatus,
       comment,
       tx,
@@ -196,7 +282,6 @@ export const govRecommendTransfer = async (
       transferId,
       userId,
       recommendation,
-      CreditTransferStatus.APPROVED_BY_TRANSFER_TO,
       comment,
       tx,
     );
@@ -235,7 +320,6 @@ export const directorReturnTransfer = async (
       transferId,
       userId,
       CreditTransferStatus.RETURNED_TO_ANALYST,
-      CreditTransferStatus.APPROVED_BY_TRANSFER_TO,
       comment,
       tx,
     );
@@ -275,7 +359,6 @@ export const directorIssueTransfer = async (
     const historyId = await updateTransferStatusAndCreateHistory(
       transferId,
       userId,
-      CreditTransferStatus.APPROVED_BY_GOV,
       CreditTransferStatus.APPROVED_BY_GOV,
       comment,
       tx,
@@ -333,7 +416,6 @@ export const directorRejectTransfer = async (
     const historyId = await updateTransferStatusAndCreateHistory(
       transferId,
       userId,
-      CreditTransferStatus.REJECTED_BY_GOV,
       CreditTransferStatus.REJECTED_BY_GOV,
       comment,
       tx,

@@ -13,9 +13,13 @@ import {
 } from "react";
 import {
   createOrSaveAssessment,
+  createOrSaveSupplementaryReassessment,
   createReassessment,
   getAssessmentData,
+  getAssessmentPutData,
   getAssessmentTemplateUrl,
+  getReassessmentPutData,
+  getSupplementaryReassessmentPutData,
   NvValues,
   saveReassessment,
 } from "../actions";
@@ -33,13 +37,7 @@ import { bytesToBase64 } from "@/app/lib/utils/base64";
 import { Adjustment, Adjustments } from "./Adjustments";
 import { Routes } from "@/app/lib/constants";
 import { Workbook } from "exceljs";
-import {
-  getNvValues,
-  getZevClassChoice,
-  parseAssessment,
-  ParsedAssmnt,
-} from "../utils";
-import { ParsedAssessment } from "./ParsedAssessment";
+import { getNvValues, getZevClassChoice, parseAssessment } from "../utils";
 import { isModelYear } from "@/app/lib/utils/typeGuards";
 import { legacyModelYearsMap, SupplierZevClassChoice } from "../constants";
 import { ZevClassSelect } from "./ZevClassSelect";
@@ -68,19 +66,65 @@ type LegacyNewReassessmentProps = {
 };
 
 type NonLegacyNewReassessmentProps = {
-  type: "nonLegacyNewReassment";
+  type: "nonLegacyNewReassessment";
+  orgName: string;
+  modelYear: ModelYear;
+  orgId: number;
+  myrId: number;
+};
+
+type LegacySavedReassessmentProps = {
+  type: "legacySavedReassessment";
+  reassessmentId: number;
+  orgName: string;
+  modelYear: ModelYear;
+  orgId: number;
+  url: string;
+};
+
+type NonLegacySavedReassessmentProps = {
+  type: "nonLegacySavedReassessment";
+  reassessmentId: number;
+  orgName: string;
+  modelYear: ModelYear;
+  orgId: number;
+  myrId: number;
+  url: string;
+};
+
+type LegacyNewSuppReassessmentProps = {
+  type: "legacyNewSuppReassessment";
+  suppId: number;
   orgName: string;
   modelYear: ModelYear;
   orgId: number;
 };
 
-// for both legacy and non-legacy saved reassessments
-type SavedReassessmentProps = {
-  type: "savedReassessment";
-  reassessmentId: number;
+type NonLegacyNewSuppReassessmentProps = {
+  type: "nonLegacyNewSuppReassessment";
+  suppId: number;
   orgName: string;
   modelYear: ModelYear;
   orgId: number;
+  myrId: number;
+};
+
+type LegacySavedSuppReassessmentProps = {
+  type: "legacySavedSuppReassessment";
+  suppId: number;
+  orgName: string;
+  modelYear: ModelYear;
+  orgId: number;
+  url: string;
+};
+
+type NonLegacySavedSuppReassessmentProps = {
+  type: "nonLegacySavedSuppReassessment";
+  suppId: number;
+  orgName: string;
+  modelYear: ModelYear;
+  orgId: number;
+  myrId: number;
   url: string;
 };
 
@@ -90,45 +134,79 @@ export const AssessmentForm = (
     | SavedAssessmentProps
     | LegacyNewReassessmentProps
     | NonLegacyNewReassessmentProps
-    | SavedReassessmentProps,
+    | LegacySavedReassessmentProps
+    | NonLegacySavedReassessmentProps
+    | LegacyNewSuppReassessmentProps
+    | NonLegacyNewSuppReassessmentProps
+    | LegacySavedSuppReassessmentProps
+    | NonLegacySavedSuppReassessmentProps,
 ) => {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
-  const [generationError, setGenerationError] = useState<string>("");
-  const [saveError, setSaveError] = useState<string>("");
+  const [error, setError] = useState<string>("");
   const [orgsMap, setOrgsMap] = useState<Partial<Record<number, string>>>();
   const [orgId, setOrgId] = useState<number>();
   const [modelYear, setModelYear] = useState<ModelYear>();
   const [myrId, setMyrId] = useState<number>();
   const [orgName, setOrgName] = useState<string>();
   const [reassessmentId, setReassessmentId] = useState<number>();
+  const [suppId, setSuppId] = useState<number>();
   const [nvValues, setNvValues] = useState<NvValues>({});
   const [zevClassSelection, setZevClassSelection] =
     useState<SupplierZevClassChoice>(ZevClass.B);
   const [adjustments, setAdjustments] = useState<Adjustment[]>([]);
-  const [assessment, setAssessment] = useState<[Workbook, ParsedAssmnt] | null>(
-    null,
-  );
 
   useEffect(() => {
-    if (props.type !== "legacyNewReassessment") {
-      setOrgId(props.orgId);
-      setModelYear(props.modelYear);
-      setOrgName(props.orgName);
-      if (props.type === "newAssessment" || props.type === "savedAssessment") {
+    switch (props.type) {
+      case "newAssessment":
+      case "savedAssessment":
+      case "nonLegacyNewReassessment":
+        setOrgName(props.orgName);
+        setModelYear(props.modelYear);
+        setOrgId(props.orgId);
         setMyrId(props.myrId);
-      } else if (props.type === "savedReassessment") {
+        break;
+      case "legacyNewReassessment":
+        setOrgsMap(props.orgsMap);
+        break;
+      case "legacySavedReassessment":
         setReassessmentId(props.reassessmentId);
-      }
-    } else {
-      setOrgsMap(props.orgsMap);
+        setOrgName(props.orgName);
+        setModelYear(props.modelYear);
+        setOrgId(props.orgId);
+        break;
+      case "nonLegacySavedReassessment":
+        setReassessmentId(props.reassessmentId);
+        setOrgName(props.orgName);
+        setModelYear(props.modelYear);
+        setOrgId(props.orgId);
+        setMyrId(props.myrId);
+        break;
+      case "legacyNewSuppReassessment":
+      case "legacySavedSuppReassessment":
+        setSuppId(props.suppId);
+        setOrgName(props.orgName);
+        setModelYear(props.modelYear);
+        setOrgId(props.orgId);
+        break;
+      case "nonLegacyNewSuppReassessment":
+      case "nonLegacySavedSuppReassessment":
+        setSuppId(props.suppId);
+        setOrgName(props.orgName);
+        setModelYear(props.modelYear);
+        setOrgId(props.orgId);
+        setMyrId(props.myrId);
+        break;
     }
   }, []);
 
   useEffect(() => {
     if (
       props.type === "savedAssessment" ||
-      props.type === "savedReassessment"
+      props.type === "legacySavedReassessment" ||
+      props.type === "nonLegacySavedReassessment" ||
+      props.type === "legacySavedSuppReassessment" ||
+      props.type === "nonLegacySavedSuppReassessment"
     ) {
       const loadAssessment = async () => {
         const files = await getFiles([{ fileName: "_", url: props.url }]);
@@ -141,7 +219,6 @@ export const AssessmentForm = (
             getZevClassChoice(parsedAssmnt.details.zevClassOrdering),
           );
           setAdjustments(parsedAssmnt.currentAdjustments);
-          setAssessment([assmntWorkbook, parsedAssmnt]);
         }
       };
       loadAssessment();
@@ -168,110 +245,163 @@ export const AssessmentForm = (
     [],
   );
 
-  const handleGenerateAssessment = useCallback(() => {
-    setGenerationError("");
-    startTransition(async () => {
-      try {
-        if (!orgId || !modelYear) {
-          throw new Error("Supplier and Model Year are required!");
-        }
-        validateNvValues(nvValues);
-        const zevClassOrdering = getZevClassOrdering(zevClassSelection);
-        const adjustmentsPayload = getAdjustmentsPayload(adjustments);
-        const [templateUrl, assessmentResponse] = await Promise.all([
-          getAssessmentTemplateUrl(),
-          getAssessmentData(
-            orgId,
-            modelYear,
-            adjustmentsPayload,
-            nvValues,
-            zevClassOrdering,
-          ),
-        ]);
-        if (assessmentResponse.responseType === "error") {
-          throw new Error(assessmentResponse.message);
-        }
-        const templateResponse = await axios.get(templateUrl, {
-          responseType: "arraybuffer",
-        });
-        const template = templateResponse.data;
-        const assessment = await generateAssessment(
-          template,
-          assessmentResponse.data,
-          modelYear,
-          zevClassOrdering,
-          adjustmentsPayload,
-        );
-        const parsedAssessment = parseAssessment(assessment);
-        setAssessment([assessment, parsedAssessment]);
-      } catch (e) {
-        if (e instanceof Error) {
-          setGenerationError(e.message);
-        }
-      }
+  const generateAssmnt = useCallback(async () => {
+    if (!orgId || !modelYear) {
+      throw new Error("Supplier and Model Year are required!");
+    }
+    validateNvValues(nvValues);
+    const zevClassOrdering = getZevClassOrdering(zevClassSelection);
+    const adjustmentsPayload = getAdjustmentsPayload(adjustments);
+    const [templateUrl, assessmentResponse] = await Promise.all([
+      getAssessmentTemplateUrl(),
+      getAssessmentData(
+        orgId,
+        modelYear,
+        adjustmentsPayload,
+        nvValues,
+        zevClassOrdering,
+      ),
+    ]);
+    if (assessmentResponse.responseType === "error") {
+      throw new Error(assessmentResponse.message);
+    }
+    const templateResponse = await axios.get(templateUrl, {
+      responseType: "arraybuffer",
     });
+    const template = templateResponse.data;
+    const assessment = await generateAssessment(
+      template,
+      assessmentResponse.data,
+      modelYear,
+      zevClassOrdering,
+      adjustmentsPayload,
+    );
+    return assessment;
   }, [props.type, orgId, modelYear, nvValues, zevClassSelection, adjustments]);
 
-  const handleClearAssessment = useCallback(() => {
-    setSaveError("");
-    setAssessment(null);
-  }, []);
-
-  const handleSave = useCallback(() => {
-    setSaveError("");
-    startTransition(async () => {
-      try {
-        if (!orgId || !modelYear) {
-          throw new Error("Invalid supplier or model year!");
-        }
-        if (assessment === null) {
-          throw new Error("Exactly 1 valid Assessment/Reassessment expected!");
-        }
-        let response;
-        const assessmentBase64 = bytesToBase64(
-          await assessment[0].xlsx.writeBuffer(),
-        );
-        if (
-          myrId &&
-          (props.type === "newAssessment" || props.type === "savedAssessment")
-        ) {
-          response = await createOrSaveAssessment(myrId, assessmentBase64);
-        } else if (
-          props.type === "legacyNewReassessment" ||
-          props.type === "nonLegacyNewReassment"
-        ) {
-          response = await createReassessment(
-            orgId,
-            modelYear,
-            assessmentBase64,
-          );
-        } else if (reassessmentId && props.type === "savedReassessment") {
-          response = await saveReassessment(reassessmentId, assessmentBase64);
-        }
-        if (response && response.responseType === "error") {
+  const saveAssmnt = useCallback(
+    async (assessment: Workbook) => {
+      if (!orgId || !modelYear) {
+        throw new Error("Invalid supplier or model year!");
+      }
+      const assessmentBuf = await assessment.xlsx.writeBuffer();
+      let response;
+      switch (props.type) {
+        case "newAssessment":
+        case "savedAssessment":
+          if (myrId) {
+            const { url, objectName } = await getAssessmentPutData();
+            await axios.put(url, assessmentBuf, {
+              headers: { "if-none-match": "*" },
+            });
+            response = await createOrSaveAssessment(myrId, objectName);
+          }
+          break;
+        case "legacyNewReassessment":
+        case "nonLegacyNewReassessment":
+          const { url, objectName } = await getReassessmentPutData();
+          await axios.put(url, assessmentBuf, {
+            headers: { "if-none-match": "*" },
+          });
+          response = await createReassessment(orgId, modelYear, objectName);
+          break;
+        case "legacySavedReassessment":
+        case "nonLegacySavedReassessment":
+          if (reassessmentId) {
+            const { url, objectName } = await getReassessmentPutData();
+            await axios.put(url, assessmentBuf, {
+              headers: { "if-none-match": "*" },
+            });
+            response = await saveReassessment(reassessmentId, objectName);
+          }
+          break;
+        case "legacyNewSuppReassessment":
+        case "nonLegacyNewSuppReassessment":
+        case "legacySavedSuppReassessment":
+        case "nonLegacySavedSuppReassessment":
+          if (suppId) {
+            const { url, objectName } =
+              await getSupplementaryReassessmentPutData();
+            await axios.put(url, assessmentBuf, {
+              headers: { "if-none-match": "*" },
+            });
+            response = await createOrSaveSupplementaryReassessment(
+              suppId,
+              objectName,
+            );
+          }
+          break;
+      }
+      if (response) {
+        const responseType = response.responseType;
+        if (responseType === "error") {
           throw new Error(response.message);
-        } else if (response && response.responseType === "data") {
-          const responseData = response.data;
-          if (typeof responseData === "number") {
-            router.push(`${Routes.ComplianceReporting}/${responseData}`);
-          } else {
-            const { reassessmentId, myrId } = responseData;
-            if (myrId) {
-              router.push(
-                `${Routes.ComplianceReporting}/${myrId}/reassessment/${reassessmentId}`,
-              );
-            } else {
-              router.push(`${Routes.LegacyReassessments}/${reassessmentId}`);
-            }
+        } else {
+          switch (props.type) {
+            case "newAssessment":
+            case "savedAssessment":
+              if (myrId) {
+                router.push(`${Routes.ComplianceReporting}/${myrId}`);
+              }
+              break;
+            case "legacyNewReassessment":
+              if (responseType === "data") {
+                router.push(`${Routes.LegacyReassessments}/${response.data}`);
+              }
+              break;
+            case "nonLegacyNewReassessment":
+              if (myrId && responseType === "data") {
+                router.push(
+                  `${Routes.ComplianceReporting}/${myrId}/reassessment/${response.data}`,
+                );
+              }
+              break;
+            case "legacySavedReassessment":
+              if (reassessmentId) {
+                router.push(`${Routes.LegacyReassessments}/${reassessmentId}`);
+              }
+              break;
+            case "nonLegacySavedReassessment":
+              if (myrId && reassessmentId) {
+                router.push(
+                  `${Routes.ComplianceReporting}/${myrId}/reassessment/${reassessmentId}`,
+                );
+              }
+              break;
+            case "legacyNewSuppReassessment":
+            case "legacySavedSuppReassessment":
+              if (suppId) {
+                router.push(`${Routes.LegacySupplementary}/${suppId}`);
+              }
+              break;
+            case "nonLegacyNewSuppReassessment":
+            case "nonLegacySavedSuppReassessment":
+              if (myrId && suppId) {
+                router.push(
+                  `${Routes.ComplianceReporting}/${myrId}/supplementary/${suppId}`,
+                );
+              }
+              break;
           }
         }
+      }
+    },
+    [props.type, orgId, modelYear, myrId, reassessmentId, suppId],
+  );
+
+  const handleGenerateAndSaveAssmnt = useCallback(() => {
+    setError("");
+    startTransition(async () => {
+      try {
+        const assmnt = await generateAssmnt();
+        await saveAssmnt(assmnt);
       } catch (e) {
         if (e instanceof Error) {
-          setSaveError(e.message);
+          setError(e.message);
         }
       }
     });
-  }, [props.type, orgId, modelYear, assessment, myrId, reassessmentId]);
+  }, [generateAssmnt, saveAssmnt]);
 
   const handleOrgSelect = useCallback(
     (selectedOrgId: string) => {
@@ -298,7 +428,7 @@ export const AssessmentForm = (
           onChange={(e) => {
             handleOrgSelect(e.target.value);
           }}
-          disabled={!!assessment}
+          disabled={isPending}
         >
           <option key={undefined}>--</option>
           {Object.entries(orgsMap).map(([key, value]) => (
@@ -330,7 +460,7 @@ export const AssessmentForm = (
       );
     }
     return null;
-  }, [props.type, orgName, orgId, orgsMap, assessment, handleOrgSelect]);
+  }, [props.type, orgName, orgId, orgsMap, isPending, handleOrgSelect]);
 
   const modelYearComponent: JSX.Element | null = useMemo(() => {
     let innerComponent;
@@ -344,7 +474,7 @@ export const AssessmentForm = (
             const value = e.target.value;
             setModelYear(isModelYear(value) ? value : undefined);
           }}
-          disabled={!!assessment}
+          disabled={isPending}
         >
           <option key={undefined}>--</option>
           {Object.entries(legacyModelYearsMap).map(([key, value]) => (
@@ -376,7 +506,7 @@ export const AssessmentForm = (
       );
     }
     return null;
-  }, [props.type, modelYear, modelYearsMap, legacyModelYearsMap, assessment]);
+  }, [props.type, modelYear, modelYearsMap, legacyModelYearsMap, isPending]);
 
   return (
     <div>
@@ -385,7 +515,7 @@ export const AssessmentForm = (
       <MyrNvValues
         nvValues={nvValues}
         handleChange={handleNvValuesChange}
-        disabled={!!assessment || isPending}
+        disabled={isPending}
       />
       <div className="flex items-center py-2 my-2">
         <p>
@@ -397,44 +527,23 @@ export const AssessmentForm = (
         <ZevClassSelect
           zevClassSelection={zevClassSelection}
           handleChange={handleZevClassSelect}
-          disabled={!!assessment || isPending}
+          disabled={isPending}
         />
       </div>
       <Adjustments
         type="assessment"
         adjustments={adjustments}
         setAdjustments={setAdjustments}
-        disabled={!!assessment || isPending}
+        disabled={isPending}
       />
-      {generationError && <p className="text-red-600">{generationError}</p>}
+      {error && <p className="text-red-600">{error}</p>}
       <div className="flex space-x-2">
-        {assessment ? (
-          <Button
-            variant="secondary"
-            onClick={handleClearAssessment}
-            disabled={isPending}
-          >
-            {isPending
-              ? "..."
-              : `Clear ${props.type === "newAssessment" || props.type === "savedAssessment" ? "Assessment" : "Reassessment"}`}
-          </Button>
-        ) : (
-          <Button
-            variant="secondary"
-            onClick={handleGenerateAssessment}
-            disabled={isPending}
-          >
-            {isPending
-              ? "..."
-              : `Generate ${props.type === "newAssessment" || props.type === "savedAssessment" ? "Assessment" : "Reassessment"}`}
-          </Button>
-        )}
-      </div>
-      {assessment && <ParsedAssessment assessment={assessment[1]} />}
-      {saveError && <p className="text-red-600">{saveError}</p>}
-      <div className="flex space-x-2">
-        <Button variant="primary" onClick={handleSave} disabled={isPending}>
-          {isPending ? "..." : "Save"}
+        <Button
+          variant="primary"
+          onClick={handleGenerateAndSaveAssmnt}
+          disabled={isPending}
+        >
+          {isPending ? "..." : "Generate and Save Assessment"}
         </Button>
       </div>
     </div>

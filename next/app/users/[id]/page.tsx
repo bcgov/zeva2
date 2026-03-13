@@ -5,7 +5,7 @@ import { getGovOrgId } from "@/app/organizations/lib/data";
 
 const Page = async (props: { params: Promise<{ id: string }> }) => {
   const args = await props.params;
-  const id = parseInt(args.id, 10);
+  const id = Number.parseInt(args.id, 10);
   const user = await getUser(id);
   if (!user) {
     return <div>User not found</div>;

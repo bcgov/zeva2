@@ -4,8 +4,20 @@ export type LegacyReassessment = {
   id: number;
   modelYear: ModelYear;
   status: ReassessmentStatus;
-  sequenceNumber: number;
   organization: {
     name: string;
   };
+  ReassessmentHistory: {
+    userAction: ReassessmentStatus;
+    timestamp: Date;
+  }[];
+};
+
+export type LegacyReassessmentSerialized = {
+  id: number;
+  modelYear: ModelYear;
+  status: ReassessmentStatus;
+  supplier: string;
+  submittedDate: string | null;
+  issuedDate: string | null;
 };

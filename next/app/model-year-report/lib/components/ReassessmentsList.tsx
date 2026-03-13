@@ -14,11 +14,11 @@ export const ReassessmentsList = async (props: { myrId: number }) => {
   reassessments.forEach((reassessment) => {
     const id = reassessment.id;
     entries.push(
-      <li key={reassessment.id}>
+      <li key={id} className="text-primaryBlue hover:underline">
         <Link
           href={`${Routes.ComplianceReporting}/${props.myrId}/reassessment/${id}`}
         >
-          {`Reassessment ${reassessment.sequenceNumber} - ${statusMap[reassessment.status]}`}
+          {`Reassessment ${id} - ${statusMap[reassessment.status]}`}
         </Link>
       </li>,
     );

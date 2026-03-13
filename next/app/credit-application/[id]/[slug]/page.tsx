@@ -12,7 +12,7 @@ const Page = async (props: {
   const args = await props.params;
   const searchParams = await props.searchParams;
   const readOnly = searchParams?.readOnly ? true : false;
-  const id = parseInt(args.id, 10);
+  const id = Number.parseInt(args.id, 10);
   const slug = args.slug;
   const { page, pageSize, filters, sorts } = getPageParams(
     searchParams,

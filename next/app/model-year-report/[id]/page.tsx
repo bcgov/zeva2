@@ -11,8 +11,6 @@ import { DirectorActions } from "../lib/components/DirectorActions";
 import { AnalystActions } from "../lib/components/AnalystActions";
 import { AssessmentDetails } from "../lib/components/AssessmentDetails";
 import { ForecastReportDetails } from "../lib/components/ForecastReportDetails";
-import { ReassessmentsList } from "../lib/components/ReassessmentsList";
-import { SupplementaryList } from "../lib/components/SupplementaryList";
 import {
   getDataForReassessment,
   getDataForSupplementary,
@@ -20,14 +18,21 @@ import {
 import { SystemDetails } from "../lib/components/SystemDetails";
 import { getMyrStatusEnumsToStringsMap } from "@/app/lib/utils/enumMaps";
 import { mapOfStatusToSupplierStatus } from "../lib/constants";
+import { Attachments } from "@/app/lib/components/Attachments";
+import { getMyrAttachmentDownloadUrls } from "../lib/actions";
+import { ReassessmentsAndSupplementaryReports } from "../lib/components/ReassessmentsAndSupplementaryReports";
 
 const Page = async (props: { params: Promise<{ id: string }> }) => {
   const args = await props.params;
-  const myrId = parseInt(args.id, 10);
+  const myrId = Number.parseInt(args.id, 10);
   const myr = await getModelYearReport(myrId);
   if (!myr) {
     return null;
   }
+  const download = async () => {
+    "use server";
+    return getMyrAttachmentDownloadUrls(myrId);
+  };
   const { userIsGov, userRoles } = await getUserInfo();
   const status = userIsGov
     ? myr.status
@@ -70,14 +75,9 @@ const Page = async (props: { params: Promise<{ id: string }> }) => {
   const statusMap = getMyrStatusEnumsToStringsMap();
   return (
     <div className="flex flex-col w-1/3">
-      <ContentCard title="Reassessments">
+      <ContentCard title="Reassessments and Supplementary Reports">
         <Suspense fallback={<LoadingSkeleton />}>
-          <ReassessmentsList myrId={myrId} />
-        </Suspense>
-      </ContentCard>
-      <ContentCard title="Supplementary Reports">
-        <Suspense fallback={<LoadingSkeleton />}>
-          <SupplementaryList myrId={myrId} />
+          <ReassessmentsAndSupplementaryReports myrId={myrId} />
         </Suspense>
       </ContentCard>
       <ContentCard title="Model Year Report History">
@@ -102,6 +102,13 @@ const Page = async (props: { params: Promise<{ id: string }> }) => {
         <Suspense fallback={<LoadingSkeleton />}>
           <ForecastReportDetails myrId={myrId} />
         </Suspense>
+      </ContentCard>
+      <ContentCard title="Supporting Documents">
+        <Attachments
+          attachments={myr.modelYearReportAttachments}
+          download={download}
+          zipName={`model-year-report-attachments-${myrId}`}
+        />
       </ContentCard>
       <ContentCard title="The Assessment">
         <Suspense fallback={<LoadingSkeleton />}>

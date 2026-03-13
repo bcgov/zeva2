@@ -39,6 +39,7 @@ const Page = async (props: { params: Promise<{ id: string }> }) => {
       <h1 className="text-xl font-bold mb-4">Create a Supplementary Report</h1>
       <ModelYearReportForm
         type="nonLegacyNewSupp"
+        myrId={myrId}
         modelYear={report.modelYear}
         supplierData={supplierData}
         vehicleStatistics={vehicleStats}

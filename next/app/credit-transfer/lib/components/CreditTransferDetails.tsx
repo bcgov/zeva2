@@ -1,8 +1,13 @@
 import { JSX } from "react";
 import { getCreditTransfer } from "../data";
-import { getHelpingMaps } from "@/app/model-year-report/lib/utils";
 import { getUserInfo } from "@/auth";
-import { getCreditTransferStatusEnumsToStringsMap } from "@/app/lib/utils/enumMaps";
+import {
+  getCreditTransferStatusEnumsToStringsMap,
+  getModelYearEnumsToStringsMap,
+  getVehicleClassEnumsToStringsMap,
+  getZevClassEnumsToStringsMap,
+} from "@/app/lib/utils/enumMaps";
+import { mapOfStatusToSupplierStatus } from "../constants";
 
 export const CreditTransferDetails = async (props: { id: number }) => {
   const transfer = await getCreditTransfer(props.id);
@@ -10,28 +15,24 @@ export const CreditTransferDetails = async (props: { id: number }) => {
     return null;
   }
   const { userIsGov } = await getUserInfo();
-  const helpingMaps = getHelpingMaps();
+  let status = transfer.status;
+  if (!userIsGov) {
+    status = mapOfStatusToSupplierStatus[status];
+  }
+  const vehicleClassesMap = getVehicleClassEnumsToStringsMap();
+  const zevClassesMap = getZevClassEnumsToStringsMap();
+  const modelYearsMap = getModelYearEnumsToStringsMap();
   const statusMap = getCreditTransferStatusEnumsToStringsMap();
   const transferContent: JSX.Element[] = [];
   for (const content of transfer.creditTransferContent) {
     transferContent.push(
       <ul key={content.id}>
-        <li key="vehicleClass">
-          Vehicle Class: {helpingMaps.vehicleClassesMap[content.vehicleClass]}
-        </li>
-        <li key="zevClass">
-          ZEV Class: {helpingMaps.zevClassesMap[content.zevClass]}
-        </li>
-        <li key="modelYear">
-          Model Year: {helpingMaps.modelYearsMap[content.modelYear]}
-        </li>
-        <li key="numberOfUnits">
-          Number of units: {content.numberOfUnits.toString()}
-        </li>
-        <li key="dollarValuePerUnit">
-          Dollar value per unit: {content.dollarValuePerUnit.toString()}
-        </li>
-        <li key="totalDollarValue">
+        <li>Vehicle Class: {vehicleClassesMap[content.vehicleClass]}</li>
+        <li>ZEV Class: {zevClassesMap[content.zevClass]}</li>
+        <li>Model Year: {modelYearsMap[content.modelYear]}</li>
+        <li>Number of units: {content.numberOfUnits.toString()}</li>
+        <li>Dollar value per unit: {content.dollarValuePerUnit.toString()}</li>
+        <li>
           Total Dollar Value:{" "}
           {content.numberOfUnits.times(content.dollarValuePerUnit).toString()}
         </li>
@@ -40,15 +41,10 @@ export const CreditTransferDetails = async (props: { id: number }) => {
   }
   return (
     <div className="space-y-3">
-      <ul key={-1}>
+      <ul>
         <li key="transferFrom">Transfer From: {transfer.transferFrom.name}</li>
         <li key="transferTo">Transfer To: {transfer.transferTo.name}</li>
-        <li key="status">
-          Status:{" "}
-          {userIsGov
-            ? statusMap[transfer.status]
-            : statusMap[transfer.supplierStatus]}
-        </li>
+        <li key="status">Status: {statusMap[status]}</li>
       </ul>
       {transferContent}
     </div>

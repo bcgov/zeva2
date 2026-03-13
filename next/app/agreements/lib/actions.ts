@@ -47,7 +47,10 @@ export type AgreementPutObjectData = {
 };
 
 export const getAgreementAttachmentsPutData = async (numberOfFiles: number) => {
-  return await getAttachmentPutData(Directory.Agreement, numberOfFiles);
+  return await getAttachmentPutData(
+    Directory.AgreementAttachments,
+    numberOfFiles,
+  );
 };
 
 export const getAgreementAttachmentDownloadUrls = async (

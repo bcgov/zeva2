@@ -36,7 +36,10 @@ import { addJobToEmailQueue } from "@/app/lib/services/queue";
 import { Attachment, AttachmentDownload } from "@/app/lib/constants/attachment";
 
 export const getVehicleAttachmentsPutData = async (numberOfFiles: number) => {
-  return await getAttachmentPutData(Directory.Vehicle, numberOfFiles);
+  return await getAttachmentPutData(
+    Directory.VehicleAttachments,
+    numberOfFiles,
+  );
 };
 
 export type VehiclePayload = Omit<

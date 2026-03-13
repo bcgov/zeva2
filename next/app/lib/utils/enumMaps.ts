@@ -11,7 +11,6 @@ import {
   CreditApplicationStatus,
   CreditApplicationSupplierStatus,
   CreditTransferStatus,
-  CreditTransferSupplierStatus,
   Idp,
   ModelYear,
   ModelYearReportStatus,
@@ -20,7 +19,6 @@ import {
   ReassessmentStatus,
   ReferenceType,
   Role,
-  SupplementaryReportStatus,
   SupplierClass,
   TransactionType,
   VehicleClass,
@@ -227,20 +225,6 @@ export const getStringsToCreditTransferStatusEnumsMap = () => {
   );
 };
 
-export const getCreditTransferSupplierStatusEnumsToStringsMap = () => {
-  return getEnumsToStringsMap<CreditTransferSupplierStatus>(
-    CreditTransferSupplierStatus,
-    statusTransformer,
-  );
-};
-
-export const getStringsToCreditTransferSupplierStatusEnumsMap = () => {
-  return getStringsToEnumsMap<CreditTransferSupplierStatus>(
-    CreditTransferSupplierStatus,
-    statusTransformer,
-  );
-};
-
 export const getCreditApplicationStatusEnumsToStringsMap = () => {
   return getEnumsToStringsMap<CreditApplicationStatus>(
     CreditApplicationStatus,
@@ -293,20 +277,6 @@ export const getStringsToSupplierClassEnumsMap = () => {
 
 export const getSupplierClassEnumsToStringsMap = () => {
   return getEnumsToStringsMap<SupplierClass>(SupplierClass, statusTransformer);
-};
-
-export const getStringsToSupplementaryReportStatusEnumsMap = () => {
-  return getStringsToEnumsMap<SupplementaryReportStatus>(
-    SupplementaryReportStatus,
-    statusTransformer,
-  );
-};
-
-export const getSupplementaryReportStatusEnumsToStringsMap = () => {
-  return getEnumsToStringsMap<SupplementaryReportStatus>(
-    SupplementaryReportStatus,
-    statusTransformer,
-  );
 };
 
 export const getStringsToVehicleClassCodeEnumsMap = (): Partial<

@@ -2,7 +2,7 @@ import { getUserInfo } from "@/auth";
 import { getSupplementaryHistories } from "../data";
 import { JSX } from "react";
 import { getIsoYmdString, getTimeWithTz } from "@/app/lib/utils/date";
-import { getSupplementaryReportStatusEnumsToStringsMap } from "@/app/lib/utils/enumMaps";
+import { getMyrStatusEnumsToStringsMap } from "@/app/lib/utils/enumMaps";
 
 export const SupplementaryReportHistory = async (props: { suppId: number }) => {
   const histories = await getSupplementaryHistories(props.suppId);
@@ -10,7 +10,7 @@ export const SupplementaryReportHistory = async (props: { suppId: number }) => {
     return null;
   }
   const { userIsGov } = await getUserInfo();
-  const statusMap = getSupplementaryReportStatusEnumsToStringsMap();
+  const statusMap = getMyrStatusEnumsToStringsMap();
   const entries: JSX.Element[] = [];
   histories.forEach((history) => {
     let name = `${history.user.firstName} ${history.user.lastName}`;

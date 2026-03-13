@@ -5,8 +5,6 @@ import {
   ModelYearReportStatus,
   ReassessmentStatus,
   Role,
-  SupplierClass,
-  SupplementaryReportStatus,
 } from "@/prisma/generated/enums";
 import {
   ModelYearReportWhereUniqueInput,
@@ -77,6 +75,11 @@ export const getModelYearReport = async (myrId: number) => {
       organization: {
         select: {
           name: true,
+        },
+      },
+      modelYearReportAttachments: {
+        select: {
+          fileName: true,
         },
       },
       ...(userIsGov && { assessment: true }),
@@ -179,6 +182,8 @@ export const getModelYearReportDetails = async (id: number) => {
 export const getModelYearReports = async (): Promise<MyrRecord[]> => {
   const { userIsGov, userOrgId, userRoles } = await getUserInfo();
   const whereClause: ModelYearReportWhereInput = {};
+  const reassessmentWhereClause: ReassessmentWhereInput = {};
+  const suppWhereClause: SupplementaryReportWhereInput = {};
   if (userIsGov) {
     if (userRoles.includes(Role.DIRECTOR)) {
       whereClause.NOT = {
@@ -191,6 +196,18 @@ export const getModelYearReports = async (): Promise<MyrRecord[]> => {
           ],
         },
       };
+      reassessmentWhereClause.status = {
+        in: [
+          ReassessmentStatus.ISSUED,
+          ReassessmentStatus.SUBMITTED_TO_DIRECTOR,
+        ],
+      };
+      suppWhereClause.status = {
+        in: [
+          ModelYearReportStatus.ASSESSED,
+          ModelYearReportStatus.SUBMITTED_TO_DIRECTOR,
+        ],
+      };
     } else {
       whereClause.NOT = {
         status: {
@@ -200,9 +217,16 @@ export const getModelYearReports = async (): Promise<MyrRecord[]> => {
           ],
         },
       };
+      suppWhereClause.status = {
+        notIn: [
+          ModelYearReportStatus.DRAFT,
+          ModelYearReportStatus.RETURNED_TO_SUPPLIER,
+        ],
+      };
     }
   } else {
     whereClause.organizationId = userOrgId;
+    reassessmentWhereClause.status = ReassessmentStatus.ISSUED;
   }
   return await prisma.modelYearReport.findMany({
     where: whereClause,
@@ -219,19 +243,21 @@ export const getModelYearReports = async (): Promise<MyrRecord[]> => {
         },
       },
       reassessments: {
+        where: reassessmentWhereClause,
         select: {
           status: true,
         },
         orderBy: {
-          sequenceNumber: "desc",
+          id: "desc",
         },
       },
       supplementaryReports: {
+        where: suppWhereClause,
         select: {
           status: true,
         },
         orderBy: {
-          sequenceNumber: "desc",
+          id: "desc",
         },
       },
     },
@@ -244,27 +270,25 @@ export const getModelYearReports = async (): Promise<MyrRecord[]> => {
 export const getAssessment = async (myrId: number) => {
   const { userIsGov, userOrgId, userRoles } = await getUserInfo();
   let whereClause: ModelYearReportWhereInput = {};
-  if (!userIsGov) {
-    whereClause.organizationId = userOrgId;
-    whereClause.status = ModelYearReportStatus.ASSESSED;
-  } else if (userIsGov && userRoles.includes(Role.ZEVA_IDIR_USER)) {
-    whereClause.NOT = {
-      status: {
+  if (userIsGov) {
+    if (userRoles.includes(Role.DIRECTOR)) {
+      whereClause.status = {
         in: [
+          ModelYearReportStatus.SUBMITTED_TO_DIRECTOR,
+          ModelYearReportStatus.ASSESSED,
+        ],
+      };
+    } else if (userRoles.includes(Role.ZEVA_IDIR_USER)) {
+      whereClause.status = {
+        notIn: [
           ModelYearReportStatus.DRAFT,
           ModelYearReportStatus.RETURNED_TO_SUPPLIER,
         ],
-      },
-    };
-  } else if (userIsGov && userRoles.includes(Role.DIRECTOR)) {
-    whereClause.status = {
-      in: [
-        ModelYearReportStatus.SUBMITTED_TO_DIRECTOR,
-        ModelYearReportStatus.ASSESSED,
-      ],
-    };
+      };
+    }
   } else {
-    return null;
+    whereClause.organizationId = userOrgId;
+    whereClause.status = ModelYearReportStatus.ASSESSED;
   }
   const assessment = await prisma.assessment.findUnique({
     where: {
@@ -272,9 +296,6 @@ export const getAssessment = async (myrId: number) => {
       modelYearReport: whereClause,
     },
   });
-  if (!assessment) {
-    return null;
-  }
   return assessment;
 };
 
@@ -350,21 +371,40 @@ export const getReassessments = async (myrId: number) => {
   }
   return await prisma.reassessment.findMany({
     where: whereClause,
-    orderBy: {
-      sequenceNumber: "asc",
+    select: {
+      id: true,
+      status: true,
+      ReassessmentHistory: {
+        select: {
+          userAction: true,
+          timestamp: true,
+        },
+      },
     },
   });
 };
 
 export const getSupplementaryReport = async (suppId: number) => {
-  const { userIsGov, userOrgId } = await getUserInfo();
+  const { userIsGov, userOrgId, userRoles } = await getUserInfo();
   const whereClause: SupplementaryReportWhereUniqueInput = {
     id: suppId,
   };
   if (userIsGov) {
-    whereClause.status = {
-      not: SupplementaryReportStatus.DRAFT,
-    };
+    if (userRoles.includes(Role.DIRECTOR)) {
+      whereClause.status = {
+        in: [
+          ModelYearReportStatus.ASSESSED,
+          ModelYearReportStatus.SUBMITTED_TO_DIRECTOR,
+        ],
+      };
+    } else if (userRoles.includes(Role.ZEVA_IDIR_USER)) {
+      whereClause.status = {
+        notIn: [
+          ModelYearReportStatus.DRAFT,
+          ModelYearReportStatus.RETURNED_TO_SUPPLIER,
+        ],
+      };
+    }
   } else {
     whereClause.organizationId = userOrgId;
   }
@@ -376,6 +416,16 @@ export const getSupplementaryReport = async (suppId: number) => {
           name: true,
         },
       },
+      supplementaryReportReassessment: {
+        select: {
+          objectName: true,
+        },
+      },
+      supplementaryReportAttachments: {
+        select: {
+          fileName: true,
+        },
+      },
     },
   });
 };
@@ -385,13 +435,15 @@ export const getSupplementaryHistories = async (suppId: number) => {
   const whereClause: SupplementaryReportHistoryWhereInput = {
     supplementaryReportId: suppId,
   };
-  if (userIsGov) {
-    whereClause.userAction = {
-      not: SupplementaryReportStatus.DRAFT,
-    };
-  } else {
+  if (!userIsGov) {
     whereClause.supplementaryReport = {
       organizationId: userOrgId,
+    };
+    whereClause.userAction = {
+      notIn: [
+        ModelYearReportStatus.RETURNED_TO_ANALYST,
+        ModelYearReportStatus.SUBMITTED_TO_DIRECTOR,
+      ],
     };
   }
   return await prisma.supplementaryReportHistory.findMany({
@@ -413,14 +465,26 @@ export const getSupplementaryHistories = async (suppId: number) => {
 };
 
 export const getSupplementaries = async (myrId: number) => {
-  const { userIsGov, userOrgId } = await getUserInfo();
+  const { userIsGov, userOrgId, userRoles } = await getUserInfo();
   const whereClause: SupplementaryReportWhereInput = {
     modelYearReportId: myrId,
   };
   if (userIsGov) {
-    whereClause.status = {
-      not: SupplementaryReportStatus.DRAFT,
-    };
+    if (userRoles.includes(Role.DIRECTOR)) {
+      whereClause.status = {
+        in: [
+          ModelYearReportStatus.ASSESSED,
+          ModelYearReportStatus.SUBMITTED_TO_DIRECTOR,
+        ],
+      };
+    } else if (userRoles.includes(Role.ZEVA_IDIR_USER)) {
+      whereClause.status = {
+        notIn: [
+          ModelYearReportStatus.DRAFT,
+          ModelYearReportStatus.RETURNED_TO_SUPPLIER,
+        ],
+      };
+    }
   } else {
     whereClause.organizationId = userOrgId;
   }
@@ -429,12 +493,47 @@ export const getSupplementaries = async (myrId: number) => {
     select: {
       id: true,
       status: true,
-      sequenceNumber: true,
-    },
-    orderBy: {
-      sequenceNumber: "asc",
+      SupplementaryReportHistory: {
+        select: {
+          userAction: true,
+          timestamp: true,
+        },
+      },
     },
   });
+};
+
+export const getSuppReassessment = async (suppId: number) => {
+  const { userIsGov, userOrgId, userRoles } = await getUserInfo();
+  let whereClause: SupplementaryReportWhereInput = {};
+  if (userIsGov) {
+    if (userRoles.includes(Role.DIRECTOR)) {
+      whereClause.status = {
+        in: [
+          ModelYearReportStatus.SUBMITTED_TO_DIRECTOR,
+          ModelYearReportStatus.ASSESSED,
+        ],
+      };
+    } else if (userRoles.includes(Role.ZEVA_IDIR_USER)) {
+      whereClause.status = {
+        notIn: [
+          ModelYearReportStatus.DRAFT,
+          ModelYearReportStatus.RETURNED_TO_SUPPLIER,
+        ],
+      };
+    }
+  } else {
+    whereClause.organizationId = userOrgId;
+    whereClause.status = ModelYearReportStatus.ASSESSED;
+  }
+  const suppReassessment =
+    await prisma.supplementaryReportReassessment.findUnique({
+      where: {
+        supplementaryReportId: suppId,
+        supplementaryReport: whereClause,
+      },
+    });
+  return suppReassessment;
 };
 
 export type SupplierData = {

@@ -7,7 +7,7 @@ import { PenaltyCreditActions } from "../lib/components/PenaltyCreditActions";
 
 const Page = async (props: { params: Promise<{ id: string }> }) => {
   const args = await props.params;
-  const id = parseInt(args.id, 10);
+  const id = Number.parseInt(args.id, 10);
   return (
     <div>
       <ContentCard title="Penalty Credit History">

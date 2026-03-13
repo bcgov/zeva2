@@ -1,37 +1,42 @@
 "use server";
 
-import { Directory } from "@/app/lib/services/s3";
-import { getPresignedGetObjectUrl, putObject } from "@/app/lib/services/s3";
+import { Directory, getAttachmentPutData } from "@/app/lib/services/s3";
+import { getPresignedGetObjectUrl } from "@/app/lib/services/s3";
 import { AssessmentTemplate, ForecastTemplate, MyrTemplate } from "./constants";
 import { getUserInfo } from "@/auth";
 import {
+  CreditApplicationStatus,
   ModelYear,
   ModelYearReportStatus,
   Notification,
   ReassessmentStatus,
-  ReferenceType,
   Role,
-  SupplementaryReportStatus,
   SupplierClass,
   VehicleClass,
   ZevClass,
 } from "@/prisma/generated/enums";
-import { SupplyVolumeCreateManyInput } from "@/prisma/generated/models";
+import {
+  ModelYearReportAttachmentWhereInput,
+  SupplementaryReportAttachmentWhereInput,
+  SupplyVolumeCreateManyInput,
+} from "@/prisma/generated/models";
 import {
   createHistory,
   createReassessmentHistory,
   createSupplementaryHistory,
   getAssessmentSystemData,
   getDataForSupplementary,
-  getLegacyAssessedMyr,
   getDataForReassessment,
   getZevUnitData,
   MyrZevUnitTransaction,
   areTransfersCovered,
   getSupplierClassAndVolumes,
   getVehicleStatistics,
-  validateReassesmentTimeLimit,
   updateOrgSupplierClass,
+  checkReassessmentGuard,
+  createReassessmentGuard,
+  deleteReassessmentGuard,
+  assessReassessment,
 } from "./services";
 import {
   DataOrErrorActionResponse,
@@ -52,14 +57,12 @@ import {
 } from "./utilsServer";
 import { prisma } from "@/lib/prisma";
 import {
-  getAdjacentYear,
   getComplianceDate,
-  getCompliancePeriod,
   getModelYearReportModelYear,
 } from "@/app/lib/utils/complianceYear";
 import { addJobToEmailQueue } from "@/app/lib/services/queue";
 import { Buffer } from "node:buffer";
-import { getModelYearEnumsToStringsMap } from "@/app/lib/utils/enumMaps";
+import { Attachment, AttachmentDownload } from "@/app/lib/constants/attachment";
 
 export type NvValues = Partial<Record<VehicleClass, string>>;
 
@@ -164,11 +167,27 @@ export const getForecastTemplateUrl = async () => {
   );
 };
 
+export const getMyrPutData = async () => {
+  return (await getAttachmentPutData(Directory.ModelYearReport, 1))[0];
+};
+
+export const getForecastPutData = async () => {
+  return (await getAttachmentPutData(Directory.Forecast, 1))[0];
+};
+
+export const getMyrAttachmentsPutData = async (numberOfFiles: number) => {
+  return await getAttachmentPutData(
+    Directory.ModelYearReportAttachments,
+    numberOfFiles,
+  );
+};
+
 export const saveReports = async (
   modelYear: ModelYear,
-  modelYearReport: string,
-  forecastReport: string,
+  myrObjectName: string,
+  forecastObjectName: string,
   forecastReportFileName: string,
+  attachments: Attachment[],
 ): Promise<DataOrErrorActionResponse<number>> => {
   let idOfReport = NaN;
   const { userIsGov, userOrgId } = await getUserInfo();
@@ -185,41 +204,24 @@ export const saveReports = async (
     select: {
       id: true,
       status: true,
-      modelYear: true,
     },
   });
-  const reportYear = getModelYearReportModelYear();
-  if (
-    (existingMyr &&
-      (existingMyr.modelYear !== modelYear ||
-        (existingMyr.status !== ModelYearReportStatus.DRAFT &&
-          existingMyr.status !==
-            ModelYearReportStatus.RETURNED_TO_SUPPLIER))) ||
-    (!existingMyr && modelYear !== reportYear)
-  ) {
-    return getErrorActionResponse("Invalid Action!");
+  if (existingMyr) {
+    const status = existingMyr.status;
+    if (
+      status !== ModelYearReportStatus.DRAFT &&
+      status !== ModelYearReportStatus.RETURNED_TO_SUPPLIER
+    ) {
+      return getErrorActionResponse("Invalid Action!");
+    }
   }
-  const existingLegacyAssessedReport =
-    await prisma.legacyAssessedModelYearReport.findUnique({
-      where: {
-        organizationId_modelYear: {
-          organizationId: userOrgId,
-          modelYear: modelYear,
-        },
-      },
-      select: {
-        id: true,
-      },
-    });
-  if (existingLegacyAssessedReport) {
-    return getErrorActionResponse("Invalid Action!");
-  }
-  const myrObject = Buffer.from(modelYearReport, "base64");
-  const myrObjectName = getReportFullObjectName("myr");
-  const forecastObject = Buffer.from(forecastReport, "base64");
-  const forecastObjectName = getReportFullObjectName("forecast");
   await prisma.$transaction(async (tx) => {
     if (existingMyr) {
+      await tx.modelYearReportAttachment.deleteMany({
+        where: {
+          modelYearReportId: existingMyr.id,
+        },
+      });
       await tx.modelYearReport.update({
         where: {
           id: existingMyr.id,
@@ -243,10 +245,60 @@ export const saveReports = async (
       });
       idOfReport = newId;
     }
-    await putObject(myrObjectName, myrObject);
-    await putObject(forecastObjectName, forecastObject);
+    await tx.modelYearReportAttachment.createMany({
+      data: attachments.map((attachment) => {
+        return {
+          modelYearReportId: idOfReport,
+          fileName: attachment.fileName,
+          objectName: attachment.objectName,
+        };
+      }),
+    });
   });
   return getDataActionResponse<number>(idOfReport);
+};
+
+export const getMyrAttachmentDownloadUrls = async (
+  myrId: number,
+): Promise<DataOrErrorActionResponse<AttachmentDownload[]>> => {
+  const { userIsGov, userOrgId } = await getUserInfo();
+  const whereClause: ModelYearReportAttachmentWhereInput = {
+    modelYearReportId: myrId,
+  };
+  if (userIsGov) {
+    whereClause.modelYearReport = {
+      status: {
+        notIn: [
+          ModelYearReportStatus.DRAFT,
+          ModelYearReportStatus.RETURNED_TO_SUPPLIER,
+        ],
+      },
+    };
+  } else {
+    whereClause.modelYearReport = {
+      organizationId: userOrgId,
+    };
+  }
+  const attachments = await prisma.modelYearReportAttachment.findMany({
+    where: whereClause,
+    select: {
+      fileName: true,
+      objectName: true,
+    },
+  });
+  if (attachments.length === 0) {
+    return getErrorActionResponse("No attachments found!");
+  }
+  const result: AttachmentDownload[] = [];
+  for (const attachment of attachments) {
+    if (attachment.fileName) {
+      result.push({
+        fileName: attachment.fileName,
+        url: await getPresignedGetObjectUrl(attachment.objectName),
+      });
+    }
+  }
+  return getDataActionResponse(result);
 };
 
 export const submitReports = async (
@@ -269,10 +321,29 @@ export const submitReports = async (
       },
     },
     select: {
-      id: true,
+      modelYear: true,
     },
   });
   if (!myr) {
+    return getErrorActionResponse("Invalid Action!");
+  }
+  const reportYear = getModelYearReportModelYear();
+  if (reportYear !== myr.modelYear) {
+    return getErrorActionResponse("Invalid Action!");
+  }
+  const existingLegacyAssessedReport =
+    await prisma.legacyAssessedModelYearReport.findUnique({
+      where: {
+        organizationId_modelYear: {
+          organizationId: userOrgId,
+          modelYear: myr.modelYear,
+        },
+      },
+      select: {
+        id: true,
+      },
+    });
+  if (existingLegacyAssessedReport) {
     return getErrorActionResponse("Invalid Action!");
   }
   await prisma.$transaction(async (tx) => {
@@ -325,6 +396,13 @@ export const deleteReports = async (
     return getErrorActionResponse("Invalid Action!");
   }
   await prisma.$transaction(async (tx) => {
+    await tx.supplementaryReportAttachment.deleteMany({
+      where: {
+        supplementaryReport: {
+          modelYearReportId: myrId,
+        },
+      },
+    });
     await tx.supplementaryReportHistory.deleteMany({
       where: {
         supplementaryReport: {
@@ -332,7 +410,19 @@ export const deleteReports = async (
         },
       },
     });
+    await tx.supplementaryReportReassessment.deleteMany({
+      where: {
+        supplementaryReport: {
+          modelYearReportId: myrId,
+        },
+      },
+    });
     await tx.supplementaryReport.deleteMany({
+      where: {
+        modelYearReportId: myrId,
+      },
+    });
+    await tx.modelYearReportAttachment.deleteMany({
       where: {
         modelYearReportId: myrId,
       },
@@ -438,10 +528,14 @@ export const getAssessmentData = async (
   }
 };
 
+export const getAssessmentPutData = async () => {
+  return (await getAttachmentPutData(Directory.Assessment, 1))[0];
+};
+
 export const createOrSaveAssessment = async (
   myrId: number,
-  assessment: string,
-): Promise<DataOrErrorActionResponse<number>> => {
+  assessmentObjectName: string,
+): Promise<ErrorOrSuccessActionResponse> => {
   const { userIsGov, userRoles } = await getUserInfo();
   if (!userIsGov || !userRoles.includes(Role.ZEVA_IDIR_USER)) {
     return getErrorActionResponse("Unauthorized!");
@@ -460,24 +554,19 @@ export const createOrSaveAssessment = async (
   if (!myr) {
     return getErrorActionResponse("Invalid Action!");
   }
-  const assessmentObject = Buffer.from(assessment, "base64");
-  const assessmentObjectName = getReportFullObjectName("assessment");
-  await prisma.$transaction(async (tx) => {
-    await tx.assessment.upsert({
-      where: {
-        modelYearReportId: myrId,
-      },
-      create: {
-        modelYearReportId: myrId,
-        objectName: assessmentObjectName,
-      },
-      update: {
-        objectName: assessmentObjectName,
-      },
-    });
-    await putObject(assessmentObjectName, assessmentObject);
+  await prisma.assessment.upsert({
+    where: {
+      modelYearReportId: myrId,
+    },
+    create: {
+      modelYearReportId: myrId,
+      objectName: assessmentObjectName,
+    },
+    update: {
+      objectName: assessmentObjectName,
+    },
   });
-  return getDataActionResponse(myrId);
+  return getSuccessActionResponse();
 };
 
 export const submitAssessment = async (
@@ -501,17 +590,33 @@ export const submitAssessment = async (
         isNot: null,
       },
     },
+    select: {
+      organizationId: true,
+      modelYear: true,
+    },
   });
   if (!myr) {
     return getErrorActionResponse("Invalid Action!");
   }
-  const modelYearsMap = getModelYearEnumsToStringsMap();
-  const year = modelYearsMap[getAdjacentYear("next", myr.modelYear)];
-  if (!year) {
-    return getErrorActionResponse("Unexpected Error!");
-  }
-  if (new Date() < new Date(`${year}-${10}-${21}T00:00:00`)) {
-    return getErrorActionResponse("Invalid Action!");
+  const partOfMyrCA = await prisma.creditApplication.findFirst({
+    where: {
+      organizationId: myr.organizationId,
+      partOfMyrModelYear: myr.modelYear,
+      status: {
+        notIn: [
+          CreditApplicationStatus.APPROVED,
+          CreditApplicationStatus.REJECTED,
+        ],
+      },
+    },
+    select: {
+      id: true,
+    },
+  });
+  if (partOfMyrCA) {
+    return getErrorActionResponse(
+      "There exists an associated CA that must be dealt with first!",
+    );
   }
   await prisma.$transaction(async (tx) => {
     await tx.modelYearReport.update({
@@ -572,7 +677,21 @@ export const returnModelYearReport = async (
   ) {
     await prisma.$transaction(async (tx) => {
       if (returnType === ModelYearReportStatus.RETURNED_TO_SUPPLIER) {
+        await tx.supplementaryReportAttachment.deleteMany({
+          where: {
+            supplementaryReport: {
+              modelYearReportId: myrId,
+            },
+          },
+        });
         await tx.supplementaryReportHistory.deleteMany({
+          where: {
+            supplementaryReport: {
+              modelYearReportId: myrId,
+            },
+          },
+        });
+        await tx.supplementaryReportReassessment.deleteMany({
           where: {
             supplementaryReport: {
               modelYearReportId: myrId,
@@ -726,56 +845,43 @@ export const assessModelYearReport = async (
   return getSuccessActionResponse();
 };
 
+export const getReassessmentPutData = async () => {
+  return (await getAttachmentPutData(Directory.Reassessment, 1))[0];
+};
+
 export const createReassessment = async (
   organizationId: number,
   modelYear: ModelYear,
-  reassessment: string,
-): Promise<
-  DataOrErrorActionResponse<{ reassessmentId: number; myrId: number | null }>
-> => {
+  reassessmentObjectName: string,
+): Promise<DataOrErrorActionResponse<number>> => {
   let reassessmentId = NaN;
   const { userIsGov, userRoles } = await getUserInfo();
   if (!userIsGov || !userRoles.includes(Role.ZEVA_IDIR_USER)) {
     return getErrorActionResponse("Unauthorized!");
   }
-  let sequenceNumber;
   let myrId;
   try {
-    ({ sequenceNumber, myrId } = await getDataForReassessment(
-      organizationId,
-      modelYear,
-    ));
+    myrId = await getDataForReassessment(organizationId, modelYear);
   } catch (e) {
     return getErrorActionResponse("Invalid Action!");
   }
-  const reassessmentObject = Buffer.from(reassessment, "base64");
-  const reassessmentObjectName = getReportFullObjectName("reassessment");
-  await prisma.$transaction(async (tx) => {
-    const createdReassessment = await tx.reassessment.create({
-      data: {
-        organizationId,
-        modelYear,
-        sequenceNumber,
-        objectName: reassessmentObjectName,
-        status: ReassessmentStatus.DRAFT,
-        modelYearReportId: myrId,
-      },
-    });
-    reassessmentId = createdReassessment.id;
-    await putObject(reassessmentObjectName, reassessmentObject);
+  const createdReassessment = await prisma.reassessment.create({
+    data: {
+      organizationId,
+      modelYear,
+      objectName: reassessmentObjectName,
+      status: ReassessmentStatus.DRAFT,
+      modelYearReportId: myrId,
+    },
   });
-  return getDataActionResponse({
-    reassessmentId,
-    myrId,
-  });
+  reassessmentId = createdReassessment.id;
+  return getDataActionResponse(reassessmentId);
 };
 
 export const saveReassessment = async (
   reassessmentId: number,
-  reassessmentToSave: string,
-): Promise<
-  DataOrErrorActionResponse<{ reassessmentId: number; myrId: number | null }>
-> => {
+  reassessmentObjectName: string,
+): Promise<ErrorOrSuccessActionResponse> => {
   const { userIsGov, userRoles } = await getUserInfo();
   if (!userIsGov || !userRoles.includes(Role.ZEVA_IDIR_USER)) {
     return getErrorActionResponse("Unauthorized!");
@@ -789,29 +895,20 @@ export const saveReassessment = async (
     },
     select: {
       id: true,
-      modelYearReportId: true,
     },
   });
   if (!reassessment) {
     return getErrorActionResponse("Invalid Action!");
   }
-  const reassessmentObject = Buffer.from(reassessmentToSave, "base64");
-  const reassessmentObjectName = getReportFullObjectName("reassessment");
-  await prisma.$transaction(async (tx) => {
-    await tx.reassessment.update({
-      where: {
-        id: reassessmentId,
-      },
-      data: {
-        objectName: reassessmentObjectName,
-      },
-    });
-    await putObject(reassessmentObjectName, reassessmentObject);
+  await prisma.reassessment.update({
+    where: {
+      id: reassessmentId,
+    },
+    data: {
+      objectName: reassessmentObjectName,
+    },
   });
-  return getDataActionResponse({
-    reassessmentId,
-    myrId: reassessment.modelYearReportId,
-  });
+  return getSuccessActionResponse();
 };
 
 export const deleteReassessment = async (
@@ -874,11 +971,10 @@ export const submitReassessment = async (
   if (!reassessment) {
     return getErrorActionResponse("Invalid Action!");
   }
+  const organizationId = reassessment.organizationId;
   try {
-    await validateReassesmentTimeLimit(
-      reassessment.organizationId,
-      reassessment.modelYear,
-    );
+    await getDataForReassessment(organizationId, reassessment.modelYear);
+    await checkReassessmentGuard(organizationId);
   } catch {
     return getErrorActionResponse("Invalid Action!");
   }
@@ -898,6 +994,7 @@ export const submitReassessment = async (
       comment,
       tx,
     );
+    await createReassessmentGuard(organizationId, tx);
   });
   return getSuccessActionResponse();
 };
@@ -917,6 +1014,7 @@ export const returnReassessment = async (
     },
     select: {
       id: true,
+      organizationId: true,
     },
   });
   if (!reassessment) {
@@ -938,6 +1036,7 @@ export const returnReassessment = async (
       comment,
       tx,
     );
+    await deleteReassessmentGuard(reassessment.organizationId, tx);
   });
   return getSuccessActionResponse();
 };
@@ -962,98 +1061,18 @@ export const issueReassessment = async (
   const organizationId = reassessment.organizationId;
   const modelYear = reassessment.modelYear;
   try {
-    await validateReassesmentTimeLimit(organizationId, modelYear);
+    await getDataForReassessment(organizationId, modelYear);
   } catch {
     return getErrorActionResponse("Invalid Action");
   }
-  const myrId = reassessment.modelYearReportId;
-  const legacyMyr = await getLegacyAssessedMyr(organizationId, modelYear);
-  const complianceDate = getComplianceDate(modelYear);
-  const compliancePeriod = getCompliancePeriod(modelYear);
-  const reassessmentData = await getAssessmentSystemData(
-    reassessment.objectName,
-  );
-  const endingBalance = reassessmentData.endingBalance.map((record) => {
-    return { ...record, numberOfUnits: record.finalNumberOfUnits };
-  });
-  const transfersAreCovered = await areTransfersCovered(
-    organizationId,
-    modelYear,
-    endingBalance,
-  );
-  if (!transfersAreCovered) {
-    throw new Error(
-      "Issuing this reassessment would cause a transfer to become uncovered!",
-    );
-  }
-  const volumeUpsertClauses = reassessmentData.nvValues.map(
-    ([vehicleClass, volume]) => ({
-      where: {
-        organizationId_vehicleClass_modelYear: {
-          organizationId,
-          vehicleClass,
-          modelYear,
-        },
-      },
-      create: {
-        organizationId,
-        modelYear,
-        vehicleClass,
-        volume,
-      },
-      update: {
-        volume,
-      },
-    }),
-  );
   await prisma.$transaction(async (tx) => {
-    if (modelYear < ModelYear.MY_2024) {
-      for (const clause of volumeUpsertClauses) {
-        await tx.legacySalesVolume.upsert(clause);
-      }
-    } else {
-      for (const clause of volumeUpsertClauses) {
-        await tx.supplyVolume.upsert(clause);
-      }
-    }
-    await updateOrgSupplierClass(
+    await assessReassessment(
+      reassessment.modelYearReportId,
       organizationId,
       modelYear,
-      reassessmentData.supplierClass,
+      reassessment.objectName,
       tx,
     );
-    await tx.zevUnitTransaction.deleteMany({
-      where: {
-        organizationId,
-        referenceType: ReferenceType.COMPLIANCE_RATIO_REDUCTION,
-        AND: [
-          { timestamp: { gte: compliancePeriod.closedLowerBound } },
-          { timestamp: { lt: compliancePeriod.openUpperBound } },
-        ],
-      },
-    });
-    await tx.zevUnitTransaction.createMany({
-      data: reassessmentData.transactions.map((transaction) => {
-        return {
-          ...transaction,
-          organizationId,
-          referenceId: myrId,
-          legacyReferenceId: legacyMyr ? legacyMyr.legacyId : null,
-          timestamp: complianceDate,
-        };
-      }),
-    });
-    await tx.zevUnitEndingBalance.deleteMany({
-      where: {
-        organizationId,
-        complianceYear: modelYear,
-      },
-    });
-    await tx.zevUnitEndingBalance.createMany({
-      data: reassessmentData.endingBalance.map((record) => {
-        return { ...record, organizationId, complianceYear: modelYear };
-      }),
-    });
     await tx.reassessment.update({
       where: {
         id: reassessment.id,
@@ -1069,42 +1088,35 @@ export const issueReassessment = async (
       comment,
       tx,
     );
-    if (myrId) {
-      await tx.modelYearReport.update({
-        where: {
-          id: myrId,
-        },
-        data: {
-          compliant: reassessmentData.compliant,
-          reportableNvValue: reassessmentData.reportableNvValue,
-          supplierClass: reassessmentData.supplierClass,
-        },
-      });
-    }
+    await deleteReassessmentGuard(organizationId, tx);
   });
   return getSuccessActionResponse();
 };
 
+export const getSuppPutData = async () => {
+  return (await getAttachmentPutData(Directory.Supplementary, 1))[0];
+};
+
+export const getSuppAttachmentsPutData = async (numberOfFiles: number) => {
+  return await getAttachmentPutData(
+    Directory.SupplementaryAttachments,
+    numberOfFiles,
+  );
+};
+
 export const createSupplementary = async (
   modelYear: ModelYear,
-  report: string,
-): Promise<
-  DataOrErrorActionResponse<{ supplementaryId: number; myrId: number | null }>
-> => {
+  suppObjectName: string,
+  attachments: Attachment[],
+): Promise<DataOrErrorActionResponse<number>> => {
   let supplementaryId = NaN;
   const { userIsGov, userOrgId } = await getUserInfo();
   if (userIsGov) {
     return getErrorActionResponse("Unauthorized!");
   }
-  const reportObject = Buffer.from(report, "base64");
-  const reportObjectName = getReportFullObjectName("supplementary");
-  let sequenceNumber;
   let myrId;
   try {
-    ({ sequenceNumber, myrId } = await getDataForSupplementary(
-      userOrgId,
-      modelYear,
-    ));
+    myrId = await getDataForSupplementary(userOrgId, modelYear);
   } catch (e) {
     return getErrorActionResponse("Invalid Action!");
   }
@@ -1113,27 +1125,73 @@ export const createSupplementary = async (
       data: {
         organizationId: userOrgId,
         modelYear,
-        sequenceNumber,
-        objectName: reportObjectName,
-        status: SupplementaryReportStatus.DRAFT,
+        objectName: suppObjectName,
+        status: ModelYearReportStatus.DRAFT,
         modelYearReportId: myrId,
       },
     });
     supplementaryId = createdReport.id;
-    await putObject(reportObjectName, reportObject);
+    await tx.supplementaryReportAttachment.createMany({
+      data: attachments.map((attachment) => {
+        return {
+          supplementaryReportId: supplementaryId,
+          fileName: attachment.fileName,
+          objectName: attachment.objectName,
+        };
+      }),
+    });
   });
-  return getDataActionResponse({
-    supplementaryId,
-    myrId: myrId,
+  return getDataActionResponse(supplementaryId);
+};
+
+export const getSuppAttachmentDownloadUrls = async (
+  suppId: number,
+): Promise<DataOrErrorActionResponse<AttachmentDownload[]>> => {
+  const { userIsGov, userOrgId } = await getUserInfo();
+  const whereClause: SupplementaryReportAttachmentWhereInput = {
+    supplementaryReportId: suppId,
+  };
+  if (userIsGov) {
+    whereClause.supplementaryReport = {
+      status: {
+        notIn: [
+          ModelYearReportStatus.DRAFT,
+          ModelYearReportStatus.RETURNED_TO_SUPPLIER,
+        ],
+      },
+    };
+  } else {
+    whereClause.supplementaryReport = {
+      organizationId: userOrgId,
+    };
+  }
+  const attachments = await prisma.supplementaryReportAttachment.findMany({
+    where: whereClause,
+    select: {
+      fileName: true,
+      objectName: true,
+    },
   });
+  if (attachments.length === 0) {
+    return getErrorActionResponse("No attachments found!");
+  }
+  const result: AttachmentDownload[] = [];
+  for (const attachment of attachments) {
+    if (attachment.fileName) {
+      result.push({
+        fileName: attachment.fileName,
+        url: await getPresignedGetObjectUrl(attachment.objectName),
+      });
+    }
+  }
+  return getDataActionResponse(result);
 };
 
 export const saveSupplementary = async (
   supplementaryId: number,
-  report: string,
-): Promise<
-  DataOrErrorActionResponse<{ supplementaryId: number; myrId: number | null }>
-> => {
+  suppObjectName: string,
+  attachments: Attachment[],
+): Promise<ErrorOrSuccessActionResponse> => {
   const { userIsGov, userOrgId } = await getUserInfo();
   if (userIsGov) {
     return getErrorActionResponse("Unauthorized!");
@@ -1142,32 +1200,40 @@ export const saveSupplementary = async (
     where: {
       id: supplementaryId,
       organizationId: userOrgId,
-      status: SupplementaryReportStatus.DRAFT,
+      status: ModelYearReportStatus.DRAFT,
     },
     select: {
-      modelYearReportId: true,
+      id: true,
     },
   });
   if (!suppReport) {
     return getErrorActionResponse("Invalid Action!");
   }
-  const reportObject = Buffer.from(report, "base64");
-  const reportObjectName = getReportFullObjectName("supplementary");
   await prisma.$transaction(async (tx) => {
     await tx.supplementaryReport.update({
       where: {
         id: supplementaryId,
       },
       data: {
-        objectName: reportObjectName,
+        objectName: suppObjectName,
       },
     });
-    await putObject(reportObjectName, reportObject);
+    await tx.supplementaryReportAttachment.deleteMany({
+      where: {
+        supplementaryReportId: supplementaryId,
+      },
+    });
+    await tx.supplementaryReportAttachment.createMany({
+      data: attachments.map((attachment) => {
+        return {
+          supplementaryReportId: supplementaryId,
+          fileName: attachment.fileName,
+          objectName: attachment.objectName,
+        };
+      }),
+    });
   });
-  return getDataActionResponse({
-    supplementaryId,
-    myrId: suppReport.modelYearReportId,
-  });
+  return getSuccessActionResponse();
 };
 
 export const deleteSupplementary = async (
@@ -1181,7 +1247,12 @@ export const deleteSupplementary = async (
     where: {
       id: supplementaryId,
       organizationId: userOrgId,
-      status: SupplementaryReportStatus.DRAFT,
+      status: {
+        in: [
+          ModelYearReportStatus.DRAFT,
+          ModelYearReportStatus.RETURNED_TO_SUPPLIER,
+        ],
+      },
     },
     select: {
       id: true,
@@ -1190,15 +1261,28 @@ export const deleteSupplementary = async (
   if (!suppReport) {
     return getErrorActionResponse("Invalid Action!");
   }
-  await prisma.supplementaryReport.delete({
-    where: {
-      id: supplementaryId,
-    },
+  await prisma.$transaction(async (tx) => {
+    await tx.supplementaryReportAttachment.deleteMany({
+      where: {
+        supplementaryReportId: supplementaryId,
+      },
+    });
+    await tx.supplementaryReportHistory.deleteMany({
+      where: {
+        supplementaryReportId: supplementaryId,
+      },
+    });
+    await tx.supplementaryReport.delete({
+      where: {
+        id: supplementaryId,
+      },
+    });
   });
+
   return getSuccessActionResponse();
 };
 
-export const submitSupplementary = async (
+export const submitSupplementaryToGovernment = async (
   supplementaryId: number,
   comment?: string,
 ): Promise<ErrorOrSuccessActionResponse> => {
@@ -1210,7 +1294,12 @@ export const submitSupplementary = async (
     where: {
       id: supplementaryId,
       organizationId: userOrgId,
-      status: SupplementaryReportStatus.DRAFT,
+      status: {
+        in: [
+          ModelYearReportStatus.DRAFT,
+          ModelYearReportStatus.RETURNED_TO_SUPPLIER,
+        ],
+      },
     },
     select: {
       id: true,
@@ -1225,13 +1314,13 @@ export const submitSupplementary = async (
         id: supplementaryId,
       },
       data: {
-        status: SupplementaryReportStatus.SUBMITTED,
+        status: ModelYearReportStatus.SUBMITTED_TO_GOVERNMENT,
       },
     });
     await createSupplementaryHistory(
       supplementaryId,
       userId,
-      SupplementaryReportStatus.SUBMITTED,
+      ModelYearReportStatus.SUBMITTED_TO_GOVERNMENT,
       comment,
       tx,
     );
@@ -1239,42 +1328,263 @@ export const submitSupplementary = async (
   return getSuccessActionResponse();
 };
 
-export const acknowledgeSupplementary = async (
-  supplementaryId: number,
+export const returnSupplementaryToSupplier = async (
+  suppId: number,
   comment?: string,
 ): Promise<ErrorOrSuccessActionResponse> => {
-  const { userIsGov, userId } = await getUserInfo();
-  if (!userIsGov) {
+  const { userIsGov, userId, userRoles } = await getUserInfo();
+  if (!userIsGov || !userRoles.includes(Role.ZEVA_IDIR_USER)) {
     return getErrorActionResponse("Unauthorized!");
   }
-  const suppReport = await prisma.supplementaryReport.findUnique({
+  const supp = await prisma.supplementaryReport.findUnique({
     where: {
-      id: supplementaryId,
-      status: SupplementaryReportStatus.SUBMITTED,
+      id: suppId,
+      status: ModelYearReportStatus.SUBMITTED_TO_GOVERNMENT,
+    },
+    select: {
+      id: true,
+      supplementaryReportReassessment: {
+        select: {
+          id: true,
+        },
+      },
+    },
+  });
+  if (!supp) {
+    return getErrorActionResponse("Invalid Action!");
+  }
+  await prisma.$transaction(async (tx) => {
+    if (supp.supplementaryReportReassessment) {
+      await tx.supplementaryReportReassessment.delete({
+        where: {
+          id: supp.supplementaryReportReassessment.id,
+        },
+      });
+    }
+    await tx.supplementaryReport.update({
+      where: {
+        id: suppId,
+      },
+      data: {
+        status: ModelYearReportStatus.RETURNED_TO_SUPPLIER,
+      },
+    });
+    await createSupplementaryHistory(
+      suppId,
+      userId,
+      ModelYearReportStatus.RETURNED_TO_SUPPLIER,
+      comment,
+      tx,
+    );
+  });
+  return getSuccessActionResponse();
+};
+
+export const getSupplementaryReassessmentPutData = async () => {
+  return (
+    await getAttachmentPutData(Directory.SupplementaryReassessment, 1)
+  )[0];
+};
+
+export const createOrSaveSupplementaryReassessment = async (
+  suppId: number,
+  reassessmentObjectName: string,
+): Promise<ErrorOrSuccessActionResponse> => {
+  const { userIsGov, userRoles } = await getUserInfo();
+  if (!userIsGov || !userRoles.includes(Role.ZEVA_IDIR_USER)) {
+    return getErrorActionResponse("Unauthorized!");
+  }
+  const supp = await prisma.supplementaryReport.findUnique({
+    where: {
+      id: suppId,
+      status: {
+        in: [
+          ModelYearReportStatus.SUBMITTED_TO_GOVERNMENT,
+          ModelYearReportStatus.RETURNED_TO_ANALYST,
+        ],
+      },
     },
     select: {
       id: true,
     },
   });
-  if (!suppReport) {
+  if (!supp) {
+    return getErrorActionResponse("Invalid Action!");
+  }
+  await prisma.supplementaryReportReassessment.upsert({
+    where: {
+      supplementaryReportId: suppId,
+    },
+    create: {
+      supplementaryReportId: suppId,
+      objectName: reassessmentObjectName,
+    },
+    update: {
+      objectName: reassessmentObjectName,
+    },
+  });
+  return getSuccessActionResponse();
+};
+
+export const submitSupplementaryToDirector = async (
+  suppId: number,
+  comment?: string,
+) => {
+  const { userIsGov, userId, userRoles } = await getUserInfo();
+  if (!userIsGov || !userRoles.includes(Role.ZEVA_IDIR_USER)) {
+    return getErrorActionResponse("Unauthorized!");
+  }
+  const supp = await prisma.supplementaryReport.findUnique({
+    where: {
+      id: suppId,
+      status: {
+        in: [
+          ModelYearReportStatus.SUBMITTED_TO_GOVERNMENT,
+          ModelYearReportStatus.RETURNED_TO_ANALYST,
+        ],
+      },
+      supplementaryReportReassessment: {
+        isNot: null,
+      },
+    },
+    select: {
+      organizationId: true,
+      modelYear: true,
+    },
+  });
+  if (!supp) {
+    return getErrorActionResponse("Invalid Action!");
+  }
+  try {
+    await getDataForReassessment(supp.organizationId, supp.modelYear);
+    await checkReassessmentGuard(supp.organizationId);
+  } catch {
     return getErrorActionResponse("Invalid Action!");
   }
   await prisma.$transaction(async (tx) => {
     await tx.supplementaryReport.update({
       where: {
-        id: supplementaryId,
+        id: suppId,
       },
       data: {
-        status: SupplementaryReportStatus.ACKNOWLEDGED,
+        status: ModelYearReportStatus.SUBMITTED_TO_DIRECTOR,
       },
     });
     await createSupplementaryHistory(
-      supplementaryId,
+      suppId,
       userId,
-      SupplementaryReportStatus.ACKNOWLEDGED,
+      ModelYearReportStatus.SUBMITTED_TO_DIRECTOR,
       comment,
       tx,
     );
+    await createReassessmentGuard(supp.organizationId, tx);
+  });
+  return getSuccessActionResponse();
+};
+
+export const returnSupplementaryToAnalyst = async (
+  suppId: number,
+  comment?: string,
+): Promise<ErrorOrSuccessActionResponse> => {
+  const { userIsGov, userId, userRoles } = await getUserInfo();
+  if (!userIsGov || !userRoles.includes(Role.DIRECTOR)) {
+    return getErrorActionResponse("Unauthorized!");
+  }
+  const supp = await prisma.supplementaryReport.findUnique({
+    where: {
+      id: suppId,
+      status: ModelYearReportStatus.SUBMITTED_TO_DIRECTOR,
+    },
+    select: {
+      organizationId: true,
+    },
+  });
+  if (!supp) {
+    return getErrorActionResponse("Invalid Action!");
+  }
+  await prisma.$transaction(async (tx) => {
+    await tx.supplementaryReport.update({
+      where: {
+        id: suppId,
+      },
+      data: {
+        status: ModelYearReportStatus.RETURNED_TO_ANALYST,
+      },
+    });
+    await createSupplementaryHistory(
+      suppId,
+      userId,
+      ModelYearReportStatus.RETURNED_TO_ANALYST,
+      comment,
+      tx,
+    );
+    await deleteReassessmentGuard(supp.organizationId, tx);
+  });
+  return getSuccessActionResponse();
+};
+
+export const assessSupplementary = async (
+  suppId: number,
+  comment?: string,
+): Promise<ErrorOrSuccessActionResponse> => {
+  const { userIsGov, userId, userRoles } = await getUserInfo();
+  if (!userIsGov || !userRoles.includes(Role.DIRECTOR)) {
+    return getErrorActionResponse("Unauthorized!");
+  }
+  const supp = await prisma.supplementaryReport.findUnique({
+    where: {
+      id: suppId,
+      status: ModelYearReportStatus.SUBMITTED_TO_DIRECTOR,
+    },
+    select: {
+      modelYearReportId: true,
+      organizationId: true,
+      modelYear: true,
+      supplementaryReportReassessment: {
+        select: {
+          objectName: true,
+        },
+      },
+    },
+  });
+  if (!supp) {
+    return getErrorActionResponse("Invalid Action");
+  }
+  const suppReassessment = supp.supplementaryReportReassessment;
+  if (!suppReassessment) {
+    return getErrorActionResponse("Invalid Action");
+  }
+  const organizationId = supp.organizationId;
+  const modelYear = supp.modelYear;
+  try {
+    await getDataForReassessment(organizationId, modelYear);
+  } catch {
+    return getErrorActionResponse("Invalid Action");
+  }
+  await prisma.$transaction(async (tx) => {
+    await assessReassessment(
+      supp.modelYearReportId,
+      organizationId,
+      modelYear,
+      suppReassessment.objectName,
+      tx,
+    );
+    await tx.supplementaryReport.update({
+      where: {
+        id: suppId,
+      },
+      data: {
+        status: ModelYearReportStatus.ASSESSED,
+      },
+    });
+    await createSupplementaryHistory(
+      suppId,
+      userId,
+      ModelYearReportStatus.ASSESSED,
+      comment,
+      tx,
+    );
+    await deleteReassessmentGuard(organizationId, tx);
   });
   return getSuccessActionResponse();
 };

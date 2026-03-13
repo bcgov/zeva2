@@ -1,5 +1,6 @@
 import Excel from "exceljs";
 import {
+  getComplianceDate,
   getCompliancePeriod,
   getCurrentComplianceYear,
   getDominatedComplianceYears,
@@ -19,7 +20,6 @@ import {
   ModelYearReportStatus,
   ReassessmentStatus,
   ReferenceType,
-  SupplementaryReportStatus,
   SupplierClass,
   TransactionType,
   VehicleClass,
@@ -447,9 +447,10 @@ export const createReassessmentHistory = async (
   });
 };
 
-// returns a (non-legacy) myrId if (orgId, modelYear) can be associated with
-// such a myrId
-export const validateReassesmentTimeLimit = async (
+// returns myrId if non-legacy reassessment,
+// null if legacy reassessment,
+// throws error if doing a reassessment is not allowed.
+export const getDataForReassessment = async (
   organizationId: number,
   modelYear: ModelYear,
 ) => {
@@ -503,43 +504,6 @@ export const validateReassesmentTimeLimit = async (
   return null;
 };
 
-// returns {sequenceNumber, myrId} if non-legacy reassessment,
-// {sequenceNumber, null} if legacy reassessment,
-// throws error if creating a reassessment is not allowed.
-export const getDataForReassessment = async (
-  organizationId: number,
-  modelYear: ModelYear,
-) => {
-  const myrId = await validateReassesmentTimeLimit(organizationId, modelYear);
-  let sequenceNumber = 0;
-  const latestReassessment = await prisma.reassessment.findFirst({
-    where: {
-      organizationId,
-      modelYear,
-    },
-    select: {
-      status: true,
-      sequenceNumber: true,
-    },
-    orderBy: {
-      sequenceNumber: "desc",
-    },
-  });
-  if (
-    latestReassessment &&
-    latestReassessment.status !== ReassessmentStatus.ISSUED
-  ) {
-    throw new Error();
-  }
-  if (latestReassessment) {
-    sequenceNumber = latestReassessment.sequenceNumber + 1;
-  }
-  return {
-    sequenceNumber,
-    myrId,
-  };
-};
-
 export type MyrDataForAssessment = {
   nvValues: NvValues;
   zevClassOrdering: ZevClass[];
@@ -572,7 +536,7 @@ export const getLegacyAssessedMyr = async (
 export const createSupplementaryHistory = async (
   supplementaryReportId: number,
   userId: number,
-  userAction: SupplementaryReportStatus,
+  userAction: ModelYearReportStatus,
   comment?: string,
   transactionClient?: TransactionClient,
 ) => {
@@ -587,9 +551,9 @@ export const createSupplementaryHistory = async (
   });
 };
 
-// returns {sequenceNumber, myrId} if non-legacy supplementary,
-// {sequenceNumber, null} if legacy supplementary,
-// throws error if creating a supplementary is not allowed.
+// returns myrId if non-legacy supplementary,
+// null if legacy supplementary,
+// throws error if doing a supplementary is not allowed.
 export const getDataForSupplementary = async (
   organizationId: number,
   modelYear: ModelYear,
@@ -625,33 +589,10 @@ export const getDataForSupplementary = async (
   if ((!myr && !legacyMyr) || (myr && legacyMyr)) {
     throw new Error();
   }
-  let sequenceNumber = 0;
-  const latestSupplementary = await prisma.supplementaryReport.findFirst({
-    where: {
-      organizationId,
-      modelYear,
-    },
-    select: {
-      status: true,
-      sequenceNumber: true,
-    },
-    orderBy: {
-      sequenceNumber: "desc",
-    },
-  });
-  if (
-    latestSupplementary &&
-    latestSupplementary.status === SupplementaryReportStatus.DRAFT
-  ) {
-    throw new Error();
+  if (myr?.id) {
+    return myr.id;
   }
-  if (latestSupplementary) {
-    sequenceNumber = latestSupplementary.sequenceNumber + 1;
-  }
-  return {
-    sequenceNumber,
-    myrId: myr ? myr.id : null,
-  };
+  return null;
 };
 
 // upon issuance of an assessment or reassessment,
@@ -725,5 +666,150 @@ export const updateOrgSupplierClass = async (
     } else {
       await updateClass();
     }
+  }
+};
+
+// call this when submitting a reassessment to the director;
+// will throw an error if doing so is not allowed
+export const checkReassessmentGuard = async (organizationId: number) => {
+  const guard = await prisma.reassessmentGuard.findUnique({
+    where: {
+      organizationId,
+    },
+  });
+  if (guard) {
+    throw new Error();
+  }
+};
+
+export const createReassessmentGuard = async (
+  organizationId: number,
+  transactionClient?: TransactionClient,
+) => {
+  const client = transactionClient ?? prisma;
+  await client.reassessmentGuard.create({
+    data: {
+      organizationId,
+    },
+  });
+};
+
+// if the reassessment guard does not exist,
+// an error will be thrown
+export const deleteReassessmentGuard = async (
+  organizationId: number,
+  transactionClient?: TransactionClient,
+) => {
+  const client = transactionClient ?? prisma;
+  await client.reassessmentGuard.delete({
+    where: {
+      organizationId,
+    },
+  });
+};
+
+export const assessReassessment = async (
+  modelYearReportId: number | null,
+  organizationId: number,
+  modelYear: ModelYear,
+  objectName: string,
+  transactionClient?: TransactionClient,
+) => {
+  const client = transactionClient ?? prisma;
+  const legacyMyr = await getLegacyAssessedMyr(organizationId, modelYear);
+  const complianceDate = getComplianceDate(modelYear);
+  const compliancePeriod = getCompliancePeriod(modelYear);
+  const reassessmentData = await getAssessmentSystemData(objectName);
+  const endingBalance = reassessmentData.endingBalance.map((record) => {
+    return { ...record, numberOfUnits: record.finalNumberOfUnits };
+  });
+  const transfersAreCovered = await areTransfersCovered(
+    organizationId,
+    modelYear,
+    endingBalance,
+  );
+  if (!transfersAreCovered) {
+    throw new Error(
+      "Issuing this reassessment would cause a transfer to become uncovered!",
+    );
+  }
+  const volumeUpsertClauses = reassessmentData.nvValues.map(
+    ([vehicleClass, volume]) => ({
+      where: {
+        organizationId_vehicleClass_modelYear: {
+          organizationId,
+          vehicleClass,
+          modelYear,
+        },
+      },
+      create: {
+        organizationId,
+        modelYear,
+        vehicleClass,
+        volume,
+      },
+      update: {
+        volume,
+      },
+    }),
+  );
+  if (modelYear < ModelYear.MY_2024) {
+    for (const clause of volumeUpsertClauses) {
+      await client.legacySalesVolume.upsert(clause);
+    }
+  } else {
+    for (const clause of volumeUpsertClauses) {
+      await client.supplyVolume.upsert(clause);
+    }
+  }
+  await updateOrgSupplierClass(
+    organizationId,
+    modelYear,
+    reassessmentData.supplierClass,
+    client,
+  );
+  await client.zevUnitTransaction.deleteMany({
+    where: {
+      organizationId,
+      referenceType: ReferenceType.COMPLIANCE_RATIO_REDUCTION,
+      AND: [
+        { timestamp: { gte: compliancePeriod.closedLowerBound } },
+        { timestamp: { lt: compliancePeriod.openUpperBound } },
+      ],
+    },
+  });
+  await client.zevUnitTransaction.createMany({
+    data: reassessmentData.transactions.map((transaction) => {
+      return {
+        ...transaction,
+        organizationId,
+        referenceId: modelYearReportId,
+        legacyReferenceId: legacyMyr ? legacyMyr.legacyId : null,
+        timestamp: complianceDate,
+      };
+    }),
+  });
+  await client.zevUnitEndingBalance.deleteMany({
+    where: {
+      organizationId,
+      complianceYear: modelYear,
+    },
+  });
+  await client.zevUnitEndingBalance.createMany({
+    data: reassessmentData.endingBalance.map((record) => {
+      return { ...record, organizationId, complianceYear: modelYear };
+    }),
+  });
+  if (modelYearReportId) {
+    await client.modelYearReport.update({
+      where: {
+        id: modelYearReportId,
+      },
+      data: {
+        compliant: reassessmentData.compliant,
+        reportableNvValue: reassessmentData.reportableNvValue,
+        supplierClass: reassessmentData.supplierClass,
+      },
+    });
   }
 };

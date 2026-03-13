@@ -1,20 +1,32 @@
 import { getUserInfo } from "@/auth";
 import { prisma } from "@/lib/prisma";
-import { SupplementaryReportStatus } from "@/prisma/generated/enums";
 import { SupplementaryReportWhereInput } from "@/prisma/generated/models";
 import { LegacySupplementary } from "./constants";
+import { ModelYearReportStatus, Role } from "@/prisma/generated/enums";
 
 export const getLegacySupplementaries = async (): Promise<
   LegacySupplementary[]
 > => {
-  const { userIsGov, userOrgId } = await getUserInfo();
+  const { userIsGov, userOrgId, userRoles } = await getUserInfo();
   const whereClause: SupplementaryReportWhereInput = {
     modelYearReportId: null,
   };
   if (userIsGov) {
-    whereClause.status = {
-      not: SupplementaryReportStatus.DRAFT,
-    };
+    if (userRoles.includes(Role.DIRECTOR)) {
+      whereClause.status = {
+        in: [
+          ModelYearReportStatus.ASSESSED,
+          ModelYearReportStatus.SUBMITTED_TO_DIRECTOR,
+        ],
+      };
+    } else if (userRoles.includes(Role.ZEVA_IDIR_USER)) {
+      whereClause.status = {
+        notIn: [
+          ModelYearReportStatus.DRAFT,
+          ModelYearReportStatus.RETURNED_TO_SUPPLIER,
+        ],
+      };
+    }
   } else {
     whereClause.organizationId = userOrgId;
   }
@@ -24,13 +36,18 @@ export const getLegacySupplementaries = async (): Promise<
       id: true,
       modelYear: true,
       status: true,
-      sequenceNumber: true,
       organization: {
         select: {
           name: true,
         },
       },
+      SupplementaryReportHistory: {
+        select: {
+          userAction: true,
+          timestamp: true,
+        },
+      },
     },
-    orderBy: [{ organizationId: "asc" }, { sequenceNumber: "asc" }],
+    orderBy: { id: "asc" },
   });
 };

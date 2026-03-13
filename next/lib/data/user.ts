@@ -36,7 +36,7 @@ export const getActiveUserByProfile = async (
 };
 
 export const findUniqueMappedActiveUser = async (idpSub: string) => {
-  const users = await prisma.user.findMany({
+  const user = await prisma.user.findUnique({
     where: {
       idpSub: idpSub,
       isActive: true,
@@ -45,10 +45,7 @@ export const findUniqueMappedActiveUser = async (idpSub: string) => {
       organization: true,
     },
   });
-  if (users.length === 0 || users.length > 1) {
-    return null;
-  }
-  return users[0];
+  return user;
 };
 
 export const findUniqueUnmappedActiveUser = async (
@@ -56,21 +53,21 @@ export const findUniqueUnmappedActiveUser = async (
   idpUsername: string,
   idpSub: string,
 ) => {
-  const users = await prisma.user.findMany({
+  const user = await prisma.user.findUnique({
     where: {
-      idp: idp,
-      idpUsername: idpUsername,
-      idpSub: null,
+      idp_idpUsername: {
+        idp: idp,
+        idpUsername: idpUsername,
+      },
       isActive: true,
     },
     include: {
       organization: true,
     },
   });
-  if (users.length === 0 || users.length > 1) {
+  if (!user || user.idpSub) {
     return null;
   }
-  const user = users[0];
   await mapUser(user.id, idpSub);
   return user;
 };

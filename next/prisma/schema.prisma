@@ -11,6 +11,9 @@ datasource db {
 // prisma doesn't allow enum values to start with a number
 // this enum must be in ascending lexicographical order, as well as ascending logical order
 enum ModelYear {
+  MY_2014
+  MY_2015
+  MY_2016
   MY_2017
   MY_2018
   MY_2019
@@ -31,6 +34,10 @@ enum ModelYear {
   MY_2034
   MY_2035
   MY_2036
+  MY_2037
+  MY_2038
+  MY_2039
+  MY_2040
 }
 
 enum SupplierClass {
@@ -62,6 +69,7 @@ model Organization {
   Reassessment                  Reassessment[]
   SupplementaryReport           SupplementaryReport[]
   LegacyAssessedModelYearReport LegacyAssessedModelYearReport[]
+  reassessmentGuard             ReassessmentGuard?
 
   @@map("organization")
 }
@@ -114,7 +122,7 @@ enum Notification {
 model User {
   id                         Int                          @id @default(autoincrement())
   contactEmail               String?                      @map("contact_email")
-  idpSub                     String?                      @map("idp_sub")
+  idpSub                     String?                      @unique @map("idp_sub")
   idp                        Idp                          @map("idp")
   idpUsername                String                       @map("idp_username")
   isActive                   Boolean                      @default(true) @map("is_active")
@@ -205,6 +213,7 @@ model ZevUnitEndingBalance {
 enum CreditTransferStatus {
   APPROVED_BY_GOV
   APPROVED_BY_TRANSFER_TO
+  DRAFT
   RECOMMEND_APPROVAL_GOV
   RECOMMEND_REJECTION_GOV
   REJECTED_BY_GOV
@@ -214,23 +223,13 @@ enum CreditTransferStatus {
   SUBMITTED_TO_TRANSFER_TO
 }
 
-enum CreditTransferSupplierStatus {
-  APPROVED_BY_GOV
-  APPROVED_BY_TRANSFER_TO
-  REJECTED_BY_GOV
-  REJECTED_BY_TRANSFER_TO
-  RESCINDED_BY_TRANSFER_FROM
-  SUBMITTED_TO_TRANSFER_TO
-}
-
 model CreditTransfer {
-  id                    Int                          @id @default(autoincrement())
-  transferToId          Int                          @map("transfer_to_id")
-  transferTo            Organization                 @relation("creditTransferTo", fields: [transferToId], references: [id])
-  transferFromId        Int                          @map("transfer_from_id")
-  transferFrom          Organization                 @relation("creditTransferFrom", fields: [transferFromId], references: [id])
+  id                    Int                     @id @default(autoincrement())
+  transferToId          Int                     @map("transfer_to_id")
+  transferTo            Organization            @relation("creditTransferTo", fields: [transferToId], references: [id])
+  transferFromId        Int                     @map("transfer_from_id")
+  transferFrom          Organization            @relation("creditTransferFrom", fields: [transferFromId], references: [id])
   status                CreditTransferStatus
-  supplierStatus        CreditTransferSupplierStatus
   creditTransferContent CreditTransferContent[]
   creditTransferHistory CreditTransferHistory[]
 
@@ -401,6 +400,8 @@ model CreditApplication {
   id                          Int                             @id @default(autoincrement())
   organization                Organization                    @relation(fields: [organizationId], references: [id])
   organizationId              Int                             @map("organization_id")
+  objectName                  String                          @unique @map("object_name")
+  fileName                    String                          @map("file_name")
   submissionTimestamp         DateTime?                       @map("submission_timestamp") @db.Timestamptz(6)
   transactionTimestamp        DateTime?                       @map("transaction_timestamp") @db.Timestamptz(6)
   status                      CreditApplicationStatus         @map("status")
@@ -468,7 +469,6 @@ model CreditApplicationAttachment {
   creditApplication   CreditApplication @relation(fields: [creditApplicationId], references: [id])
   fileName            String            @map("file_name")
   objectName          String            @unique @map("object_name")
-  isApplication       Boolean           @default(false) @map("is_application")
 
   @@map("credit_application_attachment")
 }
@@ -617,28 +617,23 @@ enum ReassessmentStatus {
   SUBMITTED_TO_DIRECTOR
 }
 
-enum SupplementaryReportStatus {
-  ACKNOWLEDGED
-  DRAFT
-  SUBMITTED
-}
-
 model ModelYearReport {
-  id                       Int                      @id @default(autoincrement())
-  organization             Organization             @relation(fields: [organizationId], references: [id])
-  organizationId           Int                      @map("organization_id")
-  modelYear                ModelYear                @map("model_year")
-  status                   ModelYearReportStatus
-  objectName               String                   @unique @map("object_name")
-  forecastReportObjectName String                   @unique @map("forecast_report_object_name")
-  forecastReportFileName   String                   @map("forecast_report_file_name")
-  compliant                Boolean?
-  reportableNvValue        Int?                     @map("reportable_nv_value")
-  supplierClass            SupplierClass?           @map("supplier_class")
-  modelYearReportHistory   ModelYearReportHistory[]
-  assessment               Assessment?
-  reassessments            Reassessment[]
-  supplementaryReports     SupplementaryReport[]
+  id                         Int                         @id @default(autoincrement())
+  organization               Organization                @relation(fields: [organizationId], references: [id])
+  organizationId             Int                         @map("organization_id")
+  modelYear                  ModelYear                   @map("model_year")
+  status                     ModelYearReportStatus
+  objectName                 String                      @unique @map("object_name")
+  forecastReportObjectName   String                      @unique @map("forecast_report_object_name")
+  forecastReportFileName     String                      @map("forecast_report_file_name")
+  compliant                  Boolean?
+  reportableNvValue          Int?                        @map("reportable_nv_value")
+  supplierClass              SupplierClass?              @map("supplier_class")
+  modelYearReportHistory     ModelYearReportHistory[]
+  assessment                 Assessment?
+  reassessments              Reassessment[]
+  supplementaryReports       SupplementaryReport[]
+  modelYearReportAttachments ModelYearReportAttachment[]
 
   @@unique([organizationId, modelYear])
   @@map("model_year_report")
@@ -666,6 +661,16 @@ model ModelYearReportHistory {
   @@map("model_year_report_history")
 }
 
+model ModelYearReportAttachment {
+  id                Int             @id @default(autoincrement())
+  modelYearReportId Int             @map("model_year_report_id")
+  modelYearReport   ModelYearReport @relation(fields: [modelYearReportId], references: [id])
+  fileName          String          @map("file_name")
+  objectName        String          @unique @map("object_name")
+
+  @@map("model_year_report_attachment")
+}
+
 model LegacyAssessedModelYearReport {
   id               Int          @id @default(autoincrement())
   legacyId         Int          @unique @map("legacy_id")
@@ -679,32 +684,51 @@ model LegacyAssessedModelYearReport {
 }
 
 model SupplementaryReport {
-  id                         Int                          @id @default(autoincrement())
-  status                     SupplementaryReportStatus
-  organization               Organization                 @relation(fields: [organizationId], references: [id])
-  organizationId             Int                          @map("organization_id")
-  modelYear                  ModelYear                    @map("model_year")
-  modelYearReportId          Int?                         @map("model_year_report_id")
-  modelYearReport            ModelYearReport?             @relation(fields: [modelYearReportId], references: [id])
-  sequenceNumber             Int                          @map("sequence_number")
-  objectName                 String                       @unique @map("object_name")
-  SupplementaryReportHistory SupplementaryReportHistory[]
+  id                              Int                              @id @default(autoincrement())
+  status                          ModelYearReportStatus
+  organization                    Organization                     @relation(fields: [organizationId], references: [id])
+  organizationId                  Int                              @map("organization_id")
+  modelYear                       ModelYear                        @map("model_year")
+  modelYearReportId               Int?                             @map("model_year_report_id")
+  modelYearReport                 ModelYearReport?                 @relation(fields: [modelYearReportId], references: [id])
+  objectName                      String                           @unique @map("object_name")
+  SupplementaryReportHistory      SupplementaryReportHistory[]
+  supplementaryReportAttachments  SupplementaryReportAttachment[]
+  supplementaryReportReassessment SupplementaryReportReassessment?
 
-  @@unique([organizationId, modelYear, sequenceNumber])
   @@map("supplementary_report")
 }
 
+model SupplementaryReportReassessment {
+  id                    Int                 @id @default(autoincrement())
+  supplementaryReportId Int                 @unique @map("supplementary_report_id")
+  supplementaryReport   SupplementaryReport @relation(fields: [supplementaryReportId], references: [id])
+  objectName            String              @unique @map("object_name")
+
+  @@map("supplementary_report_reassessment")
+}
+
 model SupplementaryReportHistory {
-  id                    Int                       @id @default(autoincrement())
-  supplementaryReportId Int                       @map("supplementary_report_id")
-  supplementaryReport   SupplementaryReport       @relation(fields: [supplementaryReportId], references: [id])
-  userId                Int                       @map("user_id")
-  user                  User                      @relation(fields: [userId], references: [id])
-  timestamp             DateTime                  @default(now()) @db.Timestamptz(6)
-  userAction            SupplementaryReportStatus @map("user_action")
+  id                    Int                   @id @default(autoincrement())
+  supplementaryReportId Int                   @map("supplementary_report_id")
+  supplementaryReport   SupplementaryReport   @relation(fields: [supplementaryReportId], references: [id])
+  userId                Int                   @map("user_id")
+  user                  User                  @relation(fields: [userId], references: [id])
+  timestamp             DateTime              @default(now()) @db.Timestamptz(6)
+  userAction            ModelYearReportStatus @map("user_action")
   comment               String?
 
   @@map("supplementary_report_history")
+}
+
+model SupplementaryReportAttachment {
+  id                    Int                 @id @default(autoincrement())
+  supplementaryReportId Int                 @map("supplementary_report_id")
+  supplementaryReport   SupplementaryReport @relation(fields: [supplementaryReportId], references: [id])
+  fileName              String              @map("file_name")
+  objectName            String              @unique @map("object_name")
+
+  @@map("supplementary_report_attachment")
 }
 
 model Reassessment {
@@ -715,11 +739,9 @@ model Reassessment {
   modelYear           ModelYear             @map("model_year")
   modelYearReportId   Int?                  @map("model_year_report_id")
   modelYearReport     ModelYearReport?      @relation(fields: [modelYearReportId], references: [id])
-  sequenceNumber      Int                   @map("sequence_number")
   objectName          String                @unique @map("object_name")
   ReassessmentHistory ReassessmentHistory[]
 
-  @@unique([organizationId, modelYear, sequenceNumber])
   @@map("reassessment")
 }
 
@@ -734,4 +756,12 @@ model ReassessmentHistory {
   comment        String?
 
   @@map("reassessment_history")
+}
+
+model ReassessmentGuard {
+  id             Int          @id @default(autoincrement())
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  organizationId Int          @unique @map("organization_id")
+
+  @@map("reassessment_guard")
 }

@@ -37,7 +37,7 @@ export const DirectorActions = (props: {
         }
       }
     });
-  }, [props.myrId, props.status, comment]);
+  }, [props.myrId, comment]);
 
   const handleIssueAssessment = useCallback(() => {
     setError("");
