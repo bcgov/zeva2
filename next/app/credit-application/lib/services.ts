@@ -257,17 +257,15 @@ export const unreserveVins = async (
 export const createAttachments = async (
   creditApplicationId: number,
   attachments: Attachment[],
-  indexOfApplication: number,
   transactionClient?: TransactionClient,
 ) => {
   const client = transactionClient ?? prisma;
   const toCreate = [];
-  for (const [index, attachment] of attachments.entries()) {
+  for (const attachment of attachments) {
     toCreate.push({
       creditApplicationId,
       objectName: attachment.objectName,
       fileName: attachment.fileName,
-      ...(index === indexOfApplication && { isApplication: true }),
     });
   }
   await client.creditApplicationAttachment.createMany({

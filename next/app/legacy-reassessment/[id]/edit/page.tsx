@@ -12,7 +12,11 @@ const Page = async (props: { params: Promise<{ id: string }> }) => {
   const args = await props.params;
   const reassessmentId = Number.parseInt(args.id, 10);
   const reassessment = await getReassessment(reassessmentId);
-  if (!reassessment || reassessment.status !== ReassessmentStatus.DRAFT) {
+  if (
+    !reassessment ||
+    (reassessment.status !== ReassessmentStatus.DRAFT &&
+      reassessment.status !== ReassessmentStatus.RETURNED_TO_ANALYST)
+  ) {
     return null;
   }
   return (

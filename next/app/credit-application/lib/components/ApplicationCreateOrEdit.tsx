@@ -1,9 +1,10 @@
 import { getUserInfo } from "@/auth";
 import { CreditApplicationForm } from "./CreditApplicationForm";
-import { getDocumentDownloadUrls } from "../actions";
+import { getCreditApplicationAttachmentDownloadUrls } from "../actions";
 import { AttachmentDownload } from "@/app/lib/constants/attachment";
 import { getOrgInfo } from "../services";
 import { getCreditApplication } from "../data";
+import { getPresignedGetObjectUrl } from "@/app/lib/services/s3";
 
 export const ApplicationCreateOrEdit = async (props: {
   creditApplicationId?: number;
@@ -17,28 +18,25 @@ export const ApplicationCreateOrEdit = async (props: {
   let recordsAddress;
   let makes;
   let applicationFile: AttachmentDownload | null = null;
-  const attachments: AttachmentDownload[] = [];
+  let attachments: AttachmentDownload[] = [];
   if (props.creditApplicationId) {
     const [application, attachmentsResp] = await Promise.all([
       getCreditApplication(props.creditApplicationId),
-      getDocumentDownloadUrls(props.creditApplicationId),
+      getCreditApplicationAttachmentDownloadUrls(props.creditApplicationId),
     ]);
     if (!application) {
       return null;
     }
+    applicationFile = {
+      url: await getPresignedGetObjectUrl(application.objectName),
+      fileName: application.fileName,
+    };
     legalName = application.legalName;
     recordsAddress = application.recordsAddress;
     serviceAddress = application.serviceAddress;
     makes = application.makes;
     if (attachmentsResp.responseType === "data") {
-      const data = attachmentsResp.data;
-      for (const datum of data) {
-        if (datum.isApplication) {
-          applicationFile = datum;
-        } else {
-          attachments.push(datum);
-        }
-      }
+      attachments = attachmentsResp.data;
     }
   } else {
     const orgInfo = await getOrgInfo(userOrgId);

@@ -11,7 +11,12 @@ const Page = async (props: { params: Promise<{ id: string }> }) => {
   const suppId = Number.parseInt(args.id, 10);
   const { userIsGov } = await getUserInfo();
   const report = await getSupplementaryReport(suppId);
-  if (userIsGov || !report || report.status !== ModelYearReportStatus.DRAFT) {
+  if (
+    userIsGov ||
+    !report ||
+    (report.status !== ModelYearReportStatus.DRAFT &&
+      report.status !== ModelYearReportStatus.RETURNED_TO_SUPPLIER)
+  ) {
     return null;
   }
   const attachments: AttachmentDownload[] = [];

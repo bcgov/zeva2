@@ -79,11 +79,7 @@ export const TransferFromActions = (props: {
             setComment={setComment}
             disabled={isPending}
           />
-          <Button
-            variant="danger"
-            onClick={handleGoToEdit}
-            disabled={isPending}
-          >
+          <Button variant="danger" onClick={handleDelete} disabled={isPending}>
             {isPending ? "..." : "Delete"}
           </Button>
           <Button

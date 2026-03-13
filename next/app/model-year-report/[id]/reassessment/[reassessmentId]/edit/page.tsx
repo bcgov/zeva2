@@ -2,6 +2,7 @@ import { getPresignedGetObjectUrl } from "@/app/lib/services/s3";
 import { AssessmentForm } from "@/app/model-year-report/lib/components/AssessmentForm";
 import { getReassessment } from "@/app/model-year-report/lib/data";
 import { getUserInfo } from "@/auth";
+import { ReassessmentStatus } from "@/prisma/generated/enums";
 
 const Page = async (props: {
   params: Promise<{ id: string; reassessmentId: string }>;
@@ -14,7 +15,11 @@ const Page = async (props: {
   const myrId = Number.parseInt(args.id, 10);
   const reassessmentId = Number.parseInt(args.reassessmentId, 10);
   const reassessment = await getReassessment(reassessmentId);
-  if (!reassessment) {
+  if (
+    !reassessment ||
+    (reassessment.status !== ReassessmentStatus.DRAFT &&
+      reassessment.status !== ReassessmentStatus.RETURNED_TO_ANALYST)
+  ) {
     return null;
   }
   return (

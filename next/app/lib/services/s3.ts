@@ -7,9 +7,10 @@ import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { randomUUID } from "node:crypto";
 
 export enum Directory {
-  Agreement = "agreement",
+  AgreementAttachments = "agreementAttachments",
   Assessment = "assessment",
   CreditApplication = "creditApplication",
+  CreditApplicationAttachments = "creditApplicationAttachments",
   Forecast = "forecast",
   Icbc = "icbc",
   ModelYearReport = "modelYearReport",
@@ -19,7 +20,7 @@ export enum Directory {
   SupplementaryAttachments = "supplementaryAttachments",
   SupplementaryReassessment = "supplementaryReassessment",
   Templates = "templates",
-  Vehicle = "vehicle",
+  VehicleAttachments = "vehicleAttachments",
 }
 
 export const getClient = () => {

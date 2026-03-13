@@ -6,7 +6,10 @@ import { Suspense } from "react";
 import { LoadingSkeleton } from "@/app/lib/components/skeletons";
 import { ApplicationHistories } from "../lib/components/ApplicationHistories";
 import { ApplicationDetails } from "../lib/components/ApplicationDetails";
-import { getDocumentDownloadUrls } from "../lib/actions";
+import {
+  getCreditApplicationAttachmentDownloadUrls,
+  getCreditApplicationDownloadUrl,
+} from "../lib/actions";
 import { Attachments } from "@/app/lib/components/Attachments";
 import { SupplierActions } from "../lib/components/SupplierActions";
 import { DirectorActions } from "../lib/components/DirectorActions";
@@ -24,9 +27,13 @@ const Page = async (props: { params: Promise<{ id: string }> }) => {
   const applicationStatus = creditApplication.status;
   const applicationSupplierStatus = creditApplication.supplierStatus;
   const { userIsGov, userOrgId, userRoles } = await getUserInfo();
-  const download = async () => {
+  const downloadApplication = async () => {
     "use server";
-    return getDocumentDownloadUrls(id);
+    return getCreditApplicationDownloadUrl(id);
+  };
+  const downloadAttachments = async () => {
+    "use server";
+    return getCreditApplicationAttachmentDownloadUrls(id);
   };
 
   const applicationData = (
@@ -50,10 +57,19 @@ const Page = async (props: { params: Promise<{ id: string }> }) => {
           />
         </Suspense>
       </ContentCard>
-      <ContentCard title="Attachments">
+      {!userIsGov && (
+        <ContentCard title="The Credit Application">
+          <Attachments
+            attachments={[{ fileName: creditApplication.fileName }]}
+            download={downloadApplication}
+            zipName={`credit-application-${id}`}
+          />
+        </ContentCard>
+      )}
+      <ContentCard title="Supporting Documents">
         <Attachments
           attachments={creditApplication.CreditApplicationAttachment}
-          download={download}
+          download={downloadAttachments}
           zipName={`credit-application-attachments-${id}`}
         />
       </ContentCard>

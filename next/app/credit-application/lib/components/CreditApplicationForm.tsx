@@ -1,14 +1,14 @@
 "use client";
 
-import axios from "axios";
+import axios, { AxiosResponse } from "axios";
 import Excel from "exceljs";
 import { Button } from "@/app/lib/components";
 import { Dropzone } from "@/app/lib/components/Dropzone";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState, useTransition } from "react";
-import { FileWithPath } from "react-dropzone";
 import {
   getCreditApplicationAttachmentPutData,
+  getCreditApplicationPutData,
   getSupplierEligibleVehicles,
   getSupplierTemplateDownloadUrl,
   supplierSave,
@@ -36,8 +36,8 @@ export const CreditApplicationForm = (props: {
   const [serviceAddress, setServiceAddress] = useState<string>();
   const [recordsAddress, setRecordsAddress] = useState<string>();
   const [makes, setMakes] = useState<string>();
-  const [files, setFiles] = useState<FileWithPath[]>([]);
-  const [attachments, setAttachments] = useState<FileWithPath[]>([]);
+  const [files, setFiles] = useState<File[]>([]);
+  const [attachments, setAttachments] = useState<File[]>([]);
   const [error, setError] = useState<string>("");
 
   useEffect(() => {
@@ -59,19 +59,14 @@ export const CreditApplicationForm = (props: {
       }
     };
     loadPrev();
-  }, [props.creditApplication]);
+  }, []);
 
   useEffect(() => {
     setLegalName(props.legalName);
     setRecordsAddress(props.recordsAddress);
     setServiceAddress(props.serviceAddress);
     setMakes(props.makes);
-  }, [
-    props.legalName,
-    props.recordsAddress,
-    props.serviceAddress,
-    props.makes,
-  ]);
+  }, []);
 
   const handleDownload = useCallback(() => {
     setError("");
@@ -119,26 +114,38 @@ export const CreditApplicationForm = (props: {
         if (files.length !== 1) {
           throw new Error("Exactly 1 Credit Application file expected!");
         }
-        const allAttachments = [files[0], ...attachments];
-        const attachmentsPayload: Attachment[] = [];
-        const putData = await getCreditApplicationAttachmentPutData(
-          allAttachments.length,
-        );
-        for (const [index, attachment] of allAttachments.entries()) {
-          const putDatum = putData[index];
-          await axios.put(putDatum.url, attachment, {
+        const application = files[0];
+        const puts: Promise<AxiosResponse>[] = [];
+        const applicationPutData = await getCreditApplicationPutData();
+        puts.push(
+          axios.put(applicationPutData.url, application, {
             headers: { "if-none-match": "*" },
-          });
+          }),
+        );
+        const attachmentsPayload: Attachment[] = [];
+        const attachmentsPutData = await getCreditApplicationAttachmentPutData(
+          attachments.length,
+        );
+        for (const [index, attachment] of attachments.entries()) {
+          const putDatum = attachmentsPutData[index];
+          puts.push(
+            axios.put(putDatum.url, attachment, {
+              headers: { "if-none-match": "*" },
+            }),
+          );
           attachmentsPayload.push({
             objectName: putDatum.objectName,
             fileName: attachment.name,
           });
         }
+        await Promise.all(puts);
         const response = await supplierSave(
           legalName,
           recordsAddress,
           serviceAddress,
           makes,
+          applicationPutData.objectName,
+          application.name,
           attachmentsPayload,
           props.creditApplication?.id,
         );

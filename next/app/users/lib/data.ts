@@ -58,6 +58,9 @@ export const fetchUsers = async (
         },
       },
     },
+    orderBy: {
+      id: "asc",
+    },
   });
 };
 

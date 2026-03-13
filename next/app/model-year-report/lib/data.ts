@@ -371,8 +371,15 @@ export const getReassessments = async (myrId: number) => {
   }
   return await prisma.reassessment.findMany({
     where: whereClause,
-    orderBy: {
-      id: "asc",
+    select: {
+      id: true,
+      status: true,
+      ReassessmentHistory: {
+        select: {
+          userAction: true,
+          timestamp: true,
+        },
+      },
     },
   });
 };
@@ -486,9 +493,12 @@ export const getSupplementaries = async (myrId: number) => {
     select: {
       id: true,
       status: true,
-    },
-    orderBy: {
-      id: "asc",
+      SupplementaryReportHistory: {
+        select: {
+          userAction: true,
+          timestamp: true,
+        },
+      },
     },
   });
 };

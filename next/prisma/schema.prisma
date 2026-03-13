@@ -400,6 +400,8 @@ model CreditApplication {
   id                          Int                             @id @default(autoincrement())
   organization                Organization                    @relation(fields: [organizationId], references: [id])
   organizationId              Int                             @map("organization_id")
+  objectName                  String                          @unique @map("object_name")
+  fileName                    String                          @map("file_name")
   submissionTimestamp         DateTime?                       @map("submission_timestamp") @db.Timestamptz(6)
   transactionTimestamp        DateTime?                       @map("transaction_timestamp") @db.Timestamptz(6)
   status                      CreditApplicationStatus         @map("status")
@@ -467,7 +469,6 @@ model CreditApplicationAttachment {
   creditApplication   CreditApplication @relation(fields: [creditApplicationId], references: [id])
   fileName            String            @map("file_name")
   objectName          String            @unique @map("object_name")
-  isApplication       Boolean           @default(false) @map("is_application")
 
   @@map("credit_application_attachment")
 }

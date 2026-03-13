@@ -1,10 +1,14 @@
 /*
   Warnings:
 
+  - You are about to drop the column `is_application` on the `credit_application_attachment` table. All the data in the column will be lost.
   - You are about to drop the column `supplierStatus` on the `credit_transfer` table. All the data in the column will be lost.
   - You are about to drop the column `sequence_number` on the `reassessment` table. All the data in the column will be lost.
   - You are about to drop the column `sequence_number` on the `supplementary_report` table. All the data in the column will be lost.
+  - A unique constraint covering the columns `[object_name]` on the table `credit_application` will be added. If there are existing duplicate values, this will fail.
   - A unique constraint covering the columns `[idp_sub]` on the table `user` will be added. If there are existing duplicate values, this will fail.
+  - Added the required column `file_name` to the `credit_application` table without a default value. This is not possible if the table is not empty.
+  - Added the required column `object_name` to the `credit_application` table without a default value. This is not possible if the table is not empty.
   - Changed the type of `status` on the `supplementary_report` table. No cast exists, the column would be dropped and recreated, which cannot be done if there is data, since the column is required.
   - Changed the type of `user_action` on the `supplementary_report_history` table. No cast exists, the column would be dropped and recreated, which cannot be done if there is data, since the column is required.
 
@@ -33,6 +37,13 @@ DROP INDEX "reassessment_organization_id_model_year_sequence_number_key";
 
 -- DropIndex
 DROP INDEX "supplementary_report_organization_id_model_year_sequence_nu_key";
+
+-- AlterTable
+ALTER TABLE "credit_application" ADD COLUMN     "file_name" TEXT NOT NULL,
+ADD COLUMN     "object_name" TEXT NOT NULL;
+
+-- AlterTable
+ALTER TABLE "credit_application_attachment" DROP COLUMN "is_application";
 
 -- AlterTable
 ALTER TABLE "credit_transfer" DROP COLUMN "supplierStatus";
@@ -106,6 +117,9 @@ CREATE UNIQUE INDEX "supplementary_report_attachment_object_name_key" ON "supple
 
 -- CreateIndex
 CREATE UNIQUE INDEX "reassessment_guard_organization_id_key" ON "reassessment_guard"("organization_id");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "credit_application_object_name_key" ON "credit_application"("object_name");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "user_idp_sub_key" ON "user"("idp_sub");

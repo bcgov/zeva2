@@ -5,6 +5,7 @@ import { getPresignedGetObjectUrl } from "@/app/lib/services/s3";
 import { AssessmentTemplate, ForecastTemplate, MyrTemplate } from "./constants";
 import { getUserInfo } from "@/auth";
 import {
+  CreditApplicationStatus,
   ModelYear,
   ModelYearReportStatus,
   Notification,
@@ -589,9 +590,33 @@ export const submitAssessment = async (
         isNot: null,
       },
     },
+    select: {
+      organizationId: true,
+      modelYear: true,
+    },
   });
   if (!myr) {
     return getErrorActionResponse("Invalid Action!");
+  }
+  const partOfMyrCA = await prisma.creditApplication.findFirst({
+    where: {
+      organizationId: myr.organizationId,
+      partOfMyrModelYear: myr.modelYear,
+      status: {
+        notIn: [
+          CreditApplicationStatus.APPROVED,
+          CreditApplicationStatus.REJECTED,
+        ],
+      },
+    },
+    select: {
+      id: true,
+    },
+  });
+  if (partOfMyrCA) {
+    return getErrorActionResponse(
+      "There exists an associated CA that must be dealt with first!",
+    );
   }
   await prisma.$transaction(async (tx) => {
     await tx.modelYearReport.update({
@@ -652,7 +677,21 @@ export const returnModelYearReport = async (
   ) {
     await prisma.$transaction(async (tx) => {
       if (returnType === ModelYearReportStatus.RETURNED_TO_SUPPLIER) {
+        await tx.supplementaryReportAttachment.deleteMany({
+          where: {
+            supplementaryReport: {
+              modelYearReportId: myrId,
+            },
+          },
+        });
         await tx.supplementaryReportHistory.deleteMany({
+          where: {
+            supplementaryReport: {
+              modelYearReportId: myrId,
+            },
+          },
+        });
+        await tx.supplementaryReportReassessment.deleteMany({
           where: {
             supplementaryReport: {
               modelYearReportId: myrId,

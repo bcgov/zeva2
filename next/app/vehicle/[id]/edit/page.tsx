@@ -4,12 +4,17 @@ import { getAttachmentDownloadUrls } from "../../lib/actions";
 import { AttachmentDownload } from "@/app/lib/constants/attachment";
 import { VehicleForm, VehicleFormData } from "../../lib/components/VehicleForm";
 import { getVehicleClassCodeEnumsToStringsMap } from "@/app/lib/utils/enumMaps";
+import { VehicleStatus } from "@/prisma/generated/enums";
 
 const Page = async (props: { params: Promise<{ id: string }> }) => {
   const args = await props.params;
   const vehicleId = Number.parseInt(args.id, 10);
   const vehicle = await getVehicle(vehicleId);
-  if (!vehicle) {
+  if (
+    !vehicle ||
+    (vehicle.status !== VehicleStatus.DRAFT &&
+      vehicle.status !== VehicleStatus.RETURNED_TO_SUPPLIER)
+  ) {
     return null;
   }
   const attachments: AttachmentDownload[] = [];

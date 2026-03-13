@@ -76,7 +76,7 @@ export const VehicleForm = (props: {
       }
     };
     initializeForm();
-  }, [props.vehicle]);
+  }, []);
 
   const classCodesMap = useMemo(() => {
     return getStringsToVehicleClassCodeEnumsMap();
