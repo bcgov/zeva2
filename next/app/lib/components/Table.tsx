@@ -17,7 +17,7 @@ import { LoadingSkeleton } from "./skeletons";
 import { Button } from "./inputs";
 import { TableHeader } from "./TableHeader";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faAngleLeft, faAngleRight, faMagnifyingGlass } from "@fortawesome/free-solid-svg-icons";
+import { faAngleLeft, faAngleRight } from "@fortawesome/free-solid-svg-icons";
 
 interface ITableProps<T> {
   columns: ColumnDef<T, any>[];
@@ -27,7 +27,6 @@ interface ITableProps<T> {
   explicitSizing?: boolean;
   paramsToPreserve?: string[];
   stackHeaderContents?: boolean;
-  enableGlobalSearch?: boolean;
   title?: string;
   headerContent?: React.ReactNode;
 }
@@ -44,7 +43,6 @@ export const Table = <T extends ZevaObject>({
   explicitSizing,
   paramsToPreserve,
   stackHeaderContents,
-  enableGlobalSearch = false,
   title,
   headerContent,
 }: ITableProps<T>) => {
@@ -62,9 +60,6 @@ export const Table = <T extends ZevaObject>({
   const [filters, setFilters] = React.useState<{ [key: string]: string }>(
     getObject(searchParams.get("filters")),
   );
-  const [globalSearch, setGlobalSearch] = React.useState<string>(
-    searchParams.get("search") || "",
-  );
 
   const replaceUrl = React.useCallback(
     (params: URLSearchParams) => {
@@ -81,24 +76,8 @@ export const Table = <T extends ZevaObject>({
         newParams.set(param, paramValue);
       }
     });
-    setGlobalSearch("");
     replaceUrl(newParams);
   }, [paramsToPreserve, searchParams, replaceUrl]);
-
-  const handleGlobalSearchChange = React.useCallback(
-    (value: string) => {
-      setGlobalSearch(value);
-      const params = new URLSearchParams(searchParams);
-      if (value) {
-        params.set("search", value);
-      } else {
-        params.delete("search");
-      }
-      params.set("page", "1");
-      replaceUrl(params);
-    },
-    [searchParams, replaceUrl],
-  );
 
   const currentPageSize = React.useMemo(() => {
     const pageSize = searchParams.get("pageSize");
@@ -225,24 +204,7 @@ export const Table = <T extends ZevaObject>({
   return (
     <div>
       <div className="mb-4 flex items-center justify-between gap-4">
-        <div className="flex items-center gap-4">
-          {headerContent && <div>{headerContent}</div>}
-          {enableGlobalSearch && (
-            <div className="relative w-80">
-              <FontAwesomeIcon
-                icon={faMagnifyingGlass}
-                className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
-              />
-              <input
-                type="text"
-                placeholder="Example text"
-                value={globalSearch}
-                onChange={(e) => handleGlobalSearchChange(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              />
-            </div>
-          )}
-        </div>
+        {headerContent && <div>{headerContent}</div>}
         <Button variant="secondary" size="small" onClick={handleReset}>
           Reset Table
         </Button>
