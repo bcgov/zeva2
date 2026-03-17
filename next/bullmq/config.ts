@@ -1,9 +1,4 @@
 import { handleEmailJob } from "./handlers/email";
-import {
-  handleConsumeIcbcFileJob,
-  handleConsumeIcbcFileJobCompleted,
-  handleConsumeIcbcFileJobFailed,
-} from "./handlers/icbc";
 import { ConnectionOptions } from "bullmq";
 import { QueueNames } from "@/app/lib/constants/queue";
 import { handleFlagInProcessCAsJob } from "./handlers/flagCAs";
@@ -36,13 +31,6 @@ export const bullmqConfig = {
       queueName: QueueNames.Email,
       numberOfWorkers: 1,
       handler: handleEmailJob,
-    },
-    {
-      queueName: QueueNames.Icbc,
-      numberOfWorkers: 1, // do not change this
-      handler: handleConsumeIcbcFileJob,
-      completedHandler: handleConsumeIcbcFileJobCompleted,
-      failedHandler: handleConsumeIcbcFileJobFailed,
     },
     {
       queueName: QueueNames.FlagInProcessCAs,

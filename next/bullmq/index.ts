@@ -7,8 +7,6 @@ if (bullmqConfig.startWorkers) {
     const queueName = workerSpec.queueName;
     const numberOfWorkers = workerSpec.numberOfWorkers;
     const handler = workerSpec.handler;
-    const completedHandler = workerSpec.completedHandler;
-    const failedHandler = workerSpec.failedHandler;
     for (let i = 0; i < numberOfWorkers; i++) {
       const worker = new Worker<any>(queueName, handler, {
         connection: defaultConnection,
@@ -23,13 +21,8 @@ if (bullmqConfig.startWorkers) {
       worker.on("error", (err) => {
         console.error("At %s, encountered error: %s", new Date(), err);
       });
-      if (completedHandler) {
-        worker.on("completed", completedHandler);
-      }
-      if (failedHandler) {
-        worker.on("failed", failedHandler);
-      }
-      // can also listen to the "progress" event
+      // can listen to the "completed", "failed", "progress" events,
+      // and define handlers for those
     }
   }
 }

@@ -26,6 +26,7 @@ import {
   updateStatus,
   createAttachments,
   getPartOfMyrModelYear,
+  getDecodedVinsMap,
 } from "./services";
 import { ErrorsTemplate, SupplierTemplate } from "./constants";
 import {
@@ -475,6 +476,7 @@ export const validateCreditApplication = async (
     return [...acc, cv.vin];
   }, []);
   const icbcMap = await getIcbcRecordsMap(vins);
+  const decodedVins = await getDecodedVinsMap(vins);
   const warningsMap = getWarningsMap(
     records,
     icbcMap,

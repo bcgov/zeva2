@@ -74,11 +74,6 @@ export const navbarSubItems: NavbarSubItems = {
       route: Routes.PenaltyCredit,
       roles: govRoles,
     },
-    {
-      label: "Update ICBC Data",
-      route: Routes.Icbc,
-      roles: [Role.ZEVA_IDIR_USER],
-    },
   ],
   "Vehicle Suppliers": [
     {

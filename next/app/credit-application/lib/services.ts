@@ -1,3 +1,4 @@
+import axios from "axios";
 import { prisma } from "@/lib/prisma";
 import {
   AddressType,
@@ -20,6 +21,8 @@ import {
   getAdjacentYear,
   getCurrentComplianceYear,
 } from "@/app/lib/utils/complianceYear";
+import { getStringsToModelYearsEnumsMap } from "@/app/lib/utils/enumMaps";
+import { validateDate } from "@/app/lib/utils/date";
 
 export const getOrgInfo = async (orgId: number) => {
   const orgInfo = await prisma.organization.findUnique({
@@ -175,31 +178,85 @@ export const getIcbcRecordsMap = async (
   vins: string[],
 ): Promise<IcbcRecordsMap> => {
   const result: IcbcRecordsMap = {};
-  const icbcRecords = await prisma.icbcRecord.findMany({
-    where: {
-      vin: {
-        in: vins,
-      },
-    },
-    select: {
-      vin: true,
-      make: true,
-      model: true,
-      year: true,
-      icbcFile: {
-        select: {
-          timestamp: true,
-        },
-      },
-    },
-  });
-  for (const icbcRecord of icbcRecords) {
-    result[icbcRecord.vin] = {
-      make: icbcRecord.make,
-      modelName: icbcRecord.model,
-      modelYear: icbcRecord.year,
-      timestamp: icbcRecord.icbcFile.timestamp,
-    };
+  const cthubUrl = process.env.CTHUB_URL;
+  const cthubToken = process.env.CTHUB_TOKEN;
+  if (cthubUrl && cthubToken) {
+    const response = await axios.post(
+      `${cthubUrl}/icbc/get_icbc_ev_records`,
+      { vins },
+      { headers: { Authorization: `Token ${cthubToken}` } },
+    );
+    const data: Record<
+      string,
+      {
+        make: string | null;
+        model: string | null;
+        modelYear: string | null;
+        registrationDate: string | null;
+        snapshotDate: string;
+      }
+    > = response.data;
+    const modelYearsMap = getStringsToModelYearsEnumsMap();
+    for (const [vin, record] of Object.entries(data)) {
+      const make = record.make;
+      const modelName = record.model;
+      const modelYearString = record.modelYear;
+      const dateString = record.registrationDate ?? record.snapshotDate
+      const [dateIsValid, timestamp] = validateDate(dateString)
+      if (make && modelName && modelYearString && dateIsValid) {
+        const modelYear = modelYearsMap[modelYearString];
+        if (modelYear) {
+          result[vin] = { make, modelName, modelYear, timestamp };
+        }
+      }
+    }
+  }
+  return result;
+};
+
+export type DecodedVinsMap = Partial<
+  Record<
+    string,
+    {
+      make: string;
+      modelName: string;
+      modelYear: ModelYear;
+    }
+  >
+>;
+
+export const getDecodedVinsMap = async (
+  vins: string[],
+): Promise<DecodedVinsMap> => {
+  const result: DecodedVinsMap = {};
+  const cthubUrl = process.env.CTHUB_URL;
+  const cthubToken = process.env.CTHUB_TOKEN;
+  if (cthubUrl && cthubToken) {
+    const response = await axios.post(
+      `${cthubUrl}/decoded-vin-records/get_vinpower_decoded_ev_vins`,
+      { vins },
+      { headers: { Authorization: `Token ${cthubToken}` } },
+    );
+    const data: Record<
+      string,
+      {
+        make: string | null;
+        model: string | null;
+        modelYear: string | null;
+      }
+    > = response.data;
+    const modelYearsMap = getStringsToModelYearsEnumsMap();
+    for (const [vin, record] of Object.entries(data)) {
+      const make = record.make;
+      const modelName = record.model;
+      const modelYearString = record.modelYear;
+      if (make && modelName && modelYearString) {
+        const modelYear = modelYearsMap[modelYearString];
+        if (modelYear) {
+          result[vin] = { make, modelName, modelYear };
+        }
+      }
+    }
   }
   return result;
 };

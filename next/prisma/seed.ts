@@ -5,7 +5,6 @@ import { getStringsToModelYearsEnumsMap } from "@/app/lib/utils/enumMaps";
 import { isNotification } from "@/app/lib/utils/typeGuards";
 import { seedOrganizations } from "./seedProcesses/seedOrganizations";
 import { seedTransactions } from "./seedProcesses/seedTransactions";
-import { seedIcbc } from "./seedProcesses/seedIcbc";
 import { seedUsers } from "./seedProcesses/seedUsers";
 import { seedVolumes } from "./seedProcesses/seedVolumes";
 import { seedVehicles } from "./seedProcesses/seedVehicles";
@@ -106,8 +105,6 @@ const main = () => {
       );
 
       await seedLegacyVins(tx);
-
-      await seedIcbc(tx, mapOfModelYearIdsToModelYearEnum);
 
       await seedVolumes(
         tx,
