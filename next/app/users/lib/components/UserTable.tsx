@@ -22,7 +22,12 @@ export interface UserTableProps {
   isAdmin?: boolean;
 }
 
-export const UserTable = ({ users, userIsGov, category, isAdmin }: UserTableProps) => {
+export const UserTable = ({
+  users,
+  userIsGov,
+  category,
+  isAdmin,
+}: UserTableProps) => {
   const router = useRouter();
   const navigationAction = useCallback((id: number) => {
     router.push(`${Routes.Users}/${id}`);
@@ -138,7 +143,7 @@ export const UserTable = ({ users, userIsGov, category, isAdmin }: UserTableProp
           <div className="flex justify-start">
             <Button
               variant="primary"
-              size="medium"
+              size="regular"
               onClick={() => router.push(`${Routes.Users}/new`)}
             >
               <FontAwesomeIcon icon={faPlus} className="mr-2" />

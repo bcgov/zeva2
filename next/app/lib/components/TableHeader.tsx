@@ -2,8 +2,13 @@
 
 import { Table, flexRender } from "@tanstack/react-table";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faSort, faSortUp, faSortDown } from "@fortawesome/free-solid-svg-icons";
+import {
+  faSort,
+  faSortUp,
+  faSortDown,
+} from "@fortawesome/free-solid-svg-icons";
 import { getSizingHeaders } from "@/app/lib/utils/tableUtils";
+import { Fragment } from "react/jsx-runtime";
 
 interface ITableHeaderProps<T> {
   table: Table<T>;
@@ -26,19 +31,35 @@ interface ITableHeaderProps<T> {
 
 const renderSortIcon = (sortState: "asc" | "desc" | null) => {
   if (sortState === "asc") {
-    return <FontAwesomeIcon icon={faSortUp} className="text-gray-600 hover:text-gray-800 transition-colors" />;
+    return (
+      <FontAwesomeIcon
+        icon={faSortUp}
+        className="text-gray-600 hover:text-gray-800 transition-colors"
+      />
+    );
   }
   if (sortState === "desc") {
-    return <FontAwesomeIcon icon={faSortDown} className="text-gray-600 hover:text-gray-800 transition-colors" />;
+    return (
+      <FontAwesomeIcon
+        icon={faSortDown}
+        className="text-gray-600 hover:text-gray-800 transition-colors"
+      />
+    );
   }
-  return <FontAwesomeIcon icon={faSort} className="text-gray-400 hover:text-gray-600 transition-colors" />;
+  return (
+    <FontAwesomeIcon
+      icon={faSort}
+      className="text-gray-400 hover:text-gray-600 transition-colors"
+    />
+  );
 };
 
 const getButtonClassName = (
   enableSorting: boolean,
   canSort: boolean,
 ): string => {
-  const baseClasses = "bg-transparent border-0 p-0 text-inherit font-inherit w-full text-left focus:outline-none focus-visible:outline-none focus:ring-0 active:bg-transparent hover:bg-transparent [&:hover]:text-inherit";
+  const baseClasses =
+    "bg-transparent border-0 p-0 text-inherit font-inherit w-full text-left focus:outline-none focus-visible:outline-none focus:ring-0 active:bg-transparent hover:bg-transparent [&:hover]:text-inherit";
   const interactiveClass =
     enableSorting && canSort ? "cursor-pointer select-none" : "cursor-default";
   return `${baseClasses} ${interactiveClass}`;
@@ -109,10 +130,15 @@ export const TableHeader = <T extends unknown>({
   return (
     <thead className={customStyles?.thead || "bg-gray-50"}>
       {explicitSizing && getSizingHeaders(table, explicitSizing)}
-      {table.getHeaderGroups().map((headerGroup) => (
-        <>
+      {table.getHeaderGroups().map((headerGroup, index) => (
+        <Fragment key={index}>
           {/* Column Headers Row */}
-          <tr key={`${headerGroup.id}-headers`} className={customStyles?.theadTr || "bg-white border-b border-gray-200"}>
+          <tr
+            key={`${headerGroup.id}-headers`}
+            className={
+              customStyles?.theadTr || "bg-white border-b border-gray-200"
+            }
+          >
             {headerGroup.headers.map((header) => {
               const thClassName = customStyles?.theadTh
                 ? customStyles.theadTh
@@ -124,7 +150,9 @@ export const TableHeader = <T extends unknown>({
                 <th
                   key={header.id}
                   className={thClassName}
-                  style={explicitSizing ? { width: header.getSize() } : undefined}
+                  style={
+                    explicitSizing ? { width: header.getSize() } : undefined
+                  }
                 >
                   {header.isPlaceholder ? null : (
                     <button
@@ -153,7 +181,8 @@ export const TableHeader = <T extends unknown>({
                           header.getContext(),
                         )}
                       </span>
-                      {enableSorting && header.column.getCanSort() &&
+                      {enableSorting &&
+                        header.column.getCanSort() &&
                         renderSortIcon(sortState[header.id] || null)}
                     </button>
                   )}
@@ -163,7 +192,10 @@ export const TableHeader = <T extends unknown>({
           </tr>
           {/* Filter Inputs Row */}
           {enableFiltering && (
-            <tr key={`${headerGroup.id}-filters`} className="bg-gray-50 border-b-2 border-gray-300">
+            <tr
+              key={`${headerGroup.id}-filters`}
+              className="bg-gray-50 border-b-2 border-gray-300"
+            >
               {headerGroup.headers.map((header) => {
                 const thClassName = customStyles?.theadTh
                   ? customStyles.theadTh
@@ -173,7 +205,9 @@ export const TableHeader = <T extends unknown>({
                   <th
                     key={header.id}
                     className={thClassName}
-                    style={explicitSizing ? { width: header.getSize() } : undefined}
+                    style={
+                      explicitSizing ? { width: header.getSize() } : undefined
+                    }
                   >
                     {header.isPlaceholder ? null : (
                       <HeaderFilterInput
@@ -190,7 +224,7 @@ export const TableHeader = <T extends unknown>({
               })}
             </tr>
           )}
-        </>
+        </Fragment>
       ))}
     </thead>
   );
