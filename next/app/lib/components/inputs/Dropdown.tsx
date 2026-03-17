@@ -25,7 +25,7 @@ export const Dropdown: FC<IDropdownProps> = ({
   id,
   label,
   helperText,
-  placeholder = "Select an option",
+  placeholder = "Select an Option",
   options,
   value,
   onChange,
@@ -146,15 +146,15 @@ export const Dropdown: FC<IDropdownProps> = ({
       return "bg-disabledSurface border-dividerMedium text-disabledText cursor-not-allowed";
     }
     if (error) {
-      return "bg-white border-error text-primaryText hover:border-errorIcon focus:border-error focus:ring-2 focus:ring-error/20";
+      return "bg-white border-error text-primaryText hover:bg-lightGrey hover:border-errorIcon focus:border-error focus:ring-2 focus:ring-error/20";
     }
     if (isOpen) {
-      return "bg-white border-primaryBlue text-primaryText ring-2 ring-primaryBlue/20";
+      return "bg-white border-primaryBlue text-primaryText ring-2 ring-primaryBlue/20 hover:bg-lightGrey";
     }
     if (isFocused) {
-      return "bg-white border-primaryBlue text-primaryText ring-2 ring-primaryBlue/20";
+      return "bg-white border-primaryBlue text-primaryText ring-2 ring-primaryBlue/20 hover:bg-lightGrey";
     }
-    return "bg-white border-dividerMedium text-primaryText hover:border-dividerDark focus:border-primaryBlue focus:ring-2 focus:ring-primaryBlue/20";
+    return "bg-white border-dividerMedium text-primaryText hover:bg-lightGrey hover:border-dividerDark focus:border-primaryBlue focus:ring-2 focus:ring-primaryBlue/20";
   };
 
   return (

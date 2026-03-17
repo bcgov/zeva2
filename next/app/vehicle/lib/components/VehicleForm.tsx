@@ -138,7 +138,7 @@ export const VehicleForm = (props: {
         <div className="w-full">
           <Dropdown
             id="modelYear"
-            placeholder="--"
+            placeholder="Select an Option"
             options={Object.entries(modelYearsMap)
               .filter(
                 ([_key, value]) =>
@@ -190,7 +190,7 @@ export const VehicleForm = (props: {
         <div className="w-full">
           <Dropdown
             id="zevType"
-            placeholder="--"
+            placeholder="Select an Option"
             options={Object.keys(ZevType).map((zevType) => ({
               value: zevType,
               label: zevType,
@@ -221,7 +221,7 @@ export const VehicleForm = (props: {
         <div className="w-full">
           <Dropdown
             id="bodyType"
-            placeholder="--"
+            placeholder="Select an Option"
             options={Object.keys(classCodesMap).map((classCode) => ({
               value: classCode,
               label: classCode,

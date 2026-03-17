@@ -28,7 +28,7 @@ export const CalculatorInputs = ({
           <Dropdown
             id="model-year"
             label="Model Year"
-            placeholder="Select an option"
+            placeholder="Select an Option"
             options={modelYearList.map((my, idx) => ({
               value: my,
               label: modelYearStrings[idx],

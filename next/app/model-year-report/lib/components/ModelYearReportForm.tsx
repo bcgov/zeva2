@@ -491,7 +491,7 @@ export const ModelYearReportForm = (
     if (props.type === "legacyNewSupp") {
       innerComponent = (
         <Dropdown
-          placeholder="--"
+          placeholder="Select an Option"
           options={Object.entries(legacyModelYearsMap).map(([key, value]) => ({
             value: value as string,
             label: key,

@@ -82,7 +82,7 @@ export const PenaltyCreditCreateForm = (props: {
       {error && <p className="text-red-600">{error}</p>}
 
       <Dropdown
-        placeholder="Supplier"
+        label="Supplier"
         options={orgOptions}
         value={data.organizationId ?? ""}
         onChange={(value) => handleChange("organizationId", value)}
@@ -90,7 +90,7 @@ export const PenaltyCreditCreateForm = (props: {
       />
 
       <Dropdown
-        placeholder="Compliance Year"
+        label="Compliance Year"
         options={yearOptions}
         value={data.complianceYear ?? ""}
         onChange={(value) => handleChange("complianceYear", value)}
@@ -98,7 +98,7 @@ export const PenaltyCreditCreateForm = (props: {
       />
 
       <Dropdown
-        placeholder="Vehicle Class"
+        label="Vehicle Class"
         options={vehicleClassOptions}
         value={data.vehicleClass ?? ""}
         onChange={(value) => handleChange("vehicleClass", value)}
@@ -106,7 +106,7 @@ export const PenaltyCreditCreateForm = (props: {
       />
 
       <Dropdown
-        placeholder="ZEV Class"
+        label="ZEV Class"
         options={zevClassOptions}
         value={data.zevClass ?? ""}
         onChange={(value) => handleChange("zevClass", value)}
@@ -114,7 +114,7 @@ export const PenaltyCreditCreateForm = (props: {
       />
 
       <Dropdown
-        placeholder="Model Year"
+        label="Model Year"
         options={yearOptions}
         value={data.modelYear ?? ""}
         onChange={(value) => handleChange("modelYear", value)}

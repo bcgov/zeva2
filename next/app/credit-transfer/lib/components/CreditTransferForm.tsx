@@ -98,7 +98,7 @@ export const CreditTransferForm = (props: {
         <div className="w-full">
           <Dropdown
             id="transferToOrg"
-            placeholder="--"
+            placeholder="Select an Option"
             options={Object.entries(props.transferCandidatesMap).map(([id, name]) => ({
               value: id,
               label: name,

@@ -423,7 +423,7 @@ export const AssessmentForm = (
     if (orgsMap && props.type === "legacyNewReassessment") {
       innerComponent = (
         <Dropdown
-          placeholder="--"
+          placeholder="Select an Option"
           options={Object.entries(orgsMap).map(([key, value]) => ({
             value: key,
             label: value as string,
@@ -462,7 +462,7 @@ export const AssessmentForm = (
     if (props.type === "legacyNewReassessment") {
       innerComponent = (
         <Dropdown
-          placeholder="--"
+          placeholder="Select an Option"
           options={Object.entries(legacyModelYearsMap).map(([key, value]) => ({
             value: value as string,
             label: key,
