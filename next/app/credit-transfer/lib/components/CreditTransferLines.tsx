@@ -2,6 +2,7 @@
 
 import { useMemo } from "react";
 import { Button } from "@/app/lib/components";
+import { Dropdown } from "@/app/lib/components/inputs";
 import { LoadingSkeleton } from "@/app/lib/components/skeletons";
 import {
   getStringsToModelYearsEnumsMap,
@@ -50,59 +51,53 @@ export const CreditTransferLines = (props: {
         return (
           <div key={index} className="flex flex-row space-x-2">
             <span key="vehicleClass" className="flex flex-col">
-              <label htmlFor="vehicleClass">Vehicle Class</label>
-              <select
+              <Dropdown
                 id="vehicleClass"
+                label="Vehicle Class"
+                options={Object.entries(vehicleClassesMap).map(([key, value]) => ({
+                  value: value as string,
+                  label: key,
+                }))}
                 value={line.vehicleClass}
-                onChange={(e) =>
-                  props.handleLineChange(index, "vehicleClass", e.target.value)
+                onChange={(value) =>
+                  props.handleLineChange(index, "vehicleClass", value)
                 }
-              >
-                {Object.entries(vehicleClassesMap).map(([key, value]) => (
-                  <option key={value} value={value}>
-                    {key}
-                  </option>
-                ))}
-              </select>
+              />
             </span>
             <span key="zevClass" className="flex flex-col">
-              <label htmlFor="zevClass">ZEV Class</label>
-              <select
+              <Dropdown
                 id="zevClass"
+                label="ZEV Class"
+                options={Object.entries(zevClassesMap).map(([key, value]) => ({
+                  value: value as string,
+                  label: key,
+                }))}
                 value={line.zevClass}
-                onChange={(e) =>
-                  props.handleLineChange(index, "zevClass", e.target.value)
+                onChange={(value) =>
+                  props.handleLineChange(index, "zevClass", value)
                 }
-              >
-                {Object.entries(zevClassesMap).map(([key, value]) => (
-                  <option key={value} value={value}>
-                    {key}
-                  </option>
-                ))}
-              </select>
+              />
             </span>
             <span key="modelYear" className="flex flex-col">
-              <label htmlFor="modelYear">Model Year</label>
-              <select
+              <Dropdown
                 id="modelYear"
-                value={line.modelYear}
-                onChange={(e) =>
-                  props.handleLineChange(index, "modelYear", e.target.value)
-                }
-              >
-                {Object.entries(modelYearsMap)
+                label="Model Year"
+                options={Object.entries(modelYearsMap)
                   .filter(
                     ([_key, value]) =>
                       value &&
                       value >= ModelYear.MY_2019 &&
                       value <= ModelYear.MY_2035,
                   )
-                  .map(([key, value]) => (
-                    <option key={value} value={value}>
-                      {key}
-                    </option>
-                  ))}
-              </select>
+                  .map(([key, value]) => ({
+                    value: value as string,
+                    label: key,
+                  }))}
+                value={line.modelYear}
+                onChange={(value) =>
+                  props.handleLineChange(index, "modelYear", value)
+                }
+              />
             </span>
             <span key="numberOfUnits" className="flex flex-col">
               <label htmlFor="numberOfUnits">Number of Units</label>

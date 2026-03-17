@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState, useTransition } from "react";
 import { Button } from "@/app/lib/components";
+import { Dropdown } from "@/app/lib/components/inputs";
 import { Role } from "@/prisma/generated/enums";
 import { UserModel } from "@/prisma/generated/models";
 import { createUser, updateUser } from "../actions";
@@ -198,25 +199,15 @@ export const UserForm = ({
             </div>
 
             {orgsMap && (
-              <div className="space-y-1">
-                <label className="text-sm font-medium text-primaryText">
-                  Organization
-                </label>
-                <select
-                  name="organizationId"
-                  className="form-input-base"
-                  value={form.organizationId ?? ""}
-                  onChange={(e) => {
-                    handleChange(e.target.name, e.target.value);
-                  }}
-                >
-                  {Object.entries(orgsMap).map(([id, name]) => (
-                    <option key={id} value={id}>
-                      {name}
-                    </option>
-                  ))}
-                </select>
-              </div>
+              <Dropdown
+                label="Organization"
+                options={Object.entries(orgsMap).map(([id, name]) => ({
+                  value: id,
+                  label: name,
+                }))}
+                value={form.organizationId ?? ""}
+                onChange={(value) => handleChange("organizationId", value)}
+              />
             )}
             <UserFormFields
               form={form}

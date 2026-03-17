@@ -15,6 +15,7 @@ import {
 } from "@/lib/utils/urlSearchParams";
 import { LoadingSkeleton } from "./skeletons";
 import { Button } from "./inputs";
+import { Dropdown } from "./inputs/Dropdown";
 import { TableHeader } from "./TableHeader";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faAngleLeft, faAngleRight } from "@fortawesome/free-solid-svg-icons";
@@ -27,8 +28,6 @@ interface ITableProps<T> {
   explicitSizing?: boolean;
   paramsToPreserve?: string[];
   stackHeaderContents?: boolean;
-  title?: string;
-  headerContent?: React.ReactNode;
 }
 
 interface ZevaObject {
@@ -43,8 +42,6 @@ export const Table = <T extends ZevaObject>({
   explicitSizing,
   paramsToPreserve,
   stackHeaderContents,
-  title,
-  headerContent,
 }: ITableProps<T>) => {
   const { replace } = useRouter();
   const table = useReactTable({
@@ -126,8 +123,15 @@ export const Table = <T extends ZevaObject>({
     [currentPage, numberOfPages, handlePageChange],
   );
 
-  const pageNumbers = React.useMemo(() => {
-    return Array.from({ length: numberOfPages }, (_, i) => i + 1);
+  const pageOptionsJSX = React.useMemo(() => {
+    const result: { value: string; label: string }[] = [];
+    for (let i = 1; i <= numberOfPages; i++) {
+      result.push({
+        value: i.toString(),
+        label: i.toString(),
+      });
+    }
+    return result;
   }, [numberOfPages]);
 
   const handleFilterChange = React.useCallback((key: string, value: string) => {
@@ -202,127 +206,94 @@ export const Table = <T extends ZevaObject>({
     return <LoadingSkeleton />;
   }
   return (
-    <div>
-      <div className="mb-4 flex items-center justify-between gap-4">
-        {headerContent && <div>{headerContent}</div>}
+    <div className="bg-white rounded-lg shadow-level-1 p-4">
+      <div className="flex flex-row-reverse">
         <Button variant="secondary" size="small" onClick={handleReset}>
           Reset Table
         </Button>
       </div>
-      <div className="bg-white rounded-lg border-2 border-gray-300">
-        <div className="overflow-x-auto">
-          <table className={`w-full ${explicitSizing ? "table-fixed" : ""}`}>
-            <TableHeader
-              table={table}
-              explicitSizing={explicitSizing}
-              stackHeaderContents={stackHeaderContents}
-              enableSorting={true}
-              enableFiltering={true}
-              onSortChange={handleSortChange}
-              onFilterChange={handleFilterChange}
-              sortState={sortsMap}
-              filterState={filters}
-              filterOnApply={true}
-              onFilterApply={handleFilterApply}
-            />
-            <tbody className="bg-white divide-y divide-gray-100">
-              {table.getRowModel().rows.map((row, index) => {
-                const isEven = index % 2 === 0;
-                return (
-                  <tr
-                    key={row.id}
-                    className={`${isEven ? "bg-white" : "bg-gray-50"} ${
-                      navigationAction
-                        ? "hover:bg-blue-50 transition-colors cursor-pointer"
-                        : ""
-                    }`}
-                    onClick={() => handleNavigation(row.original.id)}
+      <div className="overflow-x-scroll">
+        <table
+          className={`w-full divide-y divide-gray-200 rounded border-t border-l border-r border-navBorder ${explicitSizing ? "table-fixed" : ""}`}
+        >
+          <TableHeader
+            table={table}
+            explicitSizing={explicitSizing}
+            stackHeaderContents={stackHeaderContents}
+            enableSorting={true}
+            enableFiltering={true}
+            onSortChange={handleSortChange}
+            onFilterChange={handleFilterChange}
+            sortState={sortsMap}
+            filterState={filters}
+            filterOnApply={true}
+            onFilterApply={handleFilterApply}
+          />
+          <tbody className="bg-white divide-y divide-gray-200">
+            {table.getRowModel().rows.map((row) => (
+              <tr
+                key={row.id}
+                className={
+                  navigationAction
+                    ? "hover:bg-gray-200 transition-colors cursor-pointer"
+                    : ""
+                }
+                onClick={() => handleNavigation(row.original.id)}
+              >
+                {row.getVisibleCells().map((cell) => (
+                  <td
+                    key={cell.id}
+                    className={`px-6 py-4 whitespace-nowrap ${explicitSizing ? "truncate" : ""}`}
+                    style={
+                      explicitSizing
+                        ? { width: cell.column.getSize() }
+                        : undefined
+                    }
                   >
-                    {row.getVisibleCells().map((cell) => (
-                      <td
-                        key={cell.id}
-                        className={`px-6 py-4 text-sm text-gray-900 ${explicitSizing ? "truncate" : ""}`}
-                        style={
-                          explicitSizing
-                            ? { width: cell.column.getSize() }
-                            : undefined
-                        }
-                      >
-                        {flexRender(
-                          cell.column.columnDef.cell,
-                          cell.getContext(),
-                        )}
-                      </td>
-                    ))}
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-        <div className="flex items-center justify-between bg-gray-50 border-t border-gray-300 px-6 py-3">
-          <button
-            onClick={() => handlePageNav("prev")}
-            disabled={currentPage <= 1}
-            className={`flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-md ${
-              currentPage > 1
-                ? "text-white bg-primaryBlue hover:bg-primaryBlueHover"
-                : "text-gray-400 bg-gray-200 cursor-not-allowed"
-            }`}
-          >
-            <FontAwesomeIcon icon={faAngleLeft} />
-            Previous Page
-          </button>
-
-          <div className="flex items-center gap-2">
-            {pageNumbers.map((page) => {
-              const isCurrentPage = currentPage === page;
-              return (
-                <button
-                  key={page}
-                  onClick={() => handlePageChange(page.toString())}
-                  className={`min-w-[40px] h-[40px] px-3 py-2 text-sm font-semibold rounded-md ${
-                    isCurrentPage
-                      ? "bg-primaryBlue text-white"
-                      : "text-gray-700 bg-white hover:bg-gray-100 border border-gray-300"
-                  }`}
-                >
-                  {page}
-                </button>
-              );
-            })}
-          </div>
-
-          <div className="flex items-center gap-3">
-            <select
-              value={currentPageSize}
-              onChange={(e) => {
-                handlePageSizeChange(e.target.value);
-              }}
-              className="px-3 py-2 text-sm font-medium bg-white border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              {[5, 10, 25, 50, 100].map((pageSize) => {
-                return (
-                  <option key={pageSize} value={pageSize}>
-                    {pageSize} rows
-                  </option>
-                );
-              })}
-            </select>
-            <button
-              onClick={() => handlePageNav("next")}
-              disabled={currentPage >= numberOfPages}
-              className={`flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-md ${
-                currentPage < numberOfPages
-                  ? "text-white bg-primaryBlue hover:bg-primaryBlueHover"
-                  : "text-gray-400 bg-gray-200 cursor-not-allowed"
-              }`}
-            >
-              Next Page
-              <FontAwesomeIcon icon={faAngleRight} />
-            </button>
-          </div>
-        </div>
+                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                  </td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <div className="flex items-center justify-center bg-navBorder w-full rounded p-2">
+        <FontAwesomeIcon
+          icon={faAngleLeft}
+          onClick={() => {
+            handlePageNav("prev");
+          }}
+          className="mr-2 text-defaultTextBlack cursor-pointer"
+        />
+        <span className="text-sm text-gray-700">
+          Page{" "}
+          <Dropdown
+            options={pageOptionsJSX}
+            value={currentPage.toString()}
+            onChange={handlePageChange}
+            className="inline-block w-20"
+          />{" "}
+          of {numberOfPages}
+        </span>
+        <FontAwesomeIcon
+          icon={faAngleRight}
+          onClick={() => {
+            handlePageNav("next");
+          }}
+          className="ml-2 text-defaultTextBlack cursor-pointer"
+        />
+        <span className="ml-3">
+          <Dropdown
+            options={[5, 10, 25, 50, 100].map((pageSize) => ({
+              value: pageSize.toString(),
+              label: `${pageSize} rows`,
+            }))}
+            value={currentPageSize.toString()}
+            onChange={handlePageSizeChange}
+            className="inline-block w-32"
+          />
+        </span>
       </div>
     </div>
   );

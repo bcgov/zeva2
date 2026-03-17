@@ -9,6 +9,7 @@ import {
   getStringsToZevClassEnumsMap,
 } from "@/app/lib/utils/enumMaps";
 import { Button } from "@/app/lib/components";
+import { Dropdown } from "@/app/lib/components/inputs";
 import { getPenaltyCreditPayload } from "../utilsClient";
 import { ZevClass } from "@/prisma/generated/enums";
 import { useRouter } from "next/navigation";
@@ -22,47 +23,35 @@ export const PenaltyCreditCreateForm = (props: {
   const [error, setError] = useState<string>("");
   const [data, setData] = useState<Partial<Record<string, string>>>({});
 
-  const getOptions = useCallback((map: Record<string, any>) => {
-    return Object.keys(map).map((key) => {
-      return (
-        <option key={key} value={key}>
-          {key}
-        </option>
-      );
-    });
-  }, []);
-
   const orgOptions = useMemo(() => {
-    return props.orgNamesAndIds.map((element) => {
-      return (
-        <option value={element.id} key={element.id}>
-          {element.name}
-        </option>
-      );
-    });
+    return props.orgNamesAndIds.map((element) => ({
+      value: element.id.toString(),
+      label: element.name,
+    }));
   }, [props.orgNamesAndIds]);
 
   const yearOptions = useMemo(() => {
-    return getOptions(getStringsToModelYearsEnumsMap());
+    return Object.entries(getStringsToModelYearsEnumsMap()).map(([key, value]) => ({
+      value: key,
+      label: key,
+    }));
   }, []);
 
   const vehicleClassOptions = useMemo(() => {
-    return getOptions(getStringsToVehicleClassEnumsMap());
+    return Object.entries(getStringsToVehicleClassEnumsMap()).map(([key, value]) => ({
+      value: key,
+      label: key,
+    }));
   }, []);
 
   const zevClassOptions = useMemo(() => {
-    const result: JSX.Element[] = [];
     const zevClassMap = getStringsToZevClassEnumsMap();
-    for (const [s, e] of Object.entries(zevClassMap)) {
-      if (e === ZevClass.A || e === ZevClass.UNSPECIFIED) {
-        result.push(
-          <option key={s} value={s}>
-            {s}
-          </option>,
-        );
-      }
-    }
-    return result;
+    return Object.entries(zevClassMap)
+      .filter(([_s, e]) => e === ZevClass.A || e === ZevClass.UNSPECIFIED)
+      .map(([s, _e]) => ({
+        value: s,
+        label: s,
+      }));
   }, []);
 
   const handleChange = useCallback((key: string, value: string) => {
@@ -92,75 +81,45 @@ export const PenaltyCreditCreateForm = (props: {
     <div>
       {error && <p className="text-red-600">{error}</p>}
 
-      <select
-        value={data.organizationId}
-        name={"organizationId"}
-        className="border p-2 w-full"
-        onChange={(e) => {
-          handleChange(e.target.name, e.target.value);
-        }}
-      >
-        <option value={""} key={-1}>
-          Supplier
-        </option>
-        {orgOptions}
-      </select>
+      <Dropdown
+        placeholder="Supplier"
+        options={orgOptions}
+        value={data.organizationId ?? ""}
+        onChange={(value) => handleChange("organizationId", value)}
+        className="mb-2"
+      />
 
-      <select
-        value={data.complianceYear}
-        name={"complianceYear"}
-        className="border p-2 w-full"
-        onChange={(e) => {
-          handleChange(e.target.name, e.target.value);
-        }}
-      >
-        <option value={""} key={-1}>
-          Compliance Year
-        </option>
-        {yearOptions}
-      </select>
+      <Dropdown
+        placeholder="Compliance Year"
+        options={yearOptions}
+        value={data.complianceYear ?? ""}
+        onChange={(value) => handleChange("complianceYear", value)}
+        className="mb-2"
+      />
 
-      <select
-        value={data.vehicleClass}
-        name={"vehicleClass"}
-        className="border p-2 w-full"
-        onChange={(e) => {
-          handleChange(e.target.name, e.target.value);
-        }}
-      >
-        <option value={""} key={-1}>
-          Vehicle Class
-        </option>
-        {vehicleClassOptions}
-      </select>
+      <Dropdown
+        placeholder="Vehicle Class"
+        options={vehicleClassOptions}
+        value={data.vehicleClass ?? ""}
+        onChange={(value) => handleChange("vehicleClass", value)}
+        className="mb-2"
+      />
 
-      <select
-        value={data.zevClass}
-        name={"zevClass"}
-        className="border p-2 w-full"
-        onChange={(e) => {
-          handleChange(e.target.name, e.target.value);
-        }}
-      >
-        <option value={""} key={-1}>
-          ZEV Class
-        </option>
-        {zevClassOptions}
-      </select>
+      <Dropdown
+        placeholder="ZEV Class"
+        options={zevClassOptions}
+        value={data.zevClass ?? ""}
+        onChange={(value) => handleChange("zevClass", value)}
+        className="mb-2"
+      />
 
-      <select
-        value={data.modelYear}
-        name={"modelYear"}
-        className="border p-2 w-full"
-        onChange={(e) => {
-          handleChange(e.target.name, e.target.value);
-        }}
-      >
-        <option value={""} key={-1}>
-          Model Year
-        </option>
-        {yearOptions}
-      </select>
+      <Dropdown
+        placeholder="Model Year"
+        options={yearOptions}
+        value={data.modelYear ?? ""}
+        onChange={(value) => handleChange("modelYear", value)}
+        className="mb-2"
+      />
 
       <input
         type="text"

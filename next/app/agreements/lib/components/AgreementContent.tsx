@@ -2,6 +2,7 @@
 
 import { Dispatch, SetStateAction, useCallback, useMemo } from "react";
 import { Button } from "@/app/lib/components";
+import { Dropdown } from "@/app/lib/components/inputs";
 import {
   getStringsToModelYearsEnumsMap,
   getStringsToVehicleClassEnumsMap,
@@ -15,10 +16,12 @@ import {
   isZevClass,
 } from "@/app/lib/utils/typeGuards";
 
-export type AgreementContentRecord = Omit<
-  ZevUnitRecord,
-  "type" | "numberOfUnits"
-> & { numberOfUnits: string };
+export type AgreementContentRecord = {
+  vehicleClass?: VehicleClass;
+  zevClass?: ZevClass;
+  modelYear?: ModelYear;
+  numberOfUnits: string;
+};
 
 const fieldLabelClass = "py-1 font-semibold text-primaryBlue";
 const fieldContentClass = "p-1 border border-gray-300 rounded";
@@ -45,9 +48,9 @@ export const AgreementContent = (props: {
       return [
         ...prev,
         {
-          vehicleClass: VehicleClass.REPORTABLE,
-          zevClass: ZevClass.A,
-          modelYear: ModelYear.MY_2019,
+          vehicleClass: undefined,
+          zevClass: undefined,
+          modelYear: undefined,
           numberOfUnits: "0",
         },
       ];
@@ -87,81 +90,76 @@ export const AgreementContent = (props: {
       {props.content.map((record, index) => (
         <div
           key={index}
-          className="p-2 border-b border-gray-300 grid grid-cols-[140px_220px_250px_80px]"
+          className="p-4 border-b border-gray-300 space-y-3"
         >
-          <div className="grid grid-cols-[50px_50px]">
-            <span className="py-1">Vehicle Class</span>
-            <select
-              className={fieldContentClass}
-              value={record.vehicleClass}
-              onChange={(e) =>
-                handleRecordChange(index, "vehicleClass", e.target.value)
-              }
-              disabled={props.disabled}
-            >
-              {Object.entries(vehicleClassesMaps).map(([key, value]) => (
-                <option key={key} value={value}>
-                  {key}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div className="grid grid-cols-[50px_50px]">
-            <span className="py-1">ZEV Class</span>
-            <select
-              className={fieldContentClass}
-              value={record.zevClass}
-              onChange={(e) =>
-                handleRecordChange(index, "zevClass", e.target.value)
-              }
-              disabled={props.disabled}
-            >
-              {Object.entries(zevClassesMaps).map(([key, value]) => (
-                <option key={key} value={value}>
-                  {key}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div className="grid grid-cols-[100px_80px]">
-            <span className="py-1">Model Year</span>
-            <select
-              value={record.modelYear}
-              onChange={(e) =>
-                handleRecordChange(index, "modelYear", e.target.value)
-              }
-              disabled={props.disabled}
-            >
-              {Object.entries(modelYearsMaps).map(([key, value]) => {
-                if (
-                  value &&
-                  value >= ModelYear.MY_2019 &&
-                  value <= ModelYear.MY_2035
-                ) {
-                  return (
-                    <option key={key} value={value}>
-                      {key}
-                    </option>
-                  );
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="flex flex-col space-y-1">
+              <label className="text-sm font-medium text-primaryText">Vehicle Class</label>
+              <Dropdown
+                options={Object.entries(vehicleClassesMaps).map(([key, value]) => ({
+                  value: value as string,
+                  label: key,
+                }))}
+                value={record.vehicleClass}
+                onChange={(value) =>
+                  handleRecordChange(index, "vehicleClass", value)
                 }
-              })}
-            </select>
+                disabled={props.disabled}
+              />
+            </div>
+            <div className="flex flex-col space-y-1">
+              <label className="text-sm font-medium text-primaryText">ZEV Class</label>
+              <Dropdown
+                options={Object.entries(zevClassesMaps).map(([key, value]) => ({
+                  value: value as string,
+                  label: key,
+                }))}
+                value={record.zevClass}
+                onChange={(value) =>
+                  handleRecordChange(index, "zevClass", value)
+                }
+                disabled={props.disabled}
+              />
+            </div>
+            <div className="flex flex-col space-y-1">
+              <label className="text-sm font-medium text-primaryText">Model Year</label>
+              <Dropdown
+                options={Object.entries(modelYearsMaps)
+                  .filter(
+                    ([_key, value]) =>
+                      value &&
+                      value >= ModelYear.MY_2019 &&
+                      value <= ModelYear.MY_2035
+                  )
+                  .map(([key, value]) => ({
+                    value: value as string,
+                    label: key,
+                  }))}
+                value={record.modelYear}
+                onChange={(value) =>
+                  handleRecordChange(index, "modelYear", value)
+                }
+                disabled={props.disabled}
+              />
+            </div>
+            <div className="flex flex-col space-y-1">
+              <label className="text-sm font-medium text-primaryText">Number of Units</label>
+              <input
+                className={fieldContentClass + " text-right"}
+                type="text"
+                value={record.numberOfUnits}
+                onChange={(e) =>
+                  handleRecordChange(index, "numberOfUnits", e.target.value)
+                }
+                disabled={props.disabled}
+              />
+            </div>
           </div>
-          <div className="grid grid-cols-[150px_80px]">
-            <span className="py-1">Number of Units</span>
-            <input
-              className={fieldContentClass + " text-right"}
-              type="text"
-              value={record.numberOfUnits}
-              onChange={(e) =>
-                handleRecordChange(index, "numberOfUnits", e.target.value)
-              }
-              disabled={props.disabled}
-            />
+          <div>
+            <Button variant="danger" size="small" onClick={() => removeRecord(index)} disabled={props.disabled}>
+              Remove
+            </Button>
           </div>
-          <Button onClick={() => removeRecord(index)} disabled={props.disabled}>
-            Remove
-          </Button>
         </div>
       ))}
       <Button onClick={addRecord} disabled={props.disabled}>

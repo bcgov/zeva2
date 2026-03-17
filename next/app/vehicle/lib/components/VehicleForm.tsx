@@ -20,6 +20,7 @@ import {
 import { Dropzone } from "@/app/lib/components/Dropzone";
 import { FileWithPath } from "react-dropzone";
 import { Button } from "@/app/lib/components";
+import { Dropdown } from "@/app/lib/components/inputs";
 import { Attachment, AttachmentDownload } from "@/app/lib/constants/attachment";
 import { getDefaultAttchmentTypes } from "@/app/lib/utils/attachments";
 import { getFiles } from "@/app/lib/utils/download";
@@ -131,32 +132,28 @@ export const VehicleForm = (props: {
   return (
     <div>
       <div className="flex items-center py-2 my-2">
-        <label htmlFor="modelYear" className="w-72">
-          Model Year
-        </label>
-        <select
-          id="modelYear"
-          className="border p-2 w-full"
-          value={formData.modelYear}
-          onChange={(e) => {
-            handleChange(e.target.id, e.target.value);
-          }}
-        >
-          <option value="">--</option>
-          {Object.entries(modelYearsMap).map(([key, value]) => {
-            if (
-              value &&
-              value >= ModelYear.MY_2019 &&
-              value <= ModelYear.MY_2035
-            ) {
-              return (
-                <option key={value} value={value}>
-                  {key}
-                </option>
-              );
-            }
-          })}
-        </select>
+        <div className="w-72">
+          <label>Model Year</label>
+        </div>
+        <div className="w-full">
+          <Dropdown
+            id="modelYear"
+            placeholder="--"
+            options={Object.entries(modelYearsMap)
+              .filter(
+                ([_key, value]) =>
+                  value &&
+                  value >= ModelYear.MY_2019 &&
+                  value <= ModelYear.MY_2035
+              )
+              .map(([key, value]) => ({
+                value: value as string,
+                label: key,
+              }))}
+            value={formData.modelYear ?? ""}
+            onChange={(value) => handleChange("modelYear", value)}
+          />
+        </div>
       </div>
       <div className="flex items-center py-2 my-2">
         <label htmlFor="make" className="w-72">
@@ -187,24 +184,21 @@ export const VehicleForm = (props: {
         />
       </div>
       <div className="flex items-center py-2 my-2">
-        <label htmlFor="zevType" className="w-72">
-          ZEV Type
-        </label>
-        <select
-          id="zevType"
-          value={formData.zevType}
-          className="border p-2 w-full"
-          onChange={(e) => {
-            handleChange(e.target.id, e.target.value);
-          }}
-        >
-          <option value="">--</option>
-          {Object.keys(ZevType).map((zevType) => (
-            <option key={zevType} value={zevType}>
-              {zevType}
-            </option>
-          ))}
-        </select>
+        <div className="w-72">
+          <label>ZEV Type</label>
+        </div>
+        <div className="w-full">
+          <Dropdown
+            id="zevType"
+            placeholder="--"
+            options={Object.keys(ZevType).map((zevType) => ({
+              value: zevType,
+              label: zevType,
+            }))}
+            value={formData.zevType ?? ""}
+            onChange={(value) => handleChange("zevType", value)}
+          />
+        </div>
       </div>
       <div className="flex items-center py-2 my-2">
         <label htmlFor="range" className="w-72">
@@ -221,24 +215,21 @@ export const VehicleForm = (props: {
         />
       </div>
       <div className="flex items-center py-2 my-2">
-        <label htmlFor="bodyType" className="w-72">
-          Body Type
-        </label>
-        <select
-          id="bodyType"
-          value={formData.bodyType}
-          className="border p-2 w-full"
-          onChange={(e) => {
-            handleChange(e.target.id, e.target.value);
-          }}
-        >
-          <option value="">--</option>
-          {Object.keys(classCodesMap).map((classCode) => (
-            <option key={classCode} value={classCode}>
-              {classCode}
-            </option>
-          ))}
-        </select>
+        <div className="w-72">
+          <label>Body Type</label>
+        </div>
+        <div className="w-full">
+          <Dropdown
+            id="bodyType"
+            placeholder="--"
+            options={Object.keys(classCodesMap).map((classCode) => ({
+              value: classCode,
+              label: classCode,
+            }))}
+            value={formData.bodyType ?? ""}
+            onChange={(value) => handleChange("bodyType", value)}
+          />
+        </div>
       </div>
       <div className="flex items-center py-2 my-2">
         <label htmlFor="gvwr" className="w-72">

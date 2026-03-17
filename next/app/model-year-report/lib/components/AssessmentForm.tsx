@@ -26,6 +26,7 @@ import {
 import { getModelYearEnumsToStringsMap } from "@/app/lib/utils/enumMaps";
 import { MyrNvValues } from "./MyrNvValues";
 import { Button } from "@/app/lib/components";
+import { Dropdown } from "@/app/lib/components/inputs";
 import {
   generateAssessment,
   getAdjustmentsPayload,
@@ -421,22 +422,16 @@ export const AssessmentForm = (
     let innerComponent;
     if (orgsMap && props.type === "legacyNewReassessment") {
       innerComponent = (
-        <select
-          name="org"
-          value={orgId}
-          className="border p-2 w-full"
-          onChange={(e) => {
-            handleOrgSelect(e.target.value);
-          }}
+        <Dropdown
+          placeholder="--"
+          options={Object.entries(orgsMap).map(([key, value]) => ({
+            value: key,
+            label: value as string,
+          }))}
+          value={orgId?.toString() ?? ""}
+          onChange={handleOrgSelect}
           disabled={isPending}
-        >
-          <option key={undefined}>--</option>
-          {Object.entries(orgsMap).map(([key, value]) => (
-            <option key={key} value={key}>
-              {value}
-            </option>
-          ))}
-        </select>
+        />
       );
     } else if (orgName && props.type !== "legacyNewReassessment") {
       innerComponent = (
@@ -466,23 +461,18 @@ export const AssessmentForm = (
     let innerComponent;
     if (props.type === "legacyNewReassessment") {
       innerComponent = (
-        <select
-          name="modelYear"
-          value={modelYear}
-          className="border p-2 w-full"
-          onChange={(e) => {
-            const value = e.target.value;
+        <Dropdown
+          placeholder="--"
+          options={Object.entries(legacyModelYearsMap).map(([key, value]) => ({
+            value: value as string,
+            label: key,
+          }))}
+          value={modelYear ?? ""}
+          onChange={(value) => {
             setModelYear(isModelYear(value) ? value : undefined);
           }}
           disabled={isPending}
-        >
-          <option key={undefined}>--</option>
-          {Object.entries(legacyModelYearsMap).map(([key, value]) => (
-            <option key={key} value={value}>
-              {key}
-            </option>
-          ))}
-        </select>
+        />
       );
     } else if (modelYear) {
       innerComponent = (

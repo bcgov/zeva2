@@ -1,6 +1,7 @@
 "use client";
 
 import { ModelYear } from "@/prisma/generated/client";
+import { Dropdown } from "@/app/lib/components/inputs";
 import { ComplianceRatio, SupplierSize } from "../types";
 
 type CalculatorInputsProps = {
@@ -24,30 +25,18 @@ export const CalculatorInputs = ({
     <div className="col-span-1 lg:col-span-5 bg-lightGrey border border-dividerMedium p-6 rounded">
       <fieldset>
         <div className="mb-6">
-          <label
-            className="block text-sm font-medium text-primaryText mb-2"
-            htmlFor="model-year"
-          >
-            Model Year
-          </label>
-          <select
-            className="w-full lg:w-1/2 px-3 py-2 border border-dividerMedium rounded bg-white text-primaryText focus:outline-none focus:ring-2 focus:ring-primaryBlue focus:border-primaryBlue"
+          <Dropdown
             id="model-year"
-            name="model-year"
+            label="Model Year"
+            placeholder="Select an option"
+            options={modelYearList.map((my, idx) => ({
+              value: my,
+              label: modelYearStrings[idx],
+            }))}
             value={selectedYearOption}
-            onChange={(e) => onInputChange("model-year", e.target.value)}
-          >
-            {selectedYearOption === "" && (
-              <option disabled value="">
-                Select an option
-              </option>
-            )}
-            {modelYearStrings.map((year, idx) => (
-              <option key={year} value={modelYearList[idx]}>
-                {year}
-              </option>
-            ))}
-          </select>
+            onChange={(value) => onInputChange("model-year", value)}
+            className="w-full lg:w-1/2"
+          />
         </div>
 
         <div className="mb-6">

@@ -2,6 +2,7 @@
 
 import { Dispatch, SetStateAction, useCallback, useMemo } from "react";
 import { Button } from "@/app/lib/components";
+import { Dropdown } from "@/app/lib/components/inputs";
 import {
   getBalanceTypeEnumsToStringsMap,
   getModelYearEnumsToStringsMap,
@@ -113,82 +114,70 @@ export const Adjustments = (props: {
         <tbody>
           {props.adjustments.map((adjustment, index) => (
             <tr key={index}>
-              <td className="border border-gray-300">
-                <select
-                  id="type"
+              <td className="border border-gray-300 p-2">
+                <Dropdown
+                  options={Object.keys(balanceTypesMaps.stringsToEnums).map(
+                    (balanceType) => ({
+                      value: balanceType,
+                      label: balanceType,
+                    }),
+                  )}
                   value={adjustment.type}
-                  onChange={(e) => {
-                    handleAdjustmentChange(index, "type", e.target.value);
+                  onChange={(value) => {
+                    handleAdjustmentChange(index, "type", value);
                   }}
                   disabled={props.disabled}
-                >
-                  {Object.keys(balanceTypesMaps.stringsToEnums).map(
-                    (balanceType) => (
-                      <option key={balanceType} value={balanceType}>
-                        {balanceType}
-                      </option>
-                    ),
+                />
+              </td>
+              <td className="border border-gray-300 p-2">
+                <Dropdown
+                  options={Object.keys(vehicleClassesMaps.stringsToEnums).map(
+                    (vc) => ({
+                      value: vc,
+                      label: vc,
+                    }),
                   )}
-                </select>
-              </td>
-              <td className="border border-gray-300">
-                <select
-                  id="vehicleClass"
                   value={adjustment.vehicleClass}
-                  onChange={(e) =>
-                    handleAdjustmentChange(
-                      index,
-                      "vehicleClass",
-                      e.target.value,
-                    )
+                  onChange={(value) =>
+                    handleAdjustmentChange(index, "vehicleClass", value)
                   }
                   disabled={props.disabled}
-                >
-                  {Object.keys(vehicleClassesMaps.stringsToEnums).map((vc) => (
-                    <option key={vc} value={vc}>
-                      {vc}
-                    </option>
-                  ))}
-                </select>
+                />
               </td>
-              <td className="border border-gray-300">
-                <select
-                  id="zevClass"
+              <td className="border border-gray-300 p-2">
+                <Dropdown
+                  options={Object.keys(zevClassesMaps.stringsToEnums).map(
+                    (zc) => ({
+                      value: zc,
+                      label: zc,
+                    }),
+                  )}
                   value={adjustment.zevClass}
-                  onChange={(e) =>
-                    handleAdjustmentChange(index, "zevClass", e.target.value)
+                  onChange={(value) =>
+                    handleAdjustmentChange(index, "zevClass", value)
                   }
                   disabled={props.disabled}
-                >
-                  {Object.keys(zevClassesMaps.stringsToEnums).map((zc) => (
-                    <option key={zc} value={zc}>
-                      {zc}
-                    </option>
-                  ))}
-                </select>
+                />
               </td>
-              <td className="border border-gray-300">
-                <select
-                  id="modelYear"
-                  value={adjustment.modelYear}
-                  onChange={(e) =>
-                    handleAdjustmentChange(index, "modelYear", e.target.value)
-                  }
-                  disabled={props.disabled}
-                >
-                  {Object.entries(modelYearsMaps.stringsToEnums)
+              <td className="border border-gray-300 p-2">
+                <Dropdown
+                  options={Object.entries(modelYearsMaps.stringsToEnums)
                     .filter(
                       ([_key, value]) =>
                         value &&
                         value >= ModelYear.MY_2019 &&
                         value <= ModelYear.MY_2035,
                     )
-                    .map(([key]) => (
-                      <option key={key} value={key}>
-                        {key}
-                      </option>
-                    ))}
-                </select>
+                    .map(([key]) => ({
+                      value: key,
+                      label: key,
+                    }))}
+                  value={adjustment.modelYear}
+                  onChange={(value) =>
+                    handleAdjustmentChange(index, "modelYear", value)
+                  }
+                  disabled={props.disabled}
+                />
               </td>
               <td className="border border-gray-300">
                 <input
