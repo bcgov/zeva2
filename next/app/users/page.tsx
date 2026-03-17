@@ -38,11 +38,6 @@ export default async function Page(props: {
 
   return (
     <Suspense fallback={<LoadingSkeleton />}>
-      {isAdmin && (
-        <Link href={`${Routes.Users}/new`}>
-          <Button variant="primary">Create New User</Button>
-        </Link>
-      )}
       <div className="mb-4 flex gap-2 border-b">
         {categoriesToUse.map((category) => (
           <Link
