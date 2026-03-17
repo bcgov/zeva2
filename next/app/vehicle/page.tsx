@@ -22,11 +22,6 @@ const Page = async (props: { searchParams?: Promise<pageStringParams> }) => {
 
   return (
     <Suspense key={Date.now()} fallback={<LoadingSkeleton />}>
-      {!userIsGov && (
-        <Link href={`${Routes.Vehicle}/new`}>
-          <Button variant="primary">Create a Vehicle</Button>
-        </Link>
-      )}
       <div className="mb-4 flex gap-2 border-b border-gray-400">
         <Link
           href={{
@@ -76,6 +71,13 @@ const Page = async (props: { searchParams?: Promise<pageStringParams> }) => {
         pageSize={pageSize}
         filters={transformedFilters}
         sorts={sorts}
+        headerContent={
+          !userIsGov ? (
+            <Link href={`${Routes.Vehicle}/new`}>
+              <Button variant="primary">Create a Vehicle</Button>
+            </Link>
+          ) : undefined
+        }
       />
     </Suspense>
   );

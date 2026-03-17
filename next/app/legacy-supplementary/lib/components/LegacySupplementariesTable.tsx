@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useMemo } from "react";
+import { ReactNode, useCallback, useMemo } from "react";
 import { ColumnDef, createColumnHelper } from "@tanstack/react-table";
 import { ClientSideTable } from "@/app/lib/components";
 import {
@@ -14,6 +14,7 @@ import { LegacySupplementarySerialized } from "../constants";
 export const LegacySupplementariesTable = (props: {
   supplementaries: LegacySupplementarySerialized[];
   userIsGov: boolean;
+  headerContent?: ReactNode;
 }) => {
   const router = useRouter();
   const navigationAction = useCallback(async (id: number) => {
@@ -85,6 +86,7 @@ export const LegacySupplementariesTable = (props: {
       navigationAction={navigationAction}
       enableFiltering={true}
       enableSorting={true}
+      headerContent={props.headerContent}
     />
   );
 };

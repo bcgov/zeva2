@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useMemo } from "react";
+import { ReactNode, useCallback, useMemo } from "react";
 import { ColumnDef, createColumnHelper } from "@tanstack/react-table";
 import { ClientSideTable } from "@/app/lib/components";
 import {
@@ -17,6 +17,7 @@ import { IsCompliant } from "../constants";
 export const ReportsTable = (props: {
   myrs: MyrRecordSerialized[];
   userIsGov: boolean;
+  headerContent?: ReactNode;
 }) => {
   const router = useRouter();
   const navigationAction = useCallback(async (id: number) => {
@@ -140,6 +141,7 @@ export const ReportsTable = (props: {
       enableFiltering={true}
       enableSorting={true}
       navigationAction={navigationAction}
+      headerContent={props.headerContent}
     />
   );
 };

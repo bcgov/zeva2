@@ -3,6 +3,7 @@ import { Routes } from "@/app/lib/constants";
 import { getAgreements } from "../data";
 import { AgreementTable } from "./AgreementTable";
 import { getSerializedAgreements } from "../utilsServer";
+import { ReactNode } from "react";
 
 export const AgreementList = async (props: {
   page: number;
@@ -10,6 +11,7 @@ export const AgreementList = async (props: {
   filters: Record<string, string>;
   sorts: Record<string, string>;
   userIsGov: boolean;
+  headerContent?: ReactNode;
 }) => {
   const navigationAction = async (id: number) => {
     "use server";
@@ -29,6 +31,7 @@ export const AgreementList = async (props: {
       totalNumberOfAgreements={totalNumberOfAgreements}
       navigationAction={navigationAction}
       userIsGov={props.userIsGov}
+      headerContent={props.headerContent}
     />
   );
 };

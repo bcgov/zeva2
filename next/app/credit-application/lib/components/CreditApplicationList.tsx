@@ -4,12 +4,14 @@ import { getSerializedApplications } from "../utilsServer";
 import { ApplicationsTable } from "./ApplicationsTable";
 import { Routes } from "@/app/lib/constants";
 import { getUserInfo } from "@/auth";
+import { ReactNode } from "react";
 
 export const CreditApplicationList = async (props: {
   page: number;
   pageSize: number;
   filters: { [key: string]: string };
   sorts: { [key: string]: string };
+  headerContent?: ReactNode;
 }) => {
   const { userIsGov } = await getUserInfo();
   const navigationAction = async (id: number) => {
@@ -32,6 +34,7 @@ export const CreditApplicationList = async (props: {
       totalNumberOfApplications={totalNumberOfApplications}
       navigationAction={navigationAction}
       userIsGov={userIsGov}
+      headerContent={props.headerContent}
     />
   );
 };

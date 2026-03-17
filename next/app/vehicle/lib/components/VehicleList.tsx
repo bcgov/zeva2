@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { Routes } from "@/app/lib/constants";
 import { VehicleTable } from "./VehicleTable";
 import { getUserInfo } from "@/auth";
+import { ReactNode } from "react";
 
 export type VehicleSparseSerialized = Omit<
   VehicleSparse,
@@ -17,6 +18,7 @@ export const VehicleList = async (props: {
   pageSize: number;
   filters: Record<string, string>;
   sorts: Record<string, string>;
+  headerContent?: ReactNode;
 }) => {
   const { userIsGov } = await getUserInfo();
   const navigationAction = async (id: number) => {
@@ -45,6 +47,7 @@ export const VehicleList = async (props: {
       totalNumbeOfVehicles={totalNumberOfVehicles}
       navigationAction={navigationAction}
       userIsGov={userIsGov}
+      headerContent={props.headerContent}
     />
   );
 };

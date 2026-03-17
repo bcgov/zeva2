@@ -205,7 +205,7 @@ export const Table = <T extends ZevaObject>({
   return (
     <div>
       <div className="mb-4 flex items-center justify-between gap-4">
-        {headerContent && <div>{headerContent}</div>}
+        <div>{headerContent}</div>
         <Button variant="secondary" size="small" onClick={handleReset}>
           Reset Table
         </Button>

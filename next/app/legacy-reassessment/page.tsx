@@ -15,12 +15,15 @@ const Page = async () => {
   }
   return (
     <Suspense key={Date.now()} fallback={<LoadingSkeleton />}>
-      {canSubmitReassessment && (
-        <Link href={`${Routes.LegacyReassessments}/new`}>
-          <Button>Create a Legacy Reassessment</Button>
-        </Link>
-      )}
-      <LegacyReassessmentsList />
+      <LegacyReassessmentsList
+        headerContent={
+          canSubmitReassessment ? (
+            <Link href={`${Routes.LegacyReassessments}/new`}>
+              <Button>Create a Legacy Reassessment</Button>
+            </Link>
+          ) : undefined
+        }
+      />
     </Suspense>
   );
 };

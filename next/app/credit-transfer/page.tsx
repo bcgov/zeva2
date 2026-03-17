@@ -10,12 +10,15 @@ const Page = async () => {
   const { userIsGov } = await getUserInfo();
   return (
     <Suspense key={Date.now()} fallback={<LoadingSkeleton />}>
-      {!userIsGov && (
-        <Link href={`${Routes.CreditTransfers}/new`}>
-          <Button variant="primary">Create a Credit Transfer</Button>
-        </Link>
-      )}
-      <CreditTransferList />
+      <CreditTransferList
+        headerContent={
+          !userIsGov ? (
+            <Link href={`${Routes.CreditTransfers}/new`}>
+              <Button variant="primary">Create a Credit Transfer</Button>
+            </Link>
+          ) : undefined
+        }
+      />
     </Suspense>
   );
 };

@@ -10,12 +10,15 @@ const Page = async () => {
   const { userIsGov } = await getUserInfo();
   return (
     <Suspense key={Date.now()} fallback={<LoadingSkeleton />}>
-      {!userIsGov && (
-        <Link href={`${Routes.LegacySupplementary}/new`}>
-          <Button>Create a Legacy Supplementary Report</Button>
-        </Link>
-      )}
-      <LegacySupplementariesList />
+      <LegacySupplementariesList
+        headerContent={
+          !userIsGov ? (
+            <Link href={`${Routes.LegacySupplementary}/new`}>
+              <Button>Create a Legacy Supplementary Report</Button>
+            </Link>
+          ) : undefined
+        }
+      />
     </Suspense>
   );
 };

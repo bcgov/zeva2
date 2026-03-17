@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useMemo } from "react";
+import { ReactNode, useCallback, useMemo } from "react";
 import { createColumnHelper } from "@tanstack/react-table";
 import { ClientSideTable } from "@/app/lib/components";
 import { useRouter } from "next/navigation";
@@ -10,6 +10,7 @@ import { CreditTransferSerialized } from "../constants";
 
 export const CreditTransfersTable = (props: {
   transfers: CreditTransferSerialized[];
+  headerContent?: ReactNode;
 }) => {
   const router = useRouter();
   const navigationAction = useCallback(async (id: number) => {
@@ -88,6 +89,7 @@ export const CreditTransfersTable = (props: {
       navigationAction={navigationAction}
       enableFiltering={true}
       enableSorting={true}
+      headerContent={props.headerContent}
     />
   );
 };

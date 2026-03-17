@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { ReactNode, useMemo } from "react";
 import { ColumnDef, createColumnHelper } from "@tanstack/react-table";
 import { Table } from "@/app/lib/components";
 import { VehicleSparseSerialized } from "./VehicleList";
@@ -14,6 +14,7 @@ export const VehicleTable = (props: {
   totalNumbeOfVehicles: number;
   navigationAction: (id: number) => Promise<void>;
   userIsGov: boolean;
+  headerContent?: ReactNode;
 }) => {
   const columnHelper = createColumnHelper<VehicleSparseSerialized>();
   const modelYearEnumMap = useMemo(() => {
@@ -118,6 +119,7 @@ export const VehicleTable = (props: {
       data={props.vehicles}
       totalNumberOfRecords={props.totalNumbeOfVehicles}
       navigationAction={props.navigationAction}
+      headerContent={props.headerContent}
     />
   );
 };
