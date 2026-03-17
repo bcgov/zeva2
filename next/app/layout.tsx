@@ -22,7 +22,7 @@ export default async function RootLayout({
         <body className="antialiased h-screen flex flex-col">
           <NavigationGuardProvider>
             <Header />
-            <main className="flex-1 overflow-auto">{children}</main>
+            <main className="flex-1 overflow-auto p-6">{children}</main>
           </NavigationGuardProvider>
         </body>
       </html>
