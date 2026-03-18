@@ -19,6 +19,7 @@ env:
   TOOLS_NAMESPACE: ${{ secrets.OPENSHIFT_NAMESPACE_PLATE }}-tools
   DEV_NAMESPACE: ${{ secrets.OPENSHIFT_NAMESPACE_PLATE }}-dev
   PR_NUMBER: ${{ github.event.pull_request.number }}
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 concurrency:
   group: pr-build-${{ github.event.pull_request.number }}
@@ -119,7 +120,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Restore oc command from Cache
-        uses: actions/cache@v4.2.0
+        uses: actions/cache@v5.0.4
         with:
           path: /usr/local/bin/oc
           key: oc-cli-${{ runner.os }}
@@ -146,7 +147,7 @@ jobs:
     timeout-minutes: 60
     steps:
       - name: Checkout Manifest repository
-        uses: actions/checkout@v4.1.1
+        uses: actions/checkout@v6.0.2
         with:
           repository: bcgov-c/tenant-gitops-ea8eab
           ref: main
@@ -177,7 +178,7 @@ jobs:
             yq -i eval '(.env[] | select(.name == "MINIO_SECRET_KEY") | .valueFrom.secretKeyRef.name) = "zeva2-minio-dev-${{ env.PR_NUMBER }}"' zeva2/zeva2-bullmq/values-dev-pr.yaml
 
       - name: Restore oc command from Cache
-        uses: actions/cache@v4.2.0
+        uses: actions/cache@v5.0.4
         with:
           path: /usr/local/bin/oc
           key: oc-cli-${{ runner.os }}
