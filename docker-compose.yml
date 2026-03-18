@@ -61,7 +61,7 @@ services:
       - BEGINNING_OF_COMPLIANCE_YEAR=10-01T00:00:00.000
       - END_OF_COMPLIANCE_YEAR=09-30T23:59:59.999
       - CTHUB_URL=http://host.docker.internal:8000/api
-      - CTHUB_TOKEN=03a7e3705991a4be673af21b3359f1052abc45fd
+      - CTHUB_TOKEN
     depends_on:
       db:
         condition: service_healthy
