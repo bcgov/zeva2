@@ -193,7 +193,7 @@ export const getIcbcRecordsMap = async (
         model: string | null;
         modelYear: string | null;
         registrationDate: string | null;
-        snapshotDate: string;
+        snapshotDate: string | null;
       }
     > = response.data;
     const modelYearsMap = getStringsToModelYearsEnumsMap();
@@ -201,12 +201,18 @@ export const getIcbcRecordsMap = async (
       const make = record.make;
       const modelName = record.model;
       const modelYearString = record.modelYear;
-      const dateString = record.registrationDate ?? record.snapshotDate
-      const [dateIsValid, timestamp] = validateDate(dateString)
-      if (make && modelName && modelYearString && dateIsValid) {
-        const modelYear = modelYearsMap[modelYearString];
-        if (modelYear) {
-          result[vin] = { make, modelName, modelYear, timestamp };
+      const regDate = record.registrationDate;
+      const snapDate = record.snapshotDate;      
+      if (make && modelName && modelYearString) {
+        const dateString = regDate ?? snapDate;
+        if (dateString) {
+          const [dateIsValid, timestamp] = validateDate(dateString);
+          if (dateIsValid) {
+            const modelYear = modelYearsMap[modelYearString];
+            if (modelYear) {
+              result[vin] = { make, modelName, modelYear, timestamp };
+            }
+          }
         }
       }
     }

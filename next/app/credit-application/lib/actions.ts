@@ -511,6 +511,12 @@ export const validateCreditApplication = async (
       record.icbcModelYear = icbcRecord.modelYear;
       record.icbcTimestamp = icbcRecord.timestamp;
     }
+    const decodedRecord = decodedVins[vin];
+    if (decodedRecord) {
+      record.decodedMake = decodedRecord.make;
+      record.decodedModelName = decodedRecord.modelName;
+      record.decodedModelYear = decodedRecord.modelYear;
+    }
     record.validated = validated;
     record.warnings = warnings ? warnings : [];
   }
