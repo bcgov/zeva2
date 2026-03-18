@@ -20,6 +20,7 @@ permissions:
 env:
   TOOLS_NAMESPACE: ${{ secrets.OPENSHIFT_NAMESPACE_PLATE }}-tools
   DEV_NAMESPACE: ${{ secrets.OPENSHIFT_NAMESPACE_PLATE }}-dev
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -35,7 +36,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6.0.2
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -74,7 +75,7 @@ jobs:
       release_tag: ${{ steps.release_version.outputs.tag }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6.0.2
         with:
           fetch-depth: 0
 
@@ -168,7 +169,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Restore oc command from Cache
-        uses: actions/cache@v4.2.0
+        uses: actions/cache@v5.0.4
         with:
           path: /usr/local/bin/oc
           key: oc-cli-${{ runner.os }}
