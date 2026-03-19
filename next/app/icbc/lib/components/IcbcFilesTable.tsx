@@ -2,11 +2,14 @@
 
 import { ClientSideTable } from "@/app/lib/components";
 import { ColumnDef, createColumnHelper } from "@tanstack/react-table";
-import { useMemo } from "react";
+import { ReactNode, useMemo } from "react";
 import { IcbcFileSerialized } from "../utils";
 import { lowerCaseAndCapitalize } from "@/app/lib/utils/enumMaps";
 
-export const IcbcFilesTable = (props: { files: IcbcFileSerialized[] }) => {
+export const IcbcFilesTable = (props: {
+  files: IcbcFileSerialized[];
+  headerContent?: ReactNode;
+}) => {
   const columnHelper = createColumnHelper<IcbcFileSerialized>();
   const columns = useMemo(() => {
     const result: ColumnDef<IcbcFileSerialized, any>[] = [
@@ -80,6 +83,7 @@ export const IcbcFilesTable = (props: { files: IcbcFileSerialized[] }) => {
       enableFiltering={true}
       enableSorting={true}
       initialPageSize={10}
+      headerContent={props.headerContent}
     />
   );
 };

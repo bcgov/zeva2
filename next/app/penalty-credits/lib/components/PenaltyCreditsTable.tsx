@@ -2,7 +2,7 @@
 
 import { ColumnDef, createColumnHelper } from "@tanstack/react-table";
 import { Table } from "@/app/lib/components";
-import { useMemo } from "react";
+import { ReactNode, useMemo } from "react";
 import { PenaltyCreditSparse } from "../data";
 import {
   getModelYearEnumsToStringsMap,
@@ -13,6 +13,7 @@ export const PenaltyCreditsTable = (props: {
   credits: PenaltyCreditSparse[];
   totalNumberOfCredits: number;
   navigationAction: (id: number) => Promise<never>;
+  headerContent?: ReactNode;
 }) => {
   const columnHelper = createColumnHelper<PenaltyCreditSparse>();
   const columns = useMemo(() => {
@@ -52,6 +53,7 @@ export const PenaltyCreditsTable = (props: {
       data={props.credits}
       totalNumberOfRecords={props.totalNumberOfCredits}
       navigationAction={props.navigationAction}
+      headerContent={props.headerContent}
     />
   );
 };

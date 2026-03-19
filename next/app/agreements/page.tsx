@@ -17,17 +17,19 @@ const Page = async (props: { searchParams?: Promise<pageStringParams> }) => {
 
   return (
     <Suspense key={Date.now()} fallback={<LoadingSkeleton />}>
-      {canCreateNewAgreement && (
-        <Link href={`${Routes.CreditAgreements}/new`}>
-          <Button variant="primary">Create a New Agreement</Button>
-        </Link>
-      )}
       <AgreementList
         page={page}
         pageSize={pageSize}
         filters={filters}
         sorts={sorts}
         userIsGov={userIsGov}
+        headerContent={
+          canCreateNewAgreement ? (
+            <Link href={`${Routes.CreditAgreements}/new`}>
+              <Button variant="primary">Create a New Agreement</Button>
+            </Link>
+          ) : undefined
+        }
       />
     </Suspense>
   );

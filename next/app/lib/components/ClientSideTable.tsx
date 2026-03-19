@@ -13,6 +13,7 @@ import {
   ColumnFiltersState,
 } from "@tanstack/react-table";
 import { Button } from "./inputs";
+import { Dropdown } from "./inputs/Dropdown";
 import { TableHeader } from "./TableHeader";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
@@ -284,21 +285,17 @@ export const ClientSideTable = <T extends ZevaObject>({
           </div>
 
           <div className="flex items-center gap-3">
-            <select
-              value={table.getState().pagination.pageSize}
-              onChange={(e) => {
-                table.setPageSize(Number(e.target.value));
+            <Dropdown
+              options={[5, 10, 25, 50, 100].map((pageSize) => ({
+                value: pageSize.toString(),
+                label: `${pageSize} rows`,
+              }))}
+              value={table.getState().pagination.pageSize.toString()}
+              onChange={(value) => {
+                table.setPageSize(Number(value));
               }}
-              className="px-3 py-2 text-sm font-medium bg-white border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              {[5, 10, 25, 50, 100].map((pageSize) => {
-                return (
-                  <option key={pageSize} value={pageSize}>
-                    {pageSize} rows
-                  </option>
-                );
-              })}
-            </select>
+              className="inline-block w-32"
+            />
             <button
               onClick={() => table.nextPage()}
               disabled={!table.getCanNextPage()}

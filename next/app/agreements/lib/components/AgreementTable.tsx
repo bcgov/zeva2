@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, ReactNode } from "react";
 import { ColumnDef, createColumnHelper } from "@tanstack/react-table";
 import { Table } from "@/app/lib/components";
 import { AgreementWithOrgNameSerialized } from "../utilsServer";
@@ -14,6 +14,7 @@ export const AgreementTable = (props: {
   totalNumberOfAgreements: number;
   navigationAction: (id: number) => Promise<void>;
   userIsGov: boolean;
+  headerContent?: ReactNode;
 }) => {
   const columnHelper = createColumnHelper<AgreementWithOrgNameSerialized>();
   const statusMap = useMemo(() => {
@@ -82,6 +83,7 @@ export const AgreementTable = (props: {
       data={props.agreements}
       totalNumberOfRecords={props.totalNumberOfAgreements}
       navigationAction={props.navigationAction}
+      headerContent={props.headerContent}
     />
   );
 };

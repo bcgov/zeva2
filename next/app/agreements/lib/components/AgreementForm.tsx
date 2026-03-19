@@ -14,6 +14,7 @@ import {
   createAgreement,
   getAgreementAttachmentsPutData,
   saveAgreement,
+  AgreementContentPayload,
 } from "../actions";
 import { Routes } from "@/app/lib/constants";
 import {
@@ -26,9 +27,10 @@ import { getStringsToAgreementTypeEnumsMap } from "@/app/lib/utils/enumMaps";
 import { Dropzone } from "@/app/lib/components/Dropzone";
 import { FileWithPath } from "react-dropzone";
 import { Button } from "@/app/lib/components";
+import { Dropdown } from "@/app/lib/components/inputs";
 import { Attachment, AttachmentDownload } from "@/app/lib/constants/attachment";
 import { getFiles } from "@/app/lib/utils/download";
-import { AgreementContent } from "./AgreementContent";
+import { AgreementContent, AgreementContentRecord } from "./AgreementContent";
 import { validateDate } from "@/app/lib/utils/date";
 import { validateNumberOfUnits } from "../utilsClient";
 import { isAgreementType } from "@/app/lib/utils/typeGuards";
@@ -66,7 +68,7 @@ export const AgreementForm = (props: NewProps | SavedProps) => {
   const [agreementId, setAgreementId] = useState<number>();
   const [agreementType, setAgreementType] = useState<AgreementType>();
   const [date, setDate] = useState<string>();
-  const [content, setContent] = useState<SavedProps["content"]>([]);
+  const [content, setContent] = useState<AgreementContentRecord[]>([]);
   const [orgsMap, setOrgsMap] = useState<Partial<Record<number, string>>>();
   const [files, setFiles] = useState<FileWithPath[]>([]);
 
@@ -142,6 +144,9 @@ export const AgreementForm = (props: NewProps | SavedProps) => {
           throw new Error("You must add at least one ZEV Unit record!");
         }
         for (const record of content) {
+          if (!record.vehicleClass || !record.zevClass || !record.modelYear) {
+            throw new Error("All ZEV Unit records must have Vehicle Class, ZEV Class, and Model Year filled in!");
+          }
           validateNumberOfUnits(record.numberOfUnits);
         }
         const attachments: Attachment[] = [];
@@ -166,14 +171,14 @@ export const AgreementForm = (props: NewProps | SavedProps) => {
             orgId,
             agreementType,
             date,
-            content,
+            content as AgreementContentPayload[],
             attachments,
           );
         } else if (props.type === "saved" && agreementId) {
           response = await saveAgreement(
             agreementId,
             date,
-            content,
+            content as AgreementContentPayload[],
             attachments,
           );
         }
@@ -196,20 +201,18 @@ export const AgreementForm = (props: NewProps | SavedProps) => {
       return (
         <div className={mainDivClass}>
           <span className={fieldLabelClass}>Supplier</span>
-          <select
-            name="supplier"
-            className={fieldContentClass + " w-60"}
-            value={orgId ?? ""}
-            onChange={(e) => handleOrgSelect(e.target.value)}
-            disabled={props.type === "saved" || isPending}
-          >
-            <option value={""}>--</option>
-            {Object.entries(orgsMap).map(([key, value]) => (
-              <option key={key} value={key}>
-                {value}
-              </option>
-            ))}
-          </select>
+          <div className="w-60">
+            <Dropdown
+              placeholder="Select an Option"
+              options={Object.entries(orgsMap).map(([key, value]) => ({
+                value: key,
+                label: value as string,
+              }))}
+              value={orgId?.toString() ?? ""}
+              onChange={handleOrgSelect}
+              disabled={props.type === "saved" || isPending}
+            />
+          </div>
         </div>
       );
     }
@@ -221,20 +224,18 @@ export const AgreementForm = (props: NewProps | SavedProps) => {
       {orgsComponent}
       <div className={mainDivClass}>
         <span className={fieldLabelClass}>Agreement Type</span>
-        <select
-          name="agreementType"
-          className={fieldContentClass + " w-60"}
-          value={agreementType ?? ""}
-          onChange={(e) => handleChange("agreementType", e.target.value)}
-          disabled={props.type === "saved" || isPending}
-        >
-          <option value={""}>--</option>
-          {Object.entries(typesMap).map(([key, value]) => (
-            <option key={key} value={value}>
-              {key}
-            </option>
-          ))}
-        </select>
+        <div className="w-60">
+          <Dropdown
+            placeholder="Select an Option"
+            options={Object.entries(typesMap).map(([key, value]) => ({
+              value: value as string,
+              label: key,
+            }))}
+            value={agreementType ?? ""}
+            onChange={(value) => handleChange("agreementType", value)}
+            disabled={props.type === "saved" || isPending}
+          />
+        </div>
       </div>
       <div className={mainDivClass}>
         <span className={fieldLabelClass}>Date</span>

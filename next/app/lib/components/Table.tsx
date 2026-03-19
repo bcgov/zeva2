@@ -15,6 +15,7 @@ import {
 } from "@/lib/utils/urlSearchParams";
 import { LoadingSkeleton } from "./skeletons";
 import { Button } from "./inputs";
+import { Dropdown } from "./inputs/Dropdown";
 import { TableHeader } from "./TableHeader";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faAngleLeft, faAngleRight } from "@fortawesome/free-solid-svg-icons";
@@ -204,7 +205,7 @@ export const Table = <T extends ZevaObject>({
   return (
     <div>
       <div className="mb-4 flex items-center justify-between gap-4">
-        {headerContent && <div>{headerContent}</div>}
+        <div>{headerContent}</div>
         <Button variant="secondary" size="small" onClick={handleReset}>
           Reset Table
         </Button>
@@ -294,21 +295,15 @@ export const Table = <T extends ZevaObject>({
           </div>
 
           <div className="flex items-center gap-3">
-            <select
-              value={currentPageSize}
-              onChange={(e) => {
-                handlePageSizeChange(e.target.value);
-              }}
-              className="px-3 py-2 text-sm font-medium bg-white border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              {[5, 10, 25, 50, 100].map((pageSize) => {
-                return (
-                  <option key={pageSize} value={pageSize}>
-                    {pageSize} rows
-                  </option>
-                );
-              })}
-            </select>
+            <Dropdown
+              options={[5, 10, 25, 50, 100].map((pageSize) => ({
+                value: pageSize.toString(),
+                label: `${pageSize} rows`,
+              }))}
+              value={currentPageSize.toString()}
+              onChange={handlePageSizeChange}
+              className="inline-block w-32"
+            />
             <button
               onClick={() => handlePageNav("next")}
               disabled={currentPage >= numberOfPages}

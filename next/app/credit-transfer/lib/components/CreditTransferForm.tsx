@@ -1,6 +1,7 @@
 "use client";
 
 import { Button } from "@/app/lib/components";
+import { Dropdown } from "@/app/lib/components/inputs";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState, useTransition } from "react";
 import { Routes } from "@/app/lib/constants";
@@ -91,25 +92,22 @@ export const CreditTransferForm = (props: {
     <div>
       {error && <p className="text-red-600">{error}</p>}
       <div className="flex items-center py-2 my-2">
-        <label htmlFor="transferToOrg" className="w-72">
-          Transfer To:
-        </label>
-        <select
-          id="transferToOrg"
-          value={transferTo}
-          className="border p-2 w-full"
-          onChange={(e) => {
-            handleTransferToSelect(e.target.value);
-          }}
-          disabled={!!props.creditTransfer || isPending}
-        >
-          <option value="">--</option>
-          {Object.entries(props.transferCandidatesMap).map(([id, name]) => (
-            <option key={id} value={id}>
-              {name}
-            </option>
-          ))}
-        </select>
+        <div className="w-72">
+          <label>Transfer To:</label>
+        </div>
+        <div className="w-full">
+          <Dropdown
+            id="transferToOrg"
+            placeholder="Select an Option"
+            options={Object.entries(props.transferCandidatesMap).map(([id, name]) => ({
+              value: id,
+              label: name,
+            }))}
+            value={transferTo}
+            onChange={handleTransferToSelect}
+            disabled={!!props.creditTransfer || isPending}
+          />
+        </div>
       </div>
       <CreditTransferLines
         lines={lines}

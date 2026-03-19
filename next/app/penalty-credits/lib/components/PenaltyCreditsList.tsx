@@ -3,12 +3,14 @@ import { getUserInfo } from "@/auth";
 import { redirect } from "next/navigation";
 import { getPenaltyCredits } from "../data";
 import { PenaltyCreditsTable } from "./PenaltyCreditsTable";
+import { ReactNode } from "react";
 
 export const PenaltyCreditsList = async (props: {
   page: number;
   pageSize: number;
   filters: Record<string, string>;
   sorts: Record<string, string>;
+  headerContent?: ReactNode;
 }) => {
   const { userIsGov } = await getUserInfo();
   if (!userIsGov) {
@@ -30,6 +32,7 @@ export const PenaltyCreditsList = async (props: {
       credits={credits}
       totalNumberOfCredits={totalNumberOfCredits}
       navigationAction={navigationAction}
+      headerContent={props.headerContent}
     />
   );
 };

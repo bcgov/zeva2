@@ -3,7 +3,7 @@
 import { CreditApplicationSparseSerialized } from "../constants";
 import { ColumnDef, createColumnHelper } from "@tanstack/react-table";
 import { Table } from "@/app/lib/components";
-import { useMemo } from "react";
+import { ReactNode, useMemo } from "react";
 import {
   getCreditApplicationStatusEnumsToStringsMap,
   getModelYearEnumsToStringsMap,
@@ -14,6 +14,7 @@ export const ApplicationsTable = (props: {
   totalNumberOfApplications: number;
   navigationAction: (id: number) => Promise<never>;
   userIsGov: boolean;
+  headerContent?: ReactNode;
 }) => {
   const statusMap = useMemo(() => {
     return getCreditApplicationStatusEnumsToStringsMap();
@@ -102,6 +103,7 @@ export const ApplicationsTable = (props: {
       data={props.applications}
       totalNumberOfRecords={props.totalNumberOfApplications}
       navigationAction={props.navigationAction}
+      headerContent={props.headerContent}
     />
   );
 };

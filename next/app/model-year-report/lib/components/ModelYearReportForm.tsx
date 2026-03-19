@@ -2,6 +2,7 @@
 
 import axios, { AxiosResponse } from "axios";
 import { Button } from "@/app/lib/components";
+import { Dropdown } from "@/app/lib/components/inputs";
 import { getModelYearEnumsToStringsMap } from "@/app/lib/utils/enumMaps";
 import { ModelYear, VehicleClass, ZevClass } from "@/prisma/generated/enums";
 import { useRouter } from "next/navigation";
@@ -489,23 +490,18 @@ export const ModelYearReportForm = (
     let innerComponent;
     if (props.type === "legacyNewSupp") {
       innerComponent = (
-        <select
-          name="modelYear"
-          value={modelYear}
-          className="border p-2 w-full"
-          onChange={(e) => {
-            const value = e.target.value;
+        <Dropdown
+          placeholder="Select an Option"
+          options={Object.entries(legacyModelYearsMap).map(([key, value]) => ({
+            value: value as string,
+            label: key,
+          }))}
+          value={modelYear ?? ""}
+          onChange={(value) => {
             setModelYear(isModelYear(value) ? value : undefined);
           }}
           disabled={isPending}
-        >
-          <option key={undefined}>--</option>
-          {Object.entries(legacyModelYearsMap).map(([key, value]) => (
-            <option key={key} value={value}>
-              {key}
-            </option>
-          ))}
-        </select>
+        />
       );
     } else if (modelYear) {
       innerComponent = (

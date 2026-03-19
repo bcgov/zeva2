@@ -20,12 +20,15 @@ const Page = async () => {
   }
   return (
     <Suspense key={Date.now()} fallback={<LoadingSkeleton />}>
-      {canSubmitReport && (
-        <Link href={`${Routes.ComplianceReporting}/new`}>
-          <Button variant="primary">Submit a Model Year Report</Button>
-        </Link>
-      )}
-      <ReportsList />
+      <ReportsList
+        headerContent={
+          canSubmitReport ? (
+            <Link href={`${Routes.ComplianceReporting}/new`}>
+              <Button variant="primary">Submit a Model Year Report</Button>
+            </Link>
+          ) : undefined
+        }
+      />
     </Suspense>
   );
 };
