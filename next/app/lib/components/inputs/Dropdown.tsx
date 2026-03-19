@@ -161,10 +161,7 @@ export const Dropdown: FC<IDropdownProps> = ({
     <div className={`relative ${className}`} ref={dropdownRef}>
       {/* Label */}
       {label && (
-        <label
-          htmlFor={id}
-          className="form-label block mb-1.5"
-        >
+        <label htmlFor={id} className="form-label block mb-1.5">
           {label}
         </label>
       )}

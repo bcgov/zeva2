@@ -40,21 +40,28 @@ export const RecordsTable = (props: {
       "Error in ICBC data",
       "Other, explained in comments",
     ];
+    const options: JSX.Element[] = [];
+    reasons.forEach((reason) => {
+      options.push(
+        <option key={reason} value={reason}>
+          {reason}
+        </option>,
+      );
+    });
     return (
-      <Dropdown
-        placeholder=""
-        options={reasons.map((reason) => ({
-          value: reason,
-          label: reason,
-        }))}
+      <select
         value={reason ?? ""}
-        onChange={(value) => {
-          const newValue = value ? value : null;
+        onChange={(event) => {
+          const targetValue = event.target.value;
+          const newValue = targetValue ? targetValue : null;
           setMapOfData((prev) => {
             return { ...prev, [id]: [prev[id][0], newValue] };
           });
         }}
-      />
+      >
+        {options}
+        <option key={"no reason"} value={""}></option>
+      </select>
     );
   }, []);
 

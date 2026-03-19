@@ -8,20 +8,13 @@ import {
   getStringsToVehicleClassEnumsMap,
   getStringsToZevClassEnumsMap,
 } from "@/app/lib/utils/enumMaps";
-import { ModelYear, VehicleClass, ZevClass } from "@/prisma/generated/enums";
-import { ZevUnitRecord } from "@/lib/utils/zevUnit";
+import { ModelYear } from "@/prisma/generated/enums";
 import {
   isModelYear,
   isVehicleClass,
   isZevClass,
 } from "@/app/lib/utils/typeGuards";
-
-export type AgreementContentRecord = {
-  vehicleClass?: VehicleClass;
-  zevClass?: ZevClass;
-  modelYear?: ModelYear;
-  numberOfUnits: string;
-};
+import { AgreementContentRecord } from "../constants";
 
 const fieldLabelClass = "py-1 font-semibold text-primaryBlue";
 const fieldContentClass = "p-1 border border-gray-300 rounded";
@@ -88,18 +81,19 @@ export const AgreementContent = (props: {
     <div className="p-2 border border-gray-300 rounded">
       <p className={fieldLabelClass}>ZEV Units</p>
       {props.content.map((record, index) => (
-        <div
-          key={index}
-          className="p-4 border-b border-gray-300 space-y-3"
-        >
+        <div key={index} className="p-4 border-b border-gray-300 space-y-3">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             <div className="flex flex-col space-y-1">
-              <label className="text-sm font-medium text-primaryText">Vehicle Class</label>
+              <label className="text-sm font-medium text-primaryText">
+                Vehicle Class
+              </label>
               <Dropdown
-                options={Object.entries(vehicleClassesMaps).map(([key, value]) => ({
-                  value: value as string,
-                  label: key,
-                }))}
+                options={Object.entries(vehicleClassesMaps).map(
+                  ([key, value]) => ({
+                    value: value as string,
+                    label: key,
+                  }),
+                )}
                 value={record.vehicleClass}
                 onChange={(value) =>
                   handleRecordChange(index, "vehicleClass", value)
@@ -108,7 +102,9 @@ export const AgreementContent = (props: {
               />
             </div>
             <div className="flex flex-col space-y-1">
-              <label className="text-sm font-medium text-primaryText">ZEV Class</label>
+              <label className="text-sm font-medium text-primaryText">
+                ZEV Class
+              </label>
               <Dropdown
                 options={Object.entries(zevClassesMaps).map(([key, value]) => ({
                   value: value as string,
@@ -122,14 +118,16 @@ export const AgreementContent = (props: {
               />
             </div>
             <div className="flex flex-col space-y-1">
-              <label className="text-sm font-medium text-primaryText">Model Year</label>
+              <label className="text-sm font-medium text-primaryText">
+                Model Year
+              </label>
               <Dropdown
                 options={Object.entries(modelYearsMaps)
                   .filter(
                     ([_key, value]) =>
                       value &&
                       value >= ModelYear.MY_2019 &&
-                      value <= ModelYear.MY_2035
+                      value <= ModelYear.MY_2035,
                   )
                   .map(([key, value]) => ({
                     value: value as string,
@@ -143,7 +141,9 @@ export const AgreementContent = (props: {
               />
             </div>
             <div className="flex flex-col space-y-1">
-              <label className="text-sm font-medium text-primaryText">Number of Units</label>
+              <label className="text-sm font-medium text-primaryText">
+                Number of Units
+              </label>
               <input
                 className={fieldContentClass + " text-right"}
                 type="text"
@@ -156,7 +156,12 @@ export const AgreementContent = (props: {
             </div>
           </div>
           <div>
-            <Button variant="danger" size="small" onClick={() => removeRecord(index)} disabled={props.disabled}>
+            <Button
+              variant="danger"
+              size="small"
+              onClick={() => removeRecord(index)}
+              disabled={props.disabled}
+            >
               Remove
             </Button>
           </div>

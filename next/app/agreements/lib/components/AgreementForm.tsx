@@ -14,7 +14,6 @@ import {
   createAgreement,
   getAgreementAttachmentsPutData,
   saveAgreement,
-  AgreementContentPayload,
 } from "../actions";
 import { Routes } from "@/app/lib/constants";
 import {
@@ -30,10 +29,11 @@ import { Button } from "@/app/lib/components";
 import { Dropdown } from "@/app/lib/components/inputs";
 import { Attachment, AttachmentDownload } from "@/app/lib/constants/attachment";
 import { getFiles } from "@/app/lib/utils/download";
-import { AgreementContent, AgreementContentRecord } from "./AgreementContent";
+import { AgreementContent } from "./AgreementContent";
 import { validateDate } from "@/app/lib/utils/date";
-import { validateNumberOfUnits } from "../utilsClient";
+import { contentIsValid } from "../utilsClient";
 import { isAgreementType } from "@/app/lib/utils/typeGuards";
+import { AgreementContentRecord } from "../constants";
 
 const mainDivClass = "grid grid-cols-[220px_1fr]";
 const fieldLabelClass = "py-1 font-semibold text-primaryBlue";
@@ -143,11 +143,12 @@ export const AgreementForm = (props: NewProps | SavedProps) => {
         if (content.length === 0) {
           throw new Error("You must add at least one ZEV Unit record!");
         }
-        for (const record of content) {
-          if (!record.vehicleClass || !record.zevClass || !record.modelYear) {
-            throw new Error("All ZEV Unit records must have Vehicle Class, ZEV Class, and Model Year filled in!");
-          }
-          validateNumberOfUnits(record.numberOfUnits);
+        const payloadValid = contentIsValid(content);
+        if (!payloadValid) {
+          throw new Error(
+            `All ZEV Unit records must have a Vehicle Class, ZEV Class, and Model Year; 
+            furthermore, Number of Units must be a strictly positive number rounded to 2 decimal places or less!`,
+          );
         }
         const attachments: Attachment[] = [];
         if (files.length > 0) {
@@ -171,14 +172,14 @@ export const AgreementForm = (props: NewProps | SavedProps) => {
             orgId,
             agreementType,
             date,
-            content as AgreementContentPayload[],
+            content,
             attachments,
           );
         } else if (props.type === "saved" && agreementId) {
           response = await saveAgreement(
             agreementId,
             date,
-            content as AgreementContentPayload[],
+            content,
             attachments,
           );
         }

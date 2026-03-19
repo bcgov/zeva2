@@ -1,5 +1,4 @@
 import { Decimal } from "decimal.js";
-import { AgreementContentPayload } from "./actions";
 import { ZevClass } from "@/prisma/generated/enums";
 import {
   getMatchingTerms,
@@ -12,6 +11,7 @@ import {
   AgreementWhereInput,
   AgreementOrderByWithRelationInput,
 } from "@/prisma/generated/models";
+import { AgreementContentPayload } from "./constants";
 
 export const getCreditsSum = (content: AgreementContentPayload[]) => {
   let aCredits = new Decimal(0);

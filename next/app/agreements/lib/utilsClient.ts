@@ -1,14 +1,21 @@
 import { Decimal } from "decimal.js";
+import { AgreementContentPayload, AgreementContentRecord } from "./constants";
 
-export const validateNumberOfUnits = (numberOfUnits: string) => {
-  try {
-    const numberOfUnitsDec = new Decimal(numberOfUnits);
-    if (numberOfUnitsDec.lte(0) || numberOfUnitsDec.decimalPlaces() > 2) {
-      throw new Error();
+export const contentIsValid = (
+  content: AgreementContentRecord[],
+): content is AgreementContentPayload[] => {
+  for (const record of content) {
+    if (!record.vehicleClass || !record.zevClass || !record.modelYear) {
+      return false;
     }
-  } catch (e) {
-    throw new Error(
-      "Number of Units must be a strictly positive number rounded to 2 decimal places or less!",
-    );
+    try {
+      const numberOfUnitsDec = new Decimal(record.numberOfUnits);
+      if (numberOfUnitsDec.lte(0) || numberOfUnitsDec.decimalPlaces() > 2) {
+        throw new Error();
+      }
+    } catch {
+      return false;
+    }
   }
+  return true;
 };
