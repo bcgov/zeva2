@@ -31,17 +31,21 @@ export const PenaltyCreditCreateForm = (props: {
   }, [props.orgNamesAndIds]);
 
   const yearOptions = useMemo(() => {
-    return Object.entries(getStringsToModelYearsEnumsMap()).map(([key, value]) => ({
-      value: key,
-      label: key,
-    }));
+    return Object.entries(getStringsToModelYearsEnumsMap()).map(
+      ([key, value]) => ({
+        value: key,
+        label: key,
+      }),
+    );
   }, []);
 
   const vehicleClassOptions = useMemo(() => {
-    return Object.entries(getStringsToVehicleClassEnumsMap()).map(([key, value]) => ({
-      value: key,
-      label: key,
-    }));
+    return Object.entries(getStringsToVehicleClassEnumsMap()).map(
+      ([key, value]) => ({
+        value: key,
+        label: key,
+      }),
+    );
   }, []);
 
   const zevClassOptions = useMemo(() => {

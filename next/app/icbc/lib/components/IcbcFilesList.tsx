@@ -13,6 +13,9 @@ export const IcbcFilesList = async (props: { headerContent?: ReactNode }) => {
   const serializedFiles = getSerializedIcbcFiles(files);
 
   return (
-    <IcbcFilesTable files={serializedFiles} headerContent={props.headerContent} />
+    <IcbcFilesTable
+      files={serializedFiles}
+      headerContent={props.headerContent}
+    />
   );
 };

@@ -144,7 +144,7 @@ export const VehicleForm = (props: {
                 ([_key, value]) =>
                   value &&
                   value >= ModelYear.MY_2019 &&
-                  value <= ModelYear.MY_2035
+                  value <= ModelYear.MY_2035,
               )
               .map(([key, value]) => ({
                 value: value as string,

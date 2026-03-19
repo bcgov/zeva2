@@ -99,10 +99,12 @@ export const CreditTransferForm = (props: {
           <Dropdown
             id="transferToOrg"
             placeholder="Select an Option"
-            options={Object.entries(props.transferCandidatesMap).map(([id, name]) => ({
-              value: id,
-              label: name,
-            }))}
+            options={Object.entries(props.transferCandidatesMap).map(
+              ([id, name]) => ({
+                value: id,
+                label: name,
+              }),
+            )}
             value={transferTo}
             onChange={handleTransferToSelect}
             disabled={!!props.creditTransfer || isPending}

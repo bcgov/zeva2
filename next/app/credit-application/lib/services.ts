@@ -419,6 +419,18 @@ export const getPartOfMyrModelYear = async (
 ): Promise<ModelYear | null> => {
   const currentCy = getCurrentComplianceYear();
   const previousCy = getAdjacentYear("prev", currentCy);
+  const legacyAssessedMyr =
+    await prisma.legacyAssessedModelYearReport.findUnique({
+      where: {
+        organizationId_modelYear: {
+          organizationId: orgId,
+          modelYear: previousCy,
+        },
+      },
+    });
+  if (legacyAssessedMyr) {
+    return null;
+  }
   const myr = await prisma.modelYearReport.findUnique({
     where: {
       organizationId_modelYear: {
@@ -428,11 +440,11 @@ export const getPartOfMyrModelYear = async (
     },
   });
   if (
-    !myr ||
-    myr.status === ModelYearReportStatus.DRAFT ||
-    myr.status === ModelYearReportStatus.RETURNED_TO_SUPPLIER
+    myr &&
+    myr.status !== ModelYearReportStatus.DRAFT &&
+    myr.status !== ModelYearReportStatus.RETURNED_TO_SUPPLIER
   ) {
-    return previousCy;
+    return null;
   }
-  return null;
+  return previousCy;
 };

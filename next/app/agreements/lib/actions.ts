@@ -5,12 +5,9 @@ import { prisma } from "@/lib/prisma";
 import {
   AgreementStatus,
   AgreementType,
-  ModelYear,
   ReferenceType,
   Role,
   TransactionType,
-  VehicleClass,
-  ZevClass,
 } from "@/prisma/generated/enums";
 import { getPresignedGetObjectUrl } from "@/app/lib/services/s3";
 import {
@@ -33,13 +30,7 @@ import {
 } from "@/prisma/generated/models";
 import { Directory, getAttachmentPutData } from "@/app/lib/services/s3";
 import { Attachment, AttachmentDownload } from "@/app/lib/constants/attachment";
-
-export type AgreementContentPayload = {
-  vehicleClass: VehicleClass;
-  zevClass: ZevClass;
-  modelYear: ModelYear;
-  numberOfUnits: string;
-};
+import { AgreementContentPayload } from "./constants";
 
 export type AgreementPutObjectData = {
   objectName: string;
