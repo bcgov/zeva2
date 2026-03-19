@@ -64,7 +64,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Verify author is allowed to run PR build
-        uses: actions/github-script@v7
+        uses: actions/github-script@v8
         with:
           script: |
             const allowedAuthors = [
