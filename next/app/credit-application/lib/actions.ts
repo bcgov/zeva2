@@ -26,6 +26,7 @@ import {
   updateStatus,
   createAttachments,
   getPartOfMyrModelYear,
+  getDecodedVinsMap,
 } from "./services";
 import { ErrorsTemplate, SupplierTemplate } from "./constants";
 import {
@@ -475,6 +476,7 @@ export const validateCreditApplication = async (
     return [...acc, cv.vin];
   }, []);
   const icbcMap = await getIcbcRecordsMap(vins);
+  const decodedVins = await getDecodedVinsMap(vins);
   const warningsMap = getWarningsMap(
     records,
     icbcMap,
@@ -508,6 +510,12 @@ export const validateCreditApplication = async (
       record.icbcModelName = icbcRecord.modelName;
       record.icbcModelYear = icbcRecord.modelYear;
       record.icbcTimestamp = icbcRecord.timestamp;
+    }
+    const decodedRecord = decodedVins[vin];
+    if (decodedRecord) {
+      record.decodedMake = decodedRecord.make;
+      record.decodedModelName = decodedRecord.modelName;
+      record.decodedModelYear = decodedRecord.modelYear;
     }
     record.validated = validated;
     record.warnings = warnings ? warnings : [];

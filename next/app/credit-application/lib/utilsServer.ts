@@ -150,7 +150,11 @@ export const getRecordsWhereClause = (
       } else if (newValue === "n") {
         result[key] = false;
       }
-    } else if (key === "modelYear" || key === "icbcModelYear") {
+    } else if (
+      key === "modelYear" ||
+      key === "icbcModelYear" ||
+      key === "decodedModelYear"
+    ) {
       result[key] = {
         in: getMatchingTerms(modelYearsMap, value),
       };
@@ -166,7 +170,9 @@ export const getRecordsWhereClause = (
       key === "make" ||
       key === "modelName" ||
       key === "icbcMake" ||
-      key === "icbcModelName"
+      key === "icbcModelName" ||
+      key === "decodedMake" ||
+      key === "decodedModelName"
     ) {
       const newValue = value.toLowerCase();
       result[key] = {
@@ -225,6 +231,9 @@ export const getRecordsOrderByClause = (
         key === "icbcMake" ||
         key === "icbcModelName" ||
         key === "icbcModelYear" ||
+        key === "decodedMake" ||
+        key === "decodedModelName" ||
+        key === "decodedModelYear" ||
         key === "validated" ||
         key === "warnings" ||
         key === "reason")

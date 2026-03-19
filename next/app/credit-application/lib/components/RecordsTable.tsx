@@ -172,6 +172,31 @@ export const RecordsTable = (props: {
           size: 100,
         },
       ),
+      columnHelper.accessor((row) => row.decodedMake, {
+        id: "decodedMake",
+        enableSorting: true,
+        enableColumnFilter: true,
+        header: () => <span>Decoded Make</span>,
+        size: 100,
+      }),
+      columnHelper.accessor((row) => row.decodedModelName, {
+        id: "decodedModelName",
+        enableSorting: true,
+        enableColumnFilter: true,
+        header: () => <span>Decoded Model Name</span>,
+        size: 150,
+      }),
+      columnHelper.accessor(
+        (row) =>
+          row.decodedModelYear ? modelYearsMap[row.decodedModelYear] : null,
+        {
+          id: "decodedModelYear",
+          enableSorting: true,
+          enableColumnFilter: true,
+          header: () => <span>Decoded Model Year</span>,
+          size: 100,
+        },
+      ),
       columnHelper.accessor((row) => row.warnings, {
         id: "warnings",
         enableSorting: true,
