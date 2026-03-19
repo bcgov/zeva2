@@ -26,6 +26,9 @@ on:
 permissions:
   contents: read
 
+env:
+  ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: true
+
 jobs:
   deploy:
     name: Deploy Zeva2

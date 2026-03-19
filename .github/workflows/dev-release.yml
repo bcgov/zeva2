@@ -21,6 +21,7 @@ env:
   TOOLS_NAMESPACE: ${{ secrets.OPENSHIFT_NAMESPACE_PLATE }}-tools
   DEV_NAMESPACE: ${{ secrets.OPENSHIFT_NAMESPACE_PLATE }}-dev
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+  ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: true
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
