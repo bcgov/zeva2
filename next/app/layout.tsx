@@ -2,6 +2,7 @@ import { getUserInfo } from "@/auth";
 import type { Metadata } from "next";
 import "./globals.css";
 import { Header } from "./lib/components/Header";
+import { Footer } from "./lib/components/Footer";
 import { NavigationGuardProvider } from "next-navigation-guard";
 
 export const metadata: Metadata = {
@@ -19,10 +20,11 @@ export default async function RootLayout({
     // Authenticated layout
     return (
       <html lang="en">
-        <body className="antialiased h-screen flex flex-col">
+        <body className="antialiased min-h-screen flex flex-col">
           <NavigationGuardProvider>
             <Header />
             <main className="flex-1 overflow-auto p-6">{children}</main>
+            <Footer />
           </NavigationGuardProvider>
         </body>
       </html>
@@ -31,7 +33,10 @@ export default async function RootLayout({
     // Unauthenticated layout
     return (
       <html lang="en">
-        <body className="antialiased h-screen">{children}</body>
+        <body className="antialiased min-h-screen flex flex-col">
+          <div className="flex-1">{children}</div>
+          <Footer />
+        </body>
       </html>
     );
   }
