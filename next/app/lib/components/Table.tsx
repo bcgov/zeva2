@@ -30,6 +30,7 @@ interface ITableProps<T> {
   stackHeaderContents?: boolean;
   title?: string;
   headerContent?: React.ReactNode;
+  noTruncateCols?: string[];
 }
 
 interface ZevaObject {
@@ -44,8 +45,8 @@ export const Table = <T extends ZevaObject>({
   explicitSizing,
   paramsToPreserve,
   stackHeaderContents,
-  title,
   headerContent,
+  noTruncateCols,
 }: ITableProps<T>) => {
   const { replace } = useRouter();
   const table = useReactTable({
@@ -239,22 +240,33 @@ export const Table = <T extends ZevaObject>({
                     }`}
                     onClick={() => handleNavigation(row.original.id)}
                   >
-                    {row.getVisibleCells().map((cell) => (
-                      <td
-                        key={cell.id}
-                        className={`px-6 py-4 text-sm text-gray-900 ${explicitSizing ? "truncate" : ""}`}
-                        style={
-                          explicitSizing
-                            ? { width: cell.column.getSize() }
-                            : undefined
-                        }
-                      >
-                        {flexRender(
-                          cell.column.columnDef.cell,
-                          cell.getContext(),
-                        )}
-                      </td>
-                    ))}
+                    {row.getVisibleCells().map((cell) => {
+                      let truncate = explicitSizing;
+                      const colId = cell.column.columnDef.id;
+                      if (
+                        noTruncateCols &&
+                        colId &&
+                        noTruncateCols.includes(colId)
+                      ) {
+                        truncate = false;
+                      }
+                      return (
+                        <td
+                          key={cell.id}
+                          className={`px-6 py-4 text-sm text-gray-900 ${truncate ? "truncate" : ""}`}
+                          style={
+                            explicitSizing
+                              ? { width: cell.column.getSize() }
+                              : undefined
+                          }
+                        >
+                          {flexRender(
+                            cell.column.columnDef.cell,
+                            cell.getContext(),
+                          )}
+                        </td>
+                      );
+                    })}
                   </tr>
                 );
               })}

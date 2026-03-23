@@ -415,7 +415,7 @@ model CreditApplication {
   ineligibleVinsCount         Int?                            @map("ineligible_vins_count")
   aCredits                    Decimal?                        @map("a_credits") @db.Decimal(65, 2)
   bCredits                    Decimal?                        @map("b_credits") @db.Decimal(65, 2)
-  validatedUpToIcbcTimestamp  DateTime?                       @map("validated_up_to_icbc_timestamp") @db.Timestamptz(6)
+  lastValidatedTimestamp      DateTime?                       @map("last_validated_timestamp") @db.Timestamptz(6)
   partOfMyrModelYear          ModelYear?                      @map("part_of_myr_model_year")
   mustRevalidate              Boolean                         @default(false) @map("must_revalidate")
   CreditApplicationHistory    CreditApplicationHistory[]

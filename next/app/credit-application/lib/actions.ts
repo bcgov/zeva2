@@ -467,10 +467,6 @@ export const validateCreditApplication = async (
   if (!creditApplication) {
     return getErrorActionResponse("Invalid Action!");
   }
-  const latestIcbcFileTimestamp = await getLatestSuccessfulFileTimestamp();
-  if (!latestIcbcFileTimestamp) {
-    return getErrorActionResponse("No ICBC files to validate against!");
-  }
   const records = creditApplication.CreditApplicationRecord;
   const vins = records.reduce((acc: string[], cv) => {
     return [...acc, cv.vin];
@@ -534,7 +530,7 @@ export const validateCreditApplication = async (
         id: creditApplicationId,
       },
       data: {
-        validatedUpToIcbcTimestamp: latestIcbcFileTimestamp,
+        lastValidatedTimestamp: new Date(),
         eligibleVinsCount,
         ineligibleVinsCount,
         aCredits,

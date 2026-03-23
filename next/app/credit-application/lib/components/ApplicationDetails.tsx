@@ -28,10 +28,10 @@ export const ApplicationDetails = async (props: {
         </li>
       )}
       <li>Status: {statusMap[status]}</li>
-      {props.userIsGov && props.application.validatedUpToIcbcTimestamp && (
+      {props.userIsGov && props.application.lastValidatedTimestamp && (
         <li>
-          Validated using ICBC data up to and including:{" "}
-          {getIsoYmdString(props.application.validatedUpToIcbcTimestamp)}
+          Last Validated On:{" "}
+          {getIsoYmdString(props.application.lastValidatedTimestamp)}
         </li>
       )}
     </ul>

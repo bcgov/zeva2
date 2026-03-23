@@ -86,7 +86,7 @@ const Page = async (props: { params: Promise<{ id: string }> }) => {
               id={id}
               status={applicationStatus}
               validatedBefore={
-                creditApplication.validatedUpToIcbcTimestamp !== null
+                creditApplication.lastValidatedTimestamp !== null
               }
             />
           </ContentCard>
