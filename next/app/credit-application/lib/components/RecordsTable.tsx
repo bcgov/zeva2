@@ -9,7 +9,7 @@ import {
   useState,
   useTransition,
 } from "react";
-import { Button, ContentCard, Table } from "@/app/lib/components";
+import { Button, ContentCard, Table, Dropdown } from "@/app/lib/components";
 import { MapOfValidatedAndReasons, updateValidatedRecords } from "../actions";
 import { useRouter } from "next/navigation";
 import { getModelYearEnumsToStringsMap } from "@/app/lib/utils/enumMaps";
@@ -40,28 +40,21 @@ export const RecordsTable = (props: {
       "Error in ICBC data",
       "Other, explained in comments",
     ];
-    const options: JSX.Element[] = [];
-    reasons.forEach((reason) => {
-      options.push(
-        <option key={reason} value={reason}>
-          {reason}
-        </option>,
-      );
-    });
     return (
-      <select
+      <Dropdown
+        placeholder=""
+        options={reasons.map((reason) => ({
+          value: reason,
+          label: reason,
+        }))}
         value={reason ?? ""}
-        onChange={(event) => {
-          const targetValue = event.target.value;
-          const newValue = targetValue ? targetValue : null;
+        onChange={(value) => {
+          const newValue = value ? value : null;
           setMapOfData((prev) => {
             return { ...prev, [id]: [prev[id][0], newValue] };
           });
         }}
-      >
-        {options}
-        <option key={"no reason"} value={""}></option>
-      </select>
+      />
     );
   }, []);
 
@@ -272,6 +265,7 @@ export const RecordsTable = (props: {
         explicitSizing={true}
         paramsToPreserve={["readOnly"]}
         stackHeaderContents={true}
+        noTruncateCols={["reason"]}
       />
       {!props.readOnly && (
         <ContentCard title="Actions">

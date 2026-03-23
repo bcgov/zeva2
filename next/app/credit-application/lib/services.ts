@@ -202,7 +202,7 @@ export const getIcbcRecordsMap = async (
       const modelName = record.model;
       const modelYearString = record.modelYear;
       const regDate = record.registrationDate;
-      const snapDate = record.snapshotDate;      
+      const snapDate = record.snapshotDate;
       if (make && modelName && modelYearString) {
         const dateString = regDate ?? snapDate;
         if (dateString) {
