@@ -7,7 +7,7 @@ import { useCallback, useState, useTransition } from "react";
 import { directorApprove, directorReturnToAnalyst } from "../actions";
 import { getNormalizedComment } from "@/app/lib/utils/comment";
 import { Routes } from "@/app/lib/constants";
-import { CommentBox } from "@/app/lib/components/inputs/CommentBox";
+import { Textarea } from "@/app/lib/components/inputs/Textarea";
 
 export const DirectorActions = (props: {
   id: number;
@@ -69,9 +69,9 @@ export const DirectorActions = (props: {
       {props.status === CreditApplicationStatus.RECOMMEND_APPROVAL && (
         <>
           {error && <p className="text-red-600">{error}</p>}
-          <CommentBox
-            comment={comment}
-            setComment={setComment}
+          <Textarea
+            value={comment}
+            onChange={setComment}
             disabled={isPending}
           />
           <Button

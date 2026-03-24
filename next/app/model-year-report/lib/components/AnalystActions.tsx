@@ -7,7 +7,7 @@ import { useRouter } from "next/navigation";
 import { useCallback, useState, useTransition } from "react";
 import { returnModelYearReport, submitAssessment } from "../actions";
 import { getNormalizedComment } from "@/app/lib/utils/comment";
-import { CommentBox } from "@/app/lib/components/inputs/CommentBox";
+import { Textarea } from "@/app/lib/components/inputs/Textarea";
 
 export const AnalystActions = (props: {
   myrId: number;
@@ -80,9 +80,9 @@ export const AnalystActions = (props: {
     return (
       <div>
         {error && <p className="text-red-600">{error}</p>}
-        <CommentBox
-          comment={comment}
-          setComment={setComment}
+        <Textarea
+          value={comment}
+          onChange={setComment}
           disabled={isPending}
         />
         <Button

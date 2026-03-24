@@ -6,7 +6,7 @@ import { ReassessmentStatus } from "@/prisma/generated/enums";
 import { useRouter } from "next/navigation";
 import { useCallback, useState, useTransition } from "react";
 import { deleteReassessment, submitReassessment } from "../actions";
-import { CommentBox } from "@/app/lib/components/inputs/CommentBox";
+import { Textarea } from "@/app/lib/components/inputs/Textarea";
 import { getNormalizedComment } from "@/app/lib/utils/comment";
 
 export const ReassessmentAnalystActions = (props: {
@@ -79,9 +79,9 @@ export const ReassessmentAnalystActions = (props: {
   return (
     <div className="space-y-2">
       {error && <p className="text-red-600">{error}</p>}
-      <CommentBox
-        comment={comment}
-        setComment={setComment}
+      <Textarea
+        value={comment}
+        onChange={setComment}
         disabled={isPending}
       />
       <Button onClick={handleDelete} disabled={isPending}>
