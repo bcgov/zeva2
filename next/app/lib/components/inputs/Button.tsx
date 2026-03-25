@@ -61,11 +61,19 @@ export const Button: FC<IButtonProps> = ({
       {...rest}
     >
       {icon && iconPosition === "left" && (
-        <span className={iconSizeClass[size]}>{icon}</span>
+        <span
+          className={`inline-flex shrink-0 items-center justify-center leading-none ${iconSizeClass[size]}`}
+        >
+          {icon}
+        </span>
       )}
       {children}
       {icon && iconPosition === "right" && (
-        <span className={iconSizeClass[size]}>{icon}</span>
+        <span
+          className={`inline-flex shrink-0 items-center justify-center leading-none ${iconSizeClass[size]}`}
+        >
+          {icon}
+        </span>
       )}
     </button>
   );
