@@ -42,6 +42,10 @@ export const Navbar: React.FC<{
     return params;
   };
 
+  const isPathUnderRoute = (route: string) => {
+    return pathname === route || pathname.startsWith(route + "/");
+  };
+
   const [activeLabel, setActiveLabel] = React.useState<string | undefined>(
     undefined,
   );
@@ -75,6 +79,12 @@ export const Navbar: React.FC<{
             }),
           };
         }
+        if (isPathUnderRoute(item.route)) {
+          return {
+            label,
+            menu,
+          };
+        }
       }
     }
     return {};
@@ -83,7 +93,7 @@ export const Navbar: React.FC<{
   useEffect(() => {
     const { label, menu } = findMenuMatchingPathname(subItems);
     setActiveLabel(
-      label ?? mainItems.find((item) => checkRoute(item.route))?.label,
+      label ?? mainItems.find((item) => isPathUnderRoute(item.route))?.label,
     );
     setActiveSubMenu(menu);
   }, [pathname, mainItems, subItems]);
@@ -117,20 +127,31 @@ export const Navbar: React.FC<{
 
       {activeSubMenu && (
         <Row className="m-2 gap-2 border-b border-gray-400">
-          {activeSubMenu.map((item, index) => (
-            <Link
-              key={index}
-              className={
-                "px-4 py-2.5 text-sm -mb-px rounded-t" +
-                (checkRoute(item.route)
-                  ? " border-t border-l border-r border-gray-400 border-b-white bg-white text-black"
-                  : " border-t border-l border-r border-gray-300 border-b-gray-400 text-[#255A90] hover:bg-[#F7F9FC]")
-              }
-              href={item.route}
-            >
-              {item.label}
-            </Link>
-          ))}
+          {activeSubMenu.map((item, index) => {
+            const bestMatch = activeSubMenu
+              .filter(
+                (subItem) =>
+                  checkRoute(subItem.route) || isPathUnderRoute(subItem.route),
+              )
+              .sort((a, b) => b.route.length - a.route.length)[0];
+
+            const isActive = bestMatch?.route === item.route;
+
+            return (
+              <Link
+                key={index}
+                className={
+                  "px-4 py-2.5 text-sm -mb-px rounded-t" +
+                  (isActive
+                    ? " border-t border-l border-r border-gray-400 border-b-white bg-white text-black"
+                    : " border-t border-l border-r border-gray-300 border-b-gray-400 text-[#255A90] hover:bg-[#F7F9FC]")
+                }
+                href={item.route}
+              >
+                {item.label}
+              </Link>
+            );
+          })}
         </Row>
       )}
     </>

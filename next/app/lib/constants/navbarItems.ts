@@ -21,7 +21,7 @@ export const navbarMainItems: MenuItem[] = [
   },
   {
     label: "Credit Transactions",
-    route: Routes.CreditApplication,
+    route: Routes.CreditAgreements,
     roles: govRoles,
   },
   {
