@@ -8,7 +8,7 @@ import {
   submitSupplementaryToGovernment,
 } from "../actions";
 import { getNormalizedComment } from "@/app/lib/utils/comment";
-import { CommentBox } from "@/app/lib/components/inputs/CommentBox";
+import { Textarea } from "@/app/lib/components/inputs/Textarea";
 import { Routes } from "@/app/lib/constants";
 import { ModelYearReportStatus } from "@/prisma/generated/enums";
 
@@ -82,9 +82,9 @@ export const SupplementarySupplierActions = (props: {
     return (
       <div className="space-y-2">
         {error && <p className="text-red-600">{error}</p>}
-        <CommentBox
-          comment={comment}
-          setComment={setComment}
+        <Textarea
+          value={comment}
+          onChange={setComment}
           disabled={isPending}
         />
         <Button variant="secondary" onClick={handleDelete} disabled={isPending}>

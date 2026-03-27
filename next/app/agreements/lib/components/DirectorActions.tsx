@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { useCallback, useState, useTransition } from "react";
 import { issueAgreement, returnToAnalyst } from "../actions";
 import { getNormalizedComment } from "@/app/lib/utils/comment";
-import { CommentBox } from "@/app/lib/components/inputs/CommentBox";
+import { Textarea } from "@/app/lib/components/inputs/Textarea";
 import { Routes } from "@/app/lib/constants";
 
 export const DirectorActions = (props: {
@@ -66,9 +66,9 @@ export const DirectorActions = (props: {
     <>
       <div className="mt-4">
         <p className="py-1 font-semibold text-primaryBlue">Optional Comment</p>
-        <CommentBox
-          comment={comment}
-          setComment={setComment}
+        <Textarea
+          value={comment}
+          onChange={setComment}
           disabled={isPending}
         />
       </div>

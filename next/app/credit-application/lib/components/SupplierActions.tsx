@@ -18,7 +18,7 @@ import {
 } from "../actions";
 import { getNormalizedComment } from "@/app/lib/utils/comment";
 import { Routes } from "@/app/lib/constants";
-import { CommentBox } from "@/app/lib/components/inputs/CommentBox";
+import { Textarea } from "@/app/lib/components/inputs/Textarea";
 import { getModelYearEnumsToStringsMap } from "@/app/lib/utils/enumMaps";
 import { ErrorsTemplate } from "../constants";
 import { downloadBuffer } from "@/app/lib/utils/download";
@@ -117,9 +117,9 @@ export const SupplierActions = (props: {
     return (
       <>
         {error && <p className="text-red-600">{error}</p>}
-        <CommentBox
-          comment={comment}
-          setComment={setComment}
+        <Textarea
+          value={comment}
+          onChange={setComment}
           disabled={isPending}
         />
         <Button variant="danger" onClick={handleDelete} disabled={isPending}>

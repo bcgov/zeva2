@@ -1,7 +1,7 @@
 "use client";
 
 import { Button } from "@/app/lib/components";
-import { CommentBox } from "@/app/lib/components/inputs/CommentBox";
+import { Textarea } from "@/app/lib/components/inputs/Textarea";
 import { useRouter } from "next/navigation";
 import { useCallback, useState, useTransition } from "react";
 import { deleteTransfer, rescindTransfer, submitTransfer } from "../actions";
@@ -74,9 +74,9 @@ export const TransferFromActions = (props: {
       return (
         <div className="space-y-2">
           {error && <p className="text-red-600">{error}</p>}
-          <CommentBox
-            comment={comment}
-            setComment={setComment}
+          <Textarea
+            value={comment}
+            onChange={setComment}
             disabled={isPending}
           />
           <Button variant="danger" onClick={handleDelete} disabled={isPending}>
@@ -102,9 +102,9 @@ export const TransferFromActions = (props: {
       return (
         <div className="space-y-2">
           {error && <p className="text-red-600">{error}</p>}
-          <CommentBox
-            comment={comment}
-            setComment={setComment}
+          <Textarea
+            value={comment}
+            onChange={setComment}
             disabled={isPending}
           />
           <Button
