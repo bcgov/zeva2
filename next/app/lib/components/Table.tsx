@@ -78,6 +78,15 @@ export const Table = <T extends ZevaObject>({
         newParams.set(param, paramValue);
       }
     });
+    
+    const currentFilters = searchParams.get("filters");
+    if (currentFilters) {
+      const filtersObject = getObject(currentFilters);
+      if (filtersObject.isActive) {
+        newParams.set("filters", getString({ isActive: filtersObject.isActive }));
+      }
+    }
+    
     replaceUrl(newParams);
   }, [paramsToPreserve, searchParams, replaceUrl]);
 
