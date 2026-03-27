@@ -18,6 +18,8 @@ import { RoleSelector } from "./RoleSelector";
 import { FormChangeWarning } from "./FormChangeWarning";
 import { useNavigationGuard } from "next-navigation-guard";
 import { Modal } from "@/app/lib/components/Modal";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faArrowLeft } from "@fortawesome/free-solid-svg-icons";
 
 export const UserForm = ({
   user,
@@ -321,26 +323,31 @@ export const UserForm = ({
           disableSecondaryButton={false}
         />
 
-        <div className="flex items-center justify-end gap-4 border-t border-dividerMedium/30 pt-4">
+        <div className="flex items-center justify-between border-t border-dividerMedium/30 pt-4">
           <Button
             type="button"
-            className="rounded-md border border-dividerMedium bg-white px-4 py-2 text-sm font-medium text-primaryText hover:border-primaryBlue hover:text-primaryBlue"
+            variant="secondary"
+            icon={<FontAwesomeIcon icon={faArrowLeft} className="h-3.5 w-3.5" />}
+            iconPosition="left"
+            className="rounded-md border-primaryBlue bg-white font-semibold text-primaryText hover:border-primaryBlue hover:text-primaryText active:text-primaryText"
             onClick={() => router.back()}
             disabled={isPending}
           >
             Back
           </Button>
-          <Button
-            type="submit"
-            onClick={() => {
-              setGuardEnabled(false);
-              setSubmitClicked(true);
-            }}
-            disabled={isPending}
-            className="rounded-md bg-primaryBlue px-5 py-2 text-sm font-semibold text-textOnPrimary shadow-sm hover:bg-primaryBlueHover disabled:cursor-not-allowed disabled:bg-disabledBG disabled:text-disabledText"
-          >
-            {isPending ? "..." : user ? "Update" : "Create"}
-          </Button>
+          <div className="flex items-center gap-4">
+            <Button
+              type="submit"
+              onClick={() => {
+                setGuardEnabled(false);
+                setSubmitClicked(true);
+              }}
+              disabled={isPending}
+              className="rounded-md bg-primaryBlue px-5 py-2 text-sm font-semibold text-textOnPrimary shadow-sm hover:bg-primaryBlueHover disabled:cursor-not-allowed disabled:bg-disabledBG disabled:text-disabledText"
+            >
+              {isPending ? "..." : user ? "Update" : "Create"}
+            </Button>
+          </div>
         </div>
       </div>
     </div>
