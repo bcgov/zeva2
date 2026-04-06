@@ -62,7 +62,7 @@ services:
       - END_OF_COMPLIANCE_YEAR=09-30T23:59:59.999
       - CTHUB_URL=http://host.docker.internal:8000/api
       - CTHUB_TOKEN
-      - ZEVA2_VERSION=${ZEVA2_VERSION:-dev}
+      - ZEVA2_VERSION
     depends_on:
       db:
         condition: service_healthy
