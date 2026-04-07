@@ -4,7 +4,7 @@ import {
   LegacySupplementarySerialized,
 } from "./constants";
 import { ModelYearReportStatus } from "@/prisma/generated/enums";
-import { mapOfStatusToSupplierStatus } from "@/app/model-year-report/lib/constants";
+import { mapOfStatusToSupplierStatus } from "../model-year-reports/constants";
 
 export const getSerializedLegacySupps = (
   supps: LegacySupplementary[],

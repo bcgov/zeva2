@@ -1,5 +1,5 @@
 import { getOrgsMap } from "@/app/lib/data/orgs";
-import { AssessmentForm } from "@/app/model-year-report/lib/components/AssessmentForm";
+import { AssessmentForm } from "../../model-year-reports/components/AssessmentForm";
 import { getUserInfo } from "@/auth";
 
 export const NewPage = async () => {

@@ -1,10 +1,10 @@
 import { getUserInfo } from "@/auth";
-import { ModelYearReportForm } from "@/app/model-year-report/lib/components/ModelYearReportForm";
-import { getSupplementaryReport } from "@/app/model-year-report/lib/data";
+import { ModelYearReportForm } from "@/app/compliance-reporting/lib/model-year-reports/components/ModelYearReportForm";
+import { getSupplementaryReport } from "@/app/compliance-reporting/lib/model-year-reports/data";
 import { getPresignedGetObjectUrl } from "@/app/lib/services/s3";
 import { ModelYearReportStatus } from "@/prisma/generated/enums";
 import { AttachmentDownload } from "@/app/lib/constants/attachment";
-import { getSuppAttachmentDownloadUrls } from "@/app/model-year-report/lib/actions";
+import { getSuppAttachmentDownloadUrls } from "@/app/compliance-reporting/lib/model-year-reports/actions";
 
 const Page = async (props: {
   params: Promise<{ id: string; supplementaryId: string }>;

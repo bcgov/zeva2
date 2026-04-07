@@ -1,5 +1,5 @@
-import { Reassessment } from "@/app/model-year-report/lib/components/Reassessment";
-import { getReassessment } from "@/app/model-year-report/lib/data";
+import { Reassessment } from "@/app/compliance-reporting/lib/model-year-reports/components/Reassessment";
+import { getReassessment } from "@/app/compliance-reporting/lib/model-year-reports/data";
 
 const Page = async (props: {
   params: Promise<{ id: string; reassessmentId: string }>;

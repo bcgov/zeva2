@@ -1,7 +1,7 @@
 // for creating a non-legacy supplementary reassessment
 import { getUserInfo } from "@/auth";
-import { AssessmentForm } from "@/app/model-year-report/lib/components/AssessmentForm";
-import { getSupplementaryReport } from "@/app/model-year-report/lib/data";
+import { AssessmentForm } from "@/app/compliance-reporting/lib/model-year-reports/components/AssessmentForm";
+import { getSupplementaryReport } from "@/app/compliance-reporting/lib/model-year-reports/data";
 import { ModelYearReportStatus } from "@/prisma/generated/enums";
 
 const Page = async (props: {

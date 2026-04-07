@@ -1,5 +1,5 @@
-import { getSupplementaryReport } from "@/app/model-year-report/lib/data";
-import { Supplementary } from "@/app/model-year-report/lib/components/Supplementary";
+import { getSupplementaryReport } from "@/app/compliance-reporting/lib/model-year-reports/data";
+import { Supplementary } from "@/app/compliance-reporting/lib/model-year-reports/components/Supplementary";
 
 const Page = async (props: {
   params: Promise<{ id: string; supplementaryId: string }>;

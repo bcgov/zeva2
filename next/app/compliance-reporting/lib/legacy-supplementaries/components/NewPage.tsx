@@ -1,6 +1,6 @@
 import { getUserInfo } from "@/auth";
-import { ModelYearReportForm } from "@/app/model-year-report/lib/components/ModelYearReportForm";
-import { getSupplierOwnData } from "@/app/model-year-report/lib/data";
+import { ModelYearReportForm } from "../../model-year-reports/components/ModelYearReportForm";
+import { getSupplierOwnData } from "../../model-year-reports/data";
 
 export const NewPage = async () => {
   const { userIsGov } = await getUserInfo();

@@ -1,10 +1,10 @@
 import { getUserInfo } from "@/auth";
-import { getSupplementaryReport } from "@/app/model-year-report/lib/data";
+import { getSupplementaryReport } from "../../model-year-reports/data";
 import { getPresignedGetObjectUrl } from "@/app/lib/services/s3";
-import { ModelYearReportForm } from "@/app/model-year-report/lib/components/ModelYearReportForm";
+import { ModelYearReportForm } from "../../model-year-reports/components/ModelYearReportForm";
 import { ModelYearReportStatus } from "@/prisma/generated/enums";
 import { AttachmentDownload } from "@/app/lib/constants/attachment";
-import { getSuppAttachmentDownloadUrls } from "@/app/model-year-report/lib/actions";
+import { getSuppAttachmentDownloadUrls } from "../../model-year-reports/actions";
 
 export const EditPage = async (props: { id: string }) => {
   const suppId = Number.parseInt(props.id, 10);

@@ -3,10 +3,10 @@ import {
   getModelYearReport,
   getSupplierOwnData,
   getSupplierOwnVehicleStats,
-} from "../../lib/data";
-import { ModelYearReportForm } from "../../lib/components/ModelYearReportForm";
+} from "@/app/compliance-reporting/lib/model-year-reports/data";
+import { ModelYearReportForm } from "@/app/compliance-reporting/lib/model-year-reports/components/ModelYearReportForm";
 import { ModelYearReportStatus } from "@/prisma/generated/enums";
-import { getDataForSupplementary } from "../../lib/services";
+import { getDataForSupplementary } from "@/app/compliance-reporting/lib/model-year-reports/services";
 
 const Page = async (props: { params: Promise<{ id: string }> }) => {
   const { userIsGov } = await getUserInfo();

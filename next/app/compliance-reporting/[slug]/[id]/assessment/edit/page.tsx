@@ -1,6 +1,6 @@
 import { getPresignedGetObjectUrl } from "@/app/lib/services/s3";
-import { AssessmentForm } from "@/app/model-year-report/lib/components/AssessmentForm";
-import { getModelYearReport } from "@/app/model-year-report/lib/data";
+import { AssessmentForm } from "@/app/compliance-reporting/lib/model-year-reports/components/AssessmentForm";
+import { getModelYearReport } from "@/app/compliance-reporting/lib/model-year-reports/data";
 import { getUserInfo } from "@/auth";
 import { ModelYearReportStatus } from "@/prisma/generated/enums";
 
