@@ -7,7 +7,7 @@ import {
   afterEach,
 } from "@jest/globals";
 import { Role, AddressType } from "@/prisma/generated/enums";
-import { saveOrganization } from "../action";
+import { saveOrganization } from "../actions";
 import { prisma } from "@/lib/prisma";
 import {
   baseGovUserInfo,

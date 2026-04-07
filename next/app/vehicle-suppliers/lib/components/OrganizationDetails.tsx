@@ -10,11 +10,14 @@ import {
   getVehicleClassEnumsToStringsMap,
   getRoleEnumsToStringsMap,
 } from "@/app/lib/utils/enumMaps";
+import { useRouter } from "next/navigation";
+import { Routes } from "@/app/lib/constants";
 
 type OrganizationUser = {
   id: number;
   firstName: string;
   lastName: string;
+  isActive: boolean;
   roles: Role[];
 };
 
@@ -49,10 +52,11 @@ const organizationUsers = (users: OrganizationUser[]) => {
       {users.map((user) => (
         <li key={user.id}>
           <a
-            href={`/users/${user.id}`}
+            href={`${Routes.Administration}/${user.id}`}
             className="text-primaryBlue hover:underline"
           >
-            {user.firstName} {user.lastName} [
+            {user.firstName} {user.lastName} -{" "}
+            {user.isActive ? "Active" : "Inactive"} [
             {user.roles.map((role) => rolesMap[role]).join(" | ")}]
           </a>
         </li>
@@ -68,6 +72,7 @@ type Volume = {
 };
 
 const OrganizationDetails = (props: {
+  userIsGov: boolean;
   organizationName: string;
   shortName?: string;
   isActive: boolean;
@@ -79,6 +84,7 @@ const OrganizationDetails = (props: {
   users: OrganizationUser[];
   canEdit: boolean;
 }) => {
+  const router = useRouter();
   const [mode, setMode] = useState<"view" | "edit">("view");
 
   if (mode === "edit") {
@@ -128,10 +134,22 @@ const OrganizationDetails = (props: {
         </div>
       </div>
 
-      <div>
-        <h3 className="font-semibold mr-2">User(s):</h3>
-        {organizationUsers(props.users)}
-      </div>
+      {props.userIsGov && (
+        <div>
+          <div className="flex flex-row gap-8">
+            <h3 className="font-semibold mr-2">User(s):</h3>
+            {props.canEdit && (
+              <Button
+                variant="secondary"
+                onClick={() => router.push(`${Routes.Administration}/new`)}
+              >
+                Add User
+              </Button>
+            )}
+          </div>
+          {organizationUsers(props.users)}
+        </div>
+      )}
 
       <div>
         <span className="font-semibold mr-2">Class:</span>

@@ -3,11 +3,7 @@
 import { useCallback, useMemo } from "react";
 import { ColumnDef, createColumnHelper } from "@tanstack/react-table";
 import { ClientSideTable, Button } from "@/app/lib/components";
-import {
-  GovUserCategory,
-  SupplierUserCategory,
-  UserWithOrgName,
-} from "../data";
+import { UserWithOrgName } from "../data";
 import { getRoleEnumsToStringsMap } from "@/app/lib/utils/enumMaps";
 import { useRouter } from "next/navigation";
 import { Routes } from "@/app/lib/constants";
@@ -18,7 +14,7 @@ import { Idp } from "@/prisma/generated/enums";
 export interface UserTableProps {
   users: UserWithOrgName[];
   userIsGov: boolean;
-  category: GovUserCategory | SupplierUserCategory;
+  category: "bceid" | "idir" | "inactive";
   isAdmin?: boolean;
 }
 
@@ -29,9 +25,12 @@ export const UserTable = ({
   isAdmin,
 }: UserTableProps) => {
   const router = useRouter();
-  const navigationAction = useCallback((id: number) => {
-    router.push(`${Routes.Users}/${id}`);
-  }, []);
+  const navigationAction = useCallback(
+    (id: number) => {
+      router.push(`${Routes.Administration}/${category}/${id}`);
+    },
+    [category],
+  );
   const columnHelper = createColumnHelper<UserWithOrgName>();
 
   const rolesMap = useMemo(() => {
@@ -144,7 +143,7 @@ export const UserTable = ({
             <Button
               variant="primary"
               size="regular"
-              onClick={() => router.push(`${Routes.Users}/new`)}
+              onClick={() => router.push(`${Routes.Administration}/new`)}
             >
               <FontAwesomeIcon icon={faPlus} className="mr-2" />
               Create new user

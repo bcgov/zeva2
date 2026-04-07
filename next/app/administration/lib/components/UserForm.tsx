@@ -152,7 +152,21 @@ export const UserForm = ({
         if (guardEnabled) {
           navGuard.accept();
         } else {
-          router.push(`${Routes.Users}/${userId}`);
+          if (userOrgId === govOrgId) {
+            let slug;
+            if (!payload.isActive) {
+              slug = "inactive";
+            } else if (
+              payload.organizationId === Number.parseInt(govOrgId, 10)
+            ) {
+              slug = "idir";
+            } else {
+              slug = "bceid";
+            }
+            router.push(`${Routes.Administration}/${slug}/${userId}`);
+          } else {
+            router.push(`${Routes.Administration}/${userId}`);
+          }
         }
       } catch (e) {
         if (e instanceof Error) {
@@ -165,7 +179,7 @@ export const UserForm = ({
         }
       }
     });
-  }, [user, form, roles, guardEnabled, navGuard, govOrgId]);
+  }, [user, form, roles, guardEnabled, navGuard, userOrgId, govOrgId]);
 
   // Allow deferred submit after turning off guard
   useEffect(() => {

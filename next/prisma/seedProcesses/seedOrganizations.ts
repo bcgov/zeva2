@@ -1,6 +1,6 @@
 import { TransactionClient } from "@/types/prisma";
 import { prismaOld } from "@/lib/prismaOld";
-import { isEmptyAddress } from "@/app/organizations/lib/utils";
+import { isEmptyAddress } from "@/app/vehicle-suppliers/lib/utils";
 import { cleanupStringData } from "@/lib/utils/dataCleanup";
 import { AddressType, SupplierClass } from "../generated/enums";
 

@@ -8,43 +8,27 @@ export type UserWithOrgName = Omit<UserModel, "idpSub"> & {
   organization: { name: string };
 };
 
-export type GovUserCategory = "bceid" | "idir" | "inactive";
-
-export type SupplierUserCategory = "active" | "inactive";
-
 export const fetchUsers = async (
-  category: GovUserCategory | SupplierUserCategory,
+  category: "bceid" | "idir" | "inactive",
 ): Promise<UserWithOrgName[]> => {
+  const { userIsGov } = await getUserInfo();
   const isAdmin = await userIsAdmin();
-  if (!isAdmin) {
+  if (!userIsGov || !isAdmin) {
     return [];
   }
-  const { userIsGov, userOrgId } = await getUserInfo();
   const whereClause: UserWhereInput = {};
-  if (userIsGov) {
-    switch (category) {
-      case "bceid":
-        whereClause.idp = Idp.BCEID_BUSINESS;
-        whereClause.isActive = true;
-        break;
-      case "idir":
-        whereClause.idp = Idp.AZURE_IDIR;
-        whereClause.isActive = true;
-        break;
-      case "inactive":
-        whereClause.isActive = false;
-        break;
-    }
-  } else {
-    whereClause.organizationId = userOrgId;
-    switch (category) {
-      case "active":
-        whereClause.isActive = true;
-        break;
-      case "inactive":
-        whereClause.isActive = false;
-        break;
-    }
+  switch (category) {
+    case "bceid":
+      whereClause.idp = Idp.BCEID_BUSINESS;
+      whereClause.isActive = true;
+      break;
+    case "idir":
+      whereClause.idp = Idp.AZURE_IDIR;
+      whereClause.isActive = true;
+      break;
+    case "inactive":
+      whereClause.isActive = false;
+      break;
   }
   return await prisma.user.findMany({
     where: whereClause,

@@ -6,7 +6,7 @@ import {
 import { OrganizationAddressSparse } from "../../data";
 import { UserInfo } from "@/auth";
 import { expect, jest } from "@jest/globals";
-import { OrganizationPayload } from "../../action";
+import { OrganizationPayload } from "../../actions";
 import { prisma } from "@/lib/prisma";
 
 export const baseGovUserInfo = {

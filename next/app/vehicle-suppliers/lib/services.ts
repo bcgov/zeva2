@@ -36,9 +36,7 @@ export const getOrganizationDetails = async (id: number) => {
           firstName: true,
           lastName: true,
           roles: true,
-        },
-        where: {
-          isActive: true, // Only get active users
+          isActive: true,
         },
       },
       SupplyVolume: {

@@ -29,6 +29,7 @@ export const IndividualPage = async (props: { orgId: string }) => {
 
   return (
     <OrganizationDetails
+      userIsGov={userIsGov}
       organizationName={organization.name}
       shortName={organization.shortName ?? undefined}
       isActive={organization.isActive}

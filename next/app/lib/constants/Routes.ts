@@ -22,4 +22,5 @@ export enum Routes {
 
   VehicleSuppliers = "/vehicle-suppliers",
   Administration = "/administration",
+  Icbc = "/icbc",
 }

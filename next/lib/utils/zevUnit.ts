@@ -17,7 +17,7 @@ import {
   isZevClass,
 } from "@/app/lib/utils/typeGuards";
 import { specialComplianceRatios } from "@/app/lib/constants/complianceRatio";
-import { supplierZevClasses } from "@/app/model-year-report/lib/constants";
+import { supplierZevClasses } from "@/app/compliance-reporting/lib/model-year-reports/constants";
 
 // both ZevUnitTransactions and ZevUnitEndingBalances can be of type ZevUnitRecord;
 // a ZevUnitEndingBalance will need to be modified slightly

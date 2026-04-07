@@ -1,6 +1,6 @@
 import { jest, describe, it, expect, beforeEach } from "@jest/globals";
 import { Role, AddressType } from "@/prisma/generated/enums";
-import { createOrganization } from "../action";
+import { createOrganization } from "../actions";
 import { prisma } from "@/lib/prisma";
 import {
   baseGovUserInfo,
