@@ -3,8 +3,6 @@ import { LoadingSkeleton } from "../lib/components/skeletons";
 import { getPageParams, pageStringParams } from "../lib/utils/nextPage";
 import { getUserInfo } from "@/auth";
 import { OrganizationList } from "./lib/components/OrganizationList";
-import { Button } from "@/app/lib/components";
-import { Routes } from "@/app/lib/constants";
 import { Role } from "@/prisma/generated/enums";
 
 const Page = async (props: { searchParams?: Promise<pageStringParams> }) => {
@@ -13,17 +11,12 @@ const Page = async (props: { searchParams?: Promise<pageStringParams> }) => {
   const { userIsGov, userRoles } = await getUserInfo();
 
   if (!userIsGov) {
-    return (
-      <div className="p-6 font-semibold">
-        You do not have access to this page.
-      </div>
-    );
+    return null;
   }
-
   const canCreateNewOrg = userRoles.includes(Role.ADMINISTRATOR);
 
   return (
-    <Suspense key={Date.now()} fallback={<LoadingSkeleton />}>
+    <Suspense fallback={<LoadingSkeleton />}>
       <OrganizationList
         page={page}
         pageSize={pageSize}

@@ -1,3 +1,5 @@
+"use server"
+
 import { getUserInfo } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { AddressType } from "@/prisma/generated/enums";

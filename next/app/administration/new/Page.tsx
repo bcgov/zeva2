@@ -1,5 +1,5 @@
 import { getUserInfo } from "@/auth";
-import { UserForm } from "../lib/components/UserForm";
+import { UserForm } from "@/app/administration/lib/components/UserForm";
 import { getOrgsMap } from "@/app/lib/data/orgs";
 import { getGovOrgId } from "@/app/organizations/lib/data";
 

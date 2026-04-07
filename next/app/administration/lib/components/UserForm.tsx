@@ -180,7 +180,7 @@ export const UserForm = ({
       <div className="w-full px-2 py-4 space-y-4 sm:px-4 lg:px-8 xl:px-12">
         <div className="space-y-2">
           <h1 className="text-2xl font-semibold text-primaryText">
-            Government User Management
+            User Management
           </h1>
           <p className="text-sm text-secondaryText">
             Manage user account details, status, and roles.

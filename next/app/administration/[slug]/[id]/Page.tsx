@@ -1,19 +1,20 @@
 import { getUserInfo } from "@/auth";
-import { getUser } from "../lib/data";
-import { UserForm } from "../lib/components/UserForm";
+import { getUser } from "../../lib/data";
+import { UserForm } from "../../lib/components/UserForm";
 import { getGovOrgId } from "@/app/organizations/lib/data";
 
-const Page = async (props: { params: Promise<{ id: string }> }) => {
+const Page = async (props: { params: Promise<{ slug: string, id: string }> }) => {
+  const { userIsGov, userOrgId } = await getUserInfo();
+  if (!userIsGov) {
+    return null;
+  }
   const args = await props.params;
   const id = Number.parseInt(args.id, 10);
   const user = await getUser(id);
   if (!user) {
-    return <div>User not found</div>;
+    return null;
   }
-
-  const { userOrgId } = await getUserInfo();
   const govOrgId = await getGovOrgId();
-
   return (
     <div className="w-full px-6 py-6 lg:px-10 xl:px-14">
       <UserForm

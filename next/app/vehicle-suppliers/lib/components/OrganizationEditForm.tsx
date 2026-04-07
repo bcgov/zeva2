@@ -1,7 +1,7 @@
 "use client";
 import { FormEvent, useCallback, useState } from "react";
 import { Button } from "@/app/lib/components";
-import { OrganizationPayload } from "../action";
+import { createOrganization, OrganizationPayload, saveOrganization } from "../actions";
 import AddressEditForm from "./AddressEditForm";
 import { OrganizationAddressSparse } from "../data";
 import { cleanupAddressData } from "../utils";
@@ -12,6 +12,7 @@ const addressFrameClass = "w-1/2 border border-borderGrey p-2";
 const addressHeadingClass = "text-lg font-semibold text-primaryBlue pb-4";
 
 const OrganizationEditForm = (props: {
+  orgId?: number;
   formHeading: string;
   submitButtonText: string;
   organizationName?: string;
@@ -19,7 +20,6 @@ const OrganizationEditForm = (props: {
   isActive: boolean;
   serviceAddress?: OrganizationAddressSparse;
   recordsAddress?: OrganizationAddressSparse;
-  upsertData: (data: OrganizationPayload) => Promise<void>;
   handleCancel: () => void;
 }) => {
   const [organizationName, setOrganizationName] = useState(
@@ -69,10 +69,14 @@ const OrganizationEditForm = (props: {
         serviceAddress: cleanupAddressData(serviceAddress),
         recordsAddress: cleanupAddressData(recordsAddress),
       };
-      await props.upsertData(data);
+      if (props.orgId) {
+        await saveOrganization(props.orgId, data);
+      } else {
+        await createOrganization(data);
+      }
       window.location.reload(); // Reload to reflect changes if not redirected
     },
-    [organizationName, shortName, isActive, serviceAddress, recordsAddress],
+    [props.orgId, organizationName, shortName, isActive, serviceAddress, recordsAddress],
   );
 
   return (

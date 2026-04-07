@@ -4,7 +4,6 @@ import { ModelYear, Role, VehicleClass } from "@/prisma/generated/enums";
 import { Button } from "@/app/lib/components";
 import { useState } from "react";
 import OrganizationEditForm from "./OrganizationEditForm";
-import { OrganizationPayload } from "../action";
 import { OrganizationAddressSparse } from "../data";
 import {
   getModelYearEnumsToStringsMap,
@@ -78,7 +77,7 @@ const OrganizationDetails = (props: {
   saleVolumes: Volume[];
   supplyVolumes: Volume[];
   users: OrganizationUser[];
-  update?: (data: OrganizationPayload) => Promise<void>;
+  canEdit: boolean;
 }) => {
   const [mode, setMode] = useState<"view" | "edit">("view");
 
@@ -92,7 +91,6 @@ const OrganizationDetails = (props: {
         isActive={props.isActive}
         serviceAddress={props.serviceAddress}
         recordsAddress={props.recordsAddress}
-        upsertData={props.update ?? (() => Promise.resolve())}
         handleCancel={() => setMode("view")}
       />
     );
@@ -107,7 +105,7 @@ const OrganizationDetails = (props: {
         <h2 className="text-xl font-semibold text-primaryBlue py-1">
           {props.organizationName}
         </h2>
-        {props.update && (
+        {props.canEdit && (
           <Button variant="secondary" onClick={() => setMode("edit")}>
             Edit
           </Button>
