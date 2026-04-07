@@ -1,7 +1,7 @@
 import { getUserInfo } from "@/auth";
 import { UserForm } from "@/app/administration/lib/components/UserForm";
 import { getOrgsMap } from "@/app/lib/data/orgs";
-import { getGovOrgId } from "@/app/organizations/lib/data";
+import { getGovOrgId } from "@/app/vehicle-suppliers/lib/data";
 
 const Page = async () => {
   const { userIsGov, userOrgId } = await getUserInfo();
