@@ -18,6 +18,7 @@ export type VehicleSparse = Omit<
 // page is 1-based
 // currently, this function is not used with SSR, so it is important to select only the data you need!
 export const getVehicles = async (
+  type: "active" | "inactive",
   page: number,
   pageSize: number,
   filters: { [key: string]: string },
@@ -53,6 +54,7 @@ export const getVehicles = async (
   } else {
     where.organizationId = userOrgId;
   }
+  where.isActive = type === "active";
   return await prisma.$transaction([
     prisma.vehicle.findMany({
       skip,

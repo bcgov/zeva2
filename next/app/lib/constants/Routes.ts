@@ -1,5 +1,3 @@
-export const MY_ORGANIZATION = "mine";
-
 export enum Routes {
   Home = "/dashboard",
 
@@ -16,9 +14,12 @@ export enum Routes {
   CreditTransfers = "/zev-unit-activities/credit-transfers",
   PenaltyCredits = "/zev-unit-activities/penalty-credits",
   ZevUnitTransactions = "/zev-unit-activities/zev-unit-transactions",
+
+  // zev models
+  ActiveZevModels = "/zev-models/active",
+  InactiveZevModels = "/zev-models/inactive",
+  NewZevModels = "zev-models/new",
   
-  VehicleSuppliers = "/organizations",
-  Administration = `/organizations/${MY_ORGANIZATION}`,
-  Vehicle = "/vehicle",
-  Users = "/users",
+  VehicleSuppliers = "/vehicle-suppliers",
+  Administration = "/administration",
 }

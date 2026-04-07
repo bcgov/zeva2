@@ -10,10 +10,10 @@ export type VehicleSparseSerialized = Omit<
   "numberOfUnits" | "isActive"
 > & {
   numberOfUnits: string | undefined;
-  isActive: string;
 };
 
 export const VehicleList = async (props: {
+  type: "active" | "inactive",
   page: number;
   pageSize: number;
   filters: Record<string, string>;
@@ -23,9 +23,14 @@ export const VehicleList = async (props: {
   const { userIsGov } = await getUserInfo();
   const navigationAction = async (id: number) => {
     "use server";
-    redirect(`${Routes.Vehicle}/${id}`);
+    if (props.type === "active") {
+      redirect(`${Routes.ActiveZevModels}/${id}`);
+    } else if (props.type === "inactive") {
+      redirect(`${Routes.InactiveZevModels}/${id}`);
+    }
   };
   const [vehicles, totalNumberOfVehicles] = await getVehicles(
+    props.type,
     props.page,
     props.pageSize,
     props.filters,
@@ -37,7 +42,6 @@ export const VehicleList = async (props: {
       return {
         ...vehicle,
         numberOfUnits: vehicle.numberOfUnits.toString(),
-        isActive: vehicle.isActive ? "Yes" : "No",
       };
     },
   );

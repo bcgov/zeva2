@@ -15,7 +15,6 @@ import {
   getStringsToVehicleStatusEnumsMap,
   getStringsToZevClassEnumsMap,
 } from "@/app/lib/utils/enumMaps";
-import { VehicleActiveFilter } from "@/app/lib/constants/filter";
 
 export const getWhereClause = (filters: {
   [key: string]: string;
@@ -58,15 +57,6 @@ export const getWhereClause = (filters: {
       result[key] = {
         in: getMatchingTerms(ZevType, value),
       };
-    } else if (key === VehicleActiveFilter.key) {
-      const newValue = value.toLowerCase().trim();
-      if (newValue === VehicleActiveFilter.activeValue) {
-        result[key] = true;
-      } else if (newValue === VehicleActiveFilter.inactiveValue) {
-        result[key] = false;
-      } else {
-        result.id = -1;
-      }
     } else if (key === "submittedCount" || key === "issuedCount") {
       result[key] = Number.parseInt(value, 10);
     }
@@ -94,7 +84,6 @@ export const getOrderByClause = (
         key === "zevClass" ||
         key === "modelYear" ||
         key === "zevType" ||
-        key === "isActive" ||
         key === "submittedCount" ||
         key === "issuedCount"
       ) {

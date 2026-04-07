@@ -2,16 +2,16 @@ import { ContentCard } from "@/app/lib/components";
 import { getUserInfo } from "@/auth";
 import { LoadingSkeleton } from "@/app/lib/components/skeletons";
 import { JSX, Suspense } from "react";
-import { VehicleHistories } from "../lib/components/VehicleHistories";
-import { VehicleDetails } from "../lib/components/VehicleDetails";
-import { getVehicle } from "../lib/data";
+import { VehicleHistories } from "@/app/zev-models/lib/components/VehicleHistories";
+import { VehicleDetails } from "../../lib/components/VehicleDetails";
+import { getVehicle } from "../../lib/data";
 import { Role } from "@/prisma/generated/enums";
-import { getAttachmentDownloadUrls } from "../lib/actions";
+import { getAttachmentDownloadUrls } from "@/app/zev-models/lib/actions";
 import { Attachments } from "@/app/lib/components/Attachments";
-import { SupplierActions } from "../lib/components/SupplierActions";
-import { AnalystActions } from "../lib/components/AnalystActions";
+import { SupplierActions } from "@/app/zev-models/lib/components/SupplierActions";
+import { AnalystActions } from "@/app/zev-models/lib/components/AnalystActions";
 
-const Page = async (props: { params: Promise<{ id: string }> }) => {
+const Page = async (props: { params: Promise<{ slug: string, id: string }> }) => {
   const { userIsGov, userRoles } = await getUserInfo();
   const args = await props.params;
   const id = Number.parseInt(args.id);

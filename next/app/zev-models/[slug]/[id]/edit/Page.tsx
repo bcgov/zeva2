@@ -1,12 +1,12 @@
 import { Suspense } from "react";
-import { getVehicle } from "../../lib/data";
-import { getAttachmentDownloadUrls } from "../../lib/actions";
+import { getVehicle } from "@/app/zev-models/lib/data";
+import { getAttachmentDownloadUrls } from "@/app/zev-models/lib/actions";
 import { AttachmentDownload } from "@/app/lib/constants/attachment";
-import { VehicleForm, VehicleFormData } from "../../lib/components/VehicleForm";
+import { VehicleForm, VehicleFormData } from "@/app/zev-models/lib/components/VehicleForm";
 import { getVehicleClassCodeEnumsToStringsMap } from "@/app/lib/utils/enumMaps";
 import { VehicleStatus } from "@/prisma/generated/enums";
 
-const Page = async (props: { params: Promise<{ id: string }> }) => {
+const Page = async (props: { params: Promise<{ slug: string, id: string }> }) => {
   const args = await props.params;
   const vehicleId = Number.parseInt(args.id, 10);
   const vehicle = await getVehicle(vehicleId);
