@@ -21,7 +21,7 @@ export const ListPage = async (props: { searchParams?: pageStringParams }) => {
       sorts={sorts}
       headerContent={
         !userIsGov ? (
-          <Link href={`${Routes.CreditApplication}/new`}>
+          <Link href={`${Routes.CreditApplications}/new`}>
             <Button variant="primary">Create a Credit Application</Button>
           </Link>
         ) : undefined

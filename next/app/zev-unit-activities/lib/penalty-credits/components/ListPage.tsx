@@ -21,7 +21,7 @@ export const ListPage = async (props: { searchParams?: pageStringParams }) => {
       sorts={sorts}
       headerContent={
         userIsGov && userRoles.includes(Role.ZEVA_IDIR_USER) ? (
-          <Link href={`${Routes.PenaltyCredit}/new`}>
+          <Link href={`${Routes.PenaltyCredits}/new`}>
             <Button variant="primary">Create New Penalty Credit</Button>
           </Link>
         ) : undefined

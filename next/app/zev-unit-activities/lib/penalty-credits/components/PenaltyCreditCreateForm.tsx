@@ -72,7 +72,7 @@ export const PenaltyCreditCreateForm = (props: {
         if (response.responseType === "error") {
           throw new Error(response.message);
         }
-        router.push(`${Routes.PenaltyCredit}/${response.data}`);
+        router.push(`${Routes.PenaltyCredits}/${response.data}`);
       } catch (e) {
         if (e instanceof Error) {
           setError(e.message);

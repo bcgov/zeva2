@@ -41,7 +41,7 @@ export const AnalystActions = (props: {
           if (newStatus === VehicleStatus.VALIDATED) {
             router.refresh();
           } else {
-            router.push(Routes.Vehicle);
+            router.push(Routes.InactiveZevModels);
           }
         }
       });

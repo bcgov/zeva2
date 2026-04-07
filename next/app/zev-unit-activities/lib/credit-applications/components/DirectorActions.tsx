@@ -21,7 +21,7 @@ export const DirectorActions = (props: {
   const handleViewValidated = useCallback(() => {
     startTransition(() => {
       router.push(
-        `${Routes.CreditApplication}/${props.id}/validated?readOnly=Y`,
+        `${Routes.CreditApplications}/${props.id}/validated?readOnly=Y`,
       );
     });
   }, [props.id, router]);
@@ -35,7 +35,7 @@ export const DirectorActions = (props: {
       if (response.responseType === "error") {
         setError(response.message);
       } else {
-        router.push(Routes.CreditApplication);
+        router.push(Routes.CreditApplications);
       }
     });
   }, [props.id, comment]);

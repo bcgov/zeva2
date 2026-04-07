@@ -67,19 +67,19 @@ export const TransactionAccordion = ({
   const getLink = useCallback(
     (referenceType: ReferenceType, referenceId: number) => {
       if (referenceType === ReferenceType.SUPPLY_CREDITS) {
-        return `${Routes.CreditApplication}/${referenceId}`;
+        return `${Routes.CreditApplications}/${referenceId}`;
       }
       if (referenceType === ReferenceType.TRANSFER) {
         return `${Routes.CreditTransfers}/${referenceId}`;
       }
       if (userIsGov && referenceType === ReferenceType.PENALTY_CREDITS) {
-        return `${Routes.PenaltyCredit}/${referenceId}`;
+        return `${Routes.PenaltyCredits}/${referenceId}`;
       }
       if (
         referenceType === ReferenceType.COMPLIANCE_RATIO_REDUCTION ||
         referenceType === ReferenceType.ASSESSMENT_ADJUSTMENT
       ) {
-        return `${Routes.ComplianceReporting}/${referenceId}`;
+        return `${Routes.ModelYearReports}/${referenceId}`;
       }
       if (referenceType === ReferenceType.AGREEMENT) {
         return `${Routes.CreditAgreements}/${referenceId}`;

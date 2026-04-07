@@ -153,7 +153,7 @@ export const CreditApplicationForm = (props: {
           throw new Error(response.message);
         }
         const applicationId = response.data;
-        router.push(`${Routes.CreditApplication}/${applicationId}`);
+        router.push(`${Routes.CreditApplications}/${applicationId}`);
       } catch (e) {
         if (e instanceof Error) {
           setError(e.message);

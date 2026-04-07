@@ -29,7 +29,7 @@ export const AnalystActions = (props: {
       if (response.responseType === "error") {
         setError(response.message);
       } else {
-        router.push(`${Routes.CreditApplication}/${props.id}/validated`);
+        router.push(`${Routes.CreditApplications}/${props.id}/validated`);
       }
     });
   }, [props.id]);
@@ -38,7 +38,7 @@ export const AnalystActions = (props: {
     (edit: boolean) => {
       startTransition(() => {
         router.push(
-          `${Routes.CreditApplication}/${props.id}/validated${edit ? "" : "?readOnly=Y"}`,
+          `${Routes.CreditApplications}/${props.id}/validated${edit ? "" : "?readOnly=Y"}`,
         );
       });
     },
@@ -68,7 +68,7 @@ export const AnalystActions = (props: {
       if (response.responseType === "error") {
         setError(response.message);
       } else {
-        router.push(Routes.CreditApplication);
+        router.push(Routes.CreditApplications);
       }
     });
   }, [props.id, comment]);

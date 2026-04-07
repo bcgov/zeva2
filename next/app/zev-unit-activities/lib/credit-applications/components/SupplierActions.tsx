@@ -44,14 +44,14 @@ export const SupplierActions = (props: {
       if (response.responseType === "error") {
         setError(response.message);
       } else {
-        router.push(Routes.CreditApplication);
+        router.push(Routes.CreditApplications);
       }
     });
   }, [props.creditApplicationId]);
 
   const handleGoToEdit = useCallback(() => {
     router.push(
-      `${Routes.CreditApplication}/${props.creditApplicationId}/edit`,
+      `${Routes.CreditApplications}/${props.creditApplicationId}/edit`,
     );
   }, [props.creditApplicationId]);
 

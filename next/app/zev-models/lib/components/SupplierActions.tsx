@@ -31,13 +31,13 @@ export const SupplierActions = (props: {
       if (response.responseType === "error") {
         setError(response.message);
       } else {
-        router.push(Routes.Vehicle);
+        router.push(Routes.ActiveZevModels);
       }
     });
   }, [props.vehicleId]);
 
   const handleGoToEdit = useCallback(() => {
-    router.push(`${Routes.Vehicle}/${props.vehicleId}/edit`);
+    router.push(`${Routes.InactiveZevModels}/${props.vehicleId}/edit`);
   }, [props.vehicleId]);
 
   const handleSubmit = useCallback(() => {

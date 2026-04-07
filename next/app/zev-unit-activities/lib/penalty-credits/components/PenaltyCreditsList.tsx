@@ -18,7 +18,7 @@ export const PenaltyCreditsList = async (props: {
   }
   const navigationAction = async (id: number) => {
     "use server";
-    redirect(`${Routes.PenaltyCredit}/${id}`);
+    redirect(`${Routes.PenaltyCredits}/${id}`);
   };
   const [credits, totalNumberOfCredits] = await getPenaltyCredits(
     props.page,
