@@ -30,7 +30,7 @@ export const DirectorActions = (props: {
         if (response.responseType === "error") {
           throw new Error(response.message);
         }
-        router.push(Routes.ComplianceReporting);
+        router.push(Routes.ModelYearReports);
       } catch (e) {
         if (e instanceof Error) {
           setError(e.message);

@@ -22,7 +22,7 @@ export const ReassessmentAnalystActions = (props: {
   const handleGoToEditReassessment = useCallback(() => {
     if (props.myrId) {
       router.push(
-        `${Routes.ComplianceReporting}/${props.myrId}/reassessment/${props.reassessmentId}/edit`,
+        `${Routes.ModelYearReports}/${props.myrId}/reassessment/${props.reassessmentId}/edit`,
       );
     } else {
       router.push(`${Routes.LegacyReassessments}/${props.reassessmentId}/edit`);
@@ -58,7 +58,7 @@ export const ReassessmentAnalystActions = (props: {
           throw new Error(response.message);
         }
         if (props.myrId) {
-          router.push(`${Routes.ComplianceReporting}/${props.myrId}`);
+          router.push(`${Routes.ModelYearReports}/${props.myrId}`);
         } else {
           router.push(Routes.LegacyReassessments);
         }

@@ -20,7 +20,7 @@ export const ListPage = async () => {
     <ReportsList
       headerContent={
         canSubmitReport ? (
-          <Link href={`${Routes.ComplianceReporting}/new`}>
+          <Link href={`${Routes.ModelYearReports}/new`}>
             <Button variant="primary">Submit a Model Year Report</Button>
           </Link>
         ) : undefined

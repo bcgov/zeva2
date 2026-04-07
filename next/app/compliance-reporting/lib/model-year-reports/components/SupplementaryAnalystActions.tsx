@@ -37,7 +37,7 @@ export const SupplementaryAnalystActions = (props: {
           throw new Error(response.message);
         }
         if (props.myrId) {
-          router.push(`${Routes.ComplianceReporting}/${props.myrId}`);
+          router.push(`${Routes.ModelYearReports}/${props.myrId}`);
         } else {
           router.push(Routes.LegacySupplementary);
         }
@@ -72,7 +72,7 @@ export const SupplementaryAnalystActions = (props: {
   const handleGoToCreateSuppReassessment = useCallback(() => {
     if (props.myrId) {
       router.push(
-        `${Routes.ComplianceReporting}/${props.myrId}/supplementary/${props.suppId}/reassessment`,
+        `${Routes.ModelYearReports}/${props.myrId}/supplementary/${props.suppId}/reassessment`,
       );
     } else {
       router.push(`${Routes.LegacySupplementary}/${props.suppId}/reassessment`);
@@ -82,7 +82,7 @@ export const SupplementaryAnalystActions = (props: {
   const handleGoToEditSuppReassessment = useCallback(() => {
     if (props.myrId) {
       router.push(
-        `${Routes.ComplianceReporting}/${props.myrId}/supplementary/${props.suppId}/reassessment/edit`,
+        `${Routes.ModelYearReports}/${props.myrId}/supplementary/${props.suppId}/reassessment/edit`,
       );
     } else {
       router.push(

@@ -342,7 +342,7 @@ export const AssessmentForm = (
             case "newAssessment":
             case "savedAssessment":
               if (myrId) {
-                router.push(`${Routes.ComplianceReporting}/${myrId}`);
+                router.push(`${Routes.ModelYearReports}/${myrId}`);
               }
               break;
             case "legacyNewReassessment":
@@ -353,7 +353,7 @@ export const AssessmentForm = (
             case "nonLegacyNewReassessment":
               if (myrId && responseType === "data") {
                 router.push(
-                  `${Routes.ComplianceReporting}/${myrId}/reassessment/${response.data}`,
+                  `${Routes.ModelYearReports}/${myrId}/reassessment/${response.data}`,
                 );
               }
               break;
@@ -365,7 +365,7 @@ export const AssessmentForm = (
             case "nonLegacySavedReassessment":
               if (myrId && reassessmentId) {
                 router.push(
-                  `${Routes.ComplianceReporting}/${myrId}/reassessment/${reassessmentId}`,
+                  `${Routes.ModelYearReports}/${myrId}/reassessment/${reassessmentId}`,
                 );
               }
               break;
@@ -379,7 +379,7 @@ export const AssessmentForm = (
             case "nonLegacySavedSuppReassessment":
               if (myrId && suppId) {
                 router.push(
-                  `${Routes.ComplianceReporting}/${myrId}/supplementary/${suppId}`,
+                  `${Routes.ModelYearReports}/${myrId}/supplementary/${suppId}`,
                 );
               }
               break;

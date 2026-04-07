@@ -86,7 +86,7 @@ export const ReassessmentsAndSupplementaryReports = async (props: {
       entries.push(
         <li key={`r-${id}`} className="text-primaryBlue hover:underline">
           <Link
-            href={`${Routes.ComplianceReporting}/${props.myrId}/reassessment/${id}`}
+            href={`${Routes.ModelYearReports}/${props.myrId}/reassessment/${id}`}
           >
             {`Reassessment - ${reassessmentStatusMap[obj.status]} - ${date}`}
           </Link>
@@ -96,7 +96,7 @@ export const ReassessmentsAndSupplementaryReports = async (props: {
       entries.push(
         <li key={`s-${id}`} className="text-primaryBlue hover:underline">
           <Link
-            href={`${Routes.ComplianceReporting}/${props.myrId}/supplementary/${id}`}
+            href={`${Routes.ModelYearReports}/${props.myrId}/supplementary/${id}`}
           >
             {`Supplementary Report - ${suppStatusMap[obj.status]} - ${date}`}
           </Link>
@@ -110,7 +110,7 @@ export const ReassessmentsAndSupplementaryReports = async (props: {
       entries.push(
         <li key={`r-${id}`} className="text-primaryBlue hover:underline">
           <Link
-            href={`${Routes.ComplianceReporting}/${props.myrId}/reassessment/${id}`}
+            href={`${Routes.ModelYearReports}/${props.myrId}/reassessment/${id}`}
           >
             {`Reassessment - ${reassessmentStatusMap[item.status]}`}
           </Link>
@@ -120,7 +120,7 @@ export const ReassessmentsAndSupplementaryReports = async (props: {
       entries.push(
         <li key={`s-${id}`} className="text-primaryBlue hover:underline">
           <Link
-            href={`${Routes.ComplianceReporting}/${props.myrId}/supplementary/${id}`}
+            href={`${Routes.ModelYearReports}/${props.myrId}/supplementary/${id}`}
           >
             {`Supplementary Report - ${suppStatusMap[item.status]}`}
           </Link>

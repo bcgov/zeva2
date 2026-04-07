@@ -32,7 +32,7 @@ export const AnalystActions = (props: {
         if (response.responseType === "error") {
           throw new Error(response.message);
         }
-        router.push(Routes.ComplianceReporting);
+        router.push(Routes.ModelYearReports);
       } catch (e) {
         if (e instanceof Error) {
           setError(e.message);
@@ -62,15 +62,15 @@ export const AnalystActions = (props: {
   }, [props.myrId, comment]);
 
   const handleGoToCreateAssessment = useCallback(() => {
-    router.push(`${Routes.ComplianceReporting}/${props.myrId}/assessment`);
+    router.push(`${Routes.ModelYearReports}/${props.myrId}/assessment`);
   }, [props.myrId]);
 
   const handleGoToEditAssessment = useCallback(() => {
-    router.push(`${Routes.ComplianceReporting}/${props.myrId}/assessment/edit`);
+    router.push(`${Routes.ModelYearReports}/${props.myrId}/assessment/edit`);
   }, [props.myrId]);
 
   const handleGoToCreateReassessment = useCallback(() => {
-    router.push(`${Routes.ComplianceReporting}/${props.myrId}/reassessment`);
+    router.push(`${Routes.ModelYearReports}/${props.myrId}/reassessment`);
   }, [props.myrId]);
 
   if (

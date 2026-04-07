@@ -438,20 +438,20 @@ export const ModelYearReportForm = (
             case "newMyr":
             case "savedMyr":
               if (responseType === "data") {
-                router.push(`${Routes.ComplianceReporting}/${response.data}`);
+                router.push(`${Routes.ModelYearReports}/${response.data}`);
               }
               break;
             case "nonLegacyNewSupp":
               if (myrId && responseType === "data") {
                 router.push(
-                  `${Routes.ComplianceReporting}/${myrId}/supplementary/${response.data}`,
+                  `${Routes.ModelYearReports}/${myrId}/supplementary/${response.data}`,
                 );
               }
               break;
             case "nonLegacySavedSupp":
               if (myrId && supplementaryId) {
                 router.push(
-                  `${Routes.ComplianceReporting}/${myrId}/supplementary/${supplementaryId}`,
+                  `${Routes.ModelYearReports}/${myrId}/supplementary/${supplementaryId}`,
                 );
               }
               break;

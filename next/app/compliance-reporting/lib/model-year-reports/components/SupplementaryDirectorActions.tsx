@@ -31,7 +31,7 @@ export const SupplementaryDirectorActions = (props: {
           throw new Error(response.message);
         }
         if (props.myrId) {
-          router.push(`${Routes.ComplianceReporting}/${props.myrId}`);
+          router.push(`${Routes.ModelYearReports}/${props.myrId}`);
         } else {
           router.push(Routes.LegacySupplementary);
         }

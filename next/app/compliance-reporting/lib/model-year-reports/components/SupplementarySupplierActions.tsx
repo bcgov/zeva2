@@ -33,7 +33,7 @@ export const SupplementarySupplierActions = (props: {
           throw new Error(response.message);
         }
         if (props.myrId) {
-          router.push(`${Routes.ComplianceReporting}/${props.myrId}`);
+          router.push(`${Routes.ModelYearReports}/${props.myrId}`);
         } else {
           router.push(`${Routes.LegacySupplementary}`);
         }
@@ -68,7 +68,7 @@ export const SupplementarySupplierActions = (props: {
   const handleGoToEdit = useCallback(() => {
     if (props.myrId) {
       router.push(
-        `${Routes.ComplianceReporting}/${props.myrId}/supplementary/${props.suppId}/edit`,
+        `${Routes.ModelYearReports}/${props.myrId}/supplementary/${props.suppId}/edit`,
       );
     } else {
       router.push(`${Routes.LegacySupplementary}/${props.suppId}/edit`);

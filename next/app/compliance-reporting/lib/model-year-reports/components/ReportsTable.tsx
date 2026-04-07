@@ -21,7 +21,7 @@ export const ReportsTable = (props: {
 }) => {
   const router = useRouter();
   const navigationAction = useCallback(async (id: number) => {
-    router.push(`${Routes.ComplianceReporting}/${id}`);
+    router.push(`${Routes.ModelYearReports}/${id}`);
   }, []);
   const columnHelper = createColumnHelper<MyrRecordSerialized>();
   const modelYearEnumMap = useMemo(() => {

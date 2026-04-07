@@ -27,7 +27,7 @@ export const SupplierActions = (props: {
         if (response.responseType === "error") {
           throw new Error(response.message);
         }
-        router.push(Routes.ComplianceReporting);
+        router.push(Routes.ModelYearReports);
       } catch (e) {
         if (e instanceof Error) {
           setError(e.message);
@@ -37,11 +37,11 @@ export const SupplierActions = (props: {
   }, [props.myrId]);
 
   const handleGoToEdit = useCallback(() => {
-    router.push(`${Routes.ComplianceReporting}/${props.myrId}/edit`);
+    router.push(`${Routes.ModelYearReports}/${props.myrId}/edit`);
   }, [props.myrId]);
 
   const handleGoToCreateSupplementary = useCallback(() => {
-    router.push(`${Routes.ComplianceReporting}/${props.myrId}/supplementary`);
+    router.push(`${Routes.ModelYearReports}/${props.myrId}/supplementary`);
   }, [props.myrId]);
 
   const handleSubmit = useCallback(() => {
