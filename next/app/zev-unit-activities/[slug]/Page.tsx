@@ -7,7 +7,10 @@ import { ListPage as TransfersPage } from "../lib/credit-transfers/components/Li
 import { ListPage as PenaltyCreditsPage } from "../lib/penalty-credits/components/ListPage";
 import { ListPage as TransactionsPage } from "../lib/zev-unit-transactions/components/ListPage";
 
-const Page = async (props: { params: Promise<{ slug: string }>, searchParams?: Promise<pageStringParams> }) => {
+const Page = async (props: {
+  params: Promise<{ slug: string }>;
+  searchParams?: Promise<pageStringParams>;
+}) => {
   const args = await props.params;
   const searchParams = await props.searchParams;
   const slug = args.slug;
@@ -15,28 +18,24 @@ const Page = async (props: { params: Promise<{ slug: string }>, searchParams?: P
   let listPage;
   switch (slug) {
     case "credit-agreements":
-        listPage = <AgreementsPage searchParams={searchParams}/>
-        break;
+      listPage = <AgreementsPage searchParams={searchParams} />;
+      break;
     case "credit-applications":
-        listPage = <ApplicationsPage searchParams={searchParams} />;
-        break;
+      listPage = <ApplicationsPage searchParams={searchParams} />;
+      break;
     case "credit-transfers":
-        listPage = <TransfersPage />;
-        break;
+      listPage = <TransfersPage />;
+      break;
     case "penalty-credits":
-        listPage = <PenaltyCreditsPage searchParams={searchParams} />;
-        break;
+      listPage = <PenaltyCreditsPage searchParams={searchParams} />;
+      break;
     case "zev-unit-transactions":
-        listPage = <TransactionsPage />;
-        break;
+      listPage = <TransactionsPage />;
+      break;
   }
 
   if (listPage) {
-    return (
-        <Suspense fallback={<LoadingSkeleton />}>
-            {listPage}
-        </Suspense>
-    )
+    return <Suspense fallback={<LoadingSkeleton />}>{listPage}</Suspense>;
   }
   return null;
 };

@@ -14,25 +14,25 @@ export const ListPage = async (props: { orgId?: string }) => {
   if (!orgIdToUse) {
     return null;
   }
-    const balance = await fetchBalance(orgIdToUse);
-    if (balance) {
-      const complianceYears = await getComplianceYears(orgIdToUse);
-      return (
-        <main>
-          <h1>Current Balance</h1>
+  const balance = await fetchBalance(orgIdToUse);
+  if (balance) {
+    const complianceYears = await getComplianceYears(orgIdToUse);
+    return (
+      <main>
+        <h1>Current Balance</h1>
 
-          {balance === "deficit" ? (
-            <p style={{ color: "red" }}>Deficit</p>
-          ) : (
-            <BalanceTable balance={balance} />
-          )}
-          <TransactionAccordion
-            orgId={userOrgId}
-            userIsGov={userIsGov}
-            complianceYears={complianceYears}
-          />
-        </main>
-      );
-    }
+        {balance === "deficit" ? (
+          <p style={{ color: "red" }}>Deficit</p>
+        ) : (
+          <BalanceTable balance={balance} />
+        )}
+        <TransactionAccordion
+          orgId={userOrgId}
+          userIsGov={userIsGov}
+          complianceYears={complianceYears}
+        />
+      </main>
+    );
+  }
   return null;
-}
+};

@@ -2,11 +2,7 @@ import { getModelYearEnumsToStringsMap } from "@/app/lib/utils/enumMaps";
 import { ZevUnitRecordsObj } from "@/lib/utils/zevUnit";
 import { ModelYear } from "@/prisma/generated/enums";
 
-export const BalanceTable = ({
-  balance,
-}: {
-  balance: ZevUnitRecordsObj;
-}) => {
+export const BalanceTable = ({ balance }: { balance: ZevUnitRecordsObj }) => {
   const subtree = balance?.CREDIT?.REPORTABLE;
   if (!subtree) return <p>No credit data.</p>;
 
@@ -45,4 +41,4 @@ export const BalanceTable = ({
       </tbody>
     </table>
   );
-}
+};

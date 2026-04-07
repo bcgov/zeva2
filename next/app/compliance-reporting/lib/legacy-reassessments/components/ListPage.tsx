@@ -12,14 +12,14 @@ export const ListPage = async () => {
     canSubmitReassessment = true;
   }
   return (
-      <LegacyReassessmentsList
-        headerContent={
-          canSubmitReassessment ? (
-            <Link href={`${Routes.LegacyReassessments}/new`}>
-              <Button>Create a Legacy Reassessment</Button>
-            </Link>
-          ) : undefined
-        }
-      />
+    <LegacyReassessmentsList
+      headerContent={
+        canSubmitReassessment ? (
+          <Link href={`${Routes.LegacyReassessments}/new`}>
+            <Button>Create a Legacy Reassessment</Button>
+          </Link>
+        ) : undefined
+      }
+    />
   );
 };

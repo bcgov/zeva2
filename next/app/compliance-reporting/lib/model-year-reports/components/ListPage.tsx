@@ -17,14 +17,14 @@ export const ListPage = async () => {
     }
   }
   return (
-      <ReportsList
-        headerContent={
-          canSubmitReport ? (
-            <Link href={`${Routes.ComplianceReporting}/new`}>
-              <Button variant="primary">Submit a Model Year Report</Button>
-            </Link>
-          ) : undefined
-        }
-      />
+    <ReportsList
+      headerContent={
+        canSubmitReport ? (
+          <Link href={`${Routes.ComplianceReporting}/new`}>
+            <Button variant="primary">Submit a Model Year Report</Button>
+          </Link>
+        ) : undefined
+      }
+    />
   );
 };

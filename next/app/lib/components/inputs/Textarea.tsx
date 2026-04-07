@@ -2,8 +2,10 @@
 
 import { FC, TextareaHTMLAttributes, useRef, useEffect, useState } from "react";
 
-export interface ITextareaProps
-  extends Omit<TextareaHTMLAttributes<HTMLTextAreaElement>, "onChange"> {
+export interface ITextareaProps extends Omit<
+  TextareaHTMLAttributes<HTMLTextAreaElement>,
+  "onChange"
+> {
   id?: string;
   label?: string;
   helperText?: string;
@@ -98,7 +100,10 @@ export const Textarea: FC<ITextareaProps> = ({
   };
 
   return (
-    <div className={`relative ${className}`} style={{ minWidth: "280px", maxWidth: "700px" }}>
+    <div
+      className={`relative ${className}`}
+      style={{ minWidth: "280px", maxWidth: "700px" }}
+    >
       {label && (
         <label htmlFor={id} className="form-label block mb-1.5">
           {label}
@@ -109,7 +114,9 @@ export const Textarea: FC<ITextareaProps> = ({
         <p className="text-xs text-secondaryText mb-1.5">{helperText}</p>
       )}
 
-      <div className={`relative rounded-md border transition-all duration-200 ${getStateStyles()}`}>
+      <div
+        className={`relative rounded-md border transition-all duration-200 ${getStateStyles()}`}
+      >
         <textarea
           ref={textareaRef}
           id={id}
@@ -155,7 +162,10 @@ export const Textarea: FC<ITextareaProps> = ({
       )}
 
       {helperText && !error && !destructive && (
-        <p id={`${id}-helper`} className="text-xs text-secondaryText mt-1.5 sr-only">
+        <p
+          id={`${id}-helper`}
+          className="text-xs text-secondaryText mt-1.5 sr-only"
+        >
           {helperText}
         </p>
       )}

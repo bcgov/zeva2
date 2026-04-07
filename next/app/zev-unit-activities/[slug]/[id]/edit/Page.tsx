@@ -4,7 +4,9 @@ import { EditPage as AgreementsPage } from "@/app/zev-unit-activities/lib/credit
 import { EditPage as ApplicationsPage } from "@/app/zev-unit-activities/lib/credit-applications/components/EditPage";
 import { EditPage as TransfersPage } from "@/app/zev-unit-activities/lib/credit-transfers/components/EditPage";
 
-const Page = async (props: { params: Promise<{ slug: string, id: string }> }) => {
+const Page = async (props: {
+  params: Promise<{ slug: string; id: string }>;
+}) => {
   const args = await props.params;
   const slug = args.slug;
   const id = args.id;
@@ -12,22 +14,18 @@ const Page = async (props: { params: Promise<{ slug: string, id: string }> }) =>
   let editPage;
   switch (slug) {
     case "credit-agreements":
-        editPage = <AgreementsPage id={id}/>
-        break;
+      editPage = <AgreementsPage id={id} />;
+      break;
     case "credit-applications":
-        editPage = <ApplicationsPage id={id} />;
-        break;
+      editPage = <ApplicationsPage id={id} />;
+      break;
     case "credit-transfers":
-        editPage = <TransfersPage id={id} />;
-        break;
+      editPage = <TransfersPage id={id} />;
+      break;
   }
 
   if (editPage) {
-    return (
-        <Suspense fallback={<LoadingSkeleton />}>
-            {editPage}
-        </Suspense>
-    )
+    return <Suspense fallback={<LoadingSkeleton />}>{editPage}</Suspense>;
   }
   return null;
 };

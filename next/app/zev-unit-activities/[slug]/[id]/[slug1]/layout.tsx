@@ -5,7 +5,10 @@ const Layout = async (props: {
   params: Promise<{ slug: string; id: string; slug1: string }>;
 }) => {
   const { slug, id, slug1 } = await props.params;
-  if (slug === "credit-applications" && (slug1 === "validated" || slug1 === "model-name-mismatches")) {
+  if (
+    slug === "credit-applications" &&
+    (slug1 === "validated" || slug1 === "model-name-mismatches")
+  ) {
     return (
       <>
         <Navbar creditApplicationId={id} slug={slug1}></Navbar>

@@ -80,11 +80,7 @@ export const AnalystActions = (props: {
     return (
       <div>
         {error && <p className="text-red-600">{error}</p>}
-        <Textarea
-          value={comment}
-          onChange={setComment}
-          disabled={isPending}
-        />
+        <Textarea value={comment} onChange={setComment} disabled={isPending} />
         <Button
           variant="secondary"
           onClick={handleReturnToSupplier}

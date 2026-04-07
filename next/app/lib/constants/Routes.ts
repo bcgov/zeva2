@@ -19,7 +19,7 @@ export enum Routes {
   ActiveZevModels = "/zev-models/active",
   InactiveZevModels = "/zev-models/inactive",
   NewZevModels = "zev-models/new",
-  
+
   VehicleSuppliers = "/vehicle-suppliers",
   Administration = "/administration",
 }

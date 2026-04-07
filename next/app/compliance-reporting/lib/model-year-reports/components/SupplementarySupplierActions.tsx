@@ -82,11 +82,7 @@ export const SupplementarySupplierActions = (props: {
     return (
       <div className="space-y-2">
         {error && <p className="text-red-600">{error}</p>}
-        <Textarea
-          value={comment}
-          onChange={setComment}
-          disabled={isPending}
-        />
+        <Textarea value={comment} onChange={setComment} disabled={isPending} />
         <Button variant="secondary" onClick={handleDelete} disabled={isPending}>
           {isPending ? "..." : "Delete"}
         </Button>

@@ -32,7 +32,10 @@ const Page = async (props: {
         />
       </Suspense>
     );
-  } else if (slug === "credit-applications" && slug1 === "model-name-mismatches") {
+  } else if (
+    slug === "credit-applications" &&
+    slug1 === "model-name-mismatches"
+  ) {
     return (
       <Suspense fallback={<LoadingSkeleton />}>
         <ModelNameMismatches creditApplicationId={id} />

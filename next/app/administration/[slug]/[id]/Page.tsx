@@ -3,7 +3,9 @@ import { getUser } from "../../lib/data";
 import { UserForm } from "../../lib/components/UserForm";
 import { getGovOrgId } from "@/app/vehicle-suppliers/lib/data";
 
-const Page = async (props: { params: Promise<{ slug: string, id: string }> }) => {
+const Page = async (props: {
+  params: Promise<{ slug: string; id: string }>;
+}) => {
   const { userIsGov, userOrgId } = await getUserInfo();
   if (!userIsGov) {
     return null;

@@ -13,7 +13,7 @@ export type VehicleSparseSerialized = Omit<
 };
 
 export const VehicleList = async (props: {
-  type: "active" | "inactive",
+  type: "active" | "inactive";
   page: number;
   pageSize: number;
   filters: Record<string, string>;

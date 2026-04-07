@@ -66,11 +66,7 @@ export const DirectorActions = (props: {
     <>
       <div className="mt-4">
         <p className="py-1 font-semibold text-primaryBlue">Optional Comment</p>
-        <Textarea
-          value={comment}
-          onChange={setComment}
-          disabled={isPending}
-        />
+        <Textarea value={comment} onChange={setComment} disabled={isPending} />
       </div>
       <div className="flex flex-row gap-12 my-4">
         {error && <p className="text-red-600">{error}</p>}

@@ -11,46 +11,48 @@ import { getUser } from "../lib/data";
 import { UserForm } from "../lib/components/UserForm";
 import { getGovOrgId } from "@/app/vehicle-suppliers/lib/data";
 
-export const Page = async (props: {
-  params: Promise<{ slug: string }>
-}) => {
+export const Page = async (props: { params: Promise<{ slug: string }> }) => {
   const args = await props.params;
   const slug = args.slug;
   const { userIsGov, userOrgId } = await getUserInfo();
   const isAdmin = await userIsAdmin();
-  if (userIsGov && isAdmin && (slug === "idir" || slug === "bceid" || slug === "inactive")) {
+  if (
+    userIsGov &&
+    isAdmin &&
+    (slug === "idir" || slug === "bceid" || slug === "inactive")
+  ) {
     const users = await fetchUsers(slug);
     return (
-        <Suspense fallback={<LoadingSkeleton />}>
+      <Suspense fallback={<LoadingSkeleton />}>
         <UserTable
-            users={users}
-            userIsGov={userIsGov}
-            category={slug}
-            isAdmin={isAdmin}
+          users={users}
+          userIsGov={userIsGov}
+          category={slug}
+          isAdmin={isAdmin}
         />
-        </Suspense>
+      </Suspense>
     );
   } else if (!userIsGov && isAdmin) {
     const id = Number.parseInt(slug, 10);
     if (Number.isNaN(id)) {
-        return null;
+      return null;
     }
     const user = await getUser(id);
     if (!user) {
-        return null;
+      return null;
     }
     const govOrgId = await getGovOrgId();
     return (
-        <div className="w-full px-6 py-6 lg:px-10 xl:px-14">
-          <UserForm
-            user={user}
-            userOrgId={userOrgId.toString()}
-            govOrgId={govOrgId.toString()}
-          />
-        </div>
-      );
+      <div className="w-full px-6 py-6 lg:px-10 xl:px-14">
+        <UserForm
+          user={user}
+          userOrgId={userOrgId.toString()}
+          govOrgId={govOrgId.toString()}
+        />
+      </div>
+    );
   }
   return null;
-}
+};
 
 export default Page;

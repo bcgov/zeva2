@@ -1,4 +1,4 @@
-"use server"
+"use server";
 
 import { getUserInfo } from "@/auth";
 import { prisma } from "@/lib/prisma";

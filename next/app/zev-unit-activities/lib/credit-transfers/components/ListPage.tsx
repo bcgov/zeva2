@@ -7,14 +7,14 @@ import { CreditTransferList } from "./CreditTransferList";
 export const ListPage = async () => {
   const { userIsGov } = await getUserInfo();
   return (
-      <CreditTransferList
-        headerContent={
-          !userIsGov ? (
-            <Link href={`${Routes.CreditTransfers}/new`}>
-              <Button variant="primary">Create a Credit Transfer</Button>
-            </Link>
-          ) : undefined
-        }
-      />
+    <CreditTransferList
+      headerContent={
+        !userIsGov ? (
+          <Link href={`${Routes.CreditTransfers}/new`}>
+            <Button variant="primary">Create a Credit Transfer</Button>
+          </Link>
+        ) : undefined
+      }
+    />
   );
 };

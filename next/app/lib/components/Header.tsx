@@ -80,11 +80,7 @@ export const Header = async () => {
           </div>
         )}
       </Row>
-      {userId !== -1 && (
-        <PrimaryNavbar
-          userIsGov={userIsGov}
-        />
-      )}
+      {userId !== -1 && <PrimaryNavbar userIsGov={userIsGov} />}
     </div>
   );
 };

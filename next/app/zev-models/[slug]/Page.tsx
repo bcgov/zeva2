@@ -7,7 +7,10 @@ import Link from "next/link";
 import { Button } from "@/app/lib/components";
 import { Routes } from "@/app/lib/constants";
 
-const Page = async (props: { params: Promise<{ slug: string }>, searchParams?: Promise<pageStringParams> }) => {
+const Page = async (props: {
+  params: Promise<{ slug: string }>;
+  searchParams?: Promise<pageStringParams>;
+}) => {
   const { userIsGov } = await getUserInfo();
   const args = await props.params;
   const slug = args.slug;
@@ -18,21 +21,21 @@ const Page = async (props: { params: Promise<{ slug: string }>, searchParams?: P
     return (
       <Suspense fallback={<LoadingSkeleton />}>
         <VehicleList
-        type={slug}
-        page={page}
-        pageSize={pageSize}
-        filters={filters}
-        sorts={sorts}
-        headerContent={
-          !userIsGov ? (
-            <Link href={Routes.NewZevModels}>
-              <Button variant="primary">Create a Vehicle</Button>
-            </Link>
-          ) : undefined
-        }
-      />
+          type={slug}
+          page={page}
+          pageSize={pageSize}
+          filters={filters}
+          sorts={sorts}
+          headerContent={
+            !userIsGov ? (
+              <Link href={Routes.NewZevModels}>
+                <Button variant="primary">Create a Vehicle</Button>
+              </Link>
+            ) : undefined
+          }
+        />
       </Suspense>
-  );
+    );
   }
   return null;
 };

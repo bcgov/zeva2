@@ -66,11 +66,7 @@ export const SupplementaryDirectorActions = (props: {
   if (props.status === ModelYearReportStatus.SUBMITTED_TO_DIRECTOR) {
     return (
       <div className="space-y-2">
-        <Textarea
-          value={comment}
-          onChange={setComment}
-          disabled={isPending}
-        />
+        <Textarea value={comment} onChange={setComment} disabled={isPending} />
         {error && <p className="text-red-600">{error}</p>}
         <Button
           variant="secondary"

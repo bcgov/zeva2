@@ -1,7 +1,11 @@
 "use client";
 import { FormEvent, useCallback, useState } from "react";
 import { Button } from "@/app/lib/components";
-import { createOrganization, OrganizationPayload, saveOrganization } from "../actions";
+import {
+  createOrganization,
+  OrganizationPayload,
+  saveOrganization,
+} from "../actions";
 import AddressEditForm from "./AddressEditForm";
 import { OrganizationAddressSparse } from "../data";
 import { cleanupAddressData } from "../utils";
@@ -76,7 +80,14 @@ const OrganizationEditForm = (props: {
       }
       window.location.reload(); // Reload to reflect changes if not redirected
     },
-    [props.orgId, organizationName, shortName, isActive, serviceAddress, recordsAddress],
+    [
+      props.orgId,
+      organizationName,
+      shortName,
+      isActive,
+      serviceAddress,
+      recordsAddress,
+    ],
   );
 
   return (

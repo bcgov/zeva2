@@ -12,25 +12,21 @@ const Page = async (props: { params: Promise<{ slug: string }> }) => {
   let newPage;
   switch (slug) {
     case "credit-agreements":
-        newPage = <AgreementsPage />
-        break;
+      newPage = <AgreementsPage />;
+      break;
     case "credit-applications":
-        newPage = <ApplicationsPage />;
-        break;
+      newPage = <ApplicationsPage />;
+      break;
     case "credit-transfers":
-        newPage = <TransfersPage />;
-        break;
+      newPage = <TransfersPage />;
+      break;
     case "penalty-credits":
-        newPage = <PenaltyCreditsPage />;
-        break;
+      newPage = <PenaltyCreditsPage />;
+      break;
   }
 
   if (newPage) {
-    return (
-        <Suspense fallback={<LoadingSkeleton />}>
-            {newPage}
-        </Suspense>
-    )
+    return <Suspense fallback={<LoadingSkeleton />}>{newPage}</Suspense>;
   }
   return null;
 };

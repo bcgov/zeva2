@@ -4,7 +4,7 @@ import { getUserInfo } from "@/auth";
 
 const Layout = async (props: {
   children: React.ReactNode;
-  params: Promise<{ id: string; }>;
+  params: Promise<{ id: string }>;
 }) => {
   const { userIsGov } = await getUserInfo();
   if (!userIsGov) {
@@ -12,15 +12,21 @@ const Layout = async (props: {
   }
   const { id } = await props.params;
   const items = [
-    {label: "Supplier Info", route: `${Routes.VehicleSuppliers}/${id}/supplier-info`},
-    {label: "Credit Transfers", route: `${Routes.VehicleSuppliers}/${id}/zev-unit-transactions`},
+    {
+      label: "Supplier Info",
+      route: `${Routes.VehicleSuppliers}/${id}/supplier-info`,
+    },
+    {
+      label: "Credit Transfers",
+      route: `${Routes.VehicleSuppliers}/${id}/zev-unit-transactions`,
+    },
   ];
   return (
     <>
-        <SecondaryNavbar items={items}/>
-        {props.children}
+      <SecondaryNavbar items={items} />
+      {props.children}
     </>
-  )
+  );
 };
 
 export default Layout;

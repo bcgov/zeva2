@@ -7,14 +7,14 @@ import { LegacySupplementariesList } from "./LegacySupplementariesList";
 export const ListPage = async () => {
   const { userIsGov } = await getUserInfo();
   return (
-      <LegacySupplementariesList
-        headerContent={
-          !userIsGov ? (
-            <Link href={`${Routes.LegacySupplementary}/new`}>
-              <Button>Create a Legacy Supplementary Report</Button>
-            </Link>
-          ) : undefined
-        }
-      />
+    <LegacySupplementariesList
+      headerContent={
+        !userIsGov ? (
+          <Link href={`${Routes.LegacySupplementary}/new`}>
+            <Button>Create a Legacy Supplementary Report</Button>
+          </Link>
+        ) : undefined
+      }
+    />
   );
 };
