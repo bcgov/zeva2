@@ -86,9 +86,11 @@ export const Tooltip = ({
         className={`pointer-events-none invisible absolute z-50 opacity-0 transition-opacity duration-150 ease-out group-hover/tooltip:visible group-hover/tooltip:opacity-100 group-focus-within/tooltip:visible group-focus-within/tooltip:opacity-100 ${tooltipPositionClasses[placement]}`.trim()}
       >
         <span
-          className={`relative block rounded-lg bg-black px-5 py-3 text-sm font-medium text-white shadow-level-4 ${tooltipClassName}`.trim()}
+          className={`relative inline-block min-w-40 max-w-[min(26.25rem,calc(100vw-2rem))] rounded-lg bg-black px-4 py-3 text-left text-base font-medium leading-6 text-textOnPrimary shadow-level-4 ${tooltipClassName}`.trim()}
         >
-          {content}
+          <span className="block max-h-44 overflow-y-auto whitespace-normal break-words pr-1">
+            {content}
+          </span>
           <span
             className={`absolute h-3 w-3 rotate-45 bg-black ${arrowPositionClasses[placement]}`.trim()}
             aria-hidden="true"
