@@ -7,17 +7,12 @@ const Layout = async (props: {
 }) => {
   const { userIsGov } = await getUserInfo();
   const items = [
-    {label: "Credit Agreements", route: Routes.CreditAgreements},
     {label: "Credit Applications", route: Routes.CreditApplications},
     {label: "Credit Transfers", route: Routes.CreditTransfers},
+    {label: "Credit Agreements", route: Routes.CreditAgreements},
     {label: "Penalty Credits", route: Routes.PenaltyCredits},
+    ...(userIsGov ? [{label: "ZEV Unit Transactions", route: Routes.ZevUnitTransactions}] : [])
   ];
-  if (!userIsGov) {
-    items.push({
-        label: "ZEV Unit Transactions",
-        route: Routes.ZevUnitTransactions,
-    })
-  }
   return (
     <>
         <SecondaryNavbar items={items}/>

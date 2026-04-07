@@ -1,5 +1,3 @@
-// display form for editing; use slug + id to determine; e.g. edit application, agreement, etc.
-
 import { Suspense } from "react";
 import { LoadingSkeleton } from "@/app/lib/components/skeletons";
 import { EditPage as AgreementsPage } from "@/app/zev-unit-activities/lib/credit-agreements/components/EditPage";
