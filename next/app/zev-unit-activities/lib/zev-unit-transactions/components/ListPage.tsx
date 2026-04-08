@@ -27,7 +27,7 @@ export const ListPage = async (props: { orgId?: string }) => {
           <BalanceTable balance={balance} />
         )}
         <TransactionAccordion
-          orgId={userOrgId}
+          orgId={orgIdToUse}
           userIsGov={userIsGov}
           complianceYears={complianceYears}
         />
