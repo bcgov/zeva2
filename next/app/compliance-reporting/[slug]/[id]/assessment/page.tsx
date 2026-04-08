@@ -1,0 +1,34 @@
+import { getUserInfo } from "@/auth";
+import { AssessmentForm } from "@/app/compliance-reporting/lib/model-year-reports/components/AssessmentForm";
+import { getModelYearReport } from "@/app/compliance-reporting/lib/model-year-reports/data";
+import { ModelYearReportStatus } from "@/prisma/generated/enums";
+
+const Page = async (props: { params: Promise<{ id: string }> }) => {
+  const args = await props.params;
+  const id = Number.parseInt(args.id, 10);
+  const { userIsGov } = await getUserInfo();
+  const report = await getModelYearReport(id);
+  if (
+    !userIsGov ||
+    !report ||
+    (report.status !== ModelYearReportStatus.SUBMITTED_TO_GOVERNMENT &&
+      report.status !== ModelYearReportStatus.RETURNED_TO_ANALYST) ||
+    report.assessment
+  ) {
+    return null;
+  }
+  return (
+    <div className="max-w-xl mx-auto p-4">
+      <h1 className="text-xl font-bold mb-4">Create an Assessment</h1>
+      <AssessmentForm
+        type="newAssessment"
+        orgName={report.organization.name}
+        orgId={report.organizationId}
+        myrId={report.id}
+        modelYear={report.modelYear}
+      />
+    </div>
+  );
+};
+
+export default Page;

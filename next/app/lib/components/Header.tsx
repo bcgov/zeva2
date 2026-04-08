@@ -1,11 +1,4 @@
-import { Navbar } from "./Navbar";
 import { Row } from "./layout";
-import {
-  navbarMainItems,
-  navbarSubItems,
-  MenuItem,
-  NavbarSubItems,
-} from "../constants/navbarItems";
 import { fetchBalance } from "../services/balance";
 import {
   TransactionType,
@@ -14,6 +7,7 @@ import {
 } from "@/prisma/generated/enums";
 import { sumBalance } from "@/lib/utils/zevUnit";
 import { getUserInfo } from "@/auth";
+import { PrimaryNavbar } from "./PrimaryNavbar";
 
 /** Basic Header component containing the BCGOV logo and title of the application. */
 export const Header = async () => {
@@ -38,22 +32,6 @@ export const Header = async () => {
       VehicleClass.REPORTABLE,
       zevClass,
     ).toFixed(2);
-  };
-
-  const filterByRoles = (items: MenuItem[]) =>
-    items.filter(
-      (item) =>
-        !item.roles || item.roles.some((role) => userRoles.includes(role)),
-    );
-  const filteredSubItems = (items: NavbarSubItems) => {
-    const filtered: NavbarSubItems = {};
-    for (const label in items) {
-      const subItems = filterByRoles(items[label]);
-      if (subItems.length > 0) {
-        filtered[label] = subItems;
-      }
-    }
-    return filtered;
   };
 
   return (
@@ -102,12 +80,7 @@ export const Header = async () => {
           </div>
         )}
       </Row>
-      {userId !== -1 && (
-        <Navbar
-          mainItems={filterByRoles(navbarMainItems)}
-          subItems={filteredSubItems(navbarSubItems)}
-        />
-      )}
+      {userId !== -1 && <PrimaryNavbar userIsGov={userIsGov} />}
     </div>
   );
 };

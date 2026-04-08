@@ -1,20 +1,26 @@
-export const MY_ORGANIZATION = "mine";
-
 export enum Routes {
   Home = "/dashboard",
-  ComplianceReporting = "/model-year-report",
-  ComplianceRatios = "/model-year-report/compliance-ratios",
-  ComplianceCalculator = "/compliance-calculator",
-  LegacyReassessments = "/legacy-reassessment",
-  LegacySupplementary = "/legacy-supplementary",
-  CreditTransfers = "/credit-transfer",
-  CreditAgreements = "/agreements",
-  VehicleSuppliers = "/organizations",
-  Administration = `/organizations/${MY_ORGANIZATION}`,
+
+  // compliance reporting
+  ComplianceCalculator = "/compliance-reporting/compliance-calculator",
+  ComplianceRatios = "/compliance-reporting/compliance-ratios",
+  LegacyReassessments = "/compliance-reporting/legacy-reassessments",
+  LegacySupplementary = "/compliance-reporting/legacy-supplementaries",
+  ModelYearReports = "/compliance-reporting/model-year-reports",
+
+  // zev unit activities
+  CreditAgreements = "/zev-unit-activities/credit-agreements",
+  CreditApplications = "/zev-unit-activities/credit-applications",
+  CreditTransfers = "/zev-unit-activities/credit-transfers",
+  PenaltyCredits = "/zev-unit-activities/penalty-credits",
+  ZevUnitTransactions = "/zev-unit-activities/zev-unit-transactions",
+
+  // zev models
+  ActiveZevModels = "/zev-models/active",
+  InactiveZevModels = "/zev-models/inactive",
+  NewZevModels = "zev-models/new",
+
+  VehicleSuppliers = "/vehicle-suppliers",
+  Administration = "/administration",
   Icbc = "/icbc",
-  Vehicle = "/vehicle",
-  Users = "/users",
-  CreditApplication = "/credit-application",
-  PenaltyCredit = "/penalty-credits",
-  ZevUnitBalance = "/zev-unit-balance",
 }

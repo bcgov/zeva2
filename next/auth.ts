@@ -6,7 +6,7 @@ import {
   UserWithOrg,
 } from "./lib/data/user";
 import { Role } from "@/prisma/generated/enums";
-import { userConfiguredCorrectly } from "./app/users/lib/utilsServer";
+import { userConfiguredCorrectly } from "./app/administration/lib/utilsServer";
 import { NextResponse } from "next/server";
 
 export const { handlers, signIn, signOut, auth } = NextAuth({

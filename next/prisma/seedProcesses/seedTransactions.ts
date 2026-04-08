@@ -12,7 +12,7 @@ import {
 import {
   ComplianceReduction,
   getComplianceRatioReductions,
-} from "@/app/model-year-report/lib/utilsServer";
+} from "@/app/compliance-reporting/lib/model-year-reports/utilsServer";
 import { getComplianceDate } from "@/app/lib/utils/complianceYear";
 
 export const seedTransactions = async (
