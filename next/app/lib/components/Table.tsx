@@ -78,6 +78,7 @@ export const Table = <T extends ZevaObject>({
         newParams.set(param, paramValue);
       }
     });
+    setFilters({});
     replaceUrl(newParams);
   }, [paramsToPreserve, searchParams, replaceUrl]);
 

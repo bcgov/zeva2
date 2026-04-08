@@ -3,7 +3,7 @@ import { ListPage as TransactionsPage } from "@/app/zev-unit-activities/lib/zev-
 import { getUserInfo } from "@/auth";
 import { Suspense } from "react";
 
-export const Page = async (props: { params: Promise<{ id: string }> }) => {
+const Page = async (props: { params: Promise<{ id: string }> }) => {
   const { userIsGov } = await getUserInfo();
   if (!userIsGov) {
     return null;
@@ -15,3 +15,5 @@ export const Page = async (props: { params: Promise<{ id: string }> }) => {
     </Suspense>
   );
 };
+
+export default Page;

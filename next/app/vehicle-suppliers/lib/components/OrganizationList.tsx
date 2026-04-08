@@ -1,4 +1,3 @@
-import React from "react";
 import { redirect } from "next/navigation";
 import { Routes } from "@/app/lib/constants";
 import { getOrganizations } from "../data";
@@ -13,7 +12,7 @@ export const OrganizationList = async (props: {
 }) => {
   const navigationAction = async (id: number) => {
     "use server";
-    redirect(`${Routes.VehicleSuppliers}/${id}`);
+    redirect(`${Routes.VehicleSuppliers}/${id}/supplier-info`);
   };
   const [organizations, totalNumberOfOrganizations] = await getOrganizations(
     props.page,

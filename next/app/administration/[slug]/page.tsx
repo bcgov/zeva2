@@ -11,7 +11,7 @@ import { getUser } from "../lib/data";
 import { UserForm } from "../lib/components/UserForm";
 import { getGovOrgId } from "@/app/vehicle-suppliers/lib/data";
 
-export const Page = async (props: { params: Promise<{ slug: string }> }) => {
+const Page = async (props: { params: Promise<{ slug: string }> }) => {
   const args = await props.params;
   const slug = args.slug;
   const { userIsGov, userOrgId } = await getUserInfo();

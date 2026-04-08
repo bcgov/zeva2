@@ -1,6 +1,6 @@
 import { getUserInfo } from "@/auth";
 import { getOrganizationDetails } from "../../lib/services";
-import OrganizationDetails from "../../lib/components/OrganizationDetails";
+import { OrganizationDetails } from "../../lib/components/OrganizationDetails";
 import { getSupplierClassEnumsToStringsMap } from "@/app/lib/utils/enumMaps";
 import { Role } from "@/prisma/generated/enums";
 
@@ -29,6 +29,7 @@ export const IndividualPage = async (props: { orgId: string }) => {
 
   return (
     <OrganizationDetails
+      orgId={orgId}
       userIsGov={userIsGov}
       organizationName={organization.name}
       shortName={organization.shortName ?? undefined}

@@ -71,7 +71,8 @@ type Volume = {
   volume: number;
 };
 
-const OrganizationDetails = (props: {
+export const OrganizationDetails = (props: {
+  orgId: number;
   userIsGov: boolean;
   organizationName: string;
   shortName?: string;
@@ -90,6 +91,7 @@ const OrganizationDetails = (props: {
   if (mode === "edit") {
     return (
       <OrganizationEditForm
+        orgId={props.orgId}
         formHeading="Edit Vehicle Supplier"
         submitButtonText="Save"
         organizationName={props.organizationName}
@@ -134,7 +136,7 @@ const OrganizationDetails = (props: {
         </div>
       </div>
 
-      {props.userIsGov && (
+      {!props.userIsGov && (
         <div>
           <div className="flex flex-row gap-8">
             <h3 className="font-semibold mr-2">User(s):</h3>
@@ -211,5 +213,3 @@ const OrganizationDetails = (props: {
     </div>
   );
 };
-
-export default OrganizationDetails;

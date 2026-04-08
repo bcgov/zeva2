@@ -5,7 +5,7 @@ export enum Routes {
   ComplianceCalculator = "/compliance-reporting/compliance-calculator",
   ComplianceRatios = "/compliance-reporting/compliance-ratios",
   LegacyReassessments = "/compliance-reporting/legacy-reassessments",
-  LegacySupplementary = "/compliance-reporting/legacy-supplementarys",
+  LegacySupplementary = "/compliance-reporting/legacy-supplementaries",
   ModelYearReports = "/compliance-reporting/model-year-reports",
 
   // zev unit activities
