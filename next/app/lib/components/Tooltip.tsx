@@ -18,7 +18,7 @@ export type TooltipPlacement =
 
 export interface ITooltipProps extends HTMLAttributes<HTMLSpanElement> {
   children: ReactNode;
-  content: ReactNode;
+  ownContent: ReactNode;
   placement?: TooltipPlacement;
   tooltipClassName?: string;
   disabled?: boolean;
@@ -56,7 +56,7 @@ const arrowPositionClasses: Record<TooltipPlacement, string> = {
 
 export const Tooltip = ({
   children,
-  content,
+  ownContent,
   placement = "top",
   className = "",
   tooltipClassName = "",
@@ -65,7 +65,7 @@ export const Tooltip = ({
 }: ITooltipProps) => {
   const tooltipId = useId();
 
-  if (disabled || content == null || content === false) {
+  if (disabled || ownContent == null || ownContent === false) {
     return (
       <span className={`inline-flex ${className}`.trim()} {...rest}>
         {children}
@@ -89,7 +89,7 @@ export const Tooltip = ({
           className={`relative inline-block min-w-40 max-w-[min(26.25rem,calc(100vw-2rem))] rounded-lg bg-black px-4 py-3 text-left text-base font-medium leading-6 text-textOnPrimary shadow-level-4 ${tooltipClassName}`.trim()}
         >
           <span className="block max-h-44 overflow-y-auto whitespace-normal break-words pr-1">
-            {content}
+            {ownContent}
           </span>
           <span
             className={`absolute h-3 w-3 rotate-45 bg-black ${arrowPositionClasses[placement]}`.trim()}
