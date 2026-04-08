@@ -37,7 +37,7 @@
     "next": "16.1.6",
     "next-auth": "5.0.0-beta.30",
     "next-navigation-guard": "0.2.0",
-    "prisma": "7.4.0",
+    "prisma": "7.7.0",
     "react": "19.2.3",
     "react-dom": "19.2.3",
     "react-dropzone": "14.3.8",
