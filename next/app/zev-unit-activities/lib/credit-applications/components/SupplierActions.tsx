@@ -5,11 +5,10 @@ import Excel from "exceljs";
 import { Button } from "@/app/lib/components";
 import {
   CreditApplicationSupplierStatus,
-  ModelYear,
   Role,
 } from "@/prisma/generated/enums";
 import { useRouter } from "next/navigation";
-import { useCallback, useMemo, useState, useTransition } from "react";
+import { useCallback, useState, useTransition } from "react";
 import {
   getErrorsTemplateDownloadUrl,
   getNotValidatedRecords,
@@ -19,7 +18,6 @@ import {
 import { getNormalizedComment } from "@/app/lib/utils/comment";
 import { Routes } from "@/app/lib/constants";
 import { Textarea } from "@/app/lib/components/inputs/Textarea";
-import { getModelYearEnumsToStringsMap } from "@/app/lib/utils/enumMaps";
 import { ErrorsTemplate } from "../constants";
 import { downloadBuffer } from "@/app/lib/utils/download";
 
@@ -27,16 +25,11 @@ export const SupplierActions = (props: {
   creditApplicationId: number;
   status: CreditApplicationSupplierStatus;
   userRoles: Role[];
-  partOfMyrModelYear: ModelYear | null;
 }) => {
   const [isPending, startTransition] = useTransition();
   const router = useRouter();
   const [comment, setComment] = useState<string>("");
   const [error, setError] = useState<string>("");
-
-  const modelYearsMap = useMemo(() => {
-    return getModelYearEnumsToStringsMap();
-  }, []);
 
   const handleDelete = useCallback(() => {
     startTransition(async () => {
@@ -55,23 +48,19 @@ export const SupplierActions = (props: {
     );
   }, [props.creditApplicationId]);
 
-  const handleSubmit = useCallback(
-    (partOfMyr: boolean) => {
-      startTransition(async () => {
-        const response = await supplierSubmit(
-          props.creditApplicationId,
-          partOfMyr,
-          getNormalizedComment(comment),
-        );
-        if (response.responseType === "error") {
-          setError(response.message);
-        } else {
-          router.refresh();
-        }
-      });
-    },
-    [props.creditApplicationId, comment],
-  );
+  const handleSubmit = useCallback(() => {
+    startTransition(async () => {
+      const response = await supplierSubmit(
+        props.creditApplicationId,
+        getNormalizedComment(comment),
+      );
+      if (response.responseType === "error") {
+        setError(response.message);
+      } else {
+        router.refresh();
+      }
+    });
+  }, [props.creditApplicationId, comment]);
 
   const handleDownloadErrors = useCallback(() => {
     startTransition(async () => {
@@ -132,22 +121,11 @@ export const SupplierActions = (props: {
           <>
             <Button
               variant="primary"
-              onClick={() => handleSubmit(false)}
+              onClick={handleSubmit}
               disabled={isPending}
             >
               {isPending ? "..." : "Submit"}
             </Button>
-            {props.partOfMyrModelYear && (
-              <Button
-                variant="primary"
-                onClick={() => handleSubmit(true)}
-                disabled={isPending}
-              >
-                {isPending
-                  ? "..."
-                  : `Submit as part of ${modelYearsMap[props.partOfMyrModelYear]} Model Year Report`}
-              </Button>
-            )}
           </>
         )}
       </>

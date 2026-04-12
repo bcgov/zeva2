@@ -21,13 +21,12 @@ export const ApplicationDetails = async (props: {
       <li>Makes: {props.application.makes}</li>
       <li>Service Address: {props.application.serviceAddress}</li>
       <li>Records Address: {props.application.recordsAddress}</li>
-      {props.application.partOfMyrModelYear && (
+      <li>Status: {statusMap[status]}</li>
+      {props.userIsGov && props.application.complianceYear && (
         <li>
-          Model Year of Associated Model Year Report:{" "}
-          {modelYearsMap[props.application.partOfMyrModelYear]}
+          Compliance Year: {modelYearsMap[props.application.complianceYear]}
         </li>
       )}
-      <li>Status: {statusMap[status]}</li>
       {props.userIsGov && props.application.lastValidatedTimestamp && (
         <li>
           Last Validated On:{" "}

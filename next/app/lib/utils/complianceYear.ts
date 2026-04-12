@@ -81,3 +81,20 @@ export const getComplianceDate = (modelYear: ModelYear): Date => {
 export const getDominatedComplianceYears = (complianceYear: ModelYear) => {
   return Object.values(ModelYear).filter((cy) => cy < complianceYear);
 };
+
+export const withinTwentyDayPeriod = (ts: Date) => {
+  const year = ts.getFullYear();
+  const month = ts.getMonth();
+  const date = ts.getDate();
+  const beginningDate = new Date(
+    `${year}-${process.env.BEGINNING_OF_COMPLIANCE_YEAR}`,
+  );
+  if (
+    month === beginningDate.getMonth() &&
+    date >= beginningDate.getDate() &&
+    date <= beginningDate.getDate() + 19
+  ) {
+    return true;
+  }
+  return false;
+};

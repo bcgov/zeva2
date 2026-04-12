@@ -416,8 +416,7 @@ model CreditApplication {
   aCredits                    Decimal?                        @map("a_credits") @db.Decimal(65, 2)
   bCredits                    Decimal?                        @map("b_credits") @db.Decimal(65, 2)
   lastValidatedTimestamp      DateTime?                       @map("last_validated_timestamp") @db.Timestamptz(6)
-  partOfMyrModelYear          ModelYear?                      @map("part_of_myr_model_year")
-  mustRevalidate              Boolean                         @default(false) @map("must_revalidate")
+  complianceYear              ModelYear?                      @map("compliance_year")
   CreditApplicationHistory    CreditApplicationHistory[]
   CreditApplicationRecord     CreditApplicationRecord[]
   CreditApplicationAttachment CreditApplicationAttachment[]
