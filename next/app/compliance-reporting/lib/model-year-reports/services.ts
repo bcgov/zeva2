@@ -564,12 +564,7 @@ export const getDataForSupplementary = async (
         organizationId,
         modelYear: modelYear,
       },
-      status: {
-        notIn: [
-          ModelYearReportStatus.DRAFT,
-          ModelYearReportStatus.RETURNED_TO_SUPPLIER,
-        ],
-      },
+      status: ModelYearReportStatus.ASSESSED,
     },
     select: {
       id: true,

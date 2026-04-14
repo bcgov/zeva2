@@ -440,19 +440,17 @@ export const serializeCredits = (
 export const getComplianceYearData = (submissionTimestamp: Date) => {
   const modelYearsMap = getModelYearEnumsToStringsMap();
   const currentCy = getCurrentComplianceYear();
-  const dominatedCys = getDominatedComplianceYears(currentCy);
-  const complianceYears = dominatedCys.map((cy) => {
-    const cyString = modelYearsMap[cy];
-    if (!cyString) {
-      throw new Error();
-    }
-    return cyString;
-  });
-  const currentCyString = modelYearsMap[currentCy];
-  if (!currentCyString) {
-    throw new Error();
-  }
-  complianceYears.unshift(currentCyString);
+  const complianceYears = Object.values(ModelYear)
+    .filter((cy) => {
+      return cy >= ModelYear.MY_2019 && cy <= currentCy;
+    })
+    .map((cy) => {
+      const cyString = modelYearsMap[cy];
+      if (!cyString) {
+        throw new Error();
+      }
+      return cyString;
+    });
   let defaultCy;
   if (withinTwentyDayPeriod(submissionTimestamp)) {
     defaultCy = getAdjacentYear("prev", currentCy);

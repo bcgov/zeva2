@@ -193,7 +193,7 @@ export const Dropdown: FC<IDropdownProps> = ({
         </span>
         {/* Chevron Icon */}
         <svg
-          className={`w-4 h-4 ml-2 transition-transform duration-200 flex-shrink-0 ${
+          className={`w-4 h-4 ml-2 transition-transform duration-200 shrink-0 ${
             isOpen ? "rotate-180" : ""
           } ${disabled ? "text-disabledIcon" : error ? "text-errorIcon" : "text-primaryIcon"}`}
           fill="none"
@@ -243,7 +243,7 @@ export const Dropdown: FC<IDropdownProps> = ({
       {error && errorMessage && (
         <div className="flex items-start gap-1 mt-1.5">
           <svg
-            className="w-4 h-4 text-errorIcon flex-shrink-0 mt-0.5"
+            className="w-4 h-4 text-errorIcon shrink-0 mt-0.5"
             fill="currentColor"
             viewBox="0 0 20 20"
             aria-hidden="true"

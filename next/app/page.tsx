@@ -11,7 +11,7 @@ export default function Home() {
       className="h-screen bg-[url('../public/bg.jpg')] bg-no-repeat bg-center bg-cover h-screen m-0 p-0 overflow-hidden relative"
     >
       <div className="grid grid-cols-1 grid-rows-[auto_1fr] md:grid-rows-1 md:grid-cols-[30%_70%] h-full">
-        <div className="bg-white bg-opacity-80 md:h-full order-2 md:order-1">
+        <div className="bg-white/80 md:h-full order-2 md:order-1">
           {/* desktop logo */}
           <Image
             src="/BCID_H_rgb_pos.png"

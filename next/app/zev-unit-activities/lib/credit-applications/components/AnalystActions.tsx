@@ -160,6 +160,7 @@ export const AnalystActions = (props: {
             onChange={(value) => {
               handleSelectCy(value);
             }}
+            value={complianceYear}
           />
           <Button
             variant="primary"
