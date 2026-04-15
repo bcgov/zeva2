@@ -1,4 +1,4 @@
-FROM artifacts.developer.gov.bc.ca/docker-remote/node:22.13.1
+FROM artifacts.developer.gov.bc.ca/docker-remote/node:24.14.1
 
 WORKDIR /next
 

@@ -342,17 +342,17 @@ export const getPendingSupplyCredits = async (
             CreditApplicationStatus.RETURNED_TO_ANALYST,
           ],
         },
-        partOfMyrModelYear: modelYear,
       },
     },
-    by: ["vehicleClass", "zevClass"],
+    by: ["vehicleClass", "zevClass", "modelYear"],
     _sum: {
       numberOfUnits: true,
     },
   });
   for (const record of groupBy) {
+    const recordMy = record.modelYear;
     const numberOfUnits = record._sum.numberOfUnits;
-    if (numberOfUnits) {
+    if (recordMy === modelYear && numberOfUnits) {
       result.push({
         numberOfUnits,
         vehicleClass: record.vehicleClass,
@@ -564,12 +564,7 @@ export const getDataForSupplementary = async (
         organizationId,
         modelYear: modelYear,
       },
-      status: {
-        notIn: [
-          ModelYearReportStatus.DRAFT,
-          ModelYearReportStatus.RETURNED_TO_SUPPLIER,
-        ],
-      },
+      status: ModelYearReportStatus.ASSESSED,
     },
     select: {
       id: true,

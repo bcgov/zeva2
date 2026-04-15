@@ -118,8 +118,8 @@ export const mockFunctions = (opt: {
       : undefined;
 
   // Mock prisma.$transaction to simulate database operations.
-  const createOrgFn = jest.fn(() => Promise.resolve(createdOrg));
-  const updateOrgFn = jest.fn(() => Promise.resolve(createdOrg));
+  const createOrgFn = jest.fn((data: any) => Promise.resolve(createdOrg));
+  const updateOrgFn = jest.fn((data: any) => Promise.resolve(createdOrg));
   const createAddressFn = jest
     .fn()
     .mockImplementationOnce(() => Promise.resolve(createdServiceAddress))

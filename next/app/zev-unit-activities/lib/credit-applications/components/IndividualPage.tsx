@@ -15,7 +15,7 @@ import { SupplierActions } from "./SupplierActions";
 import { DirectorActions } from "./DirectorActions";
 import { AnalystActions } from "./AnalystActions";
 import { ApplicationStatistics } from "./ApplicationStatistics";
-import { getPartOfMyrModelYear } from "../services";
+import { getComplianceYearData } from "../utilsServer";
 
 export const IndividualPage = async (props: { id: string }) => {
   const id = Number.parseInt(props.id, 10);
@@ -25,7 +25,7 @@ export const IndividualPage = async (props: { id: string }) => {
   }
   const applicationStatus = creditApplication.status;
   const applicationSupplierStatus = creditApplication.supplierStatus;
-  const { userIsGov, userOrgId, userRoles } = await getUserInfo();
+  const { userIsGov, userRoles } = await getUserInfo();
   const downloadApplication = async () => {
     "use server";
     return getCreditApplicationDownloadUrl(id);
@@ -77,6 +77,11 @@ export const IndividualPage = async (props: { id: string }) => {
 
   if (userIsGov) {
     if (userRoles.includes(Role.ZEVA_IDIR_USER)) {
+      const caSubmittedDate = creditApplication.submissionTimestamp;
+      if (!caSubmittedDate) {
+        throw new Error();
+      }
+      const cyData = getComplianceYearData(caSubmittedDate);
       return (
         <div className="flex flex-col w-1/3">
           {applicationData}
@@ -87,6 +92,8 @@ export const IndividualPage = async (props: { id: string }) => {
               validatedBefore={
                 creditApplication.lastValidatedTimestamp !== null
               }
+              complianceYears={cyData.complianceYears}
+              defaultComplianceYear={cyData.defaultComplianceYear}
             />
           </ContentCard>
         </div>
@@ -102,7 +109,6 @@ export const IndividualPage = async (props: { id: string }) => {
       );
     }
   }
-  const partOfMyrModelYear = await getPartOfMyrModelYear(userOrgId);
   return (
     <div className="flex flex-col w-1/3">
       {applicationData}
@@ -111,7 +117,6 @@ export const IndividualPage = async (props: { id: string }) => {
           creditApplicationId={id}
           status={applicationSupplierStatus}
           userRoles={userRoles}
-          partOfMyrModelYear={partOfMyrModelYear}
         />
       </ContentCard>
     </div>

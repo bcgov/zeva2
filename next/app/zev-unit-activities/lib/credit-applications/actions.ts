@@ -12,7 +12,11 @@ import {
   ZevClass,
 } from "@/prisma/generated/enums";
 import Excel from "exceljs";
-import { getWarningsMap, parseSupplierSubmission } from "./utilsServer";
+import {
+  getWarningsMap,
+  parseSupplierSubmission,
+  twentyDayPeriodCheck,
+} from "./utilsServer";
 import {
   createHistory,
   deleteAttachments,
@@ -25,7 +29,6 @@ import {
   unreserveVins,
   updateStatus,
   createAttachments,
-  getPartOfMyrModelYear,
   getDecodedVinsMap,
 } from "./services";
 import { ErrorsTemplate, SupplierTemplate } from "./constants";
@@ -44,9 +47,11 @@ import {
 } from "@/app/lib/utils/actionResponse";
 import { Attachment, AttachmentDownload } from "@/app/lib/constants/attachment";
 import { addJobToEmailQueue } from "@/app/lib/services/queue";
-import { getComplianceDate } from "@/app/lib/utils/complianceYear";
+import {
+  getComplianceDate,
+  getCurrentComplianceYear,
+} from "@/app/lib/utils/complianceYear";
 import { Decimal } from "decimal.js";
-import { getLatestSuccessfulFileTimestamp } from "@/app/icbc/lib/services";
 import {
   CreditApplicationAttachmentWhereInput,
   CreditApplicationRecordCreateManyInput,
@@ -335,7 +340,6 @@ export const supplierDelete = async (
 
 export const supplierSubmit = async (
   creditApplicationId: number,
-  partOfMyr: boolean,
   comment?: string,
 ): Promise<ErrorOrSuccessActionResponse> => {
   const { userIsGov, userOrgId, userId, userRoles } = await getUserInfo();
@@ -368,17 +372,9 @@ export const supplierSubmit = async (
   ) {
     return getErrorActionResponse("Invalid Action!");
   }
-  let partOfMyrModelYear: ModelYear | null = null;
-  if (partOfMyr) {
-    const myrModelYear = await getPartOfMyrModelYear(userOrgId);
-    if (!myrModelYear) {
-      return getErrorActionResponse("Invalid Action!");
-    } else {
-      partOfMyrModelYear = myrModelYear;
-    }
-  }
   const records = application.CreditApplicationRecord;
   try {
+    twentyDayPeriodCheck(records);
     const invalidDateVins: string[] = [];
     for (const record of records) {
       if (record.timestamp > new Date()) {
@@ -405,7 +401,6 @@ export const supplierSubmit = async (
           status: CreditApplicationStatus.SUBMITTED,
           supplierStatus: CreditApplicationStatus.SUBMITTED,
           submissionTimestamp: new Date(),
-          partOfMyrModelYear,
         },
       });
       await tx.reservedVin.createMany({
@@ -473,11 +468,7 @@ export const validateCreditApplication = async (
   }, []);
   const icbcMap = await getIcbcRecordsMap(vins);
   const decodedVins = await getDecodedVinsMap(vins);
-  const warningsMap = getWarningsMap(
-    records,
-    icbcMap,
-    creditApplication.partOfMyrModelYear,
-  );
+  const warningsMap = getWarningsMap(records, icbcMap);
   let eligibleVinsCount = 0;
   let ineligibleVinsCount = 0;
   let aCredits = new Decimal(0);
@@ -535,7 +526,6 @@ export const validateCreditApplication = async (
         ineligibleVinsCount,
         aCredits,
         bCredits,
-        mustRevalidate: false,
       },
     });
   });
@@ -648,11 +638,15 @@ export const updateValidatedRecords = async (
 
 export const analystRecommend = async (
   creditApplicationId: number,
+  complianceYear: ModelYear,
   comment?: string,
 ): Promise<ErrorOrSuccessActionResponse> => {
   const { userIsGov, userId, userRoles } = await getUserInfo();
   if (!userIsGov || !userRoles.some((role) => role === Role.ZEVA_IDIR_USER)) {
     return getErrorActionResponse("Unauthorized!");
+  }
+  if (!complianceYear || complianceYear > getCurrentComplianceYear()) {
+    return getErrorActionResponse("Invalid Action!");
   }
   const creditApplication = await prisma.creditApplication.findUnique({
     where: {
@@ -666,15 +660,16 @@ export const analystRecommend = async (
   ) {
     return getErrorActionResponse("Invalid Action!");
   }
-  if (creditApplication.mustRevalidate) {
-    return getErrorActionResponse("You must revalidate the application!");
-  }
   await prisma.$transaction(async (tx) => {
-    await updateStatus(
-      creditApplicationId,
-      CreditApplicationStatus.RECOMMEND_APPROVAL,
-      tx,
-    );
+    await tx.creditApplication.update({
+      where: {
+        id: creditApplicationId,
+      },
+      data: {
+        status: CreditApplicationStatus.RECOMMEND_APPROVAL,
+        complianceYear,
+      },
+    });
     const historyId = await createHistory(
       userId,
       creditApplicationId,
@@ -821,16 +816,17 @@ export const directorApprove = async (
     },
     select: {
       organizationId: true,
-      partOfMyrModelYear: true,
-      mustRevalidate: true,
+      complianceYear: true,
     },
   });
-  if (!creditApplication) {
+  if (
+    !creditApplication ||
+    !creditApplication.complianceYear ||
+    creditApplication.complianceYear > getCurrentComplianceYear()
+  ) {
     return getErrorActionResponse("Invalid Action!");
   }
-  if (creditApplication.mustRevalidate) {
-    return getErrorActionResponse("The application must be revalidated!");
-  }
+  const complianceYear = creditApplication.complianceYear;
   const invalidVinRecords = await prisma.creditApplicationRecord.findMany({
     where: {
       creditApplicationId,
@@ -846,9 +842,13 @@ export const directorApprove = async (
   const transactionsToCreate: ZevUnitTransactionCreateManyInput[] = [];
   const creditRecords =
     await getApplicationFlattenedCreditRecords(creditApplicationId);
-  const transactionTimestamp = creditApplication.partOfMyrModelYear
-    ? getComplianceDate(creditApplication.partOfMyrModelYear)
-    : new Date();
+  let transactionTimestamp;
+  const currentCy = getCurrentComplianceYear();
+  if (currentCy === complianceYear) {
+    transactionTimestamp = new Date();
+  } else {
+    transactionTimestamp = getComplianceDate(complianceYear);
+  }
   for (const record of creditRecords) {
     transactionsToCreate.push({
       organizationId: creditApplication.organizationId,

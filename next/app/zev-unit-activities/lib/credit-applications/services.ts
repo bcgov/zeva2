@@ -9,7 +9,6 @@ import {
   VehicleStatus,
   ZevType,
   ZevClass,
-  ModelYearReportStatus,
 } from "@/prisma/generated/enums";
 import { CreditApplicationRecordWhereInput } from "@/prisma/generated/models";
 import { mapOfStatusToSupplierStatus } from "./constants";
@@ -17,10 +16,6 @@ import { Attachment } from "@/app/lib/constants/attachment";
 import { TransactionClient } from "@/types/prisma";
 import { Decimal } from "decimal.js";
 import { flattenZevUnitRecords, ZevUnitRecord } from "@/lib/utils/zevUnit";
-import {
-  getAdjacentYear,
-  getCurrentComplianceYear,
-} from "@/app/lib/utils/complianceYear";
 import { getStringsToModelYearsEnumsMap } from "@/app/lib/utils/enumMaps";
 import { validateDate } from "@/app/lib/utils/date";
 
@@ -475,39 +470,4 @@ export const getCreditStats = async (
       numberOfUnits: true,
     },
   });
-};
-
-export const getPartOfMyrModelYear = async (
-  orgId: number,
-): Promise<ModelYear | null> => {
-  const currentCy = getCurrentComplianceYear();
-  const previousCy = getAdjacentYear("prev", currentCy);
-  const legacyAssessedMyr =
-    await prisma.legacyAssessedModelYearReport.findUnique({
-      where: {
-        organizationId_modelYear: {
-          organizationId: orgId,
-          modelYear: previousCy,
-        },
-      },
-    });
-  if (legacyAssessedMyr) {
-    return null;
-  }
-  const myr = await prisma.modelYearReport.findUnique({
-    where: {
-      organizationId_modelYear: {
-        organizationId: orgId,
-        modelYear: previousCy,
-      },
-    },
-  });
-  if (
-    myr &&
-    myr.status !== ModelYearReportStatus.DRAFT &&
-    myr.status !== ModelYearReportStatus.RETURNED_TO_SUPPLIER
-  ) {
-    return null;
-  }
-  return previousCy;
 };

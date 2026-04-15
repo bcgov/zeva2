@@ -1,7 +1,6 @@
 import { handleEmailJob } from "./handlers/email";
 import { ConnectionOptions } from "bullmq";
 import { QueueNames } from "@/app/lib/constants/queue";
-import { handleFlagInProcessCAsJob } from "./handlers/flagCAs";
 
 const connection: ConnectionOptions = {
   host: process.env.REDIS_HOST ?? "redis",
@@ -31,11 +30,6 @@ export const bullmqConfig = {
       queueName: QueueNames.Email,
       numberOfWorkers: 1,
       handler: handleEmailJob,
-    },
-    {
-      queueName: QueueNames.FlagInProcessCAs,
-      numberOfWorkers: 1,
-      handler: handleFlagInProcessCAsJob,
     },
   ],
   queueDefaultJobOptions: {

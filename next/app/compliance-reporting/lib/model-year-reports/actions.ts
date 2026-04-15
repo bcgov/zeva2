@@ -5,7 +5,6 @@ import { getPresignedGetObjectUrl } from "@/app/lib/services/s3";
 import { AssessmentTemplate, ForecastTemplate, MyrTemplate } from "./constants";
 import { getUserInfo } from "@/auth";
 import {
-  CreditApplicationStatus,
   ModelYear,
   ModelYearReportStatus,
   Notification,
@@ -50,7 +49,6 @@ import {
   ComplianceInfo,
   ComplianceReduction,
   getComplianceInfo,
-  getReportFullObjectName,
   getSerializedMyrRecords,
   getSerializedMyrRecordsExcludeKey,
   UnitsAsString,
@@ -59,9 +57,9 @@ import { prisma } from "@/lib/prisma";
 import {
   getComplianceDate,
   getModelYearReportModelYear,
+  withinTwentyDayPeriod,
 } from "@/app/lib/utils/complianceYear";
 import { addJobToEmailQueue } from "@/app/lib/services/queue";
-import { Buffer } from "node:buffer";
 import { Attachment, AttachmentDownload } from "@/app/lib/constants/attachment";
 
 export type NvValues = Partial<Record<VehicleClass, string>>;
@@ -598,25 +596,8 @@ export const submitAssessment = async (
   if (!myr) {
     return getErrorActionResponse("Invalid Action!");
   }
-  const partOfMyrCA = await prisma.creditApplication.findFirst({
-    where: {
-      organizationId: myr.organizationId,
-      partOfMyrModelYear: myr.modelYear,
-      status: {
-        notIn: [
-          CreditApplicationStatus.APPROVED,
-          CreditApplicationStatus.REJECTED,
-        ],
-      },
-    },
-    select: {
-      id: true,
-    },
-  });
-  if (partOfMyrCA) {
-    return getErrorActionResponse(
-      "There exists an associated CA that must be dealt with first!",
-    );
+  if (withinTwentyDayPeriod(new Date())) {
+    return getErrorActionResponse("Please wait until after the 20-day period!");
   }
   await prisma.$transaction(async (tx) => {
     await tx.modelYearReport.update({
@@ -758,6 +739,9 @@ export const assessModelYearReport = async (
   });
   if (!myr || !myr.assessment) {
     return getErrorActionResponse("Assessable Model Year Report not found!");
+  }
+  if (withinTwentyDayPeriod(new Date())) {
+    return getErrorActionResponse("Please wait until after the 20-day period!");
   }
   const modelYear = myr.modelYear;
   const organizationId = myr.organizationId;

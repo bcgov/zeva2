@@ -1,9 +1,9 @@
 "use client";
 
-import { Button } from "@/app/lib/components";
+import { Button, Dropdown } from "@/app/lib/components";
 import { CreditApplicationStatus } from "@/prisma/generated/enums";
 import { useRouter } from "next/navigation";
-import { useCallback, useState, useTransition } from "react";
+import { useCallback, useMemo, useState, useTransition } from "react";
 import {
   analystRecommend,
   analystReject,
@@ -12,16 +12,30 @@ import {
 import { Routes } from "@/app/lib/constants";
 import { Textarea } from "@/app/lib/components/inputs/Textarea";
 import { getNormalizedComment } from "@/app/lib/utils/comment";
+import { getStringsToModelYearsEnumsMap } from "@/app/lib/utils/enumMaps";
 
 export const AnalystActions = (props: {
   id: number;
   status: CreditApplicationStatus;
   validatedBefore: boolean;
+  complianceYears: string[];
+  defaultComplianceYear: string;
 }) => {
   const [isPending, startTransition] = useTransition();
   const router = useRouter();
+  const [complianceYear, setComplianceYear] = useState<string>(
+    props.defaultComplianceYear,
+  );
   const [comment, setComment] = useState<string>("");
   const [error, setError] = useState<string>("");
+
+  const modelYearsMap = useMemo(() => {
+    return getStringsToModelYearsEnumsMap();
+  }, []);
+
+  const handleSelectCy = useCallback((selectedCy: string) => {
+    setComplianceYear(selectedCy);
+  }, []);
 
   const handleValidate = useCallback(() => {
     startTransition(async () => {
@@ -47,17 +61,28 @@ export const AnalystActions = (props: {
 
   const handleRecommend = useCallback(() => {
     startTransition(async () => {
-      const response = await analystRecommend(
-        props.id,
-        getNormalizedComment(comment),
-      );
-      if (response.responseType === "error") {
-        setError(response.message);
-      } else {
-        router.refresh();
+      try {
+        const cyEnum = modelYearsMap[complianceYear];
+        if (!cyEnum) {
+          throw new Error("You must select a compliance year!");
+        }
+        const response = await analystRecommend(
+          props.id,
+          cyEnum,
+          getNormalizedComment(comment),
+        );
+        if (response.responseType === "error") {
+          throw new Error(response.message);
+        } else {
+          router.refresh();
+        }
+      } catch (e) {
+        if (e instanceof Error) {
+          setError(e.message);
+        }
       }
     });
-  }, [props.id, comment]);
+  }, [props.id, complianceYear, comment]);
 
   const handleReject = useCallback(() => {
     startTransition(async () => {
@@ -125,6 +150,18 @@ export const AnalystActions = (props: {
           >
             {isPending ? "..." : "Edit Validated Records"}
           </Button>
+          <Dropdown
+            options={props.complianceYears.map((cy) => {
+              return {
+                value: cy,
+                label: cy,
+              };
+            })}
+            onChange={(value) => {
+              handleSelectCy(value);
+            }}
+            value={complianceYear}
+          />
           <Button
             variant="primary"
             onClick={() => {

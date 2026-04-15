@@ -1,10 +1,60 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
 
-:root {
-  --background: theme("colors.white");
-  --foreground: theme("colors.primaryText");
+@theme {
+  /* Primary colors */
+  --color-primaryBlue: #013366;
+  --color-primaryBlueHover: #1e5189;
+  --color-primaryBluePressed: #01264c;
+  --color-disabledBG: #edebe9;
+  --color-primaryGold: #fcba19;
+  --color-textOnPrimary: #ffffff;
+  --color-primaryRed: #ce3e39;
+  --color-primaryRedHover: #a2312d;
+  --color-primaryRedPressed: #721f1c;
+
+  /* Status colors - validation, system messages */
+  --color-success: #42814a;
+  --color-error: #ce3e39;
+  --color-warning: #8e5e06;
+  --color-info: #053662;
+
+  /* Icon colors */
+  --color-primaryIcon: #2d2d2d;
+  --color-secondaryIcon: #474543;
+  --color-disabledIcon: #9f9d9c;
+  --color-linkIcon: #255a90;
+  --color-successIcon: #42814a;
+  --color-errorIcon: #ce3e39;
+  --color-warningIcon: #8e5e06;
+  --color-infoIcon: #053662;
+
+  /* Secondary & text */
+  --color-primaryText: #2d2d2d;
+  --color-secondaryText: #474543;
+  --color-placeholder: #9f9d9c;
+  --color-link: #255a90;
+  --color-disabledText: #9f9d9c;
+
+  /* Surface & background */
+  --color-white: #ffffff;
+  --color-lightGrey: #faf9f8;
+  --color-disabledSurface: #edebe9;
+
+  /* Dividers/borders/overlays */
+  --color-dividerMedium: #898785;
+  --color-dividerDark: #353433;
+  --color-overlayModal: #000000;
+
+  /* Design system shadow levels */
+  --shadow-level-1: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --shadow-level-2: 0 2px 4px 0 rgba(0, 0, 0, 0.08);
+  --shadow-level-3: 0 4px 8px 0 rgba(0, 0, 0, 0.12);
+  --shadow-level-4: 0 8px 16px 0 rgba(0, 0, 0, 0.16);
+
+  /* text shadows */
+  --text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.7);
+  --text-shadow-sm: 1px 1px 2px rgba(0, 0, 0, 0.5);
+  --text-shadow-lg: 3px 3px 6px rgba(0, 0, 0, 0.5);
 }
 
 /* BC Sans Regular */
@@ -36,28 +86,43 @@
 }
 
 body {
-  color: var(--foreground);
-  background: var(--background);
+  color: var(--color-primaryText);
+  background: var(--color-white);
   font-family: BCSans, Helvetica, sans-serif;
-}
-
-button {
-  @apply m-1 bg-primaryBlue text-white hover:bg-primaryBlueHover;
 }
 
 .white-button {
   background-color: #f2f2f2;
-  color: theme("colors.primaryBlue");
-  outline: 1px solid theme("colors.primaryBlue");
+  color: var(--color-primaryBlue);
+  outline: 1px solid var(--color-primaryBlue);
 }
 
 .section-title {
   font-size: 1.2rem;
   font-weight: bold;
-  color: theme("colors.primaryBlue");
+  color: var(--color-primaryBlue);
+}
+
+@layer base {
+  button:not(:disabled),
+  [role="button"]:not(:disabled) {
+    cursor: pointer;
+  }
+
+  *,
+  ::after,
+  ::before,
+  ::backdrop,
+  ::file-selector-button {
+    border-color: var(--color-gray-200, currentColor);
+  }
 }
 
 @layer components {
+  button {
+    @apply m-1 bg-primaryBlue text-white hover:bg-primaryBlueHover;
+  }
+
   .form-input-base {
     @apply w-full rounded-md border border-dividerMedium bg-disabledSurface px-3 py-2.5 text-sm text-primaryText placeholder:text-placeholder focus:border-primaryBlue focus:ring-2 focus:ring-primaryBlue/20;
   }

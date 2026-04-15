@@ -206,7 +206,7 @@ export const UserForm = ({
           )}
         </div>
 
-        <div className="grid gap-4 lg:grid-cols-[1.7fr,1fr] 2xl:grid-cols-[2fr,1fr]">
+        <div className="grid gap-4 lg:grid-cols-[1.7fr_1fr] 2xl:grid-cols-[2fr_1fr]">
           <section className="space-y-5 rounded-lg border border-dividerMedium/40 bg-white p-4 shadow-sm lg:p-5">
             <div className="space-y-1">
               <h2 className="text-xl font-semibold text-primaryText">
