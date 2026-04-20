@@ -24,6 +24,7 @@ import { Dropdown } from "@/app/lib/components/inputs";
 import { Attachment, AttachmentDownload } from "@/app/lib/constants/attachment";
 import { getDefaultAttchmentTypes } from "@/app/lib/utils/attachments";
 import { getFiles } from "@/app/lib/utils/download";
+import { TextInput } from "@/app/lib/components/inputs";
 
 export type VehicleFormData = {
   modelYear?: string;
@@ -155,32 +156,18 @@ export const VehicleForm = (props: {
           />
         </div>
       </div>
-      <div className="flex items-center py-2 my-2">
-        <label htmlFor="make" className="w-72">
-          Make
-        </label>
-        <input
-          id="make"
-          type="text"
-          onChange={(e) => {
-            handleChange(e.target.id, e.target.value);
-          }}
+      <div className="py-2 my-2">
+        <TextInput
+          label="Make"
           value={formData.make ?? ""}
-          className="border p-2 w-full"
+          onChange={(value) => handleChange("make", value)}
         />
       </div>
-      <div className="flex items-center py-2 my-2">
-        <label htmlFor="modelName" className="w-72">
-          Model Name
-        </label>
-        <input
-          id="modelName"
-          type="text"
+      <div className="py-2 my-2">
+        <TextInput
+          label="Model Name"
           value={formData.modelName ?? ""}
-          onChange={(e) => {
-            handleChange(e.target.id, e.target.value);
-          }}
-          className="border p-2 w-full"
+          onChange={(value) => handleChange("modelName", value)}
         />
       </div>
       <div className="flex items-center py-2 my-2">
@@ -200,18 +187,12 @@ export const VehicleForm = (props: {
           />
         </div>
       </div>
-      <div className="flex items-center py-2 my-2">
-        <label htmlFor="range" className="w-72">
-          Electric EPA Range (km)
-        </label>
-        <input
-          id="range"
-          type="text"
+      <div className="py-2 my-2">
+        <TextInput
+          label="Electric EPA Range (km)"
+          type="number"
           value={formData.range ?? ""}
-          className="border p-2 w-full"
-          onChange={(e) => {
-            handleChange(e.target.id, e.target.value);
-          }}
+          onChange={(value) => handleChange("range", value)}
         />
       </div>
       <div className="flex items-center py-2 my-2">
@@ -231,18 +212,12 @@ export const VehicleForm = (props: {
           />
         </div>
       </div>
-      <div className="flex items-center py-2 my-2">
-        <label htmlFor="gvwr" className="w-72">
-          GVWR (kg)
-        </label>
-        <input
-          id="gvwr"
-          type="text"
+      <div className="py-2 my-2">
+        <TextInput
+          label="GVWR (kg)"
+          type="number"
           value={formData.gvwr ?? ""}
-          className="border p-2 w-full"
-          onChange={(e) => {
-            handleChange(e.target.id, e.target.value);
-          }}
+          onChange={(value) => handleChange("gvwr", value)}
         />
       </div>
       <div className="flex items-center space-x-4">

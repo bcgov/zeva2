@@ -1,8 +1,8 @@
 "use client";
+import { TextInput, Textarea } from "@/app/lib/components/inputs";
 import { OrganizationAddressSparse } from "../data";
 
 const fieldMainClass = "grid grid-cols-[120px_1fr]";
-const textboxClass = "p-1 border border-gray-300 rounded";
 
 type AddressState = [
   OrganizationAddressSparse,
@@ -23,18 +23,15 @@ const AddressField = (props: {
     });
 
   return props.multiline ? (
-    <textarea
-      className={textboxClass}
+    <Textarea
       rows={3}
       value={value}
-      onChange={(e) => handleChange(e.target.value)}
+      onChange={handleChange}
     />
   ) : (
-    <input
-      className={textboxClass}
-      type="text"
+    <TextInput
       value={value}
-      onChange={(e) => handleChange(e.target.value)}
+      onChange={handleChange}
     />
   );
 };
