@@ -18,6 +18,7 @@ import { getModelYearEnumsToStringsMap } from "@/app/lib/utils/enumMaps";
 import { downloadBuffer, getFiles } from "@/app/lib/utils/download";
 import { Routes } from "@/app/lib/constants";
 import { Attachment, AttachmentDownload } from "@/app/lib/constants/attachment";
+import { TextInput } from "@/app/lib/components";
 
 export const CreditApplicationForm = (props: {
   legalName: string;
@@ -173,55 +174,35 @@ export const CreditApplicationForm = (props: {
   return (
     <div>
       {error && <p className="text-red-600">{error}</p>}
-      <div className="flex items-center py-2 my-2">
-        <label className="w-72" htmlFor="legalName">
-          Legal Name
-        </label>
-        <input
-          className="border p-2 w-full"
-          name="legalName"
-          type="text"
+      <div className="py-2 my-2">
+        <TextInput
+          label="Legal Name"
           value={legalName ?? ""}
-          onChange={(e) => setLegalName(e.target.value)}
+          onChange={setLegalName}
           disabled={isPending}
         />
       </div>
-      <div className="flex items-center py-2 my-2">
-        <label className="w-72" htmlFor="recordsAddress">
-          Records Address
-        </label>
-        <input
-          className="border p-2 w-full"
-          name="recordsAddress"
-          type="text"
+      <div className="py-2 my-2">
+        <TextInput
+          label="Records Address"
           value={recordsAddress ?? ""}
-          onChange={(e) => setRecordsAddress(e.target.value)}
+          onChange={setRecordsAddress}
           disabled={isPending}
         />
       </div>
-      <div className="flex items-center py-2 my-2">
-        <label className="w-72" htmlFor="serviceAddress">
-          Service Address
-        </label>
-        <input
-          className="border p-2 w-full"
-          name="serviceAddress"
-          type="text"
+      <div className="py-2 my-2">
+        <TextInput
+          label="Service Address"
           value={serviceAddress ?? ""}
-          onChange={(e) => setServiceAddress(e.target.value)}
+          onChange={setServiceAddress}
           disabled={isPending}
         />
       </div>
-      <div className="flex items-center py-2 my-2">
-        <label className="w-72" htmlFor="makes">
-          Makes
-        </label>
-        <input
-          className="border p-2 w-full"
-          name="makes"
-          type="text"
+      <div className="py-2 my-2">
+        <TextInput
+          label="Makes"
           value={makes ?? ""}
-          onChange={(e) => setMakes(e.target.value)}
+          onChange={setMakes}
           disabled={isPending}
         />
       </div>

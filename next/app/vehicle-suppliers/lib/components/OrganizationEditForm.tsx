@@ -1,6 +1,7 @@
 "use client";
 import { FormEvent, useCallback, useState } from "react";
 import { Button } from "@/app/lib/components";
+import { TextInput } from "@/app/lib/components/inputs";
 import {
   createOrganization,
   OrganizationPayload,
@@ -98,27 +99,19 @@ const OrganizationEditForm = (props: {
 
       <form className="space-y-4" onSubmit={handleSubmit}>
         {errorMsg && <p className="text-red-600">{errorMsg}</p>}
-        <div className={mainFieldClass}>
-          <span className="p-1">Legal Organization Name</span>
-          <input
-            className="p-1"
-            type="text"
-            required
-            value={organizationName}
-            onChange={(e) => setOrganizationName(e.target.value)}
-          />
-        </div>
+        <TextInput
+          label="Legal Organization Name"
+          value={organizationName}
+          onChange={setOrganizationName}
+          required
+        />
 
-        <div className={mainFieldClass}>
-          <span className="p-1">Common Name</span>
-          <input
-            className="p-1"
-            type="text"
-            required
-            value={shortName}
-            onChange={(e) => setShortName(e.target.value)}
-          />
-        </div>
+        <TextInput
+          label="Common Name"
+          value={shortName}
+          onChange={setShortName}
+          required
+        />
         <div className={mainFieldClass + " p-1"}>
           <span>Status</span>
           <div className="flex flex-row gap-12">
