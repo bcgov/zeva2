@@ -104,7 +104,7 @@ Use this process to promote a validated Dev release to Test.
 5. Approve and merge the PR.
 6. After merge, ArgoCD deploys the new version to Test automatically.
 
-# 4. Hotfix Release to Test
+# 4. Hotfix Release to Test - try hotfix
 
 Use this process for emergency fixes on Test without pulling unrelated changes from `main`.
 
