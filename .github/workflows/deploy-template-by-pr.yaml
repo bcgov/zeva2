@@ -121,7 +121,7 @@ jobs:
             yq -i '.image.tag = "${{ inputs.version}}"' zeva2/zeva2-bullmq/${{ inputs.values_file }}
 
       - name: Create pull request to main
-        uses: peter-evans/create-pull-request@v6
+        uses: peter-evans/create-pull-request@v8
         with:
           token: ${{ secrets.manifest-repo-token }}
           commit-message: "${{ steps.pr_info.outputs.title }}"
