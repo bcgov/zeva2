@@ -7,6 +7,7 @@ module.exports = {
       name: "hotfix/1.18.x",
       range: "1.18.x",
       channel: "hotfix",
+      prerelease: true,
     },
   ],
 
