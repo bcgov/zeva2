@@ -1,13 +1,10 @@
 module.exports = {
   branches: [
     "main",
-
-    // Explicit maintenance declaration
     {
       name: "hotfix/1.18.x",
       range: "1.18.x",
       channel: "hotfix",
-      prerelease: true,
     },
   ],
 
@@ -16,11 +13,11 @@ module.exports = {
       "@semantic-release/commit-analyzer",
       {
         releaseRules: [
-          { breaking: true, release: "patch" },
-          { type: "feat", release: "patch" },
-          { type: "fix", release: "patch" },
-          { type: "perf", release: "patch" },
-          { type: "revert", release: "patch" },
+          { breaking: true, release: false },
+          { type: "feat", release: false },
+          { type: "fix", release: false },
+          { type: "perf", release: false },
+          { type: "revert", release: false },
         ],
       },
     ],
