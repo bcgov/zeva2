@@ -127,10 +127,10 @@ jobs:
           PREV_TAG="${{ steps.prev_tag.outputs.tag }}"
           if [ -n "$NEW_TAG" ] && [ "$NEW_TAG" != "$PREV_TAG" ]; then
             echo "Release created: $NEW_TAG"
-            echo "release_is_new=true" >> "$GITHUB_OUTPUT"
+            echo "is_new=true" >> "$GITHUB_OUTPUT"
           else
             echo "No new release tag created; using latest tag."
-            echo "release_is_new=false" >> "$GITHUB_OUTPUT"
+            echo "is_new=false" >> "$GITHUB_OUTPUT"
           fi
           VERSION="${NEW_TAG#v}"
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
