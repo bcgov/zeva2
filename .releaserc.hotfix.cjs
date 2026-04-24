@@ -2,8 +2,7 @@ module.exports = {
   branches: [
     "main",
     {
-      name: "hotfix/*",
-      prerelease: "hotfix",
+      name: "hotfix/1.18.x",
       channel: "hotfix",
     },
   ],
@@ -21,21 +20,7 @@ module.exports = {
       },
     ],
     "@semantic-release/release-notes-generator",
-    [
-      "@semantic-release/npm",
-      {
-        npmPublish: false,
-      },
-    ],
-    [
-      "@semantic-release/github",
-      {
-        successComment: false,
-        failTitle: false,
-        failComment: false,
-        releasedLabels: false,
-        addReleases: "bottom",
-      },
-    ],
+    ["@semantic-release/npm", { npmPublish: false }],
+    ["@semantic-release/github"],
   ],
 };
