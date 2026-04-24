@@ -4,6 +4,7 @@ module.exports = {
     {
       name: "hotfix/*",
       prerelease: "hotfix",
+      channel: "hotfix",
     },
   ],
   plugins: [
