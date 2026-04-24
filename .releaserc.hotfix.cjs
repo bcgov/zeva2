@@ -1,11 +1,15 @@
 module.exports = {
   branches: [
     "main",
+
+    // Explicit maintenance declaration
     {
       name: "hotfix/1.18.x",
+      range: "1.18.x",
       channel: "hotfix",
     },
   ],
+
   plugins: [
     [
       "@semantic-release/commit-analyzer",
@@ -24,3 +28,4 @@ module.exports = {
     ["@semantic-release/github"],
   ],
 };
+``;
