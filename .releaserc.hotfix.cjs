@@ -2,27 +2,39 @@ module.exports = {
   branches: [
     "main",
     {
-      name: "hotfix/1.18.x",
-      range: "1.18.x",
-      channel: "hotfix",
+      name: "hotfix/*",
+      prerelease: "hotfix",
     },
   ],
-
   plugins: [
     [
       "@semantic-release/commit-analyzer",
       {
         releaseRules: [
-          { breaking: true, release: false },
-          { type: "feat", release: false },
-          { type: "fix", release: false },
-          { type: "perf", release: false },
-          { type: "revert", release: false },
+          { breaking: true, release: "patch" },
+          { type: "feat", release: "patch" },
+          { type: "fix", release: "patch" },
+          { type: "perf", release: "patch" },
+          { type: "revert", release: "patch" },
         ],
       },
     ],
     "@semantic-release/release-notes-generator",
-    ["@semantic-release/npm", { npmPublish: false }],
-    ["@semantic-release/github"],
+    [
+      "@semantic-release/npm",
+      {
+        npmPublish: false,
+      },
+    ],
+    [
+      "@semantic-release/github",
+      {
+        successComment: false,
+        failTitle: false,
+        failComment: false,
+        releasedLabels: false,
+        addReleases: "bottom",
+      },
+    ],
   ],
 };
