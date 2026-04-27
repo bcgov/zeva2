@@ -163,10 +163,7 @@ export const getEligibleVehiclesMap = async (
 export const checkMatchesSystemVehicles = async () => {};
 
 export type IcbcRecordsMap = Partial<
-  Record<
-    string,
-    { make: string; modelName: string; modelYear: ModelYear; timestamp: Date }
-  >
+  Record<string, { make: string; modelName: string; modelYear: ModelYear }>
 >;
 
 export const getIcbcRecordsMap = async (
@@ -196,18 +193,10 @@ export const getIcbcRecordsMap = async (
       const make = record.make;
       const modelName = record.model;
       const modelYearString = record.modelYear;
-      const regDate = record.registrationDate;
-      const snapDate = record.snapshotDate;
       if (make && modelName && modelYearString) {
-        const dateString = regDate ?? snapDate;
-        if (dateString) {
-          const [dateIsValid, timestamp] = validateDate(dateString);
-          if (dateIsValid) {
-            const modelYear = modelYearsMap[modelYearString];
-            if (modelYear) {
-              result[vin] = { make, modelName, modelYear, timestamp };
-            }
-          }
+        const modelYear = modelYearsMap[modelYearString];
+        if (modelYear) {
+          result[vin] = { make, modelName, modelYear };
         }
       }
     }

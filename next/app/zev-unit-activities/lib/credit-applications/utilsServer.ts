@@ -165,7 +165,7 @@ export const getRecordsWhereClause = (
       result[key] = {
         in: getMatchingTerms(modelYearsMap, value),
       };
-    } else if (key === "timestamp" || key === "icbcTimestamp") {
+    } else if (key === "timestamp") {
       const [isValidDate, date] = validateDate(value);
       if (isValidDate) {
         result[key] = date;
@@ -265,9 +265,6 @@ export const getSerializedRecords = (
     result.push({
       ...record,
       timestamp: getIsoYmdString(record.timestamp),
-      icbcTimestamp: record.icbcTimestamp
-        ? getIsoYmdString(record.icbcTimestamp)
-        : "",
     });
   });
   return result;
@@ -369,7 +366,6 @@ export const getWarningsMap = (
     make: string;
     modelName: string;
     modelYear: ModelYear;
-    timestamp: Date;
   }[],
   icbcMap: IcbcRecordsMap,
 ) => {

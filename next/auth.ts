@@ -67,7 +67,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       const user = auth?.user;
       if (pathname === "/") {
         if (user) {
-          return NextResponse.redirect(new URL("/dashboard", nextUrl));
+          return NextResponse.redirect(new URL("/home", nextUrl));
         }
         return true;
       }

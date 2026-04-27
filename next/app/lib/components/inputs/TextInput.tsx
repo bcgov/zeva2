@@ -2,7 +2,10 @@
 
 import { FC, InputHTMLAttributes, useState } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faMagnifyingGlass, faCircleQuestion } from "@fortawesome/free-solid-svg-icons";
+import {
+  faMagnifyingGlass,
+  faCircleQuestion,
+} from "@fortawesome/free-solid-svg-icons";
 
 export interface ITextInputProps extends Omit<
   InputHTMLAttributes<HTMLInputElement>,
@@ -100,7 +103,10 @@ export const TextInput: FC<ITextInputProps> = ({
       style={{ minWidth: "280px", maxWidth: "700px" }}
     >
       {label && (
-        <label htmlFor={id} className="form-label block mb-1.5 text-sm text-primaryText">
+        <label
+          htmlFor={id}
+          className="form-label block mb-1.5 text-sm text-primaryText"
+        >
           {label}
         </label>
       )}
@@ -110,7 +116,10 @@ export const TextInput: FC<ITextInputProps> = ({
       >
         {leadingIcon && (
           <div className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none">
-            <FontAwesomeIcon icon={faMagnifyingGlass} className={`h-4 w-4 ${getIconColor()}`} />
+            <FontAwesomeIcon
+              icon={faMagnifyingGlass}
+              className={`h-4 w-4 ${getIconColor()}`}
+            />
           </div>
         )}
 
@@ -143,9 +152,12 @@ export const TextInput: FC<ITextInputProps> = ({
             onClick={toggleHint}
             className="absolute right-3 top-1/2 -translate-y-1/2 cursor-pointer bg-transparent border-none p-0 outline-none flex items-center justify-center leading-none"
             aria-label="Toggle hint"
-            style={{ marginTop: '-1px' }}
+            style={{ marginTop: "-1px" }}
           >
-            <FontAwesomeIcon icon={faCircleQuestion} className={`h-4 w-4 ${getIconColor()}`} />
+            <FontAwesomeIcon
+              icon={faCircleQuestion}
+              className={`h-4 w-4 ${getIconColor()}`}
+            />
           </button>
         )}
       </div>
@@ -157,10 +169,7 @@ export const TextInput: FC<ITextInputProps> = ({
       )}
 
       {hintText && !error && !destructive && showHint && (
-        <p
-          id={`${id}-hint`}
-          className="text-xs text-secondaryText mt-1.5"
-        >
+        <p id={`${id}-hint`} className="text-xs text-secondaryText mt-1.5">
           {hintText}
         </p>
       )}

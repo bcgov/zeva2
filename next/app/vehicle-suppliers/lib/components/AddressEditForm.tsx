@@ -23,16 +23,9 @@ const AddressField = (props: {
     });
 
   return props.multiline ? (
-    <Textarea
-      rows={3}
-      value={value}
-      onChange={handleChange}
-    />
+    <Textarea rows={3} value={value} onChange={handleChange} />
   ) : (
-    <TextInput
-      value={value}
-      onChange={handleChange}
-    />
+    <TextInput value={value} onChange={handleChange} />
   );
 };
 
