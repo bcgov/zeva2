@@ -29,7 +29,7 @@ export const ActionCenter = async () => {
   }
   return (
     <div className="flex flex-col gap-2 w-full border border-dividerMedium/40 p-2">
-      <h1>Action Center</h1>
+      <h1 className="text-lg font-bold">Action Center</h1>
       <ItemsPanel
         title="Requires Your Action"
         countsMap={actionRequiredCounts}

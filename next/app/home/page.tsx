@@ -5,7 +5,7 @@ import { ActionCenter } from "./components/ActionCenter";
 
 const Page = async () => {
   return (
-    <div className="flex flex-row gap-2 w-full">
+    <div className="flex flex-row gap-4 w-full">
       <div className="w-1/5">
         <Suspense fallback={<LoadingSkeleton />}>
           <UserInformationPanel />

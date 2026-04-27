@@ -122,15 +122,17 @@ export const ItemsPanel = (props: {
             >
               <div className="flex flex-row items-center gap-2">
                 {iconsMap[key]}
-                <span className="font-bold">{key}</span>
-                <span>{count}</span>
+                <span>
+                  <span className="font-bold">{key} - </span>
+                  {count}
+                </span>
               </div>
               <FontAwesomeIcon
                 icon={openCategories.includes(key) ? faAngleUp : faAngleDown}
               />
             </div>
             {openCategories.includes(key) && itemsMap[key] && (
-              <div className="flex flex-col divide-y divide-dividerMedium">
+              <div className="flex flex-col">
                 {Object.values(itemsMap[key]).map((item) => {
                   return (
                     <div
@@ -142,10 +144,12 @@ export const ItemsPanel = (props: {
                           {item.timestamp ? item.timestamp : "Unknown"}
                         </span>
                         {iconsMap[key]}
-                        <span className="font-bold">
-                          {key.endsWith("s") ? key.slice(0, -1) : key}
+                        <span>
+                          <span className="font-bold">
+                            {key.endsWith("s") ? key.slice(0, -1) : key} -{" "}
+                          </span>
+                          {item.status}
                         </span>
-                        <span>- {item.status}</span>
                       </div>
                       <div>
                         <Link href={item.route} className="text-link">
@@ -157,7 +161,7 @@ export const ItemsPanel = (props: {
                 })}
                 {itemsMap[key].length < props.countsMap[key] && (
                   <div
-                    className="cursor-pointer"
+                    className="cursor-pointer p-2 text-link"
                     onClick={() => handleLoadMore(key)}
                   >
                     Load More

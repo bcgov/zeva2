@@ -281,7 +281,7 @@ export const getSupplierCaActionRequiredItems = async (
   userOrgId: number,
   idsToExclude: number[],
 ): Promise<Item[]> => {
-  const myrs = await prisma.creditApplication.findMany({
+  const cas = await prisma.creditApplication.findMany({
     where: {
       organizationId: userOrgId,
       status: {
@@ -315,7 +315,7 @@ export const getSupplierCaActionRequiredItems = async (
     take: itemsToTake,
   });
   const statusMap = getCreditApplicationStatusEnumsToStringsMap();
-  return myrs.map((ca) => {
+  return cas.map((ca) => {
     return {
       id: ca.id,
       timestamp: ca.CreditApplicationHistory[0]
@@ -332,7 +332,7 @@ export const getSupplierZevModelActionRequiredItems = async (
   userOrgId: number,
   idsToExclude: number[],
 ): Promise<Item[]> => {
-  const myrs = await prisma.vehicle.findMany({
+  const vehicles = await prisma.vehicle.findMany({
     where: {
       organizationId: userOrgId,
       status: {
@@ -367,7 +367,7 @@ export const getSupplierZevModelActionRequiredItems = async (
     take: itemsToTake,
   });
   const statusMap = getVehicleStatusEnumsToStringsMap();
-  return myrs.map((vehicle) => {
+  return vehicles.map((vehicle) => {
     return {
       id: vehicle.id,
       timestamp: vehicle.VehicleHistory[0]
@@ -386,7 +386,7 @@ export const getSupplierCtActionRequiredItems = async (
   userOrgId: number,
   idsToExclude: number[],
 ): Promise<Item[]> => {
-  const myrs = await prisma.creditTransfer.findMany({
+  const cts = await prisma.creditTransfer.findMany({
     where: {
       OR: [
         {
@@ -429,7 +429,7 @@ export const getSupplierCtActionRequiredItems = async (
     take: itemsToTake,
   });
   const statusMap = getCreditTransferStatusEnumsToStringsMap();
-  return myrs.map((ct) => {
+  return cts.map((ct) => {
     return {
       id: ct.id,
       timestamp: ct.creditTransferHistory[0]
@@ -501,7 +501,7 @@ export const getSupplierCaInProgressItems = async (
   userOrgId: number,
   idsToExclude: number[],
 ): Promise<Item[]> => {
-  const myrs = await prisma.creditApplication.findMany({
+  const cas = await prisma.creditApplication.findMany({
     where: {
       organizationId: userOrgId,
       status: {
@@ -539,7 +539,7 @@ export const getSupplierCaInProgressItems = async (
     take: itemsToTake,
   });
   const statusMap = getCreditApplicationStatusEnumsToStringsMap();
-  return myrs.map((ca) => {
+  return cas.map((ca) => {
     return {
       id: ca.id,
       timestamp: ca.CreditApplicationHistory[0]
@@ -556,7 +556,7 @@ export const getSupplierZevModelInProgressItems = async (
   userOrgId: number,
   idsToExclude: number[],
 ): Promise<Item[]> => {
-  const myrs = await prisma.vehicle.findMany({
+  const vehicles = await prisma.vehicle.findMany({
     where: {
       organizationId: userOrgId,
       status: {
@@ -591,7 +591,7 @@ export const getSupplierZevModelInProgressItems = async (
     take: itemsToTake,
   });
   const statusMap = getVehicleStatusEnumsToStringsMap();
-  return myrs.map((vehicle) => {
+  return vehicles.map((vehicle) => {
     return {
       id: vehicle.id,
       timestamp: vehicle.VehicleHistory[0]
@@ -610,7 +610,7 @@ export const getSupplierCtInProgressItems = async (
   userOrgId: number,
   idsToExclude: number[],
 ): Promise<Item[]> => {
-  const myrs = await prisma.creditTransfer.findMany({
+  const cts = await prisma.creditTransfer.findMany({
     where: {
       OR: [
         {
@@ -668,7 +668,7 @@ export const getSupplierCtInProgressItems = async (
     take: itemsToTake,
   });
   const statusMap = getCreditTransferStatusEnumsToStringsMap();
-  return myrs.map((ct) => {
+  return cts.map((ct) => {
     return {
       id: ct.id,
       timestamp: ct.creditTransferHistory[0]
@@ -736,7 +736,7 @@ export const getSupplierCaForAwarenessItems = async (
   userOrgId: number,
   idsToExclude: number[],
 ): Promise<Item[]> => {
-  const myrs = await prisma.creditApplication.findMany({
+  const cas = await prisma.creditApplication.findMany({
     where: {
       organizationId: userOrgId,
       status: {
@@ -776,7 +776,7 @@ export const getSupplierCaForAwarenessItems = async (
     take: itemsToTake,
   });
   const statusMap = getCreditApplicationStatusEnumsToStringsMap();
-  return myrs.map((ca) => {
+  return cas.map((ca) => {
     return {
       id: ca.id,
       timestamp: ca.CreditApplicationHistory[0]
@@ -793,7 +793,7 @@ export const getSupplierZevModelForAwarenessItems = async (
   userOrgId: number,
   idsToExclude: number[],
 ): Promise<Item[]> => {
-  const myrs = await prisma.vehicle.findMany({
+  const vehicles = await prisma.vehicle.findMany({
     where: {
       organizationId: userOrgId,
       status: {
@@ -828,7 +828,7 @@ export const getSupplierZevModelForAwarenessItems = async (
     take: itemsToTake,
   });
   const statusMap = getVehicleStatusEnumsToStringsMap();
-  return myrs.map((vehicle) => {
+  return vehicles.map((vehicle) => {
     return {
       id: vehicle.id,
       timestamp: vehicle.VehicleHistory[0]
@@ -847,7 +847,7 @@ export const getSupplierCtForAwarenessItems = async (
   userOrgId: number,
   idsToExclude: number[],
 ): Promise<Item[]> => {
-  const myrs = await prisma.creditTransfer.findMany({
+  const cts = await prisma.creditTransfer.findMany({
     where: {
       OR: [
         {
@@ -906,7 +906,7 @@ export const getSupplierCtForAwarenessItems = async (
     take: itemsToTake,
   });
   const statusMap = getCreditTransferStatusEnumsToStringsMap();
-  return myrs.map((ct) => {
+  return cts.map((ct) => {
     return {
       id: ct.id,
       timestamp: ct.creditTransferHistory[0]

@@ -17,20 +17,26 @@ export const UserInformationPanel = async () => {
   const aCredits = sumCreditsForClass(balance, ZevClass.A);
   const bCredits = sumCreditsForClass(balance, ZevClass.B);
   if (aCredits === "Deficit" || bCredits === "Deficit") {
-    balanceJSX = <span>Deficit</span>;
+    balanceJSX = <span className="font-bold">Deficit</span>;
   } else {
     balanceJSX = (
       <div className="flex flex-col gap-2">
-        <span>A: {aCredits}</span>
-        <span>B: {bCredits}</span>
+        <span>
+          <span className="font-bold">A - </span>
+          {aCredits}
+        </span>
+        <span>
+          <span className="font-bold">B - </span>
+          {bCredits}
+        </span>
       </div>
     );
   }
   const rolesMap = getRoleEnumsToStringsMap();
   const roles = userRoles.map((role) => rolesMap[role]).join(", ");
   return (
-    <div className="flex flex-col gap-4 border border-dividerDark">
-      <div className="flex flex-col gap-2 p-2 divide-y divide-dividerMedium border border-dividerMedium">
+    <div className="flex flex-col gap-4">
+      <div className="flex flex-col gap-2 p-2 divide-y divide-dividerMedium/30 border border-dividerMedium/40">
         <div className="flex flex-col gap-2">
           <span>Legal Name: {userOrgName}</span>
           <span>Role(s): {roles}</span>
@@ -44,11 +50,16 @@ export const UserInformationPanel = async () => {
           Zero-Emission Vehicles Act
         </Link>
       </div>
-      <div className="flex flex-col gap-2 p-2 divide-y divide-dividerMedium border border-dividerMedium">
-        <span>{`Your ${(<Link href={Routes.ZevUnitTransactions}>Credit Balance</Link>)}`}</span>
+      <div className="flex flex-col gap-2 p-2 divide-y divide-dividerMedium/30 border border-dividerMedium/40">
+        <span>
+          Your{" "}
+          <Link className="text-link" href={Routes.ZevUnitTransactions}>
+            Credit Balance
+          </Link>
+        </span>
         {balanceJSX}
       </div>
-      <div className="flex flex-col gap-2 p-2 divide-y divide-dividerMedium border border-dividerMedium">
+      <div className="flex flex-col gap-2 p-2 divide-y divide-dividerMedium/30 border border-dividerMedium/40">
         <span>We want to hear from you!</span>
         <p>
           We are always striving to improve the ZEV Reporting System. Please
