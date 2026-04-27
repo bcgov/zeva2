@@ -1,13 +1,9 @@
 import { Row } from "./layout";
 import { fetchBalance } from "../services/balance";
-import {
-  TransactionType,
-  VehicleClass,
-  ZevClass,
-} from "@/prisma/generated/enums";
-import { sumBalance } from "@/lib/utils/zevUnit";
+import { ZevClass } from "@/prisma/generated/enums";
 import { getUserInfo } from "@/auth";
 import { PrimaryNavbar } from "./PrimaryNavbar";
+import { sumCreditsForClass } from "../utils/balance";
 
 /** Basic Header component containing the BCGOV logo and title of the application. */
 export const Header = async () => {
@@ -18,21 +14,6 @@ export const Header = async () => {
   if (!userIsGov) {
     balance = await fetchBalance(userOrgId);
   }
-
-  const sumCreditsForClass = (zevClass: ZevClass) => {
-    if (!balance) {
-      return "0.00";
-    }
-    if (balance === "deficit") {
-      return "Deficit";
-    }
-    return sumBalance(
-      balance,
-      TransactionType.CREDIT,
-      VehicleClass.REPORTABLE,
-      zevClass,
-    ).toFixed(2);
-  };
 
   return (
     <div className="w-full flex flex-col">
@@ -66,13 +47,13 @@ export const Header = async () => {
                 <div className="grid grid-cols-[3rem_minmax(0,6.5rem)] gap-x-1 items-center">
                   <span className="justify-self-end">A -</span>
                   <span className="text-left tabular-nums">
-                    {sumCreditsForClass(ZevClass.A)}
+                    {sumCreditsForClass(balance, ZevClass.A)}
                   </span>
                 </div>
                 <div className="grid grid-cols-[3rem_minmax(0,6.5rem)] gap-x-1 items-center">
                   <span className="justify-self-end">B -</span>
                   <span className="text-left tabular-nums">
-                    {sumCreditsForClass(ZevClass.B)}
+                    {sumCreditsForClass(balance, ZevClass.B)}
                   </span>
                 </div>
               </div>

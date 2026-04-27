@@ -1,5 +1,5 @@
 export enum Routes {
-  Home = "/dashboard",
+  Home = "/home",
 
   // compliance reporting
   ComplianceCalculator = "/compliance-reporting/compliance-calculator",

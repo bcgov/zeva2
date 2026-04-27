@@ -454,7 +454,6 @@ model CreditApplicationRecord {
   icbcMake            String?           @map("icbc_make")
   icbcModelName       String?           @map("icbc_model_name")
   icbcModelYear       ModelYear?        @map("icbc_model_year")
-  icbcTimestamp       DateTime?         @map("icbc_timestamp") @db.Timestamptz(6)
   decodedMake         String?           @map("decoded_make")
   decodedModelName    String?           @map("decoded_model_name")
   decodedModelYear    ModelYear?        @map("decoded_model_year")

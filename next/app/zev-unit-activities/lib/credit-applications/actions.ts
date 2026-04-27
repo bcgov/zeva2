@@ -496,7 +496,6 @@ export const validateCreditApplication = async (
       record.icbcMake = icbcRecord.make;
       record.icbcModelName = icbcRecord.modelName;
       record.icbcModelYear = icbcRecord.modelYear;
-      record.icbcTimestamp = icbcRecord.timestamp;
     }
     const decodedRecord = decodedVins[vin];
     if (decodedRecord) {
