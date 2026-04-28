@@ -152,22 +152,53 @@ Please follow these guidelines when promoting releases:
     <https://zeva2-test.apps.silver.devops.gov.bc.ca>
 2.  The deployed release number is shown at the bottom of the page, make sure it is the correct release promoted
 
-# 4. Hotfix Release to Test
+# 4. Hotfix Release
 
-Use this process for emergency fixes on Test without pulling unrelated changes from `main`.
+## Sample Scenario
 
-Example: Test is currently on `1.1.0` and a production issue requires an urgent fix.
+- There are current releases on the `main` branch:  
+  **1.17.0 → 1.18.0 → 1.18.1 → 1.18.2 → 1.19.0**
+- The release currently on **Prod** is **1.18.1**
+- There is an urgent defect that needs to be fixed on Prod
 
-1. Create a hotfix branch from the deployed Test tag:
-   - `git checkout -b hotfix/1.1.0 v1.1.0`
-   - `git push -u origin hotfix/1.1.0`
-2. Add only the emergency fix changes on that branch and commit with Conventional Commits (for example: `fix: ...`).
-3. Manually run **Hotfix to Test (Emergency Release)** using branch `hotfix/1.1.0`.
-4. Verify the generated hotfix version (for example: `1.1.1-hotfix.1`, then `.2`, `.3` for additional hotfix commits).
-5. Review and merge the Test deployment PR created in the CD repository.
-6. Review and merge the auto-created PR from the hotfix branch back to `main` to keep trunk aligned.
+## Hotfix Process
 
-![Hotfix](hotfix.png)
+1. Create a branch `hotfix/1.18.x` from tag `v1.18.1`.
+
+2. The `1.18.x` branch takes care of all hotfixes for versions:  
+   **>= 1.18.0 and < 1.19.0**
+
+3. Kick off the **Hotfix to Test** workflow from `hotfix/1.18.x`.  
+   Do **not** choose `main`.
+
+4. After the workflow completes, the following artifacts will be created:
+   - Release: `1.18.2-hotfix.1`
+   - Tag: `1.18.2-hotfix.1`
+   - Images:
+     - `zeva2-next:1.18.2-hotfix.1`
+     - `zeva2-bullmq:1.18.2-hotfix.1`
+   - Pull request in **CD repo** pending approval
+   - Pull request in **Code repo** to merge the changes in  
+     `1.18.2-hotfix.1` into `main`
+
+5. The reason for naming the release `1.18.2-hotfix.1` is that the
+   semantic release process treats it as a **pre-release** of `1.18.2`.
+
+   The release history looks like: 1.18.1 → 1.18.2-hotfix.1 → 1.18.2
+
+   Note: `1.18.2` does **not** automatically include the changes from
+   `1.18.2-hotfix.1`.
+
+   The changes from the hotfix branch must be merged into `main` with commit message of fix: merge hotfix-1.18.2 to main
+
+   The final release history is 1.17.0 → 1.18.0 → 1.18.1 → 1.18.2 → 1.19.0 → 1.19.1
+
+   Note: when release 1.18.2 or 1.19.0 to test, remember the hotfix won't be there as it is merged in 1.19.1
+
+6. Merge the pull request in the **CD repo**.  
+   Once merged, the hotfix will be deployed to **Test**.
+
+![Hotfix Release](hotfix.png)
 
 # 5. Caller Workflows
 

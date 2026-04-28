@@ -223,7 +223,7 @@ jobs:
             const headBranch = context.ref.replace("refs/heads/", "");
             const baseBranch = "main";
             const version = "${{ needs.release.outputs.release_version }}";
-            const teamReviewers = ["zelda-tech"];
+            const teamReviewers = ["kuanfandevops","tim738745","ArawuSamuel1","danclancy85"];
 
             const existing = await github.rest.pulls.list({
               owner,
