@@ -30,14 +30,14 @@ jobs:
     name: Validate hotfix branch name
     runs-on: ubuntu-latest
     steps:
-      - name: Ensure workflow runs from maintenance branch
+      - name: Ensure workflow runs from a hotfix branch
         run: |
-          BRANCH="${{ github.ref_name }}"
-          # if [[ ! "$BRANCH" =~ ^hotfix/[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-          #   echo "Hotfix workflow must run from a branch like hotfix/1.1.0."
-          #   echo "Current ref: $BRANCH"
-          #   exit 1
-          # fi
+          echo "Branch: ${{ github.ref_name }}"
+          if [[ "${{ github.ref_name }}" != hotfix/* ]]; then
+            echo "❌ Branch name must start with 'hotfix/'"
+            exit 1
+          fi
+          echo "✅ Branch name is valid"
 
   run-jest-tests:
     name: Run Jest Tests
