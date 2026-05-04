@@ -2,7 +2,6 @@ import { ContentCard } from "@/app/lib/components";
 import { getUserInfo } from "@/auth";
 import { LoadingSkeleton } from "@/app/lib/components/skeletons";
 import { JSX, Suspense } from "react";
-import { VehicleHistories } from "@/app/zev-models/lib/components/VehicleHistories";
 import { VehicleDetails } from "../../lib/components/VehicleDetails";
 import { getVehicle } from "../../lib/data";
 import { Role } from "@/prisma/generated/enums";
@@ -41,11 +40,6 @@ const Page = async (props: {
   }
   return (
     <div className="flex flex-col w-1/3">
-      <ContentCard title="Vehicle History">
-        <Suspense fallback={<LoadingSkeleton />}>
-          <VehicleHistories id={id} />
-        </Suspense>
-      </ContentCard>
       <ContentCard title="Vehicle Details">
         <Suspense fallback={<LoadingSkeleton />}>
           <VehicleDetails vehicle={vehicle} />
