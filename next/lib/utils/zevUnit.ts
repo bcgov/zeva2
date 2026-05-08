@@ -17,7 +17,6 @@ import {
   isZevClass,
 } from "@/app/lib/utils/typeGuards";
 import { specialComplianceRatios } from "@/app/lib/constants/complianceRatio";
-import { supplierZevClasses } from "@/app/compliance-reporting/lib/model-year-reports/constants";
 
 // both ZevUnitTransactions and ZevUnitEndingBalances can be of type ZevUnitRecord;
 // a ZevUnitEndingBalance will need to be modified slightly
@@ -76,17 +75,15 @@ export const calculateBalance = (
     offsetOtherDebitsWithMatchingCredits(refinedRecords);
   let balance = flattenZevUnitRecords(refinedRecords);
   if (balance.length === 0) {
-    Object.values(VehicleClass).forEach((vehicleClass) => {
-      Object.values(supplierZevClasses).forEach((zevClass) => {
-        balance.push({
-          type: TransactionType.CREDIT,
-          vehicleClass,
-          zevClass,
-          modelYear,
-          numberOfUnits: new Decimal(0),
-        });
+    for (const zevClass of [ZevClass.A, ZevClass.B]) {
+      balance.push({
+        type: TransactionType.CREDIT,
+        vehicleClass: VehicleClass.REPORTABLE,
+        zevClass,
+        modelYear,
+        numberOfUnits: new Decimal(0),
       });
-    });
+    }
   }
   return [
     balance,

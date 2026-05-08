@@ -18,12 +18,7 @@ import {
   AdjustmentPayload,
   AssessmentData,
 } from "./actions";
-import {
-  divisors,
-  interiorVolumes,
-  IsCompliant,
-  SupplierZevClassChoice,
-} from "./constants";
+import { divisors, interiorVolumes, IsCompliant } from "./constants";
 import { Adjustment } from "./components/Adjustments";
 import { ComplianceInfo, UnitsAsString } from "./utilsServer";
 import {
@@ -42,17 +37,6 @@ import {
   getStringsToVehicleClassEnumsMap,
   getStringsToZevClassEnumsMap,
 } from "@/app/lib/utils/enumMaps";
-
-export const getZevClassOrdering = (
-  priorityZevClass: SupplierZevClassChoice,
-): ZevClass[] => {
-  switch (priorityZevClass) {
-    case ZevClass.A:
-      return [ZevClass.UNSPECIFIED, ZevClass.A, ZevClass.B, ZevClass.C];
-    case ZevClass.B:
-      return [ZevClass.UNSPECIFIED, ZevClass.B, ZevClass.A, ZevClass.C];
-  }
-};
 
 export const validateNvValues = (nvValues: NvValues) => {
   if (!nvValues.REPORTABLE) {
@@ -109,7 +93,7 @@ export const generateMyr = async (
   myrData: MyrData,
   zevClassOrdering: ZevClass[],
   legalName: string,
-  makes: string,
+  makes: string[],
   recordsAddress: string,
   serviceAddress: string,
   vehicleStatistics: VehicleStatString[],
@@ -183,16 +167,21 @@ export const generateMyr = async (
 const writeSupplierDetails = (
   sheet: Excel.Worksheet,
   legalName: string,
-  makes: string,
+  makes: string[],
   classification: SupplierClass,
   serviceAddress: string,
   recordsAddress: string,
   zevClassOrdering: ZevClass[],
   helpingMaps: MyrHelpingMaps,
 ) => {
+  for (const make of makes) {
+    if (make.includes("|")) {
+      throw new Error();
+    }
+  }
   sheet.addRow([
     legalName,
-    makes,
+    makes.join("|"),
     helpingMaps.supplierClassesMap[classification],
     serviceAddress,
     recordsAddress,

@@ -3,21 +3,12 @@
 import axios, { AxiosResponse } from "axios";
 import { Button } from "@/app/lib/components";
 import { Dropdown, TextInput } from "@/app/lib/components/inputs";
-import { getModelYearEnumsToStringsMap } from "@/app/lib/utils/enumMaps";
 import { ModelYear, VehicleClass, ZevClass } from "@/prisma/generated/enums";
 import { useRouter } from "next/navigation";
-import {
-  JSX,
-  useCallback,
-  useEffect,
-  useMemo,
-  useState,
-  useTransition,
-} from "react";
+import { useCallback, useEffect, useState, useTransition } from "react";
 import {
   createSupplementary,
   getForecastPutData,
-  getForecastTemplateUrl,
   getMyrAttachmentsPutData,
   getMyrData,
   getMyrPutData,
@@ -33,22 +24,18 @@ import {
   generateMyr,
   getAdjustmentsPayload,
   getWorkbook,
-  getZevClassOrdering,
-  populateForecastTemplate,
   validateForecastReport,
   validateNvValues,
 } from "../utilsClient";
-import { downloadBuffer, getFiles } from "@/app/lib/utils/download";
+import { getFiles } from "@/app/lib/utils/download";
 import { Dropzone } from "@/app/lib/components/Dropzone";
-import { legacyModelYearsMap, SupplierZevClassChoice } from "../constants";
-import { MyrNvValues } from "./MyrNvValues";
-import { ZevClassSelect } from "./ZevClassSelect";
+import { legacyModelYearsMap } from "../constants";
 import { Routes } from "@/app/lib/constants";
 import { Workbook } from "exceljs";
 import {
   getNvValues,
   getVehicleStatsAsStrings,
-  getZevClassChoice,
+  getZevClassOrder,
   ParsedMyr,
   parseMyr,
   VehicleStatString,
@@ -59,6 +46,12 @@ import { Adjustment, Adjustments } from "./Adjustments";
 import { isModelYear } from "@/app/lib/utils/typeGuards";
 import { VehicleStatsInput } from "./VehicleStatsInputs";
 import { SupplierData } from "../data";
+import { Makes } from "./Makes";
+import { ForecastReportSubmission } from "./ForecastReportSubmission";
+import { NvValuesSubmission } from "./NvValuesSubmission";
+import { ZevClassOrder } from "./ZevClassOrder";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faTrash, faFileArrowUp } from "@fortawesome/free-solid-svg-icons";
 
 type NewMyrProps = {
   type: "newMyr";
@@ -123,11 +116,15 @@ export const ModelYearReportForm = (
   const [legalName, setLegalName] = useState<string>();
   const [serviceAddress, setServiceAddress] = useState<string>();
   const [recordsAddress, setRecordsAddress] = useState<string>();
-  const [makes, setMakes] = useState<string>();
+  const [makes, setMakes] = useState<string[]>([]);
   const [vehicleStats, setVehicleStats] = useState<VehicleStatString[]>([]);
   const [nvValues, setNvValues] = useState<NvValues>({});
-  const [zevClassSelection, setZevClassSelection] =
-    useState<SupplierZevClassChoice>(ZevClass.B);
+  const [zevClassOrder, setZevClassOrder] = useState<ZevClass[]>([
+    ZevClass.UNSPECIFIED,
+    ZevClass.B,
+    ZevClass.A,
+    ZevClass.C,
+  ]);
   const [suggestedAdjustments, setSuggestedAdjustments] = useState<
     Adjustment[]
   >([]);
@@ -217,9 +214,7 @@ export const ModelYearReportForm = (
           setVehicleStats(savedVehicleStats);
           setSuggestedAdjustments(report.suggestedAdjustments);
           setNvValues(getNvValues(report.complianceReductions));
-          setZevClassSelection(
-            getZevClassChoice(savedDetails.zevClassOrdering),
-          );
+          setZevClassOrder(getZevClassOrder(savedDetails.zevClassOrdering));
         }
       };
       const loadAttachments = async () => {
@@ -251,42 +246,37 @@ export const ModelYearReportForm = (
     }
   }, [props.type, modelYear]);
 
-  const modelYearsMap = useMemo(() => {
-    return getModelYearEnumsToStringsMap();
-  }, []);
-
   const handleNvValuesChange = useCallback(
-    (key: VehicleClass, value: string) => {
+    (vc: VehicleClass, value: string) => {
       setNvValues((prev) => {
-        return { ...prev, [key]: value };
+        return { ...prev, [vc]: value };
       });
     },
     [],
   );
 
-  const handleZevClassSelect = useCallback(
-    (zevClass: SupplierZevClassChoice) => {
-      setZevClassSelection(zevClass);
-    },
-    [],
-  );
-
   const generateReport = useCallback(async () => {
-    if (
-      !modelYear ||
-      !legalName ||
-      !serviceAddress ||
-      !recordsAddress ||
-      !makes
-    ) {
-      throw new Error("Please ensure no field is empty!");
+    if (!modelYear) {
+      throw new Error("Please select a model year!");
+    }
+    if (!legalName || !serviceAddress || !recordsAddress) {
+      throw new Error(
+        "On the Administration page, please ensure your organization has a legal name, a service address, and a records address!",
+      );
+    }
+    if (makes.length === 0) {
+      throw new Error("You must enter at least one vehicle make!");
+    }
+    for (const make of makes) {
+      if (make.includes("|")) {
+        throw new Error("A vehicle make may not contain the pipe symbol!");
+      }
     }
     validateNvValues(nvValues);
-    const zevClassOrdering = getZevClassOrdering(zevClassSelection);
     const adjustmentsPayload = getAdjustmentsPayload(suggestedAdjustments);
     const [templateUrl, myrDataResponse] = await Promise.all([
       getMyrTemplateUrl(),
-      getMyrData(modelYear, nvValues, zevClassOrdering, adjustmentsPayload),
+      getMyrData(modelYear, nvValues, zevClassOrder, adjustmentsPayload),
     ]);
     if (myrDataResponse.responseType === "error") {
       throw new Error(myrDataResponse.message);
@@ -298,7 +288,7 @@ export const ModelYearReportForm = (
     const workbook = await generateMyr(
       template,
       myrDataResponse.data,
-      zevClassOrdering,
+      zevClassOrder,
       legalName,
       makes,
       recordsAddress,
@@ -315,27 +305,9 @@ export const ModelYearReportForm = (
     serviceAddress,
     vehicleStats,
     nvValues,
-    zevClassSelection,
+    zevClassOrder,
     suggestedAdjustments,
   ]);
-
-  const handleDownloadForecastTemplate = useCallback(() => {
-    if (modelYear && (props.type === "newMyr" || props.type === "savedMyr")) {
-      startTransition(async () => {
-        const templateUrl = await getForecastTemplateUrl();
-        const templateResponse = await axios.get(templateUrl, {
-          responseType: "arraybuffer",
-        });
-        const template = await populateForecastTemplate(
-          templateResponse.data,
-          modelYear,
-        );
-        const templateBuf = await template.xlsx.writeBuffer();
-        const fileName = `forecast-report-${modelYearsMap[modelYear]}.xlsx`;
-        downloadBuffer(fileName, templateBuf);
-      });
-    }
-  }, [props.type, modelYear]);
 
   const saveReport = useCallback(
     async (report: Workbook) => {
@@ -486,10 +458,16 @@ export const ModelYearReportForm = (
     });
   }, [generateReport, saveReport]);
 
-  const modelYearComponent: JSX.Element | null = useMemo(() => {
-    let innerComponent;
-    if (props.type === "legacyNewSupp") {
-      innerComponent = (
+  const handleDeleteReport = useCallback(async () => {
+    if (props.type === "legacySavedSupp") {
+    } else if (props.type === "nonLegacySavedSupp") {
+    } else if (props.type === "nonLegacyNewSupp") {
+    }
+  }, [props.type]);
+
+  return (
+    <div className="flex flex-col gap-2">
+      {props.type === "legacyNewSupp" && (
         <Dropdown
           placeholder="Select an Option"
           options={Object.entries(legacyModelYearsMap).map(([key, value]) => ({
@@ -502,139 +480,106 @@ export const ModelYearReportForm = (
           }}
           disabled={isPending}
         />
-      );
-    } else if (modelYear) {
-      innerComponent = (
-        <input
-          disabled={true}
-          name="modelYear"
-          type="text"
-          value={modelYearsMap[modelYear]}
-          className="border p-2 w-full"
-        />
-      );
-    }
-    if (innerComponent) {
-      return (
-        <div className="flex items-center py-2 my-2">
-          <label className="w-72" htmlFor="modelYear">
-            Model Year
-          </label>
-          {innerComponent}
-        </div>
-      );
-    }
-    return null;
-  }, [props.type, modelYear, modelYearsMap, legacyModelYearsMap, isPending]);
-
-  return (
-    <div>
-      {modelYearComponent}
-      <div className="py-2 my-2">
-        <TextInput
-          label="Legal Name"
-          value={legalName ?? ""}
-          onChange={setLegalName}
-          disabled={isPending}
-        />
-      </div>
-      <div className="py-2 my-2">
-        <TextInput
-          label="Records Address"
-          value={recordsAddress ?? ""}
-          onChange={setRecordsAddress}
-          disabled={isPending}
-        />
-      </div>
-      <div className="py-2 my-2">
-        <TextInput
-          label="Service Address"
-          value={serviceAddress ?? ""}
-          onChange={setServiceAddress}
-          disabled={isPending}
-        />
-      </div>
-      <div className="py-2 my-2">
-        <TextInput
-          label="Makes"
-          value={makes ?? ""}
-          onChange={setMakes}
-          disabled={isPending}
-        />
-      </div>
-      <VehicleStatsInput
-        stats={vehicleStats}
-        setStats={setVehicleStats}
-        disabled={isPending}
-      />
-      <MyrNvValues
-        nvValues={nvValues}
-        handleChange={handleNvValuesChange}
-        disabled={isPending}
-      />
-      <div className="flex items-center py-2 my-2">
-        <p>
-          Select the ZEV class of credits that should be used first when
-          offsetting debits of the unspecified ZEV class:
-        </p>
-      </div>
-      <div className="flex items-center py-2 my-2 space-x-4">
-        <ZevClassSelect
-          zevClassSelection={zevClassSelection}
-          handleChange={handleZevClassSelect}
-          disabled={isPending}
-        />
-      </div>
-      <Adjustments
-        type="myr"
-        adjustments={suggestedAdjustments}
-        setAdjustments={setSuggestedAdjustments}
-        disabled={isPending}
-      />
-      {(props.type === "newMyr" || props.type === "savedMyr") && (
-        <div className="flex space-x-2">
-          <Button
-            variant="secondary"
-            onClick={handleDownloadForecastTemplate}
+      )}
+      {props.type !== "newMyr" && props.type !== "savedMyr" && (
+        <div className="flex flex-col gap-2">
+          <TextInput
+            label="Legal Name"
+            value={legalName ?? ""}
+            onChange={setLegalName}
             disabled={isPending}
+          />
+          <TextInput
+            label="Records Address"
+            value={recordsAddress ?? ""}
+            onChange={setRecordsAddress}
+            disabled={isPending}
+          />
+          <TextInput
+            label="Service Address"
+            value={serviceAddress ?? ""}
+            onChange={setServiceAddress}
+            disabled={isPending}
+          />
+          <VehicleStatsInput
+            stats={vehicleStats}
+            setStats={setVehicleStats}
+            disabled={isPending}
+          />
+          <Adjustments
+            type="myr"
+            adjustments={suggestedAdjustments}
+            setAdjustments={setSuggestedAdjustments}
+            disabled={isPending}
+          />
+          <div className="flex flex-col gap-2">
+            <span>Upload supporting documents here (optional; max 10):</span>
+            <Dropzone
+              files={attachments}
+              setFiles={setAttachments}
+              disabled={isPending}
+              maxNumberOfFiles={10}
+            />
+          </div>
+        </div>
+      )}
+      <Makes makes={makes} setMakes={setMakes} />
+      {(props.type === "newMyr" || props.type === "savedMyr") && modelYear && (
+        <ForecastReportSubmission
+          modelYear={modelYear}
+          forecasts={forecasts}
+          setForecasts={setForecasts}
+          disabled={isPending}
+        />
+      )}
+      {modelYear && (
+        <NvValuesSubmission
+          modelYear={modelYear}
+          nvValues={nvValues}
+          handleNvValuesChange={handleNvValuesChange}
+          disabled={isPending}
+        />
+      )}
+      {modelYear && (
+        <ZevClassOrder
+          modelYear={modelYear}
+          zevClassOrder={zevClassOrder}
+          setZevClassOrder={setZevClassOrder}
+          disabled={isPending}
+        />
+      )}
+      <div className="flex flex-row p-2 bg-gray-50 justify-between">
+        {props.type === "legacySavedSupp" ||
+        props.type === "nonLegacySavedSupp" ||
+        props.type === "savedMyr" ? (
+          <Button
+            onClick={handleDeleteReport}
+            variant="danger"
+            disabled={isPending}
+            icon={<FontAwesomeIcon icon={faTrash} />}
+            iconPosition="right"
           >
-            {isPending ? "..." : "Download Forecast Template"}
+            Delete
+          </Button>
+        ) : (
+          <span></span>
+        )}
+        <div className="flex flex-row gap-1 items-center">
+          {error && <span className="text-red-600">{error}</span>}
+          <Button
+            onClick={handleGenerateAndSaveReport}
+            variant="primary"
+            disabled={isPending}
+            icon={<FontAwesomeIcon icon={faFileArrowUp} />}
+            iconPosition="right"
+          >
+            {props.type === "legacyNewSupp" ||
+            props.type === "newMyr" ||
+            props.type === "nonLegacyNewSupp"
+              ? "Generate Report"
+              : "Regenerate Report"}
           </Button>
         </div>
-      )}
-      {(props.type === "newMyr" || props.type === "savedMyr") && (
-        <div className="flex items-center space-x-4">
-          <span>Upload your Forecast Report here:</span>
-          <Dropzone
-            files={forecasts}
-            setFiles={setForecasts}
-            disabled={isPending}
-            maxNumberOfFiles={1}
-            allowedFileTypes={{
-              "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet":
-                [".xlsx"],
-            }}
-          />
-        </div>
-      )}
-      <div className="flex items-center space-x-4">
-        <span>Upload supporting documents here (optional; max 10):</span>
-        <Dropzone
-          files={attachments}
-          setFiles={setAttachments}
-          disabled={isPending}
-          maxNumberOfFiles={10}
-        />
-      </div>
-      {error && <p className="text-red-600">{error}</p>}
-      <div className="flex space-x-2">
-        <Button
-          variant="primary"
-          onClick={handleGenerateAndSaveReport}
-          disabled={isPending}
-        >
-          {isPending ? "..." : "Generate Report and Save"}
-        </Button>
       </div>
     </div>
   );
