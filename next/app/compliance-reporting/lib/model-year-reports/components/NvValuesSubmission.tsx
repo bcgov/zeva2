@@ -46,9 +46,9 @@ export const NvValuesSubmission = (props: {
           {modelYearsMap[props.modelYear]} Model Year {salesOrSupplied}
         </span>
         <span>
-          The submitted number should not include any vehicle with a gross vehicle
-          weight rating of more than 3856 kg if that vehicle was supplied before
-          October 1, 2024.
+          The submitted number should not include any vehicle with a gross
+          vehicle weight rating of more than 3856 kg if that vehicle was
+          supplied before October 1, 2024.
         </span>
       </div>
       {vehicleClasses.map((vc, index) => {

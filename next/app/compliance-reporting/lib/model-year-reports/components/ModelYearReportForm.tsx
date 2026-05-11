@@ -8,6 +8,8 @@ import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState, useTransition } from "react";
 import {
   createSupplementary,
+  deleteReports,
+  deleteSupplementary,
   getForecastPutData,
   getMyrAttachmentsPutData,
   getMyrData,
@@ -458,12 +460,43 @@ export const ModelYearReportForm = (
     });
   }, [generateReport, saveReport]);
 
-  const handleDeleteReport = useCallback(async () => {
-    if (props.type === "legacySavedSupp") {
-    } else if (props.type === "nonLegacySavedSupp") {
-    } else if (props.type === "nonLegacyNewSupp") {
-    }
-  }, [props.type]);
+  const handleDeleteReport = useCallback(() => {
+    setError("");
+    startTransition(async () => {
+      try {
+        let response;
+        if (
+          (props.type === "legacySavedSupp" ||
+            props.type === "nonLegacySavedSupp") &&
+          supplementaryId
+        ) {
+          response = await deleteSupplementary(supplementaryId);
+        } else if (props.type === "savedMyr" && myrId) {
+          response = await deleteReports(myrId);
+        }
+        if (response) {
+          const responseType = response.responseType;
+          if (responseType === "error") {
+            throw new Error(response.message);
+          } else {
+            if (props.type === "legacySavedSupp") {
+              router.push(Routes.LegacySupplementary);
+            } else if (props.type === "nonLegacySavedSupp") {
+              router.push(
+                `${Routes.ModelYearReports}/${myrId}/reassessments-and-supplementaries`,
+              );
+            } else if (props.type === "savedMyr") {
+              router.push(Routes.ModelYearReports);
+            }
+          }
+        }
+      } catch (e) {
+        if (e instanceof Error) {
+          setError(e.message);
+        }
+      }
+    });
+  }, [props.type, myrId, supplementaryId]);
 
   return (
     <div className="flex flex-col gap-2">
@@ -523,7 +556,7 @@ export const ModelYearReportForm = (
           </div>
         </div>
       )}
-      <Makes makes={makes} setMakes={setMakes} />
+      <Makes makes={makes} setMakes={setMakes} disabled={isPending} />
       {(props.type === "newMyr" || props.type === "savedMyr") && modelYear && (
         <ForecastReportSubmission
           modelYear={modelYear}

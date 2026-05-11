@@ -12,5 +12,11 @@ export const ModelYearReportDetails = async (props: { id: number }) => {
   await myrWorkbook.xlsx.load(report.myrFile);
   const parsedMyr = parseMyr(myrWorkbook);
 
-  return <ParsedModelYearReport myr={parsedMyr} />;
+  return (
+    <ParsedModelYearReport
+      type="myr"
+      modelYear={report.modelYear}
+      myr={parsedMyr}
+    />
+  );
 };

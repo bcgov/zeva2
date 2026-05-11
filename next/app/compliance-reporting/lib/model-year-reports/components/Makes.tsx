@@ -8,6 +8,7 @@ import { faTrash } from "@fortawesome/free-solid-svg-icons";
 export const Makes = (props: {
   makes: string[];
   setMakes?: Dispatch<SetStateAction<string[]>>;
+  disabled: boolean;
 }) => {
   const [newMake, setNewMake] = useState<string>("");
 
@@ -45,16 +46,21 @@ export const Makes = (props: {
             placeholder="Enter Make"
             value={newMake}
             onChange={(enteredMake) => setNewMake(enteredMake)}
+            disabled={props.disabled}
           />
-          <Button onClick={() => handleAdd(newMake)} variant="secondary">
+          <Button
+            onClick={() => handleAdd(newMake)}
+            variant="secondary"
+            disabled={props.disabled}
+          >
             Add Make
           </Button>
         </div>
       )}
-      <div className="flex flex-col divide-y divide-dividerMedium/30 border border-dividerMedium/40 p-2">
+      <div className="flex flex-col divide-y divide-dividerMedium/30 p-2">
         <div className="flex flex-row justify-between p-2">
           <span className="font-semibold">Make</span>
-          <span className="font-semibold">Delete</span>
+          {props.setMakes && <span className="font-semibold">Delete</span>}
         </div>
         {props.makes.map((make, index) => {
           return (
@@ -63,13 +69,16 @@ export const Makes = (props: {
               className={`flex flex-row justify-between p-2 ${index % 2 === 0 ? "bg-gray-50" : ""}`}
             >
               <span>{make}</span>
-              {props.setMakes && (
-                <FontAwesomeIcon
-                  icon={faTrash}
-                  className="text-primaryRed cursor-pointer"
-                  onClick={() => handleDelete(index)}
-                />
-              )}
+              {props.setMakes &&
+                (props.disabled ? (
+                  <FontAwesomeIcon icon={faTrash} className="text-gray-500" />
+                ) : (
+                  <FontAwesomeIcon
+                    icon={faTrash}
+                    className="text-primaryRed cursor-pointer"
+                    onClick={() => handleDelete(index)}
+                  />
+                ))}
             </div>
           );
         })}

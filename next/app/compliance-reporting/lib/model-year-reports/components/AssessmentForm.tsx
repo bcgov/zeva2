@@ -336,7 +336,7 @@ export const AssessmentForm = (
             case "newAssessment":
             case "savedAssessment":
               if (myrId) {
-                router.push(`${Routes.ModelYearReports}/${myrId}`);
+                router.push(`${Routes.ModelYearReports}/${myrId}/assessment`);
               }
               break;
             case "legacyNewReassessment":
