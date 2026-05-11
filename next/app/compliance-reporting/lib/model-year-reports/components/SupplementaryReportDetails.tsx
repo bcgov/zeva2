@@ -13,5 +13,11 @@ export const SupplementaryReportDetails = async (props: { suppId: number }) => {
   const suppWorkbook = new Excel.Workbook();
   await suppWorkbook.xlsx.load(suppBuf);
   const parsedSupp = parseMyr(suppWorkbook);
-  return <ParsedModelYearReport myr={parsedSupp} />;
+  return (
+    <ParsedModelYearReport
+      type="supp"
+      modelYear={report.modelYear}
+      myr={parsedSupp}
+    />
+  );
 };

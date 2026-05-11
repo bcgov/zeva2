@@ -5,6 +5,8 @@ import { ModelYearReportStatus } from "@/prisma/generated/enums";
 import { getPresignedGetObjectUrl } from "@/app/lib/services/s3";
 import { AttachmentDownload } from "@/app/lib/constants/attachment";
 import { getMyrAttachmentDownloadUrls } from "../actions";
+import { MyrSuppBanner } from "./MyrSuppBanner";
+import { Routes } from "@/app/lib/constants";
 
 export const EditPage = async (props: { id: string }) => {
   const myrId = Number.parseInt(props.id, 10);
@@ -26,10 +28,22 @@ export const EditPage = async (props: { id: string }) => {
     attachments.push(...attachmentsResp.data);
   }
   return (
-    <div className="max-w-xl mx-auto p-4">
-      <h1 className="text-xl font-bold mb-4">
-        Edit a Model Year Report and Forecast Report
-      </h1>
+    <div className="flex flex-col gap-2 p-2">
+      <MyrSuppBanner
+        type="myr"
+        currentTabIndex={0}
+        visibleTabIndices={[0, 1, 2, 4]}
+        clickableTabs={{
+          1: `${Routes.ModelYearReports}/${myr.id}`,
+        }}
+        tabIndicators={{
+          0: "inProgress",
+          1: "pending",
+          2: "pending",
+          4: "disabled",
+        }}
+        modelYear={myr.modelYear}
+      />
       <ModelYearReportForm
         type="savedMyr"
         myrId={myrId}

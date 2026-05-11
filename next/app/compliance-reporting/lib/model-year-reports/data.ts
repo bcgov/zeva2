@@ -538,7 +538,7 @@ export const getSuppReassessment = async (suppId: number) => {
 
 export type SupplierData = {
   legalName: string;
-  makes: string;
+  makes: string[];
   recordsAddress: string;
   serviceAddress: string;
 };
@@ -549,7 +549,7 @@ export const getSupplierOwnData = async (): Promise<SupplierData> => {
     await getSupplierDetails(userOrgId);
   return {
     legalName,
-    makes: makes.join(", "),
+    makes,
     recordsAddress: recordsAddress ? getAddressAsString(recordsAddress) : "",
     serviceAddress: serviceAddress ? getAddressAsString(serviceAddress) : "",
   };

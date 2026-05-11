@@ -1,23 +1,15 @@
-import { ContentCard } from "@/app/lib/components";
 import { LoadingSkeleton } from "@/app/lib/components/skeletons";
 import { getUserInfo } from "@/auth";
 import { JSX, Suspense } from "react";
 import { ModelYearReportDetails } from "./ModelYearReportDetails";
-import { ModelYearReportHistory } from "./ModelYearReportHistory";
 import { getModelYearReport } from "../data";
 import { SupplierActions } from "./SupplierActions";
-import { Role } from "@/prisma/generated/enums";
-import { DirectorActions } from "./DirectorActions";
-import { AnalystActions } from "./AnalystActions";
-import { AssessmentDetails } from "./AssessmentDetails";
+import { ModelYearReportStatus, Role } from "@/prisma/generated/enums";
+import { AnalystMyrActions } from "./AnalystMyrActions";
 import { ForecastReportDetails } from "./ForecastReportDetails";
-import { getDataForReassessment, getDataForSupplementary } from "../services";
-import { SystemDetails } from "./SystemDetails";
-import { getMyrStatusEnumsToStringsMap } from "@/app/lib/utils/enumMaps";
 import { mapOfStatusToSupplierStatus } from "../constants";
-import { Attachments } from "@/app/lib/components/Attachments";
-import { getMyrAttachmentDownloadUrls } from "../actions";
-import { ReassessmentsAndSupplementaryReports } from "./ReassessmentsAndSupplementaryReports";
+import { MyrSuppBanner } from "./MyrSuppBanner";
+import { Routes } from "@/app/lib/constants";
 
 export const IndividualPage = async (props: { id: string }) => {
   const myrId = Number.parseInt(props.id, 10);
@@ -25,95 +17,208 @@ export const IndividualPage = async (props: { id: string }) => {
   if (!myr) {
     return null;
   }
-  const download = async () => {
-    "use server";
-    return getMyrAttachmentDownloadUrls(myrId);
-  };
   const { userIsGov, userRoles } = await getUserInfo();
   const status = userIsGov
     ? myr.status
     : mapOfStatusToSupplierStatus[myr.status];
   let actionComponent: JSX.Element | null = null;
-  if (userIsGov) {
-    if (userRoles.includes(Role.DIRECTOR)) {
-      actionComponent = <DirectorActions myrId={myrId} status={status} />;
-    } else if (userRoles.includes(Role.ZEVA_IDIR_USER)) {
-      let canCreateReassessment = true;
-      try {
-        await getDataForReassessment(myr.organizationId, myr.modelYear);
-      } catch {
-        canCreateReassessment = false;
-      }
-      actionComponent = (
-        <AnalystActions
-          myrId={myrId}
-          status={status}
-          assessmentExists={!!myr.assessment}
-          canCreateReassessment={canCreateReassessment}
-        />
-      );
-    }
-  } else {
-    let canCreateSupplementary = true;
-    try {
-      await getDataForSupplementary(myr.organizationId, myr.modelYear);
-    } catch {
-      canCreateSupplementary = false;
-    }
+  if (userIsGov && userRoles.includes(Role.ZEVA_IDIR_USER)) {
+    actionComponent = (
+      <AnalystMyrActions
+        myrId={myrId}
+        status={status}
+        assessmentExists={!!myr.assessment}
+      />
+    );
+  } else if (!userIsGov) {
     actionComponent = (
       <SupplierActions
         myrId={myrId}
         status={status}
-        canCreateSupplementary={canCreateSupplementary}
+        modelYear={myr.modelYear}
+        supplierName={myr.organization.name}
       />
     );
   }
-  const statusMap = getMyrStatusEnumsToStringsMap();
-  return (
-    <div className="flex flex-col w-1/3">
-      <ContentCard title="Reassessments and Supplementary Reports">
-        <Suspense fallback={<LoadingSkeleton />}>
-          <ReassessmentsAndSupplementaryReports myrId={myrId} />
-        </Suspense>
-      </ContentCard>
-      <ContentCard title="Model Year Report History">
-        <Suspense fallback={<LoadingSkeleton />}>
-          <ModelYearReportHistory id={myrId} />
-        </Suspense>
-      </ContentCard>
-      <ContentCard title="System Details">
-        <SystemDetails
-          userIsGov={userIsGov}
-          orgName={myr.organization.name}
+
+  let banner: JSX.Element | null = null;
+  if (!userIsGov) {
+    if (
+      status === ModelYearReportStatus.DRAFT ||
+      status === ModelYearReportStatus.RETURNED_TO_SUPPLIER
+    ) {
+      banner = (
+        <MyrSuppBanner
+          type="myr"
+          visibleTabIndices={[0, 1, 2, 4]}
+          currentTabIndex={1}
+          clickableTabs={{
+            0: `${Routes.ModelYearReports}/${myrId}/edit`,
+          }}
+          tabIndicators={{
+            0: "prevComplete",
+            1: "inProgress",
+            2: "pending",
+            4: "disabled",
+          }}
           modelYear={myr.modelYear}
-          status={statusMap[status] ?? ""}
+          status={status}
         />
-      </ContentCard>
-      <ContentCard title="The Model Year Report">
-        <Suspense fallback={<LoadingSkeleton />}>
-          <ModelYearReportDetails id={myrId} />
-        </Suspense>
-      </ContentCard>
-      <ContentCard title="The Forecast Report">
-        <Suspense fallback={<LoadingSkeleton />}>
-          <ForecastReportDetails myrId={myrId} />
-        </Suspense>
-      </ContentCard>
-      <ContentCard title="Supporting Documents">
-        <Attachments
-          attachments={myr.modelYearReportAttachments}
-          download={download}
-          zipName={`model-year-report-attachments-${myrId}`}
+      );
+    } else if (status === ModelYearReportStatus.SUBMITTED_TO_GOVERNMENT) {
+      banner = (
+        <MyrSuppBanner
+          type="myr"
+          visibleTabIndices={[0, 1, 2, 4]}
+          currentTabIndex={2}
+          clickableTabs={{}}
+          tabIndicators={{
+            0: "prevComplete",
+            1: "prevComplete",
+            2: "currentComplete",
+            4: "disabled",
+          }}
+          modelYear={myr.modelYear}
+          status={status}
         />
-      </ContentCard>
-      <ContentCard title="The Assessment">
-        <Suspense fallback={<LoadingSkeleton />}>
-          <AssessmentDetails type="assessment" id={myrId} />
-        </Suspense>
-      </ContentCard>
-      <ContentCard title="Actions">
-        <Suspense fallback={<LoadingSkeleton />}>{actionComponent}</Suspense>
-      </ContentCard>
+      );
+    } else if (status === ModelYearReportStatus.ASSESSED) {
+      banner = (
+        <MyrSuppBanner
+          type="myr"
+          visibleTabIndices={[0, 1, 2, 4, 5]}
+          currentTabIndex={2}
+          clickableTabs={{
+            4: `${Routes.ModelYearReports}/${myrId}/assessment`,
+            5: `${Routes.ModelYearReports}/${myrId}/reassessments-and-supplementaries`,
+          }}
+          tabIndicators={{
+            0: "prevComplete",
+            1: "prevComplete",
+            2: "prevComplete",
+            4: "currentComplete",
+            5: "pending",
+          }}
+          modelYear={myr.modelYear}
+          status={status}
+        />
+      );
+    }
+  } else if (userIsGov && userRoles.includes(Role.ZEVA_IDIR_USER)) {
+    if (
+      status === ModelYearReportStatus.SUBMITTED_TO_GOVERNMENT ||
+      status === ModelYearReportStatus.RETURNED_TO_ANALYST
+    ) {
+      const assessmentExists = !!myr.assessment;
+      banner = (
+        <MyrSuppBanner
+          type="myr"
+          visibleTabIndices={[2, 3, 4]}
+          currentTabIndex={2}
+          clickableTabs={{
+            3: `${Routes.ModelYearReports}/${myrId}/assessment/${assessmentExists ? "edit" : "new"}`,
+            ...(assessmentExists && {
+              4: `${Routes.ModelYearReports}/${myrId}/assessment`,
+            }),
+          }}
+          tabIndicators={{
+            2: "prevComplete",
+            3: "inProgress",
+            4: assessmentExists ? "pending" : "disabled",
+          }}
+          modelYear={myr.modelYear}
+          status={status}
+        />
+      );
+    } else if (status === ModelYearReportStatus.SUBMITTED_TO_DIRECTOR) {
+      banner = (
+        <MyrSuppBanner
+          type="myr"
+          visibleTabIndices={[2, 3, 4]}
+          currentTabIndex={2}
+          clickableTabs={{
+            4: `${Routes.ModelYearReports}/${myrId}/assessment`,
+          }}
+          tabIndicators={{
+            2: "prevComplete",
+            3: "prevComplete",
+            4: "currentComplete",
+          }}
+          modelYear={myr.modelYear}
+          status={status}
+        />
+      );
+    } else if (status === ModelYearReportStatus.ASSESSED) {
+      banner = (
+        <MyrSuppBanner
+          type="myr"
+          visibleTabIndices={[2, 3, 4, 5]}
+          currentTabIndex={2}
+          clickableTabs={{
+            4: `${Routes.ModelYearReports}/${myrId}/assessment`,
+            5: `${Routes.ModelYearReports}/${myrId}/reassessments-and-supplementaries`,
+          }}
+          tabIndicators={{
+            2: "prevComplete",
+            3: "prevComplete",
+            4: "currentComplete",
+            5: "pending",
+          }}
+          modelYear={myr.modelYear}
+          status={status}
+        />
+      );
+    }
+  } else if (userIsGov && userRoles.includes(Role.DIRECTOR)) {
+    if (status === ModelYearReportStatus.SUBMITTED_TO_DIRECTOR) {
+      banner = (
+        <MyrSuppBanner
+          type="myr"
+          visibleTabIndices={[2, 4]}
+          currentTabIndex={2}
+          clickableTabs={{
+            4: `${Routes.ModelYearReports}/${myrId}/assessment`,
+          }}
+          tabIndicators={{
+            2: "prevComplete",
+            4: "inProgress",
+          }}
+          modelYear={myr.modelYear}
+          status={status}
+        />
+      );
+    } else if (status === ModelYearReportStatus.ASSESSED) {
+      banner = (
+        <MyrSuppBanner
+          type="myr"
+          visibleTabIndices={[2, 4, 5]}
+          currentTabIndex={2}
+          clickableTabs={{
+            4: `${Routes.ModelYearReports}/${myrId}/assessment`,
+            5: `${Routes.ModelYearReports}/${myrId}/reassessments-and-supplementaries`,
+          }}
+          tabIndicators={{
+            2: "prevComplete",
+            4: "currentComplete",
+            5: "pending",
+          }}
+          modelYear={myr.modelYear}
+          status={status}
+        />
+      );
+    }
+  }
+
+  return (
+    <div className="flex flex-col gap-2">
+      {banner}
+      <Suspense fallback={<LoadingSkeleton />}>
+        <ModelYearReportDetails id={myrId} />
+      </Suspense>
+      <Suspense fallback={<LoadingSkeleton />}>
+        <ForecastReportDetails myrId={myrId} />
+      </Suspense>
+      <Suspense fallback={<LoadingSkeleton />}>{actionComponent}</Suspense>
     </div>
   );
 };

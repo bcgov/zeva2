@@ -3,6 +3,7 @@ import {
   ModelYearReportStatus,
   ReassessmentStatus,
   SupplierClass,
+  VehicleClass,
   ZevClass,
 } from "@/prisma/generated/enums";
 
@@ -39,14 +40,6 @@ export enum AssessmentTemplate {
   FinalEndingBalanceSheetName = "Final Ending Balance",
   StatementsSheetName = "Statement(s)",
 }
-
-export const supplierZevClasses = {
-  [ZevClass.A]: ZevClass.A,
-  [ZevClass.B]: ZevClass.B,
-};
-
-export type SupplierZevClassChoice =
-  (typeof supplierZevClasses)[keyof typeof supplierZevClasses];
 
 export const divisors: Readonly<Partial<Record<ModelYear, string>>> = {
   [ModelYear.MY_2025]: "3.5",
@@ -130,4 +123,54 @@ export const mapOfStatusToSupplierStatus: Readonly<
     ModelYearReportStatus.SUBMITTED_TO_GOVERNMENT,
   [ModelYearReportStatus.SUBMITTED_TO_GOVERNMENT]:
     ModelYearReportStatus.SUBMITTED_TO_GOVERNMENT,
+};
+
+export const myrSuppBannerIndicators = {
+  inProgress: "border-primaryGold",
+  pending: "border-primaryGold/20",
+  prevComplete: "border-primaryBlue",
+  currentComplete: "border-success",
+  disabled: "border-dividerMedium/60 text-dividerMedium/60",
+} as const;
+
+export const nvMap: Readonly<Partial<Record<ModelYear, VehicleClass[]>>> = {
+  [ModelYear.MY_2019]: [VehicleClass.REPORTABLE],
+  [ModelYear.MY_2020]: [VehicleClass.REPORTABLE],
+  [ModelYear.MY_2021]: [VehicleClass.REPORTABLE],
+  [ModelYear.MY_2022]: [VehicleClass.REPORTABLE],
+  [ModelYear.MY_2023]: [VehicleClass.REPORTABLE],
+  [ModelYear.MY_2024]: [VehicleClass.REPORTABLE],
+  [ModelYear.MY_2025]: [VehicleClass.REPORTABLE],
+  [ModelYear.MY_2026]: [VehicleClass.REPORTABLE],
+  [ModelYear.MY_2027]: [VehicleClass.REPORTABLE],
+  [ModelYear.MY_2028]: [VehicleClass.REPORTABLE],
+  [ModelYear.MY_2029]: [VehicleClass.REPORTABLE],
+  [ModelYear.MY_2030]: [VehicleClass.REPORTABLE],
+  [ModelYear.MY_2031]: [VehicleClass.REPORTABLE],
+  [ModelYear.MY_2032]: [VehicleClass.REPORTABLE],
+  [ModelYear.MY_2033]: [VehicleClass.REPORTABLE],
+  [ModelYear.MY_2034]: [VehicleClass.REPORTABLE],
+  [ModelYear.MY_2035]: [VehicleClass.REPORTABLE],
+};
+
+export const zevClassChoiceMap: Readonly<
+  Partial<Record<ModelYear, ZevClass[]>>
+> = {
+  [ModelYear.MY_2019]: [ZevClass.A, ZevClass.B],
+  [ModelYear.MY_2020]: [ZevClass.A, ZevClass.B],
+  [ModelYear.MY_2021]: [ZevClass.A, ZevClass.B],
+  [ModelYear.MY_2022]: [ZevClass.A, ZevClass.B],
+  [ModelYear.MY_2023]: [ZevClass.A, ZevClass.B],
+  [ModelYear.MY_2024]: [ZevClass.A, ZevClass.B],
+  [ModelYear.MY_2025]: [ZevClass.A, ZevClass.B],
+  [ModelYear.MY_2026]: [ZevClass.A, ZevClass.B],
+  [ModelYear.MY_2027]: [ZevClass.A, ZevClass.B],
+  [ModelYear.MY_2028]: [ZevClass.A, ZevClass.B],
+  [ModelYear.MY_2029]: [ZevClass.A, ZevClass.B],
+  [ModelYear.MY_2030]: [ZevClass.A, ZevClass.B],
+  [ModelYear.MY_2031]: [ZevClass.A, ZevClass.B],
+  [ModelYear.MY_2032]: [ZevClass.A, ZevClass.B],
+  [ModelYear.MY_2033]: [ZevClass.A, ZevClass.B],
+  [ModelYear.MY_2034]: [ZevClass.A, ZevClass.B],
+  [ModelYear.MY_2035]: [ZevClass.A, ZevClass.B],
 };

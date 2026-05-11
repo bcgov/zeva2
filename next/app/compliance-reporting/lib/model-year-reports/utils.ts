@@ -1,11 +1,5 @@
 import Excel, { Workbook } from "exceljs";
-import {
-  AssessmentTemplate,
-  ForecastTemplate,
-  MyrTemplate,
-  SupplierZevClassChoice,
-  supplierZevClasses,
-} from "./constants";
+import { AssessmentTemplate, ForecastTemplate, MyrTemplate } from "./constants";
 import {
   ModelYear,
   ReferenceType,
@@ -153,7 +147,7 @@ export const parseMyr = (workbook: Workbook): ParsedMyr => {
 
 type FileMyrSupplierDetails = {
   legalName: string;
-  makes: string;
+  makes: string[];
   classification: string;
   serviceAddress: string;
   recordsAddress: string;
@@ -166,7 +160,7 @@ const parseSupplierDetails = (
   const supplierDetailsRow = sheet.getRow(2);
   return {
     legalName: supplierDetailsRow.getCell(1).toString(),
-    makes: supplierDetailsRow.getCell(2).toString(),
+    makes: supplierDetailsRow.getCell(2).toString().split("|"),
     classification: supplierDetailsRow.getCell(3).toString(),
     serviceAddress: supplierDetailsRow.getCell(4).toString(),
     recordsAddress: supplierDetailsRow.getCell(5).toString(),
@@ -174,22 +168,12 @@ const parseSupplierDetails = (
   };
 };
 
-export const getZevClassChoice = (
-  zevClassOrdering: string,
-): SupplierZevClassChoice => {
+export const getZevClassOrder = (zevClassOrdering: string): ZevClass[] => {
   const zevClassesMap = getStringsToZevClassEnumsMap();
-  const orderingOfEnums = zevClassOrdering
+  return zevClassOrdering
     .split(",")
     .map((s) => zevClassesMap[s.trim()])
     .filter((zc) => !!zc);
-  const zevClassChoices: ZevClass[] = Object.values(supplierZevClasses);
-  const choice = orderingOfEnums.filter((zc) =>
-    zevClassChoices.includes(zc),
-  )[0];
-  if (choice === supplierZevClasses.A || choice === supplierZevClasses.B) {
-    return choice;
-  }
-  return ZevClass.B;
 };
 
 type FileMyrPreviousVolumes = {

@@ -24,24 +24,22 @@ import {
   saveReassessment,
 } from "../actions";
 import { getModelYearEnumsToStringsMap } from "@/app/lib/utils/enumMaps";
-import { MyrNvValues } from "./MyrNvValues";
+import { NvValuesSubmission } from "./NvValuesSubmission";
 import { Button } from "@/app/lib/components";
 import { Dropdown } from "@/app/lib/components/inputs";
 import {
   generateAssessment,
   getAdjustmentsPayload,
   getWorkbook,
-  getZevClassOrdering,
   validateNvValues,
 } from "../utilsClient";
-import { bytesToBase64 } from "@/app/lib/utils/base64";
 import { Adjustment, Adjustments } from "./Adjustments";
 import { Routes } from "@/app/lib/constants";
 import { Workbook } from "exceljs";
-import { getNvValues, getZevClassChoice, parseAssessment } from "../utils";
+import { getNvValues, getZevClassOrder, parseAssessment } from "../utils";
 import { isModelYear } from "@/app/lib/utils/typeGuards";
-import { legacyModelYearsMap, SupplierZevClassChoice } from "../constants";
-import { ZevClassSelect } from "./ZevClassSelect";
+import { legacyModelYearsMap } from "../constants";
+import { ZevClassOrder } from "./ZevClassOrder";
 import { getFiles } from "@/app/lib/utils/download";
 
 type NewAssessmentProps = {
@@ -153,8 +151,12 @@ export const AssessmentForm = (
   const [reassessmentId, setReassessmentId] = useState<number>();
   const [suppId, setSuppId] = useState<number>();
   const [nvValues, setNvValues] = useState<NvValues>({});
-  const [zevClassSelection, setZevClassSelection] =
-    useState<SupplierZevClassChoice>(ZevClass.B);
+  const [zevClassOrder, setZevClassOrder] = useState<ZevClass[]>([
+    ZevClass.UNSPECIFIED,
+    ZevClass.B,
+    ZevClass.A,
+    ZevClass.C,
+  ]);
   const [adjustments, setAdjustments] = useState<Adjustment[]>([]);
 
   useEffect(() => {
@@ -216,8 +218,8 @@ export const AssessmentForm = (
           const assmntWorkbook = await getWorkbook(assmnt.data);
           const parsedAssmnt = parseAssessment(assmntWorkbook);
           setNvValues(getNvValues(parsedAssmnt.complianceReductions));
-          setZevClassSelection(
-            getZevClassChoice(parsedAssmnt.details.zevClassOrdering),
+          setZevClassOrder(
+            getZevClassOrder(parsedAssmnt.details.zevClassOrdering),
           );
           setAdjustments(parsedAssmnt.currentAdjustments);
         }
@@ -239,19 +241,11 @@ export const AssessmentForm = (
     [],
   );
 
-  const handleZevClassSelect = useCallback(
-    (zevClass: SupplierZevClassChoice) => {
-      setZevClassSelection(zevClass);
-    },
-    [],
-  );
-
   const generateAssmnt = useCallback(async () => {
     if (!orgId || !modelYear) {
       throw new Error("Supplier and Model Year are required!");
     }
     validateNvValues(nvValues);
-    const zevClassOrdering = getZevClassOrdering(zevClassSelection);
     const adjustmentsPayload = getAdjustmentsPayload(adjustments);
     const [templateUrl, assessmentResponse] = await Promise.all([
       getAssessmentTemplateUrl(),
@@ -260,7 +254,7 @@ export const AssessmentForm = (
         modelYear,
         adjustmentsPayload,
         nvValues,
-        zevClassOrdering,
+        zevClassOrder,
       ),
     ]);
     if (assessmentResponse.responseType === "error") {
@@ -274,11 +268,11 @@ export const AssessmentForm = (
       template,
       assessmentResponse.data,
       modelYear,
-      zevClassOrdering,
+      zevClassOrder,
       adjustmentsPayload,
     );
     return assessment;
-  }, [props.type, orgId, modelYear, nvValues, zevClassSelection, adjustments]);
+  }, [props.type, orgId, modelYear, nvValues, zevClassOrder, adjustments]);
 
   const saveAssmnt = useCallback(
     async (assessment: Workbook) => {
@@ -342,7 +336,7 @@ export const AssessmentForm = (
             case "newAssessment":
             case "savedAssessment":
               if (myrId) {
-                router.push(`${Routes.ModelYearReports}/${myrId}`);
+                router.push(`${Routes.ModelYearReports}/${myrId}/assessment`);
               }
               break;
             case "legacyNewReassessment":
@@ -499,27 +493,25 @@ export const AssessmentForm = (
   }, [props.type, modelYear, modelYearsMap, legacyModelYearsMap, isPending]);
 
   return (
-    <div>
+    <div className="flex flex-col gap-2">
       {orgsComponent}
       {modelYearComponent}
-      <MyrNvValues
-        nvValues={nvValues}
-        handleChange={handleNvValuesChange}
-        disabled={isPending}
-      />
-      <div className="flex items-center py-2 my-2">
-        <p>
-          Select the ZEV class of credits that should be used first when
-          offsetting debits of the unspecified ZEV class:
-        </p>
-      </div>
-      <div className="flex items-center py-2 my-2 space-x-4">
-        <ZevClassSelect
-          zevClassSelection={zevClassSelection}
-          handleChange={handleZevClassSelect}
+      {modelYear && (
+        <NvValuesSubmission
+          modelYear={modelYear}
+          nvValues={nvValues}
+          handleNvValuesChange={handleNvValuesChange}
           disabled={isPending}
         />
-      </div>
+      )}
+      {modelYear && (
+        <ZevClassOrder
+          modelYear={modelYear}
+          zevClassOrder={zevClassOrder}
+          setZevClassOrder={setZevClassOrder}
+          disabled={isPending}
+        />
+      )}
       <Adjustments
         type="assessment"
         adjustments={adjustments}
@@ -527,15 +519,13 @@ export const AssessmentForm = (
         disabled={isPending}
       />
       {error && <p className="text-red-600">{error}</p>}
-      <div className="flex space-x-2">
-        <Button
-          variant="primary"
-          onClick={handleGenerateAndSaveAssmnt}
-          disabled={isPending}
-        >
-          {isPending ? "..." : "Generate and Save Assessment"}
-        </Button>
-      </div>
+      <Button
+        variant="primary"
+        onClick={handleGenerateAndSaveAssmnt}
+        disabled={isPending}
+      >
+        {isPending ? "..." : "Generate and Save Assessment"}
+      </Button>
     </div>
   );
 };

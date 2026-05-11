@@ -1,8 +1,12 @@
 "use client";
 
-import { JSX, useCallback, useMemo, Dispatch, SetStateAction } from "react";
+import { useCallback, Dispatch, SetStateAction } from "react";
 import { useDropzone, FileWithPath } from "react-dropzone";
-import { Button } from "./inputs";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import {
+  faArrowUpFromBracket,
+  faTrash,
+} from "@fortawesome/free-solid-svg-icons";
 
 export const Dropzone = (props: {
   files: FileWithPath[];
@@ -32,7 +36,7 @@ export const Dropzone = (props: {
     [props.setFiles, props.maxNumberOfFiles, props.handleDrop],
   );
 
-  const { getRootProps, getInputProps, isDragActive } = useDropzone({
+  const { getRootProps, getInputProps } = useDropzone({
     onDrop,
     maxFiles: props.maxNumberOfFiles,
     accept: props.allowedFileTypes,
@@ -51,45 +55,45 @@ export const Dropzone = (props: {
     [props.handleRemove, props.setFiles],
   );
 
-  const filesJSX = useMemo(() => {
-    const result: JSX.Element[] = [];
-    for (const file of props.files) {
-      result.push(
-        <li key={crypto.randomUUID()}>
-          <div className="flex flex-row">
-            <p className="mr-2 truncate">{file.name}</p>
-            <Button
-              variant="danger"
-              size="small"
-              disabled={props.disabled}
-              onClick={() => {
-                removeFile(file);
-              }}
-            >
-              {props.disabled ? "..." : "X"}
-            </Button>
-          </div>
-        </li>,
-      );
-    }
-    return result;
-  }, [props.files, props.disabled, removeFile]);
-
   return (
-    <div className="w-full">
+    <div className="flex flex-col gap-2">
       <div
-        className={`${props.disabled ? "bg-gray-100" : "bg-white"} py-2 my-2 rounded-lg shadow-level-1 p-4`}
+        {...getRootProps()}
+        className={`flex flex-col items-center justify-center p-2 gap-1 ${props.disabled ? "bg-gray-100" : "border border-dashed border-primaryBlue/40"}`}
       >
-        <div {...getRootProps()}>
-          <input {...getInputProps()} />
-          {isDragActive ? (
-            <p>Drop the files here ...</p>
-          ) : (
-            <p>Drag 'n' drop some files here, or click to select files</p>
-          )}
-        </div>
-        <ul>{filesJSX}</ul>
+        <input {...getInputProps()} />
+        <FontAwesomeIcon icon={faArrowUpFromBracket} />
+        <span>Drag and Drop files here, or</span>
+        <span
+          className={
+            props.disabled ? "" : "text-primaryBlue underline cursor-pointer"
+          }
+        >
+          Browse to select a file from your device to upload
+        </span>
       </div>
+      {props.files.length > 0 && (
+        <div className="flex flex-col gap-2 p-2 border-t border-b border-dividerMedium/40">
+          <div className="flex flex-row justify-between"></div>
+          {props.files.map((file, index) => {
+            return (
+              <div key={index} className="flex flex-row justify-between">
+                <span>{file.name}</span>
+                <span>{file.size} Bytes</span>
+                <FontAwesomeIcon
+                  icon={faTrash}
+                  onClick={() => {
+                    if (!props.disabled) {
+                      removeFile(file);
+                    }
+                  }}
+                  className={`text-primaryRed ${props.disabled ? "" : "cursor-pointer"}`}
+                />
+              </div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 };

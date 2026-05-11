@@ -1,128 +1,103 @@
-import { ParsedMyr } from "../utils";
+import { ModelYear } from "@/prisma/generated/enums";
+import { getZevClassOrder, ParsedMyr } from "../utils";
 import { ParsedComplianceReductions } from "./ParsedComplianceReductions";
 import { ParsedZevUnitRecords } from "./ParsedZevUnitRecords";
+import {
+  getAdjacentYear,
+  getComplianceDate,
+} from "@/app/lib/utils/complianceYear";
+import { getIsoYmdString } from "@/app/lib/utils/date";
+import { getModelYearEnumsToStringsMap } from "@/app/lib/utils/enumMaps";
+import { SupplierInformation } from "./SupplierInformation";
+import { PreviousVolumes } from "./PreviousVolumes";
+import { Makes } from "./Makes";
+import { ZevClassOrder } from "./ZevClassOrder";
+import { ZevStatistics } from "./ZevStatistics";
 
-export const ParsedModelYearReport = (props: { myr: ParsedMyr }) => {
+export const ParsedModelYearReport = (props: {
+  type: "myr" | "supp";
+  modelYear: ModelYear;
+  myr: ParsedMyr;
+}) => {
+  const prevCy = getAdjacentYear("prev", props.modelYear);
+  const prevCd = getComplianceDate(prevCy);
+  const prevCdString = getIsoYmdString(prevCd);
+  const modelYearsMap = getModelYearEnumsToStringsMap();
+  const reportType =
+    props.type === "myr" ? "Model Year Report" : "Supplementary Report";
+  const zevClassOrder = getZevClassOrder(
+    props.myr.supplierDetails.zevClassOrdering,
+  );
   return (
-    <div className="flex-col space-y-2">
-      <table className="w-full text-left">
-        <caption className="text-left">Supplier Details</caption>
-        <thead>
-          <tr>
-            <th className="border border-gray-300">Legal Name</th>
-            <th className="border border-gray-300">Makes</th>
-            <th className="border border-gray-300">Classification</th>
-            <th className="border border-gray-300">Service Address</th>
-            <th className="border border-gray-300">Records Address</th>
-            <th className="border border-gray-300">ZEV Class Ordering</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td className="border border-gray-300">
-              {props.myr.supplierDetails.legalName}
-            </td>
-            <td className="border border-gray-300">
-              {props.myr.supplierDetails.makes}
-            </td>
-            <td className="border border-gray-300">
-              {props.myr.supplierDetails.classification}
-            </td>
-            <td className="border border-gray-300">
-              {props.myr.supplierDetails.serviceAddress}
-            </td>
-            <td className="border border-gray-300">
-              {props.myr.supplierDetails.recordsAddress}
-            </td>
-            <td className="border border-gray-300">
-              {props.myr.supplierDetails.zevClassOrdering}
-            </td>
-          </tr>
-        </tbody>
-      </table>
-      <table className="w-full text-left">
-        <caption className="text-left">Previous Volumes</caption>
-        <thead>
-          <tr>
-            <th className="border border-gray-300">Vehicle Class</th>
-            <th className="border border-gray-300">Model Year</th>
-            <th className="border border-gray-300">Volume</th>
-          </tr>
-        </thead>
-        <tbody>
-          {props.myr.previousVolumes.map((volume) => (
-            <tr key={crypto.randomUUID()}>
-              <td className="border border-gray-300">{volume.vehicleClass}</td>
-              <td className="border border-gray-300">{volume.modelYear}</td>
-              <td className="border border-gray-300">{volume.volume}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-      <table className="w-full text-left">
-        <caption className="text-left">ZEV Statistics</caption>
-        <thead>
-          <tr>
-            <th className="border border-gray-300">Vehicle Class</th>
-            <th className="border border-gray-300">ZEV Class</th>
-            <th className="border border-gray-300">Make</th>
-            <th className="border border-gray-300">Model Name</th>
-            <th className="border border-gray-300">Model Year</th>
-            <th className="border border-gray-300">ZEV Type</th>
-            <th className="border border-gray-300">Range</th>
-            <th className="border border-gray-300">Pending Issuance Count</th>
-            <th className="border border-gray-300">Issued Count</th>
-          </tr>
-        </thead>
-        <tbody>
-          {props.myr.vehicleStatistics.map((vehicle) => (
-            <tr key={crypto.randomUUID()}>
-              <td className="border border-gray-300">{vehicle.vehicleClass}</td>
-              <td className="border border-gray-300">{vehicle.zevClass}</td>
-              <td className="border border-gray-300">{vehicle.make}</td>
-              <td className="border border-gray-300">{vehicle.modelName}</td>
-              <td className="border border-gray-300">{vehicle.modelYear}</td>
-              <td className="border border-gray-300">{vehicle.zevType}</td>
-              <td className="border border-gray-300">{vehicle.range}</td>
-              <td className="border border-gray-300">
-                {vehicle.submittedCount}
-              </td>
-              <td className="border border-gray-300">{vehicle.issuedCount}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-      <ParsedComplianceReductions reductions={props.myr.complianceReductions} />
-      <ParsedZevUnitRecords
-        caption="Beginning Balance"
-        records={props.myr.beginningBalance}
-      />
-      <ParsedZevUnitRecords
-        caption="Credits Earned during Compliance Period"
-        records={props.myr.credits}
-      />
-      <ParsedZevUnitRecords
-        caption="Pending Supply Credits"
-        records={props.myr.pendingSupplyCredits.map((credit) => {
-          return { type: "Credit", ...credit };
-        })}
-      />
-      <ParsedZevUnitRecords
-        caption="Adjustments"
-        records={props.myr.adjustments}
-      />
-      <ParsedZevUnitRecords
-        caption="Suggested Adjustments"
-        records={props.myr.suggestedAdjustments}
-      />
-      <ParsedZevUnitRecords
-        caption="Offsets and Transfers Away"
-        records={props.myr.offsetsAndTransfersAway}
-      />
-      <ParsedZevUnitRecords
-        caption="Preliminary Ending Balance"
-        records={props.myr.prelimEndingBalance}
-      />
+    <div className="flex flex-col gap-2 border border-dividerMedium/40 pb-2">
+      <div className="p-2 font-semibold font-lg bg-gray-100">
+        {modelYearsMap[props.modelYear]} {reportType}
+      </div>
+      <div className="flex flex-row gap-2 px-2">
+        <div className="flex-1">
+          <SupplierInformation details={props.myr.supplierDetails} />
+        </div>
+        <div className="flex-1">
+          <PreviousVolumes
+            modelYear={props.modelYear}
+            volumes={props.myr.previousVolumes}
+          />
+        </div>
+      </div>
+      <div className="flex flex-row flex-1 gap-2 px-2">
+        <div className="flex-1">
+          <Makes makes={props.myr.supplierDetails.makes} disabled={true} />
+        </div>
+        <div className="flex-1">
+          <ZevClassOrder
+            modelYear={props.modelYear}
+            zevClassOrder={zevClassOrder}
+            disabled={true}
+          />
+        </div>
+      </div>
+      <div className="p-2 font-semibold font-lg bg-gray-100">
+        Compliance Obligation
+      </div>
+      <div className="flex flex-col gap-2 px-2">
+        <ParsedComplianceReductions
+          reductions={props.myr.complianceReductions}
+        />
+        <ParsedZevUnitRecords
+          caption={`Balance at end of ${prevCdString}`}
+          records={props.myr.beginningBalance}
+        />
+        <ParsedZevUnitRecords
+          caption="Credit Activity"
+          records={props.myr.credits}
+        />
+        <ParsedZevUnitRecords
+          caption="Pending Supply Credits"
+          records={props.myr.pendingSupplyCredits.map((credit) => {
+            return { type: "Credit", ...credit };
+          })}
+        />
+        <ParsedZevUnitRecords
+          caption="Adjustments"
+          records={props.myr.adjustments}
+        />
+        <ParsedZevUnitRecords
+          caption="Suggested Adjustments"
+          records={props.myr.suggestedAdjustments}
+        />
+        <ParsedZevUnitRecords
+          caption="Transfers Away"
+          records={props.myr.offsetsAndTransfersAway}
+        />
+        <ParsedZevUnitRecords
+          caption="Preliminary Ending Balance"
+          records={props.myr.prelimEndingBalance}
+        />
+        <ZevStatistics
+          modelYear={props.modelYear}
+          records={props.myr.vehicleStatistics}
+        />
+      </div>
     </div>
   );
 };
