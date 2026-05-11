@@ -375,8 +375,8 @@ export const getSupplierZevModelActionRequiredItems = async (
         : undefined,
       status: statusMap[vehicle.status] ?? "",
       route: vehicle.isActive
-        ? `${Routes.ActiveZevModels}/${vehicle.id}`
-        : `${Routes.InactiveZevModels}/${vehicle.id}`,
+        ? `${Routes.ActiveZevModels}/${vehicle.id}/details`
+        : `${Routes.InactiveZevModels}/${vehicle.id}/details`,
       cta: "View",
     };
   });
