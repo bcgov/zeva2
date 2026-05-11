@@ -10,18 +10,19 @@ const AuditHistoryContent = async ({ id }: { id: number }) => {
   const vehicle = await getVehicle(id);
   const histories = await getVehicleHistories(id);
   const { userIsGov } = await getUserInfo();
-  
+
   if (!vehicle) {
     return <div>Vehicle not found</div>;
   }
 
   const statusMap = getVehicleStatusEnumsToStringsMap();
 
-  const { entries, summary, statusOptions, roleOptions } = processAuditHistories({
-    histories,
-    userIsGov,
-    statusMap,
-  });
+  const { entries, summary, statusOptions, roleOptions } =
+    processAuditHistories({
+      histories,
+      userIsGov,
+      statusMap,
+    });
 
   return (
     <VehicleAuditHistory

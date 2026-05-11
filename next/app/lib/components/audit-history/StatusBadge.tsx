@@ -4,10 +4,20 @@ import { FC } from "react";
 
 export interface IStatusBadgeProps {
   status: string;
-  variant?: "approved" | "escalated" | "reviewed" | "updated" | "returned" | "submitted" | "default";
+  variant?:
+    | "approved"
+    | "escalated"
+    | "reviewed"
+    | "updated"
+    | "returned"
+    | "submitted"
+    | "default";
 }
 
-export const StatusBadge: FC<IStatusBadgeProps> = ({ status, variant = "default" }) => {
+export const StatusBadge: FC<IStatusBadgeProps> = ({
+  status,
+  variant = "default",
+}) => {
   const variantStyles = {
     approved: "bg-green-700 text-white",
     escalated: "bg-yellow-600 text-white",

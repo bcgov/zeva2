@@ -9,7 +9,14 @@ export interface IAuditEntry {
   actor: string;
   role?: string;
   status: string;
-  statusVariant?: "approved" | "escalated" | "reviewed" | "updated" | "returned" | "submitted" | "default";
+  statusVariant?:
+    | "approved"
+    | "escalated"
+    | "reviewed"
+    | "updated"
+    | "returned"
+    | "submitted"
+    | "default";
   reason?: string;
   comment?: string;
   attachment?: {
@@ -57,7 +64,9 @@ export const AuditTimeline: FC<IAuditTimelineProps> = ({ entries }) => {
         <div key={entry.id}>
           <div className="flex gap-3 pb-4">
             <div className="flex flex-col items-center pt-1">
-              <div className={`w-0 h-full min-h-[100px] border-l-2 border-dashed ${getLineColor(entry.statusVariant)}`}></div>
+              <div
+                className={`w-0 h-full min-h-[100px] border-l-2 border-dashed ${getLineColor(entry.statusVariant)}`}
+              ></div>
             </div>
 
             <div className="flex-1">
@@ -75,8 +84,8 @@ export const AuditTimeline: FC<IAuditTimelineProps> = ({ entries }) => {
 
                 <div className="flex-1">
                   <div className="mb-3">
-                    <StatusBadge 
-                      status={entry.status} 
+                    <StatusBadge
+                      status={entry.status}
                       variant={entry.statusVariant}
                     />
                   </div>
@@ -93,7 +102,9 @@ export const AuditTimeline: FC<IAuditTimelineProps> = ({ entries }) => {
                         {entry.attachment.name}
                       </a>
                       {entry.attachment.size && (
-                        <span className="text-gray-600 ml-1">{entry.attachment.size}</span>
+                        <span className="text-gray-600 ml-1">
+                          {entry.attachment.size}
+                        </span>
                       )}
                     </div>
                   )}

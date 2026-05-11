@@ -8,18 +8,19 @@ export const AuditHistoryContent = async ({ id }: { id: number }) => {
   const application = await getCreditApplication(id);
   const histories = await getApplicationHistories(id);
   const { userIsGov } = await getUserInfo();
-  
+
   if (!application) {
     return <div>Application not found</div>;
   }
 
   const statusMap = getCreditApplicationStatusEnumsToStringsMap();
 
-  const { entries, summary, statusOptions, roleOptions } = processAuditHistories({
-    histories,
-    userIsGov,
-    statusMap,
-  });
+  const { entries, summary, statusOptions, roleOptions } =
+    processAuditHistories({
+      histories,
+      userIsGov,
+      statusMap,
+    });
 
   return (
     <ApplicationAuditHistory

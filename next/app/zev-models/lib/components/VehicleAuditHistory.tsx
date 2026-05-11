@@ -1,6 +1,10 @@
 "use client";
 
-import { AuditHistory, IAuditEntry, IAuditSummary } from "@/app/lib/components/audit-history";
+import {
+  AuditHistory,
+  IAuditEntry,
+  IAuditSummary,
+} from "@/app/lib/components/audit-history";
 import { DropdownOption } from "@/app/lib/components/inputs/Dropdown";
 
 interface VehicleAuditHistoryProps {
