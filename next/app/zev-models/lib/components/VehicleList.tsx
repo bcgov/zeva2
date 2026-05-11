@@ -24,9 +24,9 @@ export const VehicleList = async (props: {
   const navigationAction = async (id: number) => {
     "use server";
     if (props.type === "active") {
-      redirect(`${Routes.ActiveZevModels}/${id}`);
+      redirect(`${Routes.ActiveZevModels}/${id}/details`);
     } else if (props.type === "inactive") {
-      redirect(`${Routes.InactiveZevModels}/${id}`);
+      redirect(`${Routes.InactiveZevModels}/${id}/details`);
     }
   };
   const [vehicles, totalNumberOfVehicles] = await getVehicles(

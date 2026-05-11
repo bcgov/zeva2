@@ -42,25 +42,26 @@ export const AuditHistory: FC<IAuditHistoryProps> = ({
     let filtered = [...entries];
 
     if (statusFilter) {
-      filtered = filtered.filter(entry => 
-        entry.status.toLowerCase() === statusFilter.toLowerCase()
+      filtered = filtered.filter(
+        (entry) => entry.status.toLowerCase() === statusFilter.toLowerCase(),
       );
     }
 
     if (roleFilter) {
-      filtered = filtered.filter(entry => 
-        entry.role?.toLowerCase() === roleFilter.toLowerCase()
+      filtered = filtered.filter(
+        (entry) => entry.role?.toLowerCase() === roleFilter.toLowerCase(),
       );
     }
 
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
-      filtered = filtered.filter(entry => 
-        entry.status.toLowerCase().includes(query) ||
-        entry.reason?.toLowerCase().includes(query) ||
-        entry.comment?.toLowerCase().includes(query) ||
-        entry.change?.toLowerCase().includes(query) ||
-        entry.role?.toLowerCase().includes(query)
+      filtered = filtered.filter(
+        (entry) =>
+          entry.status.toLowerCase().includes(query) ||
+          entry.reason?.toLowerCase().includes(query) ||
+          entry.comment?.toLowerCase().includes(query) ||
+          entry.change?.toLowerCase().includes(query) ||
+          entry.role?.toLowerCase().includes(query),
       );
     }
 
@@ -92,19 +93,25 @@ export const AuditHistory: FC<IAuditHistoryProps> = ({
               {summary.status && (
                 <div>
                   <span className="text-gray-700">Status:</span>{" "}
-                  <span className="font-semibold text-green-600">{summary.status}</span>
+                  <span className="font-semibold text-green-600">
+                    {summary.status}
+                  </span>
                 </div>
               )}
               {summary.finalDecisionDate && (
                 <div>
                   <span className="text-gray-700">Final Decision Date:</span>{" "}
-                  <span className="font-semibold text-gray-900">{summary.finalDecisionDate}</span>
+                  <span className="font-semibold text-gray-900">
+                    {summary.finalDecisionDate}
+                  </span>
                 </div>
               )}
               {summary.decisionMaker && (
                 <div>
                   <span className="text-gray-700">Decision Maker:</span>{" "}
-                  <span className="font-semibold text-gray-900">{summary.decisionMaker}</span>
+                  <span className="font-semibold text-gray-900">
+                    {summary.decisionMaker}
+                  </span>
                 </div>
               )}
             </div>
@@ -114,10 +121,15 @@ export const AuditHistory: FC<IAuditHistoryProps> = ({
         <div className="p-4 grid grid-cols-1 md:grid-cols-4 gap-4">
           {statusOptions.length > 0 && (
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Status
+              </label>
               <Dropdown
                 placeholder="Status"
-                options={[{ value: "", label: "Select an option" }, ...statusOptions]}
+                options={[
+                  { value: "", label: "Select an option" },
+                  ...statusOptions,
+                ]}
                 value={statusFilter}
                 onChange={setStatusFilter}
               />
@@ -125,17 +137,24 @@ export const AuditHistory: FC<IAuditHistoryProps> = ({
           )}
           {roleOptions.length > 0 && (
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Role</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Role
+              </label>
               <Dropdown
                 placeholder="Role"
-                options={[{ value: "", label: "Select an option" }, ...roleOptions]}
+                options={[
+                  { value: "", label: "Select an option" },
+                  ...roleOptions,
+                ]}
                 value={roleFilter}
                 onChange={setRoleFilter}
               />
             </div>
           )}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Date</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Date
+            </label>
             <Dropdown
               placeholder="Date"
               options={[
@@ -149,7 +168,9 @@ export const AuditHistory: FC<IAuditHistoryProps> = ({
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Search</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Search
+            </label>
             <TextInput
               placeholder="Example text"
               value={searchQuery}
@@ -160,11 +181,7 @@ export const AuditHistory: FC<IAuditHistoryProps> = ({
         </div>
       </div>
 
-      {customContent && (
-        <div className="mb-6">
-          {customContent}
-        </div>
-      )}
+      {customContent && <div className="mb-6">{customContent}</div>}
 
       <div className="bg-white border border-gray-300 rounded-md p-6">
         <AuditTimeline entries={filteredEntries} />
