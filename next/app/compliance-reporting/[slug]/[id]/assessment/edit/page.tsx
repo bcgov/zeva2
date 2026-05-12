@@ -2,11 +2,13 @@ import { getPresignedGetObjectUrl } from "@/app/lib/services/s3";
 import { AssessmentForm } from "@/app/compliance-reporting/lib/model-year-reports/components/AssessmentForm";
 import { getModelYearReport } from "@/app/compliance-reporting/lib/model-year-reports/data";
 import { getUserInfo } from "@/auth";
-import { ModelYearReportStatus } from "@/prisma/generated/enums";
+import { ModelYearReportStatus, Role } from "@/prisma/generated/enums";
+import { MyrSuppBanner } from "@/app/compliance-reporting/lib/model-year-reports/components/MyrSuppBanner";
+import { Routes } from "@/app/lib/constants";
 
 const Page = async (props: { params: Promise<{ id: string }> }) => {
-  const { userIsGov } = await getUserInfo();
-  if (!userIsGov) {
+  const { userIsGov, userRoles } = await getUserInfo();
+  if (!userIsGov || !userRoles.includes(Role.ZEVA_IDIR_USER)) {
     return null;
   }
   const args = await props.params;
@@ -20,9 +22,26 @@ const Page = async (props: { params: Promise<{ id: string }> }) => {
   ) {
     return null;
   }
+
   return (
-    <div className="max-w-xl mx-auto p-4">
-      <h1 className="text-xl font-bold mb-4">Edit an Assessment</h1>
+    <div className="flex flex-col gap-2 p-2">
+      <MyrSuppBanner
+        type="myr"
+        currentTabIndex={3}
+        visibleTabIndices={[2, 3, 4]}
+        clickableTabs={{
+          2: `${Routes.ModelYearReports}/${myrId}`,
+          ...(report.assessment && {
+            4: `${Routes.ModelYearReports}/${myrId}/assessment`,
+          }),
+        }}
+        tabIndicators={{
+          2: "prevComplete",
+          3: "inProgress",
+          4: "pending",
+        }}
+        modelYear={report.modelYear}
+      />
       <AssessmentForm
         type="savedAssessment"
         orgName={report.organization.name}

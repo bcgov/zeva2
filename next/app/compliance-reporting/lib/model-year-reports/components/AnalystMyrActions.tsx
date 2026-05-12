@@ -64,14 +64,22 @@ export const AnalystMyrActions = (props: {
           </div>
         </div>
         <div className="flex flex-row p-2 bg-gray-50 justify-between">
-          <Button onClick={handleReturnToSupplier} variant="secondary">
-            Return To Supplier
+          <Button
+            onClick={handleReturnToSupplier}
+            variant="secondary"
+            disabled={isPending}
+          >
+            {isPending ? "..." : "Return to Supplier"}
           </Button>
           <div className="flex flex-row gap-1 items-center">
             {error && <span className="text-red-600">{error}</span>}
             {!props.assessmentExists && (
-              <Button onClick={handleGoToCreateAssessment} variant="primary">
-                Conduct Assessment
+              <Button
+                onClick={handleGoToCreateAssessment}
+                variant="primary"
+                disabled={isPending}
+              >
+                {isPending ? "..." : "Conduct Assessment"}
               </Button>
             )}
           </div>

@@ -47,7 +47,7 @@ export const MyrSuppBanner = (props: {
       "Report Information",
       "Review and Submit",
       "Submission",
-      type === "myr" ? "Assessment Information" : "Reassessment Information",
+      type === "myr" ? "Generate Assessment" : "Generate Reassessment",
       type === "myr" ? "Assessment" : "Reassessment",
       "Supplementary Reports and Reassessments",
     ];
