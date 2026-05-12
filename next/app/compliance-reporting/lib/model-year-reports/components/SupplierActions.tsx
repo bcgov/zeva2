@@ -5,14 +5,13 @@ import { Textarea } from "@/app/lib/components/inputs/Textarea";
 import { Routes } from "@/app/lib/constants";
 import { useRouter } from "next/navigation";
 import { useCallback, useMemo, useState, useTransition } from "react";
-import { submitReports } from "../actions";
+import { deleteReports, submitReports } from "../actions";
 import { getNormalizedComment } from "@/app/lib/utils/comment";
 import { ModelYear, ModelYearReportStatus } from "@/prisma/generated/enums";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faTrash, faArrowPointer } from "@fortawesome/free-solid-svg-icons";
 import { getModelYearEnumsToStringsMap } from "@/app/lib/utils/enumMaps";
 
-// for myrs only
 export const SupplierActions = (props: {
   myrId: number;
   status: ModelYearReportStatus;
@@ -56,6 +55,23 @@ export const SupplierActions = (props: {
           throw new Error(response.message);
         }
         router.refresh();
+      } catch (e) {
+        if (e instanceof Error) {
+          setError(e.message);
+        }
+      }
+    });
+  }, [props.myrId, comment]);
+
+  const handleDelete = useCallback(() => {
+    setError("");
+    startTransition(async () => {
+      try {
+        const response = await deleteReports(props.myrId);
+        if (response.responseType === "error") {
+          throw new Error(response.message);
+        }
+        router.push(Routes.ModelYearReports);
       } catch (e) {
         if (e instanceof Error) {
           setError(e.message);
@@ -149,14 +165,26 @@ export const SupplierActions = (props: {
           {checkboxes}
         </div>
         <div className="flex flex-row p-2 bg-gray-50 justify-between">
-          <Button
-            onClick={handleGoToEdit}
-            variant="danger"
-            icon={<FontAwesomeIcon icon={faTrash} />}
-            iconPosition="right"
-          >
-            Start Over
-          </Button>
+          <div className="flex flex-row gap-1 items-center">
+            <Button
+              onClick={handleDelete}
+              variant="danger"
+              disabled={isPending}
+              icon={<FontAwesomeIcon icon={faTrash} />}
+              iconPosition="right"
+            >
+              {isPending ? "..." : "Delete"}
+            </Button>
+            <Button
+              onClick={handleGoToEdit}
+              variant="secondary"
+              icon={<FontAwesomeIcon icon={faTrash} />}
+              iconPosition="right"
+              disabled={isPending}
+            >
+              {isPending ? "..." : "Start Over"}
+            </Button>
+          </div>
           <div className="flex flex-row gap-1 items-center">
             {error && <span className="text-red-600">{error}</span>}
             <Button
@@ -164,9 +192,9 @@ export const SupplierActions = (props: {
               variant="primary"
               icon={<FontAwesomeIcon icon={faArrowPointer} />}
               iconPosition="right"
-              disabled={checkboxesStatus.includes(false)}
+              disabled={checkboxesStatus.includes(false) || isPending}
             >
-              Submit
+              {isPending ? "..." : "Submit"}
             </Button>
           </div>
         </div>

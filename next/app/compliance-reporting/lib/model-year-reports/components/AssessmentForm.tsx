@@ -41,6 +41,8 @@ import { isModelYear } from "@/app/lib/utils/typeGuards";
 import { legacyModelYearsMap } from "../constants";
 import { ZevClassOrder } from "./ZevClassOrder";
 import { getFiles } from "@/app/lib/utils/download";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faFileArrowUp } from "@fortawesome/free-solid-svg-icons";
 
 type NewAssessmentProps = {
   type: "newAssessment";
@@ -451,10 +453,10 @@ export const AssessmentForm = (
     return null;
   }, [props.type, orgName, orgId, orgsMap, isPending, handleOrgSelect]);
 
-  const modelYearComponent: JSX.Element | null = useMemo(() => {
-    let innerComponent;
-    if (props.type === "legacyNewReassessment") {
-      innerComponent = (
+  return (
+    <div className="flex flex-col gap-2">
+      {orgsComponent}
+      {props.type === "legacyNewReassessment" && (
         <Dropdown
           placeholder="Select an Option"
           options={Object.entries(legacyModelYearsMap).map(([key, value]) => ({
@@ -467,35 +469,7 @@ export const AssessmentForm = (
           }}
           disabled={isPending}
         />
-      );
-    } else if (modelYear) {
-      innerComponent = (
-        <input
-          disabled={true}
-          name="modelYear"
-          type="text"
-          value={modelYearsMap[modelYear]}
-          className="border p-2 w-full"
-        />
-      );
-    }
-    if (innerComponent) {
-      return (
-        <div className="flex items-center py-2 my-2">
-          <label className="w-72" htmlFor="modelYear">
-            Model Year
-          </label>
-          {innerComponent}
-        </div>
-      );
-    }
-    return null;
-  }, [props.type, modelYear, modelYearsMap, legacyModelYearsMap, isPending]);
-
-  return (
-    <div className="flex flex-col gap-2">
-      {orgsComponent}
-      {modelYearComponent}
+      )}
       {modelYear && (
         <NvValuesSubmission
           modelYear={modelYear}
@@ -518,14 +492,32 @@ export const AssessmentForm = (
         setAdjustments={setAdjustments}
         disabled={isPending}
       />
-      {error && <p className="text-red-600">{error}</p>}
-      <Button
-        variant="primary"
-        onClick={handleGenerateAndSaveAssmnt}
-        disabled={isPending}
-      >
-        {isPending ? "..." : "Generate and Save Assessment"}
-      </Button>
+      <div className="flex flex-row p-2 bg-gray-50 justify-between">
+        <span></span>
+        <div className="flex flex-row gap-1 items-center">
+          {error && <span className="text-red-600">{error}</span>}
+          <Button
+            onClick={handleGenerateAndSaveAssmnt}
+            variant="primary"
+            disabled={isPending}
+            icon={<FontAwesomeIcon icon={faFileArrowUp} />}
+            iconPosition="right"
+          >
+            {(props.type === "legacyNewReassessment" ||
+              props.type === "legacyNewSuppReassessment" ||
+              props.type === "nonLegacyNewReassessment" ||
+              props.type === "nonLegacyNewSuppReassessment") &&
+              "Generate Reassessment"}
+            {(props.type === "legacySavedReassessment" ||
+              props.type === "legacySavedSuppReassessment" ||
+              props.type === "nonLegacySavedReassessment" ||
+              props.type === "nonLegacySavedSuppReassessment") &&
+              "Regenerate Reassessment"}
+            {props.type === "newAssessment" && "Generate Assessment"}
+            {props.type === "savedAssessment" && "Regenerate Assessment"}
+          </Button>
+        </div>
+      </div>
     </div>
   );
 };

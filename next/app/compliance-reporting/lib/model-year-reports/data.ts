@@ -57,15 +57,24 @@ export const modelYearReportExists = async (modelYear: ModelYear) => {
 };
 
 export const getModelYearReport = async (myrId: number) => {
-  const { userIsGov, userOrgId } = await getUserInfo();
+  const { userIsGov, userOrgId, userRoles } = await getUserInfo();
   const whereClause: ModelYearReportWhereUniqueInput = { id: myrId };
   if (userIsGov) {
-    whereClause.status = {
-      notIn: [
-        ModelYearReportStatus.DRAFT,
-        ModelYearReportStatus.RETURNED_TO_SUPPLIER,
-      ],
-    };
+    if (userRoles.includes(Role.DIRECTOR)) {
+      whereClause.status = {
+        in: [
+          ModelYearReportStatus.ASSESSED,
+          ModelYearReportStatus.SUBMITTED_TO_DIRECTOR,
+        ],
+      };
+    } else {
+      whereClause.status = {
+        notIn: [
+          ModelYearReportStatus.DRAFT,
+          ModelYearReportStatus.RETURNED_TO_SUPPLIER,
+        ],
+      };
+    }
   } else {
     whereClause.organizationId = userOrgId;
   }

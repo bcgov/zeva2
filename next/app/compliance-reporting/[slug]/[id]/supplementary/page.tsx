@@ -6,7 +6,6 @@ import {
 } from "@/app/compliance-reporting/lib/model-year-reports/data";
 import { ModelYearReportForm } from "@/app/compliance-reporting/lib/model-year-reports/components/ModelYearReportForm";
 import { ModelYearReportStatus } from "@/prisma/generated/enums";
-import { getDataForSupplementary } from "@/app/compliance-reporting/lib/model-year-reports/services";
 
 const Page = async (props: { params: Promise<{ id: string }> }) => {
   const { userIsGov } = await getUserInfo();
@@ -16,20 +15,7 @@ const Page = async (props: { params: Promise<{ id: string }> }) => {
   const args = await props.params;
   const myrId = Number.parseInt(args.id, 10);
   const report = await getModelYearReport(myrId);
-  if (
-    !report ||
-    report.status === ModelYearReportStatus.DRAFT ||
-    report.status === ModelYearReportStatus.RETURNED_TO_SUPPLIER
-  ) {
-    return null;
-  }
-  let createSupplementaryPossible = true;
-  try {
-    await getDataForSupplementary(report.organizationId, report.modelYear);
-  } catch {
-    createSupplementaryPossible = false;
-  }
-  if (!createSupplementaryPossible) {
+  if (!report || report.status !== ModelYearReportStatus.ASSESSED) {
     return null;
   }
   const supplierData = await getSupplierOwnData();

@@ -47,23 +47,39 @@ export const AnalystAssessmentActions = (props: {
     props.status === ModelYearReportStatus.SUBMITTED_TO_GOVERNMENT
   ) {
     return (
-      <div>
-        {error && <p className="text-red-600">{error}</p>}
-        <Textarea value={comment} onChange={setComment} disabled={isPending} />
-        <Button
-          variant="secondary"
-          onClick={handleGoToEditAssessment}
-          disabled={isPending}
-        >
-          {isPending ? "..." : "Start Over"}
-        </Button>
-        <Button
-          variant="primary"
-          onClick={handleSubmitToDirector}
-          disabled={isPending}
-        >
-          {isPending ? "..." : "Submit to Director"}
-        </Button>
+      <div className="flex flex-col gap-2">
+        <div className="flex flex-col border border-dividerMedium/40">
+          <div className="p-2 bg-gray-100">
+            <span className="font-semibold">Comments (optional)</span>
+          </div>
+          <div className="p-2">
+            <Textarea
+              value={comment}
+              onChange={setComment}
+              disabled={isPending}
+              placeholder="Comment"
+            />
+          </div>
+        </div>
+        <div className="flex flex-row p-2 bg-gray-50 justify-between">
+          <Button
+            onClick={handleGoToEditAssessment}
+            variant="secondary"
+            disabled={isPending}
+          >
+            {isPending ? "..." : "Start Over"}
+          </Button>
+          <div className="flex flex-row gap-1 items-center">
+            {error && <span className="text-red-600">{error}</span>}
+            <Button
+              onClick={handleSubmitToDirector}
+              variant="primary"
+              disabled={isPending}
+            >
+              {isPending ? "..." : "Submit to Director"}
+            </Button>
+          </div>
+        </div>
       </div>
     );
   }

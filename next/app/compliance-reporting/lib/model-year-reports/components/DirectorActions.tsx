@@ -63,23 +63,39 @@ export const DirectorActions = (props: {
     return null;
   }
   return (
-    <div className="space-y-2">
-      <Textarea value={comment} onChange={setComment} disabled={isPending} />
-      {error && <p className="text-red-600">{error}</p>}
-      <Button
-        variant="secondary"
-        onClick={handleReturnToAnalyst}
-        disabled={isPending}
-      >
-        {isPending ? "..." : "Return To Analyst"}
-      </Button>
-      <Button
-        variant="primary"
-        onClick={handleIssueAssessment}
-        disabled={isPending}
-      >
-        {isPending ? "..." : "Issue Assessment"}
-      </Button>
+    <div className="flex flex-col gap-2">
+      <div className="flex flex-col border border-dividerMedium/40">
+        <div className="p-2 bg-gray-100">
+          <span className="font-semibold">Comments (optional)</span>
+        </div>
+        <div className="p-2">
+          <Textarea
+            value={comment}
+            onChange={setComment}
+            disabled={isPending}
+            placeholder="Comment"
+          />
+        </div>
+      </div>
+      <div className="flex flex-row p-2 bg-gray-50 justify-between">
+        <Button
+          onClick={handleReturnToAnalyst}
+          variant="secondary"
+          disabled={isPending}
+        >
+          {isPending ? "..." : "Return To Analyst"}
+        </Button>
+        <div className="flex flex-row gap-1 items-center">
+          {error && <span className="text-red-600">{error}</span>}
+          <Button
+            onClick={handleIssueAssessment}
+            variant="primary"
+            disabled={isPending}
+          >
+            {isPending ? "..." : "Issue Assessment"}
+          </Button>
+        </div>
+      </div>
     </div>
   );
 };
