@@ -4,6 +4,7 @@ import { getModelYearReport } from "@/app/compliance-reporting/lib/model-year-re
 import { ModelYearReportStatus, Role } from "@/prisma/generated/enums";
 import { MyrSuppBanner } from "@/app/compliance-reporting/lib/model-year-reports/components/MyrSuppBanner";
 import { Routes } from "@/app/lib/constants";
+import { getPresignedGetObjectUrl } from "@/app/lib/services/s3";
 
 const Page = async (props: { params: Promise<{ id: string }> }) => {
   const args = await props.params;
@@ -43,6 +44,7 @@ const Page = async (props: { params: Promise<{ id: string }> }) => {
         orgId={report.organizationId}
         myrId={report.id}
         modelYear={report.modelYear}
+        url={await getPresignedGetObjectUrl(report.objectName)}
       />
     </div>
   );

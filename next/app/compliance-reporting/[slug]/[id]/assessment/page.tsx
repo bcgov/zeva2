@@ -1,5 +1,3 @@
-// a page that renders the assessment given the myrId
-
 import { AnalystAssessmentActions } from "@/app/compliance-reporting/lib/model-year-reports/components/AnalystAssessmentActions";
 import { AssessmentDetails } from "@/app/compliance-reporting/lib/model-year-reports/components/AssessmentDetails";
 import { DirectorActions } from "@/app/compliance-reporting/lib/model-year-reports/components/DirectorActions";
@@ -12,10 +10,10 @@ import { JSX } from "react";
 
 const Page = async (props: { params: Promise<{ id: string }> }) => {
   const args = await props.params;
-  const myrId = parseInt(args.id, 10);
+  const myrId = Number.parseInt(args.id, 10);
   const { userIsGov, userRoles } = await getUserInfo();
   const myr = await getModelYearReport(myrId);
-  if (!myr || !myr.assessment) {
+  if (!myr) {
     return null;
   }
   if (!userIsGov && myr.status !== ModelYearReportStatus.ASSESSED) {

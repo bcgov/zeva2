@@ -23,7 +23,6 @@ import {
   NvValues,
   saveReassessment,
 } from "../actions";
-import { getModelYearEnumsToStringsMap } from "@/app/lib/utils/enumMaps";
 import { NvValuesSubmission } from "./NvValuesSubmission";
 import { Button } from "@/app/lib/components";
 import { Dropdown } from "@/app/lib/components/inputs";
@@ -36,7 +35,12 @@ import {
 import { Adjustment, Adjustments } from "./Adjustments";
 import { Routes } from "@/app/lib/constants";
 import { Workbook } from "exceljs";
-import { getNvValues, getZevClassOrder, parseAssessment } from "../utils";
+import {
+  getNvValues,
+  getZevClassOrder,
+  parseAssessment,
+  parseMyr,
+} from "../utils";
 import { isModelYear } from "@/app/lib/utils/typeGuards";
 import { legacyModelYearsMap } from "../constants";
 import { ZevClassOrder } from "./ZevClassOrder";
@@ -50,6 +54,7 @@ type NewAssessmentProps = {
   modelYear: ModelYear;
   orgId: number;
   myrId: number;
+  url: string;
 };
 
 type SavedAssessmentProps = {
@@ -206,7 +211,21 @@ export const AssessmentForm = (
   }, []);
 
   useEffect(() => {
-    if (
+    if (props.type === "newAssessment") {
+      const loadMyr = async () => {
+        const files = await getFiles([{ fileName: "_", url: props.url }]);
+        if (files.length === 1) {
+          const myr = files[0];
+          const myrWorkbook = await getWorkbook(myr.data);
+          const parsedMyr = parseMyr(myrWorkbook);
+          setNvValues(getNvValues(parsedMyr.complianceReductions));
+          setZevClassOrder(
+            getZevClassOrder(parsedMyr.supplierDetails.zevClassOrdering),
+          );
+        }
+      };
+      loadMyr();
+    } else if (
       props.type === "savedAssessment" ||
       props.type === "legacySavedReassessment" ||
       props.type === "nonLegacySavedReassessment" ||
@@ -228,10 +247,6 @@ export const AssessmentForm = (
       };
       loadAssessment();
     }
-  }, []);
-
-  const modelYearsMap = useMemo(() => {
-    return getModelYearEnumsToStringsMap();
   }, []);
 
   const handleNvValuesChange = useCallback(
@@ -483,7 +498,7 @@ export const AssessmentForm = (
           modelYear={modelYear}
           zevClassOrder={zevClassOrder}
           setZevClassOrder={setZevClassOrder}
-          disabled={isPending}
+          disabled={isPending || props.type === "newAssessment"}
         />
       )}
       <Adjustments

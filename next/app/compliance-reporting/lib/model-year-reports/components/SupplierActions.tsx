@@ -93,21 +93,21 @@ export const SupplierActions = (props: {
   }, []);
 
   const checkboxes = useMemo(() => {
-    let disabled = true;
+    let disabledAndChecked = true;
     if (
       props.status === ModelYearReportStatus.DRAFT ||
       props.status === ModelYearReportStatus.RETURNED_TO_SUPPLIER
     ) {
-      disabled = false;
+      disabledAndChecked = false;
     }
     return (
       <div className="p-2 flex flex-col gap-2">
         <div className="p-1 flex flex-row gap-1">
           <input
             type="checkbox"
-            checked={checkboxesStatus[0]}
+            checked={disabledAndChecked ? true : checkboxesStatus[0]}
             onChange={() => handleCheck(0)}
-            disabled={disabled}
+            disabled={disabledAndChecked}
           />
           <span className="font-semibold">
             I confirm that all required {salesOrSupplied} credit applications
@@ -118,9 +118,9 @@ export const SupplierActions = (props: {
         <div className="p-1 flex flex-row gap-1">
           <input
             type="checkbox"
-            checked={checkboxesStatus[1]}
+            checked={disabledAndChecked ? true : checkboxesStatus[1]}
             onChange={() => handleCheck(1)}
-            disabled={disabled}
+            disabled={disabledAndChecked}
           />
           <span className="font-semibold">
             On behalf of {props.supplierName}, I confirm that information
@@ -178,8 +178,6 @@ export const SupplierActions = (props: {
             <Button
               onClick={handleGoToEdit}
               variant="secondary"
-              icon={<FontAwesomeIcon icon={faTrash} />}
-              iconPosition="right"
               disabled={isPending}
             >
               {isPending ? "..." : "Start Over"}
