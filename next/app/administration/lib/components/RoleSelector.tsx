@@ -1,6 +1,7 @@
 "use client";
 
 import { Modal } from "@/app/lib/components/Modal";
+import { SelectionCard } from "@/app/lib/components/inputs";
 import { getRoleEnumsToStringsMap } from "@/app/lib/utils/enumMaps";
 import { Role } from "@/prisma/generated/enums";
 import {
@@ -139,26 +140,16 @@ export const RoleSelector = (props: {
     <>
       <div className="space-y-2">
         {roles.map((role) => (
-          <label
-            className="flex items-start gap-3 rounded-md border border-dividerMedium/50 bg-disabledSurface px-3 py-2 text-sm text-primaryText"
+          <SelectionCard
             key={role}
-          >
-            <input
-              className="mt-1 h-4 w-4 accent-primaryBlue"
-              type="checkbox"
-              checked={props.roles.includes(role)}
-              onChange={(e) => handleRoleCheck(role, e.target.checked)}
-              disabled={isRoleDisabled(role)}
-            />
-            <span className="space-y-1">
-              <p className="font-semibold text-primaryText">{rolesMap[role]}</p>
-              {roleDescriptions[role] && (
-                <p className="text-sm text-secondaryText">
-                  {roleDescriptions[role]}
-                </p>
-              )}
-            </span>
-          </label>
+            variant="checkbox"
+            title={rolesMap[role] ?? role}
+            description={roleDescriptions[role]}
+            checked={props.roles.includes(role)}
+            onChange={(checked) => handleRoleCheck(role, checked)}
+            disabled={isRoleDisabled(role)}
+            name={`role-${role}`}
+          />
         ))}
       </div>
       <Modal

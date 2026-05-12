@@ -1,7 +1,7 @@
 "use client";
 import { FormEvent, useCallback, useState } from "react";
 import { Button } from "@/app/lib/components";
-import { TextInput } from "@/app/lib/components/inputs";
+import { SelectionCard, TextInput } from "@/app/lib/components/inputs";
 import {
   createOrganization,
   OrganizationPayload,
@@ -112,29 +112,31 @@ const OrganizationEditForm = (props: {
           onChange={setShortName}
           required
         />
-        <div className={mainFieldClass + " p-1"}>
-          <span>Status</span>
-          <div className="flex flex-row gap-12">
-            <label>
-              <input
-                className="mr-2"
-                type="radio"
-                value="true"
-                checked={isActive}
-                onChange={() => setIsActive(true)}
-              />
-              Active
-            </label>
-            <label>
-              <input
-                className="mr-2"
-                type="radio"
-                value="false"
-                checked={!isActive}
-                onChange={() => setIsActive(false)}
-              />
-              Inactive
-            </label>
+        <div className={mainFieldClass + " items-center p-1"}>
+          <span className="font-medium text-primaryText">Status</span>
+          <div className="flex flex-row gap-3">
+            <SelectionCard
+              variant="radio"
+              name="status"
+              title="Active"
+              checked={isActive}
+              onChange={() => setIsActive(true)}
+              accentColor="accent-success"
+              titleColor="text-success"
+              hoverBorderColor="hover:border-primaryBlue"
+              className="flex-1 max-w-[200px]"
+            />
+            <SelectionCard
+              variant="radio"
+              name="status"
+              title="Inactive"
+              checked={!isActive}
+              onChange={() => setIsActive(false)}
+              accentColor="accent-danger"
+              titleColor="text-danger"
+              hoverBorderColor="hover:border-primaryBlue"
+              className="flex-1 max-w-[200px]"
+            />
           </div>
         </div>
 
