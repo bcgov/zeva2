@@ -261,38 +261,28 @@ export const UserForm = ({
               </span>
             </div>
             <div className="space-y-3">
-              <label className="flex cursor-pointer items-start gap-3 rounded-lg border border-dividerMedium/60 px-4 py-3 hover:border-primaryBlue">
-                <input
-                  className="mt-1 h-4 w-4 accent-success"
-                  type="radio"
-                  name="status"
-                  checked={form.isActive === "true"}
-                  onChange={() => handleActiveIntent(true)}
-                />
-                <div className="space-y-1">
-                  <p className="text-success font-semibold">Active</p>
-                  <p className="text-sm text-secondaryText">
-                    User can log in and perform actions based on their assigned
-                    role.
-                  </p>
-                </div>
-              </label>
-              <label className="flex cursor-pointer items-start gap-3 rounded-lg border border-dividerMedium/60 px-4 py-3 hover:border-primaryRed">
-                <input
-                  className="mt-1 h-4 w-4 accent-error"
-                  type="radio"
-                  name="status"
-                  checked={form.isActive === "false"}
-                  onChange={() => handleActiveIntent(false)}
-                />
-                <div className="space-y-1">
-                  <p className="text-error font-semibold">Inactive</p>
-                  <p className="text-sm text-secondaryText">
-                    Prevents login and notifications. Activity history is
-                    retained.
-                  </p>
-                </div>
-              </label>
+              <SelectionCard
+                variant="radio"
+                name="status"
+                title="Active"
+                description="User can log in and perform actions based on their assigned role."
+                checked={form.isActive === "true"}
+                onChange={() => handleActiveIntent(true)}
+                accentColor="accent-success"
+                titleColor="text-success"
+                hoverBorderColor="hover:border-primaryBlue"
+              />
+              <SelectionCard
+                variant="radio"
+                name="status"
+                title="Inactive"
+                description="Prevents login and notifications. Activity history is retained."
+                checked={form.isActive === "false"}
+                onChange={() => handleActiveIntent(false)}
+                accentColor="accent-error"
+                titleColor="text-error"
+                hoverBorderColor="hover:border-primaryRed"
+              />
             </div>
           </section>
 
@@ -303,66 +293,20 @@ export const UserForm = ({
                 Users can have more than one role except ZEVA IDIR User
                 (read-only), which must be assigned on its own.
               </p>
-            </section>
-
-            <section className="space-y-3 rounded-lg border border-dividerMedium/40 bg-white p-4 shadow-sm">
-              <div className="flex items-center justify-between">
-                <h3 className="text-lg font-semibold text-primaryText">
-                  Status
-                </h3>
-                <span className="text-xs font-medium text-secondaryText">
-                  Controls login access
-                </span>
-              </div>
-              <div className="space-y-3">
-                <SelectionCard
-                  variant="radio"
-                  name="status"
-                  title="Active"
-                  description="User can log in and perform actions based on their assigned role."
-                  checked={form.isActive === "true"}
-                  onChange={() => handleActiveIntent(true)}
-                  accentColor="accent-success"
-                  titleColor="text-success"
-                  hoverBorderColor="hover:border-primaryBlue"
-                />
-                <SelectionCard
-                  variant="radio"
-                  name="status"
-                  title="Inactive"
-                  description="Prevents login and notifications. Activity history is retained."
-                  checked={form.isActive === "false"}
-                  onChange={() => handleActiveIntent(false)}
-                  accentColor="accent-error"
-                  titleColor="text-error"
-                  hoverBorderColor="hover:border-primaryRed"
-                />
-              </div>
-            </section>
-
-            <section className="space-y-3 rounded-lg border border-dividerMedium/40 bg-white p-4 shadow-sm">
-              <div className="space-y-1">
-                <h3 className="text-lg font-semibold text-primaryText">
-                  Roles
-                </h3>
-                <p className="text-sm text-secondaryText">
-                  Users can have more than one role except ZEVA IDIR User
-                  (read-only), which must be assigned on its own.
-                </p>
-              </div>
-              <RoleSelector
-                userId={user ? user.id : undefined}
-                govOrSupplier={
-                  form.organizationId === govOrgId ? "gov" : "supplier"
-                }
-                roles={roles}
-                setRoles={setRoles}
-                setError={setError}
-                disabled={isPending}
-              />
-            </section>
-          </div>
+            </div>
+            <RoleSelector
+              userId={user ? user.id : undefined}
+              govOrSupplier={
+                form.organizationId === govOrgId ? "gov" : "supplier"
+              }
+              roles={roles}
+              setRoles={setRoles}
+              setError={setError}
+              disabled={isPending || formAndRolesDisabled}
+            />
+          </section>
         </div>
+      </div>
 
       <FormChangeWarning
         showWarningModal={navGuard.active}
