@@ -6,7 +6,7 @@ import {
   beforeEach,
   afterEach,
 } from "@jest/globals";
-import { Role, AddressType } from "@/prisma/generated/enums";
+import { Role } from "@/prisma/generated/enums";
 import { saveOrganization } from "../actions";
 import { prisma } from "@/lib/prisma";
 import {
@@ -18,7 +18,6 @@ import {
   baseOrganization,
   mockFunctions,
   mockFunctionsWithError,
-  assertCreatedAddresses,
 } from "./__test-utilities__/action-test-data";
 
 jest.mock("@/auth", () => ({
@@ -45,25 +44,6 @@ const mockDate = () => {
   } as DateConstructor;
 };
 
-const assertExpiringAddresses = (
-  updateManyAddressFn: jest.Mock,
-  addressTypes: AddressType[],
-) => {
-  expect(updateManyAddressFn).toHaveBeenCalledTimes(addressTypes.length);
-  addressTypes.forEach((addressType, index) => {
-    expect(updateManyAddressFn).toHaveBeenNthCalledWith(index + 1, {
-      where: {
-        organizationId: testOrgId,
-        addressType,
-        expirationDate: null,
-      },
-      data: {
-        expirationDate: mockedDate,
-      },
-    });
-  });
-};
-
 describe("Organization action: saveOrganization", () => {
   beforeEach(() => {
     jest.clearAllMocks();
@@ -75,12 +55,12 @@ describe("Organization action: saveOrganization", () => {
     jest.restoreAllMocks(); // Restore all mocks
   });
 
-  it("returns false if user is not gov", async () => {
+  it("returns false if the user is a supplier user without the org admin role", async () => {
     mockFunctions({
       // test for non-gov user even with ADMINISTRATOR role
       userInfo: {
         ...baseNonGovUserInfo,
-        userRoles: [Role.ADMINISTRATOR],
+        userRoles: [Role.ZEVA_BCEID_USER],
       },
     });
     const result = await saveOrganization(testOrgId, baseOrganization);
@@ -88,11 +68,11 @@ describe("Organization action: saveOrganization", () => {
     expect(prisma.$transaction).not.toHaveBeenCalled();
   });
 
-  it("returns undefined if user is not ADMINISTRATOR", async () => {
+  it("returns false if the user is a gov user without the admin role", async () => {
     mockFunctions({
       userInfo: {
-        ...baseNonGovUserInfo,
-        userRoles: [Role.DIRECTOR], // Not an ADMINISTRATOR
+        ...baseGovUserInfo,
+        userRoles: [Role.ZEVA_IDIR_USER],
       },
     });
     const result = await saveOrganization(testOrgId, baseOrganization);
@@ -100,105 +80,15 @@ describe("Organization action: saveOrganization", () => {
     expect(prisma.$transaction).not.toHaveBeenCalled();
   });
 
-  it("updates organization and creates new addresses", async () => {
-    const { updateOrgFn, createAddressFn, updateManyAddressFn } = mockFunctions(
-      {
-        userInfo: baseGovUserInfo,
-        orgWithId: { id: testOrgId, ...baseOrganization },
-        serviceAddressWithId: { id: 10, ...baseAddress1 },
-        recordsAddressWithId: { id: 11, ...baseAddress2 },
-        existingAddressIds: {
-          service: [],
-          records: [],
-        },
-      },
-    );
+  it("updates organization and upserts non-empty addresses", async () => {
+    const { updateOrgFn, upsertAddressFn } = mockFunctions({
+      userInfo: baseGovUserInfo,
+      orgWithId: { id: testOrgId, ...baseOrganization },
+    });
 
     const result = await saveOrganization(testOrgId, {
       ...baseOrganization,
       serviceAddress: baseAddress1,
-      recordsAddress: baseAddress2,
-    });
-
-    // Expect that organization was updated
-    expect(updateOrgFn).toHaveBeenCalledTimes(1);
-    expect(updateOrgFn).toHaveBeenCalledWith({
-      where: { id: testOrgId },
-      data: {
-        ...baseOrganization,
-      },
-    });
-
-    // Expect that the existing service and records addresses were updated with the mocked date
-    assertExpiringAddresses(updateManyAddressFn, [
-      AddressType.SERVICE,
-      AddressType.RECORDS,
-    ]);
-
-    // Expect that new addresses were created
-    assertCreatedAddresses(createAddressFn, testOrgId, [
-      { addressType: AddressType.SERVICE, ...baseAddress1 },
-      { addressType: AddressType.RECORDS, ...baseAddress2 },
-    ]);
-
-    // Expect the result to be true
-    expect(result).toBe(true);
-    expect(prisma.$transaction).toHaveBeenCalled();
-  });
-
-  it("updates organization without re-creating existing addresses", async () => {
-    const { updateOrgFn, createAddressFn, updateManyAddressFn } = mockFunctions(
-      {
-        userInfo: baseGovUserInfo,
-        orgWithId: { id: testOrgId, ...baseOrganization },
-        existingAddressIds: {
-          service: [3, 4], // Existing service addresses
-          records: [5], // Existing records address
-        },
-      },
-    );
-
-    const result = await saveOrganization(testOrgId, {
-      ...baseOrganization,
-      serviceAddress: baseAddress1,
-      recordsAddress: baseAddress2,
-    });
-
-    // Expect that organization was updated
-    expect(updateOrgFn).toHaveBeenCalledTimes(1);
-    expect(updateOrgFn).toHaveBeenCalledWith({
-      where: { id: testOrgId },
-      data: {
-        ...baseOrganization,
-      },
-    });
-
-    // Expect that the existing service and records addresses were not updated
-    expect(updateManyAddressFn).not.toHaveBeenCalled();
-
-    // Expect that new addresses were not created
-    expect(createAddressFn).not.toHaveBeenCalled();
-
-    // Expect the result to be true
-    expect(result).toBe(true);
-    expect(prisma.$transaction).toHaveBeenCalled();
-  });
-
-  it("updates organization with existing addresses expired", async () => {
-    const { updateOrgFn, createAddressFn, updateManyAddressFn } = mockFunctions(
-      {
-        userInfo: baseGovUserInfo,
-        orgWithId: { id: testOrgId, ...baseOrganization },
-        existingAddressIds: {
-          service: [],
-          records: [],
-        },
-      },
-    );
-
-    const result = await saveOrganization(testOrgId, {
-      ...baseOrganization,
-      serviceAddress: emptyAddress,
       recordsAddress: emptyAddress,
     });
 
@@ -211,56 +101,8 @@ describe("Organization action: saveOrganization", () => {
       },
     });
 
-    // Expect that the existing service and records addresses were updated with the mocked date
-    assertExpiringAddresses(updateManyAddressFn, [
-      AddressType.SERVICE,
-      AddressType.RECORDS,
-    ]);
-
-    // Expect that new addresses were not created
-    expect(createAddressFn).not.toHaveBeenCalled();
-
-    // Expect the result to be true
-    expect(result).toBe(true);
-    expect(prisma.$transaction).toHaveBeenCalled();
-  });
-
-  it("updates organization with one address updated", async () => {
-    const { updateOrgFn, createAddressFn, updateManyAddressFn } = mockFunctions(
-      {
-        userInfo: baseGovUserInfo,
-        orgWithId: { id: testOrgId, ...baseOrganization },
-        serviceAddressWithId: { id: 10, ...baseAddress1 },
-        recordsAddressWithId: { id: 11, ...baseAddress2 },
-        existingAddressIds: {
-          service: [],
-          records: [9], // Existing records address
-        },
-      },
-    );
-
-    const result = await saveOrganization(testOrgId, {
-      ...baseOrganization,
-      serviceAddress: baseAddress1,
-      recordsAddress: baseAddress2,
-    });
-
-    // Expect that organization was updated
-    expect(updateOrgFn).toHaveBeenCalledTimes(1);
-    expect(updateOrgFn).toHaveBeenCalledWith({
-      where: { id: testOrgId },
-      data: {
-        ...baseOrganization,
-      },
-    });
-
-    // Expect that the existing service and records addresses were updated with the mocked date
-    assertExpiringAddresses(updateManyAddressFn, [AddressType.SERVICE]);
-
-    // Expect that new addresses were created
-    assertCreatedAddresses(createAddressFn, testOrgId, [
-      { addressType: AddressType.SERVICE, ...baseAddress1 },
-    ]);
+    // Expect 1 addresses upserted
+    expect(upsertAddressFn).toHaveBeenCalledTimes(1);
 
     // Expect the result to be true
     expect(result).toBe(true);

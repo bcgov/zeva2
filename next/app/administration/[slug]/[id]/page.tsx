@@ -18,7 +18,12 @@ const Page = async (props: {
   }
   const govOrgId = await getGovOrgId();
   return (
-    <div className="w-full px-6 py-6 lg:px-10 xl:px-14">
+    <div className="w-full">
+      <div className="p-4 bg-gray-100 text-2xl font-bold">
+        {user.organizationId === govOrgId
+          ? "Government User Management"
+          : "User Management"}
+      </div>
       <UserForm
         user={user}
         userOrgId={userOrgId.toString()}

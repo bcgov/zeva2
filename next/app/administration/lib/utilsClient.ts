@@ -13,7 +13,9 @@ export const getUserPayload = (
     !data.lastName ||
     !data.contactEmail ||
     !data.idpUsername ||
-    !data.isActive
+    !data.isActive ||
+    !data.idpEmail ||
+    !data.title
   ) {
     throw new Error("All fields are required!");
   }
@@ -29,6 +31,8 @@ export const getUserPayload = (
     contactEmail: data.contactEmail,
     idpUsername: data.idpUsername,
     isActive: data.isActive === "true",
+    idpEmail: data.idpEmail,
+    title: data.title,
     roles,
   };
 };

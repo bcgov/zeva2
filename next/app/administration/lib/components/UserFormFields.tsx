@@ -6,56 +6,58 @@ export function UserFormFields({
   form,
   onChange,
   disabled,
+  type,
 }: {
   form: Partial<Record<string, string>>;
   onChange: (field: string, value: any) => void;
   disabled: boolean;
+  type: "IDIR" | "BCeID";
 }) {
   return (
     <div className="space-y-4">
-      <div className="space-y-3 rounded-lg border border-dividerMedium/30 bg-white p-5 shadow-sm">
+      <div className="space-y-3 bg-white">
         <div className="space-y-3">
           <TextInput
             label="First name (required)"
-            placeholder="Test name"
+            placeholder="John"
             value={form.firstName ?? ""}
             onChange={(value) => onChange("firstName", value)}
             disabled={disabled}
           />
           <TextInput
             label="Last name (required)"
-            placeholder="Test last name"
+            placeholder="Smith"
             value={form.lastName ?? ""}
             onChange={(value) => onChange("lastName", value)}
             disabled={disabled}
           />
           <TextInput
             label="Job title (required)"
-            placeholder="Policy Analyst"
+            placeholder="Analyst"
+            value={form.title ?? ""}
+            onChange={(value) => onChange("title", value)}
+            disabled={disabled}
+          />
+          <TextInput
+            label={`${type} user Id (required)`}
+            placeholder="JSMITH"
             value={form.idpUsername ?? ""}
             onChange={(value) => onChange("idpUsername", value)}
             disabled={disabled}
           />
           <TextInput
-            label="IDIR user Id (required)"
-            placeholder="TEST"
-            value={form.idpUsername ?? ""}
-            onChange={(value) => onChange("idpUsername", value)}
-            disabled={disabled}
-          />
-          <TextInput
-            label="IDIR user email (required)"
+            label={`${type} user email (required)`}
             type="email"
-            placeholder="test@gov.bc.ca"
-            value={form.contactEmail ?? ""}
-            onChange={(value) => onChange("contactEmail", value)}
+            placeholder="jsmith@email.com"
+            value={form.idpEmail ?? ""}
+            onChange={(value) => onChange("idpEmail", value)}
             disabled={disabled}
           />
           <div className="space-y-1">
             <TextInput
               label="Notification email (optional)"
               type="email"
-              placeholder="test@gov.bc.ca"
+              placeholder="jsmith-notifications@email.com"
               hintText="The email used to receive notifications, if different from above"
               helpIcon
               value={form.contactEmail ?? ""}

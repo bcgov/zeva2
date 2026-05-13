@@ -78,10 +78,7 @@ export const SelectionCard = ({
           </p>
         </div>
         {description && (
-          <p
-            id={`${name}-description`}
-            className="text-sm text-secondaryText"
-          >
+          <p id={`${name}-description`} className="text-sm text-secondaryText">
             {description}
           </p>
         )}

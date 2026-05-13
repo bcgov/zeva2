@@ -79,7 +79,6 @@ model OrganizationAddress {
   organization   Organization @relation(fields: [organizationId], references: [id])
   organizationId Int          @map("organization_id")
   addressType    AddressType  @map("address_type")
-  expirationDate DateTime?    @map("expiration_date") @db.Date
   addressLines   String?      @map("address_lines")
   city           String?
   postalCode     String?      @map("postal_code")
@@ -125,6 +124,7 @@ model User {
   idpSub                     String?                      @unique @map("idp_sub")
   idp                        Idp                          @map("idp")
   idpUsername                String                       @map("idp_username")
+  idpEmail                   String                       @map("idp_email")
   isActive                   Boolean                      @default(true) @map("is_active")
   organization               Organization                 @relation(fields: [organizationId], references: [id])
   organizationId             Int                          @map("organization_id")
@@ -132,6 +132,7 @@ model User {
   notifications              Notification[]
   firstName                  String                       @map("first_name")
   lastName                   String                       @map("last_name")
+  title                      String                       @map("title")
   VehicleHistory             VehicleHistory[]
   CreditApplicationHistory   CreditApplicationHistory[]
   PenaltyCreditHistory       PenaltyCreditHistory[]

@@ -26,9 +26,6 @@ export const getOrganizationDetails = async (id: number) => {
           country: true,
           representative: true,
         },
-        where: {
-          expirationDate: null, // Only get current addresses
-        },
       },
       users: {
         select: {

@@ -2,7 +2,7 @@
 
 import { getUserInfo } from "@/auth";
 import { prisma } from "@/lib/prisma";
-import { AddressType } from "@/prisma/generated/enums";
+import { AddressType, Role } from "@/prisma/generated/enums";
 import {
   OrganizationModel,
   OrganizationAddressModel,
@@ -86,50 +86,44 @@ export const saveOrganization = async (
   data: OrganizationPayload,
 ) => {
   const { userIsGov, userRoles } = await getUserInfo();
-  if (!userIsGov || !userRoles.includes("ADMINISTRATOR")) {
-    return false; // Only government users with ADMINISTRATOR role can update organizations
+  if (
+    (userIsGov && !userRoles.includes(Role.ADMINISTRATOR)) ||
+    (!userIsGov && !userRoles.includes(Role.ORGANIZATION_ADMINISTRATOR))
+  ) {
+    return false;
   }
 
   try {
     return await prisma.$transaction(async (tx) => {
-      const currentDate = new Date();
-
       const updateAddress = async (
         addressType: AddressType,
         newAddress: OrganizationAddressSparse | undefined,
       ) => {
-        const whereClause = {
-          organizationId,
-          addressType,
-          expirationDate: null,
-        };
-        if (
-          !newAddress ||
-          (
-            await tx.organizationAddress.findMany({
-              select: { id: true },
-              where: { ...whereClause, ...newAddress },
-            })
-          ).length > 0
-        ) {
-          // No update needed if the new address is not provided or if it already exists
+        if (!newAddress) {
           return;
         }
-
-        // Expire existing addresses
-        await tx.organizationAddress.updateMany({
-          where: whereClause,
-          data: { expirationDate: currentDate },
-        });
 
         // If all fields in the new address are null, do not create the new address
         if (isEmptyAddress(newAddress)) {
           return;
         }
 
-        // Create new address
-        await tx.organizationAddress.create({
-          data: { ...newAddress, organizationId, addressType },
+        // upsert new address
+        await tx.organizationAddress.upsert({
+          where: {
+            organizationId_addressType: {
+              organizationId,
+              addressType,
+            },
+          },
+          update: {
+            ...newAddress,
+          },
+          create: {
+            ...newAddress,
+            organizationId,
+            addressType,
+          },
         });
       };
 

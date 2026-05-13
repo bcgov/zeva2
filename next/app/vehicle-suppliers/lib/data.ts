@@ -15,7 +15,7 @@ export type OrganizationSparse = {
 
 export type OrganizationAddressSparse = Omit<
   OrganizationAddressModel,
-  "id" | "organizationId" | "expirationDate" | "addressType"
+  "id" | "organizationId" | "addressType"
 >;
 
 export const getAllSuppliers = async (

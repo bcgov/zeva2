@@ -43,6 +43,9 @@ export const UserForm = ({
   const [showStatusModal, setShowStatusModal] = useState(false);
   const [pendingActive, setPendingActive] = useState<boolean | null>(null);
   const [submitClicked, setSubmitClicked] = useState<boolean>(false);
+  const [formAndRolesDisabled, setFormAndRolesDisabled] =
+    useState<boolean>(false);
+  const [orgIsGov, setOrgIsGov] = useState<boolean>(false);
 
   const handleActiveIntent = (nextChecked: boolean) => {
     setPendingActive(nextChecked);
@@ -72,6 +75,8 @@ export const UserForm = ({
         idpUsername: user.idpUsername,
         isActive: user.isActive.toString(),
         organizationId: user.organizationId.toString(),
+        idpEmail: user.idpEmail,
+        title: user.title,
       };
       setForm(initialFormData);
       setInitialForm(initialFormData);
@@ -85,6 +90,20 @@ export const UserForm = ({
       setInitialForm(initialFormData);
     }
   }, [user, userOrgId]);
+
+  useEffect(() => {
+    if (user && !user.isActive) {
+      setFormAndRolesDisabled(true);
+    }
+  }, [user]);
+
+  useEffect(() => {
+    if (form.organizationId === govOrgId) {
+      setOrgIsGov(true);
+    } else {
+      setOrgIsGov(false);
+    }
+  }, [form, govOrgId]);
 
   const handleChange = useCallback((key: string, value: string) => {
     if (key === "organizationId") {
@@ -190,170 +209,151 @@ export const UserForm = ({
   }, [guardEnabled, submitClicked, handleSubmit]);
 
   return (
-    <div className="bg-lightGrey min-h-screen text-primaryText">
-      <div className="w-full px-2 py-4 space-y-4 sm:px-4 lg:px-8 xl:px-12">
-        <div className="space-y-2">
-          <h1 className="text-2xl font-semibold text-primaryText">
-            User Management
-          </h1>
-          <p className="text-sm text-secondaryText">
-            Manage user account details, status, and roles.
-          </p>
-          {error && (
-            <p className="rounded-md border border-error/40 bg-primaryRed/10 px-3 py-2 text-sm text-error">
-              {error}
-            </p>
-          )}
-        </div>
-
-        <div className="grid gap-4 lg:grid-cols-[1.7fr_1fr] 2xl:grid-cols-[2fr_1fr]">
-          <section className="space-y-5 rounded-lg border border-dividerMedium/40 bg-white p-4 shadow-sm lg:p-5">
-            <div className="space-y-1">
-              <h2 className="text-xl font-semibold text-primaryText">
-                {user ? "Edit user" : "Create user"}
-              </h2>
-            </div>
-
-            {orgsMap && (
-              <Dropdown
-                label="Organization"
-                options={Object.entries(orgsMap).map(([id, name]) => ({
-                  value: id,
-                  label: name,
-                }))}
-                value={form.organizationId ?? ""}
-                onChange={(value) => handleChange("organizationId", value)}
-              />
-            )}
-            <UserFormFields
-              form={form}
-              onChange={handleChange}
-              disabled={isPending}
+    <div className="w-full py-4 space-y-4">
+      {error && (
+        <p className="rounded-md border border-error/40 bg-primaryRed/10 px-3 py-2 text-sm text-error">
+          {error}
+        </p>
+      )}
+      <div className="grid gap-4 lg:grid-cols-[1.7fr_1fr] 2xl:grid-cols-[2fr_1fr]">
+        <section className="space-y-5 rounded-lg border border-dividerMedium/40 bg-white p-4 shadow-sm lg:p-5">
+          <div className="space-y-1">
+            <h2 className="text-xl font-semibold text-primaryText">
+              {user ? "Edit user" : "Create user"}
+            </h2>
+          </div>
+          {orgsMap && (
+            <Dropdown
+              label="Organization"
+              options={Object.entries(orgsMap).map(([id, name]) => ({
+                value: id,
+                label: name,
+              }))}
+              value={form.organizationId ?? ""}
+              onChange={(value) => handleChange("organizationId", value)}
             />
+          )}
+          <UserFormFields
+            form={form}
+            onChange={handleChange}
+            disabled={isPending || formAndRolesDisabled}
+            type={
+              userOrgId !== govOrgId ? "BCeID" : orgIsGov ? "IDIR" : "BCeID"
+            }
+          />
+        </section>
+
+        <div className="space-y-3">
+          <section className="space-y-3 rounded-lg border border-dividerMedium/40 bg-white p-4 shadow-sm">
+            <h3 className="text-lg font-semibold text-primaryText">Account</h3>
+            <p className="flex items-center gap-2 text-sm text-secondaryText">
+              {user && user.idpSub
+                ? "User account is mapped."
+                : "User account has not been mapped."}
+            </p>
           </section>
 
-          <div className="space-y-3">
-            <section className="space-y-3 rounded-lg border border-dividerMedium/40 bg-white p-4 shadow-sm">
-              <h3 className="text-lg font-semibold text-primaryText">
-                Account
-              </h3>
-              <p className="flex items-center gap-2 text-sm text-secondaryText">
-                {user && user.idpSub
-                  ? "User account is mapped."
-                  : "User account has not been mapped."}
-              </p>
-            </section>
-
-            <section className="space-y-3 rounded-lg border border-dividerMedium/40 bg-white p-4 shadow-sm">
-              <div className="flex items-center justify-between">
-                <h3 className="text-lg font-semibold text-primaryText">
-                  Status
-                </h3>
-                <span className="text-xs font-medium text-secondaryText">
-                  Controls login access
-                </span>
-              </div>
-              <div className="space-y-3">
-                <SelectionCard
-                  variant="radio"
-                  name="status"
-                  title="Active"
-                  description="User can log in and perform actions based on their assigned role."
-                  checked={form.isActive === "true"}
-                  onChange={() => handleActiveIntent(true)}
-                  accentColor="accent-success"
-                  titleColor="text-success"
-                  hoverBorderColor="hover:border-primaryBlue"
-                />
-                <SelectionCard
-                  variant="radio"
-                  name="status"
-                  title="Inactive"
-                  description="Prevents login and notifications. Activity history is retained."
-                  checked={form.isActive === "false"}
-                  onChange={() => handleActiveIntent(false)}
-                  accentColor="accent-error"
-                  titleColor="text-error"
-                  hoverBorderColor="hover:border-primaryRed"
-                />
-              </div>
-            </section>
-
-            <section className="space-y-3 rounded-lg border border-dividerMedium/40 bg-white p-4 shadow-sm">
-              <div className="space-y-1">
-                <h3 className="text-lg font-semibold text-primaryText">
-                  Roles
-                </h3>
-                <p className="text-sm text-secondaryText">
-                  Users can have more than one role except ZEVA IDIR User
-                  (read-only), which must be assigned on its own.
-                </p>
-              </div>
-              <RoleSelector
-                userId={user ? user.id : undefined}
-                govOrSupplier={
-                  form.organizationId === govOrgId ? "gov" : "supplier"
-                }
-                roles={roles}
-                setRoles={setRoles}
-                setError={setError}
-                disabled={isPending}
+          <section className="space-y-3 rounded-lg border border-dividerMedium/40 bg-white p-4 shadow-sm">
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-semibold text-primaryText">Status</h3>
+              <span className="text-xs font-medium text-secondaryText">
+                Controls login access
+              </span>
+            </div>
+            <div className="space-y-3">
+              <SelectionCard
+                variant="radio"
+                name="status"
+                title="Active"
+                description="User can log in and perform actions based on their assigned role."
+                checked={form.isActive === "true"}
+                onChange={() => handleActiveIntent(true)}
+                accentColor="accent-success"
+                titleColor="text-success"
+                hoverBorderColor="hover:border-primaryBlue"
               />
-            </section>
-          </div>
+              <SelectionCard
+                variant="radio"
+                name="status"
+                title="Inactive"
+                description="Prevents login and notifications. Activity history is retained."
+                checked={form.isActive === "false"}
+                onChange={() => handleActiveIntent(false)}
+                accentColor="accent-error"
+                titleColor="text-error"
+                hoverBorderColor="hover:border-primaryRed"
+              />
+            </div>
+          </section>
+
+          <section className="space-y-3 rounded-lg border border-dividerMedium/40 bg-white p-4 shadow-sm">
+            <div className="space-y-1">
+              <h3 className="text-lg font-semibold text-primaryText">Roles</h3>
+              <p className="text-sm text-secondaryText">
+                Users can have more than one role except ZEVA IDIR User
+                (read-only), which must be assigned on its own.
+              </p>
+            </div>
+            <RoleSelector
+              userId={user ? user.id : undefined}
+              govOrSupplier={
+                form.organizationId === govOrgId ? "gov" : "supplier"
+              }
+              roles={roles}
+              setRoles={setRoles}
+              setError={setError}
+              disabled={isPending || formAndRolesDisabled}
+            />
+          </section>
         </div>
+      </div>
 
-        <FormChangeWarning
-          showWarningModal={navGuard.active}
-          handleSaveAndNavigate={handleSubmit}
-          handleNavigateWithoutSaving={navGuard.accept}
-          handleClose={navGuard.reject}
-          isPending={isPending}
-        />
+      <FormChangeWarning
+        showWarningModal={navGuard.active}
+        handleSaveAndNavigate={handleSubmit}
+        handleNavigateWithoutSaving={navGuard.accept}
+        handleClose={navGuard.reject}
+        isPending={isPending}
+      />
 
-        <Modal
-          showModal={showStatusModal}
-          handleCancel={cancelStatusChange}
-          handleSubmit={confirmStatusChange}
-          title={
-            pendingActive
-              ? "Confirm: Activate User"
-              : "Confirm: Deactivate User"
-          }
-          confirmLabel={pendingActive ? "Activate" : "Deactivate"}
-          modalType={pendingActive ? "confirmation" : "error"}
-          content="Are you sure you want to update this user?"
-          disablePrimaryButton={false}
-          disableSecondaryButton={false}
-        />
+      <Modal
+        showModal={showStatusModal}
+        handleCancel={cancelStatusChange}
+        handleSubmit={confirmStatusChange}
+        title={
+          pendingActive ? "Confirm: Activate User" : "Confirm: Deactivate User"
+        }
+        confirmLabel={pendingActive ? "Activate" : "Deactivate"}
+        modalType={pendingActive ? "confirmation" : "error"}
+        content="Are you sure you want to update this user?"
+        disablePrimaryButton={false}
+        disableSecondaryButton={false}
+      />
 
-        <div className="flex items-center justify-between border-t border-dividerMedium/30 pt-4">
+      <div className="flex flex-row items-center justify-between p-4 bg-gray-100">
+        <Button
+          type="button"
+          variant="secondary"
+          icon={<FontAwesomeIcon icon={faArrowLeft} className="h-3.5 w-3.5" />}
+          iconPosition="left"
+          className="rounded-md border-primaryBlue bg-white font-semibold text-primaryText hover:border-primaryBlue hover:text-primaryText active:text-primaryText"
+          onClick={() => router.back()}
+          disabled={isPending}
+        >
+          Back
+        </Button>
+        <div className="flex items-center gap-4">
           <Button
-            type="button"
-            variant="secondary"
-            icon={
-              <FontAwesomeIcon icon={faArrowLeft} className="h-3.5 w-3.5" />
-            }
-            iconPosition="left"
-            className="rounded-md border-primaryBlue bg-white font-semibold text-primaryText hover:border-primaryBlue hover:text-primaryText active:text-primaryText"
-            onClick={() => router.back()}
+            type="submit"
+            onClick={() => {
+              setGuardEnabled(false);
+              setSubmitClicked(true);
+            }}
             disabled={isPending}
+            className="rounded-md bg-primaryBlue px-5 py-2 text-sm font-semibold text-textOnPrimary shadow-sm hover:bg-primaryBlueHover disabled:cursor-not-allowed disabled:bg-disabledBG disabled:text-disabledText"
           >
-            Back
+            {isPending ? "..." : user ? "Update" : "Create"}
           </Button>
-          <div className="flex items-center gap-4">
-            <Button
-              type="submit"
-              onClick={() => {
-                setGuardEnabled(false);
-                setSubmitClicked(true);
-              }}
-              disabled={isPending}
-              className="rounded-md bg-primaryBlue px-5 py-2 text-sm font-semibold text-textOnPrimary shadow-sm hover:bg-primaryBlueHover disabled:cursor-not-allowed disabled:bg-disabledBG disabled:text-disabledText"
-            >
-              {isPending ? "..." : user ? "Update" : "Create"}
-            </Button>
-          </div>
         </div>
       </div>
     </div>
