@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState, useTransition } from "react";
 import { Button } from "@/app/lib/components";
-import { Dropdown } from "@/app/lib/components/inputs";
+import { Dropdown, SelectionCard } from "@/app/lib/components/inputs";
 import { Role } from "@/prisma/generated/enums";
 import { UserModel } from "@/prisma/generated/models";
 import { createUser, updateUser } from "../actions";
@@ -254,38 +254,28 @@ export const UserForm = ({
                 </span>
               </div>
               <div className="space-y-3">
-                <label className="flex cursor-pointer items-start gap-3 rounded-lg border border-dividerMedium/60 px-4 py-3 hover:border-primaryBlue">
-                  <input
-                    className="mt-1 h-4 w-4 accent-success"
-                    type="radio"
-                    name="status"
-                    checked={form.isActive === "true"}
-                    onChange={() => handleActiveIntent(true)}
-                  />
-                  <div className="space-y-1">
-                    <p className="text-success font-semibold">Active</p>
-                    <p className="text-sm text-secondaryText">
-                      User can log in and perform actions based on their
-                      assigned role.
-                    </p>
-                  </div>
-                </label>
-                <label className="flex cursor-pointer items-start gap-3 rounded-lg border border-dividerMedium/60 px-4 py-3 hover:border-primaryRed">
-                  <input
-                    className="mt-1 h-4 w-4 accent-error"
-                    type="radio"
-                    name="status"
-                    checked={form.isActive === "false"}
-                    onChange={() => handleActiveIntent(false)}
-                  />
-                  <div className="space-y-1">
-                    <p className="text-error font-semibold">Inactive</p>
-                    <p className="text-sm text-secondaryText">
-                      Prevents login and notifications. Activity history is
-                      retained.
-                    </p>
-                  </div>
-                </label>
+                <SelectionCard
+                  variant="radio"
+                  name="status"
+                  title="Active"
+                  description="User can log in and perform actions based on their assigned role."
+                  checked={form.isActive === "true"}
+                  onChange={() => handleActiveIntent(true)}
+                  accentColor="accent-success"
+                  titleColor="text-success"
+                  hoverBorderColor="hover:border-primaryBlue"
+                />
+                <SelectionCard
+                  variant="radio"
+                  name="status"
+                  title="Inactive"
+                  description="Prevents login and notifications. Activity history is retained."
+                  checked={form.isActive === "false"}
+                  onChange={() => handleActiveIntent(false)}
+                  accentColor="accent-error"
+                  titleColor="text-error"
+                  hoverBorderColor="hover:border-primaryRed"
+                />
               </div>
             </section>
 
