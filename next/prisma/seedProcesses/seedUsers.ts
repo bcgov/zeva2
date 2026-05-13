@@ -27,6 +27,10 @@ export const seedUsers = async (
     if (!orgIdNew) {
       throw new Error("user " + userOld.id + " with unknown org id!");
     }
+    const idpEmail = userOld.keycloak_email;
+    if (!idpEmail) {
+      throw new Error("user " + userOld.id + " with no keycloak email!");
+    }
     const userIsGov = userOld.organization.is_government;
     let idpSub = userOld.keycloak_user_id;
     if (userIsGov && idpSub) {
@@ -70,10 +74,12 @@ export const seedUsers = async (
           ? Idp.AZURE_IDIR
           : Idp.BCEID_BUSINESS,
         idpUsername: userOld.username,
+        idpEmail,
         isActive: userOld.is_active,
         organizationId: orgIdNew,
         firstName: userOld.first_name ?? "",
         lastName: userOld.last_name ?? "",
+        title: userOld.title ?? "",
         roles,
         notifications: [],
       },

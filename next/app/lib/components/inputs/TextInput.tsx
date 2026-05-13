@@ -98,10 +98,7 @@ export const TextInput: FC<ITextInputProps> = ({
   };
 
   return (
-    <div
-      className={`relative ${className}`}
-      style={{ minWidth: "280px", maxWidth: "700px" }}
-    >
+    <div className={`relative ${className}`} style={{ minWidth: "280px" }}>
       {label && (
         <label
           htmlFor={id}

@@ -77,7 +77,6 @@ export const seedOrganizations = async (tx: TransactionClient) => {
       await tx.organizationAddress.create({
         data: {
           organizationId: orgIdNew,
-          expirationDate: orgAddressOld.expiration_date,
           addressType,
           ...newAddressSparse,
         },

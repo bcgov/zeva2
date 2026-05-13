@@ -103,7 +103,6 @@ export const mockFunctions = (opt: {
       ? {
           ...serviceAddressWithId,
           addressType: AddressType.SERVICE,
-          expirationDate: null,
           organizationId: orgWithId?.id ?? 1, // Use org ID or default to 1
         }
       : undefined;
@@ -112,7 +111,6 @@ export const mockFunctions = (opt: {
       ? {
           ...recordsAddressWithId,
           addressType: AddressType.RECORDS,
-          expirationDate: null,
           organizationId: orgWithId?.id ?? 1, // Use org ID or default to 1
         }
       : undefined;
@@ -141,6 +139,7 @@ export const mockFunctions = (opt: {
     },
   );
   const updateManyAddressFn = jest.fn();
+  const upsertAddressFn = jest.fn();
 
   // Use jest.spyOn to mock prisma.$transaction
   jest.spyOn(prisma, "$transaction").mockImplementation(async (cb: any) =>
@@ -153,6 +152,7 @@ export const mockFunctions = (opt: {
         create: createAddressFn,
         findMany: findManyAddressFn,
         updateMany: updateManyAddressFn,
+        upsert: upsertAddressFn,
       },
     }),
   );
@@ -166,6 +166,7 @@ export const mockFunctions = (opt: {
     createAddressFn,
     findManyAddressFn,
     updateManyAddressFn,
+    upsertAddressFn,
   };
 };
 

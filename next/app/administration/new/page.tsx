@@ -11,10 +11,8 @@ const Page = async () => {
     orgsMap = await getOrgsMap(null, false);
   }
   return (
-    <div className="w-full px-6 py-6 lg:px-10 xl:px-14">
-      <div className="mb-4">
-        <h1 className="text-2xl font-bold">New User</h1>
-      </div>
+    <div className="w-full">
+      <div className="p-4 bg-gray-100 text-2xl font-bold">New User</div>
       <UserForm
         orgsMap={orgsMap}
         userOrgId={userOrgId.toString()}
