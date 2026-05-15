@@ -17,6 +17,7 @@ import { Routes } from "@/app/lib/constants";
 import { mapOfStatusToSupplierStatus as myrMap } from "@/app/compliance-reporting/lib/model-year-reports/constants";
 import { mapOfStatusToSupplierStatus as caMap } from "@/app/zev-unit-activities/lib/credit-applications/constants";
 import { mapOfStatusToSupplierStatus as ctMap } from "@/app/zev-unit-activities/lib/credit-transfers/constants";
+import { getZevModelDetailsRoute } from "@/app/zev-models/lib/routes";
 
 export const getSupplierActionRequiredCounts = async (userOrgId: number) => {
   const myrPromise = prisma.modelYearReport.count({
@@ -374,9 +375,7 @@ export const getSupplierZevModelActionRequiredItems = async (
         ? getIsoYmdString(vehicle.VehicleHistory[0].timestamp)
         : undefined,
       status: statusMap[vehicle.status] ?? "",
-      route: vehicle.isActive
-        ? `${Routes.ActiveZevModels}/${vehicle.id}/details`
-        : `${Routes.InactiveZevModels}/${vehicle.id}/details`,
+      route: getZevModelDetailsRoute(vehicle),
       cta: "View",
     };
   });
@@ -598,9 +597,7 @@ export const getSupplierZevModelInProgressItems = async (
         ? getIsoYmdString(vehicle.VehicleHistory[0].timestamp)
         : undefined,
       status: statusMap[vehicle.status] ?? "",
-      route: vehicle.isActive
-        ? `${Routes.ActiveZevModels}/${vehicle.id}/details`
-        : `${Routes.InactiveZevModels}/${vehicle.id}/details`,
+      route: getZevModelDetailsRoute(vehicle),
       cta: "View",
     };
   });
@@ -835,9 +832,7 @@ export const getSupplierZevModelForAwarenessItems = async (
         ? getIsoYmdString(vehicle.VehicleHistory[0].timestamp)
         : undefined,
       status: statusMap[vehicle.status] ?? "",
-      route: vehicle.isActive
-        ? `${Routes.ActiveZevModels}/${vehicle.id}/details`
-        : `${Routes.InactiveZevModels}/${vehicle.id}/details`,
+      route: getZevModelDetailsRoute(vehicle),
       cta: "View",
     };
   });

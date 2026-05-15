@@ -27,7 +27,7 @@ export const PrimaryNavbar = (props: { userIsGov: boolean }) => {
       },
       {
         label: "ZEV Models",
-        route: Routes.ActiveZevModels,
+        route: Routes.ValidatedZevModels,
       },
       ...(props.userIsGov
         ? [{ label: "Vehicle Suppliers", route: Routes.VehicleSuppliers }]

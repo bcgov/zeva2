@@ -6,6 +6,7 @@ import { getUserInfo } from "@/auth";
 import Link from "next/link";
 import { Button } from "@/app/lib/components";
 import { Routes } from "@/app/lib/constants";
+import { isZevModelTab } from "../lib/routes";
 
 const Page = async (props: {
   params: Promise<{ slug: string }>;
@@ -17,7 +18,7 @@ const Page = async (props: {
   const searchParams = await props.searchParams;
   const { page, pageSize, filters, sorts } = getPageParams(searchParams, 1, 10);
 
-  if (slug === "active" || slug === "inactive") {
+  if (isZevModelTab(slug)) {
     return (
       <Suspense fallback={<LoadingSkeleton />}>
         <VehicleList

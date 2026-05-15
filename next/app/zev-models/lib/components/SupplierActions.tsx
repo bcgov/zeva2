@@ -31,13 +31,13 @@ export const SupplierActions = (props: {
       if (response.responseType === "error") {
         setError(response.message);
       } else {
-        router.push(Routes.ActiveZevModels);
+        router.push(Routes.SubmittedZevModels);
       }
     });
   }, [props.vehicleId]);
 
   const handleGoToEdit = useCallback(() => {
-    router.push(`${Routes.InactiveZevModels}/${props.vehicleId}/edit`);
+    router.push(`${Routes.SubmittedZevModels}/${props.vehicleId}/edit`);
   }, [props.vehicleId]);
 
   const handleSubmit = useCallback(() => {
@@ -71,7 +71,13 @@ export const SupplierActions = (props: {
         if (response.responseType === "error") {
           setError(response.message);
         } else {
-          router.refresh();
+          router.push(
+            `${
+              type === "activate"
+                ? Routes.ValidatedZevModels
+                : Routes.InactiveZevModels
+            }/${props.vehicleId}/details`,
+          );
         }
       });
     },
