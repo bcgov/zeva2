@@ -125,8 +125,13 @@ export const generateMyr = async (
     helpingMaps,
   );
   writeBalance(
-    sheets.beginningBalanceSheet,
-    myrData.prevEndingBalance,
+    sheets.prevEndOfCdBalanceSheet,
+    myrData.prevEndOfCdBalance,
+    helpingMaps,
+  );
+  writeBalance(
+    sheets.prevAfterCdBalanceSheet,
+    myrData.prevAfterCdBalance,
     helpingMaps,
   );
   writeCredits(

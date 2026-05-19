@@ -36,8 +36,11 @@ export const getMyrSheets = (workbook: Workbook) => {
   const complianceReductionsSheet = workbook.getWorksheet(
     MyrTemplate.ComplianceReductionsSheetName,
   );
-  const beginningBalanceSheet = workbook.getWorksheet(
-    MyrTemplate.BeginningBalanceSheetName,
+  const prevEndOfCdBalanceSheet = workbook.getWorksheet(
+    MyrTemplate.PrevEndOfCdBalanceSheetName,
+  );
+  const prevAfterCdBalanceSheet = workbook.getWorksheet(
+    MyrTemplate.PrevAfterCdBalanceSheetName,
   );
   const creditsSheet = workbook.getWorksheet(MyrTemplate.CreditsSheetName);
   const pendingSupplyCreditsSheet = workbook.getWorksheet(
@@ -60,7 +63,8 @@ export const getMyrSheets = (workbook: Workbook) => {
     !previousVolumesSheet ||
     !vehicleStatisticsSheet ||
     !complianceReductionsSheet ||
-    !beginningBalanceSheet ||
+    !prevEndOfCdBalanceSheet ||
+    !prevAfterCdBalanceSheet ||
     !creditsSheet ||
     !pendingSupplyCreditsSheet ||
     !adjustmentsSheet ||
@@ -75,7 +79,8 @@ export const getMyrSheets = (workbook: Workbook) => {
     previousVolumesSheet,
     vehicleStatisticsSheet,
     complianceReductionsSheet,
-    beginningBalanceSheet,
+    prevEndOfCdBalanceSheet,
+    prevAfterCdBalanceSheet,
     creditsSheet,
     pendingSupplyCreditsSheet,
     adjustmentsSheet,
@@ -113,7 +118,8 @@ export type ParsedMyr = {
   previousVolumes: FileMyrPreviousVolumes[];
   vehicleStatistics: FileVehicleStatistic[];
   complianceReductions: FileReductionRecord[];
-  beginningBalance: FileZevUnitRecord[];
+  prevEndOfCdBalance: FileZevUnitRecord[];
+  prevAfterCdBalance: FileZevUnitRecord[];
   credits: FileZevUnitRecord[];
   pendingSupplyCredits: FileMyrPendingSupplyCredit[];
   adjustments: FileZevUnitRecord[];
@@ -131,7 +137,8 @@ export const parseMyr = (workbook: Workbook): ParsedMyr => {
     complianceReductions: parseComplianceReductions(
       sheets.complianceReductionsSheet,
     ),
-    beginningBalance: parseZevUnitRecords(sheets.beginningBalanceSheet),
+    prevEndOfCdBalance: parseZevUnitRecords(sheets.prevEndOfCdBalanceSheet),
+    prevAfterCdBalance: parseZevUnitRecords(sheets.prevAfterCdBalanceSheet),
     credits: parseZevUnitRecords(sheets.creditsSheet),
     pendingSupplyCredits: parsePendingSupplyCredits(
       sheets.pendingSupplyCreditsSheet,
@@ -610,3 +617,26 @@ export const getVehicleStatsAsStrings = (
 export const getAddressAsString = (address: OrganizationAddressModel) => {
   return `${address.addressLines}, ${address.city}, ${address.state}, ${address.postalCode}, ${address.country}`;
 };
+
+export const prevBalancesEqual = (prevEndOfCdBalance: FileZevUnitRecord[], prevAfterCdBalance: FileZevUnitRecord[]) => {
+  if (prevEndOfCdBalance.length === prevAfterCdBalance.length) {
+    const prevAfterCdBalanceCopy = [...prevAfterCdBalance];
+    for (const endRecord of prevEndOfCdBalance) {
+      const foundIndex = prevAfterCdBalanceCopy.findIndex((afterRecord) => {
+        return (
+          endRecord.modelYear === afterRecord.modelYear &&
+          endRecord.numberOfUnits === afterRecord.numberOfUnits &&
+          endRecord.type === afterRecord.type &&
+          endRecord.vehicleClass === afterRecord.vehicleClass &&
+          endRecord.zevClass === afterRecord.zevClass
+        );
+      });
+      if (foundIndex === -1) {
+        return false
+      }
+      prevAfterCdBalanceCopy.splice(foundIndex, 1);
+    }
+    return true;
+  }
+  return false;
+}

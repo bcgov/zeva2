@@ -78,7 +78,8 @@ export type MyrCurrentTransactions = UnitsAsString<MyrZevUnitTransaction>[];
 export type MyrData = {
   supplierClass: SupplierClass;
   volumes: [ModelYear, VehicleClass, number][];
-  prevEndingBalance: MyrEndingBalance;
+  prevEndOfCdBalance: MyrEndingBalance;
+  prevAfterCdBalance: MyrEndingBalance;
   complianceReductions: MyrComplianceReductions;
   offsets: MyrOffsets;
   currentTransactions: MyrCurrentTransactions;
@@ -116,7 +117,8 @@ export const getMyrData = async (
       reportableNvValue,
     );
     const {
-      prevEndingBalance,
+      prevEndOfCdBalance,
+      prevAfterCdBalance,
       complianceReductions,
       offsettedCredits,
       currentTransactions,
@@ -134,8 +136,10 @@ export const getMyrData = async (
     return getDataActionResponse<MyrData>({
       supplierClass,
       volumes,
-      prevEndingBalance:
-        getSerializedMyrRecords<ZevUnitRecord>(prevEndingBalance),
+      prevEndOfCdBalance:
+        getSerializedMyrRecords<ZevUnitRecord>(prevEndOfCdBalance),
+      prevAfterCdBalance:
+        getSerializedMyrRecords<ZevUnitRecord>(prevAfterCdBalance),
       complianceReductions: getSerializedMyrRecordsExcludeKey<
         ComplianceReduction,
         "type"
@@ -481,7 +485,8 @@ export const getAssessmentData = async (
       reportableNvValue,
     );
     const {
-      prevEndingBalance,
+      prevEndOfCdBalance,
+      prevAfterCdBalance,
       complianceReductions,
       endingBalance,
       offsettedCredits,
@@ -498,14 +503,14 @@ export const getAssessmentData = async (
     const complianceInfo = getComplianceInfo(
       supplierClass,
       modelYear,
-      prevEndingBalance,
+      prevEndOfCdBalance,
       endingBalance,
     );
     return getDataActionResponse<AssessmentData>({
       supplierClass,
       complianceInfo,
       beginningBalance:
-        getSerializedMyrRecords<ZevUnitRecord>(prevEndingBalance),
+        getSerializedMyrRecords<ZevUnitRecord>(prevAfterCdBalance),
       complianceReductions: getSerializedMyrRecordsExcludeKey<
         ComplianceReduction,
         "type"

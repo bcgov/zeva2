@@ -74,17 +74,6 @@ export const calculateBalance = (
   [refinedRecords, matchingCreditsThatWereOffsetByOtherDebits] =
     offsetOtherDebitsWithMatchingCredits(refinedRecords);
   let balance = flattenZevUnitRecords(refinedRecords);
-  if (balance.length === 0) {
-    for (const zevClass of [ZevClass.A, ZevClass.B]) {
-      balance.push({
-        type: TransactionType.CREDIT,
-        vehicleClass: VehicleClass.REPORTABLE,
-        zevClass,
-        modelYear,
-        numberOfUnits: new Decimal(0),
-      });
-    }
-  }
   return [
     balance,
     flattenZevUnitRecords([
