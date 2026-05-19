@@ -1,9 +1,12 @@
 import { getVehicles, VehicleSparse } from "../data";
 import { redirect } from "next/navigation";
-import { Routes } from "@/app/lib/constants";
 import { VehicleTable } from "./VehicleTable";
 import { getUserInfo } from "@/auth";
 import { ReactNode } from "react";
+import {
+  getZevModelTabRoute,
+  ZevModelTab,
+} from "@/app/zev-models/lib/routes";
 
 export type VehicleSparseSerialized = Omit<
   VehicleSparse,
@@ -13,7 +16,7 @@ export type VehicleSparseSerialized = Omit<
 };
 
 export const VehicleList = async (props: {
-  type: "active" | "inactive";
+  type: ZevModelTab;
   page: number;
   pageSize: number;
   filters: Record<string, string>;
@@ -23,11 +26,7 @@ export const VehicleList = async (props: {
   const { userIsGov } = await getUserInfo();
   const navigationAction = async (id: number) => {
     "use server";
-    if (props.type === "active") {
-      redirect(`${Routes.ActiveZevModels}/${id}/details`);
-    } else if (props.type === "inactive") {
-      redirect(`${Routes.InactiveZevModels}/${id}/details`);
-    }
+    redirect(`${getZevModelTabRoute(props.type)}/${id}/details`);
   };
   const [vehicles, totalNumberOfVehicles] = await getVehicles(
     props.type,

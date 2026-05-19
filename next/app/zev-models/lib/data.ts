@@ -2,6 +2,7 @@ import { getUserInfo } from "@/auth";
 import { getOrderByClause, getWhereClause } from "./utilsServer";
 import { prisma } from "@/lib/prisma";
 import { VehicleStatus } from "@/prisma/generated/enums";
+import { ZevModelTab } from "./routes";
 import {
   OrganizationModel,
   VehicleModel,
@@ -18,7 +19,7 @@ export type VehicleSparse = Omit<
 // page is 1-based
 // currently, this function is not used with SSR, so it is important to select only the data you need!
 export const getVehicles = async (
-  type: "active" | "inactive",
+  type: ZevModelTab,
   page: number,
   pageSize: number,
   filters: { [key: string]: string },
@@ -48,13 +49,27 @@ export const getVehicles = async (
     select = { ...select, organization: { select: { name: true } } };
     where.NOT = {
       status: {
-        in: [VehicleStatus.DRAFT, VehicleStatus.RETURNED_TO_SUPPLIER],
+        in: [VehicleStatus.DRAFT],
       },
     };
   } else {
     where.organizationId = userOrgId;
   }
-  where.isActive = type === "active";
+  switch (type) {
+    case "validated":
+      where.status = VehicleStatus.VALIDATED;
+      where.isActive = true;
+      break;
+    case "submitted":
+      where.status = {
+        in: [VehicleStatus.SUBMITTED, VehicleStatus.RETURNED_TO_SUPPLIER],
+      };
+      break;
+    case "inactive":
+      where.status = VehicleStatus.VALIDATED;
+      where.isActive = false;
+      break;
+  }
   return await prisma.$transaction([
     prisma.vehicle.findMany({
       skip,
@@ -86,7 +101,7 @@ export const getVehicle = async (
   } else {
     whereClause.NOT = {
       status: {
-        in: [VehicleStatus.DRAFT, VehicleStatus.RETURNED_TO_SUPPLIER],
+        in: [VehicleStatus.DRAFT],
       },
     };
   }
@@ -116,7 +131,7 @@ export const getVehicleHistories = async (vehicleId: number) => {
     whereClause.NOT = {
       vehicle: {
         status: {
-          in: [VehicleStatus.DRAFT, VehicleStatus.RETURNED_TO_SUPPLIER],
+          in: [VehicleStatus.DRAFT],
         },
       },
     };

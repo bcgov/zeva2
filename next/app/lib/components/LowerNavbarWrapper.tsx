@@ -13,7 +13,8 @@ export const LowerNavbarWrapper = (props: {
   switch (props.type) {
     case "zevModel":
       if (
-        pathname === Routes.ActiveZevModels ||
+        pathname === Routes.ValidatedZevModels ||
+        pathname === Routes.SubmittedZevModels ||
         pathname === Routes.InactiveZevModels
       ) {
         return props.navbar;

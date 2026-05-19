@@ -16,7 +16,8 @@ export enum Routes {
   ZevUnitTransactions = "/zev-unit-activities/zev-unit-transactions",
 
   // zev models
-  ActiveZevModels = "/zev-models/active",
+  ValidatedZevModels = "/zev-models/validated",
+  SubmittedZevModels = "/zev-models/submitted",
   InactiveZevModels = "/zev-models/inactive",
   NewZevModels = "/zev-models/new",
 
