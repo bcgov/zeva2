@@ -3,10 +3,7 @@ import { redirect } from "next/navigation";
 import { VehicleTable } from "./VehicleTable";
 import { getUserInfo } from "@/auth";
 import { ReactNode } from "react";
-import {
-  getZevModelTabRoute,
-  ZevModelTab,
-} from "@/app/zev-models/lib/routes";
+import { getZevModelTabRoute, ZevModelTab } from "@/app/zev-models/lib/routes";
 
 export type VehicleSparseSerialized = Omit<
   VehicleSparse,
@@ -46,6 +43,7 @@ export const VehicleList = async (props: {
   );
   return (
     <VehicleTable
+      type={props.type}
       vehicles={serializedVehicles}
       totalNumbeOfVehicles={totalNumberOfVehicles}
       navigationAction={navigationAction}
