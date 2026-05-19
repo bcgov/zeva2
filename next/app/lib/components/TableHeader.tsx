@@ -105,7 +105,7 @@ const HeaderFilterInput = ({
             onFilterApply?.();
           }
         }}
-        placeholder="Text"
+        placeholder="Search.."
         type="text"
         value={value}
       />
