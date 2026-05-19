@@ -47,11 +47,6 @@ export const getVehicles = async (
   const orderBy = getOrderByClause(sorts, true);
   if (userIsGov) {
     select = { ...select, organization: { select: { name: true } } };
-    where.NOT = {
-      status: {
-        in: [VehicleStatus.DRAFT],
-      },
-    };
   } else {
     where.organizationId = userOrgId;
   }
@@ -61,9 +56,15 @@ export const getVehicles = async (
       where.isActive = true;
       break;
     case "submitted":
-      where.status = {
-        in: [VehicleStatus.SUBMITTED, VehicleStatus.RETURNED_TO_SUPPLIER],
-      };
+      if (userIsGov) {
+        where.status = VehicleStatus.SUBMITTED;
+      } else {
+        where.OR = [
+          { status: VehicleStatus.DRAFT },
+          { status: VehicleStatus.RETURNED_TO_SUPPLIER },
+          { status: VehicleStatus.SUBMITTED },
+        ];
+      }
       break;
     case "inactive":
       where.status = VehicleStatus.VALIDATED;
@@ -101,7 +102,7 @@ export const getVehicle = async (
   } else {
     whereClause.NOT = {
       status: {
-        in: [VehicleStatus.DRAFT],
+        in: [VehicleStatus.DRAFT, VehicleStatus.RETURNED_TO_SUPPLIER],
       },
     };
   }

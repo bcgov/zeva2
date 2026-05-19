@@ -8,8 +8,10 @@ import {
   getModelYearEnumsToStringsMap,
   getVehicleStatusEnumsToStringsMap,
 } from "@/app/lib/utils/enumMaps";
+import { ZevModelTab } from "../routes";
 
 export const VehicleTable = (props: {
+  type: ZevModelTab;
   vehicles: VehicleSparseSerialized[];
   totalNumbeOfVehicles: number;
   navigationAction: (id: number) => Promise<void>;
@@ -27,8 +29,8 @@ export const VehicleTable = (props: {
     const result: ColumnDef<VehicleSparseSerialized, any>[] = [
       columnHelper.accessor((row) => statusMap[row.status], {
         id: "status",
-        enableSorting: true,
-        enableColumnFilter: true,
+        enableSorting: !props.userIsGov && props.type === "submitted",
+        enableColumnFilter: !props.userIsGov && props.type === "submitted",
         header: () => <span>Status</span>,
       }),
       columnHelper.accessor((row) => row.numberOfUnits, {
@@ -111,7 +113,7 @@ export const VehicleTable = (props: {
       }),
     );
     return result;
-  }, [columnHelper, props.vehicles]);
+  }, [columnHelper, props.userIsGov, props.type, props.vehicles]);
 
   return (
     <Table<VehicleSparseSerialized>
