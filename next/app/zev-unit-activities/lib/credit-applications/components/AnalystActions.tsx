@@ -82,7 +82,7 @@ export const AnalystActions = (props: {
         }
       }
     });
-  }, [props.id, complianceYear, comment]);
+  }, [props.id, modelYearsMap, complianceYear, comment]);
 
   const handleReject = useCallback(() => {
     startTransition(async () => {

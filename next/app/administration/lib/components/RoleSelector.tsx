@@ -31,7 +31,6 @@ export const RoleSelector = (props: {
     addOrRemove: "add" | "remove";
   } | null>(null);
   const [showModal, setShowModal] = useState<boolean>(false);
-  const [isPending, startTransition] = useTransition();
 
   const roles: readonly Role[] = useMemo(() => {
     if (props.govOrSupplier === "gov") {
@@ -106,34 +105,32 @@ export const RoleSelector = (props: {
     setShowModal(false);
   }, []);
 
-  const updateUserRoles = useCallback(() => {
+  const updateUserRoles = useCallback(async () => {
     props.setError("");
-    startTransition(async () => {
-      try {
-        if (props.userId === undefined || !roleInQuestion) {
-          throw new Error("Cannot update user roles!");
-        }
-        if (roleInQuestion.addOrRemove === "add") {
-          const newRoles = [...props.roles, roleInQuestion.role];
-          validateRoles(newRoles, props.govOrSupplier === "gov");
-        }
-        const resp = await updateRoles(
-          props.userId,
-          roleInQuestion.role,
-          roleInQuestion.addOrRemove,
-        );
-        if (resp.responseType === "error") {
-          props.setError(resp.message);
-        } else {
-          props.setRoles(resp.data);
-        }
-      } catch (e) {
-        if (e instanceof Error) {
-          props.setError(e.message);
-        }
+    try {
+      if (props.userId === undefined || !roleInQuestion) {
+        throw new Error("Cannot update user roles!");
       }
-      setShowModal(false);
-    });
+      if (roleInQuestion.addOrRemove === "add") {
+        const newRoles = [...props.roles, roleInQuestion.role];
+        validateRoles(newRoles, props.govOrSupplier === "gov");
+      }
+      const resp = await updateRoles(
+        props.userId,
+        roleInQuestion.role,
+        roleInQuestion.addOrRemove,
+      );
+      if (resp.responseType === "error") {
+        props.setError(resp.message);
+      } else {
+        props.setRoles(resp.data);
+      }
+    } catch (e) {
+      if (e instanceof Error) {
+        props.setError(e.message);
+      }
+    }
+    setShowModal(false);
   }, [props.userId, roleInQuestion, props.setError, props.govOrSupplier]);
 
   return (
@@ -160,8 +157,6 @@ export const RoleSelector = (props: {
         title="User Roles Change"
         confirmLabel="Yes"
         content="You are about to modify this user's roles. Are you sure you want to proceed?"
-        disablePrimaryButton={isPending}
-        disableSecondaryButton={isPending}
       />
     </>
   );

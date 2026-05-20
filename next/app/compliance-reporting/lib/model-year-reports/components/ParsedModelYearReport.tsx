@@ -67,7 +67,10 @@ export const ParsedModelYearReport = (props: {
           caption={`Balance at end of ${prevCdString}`}
           records={props.myr.prevEndOfCdBalance}
         />
-        {!prevBalancesEqual(props.myr.prevEndOfCdBalance, props.myr.prevAfterCdBalance) && (
+        {!prevBalancesEqual(
+          props.myr.prevEndOfCdBalance,
+          props.myr.prevAfterCdBalance,
+        ) && (
           <ParsedZevUnitRecords
             caption={`Balance immediately after ${prevCdString}`}
             records={props.myr.prevAfterCdBalance}

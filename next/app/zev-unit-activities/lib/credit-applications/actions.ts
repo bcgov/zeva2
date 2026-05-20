@@ -861,9 +861,11 @@ export const directorApprove = async (
       numberOfUnits: record.numberOfUnits,
     });
   }
-  let counts;
+  let allCounts;
+  let validatedCounts;
   try {
-    counts = await getVehicleCounts(creditApplicationId, "validated");
+    allCounts = await getVehicleCounts(creditApplicationId, "all");
+    validatedCounts = await getVehicleCounts(creditApplicationId, "validated");
   } catch (e) {
     if (e instanceof Error) {
       return getErrorActionResponse(e.message);
@@ -882,7 +884,19 @@ export const directorApprove = async (
       },
     });
     await unreserveVins(invalidVins, tx);
-    for (const [vehicleId, count] of counts) {
+    for (const [vehicleId, count] of allCounts) {
+      await tx.vehicle.update({
+        where: {
+          id: vehicleId,
+        },
+        data: {
+          submittedCount: {
+            decrement: count,
+          },
+        },
+      });
+    }
+    for (const [vehicleId, count] of validatedCounts) {
       await tx.vehicle.update({
         where: {
           id: vehicleId,
@@ -890,9 +904,6 @@ export const directorApprove = async (
         data: {
           issuedCount: {
             increment: count,
-          },
-          submittedCount: {
-            decrement: count,
           },
         },
       });

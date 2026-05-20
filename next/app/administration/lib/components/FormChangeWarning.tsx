@@ -8,7 +8,6 @@ export const FormChangeWarning = (props: {
   handleSaveAndNavigate: () => void;
   handleNavigateWithoutSaving: () => void;
   handleClose: () => void;
-  isPending: boolean;
 }) => {
   // X button - just close the modal and stay on page
   const handleClose = useCallback(() => {
@@ -45,8 +44,6 @@ export const FormChangeWarning = (props: {
           </div>
         </>
       }
-      disablePrimaryButton={props.isPending}
-      disableSecondaryButton={props.isPending}
       handleClose={handleClose}
     />
   );

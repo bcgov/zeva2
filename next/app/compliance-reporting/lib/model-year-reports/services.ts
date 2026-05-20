@@ -277,7 +277,7 @@ export const getPrevBalance = async (
   if (type === "endOfCd" && validatedTransactions.length === 0) {
     const result = endingBalance.map((record) => {
       const { initialNumberOfUnits, finalNumberOfUnits, ...rest } = record;
-      return { ...rest, numberOfUnits: initialNumberOfUnits }
+      return { ...rest, numberOfUnits: initialNumberOfUnits };
     });
     if (result.length === 0) {
       return getEmptyBalance(prevComplianceYear);

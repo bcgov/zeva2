@@ -416,7 +416,7 @@ const writeComplianceStatements = (
   complianceInfo: ComplianceInfo,
   helpingMaps: MyrHelpingMaps,
 ) => {
-  Object.values(complianceInfo).forEach(([vehicleClassEnum, data]) => {
+  for (const [vehicleClassEnum, data] of Object.values(complianceInfo)) {
     const vehicleClass = helpingMaps.vehicleClassesMap[vehicleClassEnum];
     if (data.isCompliant) {
       sheet.addRow([
@@ -433,7 +433,7 @@ const writeComplianceStatements = (
         ]);
       }
     }
-  });
+  }
 };
 
 const writePreviousAdjustments = (

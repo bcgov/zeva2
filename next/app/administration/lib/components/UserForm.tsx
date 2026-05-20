@@ -313,7 +313,6 @@ export const UserForm = ({
         handleSaveAndNavigate={handleSubmit}
         handleNavigateWithoutSaving={navGuard.accept}
         handleClose={navGuard.reject}
-        isPending={isPending}
       />
 
       <Modal
@@ -326,8 +325,6 @@ export const UserForm = ({
         confirmLabel={pendingActive ? "Activate" : "Deactivate"}
         modalType={pendingActive ? "confirmation" : "error"}
         content="Are you sure you want to update this user?"
-        disablePrimaryButton={false}
-        disableSecondaryButton={false}
       />
 
       <div className="flex flex-row items-center justify-between p-4 bg-gray-100">

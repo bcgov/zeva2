@@ -307,7 +307,7 @@ export const getComplianceInfo = (
       complianceMap[vehicleClass][1].hasNonZeroCredit = true;
     }
   }
-  Object.values(complianceMap).forEach(([vehicleClass, complianceData]) => {
+  for (const [vehicleClass, complianceData] of Object.values(complianceMap)) {
     const hasNonZeroSpecialDebit = complianceData.hasNonZeroSpecialDebit;
     const hasNonZeroDebit = complianceData.hasNonZeroDebit;
     const hasNonZeroCredit = complianceData.hasNonZeroCredit;
@@ -335,7 +335,7 @@ export const getComplianceInfo = (
         endingBalance,
       );
     }
-  });
+  }
   return result;
 };
 
@@ -609,9 +609,9 @@ export const getEmptyBalance = (modelYear: ModelYear) => {
           zevClass: zc,
           modelYear,
           numberOfUnits: new Decimal(0),
-        })
+        });
       }
     }
   }
   return result;
-}
+};

@@ -618,7 +618,10 @@ export const getAddressAsString = (address: OrganizationAddressModel) => {
   return `${address.addressLines}, ${address.city}, ${address.state}, ${address.postalCode}, ${address.country}`;
 };
 
-export const prevBalancesEqual = (prevEndOfCdBalance: FileZevUnitRecord[], prevAfterCdBalance: FileZevUnitRecord[]) => {
+export const prevBalancesEqual = (
+  prevEndOfCdBalance: FileZevUnitRecord[],
+  prevAfterCdBalance: FileZevUnitRecord[],
+) => {
   if (prevEndOfCdBalance.length === prevAfterCdBalance.length) {
     const prevAfterCdBalanceCopy = [...prevAfterCdBalance];
     for (const endRecord of prevEndOfCdBalance) {
@@ -632,11 +635,11 @@ export const prevBalancesEqual = (prevEndOfCdBalance: FileZevUnitRecord[], prevA
         );
       });
       if (foundIndex === -1) {
-        return false
+        return false;
       }
       prevAfterCdBalanceCopy.splice(foundIndex, 1);
     }
     return true;
   }
   return false;
-}
+};
