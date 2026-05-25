@@ -103,8 +103,8 @@ export const submitTransfer = async (
   statement: string,
   comment?: string,
 ): Promise<ErrorOrSuccessActionResponse> => {
-  const { userIsGov, userId, userOrgId } = await getUserInfo();
-  if (userIsGov) {
+  const { userIsGov, userId, userOrgId, userRoles } = await getUserInfo();
+  if (userIsGov || !userRoles.includes(Role.SIGNING_AUTHORITY)) {
     return getErrorActionResponse("Unauthorized!");
   }
   const transfer = await prisma.creditTransfer.findUnique({
@@ -218,18 +218,20 @@ export const transferToSupplierActionTransfer = async (
   statement?: string,
   comment?: string,
 ): Promise<ErrorOrSuccessActionResponse> => {
-  const { userId, userOrgId } = await getUserInfo();
+  const { userId, userOrgId, userRoles } = await getUserInfo();
   if (
     newStatus !== CreditTransferStatus.APPROVED_BY_TRANSFER_TO &&
     newStatus !== CreditTransferStatus.REJECTED_BY_TRANSFER_TO
   ) {
     return getErrorActionResponse("Invalid Action!");
   }
-  if (
-    newStatus === CreditTransferStatus.APPROVED_BY_TRANSFER_TO &&
-    !statement
-  ) {
-    return getErrorActionResponse("Invalid Action!");
+  if (newStatus === CreditTransferStatus.APPROVED_BY_TRANSFER_TO) {
+    if (!statement) {
+      return getErrorActionResponse("Invalid Action!");
+    }
+    if (!userRoles.includes(Role.SIGNING_AUTHORITY)) {
+      return getErrorActionResponse("Unauthorized!");
+    }
   }
   const transfer = await prisma.creditTransfer.findUnique({
     where: {

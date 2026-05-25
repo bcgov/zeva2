@@ -122,7 +122,7 @@ export const ParsedForecastTables = (props: { forecast: ParsedForecast }) => {
         />
         <div className="flex flex-col border border-dividerMedium/40">
           <div className="p-2 font-lg font-semibold border-b border-dividerMedium/30 bg-gray-100">
-            Non-ZEV Records
+            Total Vehicle Supply Forecast
           </div>
           <div className="grid grid-cols-4">
             <div className={headerClasses}>
