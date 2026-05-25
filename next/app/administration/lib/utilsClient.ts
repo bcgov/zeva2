@@ -11,7 +11,6 @@ export const getUserPayload = (
     !data.organizationId ||
     !data.firstName ||
     !data.lastName ||
-    !data.contactEmail ||
     !data.idpUsername ||
     !data.isActive ||
     !data.idpEmail ||
@@ -19,7 +18,7 @@ export const getUserPayload = (
   ) {
     throw new Error("All fields are required!");
   }
-  const orgId = parseInt(data.organizationId, 10);
+  const orgId = Number.parseInt(data.organizationId, 10);
   if (Number.isNaN(orgId)) {
     throw new Error("Org ID is not a number!");
   }
@@ -28,7 +27,7 @@ export const getUserPayload = (
     organizationId: orgId,
     firstName: data.firstName,
     lastName: data.lastName,
-    contactEmail: data.contactEmail,
+    contactEmail: data.contactEmail ?? null,
     idpUsername: data.idpUsername,
     isActive: data.isActive === "true",
     idpEmail: data.idpEmail,

@@ -1,9 +1,7 @@
 import { Routes } from "@/app/lib/constants";
-import { fetchBalance } from "@/app/lib/services/balance";
-import { sumCreditsForClass } from "@/app/lib/utils/balance";
 import { getRoleEnumsToStringsMap } from "@/app/lib/utils/enumMaps";
+import { getReportableBalanceAB } from "@/app/zev-unit-activities/lib/zev-unit-transactions/data";
 import { getUserInfo } from "@/auth";
-import { ZevClass } from "@/prisma/generated/enums";
 import Link from "next/link";
 
 export const UserInformationPanel = async () => {
@@ -13,21 +11,19 @@ export const UserInformationPanel = async () => {
     return null;
   }
   let balanceJSX;
-  const balance = await fetchBalance(userOrgId);
-  const aCredits = sumCreditsForClass(balance, ZevClass.A);
-  const bCredits = sumCreditsForClass(balance, ZevClass.B);
-  if (aCredits === "Deficit" || bCredits === "Deficit") {
+  const balance = await getReportableBalanceAB(userOrgId);
+  if (balance === "deficit") {
     balanceJSX = <span className="font-bold">Deficit</span>;
   } else {
     balanceJSX = (
       <div className="flex flex-col gap-2">
         <span>
-          <span className="font-bold">A - </span>
-          {aCredits}
+          <span className="font-bold">A : </span>
+          {balance.A}
         </span>
         <span>
-          <span className="font-bold">B - </span>
-          {bCredits}
+          <span className="font-bold">B : </span>
+          {balance.B}
         </span>
       </div>
     );

@@ -12,11 +12,7 @@ import {
   ZevClass,
 } from "@/prisma/generated/enums";
 import Excel from "exceljs";
-import {
-  getWarningsMap,
-  parseSupplierSubmission,
-  twentyDayPeriodCheck,
-} from "./utilsServer";
+import { getWarningsMap, parseSupplierSubmission } from "./utilsServer";
 import {
   createHistory,
   deleteAttachments,
@@ -374,7 +370,6 @@ export const supplierSubmit = async (
   }
   const records = application.CreditApplicationRecord;
   try {
-    twentyDayPeriodCheck(records);
     const invalidDateVins: string[] = [];
     for (const record of records) {
       if (record.timestamp > new Date()) {
@@ -635,6 +630,97 @@ export const updateValidatedRecords = async (
   return getSuccessActionResponse();
 };
 
+export const invalidateRecords = async (
+  creditApplicationId: number,
+  modelYear: ModelYear,
+): Promise<ErrorOrSuccessActionResponse> => {
+  const { userIsGov, userRoles } = await getUserInfo();
+  if (!userIsGov || !userRoles.some((role) => role === Role.ZEVA_IDIR_USER)) {
+    return getErrorActionResponse("Unauthorized!");
+  }
+  const creditApplication = await prisma.creditApplication.findUnique({
+    where: {
+      id: creditApplicationId,
+      status: {
+        in: [
+          CreditApplicationStatus.SUBMITTED,
+          CreditApplicationStatus.RETURNED_TO_ANALYST,
+        ],
+      },
+    },
+    select: {
+      eligibleVinsCount: true,
+      ineligibleVinsCount: true,
+      aCredits: true,
+      bCredits: true,
+      CreditApplicationRecord: {
+        select: {
+          id: true,
+          zevClass: true,
+          numberOfUnits: true,
+        },
+        where: {
+          modelYear,
+          validated: true,
+        },
+      },
+    },
+  });
+  if (!creditApplication) {
+    return getErrorActionResponse("Invalid Action!");
+  }
+  let newEligibleVinsCount = creditApplication.eligibleVinsCount;
+  let newIneligibleVinsCount = creditApplication.ineligibleVinsCount;
+  let newACredits = creditApplication.aCredits;
+  let newBCredits = creditApplication.bCredits;
+  if (
+    newEligibleVinsCount === null ||
+    newIneligibleVinsCount === null ||
+    newACredits === null ||
+    newBCredits === null
+  ) {
+    return getErrorActionResponse("Invalid Action!");
+  }
+  for (const record of creditApplication.CreditApplicationRecord) {
+    const zevClass = record.zevClass;
+    const numberOfUnits = record.numberOfUnits;
+    newEligibleVinsCount = newEligibleVinsCount - 1;
+    newIneligibleVinsCount = newIneligibleVinsCount + 1;
+    if (zevClass === ZevClass.A) {
+      newACredits = newACredits.minus(numberOfUnits);
+    } else if (zevClass === ZevClass.B) {
+      newBCredits = newBCredits.minus(numberOfUnits);
+    }
+  }
+  await prisma.$transaction(async (tx) => {
+    await tx.creditApplicationRecord.updateMany({
+      where: {
+        id: {
+          in: creditApplication.CreditApplicationRecord.map(
+            (record) => record.id,
+          ),
+        },
+      },
+      data: {
+        validated: false,
+        reason: "Invalid Model Year",
+      },
+    });
+    await tx.creditApplication.update({
+      where: {
+        id: creditApplicationId,
+      },
+      data: {
+        eligibleVinsCount: newEligibleVinsCount,
+        ineligibleVinsCount: newIneligibleVinsCount,
+        aCredits: newACredits,
+        bCredits: newBCredits,
+      },
+    });
+  });
+  return getSuccessActionResponse();
+};
+
 export const analystRecommend = async (
   creditApplicationId: number,
   complianceYear: ModelYear,
@@ -861,9 +947,11 @@ export const directorApprove = async (
       numberOfUnits: record.numberOfUnits,
     });
   }
-  let counts;
+  let allCounts;
+  let validatedCounts;
   try {
-    counts = await getVehicleCounts(creditApplicationId, "validated");
+    allCounts = await getVehicleCounts(creditApplicationId, "all");
+    validatedCounts = await getVehicleCounts(creditApplicationId, "validated");
   } catch (e) {
     if (e instanceof Error) {
       return getErrorActionResponse(e.message);
@@ -882,7 +970,19 @@ export const directorApprove = async (
       },
     });
     await unreserveVins(invalidVins, tx);
-    for (const [vehicleId, count] of counts) {
+    for (const [vehicleId, count] of allCounts) {
+      await tx.vehicle.update({
+        where: {
+          id: vehicleId,
+        },
+        data: {
+          submittedCount: {
+            decrement: count,
+          },
+        },
+      });
+    }
+    for (const [vehicleId, count] of validatedCounts) {
       await tx.vehicle.update({
         where: {
           id: vehicleId,
@@ -890,9 +990,6 @@ export const directorApprove = async (
         data: {
           issuedCount: {
             increment: count,
-          },
-          submittedCount: {
-            decrement: count,
           },
         },
       });

@@ -1,9 +1,9 @@
 "use client";
 
 import { Button, Dropdown } from "@/app/lib/components";
-import { CreditApplicationStatus } from "@/prisma/generated/enums";
+import { CreditApplicationStatus, ModelYear } from "@/prisma/generated/enums";
 import { useRouter } from "next/navigation";
-import { useCallback, useMemo, useState, useTransition } from "react";
+import { JSX, useCallback, useMemo, useState } from "react";
 import {
   analystRecommend,
   analystReject,
@@ -12,91 +12,114 @@ import {
 import { Routes } from "@/app/lib/constants";
 import { Textarea } from "@/app/lib/components/inputs/Textarea";
 import { getNormalizedComment } from "@/app/lib/utils/comment";
-import { getStringsToModelYearsEnumsMap } from "@/app/lib/utils/enumMaps";
+import { getModelYearEnumsToStringsMap } from "@/app/lib/utils/enumMaps";
+import { Modal, ModalType } from "@/app/lib/components/Modal";
+import { isModelYear } from "@/app/lib/utils/typeGuards";
 
 export const AnalystActions = (props: {
   id: number;
   status: CreditApplicationStatus;
   validatedBefore: boolean;
-  complianceYears: string[];
-  defaultComplianceYear: string;
+  complianceYears: ModelYear[];
+  defaultComplianceYear: ModelYear;
 }) => {
-  const [isPending, startTransition] = useTransition();
   const router = useRouter();
-  const [complianceYear, setComplianceYear] = useState<string>(
+  const [complianceYear, setComplianceYear] = useState<ModelYear>(
     props.defaultComplianceYear,
   );
   const [comment, setComment] = useState<string>("");
   const [error, setError] = useState<string>("");
+  const [modal, setModal] = useState<JSX.Element | null>(null);
 
   const modelYearsMap = useMemo(() => {
-    return getStringsToModelYearsEnumsMap();
+    return getModelYearEnumsToStringsMap();
   }, []);
 
   const handleSelectCy = useCallback((selectedCy: string) => {
-    setComplianceYear(selectedCy);
+    if (isModelYear(selectedCy)) {
+      setComplianceYear(selectedCy);
+    }
   }, []);
 
-  const handleValidate = useCallback(() => {
-    startTransition(async () => {
-      const response = await validateCreditApplication(props.id);
-      if (response.responseType === "error") {
-        setError(response.message);
-      } else {
-        router.push(`${Routes.CreditApplications}/${props.id}/validated`);
-      }
-    });
+  const handleValidate = useCallback(async () => {
+    const response = await validateCreditApplication(props.id);
+    if (response.responseType === "error") {
+      setError(response.message);
+    } else {
+      router.push(`${Routes.CreditApplications}/${props.id}/validated`);
+    }
+    setModal(null);
   }, [props.id]);
 
   const handleGoToValidated = useCallback(
     (edit: boolean) => {
-      startTransition(() => {
-        router.push(
-          `${Routes.CreditApplications}/${props.id}/validated${edit ? "" : "?readOnly=Y"}`,
-        );
-      });
+      router.push(
+        `${Routes.CreditApplications}/${props.id}/validated${edit ? "" : "?readOnly=Y"}`,
+      );
     },
     [props.id, router],
   );
 
-  const handleRecommend = useCallback(() => {
-    startTransition(async () => {
-      try {
-        const cyEnum = modelYearsMap[complianceYear];
-        if (!cyEnum) {
-          throw new Error("You must select a compliance year!");
-        }
-        const response = await analystRecommend(
-          props.id,
-          cyEnum,
-          getNormalizedComment(comment),
-        );
-        if (response.responseType === "error") {
-          throw new Error(response.message);
-        } else {
-          router.refresh();
-        }
-      } catch (e) {
-        if (e instanceof Error) {
-          setError(e.message);
-        }
-      }
-    });
-  }, [props.id, complianceYear, comment]);
-
-  const handleReject = useCallback(() => {
-    startTransition(async () => {
-      const response = await analystReject(
+  const handleRecommend = useCallback(async () => {
+    try {
+      const response = await analystRecommend(
         props.id,
+        complianceYear,
         getNormalizedComment(comment),
       );
       if (response.responseType === "error") {
-        setError(response.message);
+        throw new Error(response.message);
       } else {
-        router.push(Routes.CreditApplications);
+        router.refresh();
       }
-    });
+    } catch (e) {
+      if (e instanceof Error) {
+        setError(e.message);
+      }
+    }
+    setModal(null);
+  }, [props.id, complianceYear, comment]);
+
+  const handleReject = useCallback(async () => {
+    const response = await analystReject(
+      props.id,
+      getNormalizedComment(comment),
+    );
+    if (response.responseType === "error") {
+      setError(response.message);
+    } else {
+      router.push(Routes.CreditApplications);
+    }
+    setModal(null);
   }, [props.id, comment]);
+
+  const showModal = useCallback(
+    (type: "validate" | "recommend" | "reject") => {
+      let modalType: ModalType | undefined;
+      let action: (() => Promise<void>) | undefined;
+      if (type === "validate") {
+        modalType = "warning";
+        action = handleValidate;
+      } else if (type === "recommend") {
+        modalType = "confirmation";
+        action = handleRecommend;
+      } else if (type === "reject") {
+        modalType = "error";
+        action = handleReject;
+      }
+      if (modalType && action) {
+        setModal(
+          <Modal
+            showModal={true}
+            modalType={modalType}
+            handleSubmit={action}
+            handleCancel={() => setModal(null)}
+          />,
+        );
+      }
+    },
+    [handleValidate, handleRecommend, handleReject],
+  );
 
   if (
     props.status === CreditApplicationStatus.DRAFT ||
@@ -114,21 +137,20 @@ export const AnalystActions = (props: {
         onClick={() => {
           handleGoToValidated(false);
         }}
-        disabled={isPending}
       >
-        {isPending ? "..." : "View Validated Records"}
+        View Validated Records
       </Button>
     );
   }
   return (
     <>
       {error && <p className="text-red-600">{error}</p>}
-      <Textarea value={comment} onChange={setComment} disabled={isPending} />
-      <Button variant="primary" onClick={handleValidate} disabled={isPending}>
-        {isPending ? "..." : "Validate"}
+      <Textarea value={comment} onChange={setComment} />
+      <Button variant="primary" onClick={() => showModal("validate")}>
+        Validate
       </Button>
-      <Button variant="primary" onClick={handleReject} disabled={isPending}>
-        {isPending ? "..." : "Reject"}
+      <Button variant="primary" onClick={() => showModal("reject")}>
+        Reject
       </Button>
       {props.validatedBefore && (
         <>
@@ -137,24 +159,22 @@ export const AnalystActions = (props: {
             onClick={() => {
               handleGoToValidated(false);
             }}
-            disabled={isPending}
           >
-            {isPending ? "..." : "View Validated Records"}
+            View Validated Records
           </Button>
           <Button
             variant="secondary"
             onClick={() => {
               handleGoToValidated(true);
             }}
-            disabled={isPending}
           >
-            {isPending ? "..." : "Edit Validated Records"}
+            Edit Validated Records
           </Button>
           <Dropdown
             options={props.complianceYears.map((cy) => {
               return {
                 value: cy,
-                label: cy,
+                label: modelYearsMap[cy] ?? "",
               };
             })}
             onChange={(value) => {
@@ -162,17 +182,12 @@ export const AnalystActions = (props: {
             }}
             value={complianceYear}
           />
-          <Button
-            variant="primary"
-            onClick={() => {
-              handleRecommend();
-            }}
-            disabled={isPending}
-          >
-            {isPending ? "..." : "Recommend Approval"}
+          <Button variant="primary" onClick={() => showModal("recommend")}>
+            Recommend Approval
           </Button>
         </>
       )}
+      {modal}
     </>
   );
 };

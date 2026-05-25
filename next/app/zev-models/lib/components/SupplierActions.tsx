@@ -3,7 +3,7 @@
 import { Button } from "@/app/lib/components";
 import { Role, VehicleStatus } from "@/prisma/generated/enums";
 import { useRouter } from "next/navigation";
-import { useCallback, useState, useTransition } from "react";
+import { JSX, useCallback, useState, useTransition } from "react";
 import {
   supplierActivate,
   supplierDeactivate,
@@ -13,6 +13,7 @@ import {
 import { getNormalizedComment } from "@/app/lib/utils/comment";
 import { Routes } from "@/app/lib/constants";
 import { Textarea } from "@/app/lib/components/inputs/Textarea";
+import { Modal, ModalType } from "@/app/lib/components/Modal";
 
 export const SupplierActions = (props: {
   vehicleId: number;
@@ -20,94 +21,117 @@ export const SupplierActions = (props: {
   isActive: boolean;
   userRoles: Role[];
 }) => {
-  const [isPending, startTransition] = useTransition();
   const router = useRouter();
   const [comment, setComment] = useState<string>("");
   const [error, setError] = useState<string>("");
+  const [modal, setModal] = useState<JSX.Element | null>(null);
 
-  const handleDelete = useCallback(() => {
-    startTransition(async () => {
-      const response = await supplierDelete(props.vehicleId);
-      if (response.responseType === "error") {
-        setError(response.message);
-      } else {
-        router.push(Routes.SubmittedZevModels);
-      }
-    });
+  const handleDelete = useCallback(async () => {
+    const response = await supplierDelete(props.vehicleId);
+    if (response.responseType === "error") {
+      setError(response.message);
+    } else {
+      router.push(Routes.SubmittedZevModels);
+    }
+    setModal(null);
   }, [props.vehicleId]);
 
   const handleGoToEdit = useCallback(() => {
     router.push(`${Routes.SubmittedZevModels}/${props.vehicleId}/edit`);
   }, [props.vehicleId]);
 
-  const handleSubmit = useCallback(() => {
+  const handleSubmit = useCallback(async () => {
     setError("");
-    startTransition(async () => {
-      const response = await supplierSubmit(
-        props.vehicleId,
-        getNormalizedComment(comment),
-      );
-      if (response.responseType === "error") {
-        setError(response.message);
-      } else {
-        router.refresh();
-      }
-    });
+    const response = await supplierSubmit(
+      props.vehicleId,
+      getNormalizedComment(comment),
+    );
+    if (response.responseType === "error") {
+      setError(response.message);
+    } else {
+      router.refresh();
+    }
+    setModal(null);
   }, [props.vehicleId, comment]);
 
   const handleActivateDeactivate = useCallback(
-    (type: "activate" | "deactivate") => {
+    async (type: "activate" | "deactivate") => {
       setError("");
-      startTransition(async () => {
-        let response;
-        if (type === "activate") {
-          response = await supplierActivate(props.vehicleId);
-        } else if (type === "deactivate") {
-          response = await supplierDeactivate(props.vehicleId);
-        } else {
-          setError("Invalid Action!");
-          return;
-        }
-        if (response.responseType === "error") {
-          setError(response.message);
-        } else {
-          router.push(
-            `${
-              type === "activate"
-                ? Routes.ValidatedZevModels
-                : Routes.InactiveZevModels
-            }/${props.vehicleId}/details`,
-          );
-        }
-      });
+      let response;
+      if (type === "activate") {
+        response = await supplierActivate(props.vehicleId);
+      } else if (type === "deactivate") {
+        response = await supplierDeactivate(props.vehicleId);
+      } else {
+        setError("Invalid Action!");
+        setModal(null);
+        return;
+      }
+      if (response.responseType === "error") {
+        setError(response.message);
+      } else {
+        router.push(
+          `${
+            type === "activate"
+              ? Routes.ValidatedZevModels
+              : Routes.InactiveZevModels
+          }/${props.vehicleId}/details`,
+        );
+      }
+      setModal(null);
     },
     [props.vehicleId],
   );
 
+  const showModal = useCallback(
+    (type: "delete" | "submit" | "activate" | "deactivate") => {
+      let modalType: ModalType | undefined;
+      let action: (() => void) | undefined;
+      if (type === "delete") {
+        modalType = "error";
+        action = handleDelete;
+      } else if (type === "submit") {
+        modalType = "confirmation";
+        action = handleSubmit;
+      } else if (type === "activate") {
+        modalType = "confirmation";
+        action = () => handleActivateDeactivate("activate");
+      } else if (type === "deactivate") {
+        modalType = "warning";
+        action = () => handleActivateDeactivate("deactivate");
+      }
+      if (modalType && action) {
+        setModal(
+          <Modal
+            showModal={true}
+            modalType={modalType}
+            handleSubmit={action}
+            handleCancel={() => setModal(null)}
+          />,
+        );
+      }
+    },
+    [handleDelete, handleSubmit, handleActivateDeactivate],
+  );
+
   if (props.status === VehicleStatus.VALIDATED && props.isActive) {
     return (
-      <Button
-        variant="secondary"
-        onClick={() => {
-          handleActivateDeactivate("deactivate");
-        }}
-        disabled={isPending}
-      >
-        {isPending ? "..." : "Deactivate"}
-      </Button>
+      <>
+        <Button variant="secondary" onClick={() => showModal("deactivate")}>
+          Deactivate
+        </Button>
+        {modal}
+      </>
     );
   }
   if (props.status === VehicleStatus.VALIDATED && !props.isActive) {
     return (
-      <Button
-        variant="secondary"
-        onClick={() => {
-          handleActivateDeactivate("activate");
-        }}
-        disabled={isPending}
-      >
-        {isPending ? "..." : "Activate"}
-      </Button>
+      <>
+        <Button variant="secondary" onClick={() => showModal("activate")}>
+          Activate
+        </Button>
+        {modal}
+      </>
     );
   }
   if (
@@ -117,22 +141,19 @@ export const SupplierActions = (props: {
     return (
       <>
         {error && <p className="text-red-600">{error}</p>}
-        <Textarea value={comment} onChange={setComment} disabled={isPending} />
-        <Button variant="danger" onClick={handleDelete} disabled={isPending}>
-          {isPending ? "..." : "Delete"}
+        <Textarea value={comment} onChange={setComment} />
+        <Button variant="danger" onClick={() => showModal("delete")}>
+          Delete
         </Button>
-        <Button
-          variant="secondary"
-          onClick={handleGoToEdit}
-          disabled={isPending}
-        >
-          {isPending ? "..." : "Edit"}
+        <Button variant="secondary" onClick={handleGoToEdit}>
+          Edit
         </Button>
         {props.userRoles.includes(Role.SIGNING_AUTHORITY) && (
-          <Button variant="primary" onClick={handleSubmit} disabled={isPending}>
-            {isPending ? "..." : "Submit"}
+          <Button variant="primary" onClick={() => showModal("submit")}>
+            Submit
           </Button>
         )}
+        {modal}
       </>
     );
   }

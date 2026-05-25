@@ -2,7 +2,6 @@ import { getUserInfo } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import {
   ModelYear,
-  TransactionType,
   VehicleClass,
   VehicleStatus,
   ZevClass,
@@ -11,9 +10,8 @@ import {
   unspecifiedComplianceRatios,
   specialComplianceRatios,
 } from "@/app/lib/constants/complianceRatio";
-import { fetchBalance } from "@/app/lib/services/balance";
-import { sumBalance } from "@/lib/utils/zevUnit";
 import { ComplianceRatio, VehicleModel, CreditBalance } from "./types";
+import { getReportableBalanceAB } from "@/app/zev-unit-activities/lib/zev-unit-transactions/data";
 
 export const getModelYears = async (): Promise<ModelYear[]> => {
   const { userOrgId } = await getUserInfo();
@@ -92,24 +90,14 @@ export const getUserCreditBalance = async (): Promise<CreditBalance> => {
     return { A: 0, B: 0 };
   }
 
-  const balance = await fetchBalance(userOrgId);
+  const balance = await getReportableBalanceAB(userOrgId);
 
-  if (!balance || balance === "deficit") {
+  if (balance === "deficit") {
     return { A: 0, B: 0 };
   }
 
   return {
-    A: sumBalance(
-      balance,
-      TransactionType.CREDIT,
-      VehicleClass.REPORTABLE,
-      ZevClass.A,
-    ).toNumber(),
-    B: sumBalance(
-      balance,
-      TransactionType.CREDIT,
-      VehicleClass.REPORTABLE,
-      ZevClass.B,
-    ).toNumber(),
+    A: Number(balance.A),
+    B: Number(balance.B),
   };
 };

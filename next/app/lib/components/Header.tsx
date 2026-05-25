@@ -1,18 +1,16 @@
 import { Row } from "./layout";
-import { fetchBalance } from "../services/balance";
-import { ZevClass } from "@/prisma/generated/enums";
+import { getReportableBalanceAB } from "@/app/zev-unit-activities/lib/zev-unit-transactions/data";
 import { getUserInfo } from "@/auth";
 import { PrimaryNavbar } from "./PrimaryNavbar";
-import { sumCreditsForClass } from "../utils/balance";
 
 /** Basic Header component containing the BCGOV logo and title of the application. */
 export const Header = async () => {
-  const { userName, userIsGov, userOrgName, userOrgId, userRoles, userId } =
+  const { userName, userIsGov, userOrgName, userOrgId, userId } =
     await getUserInfo();
 
-  let balance: Awaited<ReturnType<typeof fetchBalance>>;
+  let balance: Awaited<ReturnType<typeof getReportableBalanceAB>> | undefined;
   if (!userIsGov) {
-    balance = await fetchBalance(userOrgId);
+    balance = await getReportableBalanceAB(userOrgId);
   }
 
   return (
@@ -24,40 +22,30 @@ export const Header = async () => {
           alt="BC GOV logo"
         />
         <span className="text-xl">Zero-Emission Vehicles Reporting System</span>
-        {userIsGov ? (
+        {balance ? (
           <div className="ml-auto flex items-center gap-4 text-sm sm:text-base">
-            {userOrgName && (
-              <span className="font-semibold">{userOrgName}</span>
-            )}
-            {userOrgName && <span className="h-6 border-l border-white/70" />}
-            <span className="font-semibold">{userName}</span>
-          </div>
-        ) : (
-          <div className="ml-auto flex items-center gap-4 text-sm sm:text-base">
-            {userOrgName && (
-              <span className="font-semibold">{userOrgName}</span>
-            )}
-            {(balance || userOrgName) && (
-              <span className="h-8 border-l border-white/70" />
-            )}
+            <span className="font-semibold">{userOrgName}</span>
+            <span className="h-8 border-l border-white/70" />
             {balance === "deficit" ? (
               <span className="font-semibold">Deficit</span>
             ) : (
               <div className="flex flex-col leading-tight text-right items-end font-semibold tabular-nums gap-1">
                 <div className="grid grid-cols-[3rem_minmax(0,6.5rem)] gap-x-1 items-center">
-                  <span className="justify-self-end">A -</span>
-                  <span className="text-left tabular-nums">
-                    {sumCreditsForClass(balance, ZevClass.A)}
-                  </span>
+                  <span className="justify-self-end">A :</span>
+                  <span className="text-left tabular-nums">{balance.A}</span>
                 </div>
                 <div className="grid grid-cols-[3rem_minmax(0,6.5rem)] gap-x-1 items-center">
-                  <span className="justify-self-end">B -</span>
-                  <span className="text-left tabular-nums">
-                    {sumCreditsForClass(balance, ZevClass.B)}
-                  </span>
+                  <span className="justify-self-end">B :</span>
+                  <span className="text-left tabular-nums">{balance.B}</span>
                 </div>
               </div>
             )}
+          </div>
+        ) : (
+          <div className="ml-auto flex items-center gap-4 text-sm sm:text-base">
+            <span className="font-semibold">{userOrgName}</span>
+            <span className="h-6 border-l border-white/70" />
+            <span className="font-semibold">{userName}</span>
           </div>
         )}
       </Row>

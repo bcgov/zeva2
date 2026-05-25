@@ -27,6 +27,8 @@ import {
   mapOfStatusToSupplierStatus,
   MyrRecord,
   MyrRecordSerialized,
+  nvMap,
+  zevClassChoiceMap,
 } from "./constants";
 import { penaltyRates } from "@/app/lib/constants/penaltyRate";
 import { isVehicleClass, isZevClass } from "@/app/lib/utils/typeGuards";
@@ -305,7 +307,7 @@ export const getComplianceInfo = (
       complianceMap[vehicleClass][1].hasNonZeroCredit = true;
     }
   }
-  Object.values(complianceMap).forEach(([vehicleClass, complianceData]) => {
+  for (const [vehicleClass, complianceData] of Object.values(complianceMap)) {
     const hasNonZeroSpecialDebit = complianceData.hasNonZeroSpecialDebit;
     const hasNonZeroDebit = complianceData.hasNonZeroDebit;
     const hasNonZeroCredit = complianceData.hasNonZeroCredit;
@@ -333,7 +335,7 @@ export const getComplianceInfo = (
         endingBalance,
       );
     }
-  });
+  }
   return result;
 };
 
@@ -592,4 +594,24 @@ export const parseAssesmentForData = (
     supplierClass,
     reportableNvValue: reportableNvValue[1],
   };
+};
+
+export const getEmptyBalance = (modelYear: ModelYear) => {
+  const result: ZevUnitRecord[] = [];
+  const vehicleClasses = nvMap[modelYear];
+  const zevClasses = zevClassChoiceMap[modelYear];
+  if (vehicleClasses && zevClasses) {
+    for (const vc of vehicleClasses) {
+      for (const zc of zevClasses) {
+        result.push({
+          type: TransactionType.CREDIT,
+          vehicleClass: vc,
+          zevClass: zc,
+          modelYear,
+          numberOfUnits: new Decimal(0),
+        });
+      }
+    }
+  }
+  return result;
 };

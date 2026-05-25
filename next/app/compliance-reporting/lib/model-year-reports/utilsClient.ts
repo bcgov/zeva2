@@ -125,8 +125,13 @@ export const generateMyr = async (
     helpingMaps,
   );
   writeBalance(
-    sheets.beginningBalanceSheet,
-    myrData.prevEndingBalance,
+    sheets.prevEndOfCdBalanceSheet,
+    myrData.prevEndOfCdBalance,
+    helpingMaps,
+  );
+  writeBalance(
+    sheets.prevAfterCdBalanceSheet,
+    myrData.prevAfterCdBalance,
     helpingMaps,
   );
   writeCredits(
@@ -411,7 +416,7 @@ const writeComplianceStatements = (
   complianceInfo: ComplianceInfo,
   helpingMaps: MyrHelpingMaps,
 ) => {
-  Object.values(complianceInfo).forEach(([vehicleClassEnum, data]) => {
+  for (const [vehicleClassEnum, data] of Object.values(complianceInfo)) {
     const vehicleClass = helpingMaps.vehicleClassesMap[vehicleClassEnum];
     if (data.isCompliant) {
       sheet.addRow([
@@ -428,7 +433,7 @@ const writeComplianceStatements = (
         ]);
       }
     }
-  });
+  }
 };
 
 const writePreviousAdjustments = (

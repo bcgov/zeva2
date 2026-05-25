@@ -5,13 +5,16 @@ import {
   getDataActionResponse,
   getErrorActionResponse,
 } from "@/app/lib/utils/actionResponse";
-import { getCompliancePeriod } from "@/app/lib/utils/complianceYear";
+import {
+  getAdjacentYear,
+  getCompliancePeriod,
+} from "@/app/lib/utils/complianceYear";
 import { getIsoYmdString } from "@/app/lib/utils/date";
 import { getUserInfo } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { ModelYear } from "@/prisma/generated/enums";
 import {
-  SerializedZevUnitEndingBalanceRecord,
+  SerializedZevUnitBalanceRecord,
   SerializedZevUnitTransaction,
 } from "./constants";
 
@@ -43,12 +46,35 @@ export const getTransactionsByComplianceYear = async (
   return getDataActionResponse(recordsToReturn);
 };
 
+export const getBeginningBalance = async (
+  organizationId: number,
+  complianceYear: ModelYear,
+): Promise<DataOrErrorActionResponse<SerializedZevUnitBalanceRecord[]>> => {
+  const { userIsGov, userOrgId } = await getUserInfo();
+  if (!userIsGov && userOrgId !== organizationId) {
+    return getErrorActionResponse("Unauthorized!");
+  }
+  const prevYear = getAdjacentYear("prev", complianceYear);
+  const records = await prisma.zevUnitEndingBalance.findMany({
+    where: {
+      organizationId,
+      complianceYear: prevYear,
+    },
+  });
+  const recordsToReturn = records.map((record) => {
+    const { finalNumberOfUnits, initialNumberOfUnits, ...rest } = record;
+    return {
+      ...rest,
+      numberOfUnits: finalNumberOfUnits.toFixed(2),
+    };
+  });
+  return getDataActionResponse(recordsToReturn);
+};
+
 export const getEndingBalance = async (
   organizationId: number,
   complianceYear: ModelYear,
-): Promise<
-  DataOrErrorActionResponse<SerializedZevUnitEndingBalanceRecord[]>
-> => {
+): Promise<DataOrErrorActionResponse<SerializedZevUnitBalanceRecord[]>> => {
   const { userIsGov, userOrgId } = await getUserInfo();
   if (!userIsGov && userOrgId !== organizationId) {
     return getErrorActionResponse("Unauthorized!");
@@ -58,14 +84,12 @@ export const getEndingBalance = async (
       organizationId,
       complianceYear,
     },
-    omit: {
-      initialNumberOfUnits: true,
-    },
   });
   const recordsToReturn = records.map((record) => {
+    const { finalNumberOfUnits, initialNumberOfUnits, ...rest } = record;
     return {
-      ...record,
-      finalNumberOfUnits: record.finalNumberOfUnits.toFixed(2),
+      ...rest,
+      numberOfUnits: initialNumberOfUnits.toFixed(2),
     };
   });
   return getDataActionResponse(recordsToReturn);

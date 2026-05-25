@@ -15,7 +15,11 @@ import { SupplierActions } from "./SupplierActions";
 import { DirectorActions } from "./DirectorActions";
 import { AnalystActions } from "./AnalystActions";
 import { ApplicationStatistics } from "./ApplicationStatistics";
-import { getComplianceYearData } from "../utilsServer";
+import {
+  getComplianceYear,
+  getCurrentComplianceYear,
+  getDominatedComplianceYears,
+} from "@/app/lib/utils/complianceYear";
 
 export const IndividualPage = async (props: { id: string }) => {
   const id = Number.parseInt(props.id, 10);
@@ -81,7 +85,9 @@ export const IndividualPage = async (props: { id: string }) => {
       if (!caSubmittedDate) {
         throw new Error();
       }
-      const cyData = getComplianceYearData(caSubmittedDate);
+      const currentCy = getCurrentComplianceYear();
+      const submittedCy = getComplianceYear(caSubmittedDate);
+      const dominatedCys = getDominatedComplianceYears(currentCy);
       return (
         <div className="flex flex-col w-1/3">
           {applicationData}
@@ -92,8 +98,8 @@ export const IndividualPage = async (props: { id: string }) => {
               validatedBefore={
                 creditApplication.lastValidatedTimestamp !== null
               }
-              complianceYears={cyData.complianceYears}
-              defaultComplianceYear={cyData.defaultComplianceYear}
+              complianceYears={[...dominatedCys, currentCy]}
+              defaultComplianceYear={submittedCy}
             />
           </ContentCard>
         </div>
@@ -117,6 +123,9 @@ export const IndividualPage = async (props: { id: string }) => {
           creditApplicationId={id}
           status={applicationSupplierStatus}
           userRoles={userRoles}
+          hasInvalidatedRecords={
+            creditApplication._count.CreditApplicationRecord > 0
+          }
         />
       </ContentCard>
     </div>

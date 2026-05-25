@@ -228,8 +228,10 @@ model CreditTransfer {
   id                    Int                     @id @default(autoincrement())
   transferToId          Int                     @map("transfer_to_id")
   transferTo            Organization            @relation("creditTransferTo", fields: [transferToId], references: [id])
+  transferToStatement   String?                 @map("transfer_to_statement")
   transferFromId        Int                     @map("transfer_from_id")
   transferFrom          Organization            @relation("creditTransferFrom", fields: [transferFromId], references: [id])
+  transferFromStatement String?                 @map("transfer_from_statement")
   status                CreditTransferStatus
   creditTransferContent CreditTransferContent[]
   creditTransferHistory CreditTransferHistory[]

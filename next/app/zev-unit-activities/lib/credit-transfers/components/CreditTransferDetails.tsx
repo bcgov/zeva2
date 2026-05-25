@@ -41,10 +41,18 @@ export const CreditTransferDetails = async (props: { id: number }) => {
   }
   return (
     <div className="space-y-3">
-      <ul>
-        <li key="transferFrom">Transfer From: {transfer.transferFrom.name}</li>
-        <li key="transferTo">Transfer To: {transfer.transferTo.name}</li>
-        <li key="status">Status: {statusMap[status]}</li>
+      <ul className="space-y-3">
+        <li>Transfer From: {transfer.transferFrom.name}</li>
+        <li>Transfer To: {transfer.transferTo.name}</li>
+        <li>Status: {statusMap[status]}</li>
+        {transfer.transferFromStatement && (
+          <li>
+            Transfer From Signed Statement: {transfer.transferFromStatement}
+          </li>
+        )}
+        {transfer.transferToStatement && (
+          <li>Transfer To Signed Statement: {transfer.transferToStatement}</li>
+        )}
       </ul>
       {transferContent}
     </div>

@@ -4,13 +4,14 @@ import { Button } from "@/app/lib/components";
 import { Textarea } from "@/app/lib/components/inputs/Textarea";
 import { Routes } from "@/app/lib/constants";
 import { useRouter } from "next/navigation";
-import { useCallback, useMemo, useState, useTransition } from "react";
+import { JSX, useCallback, useMemo, useState } from "react";
 import { deleteReports, submitReports } from "../actions";
 import { getNormalizedComment } from "@/app/lib/utils/comment";
 import { ModelYear, ModelYearReportStatus } from "@/prisma/generated/enums";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faTrash, faArrowPointer } from "@fortawesome/free-solid-svg-icons";
 import { getModelYearEnumsToStringsMap } from "@/app/lib/utils/enumMaps";
+import { Modal, ModalType } from "@/app/lib/components/Modal";
 
 export const SupplierActions = (props: {
   myrId: number;
@@ -19,13 +20,13 @@ export const SupplierActions = (props: {
   supplierName: string;
 }) => {
   const router = useRouter();
-  const [isPending, startTransition] = useTransition();
   const [comment, setComment] = useState<string>("");
   const [checkboxesStatus, setCheckboxesStatus] = useState<[boolean, boolean]>([
     false,
     false,
   ]);
   const [error, setError] = useState<string>("");
+  const [modal, setModal] = useState<JSX.Element | null>(null);
 
   const handleCheck = useCallback((index: 0 | 1) => {
     if (index === 0) {
@@ -43,41 +44,39 @@ export const SupplierActions = (props: {
     router.push(`${Routes.ModelYearReports}/${props.myrId}/edit`);
   }, [props.myrId]);
 
-  const handleSubmit = useCallback(() => {
+  const handleSubmit = useCallback(async () => {
     setError("");
-    startTransition(async () => {
-      try {
-        const response = await submitReports(
-          props.myrId,
-          getNormalizedComment(comment),
-        );
-        if (response.responseType === "error") {
-          throw new Error(response.message);
-        }
-        router.refresh();
-      } catch (e) {
-        if (e instanceof Error) {
-          setError(e.message);
-        }
+    try {
+      const response = await submitReports(
+        props.myrId,
+        getNormalizedComment(comment),
+      );
+      if (response.responseType === "error") {
+        throw new Error(response.message);
       }
-    });
+      router.refresh();
+    } catch (e) {
+      if (e instanceof Error) {
+        setError(e.message);
+      }
+    }
+    setModal(null);
   }, [props.myrId, comment]);
 
-  const handleDelete = useCallback(() => {
+  const handleDelete = useCallback(async () => {
     setError("");
-    startTransition(async () => {
-      try {
-        const response = await deleteReports(props.myrId);
-        if (response.responseType === "error") {
-          throw new Error(response.message);
-        }
-        router.push(Routes.ModelYearReports);
-      } catch (e) {
-        if (e instanceof Error) {
-          setError(e.message);
-        }
+    try {
+      const response = await deleteReports(props.myrId);
+      if (response.responseType === "error") {
+        throw new Error(response.message);
       }
-    });
+      router.push(Routes.ModelYearReports);
+    } catch (e) {
+      if (e instanceof Error) {
+        setError(e.message);
+      }
+    }
+    setModal(null);
   }, [props.myrId]);
 
   const salesOrSupplied = useMemo(() => {
@@ -137,6 +136,31 @@ export const SupplierActions = (props: {
     salesOrSupplied,
   ]);
 
+  const showModal = useCallback(
+    (type: "submit" | "delete") => {
+      let modalType: ModalType | undefined;
+      let action: (() => Promise<void>) | undefined;
+      if (type === "submit") {
+        modalType = "confirmation";
+        action = handleSubmit;
+      } else if (type === "delete") {
+        modalType = "error";
+        action = handleDelete;
+      }
+      if (modalType && action) {
+        setModal(
+          <Modal
+            showModal={true}
+            modalType={modalType}
+            handleSubmit={action}
+            handleCancel={() => setModal(null)}
+          />,
+        );
+      }
+    },
+    [handleSubmit, handleDelete],
+  );
+
   if (
     props.status === ModelYearReportStatus.DRAFT ||
     props.status === ModelYearReportStatus.RETURNED_TO_SUPPLIER
@@ -151,7 +175,6 @@ export const SupplierActions = (props: {
             <Textarea
               value={comment}
               onChange={setComment}
-              disabled={isPending}
               placeholder="Comment"
             />
           </div>
@@ -167,35 +190,31 @@ export const SupplierActions = (props: {
         <div className="flex flex-row p-2 bg-gray-50 justify-between">
           <div className="flex flex-row gap-1 items-center">
             <Button
-              onClick={handleDelete}
+              onClick={() => showModal("delete")}
               variant="danger"
-              disabled={isPending}
               icon={<FontAwesomeIcon icon={faTrash} />}
               iconPosition="right"
             >
-              {isPending ? "..." : "Delete"}
+              Delete
             </Button>
-            <Button
-              onClick={handleGoToEdit}
-              variant="secondary"
-              disabled={isPending}
-            >
-              {isPending ? "..." : "Start Over"}
+            <Button onClick={handleGoToEdit} variant="secondary">
+              Start Over
             </Button>
           </div>
           <div className="flex flex-row gap-1 items-center">
             {error && <span className="text-red-600">{error}</span>}
             <Button
-              onClick={handleSubmit}
+              onClick={() => showModal("submit")}
               variant="primary"
               icon={<FontAwesomeIcon icon={faArrowPointer} />}
               iconPosition="right"
-              disabled={checkboxesStatus.includes(false) || isPending}
+              disabled={checkboxesStatus.includes(false)}
             >
-              {isPending ? "..." : "Submit"}
+              Submit
             </Button>
           </div>
         </div>
+        {modal}
       </div>
     );
   }

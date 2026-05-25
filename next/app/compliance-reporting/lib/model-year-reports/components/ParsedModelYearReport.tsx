@@ -1,5 +1,5 @@
 import { ModelYear } from "@/prisma/generated/enums";
-import { getZevClassOrder, ParsedMyr } from "../utils";
+import { getZevClassOrder, ParsedMyr, prevBalancesEqual } from "../utils";
 import { ParsedComplianceReductions } from "./ParsedComplianceReductions";
 import { ParsedZevUnitRecords } from "./ParsedZevUnitRecords";
 import {
@@ -65,8 +65,17 @@ export const ParsedModelYearReport = (props: {
         />
         <ParsedZevUnitRecords
           caption={`Balance at end of ${prevCdString}`}
-          records={props.myr.beginningBalance}
+          records={props.myr.prevEndOfCdBalance}
         />
+        {!prevBalancesEqual(
+          props.myr.prevEndOfCdBalance,
+          props.myr.prevAfterCdBalance,
+        ) && (
+          <ParsedZevUnitRecords
+            caption={`Balance immediately after ${prevCdString}`}
+            records={props.myr.prevAfterCdBalance}
+          />
+        )}
         <ParsedZevUnitRecords
           caption="Credit Activity"
           records={props.myr.credits}

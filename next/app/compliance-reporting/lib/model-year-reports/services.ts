@@ -1,5 +1,6 @@
 import Excel from "exceljs";
 import {
+  getAdjacentYear,
   getComplianceDate,
   getCompliancePeriod,
   getCurrentComplianceYear,
@@ -38,6 +39,7 @@ import {
   getComplianceRatioReductions,
   getTransformedAdjustments,
   parseAssesmentForData,
+  getEmptyBalance,
 } from "./utilsServer";
 import { TransactionClient } from "@/types/prisma";
 import { AdjustmentPayload, NvValues } from "./actions";
@@ -194,10 +196,12 @@ export const getSupplierClassAndVolumes = async (
   };
 };
 
-export const getPrevEndingBalance = async (
+export const getPrevBalance = async (
+  type: "endOfCd" | "afterCd",
   organizationId: number,
   complianceYear: ModelYear,
 ): Promise<ZevUnitRecord[]> => {
+  const prevComplianceYear = getAdjacentYear("prev", complianceYear);
   const dominatedComplianceYears = getDominatedComplianceYears(complianceYear);
   const prevEndingBalance = await prisma.zevUnitEndingBalance.findFirst({
     select: {
@@ -232,9 +236,12 @@ export const getPrevEndingBalance = async (
       orderBy: getZevUnitRecordsOrderByClause(),
     });
     const validatedTransactions = validatePrevBalanceTransactions(transactions);
-    return flattenZevUnitRecords(validatedTransactions);
+    const result = flattenZevUnitRecords(validatedTransactions);
+    if (result.length === 0) {
+      return getEmptyBalance(prevComplianceYear);
+    }
+    return result;
   }
-  const result: ZevUnitRecord[] = [];
   const prevCy = prevEndingBalance.complianceYear;
   const endingBalance = await prisma.zevUnitEndingBalance.findMany({
     where: {
@@ -245,13 +252,8 @@ export const getPrevEndingBalance = async (
       id: true,
       organizationId: true,
       complianceYear: true,
-      initialNumberOfUnits: true,
     },
     orderBy: getZevUnitRecordsOrderByClause(),
-  });
-  endingBalance.forEach((record) => {
-    const { finalNumberOfUnits, ...rest } = record;
-    result.push({ ...rest, numberOfUnits: finalNumberOfUnits });
   });
   const { openUpperBound: prevCyUb } = getCompliancePeriod(prevCy);
   const transactions = await prisma.zevUnitTransaction.findMany({
@@ -272,7 +274,25 @@ export const getPrevEndingBalance = async (
     orderBy: getZevUnitRecordsOrderByClause(),
   });
   const validatedTransactions = validatePrevBalanceTransactions(transactions);
+  if (type === "endOfCd" && validatedTransactions.length === 0) {
+    const result = endingBalance.map((record) => {
+      const { initialNumberOfUnits, finalNumberOfUnits, ...rest } = record;
+      return { ...rest, numberOfUnits: initialNumberOfUnits };
+    });
+    if (result.length === 0) {
+      return getEmptyBalance(prevComplianceYear);
+    }
+    return result;
+  }
+  const result: ZevUnitRecord[] = [];
+  for (const record of endingBalance) {
+    const { initialNumberOfUnits, finalNumberOfUnits, ...rest } = record;
+    result.push({ ...rest, numberOfUnits: finalNumberOfUnits });
+  }
   result.push(...flattenZevUnitRecords(validatedTransactions));
+  if (result.length === 0) {
+    return getEmptyBalance(prevComplianceYear);
+  }
   return result;
 };
 
@@ -374,7 +394,8 @@ export const getZevUnitData = async (
   adjustments: AdjustmentPayload[],
   includePendingSupplyCredits: boolean,
 ) => {
-  const prevEndingBalance = await getPrevEndingBalance(orgId, modelYear);
+  const prevEndOfCdBalance = await getPrevBalance("endOfCd", orgId, modelYear);
+  const prevAfterCdBalance = await getPrevBalance("afterCd", orgId, modelYear);
   const complianceReductions = getComplianceRatioReductions(
     nvValues,
     modelYear,
@@ -391,7 +412,7 @@ export const getZevUnitData = async (
   const transformedAdjustments = getTransformedAdjustments(adjustments);
   const [endingBalance, offsettedCredits] = calculateBalance(
     [
-      ...prevEndingBalance,
+      ...prevAfterCdBalance,
       ...currentTransactions,
       ...pendingSupplyCredits,
       ...complianceReductions,
@@ -400,12 +421,17 @@ export const getZevUnitData = async (
     zevClassOrdering,
     modelYear,
   );
+  let endingBalanceToUse = endingBalance;
+  if (endingBalanceToUse.length === 0) {
+    endingBalanceToUse = getEmptyBalance(modelYear);
+  }
   return {
-    prevEndingBalance,
+    prevEndOfCdBalance,
+    prevAfterCdBalance,
     complianceReductions,
     currentTransactions,
     pendingSupplyCredits,
-    endingBalance,
+    endingBalance: endingBalanceToUse,
     offsettedCredits,
   };
 };

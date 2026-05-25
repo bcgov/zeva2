@@ -8,7 +8,7 @@ export type SerializedZevUnitTransaction = Omit<
   "numberOfUnits" | "timestamp"
 > & { numberOfUnits: string; timestamp: string };
 
-export type SerializedZevUnitEndingBalanceRecord = Omit<
+export type SerializedZevUnitBalanceRecord = Omit<
   ZevUnitEndingBalanceModel,
   "initialNumberOfUnits" | "finalNumberOfUnits"
-> & { finalNumberOfUnits: string };
+> & { numberOfUnits: string };

@@ -1,6 +1,6 @@
 "use client";
 
-import { JSX } from "react";
+import { JSX, useTransition } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faTriangleExclamation,
@@ -10,21 +10,19 @@ import {
   faCircleInfo,
 } from "@fortawesome/free-solid-svg-icons";
 
-type ModalType = "confirmation" | "error" | "info" | "warning";
+export type ModalType = "confirmation" | "error" | "info" | "warning";
 
 export type ModalProps = {
   modalType: ModalType;
   cancelLabel?: string;
   confirmLabel?: string;
   handleCancel: () => void;
-  handleSubmit: () => void;
+  handleSubmit: () => void | Promise<void>;
   handleClose?: () => void;
   modalClass?: string;
   showModal: boolean;
   title?: string;
   content?: string | JSX.Element;
-  disablePrimaryButton: boolean;
-  disableSecondaryButton: boolean;
 };
 
 const modalTypesMap: Readonly<
@@ -69,9 +67,8 @@ export function Modal({
   showModal,
   title = "Confirm",
   content = "Are you sure you want to do this action?",
-  disablePrimaryButton,
-  disableSecondaryButton,
 }: ModalProps) {
+  const [isPending, startTransition] = useTransition();
   return (
     <>
       <div
@@ -94,7 +91,7 @@ export function Modal({
             <FontAwesomeIcon
               icon={faXmark}
               className="cursor-pointer"
-              onClick={handleClose || handleCancel}
+              onClick={isPending ? () => {} : handleClose || handleCancel}
             />
           </div>
           <h3 className="text-xl font-bold text-primaryText py-4">{title}</h3>
@@ -109,19 +106,23 @@ export function Modal({
               id="cancel"
               onClick={handleCancel}
               type="button"
-              disabled={disableSecondaryButton}
+              disabled={isPending}
             >
-              {disableSecondaryButton ? "..." : cancelLabel}
+              {isPending ? "..." : cancelLabel}
             </button>
             {modalType !== "info" && (
               <button
                 className={modalTypesMap[modalType].classes}
                 id="confirm"
                 type="button"
-                onClick={handleSubmit}
-                disabled={disablePrimaryButton}
+                onClick={() =>
+                  startTransition(async () => {
+                    await handleSubmit();
+                  })
+                }
+                disabled={isPending}
               >
-                {disablePrimaryButton ? "..." : confirmLabel}
+                {isPending ? "..." : confirmLabel}
               </button>
             )}
           </div>

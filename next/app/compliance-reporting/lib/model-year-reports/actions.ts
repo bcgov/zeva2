@@ -57,7 +57,6 @@ import { prisma } from "@/lib/prisma";
 import {
   getComplianceDate,
   getModelYearReportModelYear,
-  withinTwentyDayPeriod,
 } from "@/app/lib/utils/complianceYear";
 import { addJobToEmailQueue } from "@/app/lib/services/queue";
 import { Attachment, AttachmentDownload } from "@/app/lib/constants/attachment";
@@ -78,7 +77,8 @@ export type MyrCurrentTransactions = UnitsAsString<MyrZevUnitTransaction>[];
 export type MyrData = {
   supplierClass: SupplierClass;
   volumes: [ModelYear, VehicleClass, number][];
-  prevEndingBalance: MyrEndingBalance;
+  prevEndOfCdBalance: MyrEndingBalance;
+  prevAfterCdBalance: MyrEndingBalance;
   complianceReductions: MyrComplianceReductions;
   offsets: MyrOffsets;
   currentTransactions: MyrCurrentTransactions;
@@ -116,7 +116,8 @@ export const getMyrData = async (
       reportableNvValue,
     );
     const {
-      prevEndingBalance,
+      prevEndOfCdBalance,
+      prevAfterCdBalance,
       complianceReductions,
       offsettedCredits,
       currentTransactions,
@@ -134,8 +135,10 @@ export const getMyrData = async (
     return getDataActionResponse<MyrData>({
       supplierClass,
       volumes,
-      prevEndingBalance:
-        getSerializedMyrRecords<ZevUnitRecord>(prevEndingBalance),
+      prevEndOfCdBalance:
+        getSerializedMyrRecords<ZevUnitRecord>(prevEndOfCdBalance),
+      prevAfterCdBalance:
+        getSerializedMyrRecords<ZevUnitRecord>(prevAfterCdBalance),
       complianceReductions: getSerializedMyrRecordsExcludeKey<
         ComplianceReduction,
         "type"
@@ -481,7 +484,8 @@ export const getAssessmentData = async (
       reportableNvValue,
     );
     const {
-      prevEndingBalance,
+      prevEndOfCdBalance,
+      prevAfterCdBalance,
       complianceReductions,
       endingBalance,
       offsettedCredits,
@@ -498,14 +502,14 @@ export const getAssessmentData = async (
     const complianceInfo = getComplianceInfo(
       supplierClass,
       modelYear,
-      prevEndingBalance,
+      prevEndOfCdBalance,
       endingBalance,
     );
     return getDataActionResponse<AssessmentData>({
       supplierClass,
       complianceInfo,
       beginningBalance:
-        getSerializedMyrRecords<ZevUnitRecord>(prevEndingBalance),
+        getSerializedMyrRecords<ZevUnitRecord>(prevAfterCdBalance),
       complianceReductions: getSerializedMyrRecordsExcludeKey<
         ComplianceReduction,
         "type"
@@ -595,9 +599,6 @@ export const submitAssessment = async (
   });
   if (!myr) {
     return getErrorActionResponse("Invalid Action!");
-  }
-  if (withinTwentyDayPeriod(new Date())) {
-    return getErrorActionResponse("Please wait until after the 20-day period!");
   }
   await prisma.$transaction(async (tx) => {
     await tx.modelYearReport.update({
@@ -739,9 +740,6 @@ export const assessModelYearReport = async (
   });
   if (!myr || !myr.assessment) {
     return getErrorActionResponse("Assessable Model Year Report not found!");
-  }
-  if (withinTwentyDayPeriod(new Date())) {
-    return getErrorActionResponse("Please wait until after the 20-day period!");
   }
   const modelYear = myr.modelYear;
   const organizationId = myr.organizationId;

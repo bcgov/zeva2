@@ -1,5 +1,5 @@
 import { getUserInfo } from "@/auth";
-import { fetchBalance, getComplianceYears } from "../data";
+import { getComplianceYears, getNestedReportableBalanceAB } from "../data";
 import { BalanceTable } from "./BalanceTable";
 import { TransactionAccordion } from "./TransactionAccordion";
 
@@ -14,7 +14,7 @@ export const ListPage = async (props: { orgId?: string }) => {
   if (!orgIdToUse) {
     return null;
   }
-  const balance = await fetchBalance(orgIdToUse);
+  const balance = await getNestedReportableBalanceAB(orgIdToUse);
   if (balance) {
     const complianceYears = await getComplianceYears(orgIdToUse);
     return (

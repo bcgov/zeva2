@@ -8,7 +8,7 @@ import {
   Role,
 } from "@/prisma/generated/enums";
 import { useRouter } from "next/navigation";
-import { useCallback, useState, useTransition } from "react";
+import { JSX, useCallback, useState, useTransition } from "react";
 import {
   getErrorsTemplateDownloadUrl,
   getNotValidatedRecords,
@@ -20,26 +20,28 @@ import { Routes } from "@/app/lib/constants";
 import { Textarea } from "@/app/lib/components/inputs/Textarea";
 import { ErrorsTemplate } from "../constants";
 import { downloadBuffer } from "@/app/lib/utils/download";
+import { Modal, ModalType } from "@/app/lib/components/Modal";
 
 export const SupplierActions = (props: {
   creditApplicationId: number;
   status: CreditApplicationSupplierStatus;
   userRoles: Role[];
+  hasInvalidatedRecords: boolean;
 }) => {
   const [isPending, startTransition] = useTransition();
   const router = useRouter();
   const [comment, setComment] = useState<string>("");
   const [error, setError] = useState<string>("");
+  const [modal, setModal] = useState<JSX.Element | null>(null);
 
-  const handleDelete = useCallback(() => {
-    startTransition(async () => {
-      const response = await supplierDelete(props.creditApplicationId);
-      if (response.responseType === "error") {
-        setError(response.message);
-      } else {
-        router.push(Routes.CreditApplications);
-      }
-    });
+  const handleDelete = useCallback(async () => {
+    const response = await supplierDelete(props.creditApplicationId);
+    if (response.responseType === "error") {
+      setError(response.message);
+    } else {
+      router.push(Routes.CreditApplications);
+    }
+    setModal(null);
   }, [props.creditApplicationId]);
 
   const handleGoToEdit = useCallback(() => {
@@ -48,18 +50,17 @@ export const SupplierActions = (props: {
     );
   }, [props.creditApplicationId]);
 
-  const handleSubmit = useCallback(() => {
-    startTransition(async () => {
-      const response = await supplierSubmit(
-        props.creditApplicationId,
-        getNormalizedComment(comment),
-      );
-      if (response.responseType === "error") {
-        setError(response.message);
-      } else {
-        router.refresh();
-      }
-    });
+  const handleSubmit = useCallback(async () => {
+    const response = await supplierSubmit(
+      props.creditApplicationId,
+      getNormalizedComment(comment),
+    );
+    if (response.responseType === "error") {
+      setError(response.message);
+    } else {
+      router.refresh();
+    }
+    setModal(null);
   }, [props.creditApplicationId, comment]);
 
   const handleDownloadErrors = useCallback(() => {
@@ -102,51 +103,78 @@ export const SupplierActions = (props: {
     });
   }, [props.creditApplicationId]);
 
+  const showModal = useCallback(
+    (type: "delete" | "submit") => {
+      let modalType: ModalType | undefined;
+      let action: (() => Promise<void>) | undefined;
+      if (type === "delete") {
+        modalType = "error";
+        action = handleDelete;
+      } else if (type === "submit") {
+        modalType = "confirmation";
+        action = handleSubmit;
+      }
+      if (modalType && action) {
+        setModal(
+          <Modal
+            showModal={true}
+            modalType={modalType}
+            handleSubmit={action}
+            handleCancel={() => setModal(null)}
+          />,
+        );
+      }
+    },
+    [handleDelete, handleSubmit],
+  );
+
   if (props.status === CreditApplicationSupplierStatus.DRAFT) {
     return (
       <>
         {error && <p className="text-red-600">{error}</p>}
-        <Textarea value={comment} onChange={setComment} disabled={isPending} />
-        <Button variant="danger" onClick={handleDelete} disabled={isPending}>
-          {isPending ? "..." : "Delete"}
+        <Textarea value={comment} onChange={setComment} />
+        <Button variant="danger" onClick={() => showModal("delete")}>
+          Delete
         </Button>
-        <Button
-          variant="secondary"
-          onClick={handleGoToEdit}
-          disabled={isPending}
-        >
-          {isPending ? "..." : "Edit"}
+        <Button variant="secondary" onClick={handleGoToEdit}>
+          Edit
         </Button>
         {props.userRoles.includes(Role.SIGNING_AUTHORITY) && (
           <>
-            <Button
-              variant="primary"
-              onClick={handleSubmit}
-              disabled={isPending}
-            >
-              {isPending ? "..." : "Submit"}
+            <Button variant="primary" onClick={() => showModal("submit")}>
+              Submit
             </Button>
           </>
         )}
+        {modal}
       </>
     );
   }
   if (props.status === CreditApplicationSupplierStatus.REJECTED) {
     return (
-      <Button variant="danger" onClick={handleDelete} disabled={isPending}>
-        {isPending ? "..." : "Delete"}
-      </Button>
+      <>
+        <Button variant="danger" onClick={() => showModal("delete")}>
+          Delete
+        </Button>
+        {modal}
+      </>
     );
   }
-  if (props.status === CreditApplicationSupplierStatus.APPROVED) {
+  if (
+    props.status === CreditApplicationSupplierStatus.APPROVED &&
+    props.hasInvalidatedRecords
+  ) {
     return (
-      <Button
-        variant="primary"
-        onClick={handleDownloadErrors}
-        disabled={isPending}
-      >
-        {isPending ? "..." : "Download VIN Errors"}
-      </Button>
+      <>
+        <Button
+          variant="primary"
+          onClick={handleDownloadErrors}
+          disabled={isPending}
+        >
+          {isPending ? "..." : "Download VIN Errors"}
+        </Button>
+        {modal}
+      </>
     );
   }
   return null;

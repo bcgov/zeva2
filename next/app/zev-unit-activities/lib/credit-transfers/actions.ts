@@ -100,6 +100,7 @@ export const saveTransfer = async (
 
 export const submitTransfer = async (
   creditTransferId: number,
+  statement: string,
   comment?: string,
 ): Promise<ErrorOrSuccessActionResponse> => {
   const { userIsGov, userId, userOrgId } = await getUserInfo();
@@ -126,6 +127,7 @@ export const submitTransfer = async (
       },
       data: {
         status: CreditTransferStatus.SUBMITTED_TO_TRANSFER_TO,
+        transferFromStatement: statement,
       },
     });
     const historyId = await createTransferHistory(
@@ -213,12 +215,19 @@ export const rescindTransfer = async (
 export const transferToSupplierActionTransfer = async (
   transferId: number,
   newStatus: CreditTransferStatus,
+  statement?: string,
   comment?: string,
 ): Promise<ErrorOrSuccessActionResponse> => {
   const { userId, userOrgId } = await getUserInfo();
   if (
     newStatus !== CreditTransferStatus.APPROVED_BY_TRANSFER_TO &&
     newStatus !== CreditTransferStatus.REJECTED_BY_TRANSFER_TO
+  ) {
+    return getErrorActionResponse("Invalid Action!");
+  }
+  if (
+    newStatus === CreditTransferStatus.APPROVED_BY_TRANSFER_TO &&
+    !statement
   ) {
     return getErrorActionResponse("Invalid Action!");
   }
@@ -233,11 +242,22 @@ export const transferToSupplierActionTransfer = async (
     return getErrorActionResponse("Transfer not found!");
   }
   await prisma.$transaction(async (tx) => {
-    const historyId = await updateTransferStatusAndCreateHistory(
-      transferId,
-      userId,
-      newStatus,
-      comment,
+    await tx.creditTransfer.update({
+      where: {
+        id: transferId,
+      },
+      data: {
+        status: newStatus,
+        transferToStatement: statement,
+      },
+    });
+    const historyId = await createTransferHistory(
+      {
+        creditTransferId: transferId,
+        userId,
+        userAction: newStatus,
+        comment,
+      },
       tx,
     );
     await addJobToEmailQueue({
@@ -343,13 +363,19 @@ export const directorIssueTransfer = async (
     where: {
       id: transferId,
       status: CreditTransferStatus.RECOMMEND_APPROVAL_GOV,
+      transferFromStatement: {
+        not: null,
+      },
+      transferToStatement: {
+        not: null,
+      },
     },
     include: {
       creditTransferContent: true,
     },
   });
   if (!transfer) {
-    return getErrorActionResponse("Transfer not found!");
+    return getErrorActionResponse("Invalid Action!");
   }
   const isTransferCovered = await transferIsCovered(transfer);
   if (!isTransferCovered) {
