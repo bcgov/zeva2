@@ -17,14 +17,6 @@ import {
 import { getCompliancePeriod } from "@/app/lib/utils/complianceYear";
 import { TransactionClient } from "@/types/prisma";
 
-export const getTransfer = async (transferId: number) => {
-  return await prisma.creditTransfer.findUnique({
-    where: {
-      id: transferId,
-    },
-  });
-};
-
 export type CreditTransferHistoryCreateData = Omit<
   CreditTransferHistoryUncheckedCreateInput,
   "id" | "timestamp"
