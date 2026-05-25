@@ -57,7 +57,6 @@ import { prisma } from "@/lib/prisma";
 import {
   getComplianceDate,
   getModelYearReportModelYear,
-  withinTwentyDayPeriod,
 } from "@/app/lib/utils/complianceYear";
 import { addJobToEmailQueue } from "@/app/lib/services/queue";
 import { Attachment, AttachmentDownload } from "@/app/lib/constants/attachment";
@@ -601,9 +600,6 @@ export const submitAssessment = async (
   if (!myr) {
     return getErrorActionResponse("Invalid Action!");
   }
-  if (withinTwentyDayPeriod(new Date())) {
-    return getErrorActionResponse("Please wait until after the 20-day period!");
-  }
   await prisma.$transaction(async (tx) => {
     await tx.modelYearReport.update({
       where: {
@@ -744,9 +740,6 @@ export const assessModelYearReport = async (
   });
   if (!myr || !myr.assessment) {
     return getErrorActionResponse("Assessable Model Year Report not found!");
-  }
-  if (withinTwentyDayPeriod(new Date())) {
-    return getErrorActionResponse("Please wait until after the 20-day period!");
   }
   const modelYear = myr.modelYear;
   const organizationId = myr.organizationId;

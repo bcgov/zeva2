@@ -54,9 +54,14 @@ export const ParsedAssessment = (props: { assessment: ParsedAssmnt }) => {
             <th className="border border-gray-300">Vehicle Class</th>
             <th className="border border-gray-300">ZEV Class</th>
             <th className="border border-gray-300">Model Year</th>
-            <th className="border border-gray-300">Initial Number of Units</th>
+            <th className="border border-gray-300">
+              Number of Units at the end of the associated Compliance Date
+            </th>
             <th className="border border-gray-300">Divisor</th>
-            <th className="border border-gray-300">Final Number of Units</th>
+            <th className="border border-gray-300">
+              Number of Units immediately after the end of the associated
+              Compliance Date
+            </th>
           </tr>
         </thead>
         <tbody>

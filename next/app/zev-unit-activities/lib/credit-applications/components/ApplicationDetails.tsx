@@ -1,12 +1,12 @@
 import { getIsoYmdString } from "@/app/lib/utils/date";
-import { CreditApplicationWithOrgAndAttachmentNames } from "../data";
+import { CreditApplicationWithOrgAndAttachmentNamesAndInvalidatedRecordsCount } from "../data";
 import {
   getCreditApplicationStatusEnumsToStringsMap,
   getModelYearEnumsToStringsMap,
 } from "@/app/lib/utils/enumMaps";
 
 export const ApplicationDetails = async (props: {
-  application: CreditApplicationWithOrgAndAttachmentNames;
+  application: CreditApplicationWithOrgAndAttachmentNamesAndInvalidatedRecordsCount;
   userIsGov: boolean;
 }) => {
   let status = props.application.status;

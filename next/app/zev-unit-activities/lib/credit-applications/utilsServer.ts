@@ -27,8 +27,6 @@ import {
   getAdjacentYear,
   getComplianceDate,
   getCurrentComplianceYear,
-  getDominatedComplianceYears,
-  withinTwentyDayPeriod,
 } from "@/app/lib/utils/complianceYear";
 
 export const getWhereClause = (
@@ -431,58 +429,4 @@ export const serializeCredits = (
   return credits.map((credit) => {
     return { ...credit, numberOfUnits: credit.numberOfUnits.toString() };
   });
-};
-
-export const getComplianceYearData = (submissionTimestamp: Date) => {
-  const modelYearsMap = getModelYearEnumsToStringsMap();
-  const currentCy = getCurrentComplianceYear();
-  const complianceYears = Object.values(ModelYear)
-    .filter((cy) => {
-      return cy >= ModelYear.MY_2019 && cy <= currentCy;
-    })
-    .map((cy) => {
-      const cyString = modelYearsMap[cy];
-      if (!cyString) {
-        throw new Error();
-      }
-      return cyString;
-    });
-  let defaultCy;
-  if (withinTwentyDayPeriod(submissionTimestamp)) {
-    defaultCy = getAdjacentYear("prev", currentCy);
-  } else {
-    defaultCy = currentCy;
-  }
-  const defaultCyString = modelYearsMap[defaultCy];
-  if (!defaultCyString) {
-    throw new Error();
-  }
-  return {
-    complianceYears,
-    defaultComplianceYear: defaultCyString,
-  };
-};
-
-export const twentyDayPeriodCheck = (
-  records: { modelYear: ModelYear; timestamp: Date }[],
-) => {
-  if (withinTwentyDayPeriod(new Date())) {
-    const currentCy = getCurrentComplianceYear();
-    const permittedCy = getAdjacentYear("prev", currentCy);
-    const complianceDate = getComplianceDate(permittedCy);
-    for (const record of records) {
-      const modelYear = record.modelYear;
-      const timestamp = record.timestamp;
-      if (modelYear !== permittedCy) {
-        throw new Error(
-          `During the first 20 days of a compliance year, only VINs associated with the previous compliance year may be submitted!`,
-        );
-      }
-      if (timestamp > complianceDate) {
-        throw new Error(
-          `During the first 20 days of a compliance year, only VINs with a date on or before the previous compliance date may be submitted!`,
-        );
-      }
-    }
-  }
 };

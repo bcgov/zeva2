@@ -51,7 +51,7 @@ import { ForecastReportSubmission } from "./ForecastReportSubmission";
 import { NvValuesSubmission } from "./NvValuesSubmission";
 import { ZevClassOrder } from "./ZevClassOrder";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faTrash, faFileArrowUp } from "@fortawesome/free-solid-svg-icons";
+import { faFileArrowUp } from "@fortawesome/free-solid-svg-icons";
 
 type NewMyrProps = {
   type: "newMyr";

@@ -9,20 +9,29 @@ import {
   useState,
   useTransition,
 } from "react";
-import { Button, ContentCard, Table, Dropdown } from "@/app/lib/components";
-import { MapOfValidatedAndReasons, updateValidatedRecords } from "../actions";
+import { Button, Table, Dropdown } from "@/app/lib/components";
+import {
+  invalidateRecords,
+  MapOfValidatedAndReasons,
+  updateValidatedRecords,
+} from "../actions";
 import { useRouter } from "next/navigation";
 import { getModelYearEnumsToStringsMap } from "@/app/lib/utils/enumMaps";
 import { CreditApplicationRecordSparseSerialized } from "../constants";
+import { ModelYear } from "@/prisma/generated/enums";
+import { isModelYear } from "@/app/lib/utils/typeGuards";
 
 export const RecordsTable = (props: {
   id: number;
   records: CreditApplicationRecordSparseSerialized[];
   totalNumbeOfRecords: number;
+  modelYears: ModelYear[];
   readOnly: boolean;
 }) => {
   const [mapOfData, setMapOfData] = useState<MapOfValidatedAndReasons>({});
   const [isPending, startTransition] = useTransition();
+  const [modelYearSelection, setModelYearSelection] = useState<ModelYear>();
+  const [error, setError] = useState<string>("");
   const router = useRouter();
 
   useEffect(() => {
@@ -38,6 +47,7 @@ export const RecordsTable = (props: {
       "Evidence provided",
       "Validated by other means as being registered in BC",
       "Error in ICBC data",
+      "Invalid Model Year",
       "Other, explained in comments",
     ];
     return (
@@ -65,19 +75,49 @@ export const RecordsTable = (props: {
   }, []);
 
   const handleSave = useCallback(() => {
+    setError("");
     startTransition(async () => {
       const response = await updateValidatedRecords(props.id, mapOfData);
       if (response.responseType === "error") {
-        console.error(response.message);
+        setError(response.message);
       } else {
         router.refresh();
       }
     });
-  }, [props.id, mapOfData, router]);
+  }, [props.id, mapOfData]);
 
   const modelYearsMap = useMemo(() => {
     return getModelYearEnumsToStringsMap();
   }, []);
+
+  const modelYearOptions = useMemo(() => {
+    return props.modelYears.map((my) => {
+      return {
+        value: my,
+        label: modelYearsMap[my] ?? "",
+      };
+    });
+  }, [props.modelYears, modelYearsMap]);
+
+  const handleSelectMy = useCallback((value: string) => {
+    if (isModelYear(value)) {
+      setModelYearSelection(value);
+    }
+  }, []);
+
+  const handleInvalidateByMy = useCallback(() => {
+    setError("");
+    if (modelYearSelection) {
+      startTransition(async () => {
+        const response = await invalidateRecords(props.id, modelYearSelection);
+        if (response.responseType === "error") {
+          setError(response.message);
+        } else {
+          router.refresh();
+        }
+      });
+    }
+  }, [props.id, modelYearSelection]);
 
   const getHighlighted = useCallback(
     (value: string | JSX.Element, warnings: string[]): string | JSX.Element => {
@@ -250,7 +290,7 @@ export const RecordsTable = (props: {
   ]);
 
   return (
-    <div>
+    <div className="flex flex-col gap-4">
       <Table<CreditApplicationRecordSparseSerialized>
         columns={columns}
         data={props.records}
@@ -261,11 +301,31 @@ export const RecordsTable = (props: {
         noTruncateCols={["reason"]}
       />
       {!props.readOnly && (
-        <ContentCard title="Actions">
-          <Button variant="primary" onClick={handleSave} disabled={isPending}>
-            {isPending ? "..." : "Save"}
-          </Button>
-        </ContentCard>
+        <div className="p-4 flex flex-row justify-between bg-gray-100 items-center">
+          <div className="flex flex-row gap-4">
+            <Dropdown
+              options={modelYearOptions}
+              value={modelYearSelection}
+              onChange={handleSelectMy}
+              disabled={isPending}
+            />
+            <Button
+              variant="secondary"
+              onClick={handleInvalidateByMy}
+              disabled={isPending}
+            >
+              {isPending
+                ? "..."
+                : "Invalidate validated records associated with the selected Model Year"}
+            </Button>
+          </div>
+          <div className="flex flex-row gap-4">
+            {error && <span className="text-red-600">{error}</span>}
+            <Button variant="primary" onClick={handleSave} disabled={isPending}>
+              {isPending ? "..." : "Save"}
+            </Button>
+          </div>
+        </div>
       )}
     </div>
   );

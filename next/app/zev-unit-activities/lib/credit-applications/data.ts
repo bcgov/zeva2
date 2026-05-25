@@ -24,17 +24,20 @@ import {
   CreditApplicationSparse,
 } from "./constants";
 
-export type CreditApplicationWithOrgAndAttachmentNames =
+export type CreditApplicationWithOrgAndAttachmentNamesAndInvalidatedRecordsCount =
   CreditApplicationModel & {
     organization: OrganizationModel;
     CreditApplicationAttachment: {
       fileName: string;
     }[];
+    _count: {
+      CreditApplicationRecord: number;
+    };
   };
 
 export const getCreditApplication = async (
   creditApplicationId: number,
-): Promise<CreditApplicationWithOrgAndAttachmentNames | null> => {
+): Promise<CreditApplicationWithOrgAndAttachmentNamesAndInvalidatedRecordsCount | null> => {
   const { userIsGov, userOrgId, userRoles } = await getUserInfo();
   let whereClause: CreditApplicationWhereUniqueInput = {
     id: creditApplicationId,
@@ -73,6 +76,15 @@ export const getCreditApplication = async (
           fileName: true,
         },
       },
+      _count: {
+        select: {
+          CreditApplicationRecord: {
+            where: {
+              validated: false,
+            },
+          },
+        },
+      },
     },
   });
 };
@@ -109,6 +121,25 @@ export const getValidatedRecords = async (
       where,
     }),
   ]);
+};
+
+export const getApplicationModelYears = async (creditApplicationId: number) => {
+  const { userIsGov } = await getUserInfo();
+  if (!userIsGov) {
+    throw new Error("Unauthorized!");
+  }
+  const ca = await prisma.creditApplication.findUnique({
+    where: {
+      id: creditApplicationId,
+    },
+    select: {
+      modelYears: true,
+    },
+  });
+  if (ca) {
+    return ca.modelYears;
+  }
+  return [];
 };
 
 export type CreditApplicationCredit = Omit<ZevUnitRecord, "type">;

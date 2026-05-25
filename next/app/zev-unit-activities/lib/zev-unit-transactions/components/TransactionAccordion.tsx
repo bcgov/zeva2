@@ -1,7 +1,11 @@
 "use client";
 
 import { useCallback, useMemo, useState } from "react";
-import { getEndingBalance, getTransactionsByComplianceYear } from "../actions";
+import {
+  getBeginningBalance,
+  getEndingBalance,
+  getTransactionsByComplianceYear,
+} from "../actions";
 import { useRouter } from "next/navigation";
 import {
   getModelYearEnumsToStringsMap,
@@ -13,7 +17,7 @@ import {
 import { ModelYear, ReferenceType } from "@/prisma/generated/enums";
 import { Routes } from "@/app/lib/constants";
 import {
-  SerializedZevUnitEndingBalanceRecord,
+  SerializedZevUnitBalanceRecord,
   SerializedZevUnitTransaction,
 } from "../constants";
 
@@ -31,7 +35,11 @@ export const TransactionAccordion = ({
     Partial<
       Record<
         ModelYear,
-        [SerializedZevUnitTransaction[], SerializedZevUnitEndingBalanceRecord[]]
+        [
+          SerializedZevUnitBalanceRecord[],
+          SerializedZevUnitTransaction[],
+          SerializedZevUnitBalanceRecord[],
+        ]
       >
     >
   >({});
@@ -46,17 +54,24 @@ export const TransactionAccordion = ({
         return [...prev, year];
       });
       if (!txCache[year]) {
-        const [txResponse, endingBalanceResponse] = await Promise.all([
-          getTransactionsByComplianceYear(orgId, year, "asc"),
-          getEndingBalance(orgId, year),
-        ]);
+        const [beginningBalanceResponse, txResponse, endingBalanceResponse] =
+          await Promise.all([
+            getBeginningBalance(orgId, year),
+            getTransactionsByComplianceYear(orgId, year, "asc"),
+            getEndingBalance(orgId, year),
+          ]);
         if (
+          beginningBalanceResponse.responseType === "data" &&
           txResponse.responseType === "data" &&
           endingBalanceResponse.responseType === "data"
         ) {
           setTxCache((prev) => ({
             ...prev,
-            [year]: [txResponse.data, endingBalanceResponse.data],
+            [year]: [
+              beginningBalanceResponse.data,
+              txResponse.data,
+              endingBalanceResponse.data,
+            ],
           }));
         }
       }
@@ -141,8 +156,6 @@ export const TransactionAccordion = ({
             <div style={{ padding: 8 }}>
               {!txCache[y] ? (
                 "Loading…"
-              ) : txCache[y][0].length === 0 ? (
-                "No records for this compliance year."
               ) : (
                 <table
                   style={{
@@ -179,7 +192,38 @@ export const TransactionAccordion = ({
                     </tr>
                   </thead>
                   <tbody>
-                    {txCache[y][0].map((t) => {
+                    {txCache[y][0].map((bb, index, array) => {
+                      return (
+                        <tr
+                          key={bb.id}
+                          className={
+                            index === array.length - 1
+                              ? "border-b border-gray-300"
+                              : ""
+                          }
+                        >
+                          <td style={{ padding: "4px" }}>--</td>
+                          <td style={{ padding: "4px" }}>
+                            {`Beginning Balance ${transactionTypesMap[bb.type]}`}
+                          </td>
+                          <td style={{ padding: "4px" }}>--</td>
+                          <td style={{ padding: "4px" }}>--</td>
+                          <td style={{ padding: "4px" }}>--</td>
+                          <td style={{ padding: "4px" }}>
+                            {vehicleClassesMap[bb.vehicleClass]}
+                          </td>
+                          <td style={{ padding: "4px" }}>
+                            {zevClassesMap[bb.zevClass]}
+                          </td>
+                          <td style={{ padding: "4px" }}>
+                            {modelYearsMap[bb.modelYear]}
+                          </td>
+                          <td style={{ padding: "4px" }}>{bb.numberOfUnits}</td>
+                          <td style={{ padding: "4px" }}>--</td>
+                        </tr>
+                      );
+                    })}
+                    {txCache[y][1].map((t) => {
                       const className = t.referenceId ? "cursor-pointer" : "";
                       const onClick = () => {
                         if (t.referenceId) {
@@ -216,10 +260,10 @@ export const TransactionAccordion = ({
                         </tr>
                       );
                     })}
-                    {txCache[y][1].map((eb, index) => {
+                    {txCache[y][2].map((eb, index) => {
                       return (
                         <tr
-                          key={`eb=${eb.id}`}
+                          key={eb.id}
                           className={
                             index === 0 ? "border-t border-gray-300" : ""
                           }
@@ -240,9 +284,7 @@ export const TransactionAccordion = ({
                           <td style={{ padding: "4px" }}>
                             {modelYearsMap[eb.modelYear]}
                           </td>
-                          <td style={{ padding: "4px" }}>
-                            {eb.finalNumberOfUnits}
-                          </td>
+                          <td style={{ padding: "4px" }}>{eb.numberOfUnits}</td>
                           <td style={{ padding: "4px" }}>--</td>
                         </tr>
                       );

@@ -1,17 +1,25 @@
 import { getModelYearEnumsToStringsMap } from "@/app/lib/utils/enumMaps";
-import { ZevUnitRecordsObj } from "@/lib/utils/zevUnit";
 import { ModelYear } from "@/prisma/generated/enums";
+import Decimal from "decimal.js";
 
-export const BalanceTable = ({ balance }: { balance: ZevUnitRecordsObj }) => {
-  const subtree = balance?.CREDIT?.REPORTABLE;
-  if (!subtree) return <p>No credit data.</p>;
+export const BalanceTable = ({
+  balance,
+}: {
+  balance: {
+    A?: Partial<Record<ModelYear, Decimal>>;
+    B?: Partial<Record<ModelYear, Decimal>>;
+  };
+}) => {
+  const aRecords = balance.A;
+  const bRecords = balance.B;
 
-  const aRecords = subtree.A ?? {};
-  const bRecords = subtree.B ?? {};
+  if (!aRecords && !bRecords) {
+    return <p>No credit data.</p>;
+  }
 
   const years = new Set<string>([
-    ...Object.keys(aRecords),
-    ...Object.keys(bRecords),
+    ...Object.keys(aRecords ?? {}),
+    ...Object.keys(bRecords ?? {}),
   ]);
 
   const sortedYears = Array.from(years).sort().reverse();
@@ -31,10 +39,10 @@ export const BalanceTable = ({ balance }: { balance: ZevUnitRecordsObj }) => {
           <tr key={y}>
             <td style={{ padding: "4px" }}>{modelYearsMap[y as ModelYear]}</td>
             <td style={{ textAlign: "right", padding: "4px" }}>
-              {aRecords[y as ModelYear]?.toString() ?? "—"}
+              {aRecords?.[y as ModelYear]?.toString() ?? "—"}
             </td>
             <td style={{ textAlign: "right", padding: "4px" }}>
-              {bRecords[y as ModelYear]?.toString() ?? "—"}
+              {bRecords?.[y as ModelYear]?.toString() ?? "—"}
             </td>
           </tr>
         ))}

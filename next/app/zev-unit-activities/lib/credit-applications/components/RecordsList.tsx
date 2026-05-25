@@ -1,4 +1,4 @@
-import { getValidatedRecords } from "../data";
+import { getApplicationModelYears, getValidatedRecords } from "../data";
 import { getSerializedRecords } from "../utilsServer";
 import { RecordsTable } from "./RecordsTable";
 
@@ -10,13 +10,16 @@ export const RecordsList = async (props: {
   sorts: Record<string, string>;
   readOnly: boolean;
 }) => {
-  const [records, totalNumberOfRecords] = await getValidatedRecords(
-    props.id,
-    props.page,
-    props.pageSize,
-    props.filters,
-    props.sorts,
-  );
+  const [modelYears, [records, totalNumberOfRecords]] = await Promise.all([
+    getApplicationModelYears(props.id),
+    getValidatedRecords(
+      props.id,
+      props.page,
+      props.pageSize,
+      props.filters,
+      props.sorts,
+    ),
+  ]);
   const serializedRecords = getSerializedRecords(records);
 
   return (
@@ -24,6 +27,7 @@ export const RecordsList = async (props: {
       id={props.id}
       records={serializedRecords}
       totalNumbeOfRecords={totalNumberOfRecords}
+      modelYears={modelYears}
       readOnly={props.readOnly}
     />
   );
