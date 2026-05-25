@@ -4,10 +4,11 @@ import { Button } from "@/app/lib/components";
 import { Routes } from "@/app/lib/constants";
 import { ModelYearReportStatus } from "@/prisma/generated/enums";
 import { useRouter } from "next/navigation";
-import { useCallback, useState, useTransition } from "react";
+import { JSX, useCallback, useState } from "react";
 import { returnModelYearReport } from "../actions";
 import { getNormalizedComment } from "@/app/lib/utils/comment";
 import { Textarea } from "@/app/lib/components/inputs/Textarea";
+import { Modal, ModalType } from "@/app/lib/components/Modal";
 
 export const AnalystMyrActions = (props: {
   myrId: number;
@@ -15,34 +16,55 @@ export const AnalystMyrActions = (props: {
   assessmentExists: boolean;
 }) => {
   const router = useRouter();
-  const [isPending, startTransition] = useTransition();
   const [comment, setComment] = useState<string>("");
   const [error, setError] = useState<string>("");
+  const [modal, setModal] = useState<JSX.Element | null>(null);
 
-  const handleReturnToSupplier = useCallback(() => {
+  const handleReturnToSupplier = useCallback(async () => {
     setError("");
-    startTransition(async () => {
-      try {
-        const response = await returnModelYearReport(
-          props.myrId,
-          ModelYearReportStatus.RETURNED_TO_SUPPLIER,
-          getNormalizedComment(comment),
-        );
-        if (response.responseType === "error") {
-          throw new Error(response.message);
-        }
-        router.push(Routes.ModelYearReports);
-      } catch (e) {
-        if (e instanceof Error) {
-          setError(e.message);
-        }
+    try {
+      const response = await returnModelYearReport(
+        props.myrId,
+        ModelYearReportStatus.RETURNED_TO_SUPPLIER,
+        getNormalizedComment(comment),
+      );
+      if (response.responseType === "error") {
+        throw new Error(response.message);
       }
-    });
+      router.push(Routes.ModelYearReports);
+    } catch (e) {
+      if (e instanceof Error) {
+        setError(e.message);
+      }
+    }
+    setModal(null);
   }, [props.myrId, comment]);
 
   const handleGoToCreateAssessment = useCallback(() => {
     router.push(`${Routes.ModelYearReports}/${props.myrId}/assessment/new`);
   }, [props.myrId]);
+
+  const showModal = useCallback(
+    (type: "return") => {
+      let modalType: ModalType | undefined;
+      let action: (() => Promise<void>) | undefined;
+      if (type === "return") {
+        modalType = "warning";
+        action = handleReturnToSupplier;
+      }
+      if (modalType && action) {
+        setModal(
+          <Modal
+            showModal={true}
+            modalType={modalType}
+            handleSubmit={action}
+            handleCancel={() => setModal(null)}
+          />,
+        );
+      }
+    },
+    [handleReturnToSupplier],
+  );
 
   if (
     props.status === ModelYearReportStatus.RETURNED_TO_ANALYST ||
@@ -58,32 +80,24 @@ export const AnalystMyrActions = (props: {
             <Textarea
               value={comment}
               onChange={setComment}
-              disabled={isPending}
               placeholder="Comment"
             />
           </div>
         </div>
         <div className="flex flex-row p-2 bg-gray-50 justify-between">
-          <Button
-            onClick={handleReturnToSupplier}
-            variant="secondary"
-            disabled={isPending}
-          >
-            {isPending ? "..." : "Return to Supplier"}
+          <Button onClick={() => showModal("return")} variant="secondary">
+            Return to Supplier
           </Button>
           <div className="flex flex-row gap-1 items-center">
             {error && <span className="text-red-600">{error}</span>}
             {!props.assessmentExists && (
-              <Button
-                onClick={handleGoToCreateAssessment}
-                variant="primary"
-                disabled={isPending}
-              >
-                {isPending ? "..." : "Conduct Assessment"}
+              <Button onClick={handleGoToCreateAssessment} variant="primary">
+                Conduct Assessment
               </Button>
             )}
           </div>
         </div>
+        {modal}
       </div>
     );
   }

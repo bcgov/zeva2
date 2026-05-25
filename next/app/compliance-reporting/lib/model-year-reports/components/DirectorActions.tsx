@@ -3,61 +3,85 @@
 import { Button } from "@/app/lib/components";
 import { ModelYearReportStatus } from "@/prisma/generated/enums";
 import { useRouter } from "next/navigation";
-import { useCallback, useState, useTransition } from "react";
+import { JSX, useCallback, useState } from "react";
 import { assessModelYearReport, returnModelYearReport } from "../actions";
 import { getNormalizedComment } from "@/app/lib/utils/comment";
 import { Textarea } from "@/app/lib/components/inputs/Textarea";
 import { Routes } from "@/app/lib/constants";
+import { Modal, ModalType } from "@/app/lib/components/Modal";
 
 export const DirectorActions = (props: {
   myrId: number;
   status: ModelYearReportStatus;
 }) => {
   const router = useRouter();
-  const [isPending, startTransition] = useTransition();
   const [comment, setComment] = useState<string>("");
   const [error, setError] = useState<string>("");
+  const [modal, setModal] = useState<JSX.Element | null>(null);
 
-  const handleReturnToAnalyst = useCallback(() => {
+  const handleReturnToAnalyst = useCallback(async () => {
     setError("");
-    startTransition(async () => {
-      try {
-        const response = await returnModelYearReport(
-          props.myrId,
-          ModelYearReportStatus.RETURNED_TO_ANALYST,
-          getNormalizedComment(comment),
-        );
-        if (response.responseType === "error") {
-          throw new Error(response.message);
-        }
-        router.push(Routes.ModelYearReports);
-      } catch (e) {
-        if (e instanceof Error) {
-          setError(e.message);
-        }
+    try {
+      const response = await returnModelYearReport(
+        props.myrId,
+        ModelYearReportStatus.RETURNED_TO_ANALYST,
+        getNormalizedComment(comment),
+      );
+      if (response.responseType === "error") {
+        throw new Error(response.message);
       }
-    });
+      router.push(Routes.ModelYearReports);
+    } catch (e) {
+      if (e instanceof Error) {
+        setError(e.message);
+      }
+    }
+    setModal(null);
   }, [props.myrId, comment]);
 
-  const handleIssueAssessment = useCallback(() => {
+  const handleIssueAssessment = useCallback(async () => {
     setError("");
-    startTransition(async () => {
-      try {
-        const response = await assessModelYearReport(
-          props.myrId,
-          getNormalizedComment(comment),
-        );
-        if (response.responseType === "error") {
-          throw new Error(response.message);
-        }
-        router.refresh();
-      } catch (e) {
-        if (e instanceof Error) {
-          setError(e.message);
-        }
+    try {
+      const response = await assessModelYearReport(
+        props.myrId,
+        getNormalizedComment(comment),
+      );
+      if (response.responseType === "error") {
+        throw new Error(response.message);
       }
-    });
+      router.refresh();
+    } catch (e) {
+      if (e instanceof Error) {
+        setError(e.message);
+      }
+    }
+    setModal(null);
   }, [props.myrId, comment]);
+
+  const showModal = useCallback(
+    (type: "return" | "issue") => {
+      let modalType: ModalType | undefined;
+      let action: (() => Promise<void>) | undefined;
+      if (type === "return") {
+        modalType = "warning";
+        action = handleReturnToAnalyst;
+      } else if (type === "issue") {
+        modalType = "confirmation";
+        action = handleIssueAssessment;
+      }
+      if (modalType && action) {
+        setModal(
+          <Modal
+            showModal={true}
+            modalType={modalType}
+            handleSubmit={action}
+            handleCancel={() => setModal(null)}
+          />,
+        );
+      }
+    },
+    [handleReturnToAnalyst, handleIssueAssessment],
+  );
 
   if (props.status !== ModelYearReportStatus.SUBMITTED_TO_DIRECTOR) {
     return null;
@@ -72,30 +96,22 @@ export const DirectorActions = (props: {
           <Textarea
             value={comment}
             onChange={setComment}
-            disabled={isPending}
             placeholder="Comment"
           />
         </div>
       </div>
       <div className="flex flex-row p-2 bg-gray-50 justify-between">
-        <Button
-          onClick={handleReturnToAnalyst}
-          variant="secondary"
-          disabled={isPending}
-        >
-          {isPending ? "..." : "Return To Analyst"}
+        <Button onClick={() => showModal("return")} variant="secondary">
+          Return to Analyst
         </Button>
         <div className="flex flex-row gap-1 items-center">
           {error && <span className="text-red-600">{error}</span>}
-          <Button
-            onClick={handleIssueAssessment}
-            variant="primary"
-            disabled={isPending}
-          >
-            {isPending ? "..." : "Issue Assessment"}
+          <Button onClick={() => showModal("issue")} variant="primary">
+            Issue Assessment
           </Button>
         </div>
       </div>
+      {modal}
     </div>
   );
 };
