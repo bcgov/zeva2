@@ -118,6 +118,11 @@ export const OrganizationDetails = (props: {
             Edit
           </Button>
         )}
+        {props.canEdit && (
+          <Button variant="danger" onClick={() => {}}>
+            Delete
+          </Button>
+        )}
       </div>
 
       <div>
