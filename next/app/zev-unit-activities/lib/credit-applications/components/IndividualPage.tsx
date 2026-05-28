@@ -223,15 +223,6 @@ export const IndividualPage = async (props: { id: string }) => {
           </div>
         </div>
 
-        <div className="border border-gray-300 bg-white rounded">
-          <div className="p-4 bg-gray-100 border-b border-gray-300">
-            <h2 className="text-base font-bold text-gray-900">Comment (optional)</h2>
-          </div>
-          <div className="p-6">
-            <p className="text-sm text-gray-700">N/A</p>
-          </div>
-        </div>
-
         <SupplierActions
           creditApplicationId={id}
           status={applicationSupplierStatus}

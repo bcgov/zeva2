@@ -19,6 +19,7 @@ import { Routes } from "@/app/lib/constants";
 import { ErrorsTemplate } from "../constants";
 import { downloadBuffer } from "@/app/lib/utils/download";
 import { Modal, ModalType } from "@/app/lib/components/Modal";
+import { getNormalizedComment } from "@/app/lib/utils/comment";
 
 export const SupplierActions = (props: {
   creditApplicationId: number;
@@ -29,6 +30,7 @@ export const SupplierActions = (props: {
   const [isPending, startTransition] = useTransition();
   const router = useRouter();
   const [error, setError] = useState<string>("");
+  const [comment, setComment] = useState<string>("");
   const [modal, setModal] = useState<JSX.Element | null>(null);
 
   const handleBack = useCallback(() => {
@@ -54,7 +56,7 @@ export const SupplierActions = (props: {
   const handleSubmit = useCallback(async () => {
     const response = await supplierSubmit(
       props.creditApplicationId,
-      "",
+      getNormalizedComment(comment),
     );
     if (response.responseType === "error") {
       setError(response.message);
@@ -62,7 +64,7 @@ export const SupplierActions = (props: {
       router.refresh();
     }
     setModal(null);
-  }, [props.creditApplicationId, router]);
+  }, [props.creditApplicationId, comment, router]);
 
   const handleDownloadErrors = useCallback(() => {
     startTransition(async () => {
@@ -129,30 +131,52 @@ export const SupplierActions = (props: {
     [handleDelete, handleSubmit],
   );
 
+  const canAddComment = props.userRoles.includes(Role.SIGNING_AUTHORITY);
+
+  const commentCard = canAddComment ? (
+    <div className="border border-gray-300 bg-white rounded mb-4">
+      <div className="p-4 bg-gray-100 border-b border-gray-300">
+        <h2 className="text-base font-bold text-gray-900">Comment (optional)</h2>
+      </div>
+      <div className="p-6">
+        <textarea
+          value={comment}
+          onChange={(e) => setComment(e.target.value)}
+          placeholder="Enter a description..."
+          rows={5}
+          className="w-full max-w-[560px] rounded border border-gray-300 p-3 text-sm text-gray-900 placeholder:text-gray-400 focus:border-blue-600 focus:outline-none"
+        />
+      </div>
+    </div>
+  ) : null;
+
   if (props.status === CreditApplicationSupplierStatus.DRAFT) {
     return (
-      <div className="flex items-center gap-3 w-full pb-2">
+      <>
+        {commentCard}
         {error && <p className="text-red-600 mb-2">{error}</p>}
-        <Button variant="secondary" onClick={handleBack}>
-          ← Back
-        </Button>
-        <Button variant="danger" onClick={() => showModal("delete")}>
-          Delete
-        </Button>
-        <div className="flex-1" />
-        {props.userRoles.includes(Role.SIGNING_AUTHORITY) && (
-          <Button variant="primary" onClick={() => showModal("submit")}>
-            Submit
+        <div className="flex items-center gap-3 w-full pb-6">
+          <Button variant="secondary" onClick={handleBack}>
+            ← Back
           </Button>
-        )}
-        {modal}
-      </div>
+          <Button variant="danger" onClick={() => showModal("delete")}>
+            Delete
+          </Button>
+          <div className="flex-1" />
+          {canAddComment && (
+            <Button variant="primary" onClick={() => showModal("submit")}>
+              Submit
+            </Button>
+          )}
+          {modal}
+        </div>
+      </>
     );
   }
 
   if (props.status === CreditApplicationSupplierStatus.SUBMITTED) {
     return (
-      <div className="flex items-center gap-3 w-full pb-2">
+      <div className="flex items-center gap-3 w-full pb-6">
         {error && <p className="text-red-600 mb-2">{error}</p>}
         <Button variant="secondary" onClick={handleBack}>
           ← Back
@@ -163,25 +187,28 @@ export const SupplierActions = (props: {
 
   if (props.status === CreditApplicationSupplierStatus.REJECTED) {
     return (
-      <div className="flex items-center gap-3 w-full pb-2">
+      <>
+        {commentCard}
         {error && <p className="text-red-600 mb-2">{error}</p>}
-        <Button variant="secondary" onClick={handleBack}>
-          ← Back
-        </Button>
-        <Button variant="danger" onClick={() => showModal("delete")}>
-          Delete
-        </Button>
-        <div className="flex-1" />
-        <Button variant="secondary" onClick={handleGoToEdit}>
-          Edit
-        </Button>
-        {props.userRoles.includes(Role.SIGNING_AUTHORITY) && (
-          <Button variant="primary" onClick={() => showModal("submit")}>
-            Resubmit
+        <div className="flex items-center gap-3 w-full pb-6">
+          <Button variant="secondary" onClick={handleBack}>
+            ← Back
           </Button>
-        )}
-        {modal}
-      </div>
+          <Button variant="danger" onClick={() => showModal("delete")}>
+            Delete
+          </Button>
+          <div className="flex-1" />
+          <Button variant="secondary" onClick={handleGoToEdit}>
+            Edit
+          </Button>
+          {canAddComment && (
+            <Button variant="primary" onClick={() => showModal("submit")}>
+              Resubmit
+            </Button>
+          )}
+          {modal}
+        </div>
+      </>
     );
   }
 
@@ -190,7 +217,7 @@ export const SupplierActions = (props: {
     props.hasInvalidatedRecords
   ) {
     return (
-      <div className="flex items-center gap-3 w-full pb-2">
+      <div className="flex items-center gap-3 w-full pb-6">
         {error && <p className="text-red-600 mb-2">{error}</p>}
         <Button variant="secondary" onClick={handleBack}>
           ← Back
@@ -208,7 +235,7 @@ export const SupplierActions = (props: {
   }
 
   return (
-    <div className="flex items-center gap-3 w-full pb-2">
+    <div className="flex items-center gap-3 w-full pb-6">
       <Button variant="secondary" onClick={handleBack}>
         ← Back
       </Button>
