@@ -2,6 +2,7 @@ import { Suspense } from "react";
 import { LoadingSkeleton } from "@/app/lib/components/skeletons";
 import { IndividualPage as AgreementsPage } from "../../lib/credit-agreements/components/IndividualPage";
 import { IndividualPage as ApplicationsPage } from "../../lib/credit-applications/components/IndividualPage";
+import { IndividualNavbar as ApplicationsNavbar } from "../../lib/credit-applications/components/IndividualNavbar";
 import { IndividualPage as TransfersPage } from "../../lib/credit-transfers/components/IndividualPage";
 import { IndividualPage as PenaltyCreditsPage } from "../../lib/penalty-credits/components/IndividualPage";
 
@@ -29,6 +30,15 @@ const Page = async (props: {
   }
 
   if (individualPage) {
+    if (slug === "credit-applications") {
+      return (
+        <>
+          <ApplicationsNavbar creditApplicationId={id} />
+          <Suspense fallback={<LoadingSkeleton />}>{individualPage}</Suspense>
+        </>
+      );
+    }
+
     return <Suspense fallback={<LoadingSkeleton />}>{individualPage}</Suspense>;
   }
   return null;

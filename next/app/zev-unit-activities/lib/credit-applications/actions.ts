@@ -387,6 +387,7 @@ export const supplierSubmit = async (
       throw new Error(`Reserved VINs: ${reservedVins.join(", ")}`);
     }
     const vehicleCounts = await getVehicleCounts(creditApplicationId, "all");
+    let historyId = 0;
     await prisma.$transaction(async (tx) => {
       await tx.creditApplication.update({
         where: {
@@ -403,7 +404,7 @@ export const supplierSubmit = async (
           return [...acc, { vin: cv }];
         }, []),
       });
-      const historyId = await createHistory(
+      historyId = await createHistory(
         userId,
         creditApplicationId,
         CreditApplicationStatus.SUBMITTED,
@@ -422,10 +423,12 @@ export const supplierSubmit = async (
           },
         });
       }
-      await addJobToEmailQueue({
-        historyId,
-        notificationType: Notification.CREDIT_APPLICATION,
-      });
+    });
+    await addJobToEmailQueue({
+      historyId,
+      notificationType: Notification.CREDIT_APPLICATION,
+    }).catch((e) => {
+      console.error("Failed to queue credit application email notification:", e);
     });
   } catch (e) {
     if (e instanceof Error) {

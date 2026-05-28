@@ -12,12 +12,11 @@ export const SecondaryNavbar = (props: {
   const [activeLabel, setActiveLabel] = useState<string>();
 
   useEffect(() => {
-    for (const item of props.items) {
-      if (pathname.startsWith(item.route)) {
-        setActiveLabel(item.label);
-        break;
-      }
-    }
+    const activeItem = props.items
+      .filter((item) => pathname.startsWith(item.route))
+      .sort((a, b) => b.route.length - a.route.length)[0];
+
+    setActiveLabel(activeItem?.label);
   }, [props.items, pathname]);
 
   return (
