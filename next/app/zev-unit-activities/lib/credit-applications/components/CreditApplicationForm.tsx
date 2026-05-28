@@ -257,11 +257,11 @@ export const CreditApplicationForm = (props: {
         </Button>
       </div>
 
-      <div className="px-6 pt-4 pb-6">
+      <div className="px-6 pt-4 pb-2">
         {getStatusBanner()}
       </div>
 
-      <div className="px-6 pb-6 space-y-6">
+      <div className="px-6 pb-6 pt-4 space-y-6">
         {error && <p className="text-red-600">{error}</p>}
         
         <div className="border border-gray-300 bg-gray-50 rounded max-w-sm">
@@ -285,7 +285,7 @@ export const CreditApplicationForm = (props: {
         </div>
 
         <div className="border border-gray-300 bg-white rounded">
-          <div className="p-6 bg-gray-100 border-b border-gray-300">
+          <div className="p-4 bg-gray-100 border-b border-gray-300">
             <h2 className="text-base font-bold text-gray-900">Credit Application Details</h2>
           </div>
           
@@ -376,7 +376,7 @@ export const CreditApplicationForm = (props: {
         </div>
 
         <div className="border border-gray-300 bg-white rounded">
-          <div className="p-6 bg-gray-100 border-b border-gray-300">
+          <div className="p-4 bg-gray-100 border-b border-gray-300">
             <h2 className="text-base font-bold text-gray-900">Supporting Documents (optional)</h2>
           </div>
           <div className="p-6">
