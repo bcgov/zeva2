@@ -13,7 +13,7 @@ export const PrintDownloadButton: FC<PrintDownloadButtonProps> = ({
   icon,
 }) => {
   const handleClick = () => {
-    window.print();
+    globalThis.print();
   };
 
   return (
