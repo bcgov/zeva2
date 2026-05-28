@@ -5,6 +5,7 @@ import { AttachmentDownload } from "@/app/lib/constants/attachment";
 import { getOrgInfo } from "../services";
 import { getCreditApplication } from "../data";
 import { getPresignedGetObjectUrl } from "@/app/lib/services/s3";
+import { CreditApplicationSupplierStatus } from "@/prisma/generated/enums";
 
 export const ApplicationCreateOrEdit = async (props: {
   creditApplicationId?: number;
@@ -17,6 +18,7 @@ export const ApplicationCreateOrEdit = async (props: {
   let serviceAddress;
   let recordsAddress;
   let makes;
+  let supplierStatus: CreditApplicationSupplierStatus | undefined;
   let applicationFile: AttachmentDownload | null = null;
   let attachments: AttachmentDownload[] = [];
   if (props.creditApplicationId) {
@@ -35,6 +37,7 @@ export const ApplicationCreateOrEdit = async (props: {
     recordsAddress = application.recordsAddress;
     serviceAddress = application.serviceAddress;
     makes = application.makes;
+    supplierStatus = application.supplierStatus;
     if (attachmentsResp.responseType === "data") {
       attachments = attachmentsResp.data;
     }
@@ -46,32 +49,29 @@ export const ApplicationCreateOrEdit = async (props: {
     makes = orgInfo.makes;
   }
   return (
-    <div className="max-w-xl mx-auto p-4">
-      <h1 className="text-xl font-bold mb-4">
-        {props.creditApplicationId ? "Edit" : "Create"} a Credit Application
-      </h1>
-      <div className="bg-white rounded-lg shadow-level-1 p-6">
-        {props.creditApplicationId && applicationFile ? (
-          <CreditApplicationForm
-            legalName={legalName}
-            recordsAddress={recordsAddress}
-            serviceAddress={serviceAddress}
-            makes={makes}
-            creditApplication={{
-              id: props.creditApplicationId,
-              applicationFile,
-              attachments: attachments,
-            }}
-          />
-        ) : (
-          <CreditApplicationForm
-            legalName={legalName}
-            recordsAddress={recordsAddress}
-            serviceAddress={serviceAddress}
-            makes={makes}
-          />
-        )}
-      </div>
+    <div className="bg-white">
+      {props.creditApplicationId && applicationFile ? (
+        <CreditApplicationForm
+          legalName={legalName}
+          recordsAddress={recordsAddress}
+          serviceAddress={serviceAddress}
+          makes={makes}
+          supplierStatus={supplierStatus}
+          creditApplication={{
+            id: props.creditApplicationId,
+            applicationFile,
+            attachments: attachments,
+          }}
+        />
+      ) : (
+        <CreditApplicationForm
+          legalName={legalName}
+          recordsAddress={recordsAddress}
+          serviceAddress={serviceAddress}
+          makes={makes}
+          supplierStatus={supplierStatus}
+        />
+      )}
     </div>
   );
 };

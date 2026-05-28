@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import { Routes } from "../constants";
 
 export const LowerNavbarWrapper = (props: {
-  type: "zevModel";
+  type: "zevModel" | "zevUnitActivities";
   navbar: JSX.Element;
 }) => {
   const pathname = usePathname();
@@ -16,6 +16,17 @@ export const LowerNavbarWrapper = (props: {
         pathname === Routes.ValidatedZevModels ||
         pathname === Routes.SubmittedZevModels ||
         pathname === Routes.InactiveZevModels
+      ) {
+        return props.navbar;
+      }
+      break;
+    case "zevUnitActivities":
+      if (
+        pathname === Routes.CreditApplications ||
+        pathname === Routes.CreditTransfers ||
+        pathname === Routes.CreditAgreements ||
+        pathname === Routes.PenaltyCredits ||
+        pathname === Routes.ZevUnitTransactions
       ) {
         return props.navbar;
       }

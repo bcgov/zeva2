@@ -22,7 +22,7 @@ export const PrimaryNavbar = (props: { userIsGov: boolean }) => {
         route: Routes.ModelYearReports,
       },
       {
-        label: "ZEV Unit Activities",
+        label: "Credit Transactions",
         route: Routes.CreditApplications,
       },
       {

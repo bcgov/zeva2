@@ -8,7 +8,7 @@ export enum Routes {
   LegacySupplementary = "/compliance-reporting/legacy-supplementaries",
   ModelYearReports = "/compliance-reporting/model-year-reports",
 
-  // zev unit activities
+  // credit transactions
   CreditAgreements = "/zev-unit-activities/credit-agreements",
   CreditApplications = "/zev-unit-activities/credit-applications",
   CreditTransfers = "/zev-unit-activities/credit-transfers",
