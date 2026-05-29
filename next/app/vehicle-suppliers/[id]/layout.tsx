@@ -1,5 +1,7 @@
+import { Breadcrumbs } from "@/app/lib/components";
 import { SecondaryNavbar } from "@/app/lib/components/SecondaryNavbar";
 import { Routes } from "@/app/lib/constants";
+import { getOrganizationDetails } from "../lib/services";
 import { getUserInfo } from "@/auth";
 
 const Layout = async (props: {
@@ -11,6 +13,13 @@ const Layout = async (props: {
     return null;
   }
   const { id } = await props.params;
+  const orgId = Number.parseInt(id, 10);
+  const organization = await getOrganizationDetails(orgId);
+
+  if (!organization) {
+    return null;
+  }
+
   const items = [
     {
       label: "Supplier Info",
@@ -23,6 +32,12 @@ const Layout = async (props: {
   ];
   return (
     <>
+      <Breadcrumbs
+        items={[
+          { label: "Vehicle Suppliers", href: Routes.VehicleSuppliers },
+          { label: organization.name || `Supplier ${id}` },
+        ]}
+      />
       <SecondaryNavbar items={items} />
       {props.children}
     </>
