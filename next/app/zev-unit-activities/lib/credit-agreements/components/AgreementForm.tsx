@@ -21,10 +21,7 @@ import {
   VehicleClass,
   ZevClass,
 } from "@/prisma/generated/enums";
-import {
-  getAgreementTypeEnumsToStringsMap,
-  getStringsToAgreementTypeEnumsMap,
-} from "@/app/lib/utils/enumMaps";
+import { getAgreementTypeEnumsToStringsMap } from "@/app/lib/utils/enumMaps";
 import { Dropzone } from "@/app/lib/components/Dropzone";
 import { FileWithPath } from "react-dropzone";
 import { Button } from "@/app/lib/components";
