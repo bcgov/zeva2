@@ -1,20 +1,22 @@
 "use client";
 
-import { useMemo } from "react";
+import { useCallback, useMemo } from "react";
 import { ColumnDef, createColumnHelper } from "@tanstack/react-table";
-import { Table, Button } from "@/app/lib/components";
+import { Button, ClientSideTable } from "@/app/lib/components";
 import { OrganizationSparse } from "../data";
 import { Routes } from "@/app/lib/constants";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 export const OrganizationTable = (props: {
   organizations: OrganizationSparse[];
-  totalNumberOfOrganizations: number;
-  navigationAction: (id: number) => Promise<void>;
   canCreateNewOrg: boolean;
 }) => {
+  const router = useRouter();
+  const navigationAction = useCallback(async (id: number) => {
+    router.push(`${Routes.VehicleSuppliers}/${id}/supplier-info`);
+  }, []);
   const columnHelper = createColumnHelper<OrganizationSparse>();
-
   const columns = useMemo(() => {
     const result: ColumnDef<OrganizationSparse, any>[] = [
       columnHelper.accessor((row) => row.name, {
@@ -51,13 +53,14 @@ export const OrganizationTable = (props: {
   }, [columnHelper]);
 
   return (
-    <Table<OrganizationSparse>
+    <ClientSideTable<OrganizationSparse>
       columns={columns}
       data={props.organizations}
-      totalNumberOfRecords={props.totalNumberOfOrganizations}
-      navigationAction={props.navigationAction}
+      navigationAction={navigationAction}
+      enableFiltering={true}
+      enableSorting={true}
       headerContent={
-        props.canCreateNewOrg ? (
+        props.canCreateNewOrg && (
           <Link href={`${Routes.VehicleSuppliers}/new`}>
             <Button
               variant="primary"
@@ -81,7 +84,7 @@ export const OrganizationTable = (props: {
               New Supplier
             </Button>
           </Link>
-        ) : undefined
+        )
       }
     />
   );

@@ -1,16 +1,7 @@
 import { Decimal } from "decimal.js";
 import { ZevClass } from "@/prisma/generated/enums";
-import {
-  getMatchingTerms,
-  getStringsToAgreementStatusEnumsMap,
-  getStringsToAgreementTypeEnumsMap,
-} from "@/app/lib/utils/enumMaps";
 import { AgreementWithOrgName } from "./data";
 import { ZevUnitRecord } from "@/lib/utils/zevUnit";
-import {
-  AgreementWhereInput,
-  AgreementOrderByWithRelationInput,
-} from "@/prisma/generated/models";
 import { AgreementContentPayload } from "./constants";
 
 export const getCreditsSum = (content: AgreementContentPayload[]) => {
@@ -29,68 +20,6 @@ export const getCreditsSum = (content: AgreementContentPayload[]) => {
     aCredits,
     bCredits,
   };
-};
-
-export const getWhereClause = (
-  filters: Record<string, string>,
-): Omit<AgreementWhereInput, "NOT"> => {
-  const result: Omit<AgreementWhereInput, "NOT"> = {};
-  const statusMap = getStringsToAgreementStatusEnumsMap();
-  const typeMap = getStringsToAgreementTypeEnumsMap();
-  for (const [key, rawValue] of Object.entries(filters)) {
-    const value = rawValue.trim();
-    if (key === "id") {
-      result[key] = Number.parseInt(value, 10);
-    } else if (key === "organization") {
-      result[key] = {
-        is: { name: { contains: value, mode: "insensitive" } },
-      };
-    } else if (key === "status") {
-      result[key] = {
-        in: getMatchingTerms(statusMap, value),
-      };
-    } else if (key === "agreementType") {
-      result[key] = {
-        in: getMatchingTerms(typeMap, value),
-      };
-    } else if (key === "date" || key === "aCredits" || key === "bCredits") {
-      result[key] = value;
-    }
-  }
-  return result;
-};
-
-export const getOrderByClause = (
-  sorts: Record<string, string>,
-  defaultSortById: boolean,
-): AgreementOrderByWithRelationInput[] => {
-  const result: AgreementOrderByWithRelationInput[] = [];
-  for (const [key, value] of Object.entries(sorts)) {
-    const orderBy: AgreementOrderByWithRelationInput = {};
-    if (value === "asc" || value === "desc") {
-      if (
-        key === "id" ||
-        key === "status" ||
-        key === "agreementType" ||
-        key === "date" ||
-        key === "aCredits" ||
-        key === "bCredits"
-      ) {
-        orderBy[key] = value;
-      } else if (key === "organization") {
-        orderBy[key] = {
-          name: value,
-        };
-      }
-    }
-    if (Object.keys(orderBy).length > 0) {
-      result.push(orderBy);
-    }
-  }
-  if (defaultSortById && result.length === 0) {
-    result.push({ id: "desc" });
-  }
-  return result;
 };
 
 export type AgreementWithOrgNameSerialized = Omit<

@@ -8,9 +8,7 @@ const Layout = async (props: { children: React.ReactNode }) => {
     { label: "Credit Applications", route: Routes.CreditApplications },
     { label: "Credit Transfers", route: Routes.CreditTransfers },
     { label: "Credit Agreements", route: Routes.CreditAgreements },
-    ...(userIsGov
-      ? [{ label: "Penalty Credits", route: Routes.PenaltyCredits }]
-      : []),
+    { label: "Penalty Credits", route: Routes.PenaltyCredits },
     ...(!userIsGov
       ? [{ label: "ZEV Unit Transactions", route: Routes.ZevUnitTransactions }]
       : []),

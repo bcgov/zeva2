@@ -28,7 +28,6 @@ export const ListPage = async (props: { orgId?: string }) => {
         )}
         <TransactionAccordion
           orgId={orgIdToUse}
-          userIsGov={userIsGov}
           complianceYears={complianceYears}
         />
       </main>

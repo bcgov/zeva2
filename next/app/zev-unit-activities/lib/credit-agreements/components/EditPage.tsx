@@ -30,7 +30,6 @@ export const EditPage = async (props: { id: string }) => {
     attachments.push(...attachmentsResp.data);
   }
   const orgsMap = await getOrgsMap(null, true);
-
   return (
     <div className="p-6">
       <h2 className="text-xl font-semibold text-primaryBlue pb-4">

@@ -778,6 +778,7 @@ export const assessModelYearReport = async (
         organizationId,
         modelYear,
         assessmentData.supplierClass,
+        true,
         tx,
       );
       await tx.zevUnitTransaction.createMany({

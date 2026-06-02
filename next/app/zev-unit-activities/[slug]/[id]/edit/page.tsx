@@ -3,6 +3,7 @@ import { LoadingSkeleton } from "@/app/lib/components/skeletons";
 import { EditPage as AgreementsPage } from "@/app/zev-unit-activities/lib/credit-agreements/components/EditPage";
 import { EditPage as ApplicationsPage } from "@/app/zev-unit-activities/lib/credit-applications/components/EditPage";
 import { EditPage as TransfersPage } from "@/app/zev-unit-activities/lib/credit-transfers/components/EditPage";
+import { EditPage as PenaltyCreditsPage } from "@/app/zev-unit-activities/lib/penalty-credits/components/EditPage";
 
 const Page = async (props: {
   params: Promise<{ slug: string; id: string }>;
@@ -21,6 +22,9 @@ const Page = async (props: {
       break;
     case "credit-transfers":
       editPage = <TransfersPage id={id} />;
+      break;
+    case "penalty-credits":
+      editPage = <PenaltyCreditsPage id={id} />;
       break;
   }
 

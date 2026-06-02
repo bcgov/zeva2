@@ -1,20 +1,25 @@
 "use client";
 
 import { ColumnDef, createColumnHelper } from "@tanstack/react-table";
-import { Table } from "@/app/lib/components";
-import { ReactNode, useMemo } from "react";
+import { Button, ClientSideTable } from "@/app/lib/components";
+import { useCallback, useMemo } from "react";
 import { PenaltyCreditSparse } from "../data";
 import {
   getModelYearEnumsToStringsMap,
   getPenaltyCreditStatusEnumsToStringsMap,
 } from "@/app/lib/utils/enumMaps";
+import Link from "next/link";
+import { Routes } from "@/app/lib/constants";
+import { useRouter } from "next/navigation";
 
 export const PenaltyCreditsTable = (props: {
   credits: PenaltyCreditSparse[];
-  totalNumberOfCredits: number;
-  navigationAction: (id: number) => Promise<never>;
-  headerContent?: ReactNode;
+  canCreatePenaltyCredits: boolean;
 }) => {
+  const router = useRouter();
+  const navigationAction = useCallback(async (id: number) => {
+    router.push(`${Routes.PenaltyCredits}/${id}`);
+  }, []);
   const columnHelper = createColumnHelper<PenaltyCreditSparse>();
   const columns = useMemo(() => {
     const modelYearsMap = getModelYearEnumsToStringsMap();
@@ -48,12 +53,19 @@ export const PenaltyCreditsTable = (props: {
     return result;
   }, [columnHelper, props.credits]);
   return (
-    <Table<PenaltyCreditSparse>
+    <ClientSideTable<PenaltyCreditSparse>
       columns={columns}
       data={props.credits}
-      totalNumberOfRecords={props.totalNumberOfCredits}
-      navigationAction={props.navigationAction}
-      headerContent={props.headerContent}
+      navigationAction={navigationAction}
+      enableFiltering={true}
+      enableSorting={true}
+      headerContent={
+        props.canCreatePenaltyCredits && (
+          <Link href={`${Routes.PenaltyCredits}/new`}>
+            <Button variant="primary">Create New Penalty Credit</Button>
+          </Link>
+        )
+      }
     />
   );
 };

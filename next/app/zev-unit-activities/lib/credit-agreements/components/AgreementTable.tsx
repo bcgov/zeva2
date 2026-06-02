@@ -1,21 +1,26 @@
 "use client";
 
-import { useMemo, ReactNode } from "react";
+import { useCallback, useMemo } from "react";
 import { ColumnDef, createColumnHelper } from "@tanstack/react-table";
-import { Table } from "@/app/lib/components";
+import { Button, ClientSideTable } from "@/app/lib/components";
 import { AgreementWithOrgNameSerialized } from "../utilsServer";
 import {
   getAgreementStatusEnumsToStringsMap,
   getAgreementTypeEnumsToStringsMap,
 } from "@/app/lib/utils/enumMaps";
+import Link from "next/link";
+import { Routes } from "@/app/lib/constants";
+import { useRouter } from "next/navigation";
 
 export const AgreementTable = (props: {
   agreements: AgreementWithOrgNameSerialized[];
-  totalNumberOfAgreements: number;
-  navigationAction: (id: number) => Promise<void>;
   userIsGov: boolean;
-  headerContent?: ReactNode;
+  canCreateAgreement: boolean;
 }) => {
+  const router = useRouter();
+  const navigationAction = useCallback(async (id: number) => {
+    router.push(`${Routes.CreditAgreements}/${id}`);
+  }, []);
   const columnHelper = createColumnHelper<AgreementWithOrgNameSerialized>();
   const statusMap = useMemo(() => {
     return getAgreementStatusEnumsToStringsMap();
@@ -78,12 +83,19 @@ export const AgreementTable = (props: {
   }, [columnHelper]);
 
   return (
-    <Table<AgreementWithOrgNameSerialized>
+    <ClientSideTable<AgreementWithOrgNameSerialized>
       columns={columns}
       data={props.agreements}
-      totalNumberOfRecords={props.totalNumberOfAgreements}
-      navigationAction={props.navigationAction}
-      headerContent={props.headerContent}
+      enableFiltering={true}
+      enableSorting={true}
+      navigationAction={navigationAction}
+      headerContent={
+        props.canCreateAgreement && (
+          <Link href={`${Routes.CreditAgreements}/new`}>
+            <Button variant="primary">Create a New Agreement</Button>
+          </Link>
+        )
+      }
     />
   );
 };
