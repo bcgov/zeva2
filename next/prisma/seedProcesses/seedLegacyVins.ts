@@ -14,11 +14,16 @@ export const seedLegacyVins = async (tx: TransactionClient) => {
       vin: true,
     },
   });
+  const seenVins: Set<string> = new Set();
   const vinsToReserve: { vin: string }[] = [];
   for (const record of issuedVinRecords) {
     const vin = record.vin;
     if (vin) {
+      if (seenVins.has(vin)) {
+        continue;
+      }
       vinsToReserve.push({ vin });
+      seenVins.add(vin);
     }
   }
   await tx.reservedVin.createMany({
