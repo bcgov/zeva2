@@ -1,5 +1,6 @@
 "use client";
-import { FormEvent, useCallback, useState } from "react";
+
+import { useCallback, useState, useTransition } from "react";
 import { Button } from "@/app/lib/components";
 import { SelectionCard, TextInput } from "@/app/lib/components/inputs";
 import {
@@ -11,6 +12,8 @@ import AddressEditForm from "./AddressEditForm";
 import { OrganizationAddressSparse } from "../data";
 import { cleanupAddressData } from "../utils";
 import { cleanupStringData } from "@/lib/utils/dataCleanup";
+import { useRouter } from "next/navigation";
+import { Routes } from "@/app/lib/constants";
 
 const mainFieldClass = "grid grid-cols-[220px_1fr]";
 const addressFrameClass = "w-1/2 border border-borderGrey p-2";
@@ -27,6 +30,8 @@ const OrganizationEditForm = (props: {
   recordsAddress?: OrganizationAddressSparse;
   handleCancel: () => void;
 }) => {
+  const router = useRouter();
+  const [isPending, startTransition] = useTransition();
   const [organizationName, setOrganizationName] = useState(
     props.organizationName ?? "",
   );
@@ -55,9 +60,9 @@ const OrganizationEditForm = (props: {
   );
   const [recordsAddress] = recordsAddressState;
 
-  const handleSubmit = useCallback(
-    async (e: FormEvent<HTMLFormElement>) => {
-      e.preventDefault();
+  const handleSubmit = useCallback(() => {
+    setErrorMsg("");
+    startTransition(async () => {
       const orgName = cleanupStringData(organizationName);
       const shortOrgName = cleanupStringData(shortName);
       if (!orgName || !shortOrgName) {
@@ -75,21 +80,26 @@ const OrganizationEditForm = (props: {
         recordsAddress: cleanupAddressData(recordsAddress),
       };
       if (props.orgId) {
-        await saveOrganization(props.orgId, data);
+        const orgUpdated = await saveOrganization(props.orgId, data);
+        console.log(orgUpdated);
+        if (orgUpdated) {
+          window.location.reload();
+        }
       } else {
-        await createOrganization(data);
+        const newOrg = await createOrganization(data);
+        if (newOrg) {
+          router.push(`${Routes.VehicleSuppliers}/${newOrg.id}/supplier-info`);
+        }
       }
-      window.location.reload(); // Reload to reflect changes if not redirected
-    },
-    [
-      props.orgId,
-      organizationName,
-      shortName,
-      isActive,
-      serviceAddress,
-      recordsAddress,
-    ],
-  );
+    });
+  }, [
+    props.orgId,
+    organizationName,
+    shortName,
+    isActive,
+    serviceAddress,
+    recordsAddress,
+  ]);
 
   return (
     <>
@@ -97,20 +107,20 @@ const OrganizationEditForm = (props: {
         {props.formHeading}
       </h2>
 
-      <form className="space-y-4" onSubmit={handleSubmit}>
+      <div className="space-y-4">
         {errorMsg && <p className="text-red-600">{errorMsg}</p>}
         <TextInput
           label="Legal Organization Name"
           value={organizationName}
           onChange={setOrganizationName}
-          required
+          disabled={isPending}
         />
 
         <TextInput
           label="Common Name"
           value={shortName}
           onChange={setShortName}
-          required
+          disabled={isPending}
         />
         <div className={mainFieldClass + " items-center p-1"}>
           <span className="font-medium text-primaryText">Status</span>
@@ -125,6 +135,7 @@ const OrganizationEditForm = (props: {
               titleColor="text-success"
               hoverBorderColor="hover:border-primaryBlue"
               className="flex-1 max-w-[200px]"
+              disabled={isPending}
             />
             <SelectionCard
               variant="radio"
@@ -136,6 +147,7 @@ const OrganizationEditForm = (props: {
               titleColor="text-danger"
               hoverBorderColor="hover:border-primaryBlue"
               className="flex-1 max-w-[200px]"
+              disabled={isPending}
             />
           </div>
         </div>
@@ -152,18 +164,19 @@ const OrganizationEditForm = (props: {
         </div>
 
         <div className="flex flex-row gap-12 my-2">
-          <Button variant="primary" type="submit">
+          <Button variant="primary" onClick={handleSubmit} disabled={isPending}>
             {props.submitButtonText}
           </Button>
           <Button
             variant="secondary"
             type="button"
             onClick={props.handleCancel}
+            disabled={isPending}
           >
             Cancel
           </Button>
         </div>
-      </form>
+      </div>
     </>
   );
 };

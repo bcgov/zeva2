@@ -904,10 +904,11 @@ export const directorApprove = async (
       complianceYear: true,
     },
   });
+  const currentCy = getCurrentComplianceYear();
   if (
     !creditApplication ||
     !creditApplication.complianceYear ||
-    creditApplication.complianceYear > getCurrentComplianceYear()
+    creditApplication.complianceYear > currentCy
   ) {
     return getErrorActionResponse("Invalid Action!");
   }
@@ -928,7 +929,6 @@ export const directorApprove = async (
   const creditRecords =
     await getApplicationFlattenedCreditRecords(creditApplicationId);
   let transactionTimestamp;
-  const currentCy = getCurrentComplianceYear();
   if (currentCy === complianceYear) {
     transactionTimestamp = new Date();
   } else {

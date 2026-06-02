@@ -1,31 +1,17 @@
 import { getUserInfo } from "@/auth";
 import { prisma } from "@/lib/prisma";
-import { ModelYear, PenaltyCreditStatus } from "@/prisma/generated/enums";
+import { ModelYear, PenaltyCreditStatus, Role } from "@/prisma/generated/enums";
 import {
   PenaltyCreditModel,
   PenaltyCreditHistoryModel,
+  PenaltyCreditWhereInput,
+  PenaltyCreditHistoryWhereInput,
+  PenaltyCreditWhereUniqueInput,
 } from "@/prisma/generated/models";
-import { getOrderByClause, getWhereClause } from "./utils";
 
 export type OrgNamesAndIds = {
   id: number;
   name: string;
-};
-
-export const getOrgNamesAndIds = async (): Promise<OrgNamesAndIds[]> => {
-  const { userIsGov } = await getUserInfo();
-  if (!userIsGov) {
-    throw new Error("Unauthorized!");
-  }
-  return await prisma.organization.findMany({
-    where: {
-      isGovernment: false,
-    },
-    select: {
-      id: true,
-      name: true,
-    },
-  });
 };
 
 export type PenaltyCreditWithOrgName = PenaltyCreditModel & {
@@ -35,14 +21,23 @@ export type PenaltyCreditWithOrgName = PenaltyCreditModel & {
 export const getPenaltyCredit = async (
   penaltyCreditId: number,
 ): Promise<PenaltyCreditWithOrgName | null> => {
-  const { userIsGov } = await getUserInfo();
-  if (!userIsGov) {
-    throw new Error("Unauthorized!");
+  const { userIsGov, userOrgId, userRoles } = await getUserInfo();
+  const where: PenaltyCreditWhereUniqueInput = {
+    id: penaltyCreditId,
+  };
+  if (userIsGov && userRoles.includes(Role.DIRECTOR)) {
+    where.status = {
+      in: [
+        PenaltyCreditStatus.APPROVED,
+        PenaltyCreditStatus.SUBMITTED_TO_DIRECTOR,
+      ],
+    };
+  } else if (!userIsGov) {
+    where.organizationId = userOrgId;
+    where.status = PenaltyCreditStatus.APPROVED;
   }
   return await prisma.penaltyCredit.findUnique({
-    where: {
-      id: penaltyCreditId,
-    },
+    where,
     include: {
       organization: {
         select: {
@@ -54,25 +49,48 @@ export const getPenaltyCredit = async (
 };
 
 export type PenaltyCreditHistoryWithUser = PenaltyCreditHistoryModel & {
-  user: { firstName: string; lastName: string };
+  user: {
+    firstName: string;
+    lastName: string;
+    organization: { isGovernment: boolean };
+  };
 };
 
 export const getPenaltyCreditHistories = async (
   penaltyCreditId: number,
 ): Promise<PenaltyCreditHistoryWithUser[]> => {
-  const { userIsGov } = await getUserInfo();
-  if (!userIsGov) {
-    throw new Error("Unauthorized!");
+  const { userIsGov, userOrgId, userRoles } = await getUserInfo();
+  const where: PenaltyCreditHistoryWhereInput = {
+    penaltyCreditId,
+  };
+  if (userIsGov && userRoles.includes(Role.DIRECTOR)) {
+    where.penaltyCredit = {
+      status: {
+        in: [
+          PenaltyCreditStatus.APPROVED,
+          PenaltyCreditStatus.SUBMITTED_TO_DIRECTOR,
+        ],
+      },
+    };
+  } else if (!userIsGov) {
+    where.penaltyCredit = {
+      organizationId: userOrgId,
+      status: PenaltyCreditStatus.APPROVED,
+    };
+    where.userAction = PenaltyCreditStatus.APPROVED;
   }
   return await prisma.penaltyCreditHistory.findMany({
-    where: {
-      penaltyCreditId,
-    },
+    where,
     include: {
       user: {
         select: {
           firstName: true,
           lastName: true,
+          organization: {
+            select: {
+              isGovernment: true,
+            },
+          },
         },
       },
     },
@@ -88,39 +106,31 @@ export type PenaltyCreditSparse = {
   complianceYear: ModelYear;
 };
 
-export const getPenaltyCredits = async (
-  page: number,
-  pageSize: number,
-  filters: Record<string, string>,
-  sorts: Record<string, string>,
-): Promise<[PenaltyCreditSparse[], number]> => {
-  const { userIsGov } = await getUserInfo();
-  if (!userIsGov) {
-    throw new Error("Unauthorized!");
+export const getPenaltyCredits = async (): Promise<PenaltyCreditSparse[]> => {
+  const { userIsGov, userOrgId, userRoles } = await getUserInfo();
+  const where: PenaltyCreditWhereInput = {};
+  if (userIsGov && userRoles.includes(Role.DIRECTOR)) {
+    where.status = {
+      in: [
+        PenaltyCreditStatus.APPROVED,
+        PenaltyCreditStatus.SUBMITTED_TO_DIRECTOR,
+      ],
+    };
+  } else if (!userIsGov) {
+    where.organizationId = userOrgId;
+    where.status = PenaltyCreditStatus.APPROVED;
   }
-  const skip = (page - 1) * pageSize;
-  const take = pageSize;
-  const where = getWhereClause(filters);
-  const orderBy = getOrderByClause(sorts, true);
-  return await prisma.$transaction([
-    prisma.penaltyCredit.findMany({
-      skip,
-      take,
-      where,
-      select: {
-        id: true,
-        status: true,
-        complianceYear: true,
-        organization: {
-          select: {
-            name: true,
-          },
+  return await prisma.penaltyCredit.findMany({
+    where,
+    select: {
+      id: true,
+      status: true,
+      complianceYear: true,
+      organization: {
+        select: {
+          name: true,
         },
       },
-      orderBy,
-    }),
-    prisma.penaltyCredit.count({
-      where,
-    }),
-  ]);
+    },
+  });
 };

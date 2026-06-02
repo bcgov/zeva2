@@ -18,7 +18,7 @@ const Page = async (props: {
   let listPage;
   switch (slug) {
     case "credit-agreements":
-      listPage = <AgreementsPage searchParams={searchParams} />;
+      listPage = <AgreementsPage />;
       break;
     case "credit-applications":
       listPage = <ApplicationsPage searchParams={searchParams} />;
@@ -27,7 +27,7 @@ const Page = async (props: {
       listPage = <TransfersPage />;
       break;
     case "penalty-credits":
-      listPage = <PenaltyCreditsPage searchParams={searchParams} />;
+      listPage = <PenaltyCreditsPage />;
       break;
     case "zev-unit-transactions":
       listPage = <TransactionsPage />;

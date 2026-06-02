@@ -1,7 +1,6 @@
 import { getUserInfo } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { AgreementStatus, Role } from "@/prisma/generated/enums";
-import { getWhereClause, getOrderByClause } from "./utilsServer";
 import {
   AgreementModel,
   AgreementWhereInput,
@@ -15,17 +14,9 @@ export type AgreementWithOrgName = AgreementModel & {
   };
 };
 
-export const getAgreements = async (
-  page: number,
-  pageSize: number,
-  filters: Record<string, string>,
-  sorts: Record<string, string>,
-): Promise<[AgreementWithOrgName[], number]> => {
+export const getAgreements = async (): Promise<AgreementWithOrgName[]> => {
   const { userIsGov, userOrgId, userRoles } = await getUserInfo();
-  const skip = (page - 1) * pageSize;
-  const take = pageSize;
-  const orderByClause = getOrderByClause(sorts, true);
-  const whereClause: AgreementWhereInput = getWhereClause(filters);
+  const whereClause: AgreementWhereInput = {};
   if (userIsGov && userRoles.includes(Role.DIRECTOR)) {
     whereClause.NOT = {
       status: {
@@ -36,24 +27,16 @@ export const getAgreements = async (
     whereClause.organizationId = userOrgId;
     whereClause.status = AgreementStatus.ISSUED;
   }
-  return await prisma.$transaction([
-    prisma.agreement.findMany({
-      skip,
-      take,
-      orderBy: orderByClause,
-      where: whereClause,
-      include: {
-        organization: {
-          select: {
-            name: true,
-          },
+  return await prisma.agreement.findMany({
+    where: whereClause,
+    include: {
+      organization: {
+        select: {
+          name: true,
         },
       },
-    }),
-    prisma.agreement.count({
-      where: whereClause,
-    }),
-  ]);
+    },
+  });
 };
 
 export const getAgreement = async (agreementId: number) => {

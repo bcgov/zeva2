@@ -2,7 +2,6 @@ import { getUserInfo } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { OrganizationAddressModel } from "@/prisma/generated/models";
 import { getCurrentBalance, sumBalance } from "@/lib/utils/zevUnit";
-import { filterOrganizations, sortOrganzations } from "./utils";
 import { getSupplierClassEnumsToStringsMap } from "@/app/lib/utils/enumMaps";
 
 export type OrganizationSparse = {
@@ -18,9 +17,7 @@ export type OrganizationAddressSparse = Omit<
   "id" | "organizationId" | "addressType"
 >;
 
-export const getAllSuppliers = async (
-  activeOnly: boolean = false,
-): Promise<OrganizationSparse[]> => {
+export const getSuppliers = async (): Promise<OrganizationSparse[]> => {
   const { userIsGov } = await getUserInfo();
   if (!userIsGov) {
     return [];
@@ -37,15 +34,13 @@ export const getAllSuppliers = async (
     },
     where: {
       isGovernment: false,
-      isActive: activeOnly ? true : undefined,
     },
     orderBy: {
       name: "asc",
     },
   });
   const supplierClassesMap = getSupplierClassEnumsToStringsMap();
-
-  const supplierInfo = organizations.map((org) => {
+  const result = organizations.map((org) => {
     let supplierClass = "N/A";
     if (org.supplierClass) {
       supplierClass = supplierClassesMap[org.supplierClass] ?? "N/A";
@@ -68,30 +63,7 @@ export const getAllSuppliers = async (
           : sumBalance(balance, "CREDIT", "REPORTABLE", "B").toFixed(2),
     };
   });
-
-  return supplierInfo;
-};
-
-// page is 1-based
-// currently, this function is not used with SSR, so it is important to select only the data you need!
-export const getOrganizations = async (
-  page: number,
-  pageSize: number,
-  filters: { [key: string]: string },
-  sorts: { [key: string]: string },
-): Promise<[OrganizationSparse[], number]> => {
-  const { userIsGov } = await getUserInfo();
-  if (!userIsGov) {
-    return [[], 0];
-  }
-
-  const organizations = filterOrganizations(
-    await getAllSuppliers(true),
-    filters,
-  );
-  sortOrganzations(organizations, sorts);
-  const start = (page - 1) * pageSize;
-  return [organizations.slice(start, start + pageSize), organizations.length];
+  return result;
 };
 
 export const getGovOrgId = async () => {

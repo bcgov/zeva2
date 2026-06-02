@@ -7,7 +7,6 @@ import {
   useTransition,
   useMemo,
   useEffect,
-  JSX,
 } from "react";
 import { useRouter } from "next/navigation";
 import {
@@ -22,7 +21,7 @@ import {
   VehicleClass,
   ZevClass,
 } from "@/prisma/generated/enums";
-import { getStringsToAgreementTypeEnumsMap } from "@/app/lib/utils/enumMaps";
+import { getAgreementTypeEnumsToStringsMap } from "@/app/lib/utils/enumMaps";
 import { Dropzone } from "@/app/lib/components/Dropzone";
 import { FileWithPath } from "react-dropzone";
 import { Button } from "@/app/lib/components";
@@ -72,13 +71,21 @@ export const AgreementForm = (props: NewProps | SavedProps) => {
   const [orgsMap, setOrgsMap] = useState<Partial<Record<number, string>>>();
   const [files, setFiles] = useState<FileWithPath[]>([]);
 
-  const typesMap = useMemo(() => {
-    return getStringsToAgreementTypeEnumsMap();
+  const typeOptions = useMemo(() => {
+    const map = getAgreementTypeEnumsToStringsMap();
+    return Object.values(AgreementType).map((type) => {
+      return {
+        value: type,
+        label: map[type] ?? "",
+      };
+    });
   }, []);
 
   useEffect(() => {
-    setOrgsMap(props.orgsMap);
-    if (props.type === "saved") {
+    if (props.type === "new") {
+      setOrgsMap(props.orgsMap);
+    } else {
+      setOrgsMap(props.orgsMap);
       setAgreementId(props.agreementId);
       setOrgId(props.orgId);
       setAgreementType(props.agreementType);
@@ -197,17 +204,17 @@ export const AgreementForm = (props: NewProps | SavedProps) => {
     });
   }, [props.type, files, agreementId, orgId, agreementType, date, content]);
 
-  const orgsComponent: JSX.Element | null = useMemo(() => {
-    if (orgsMap) {
-      return (
+  return (
+    <div className="space-y-4 mb-10">
+      {orgsMap && (
         <div className={mainDivClass}>
           <span className={fieldLabelClass}>Supplier</span>
           <div className="w-60">
             <Dropdown
               placeholder="Select an Option"
-              options={Object.entries(orgsMap).map(([key, value]) => ({
-                value: key,
-                label: value as string,
+              options={Object.entries(orgsMap).map(([id, name]) => ({
+                value: id,
+                label: name ?? "",
               }))}
               value={orgId?.toString() ?? ""}
               onChange={handleOrgSelect}
@@ -215,23 +222,13 @@ export const AgreementForm = (props: NewProps | SavedProps) => {
             />
           </div>
         </div>
-      );
-    }
-    return null;
-  }, [props.type, orgId, orgsMap]);
-
-  return (
-    <div className="space-y-4 mb-10">
-      {orgsComponent}
+      )}
       <div className={mainDivClass}>
         <span className={fieldLabelClass}>Agreement Type</span>
         <div className="w-60">
           <Dropdown
             placeholder="Select an Option"
-            options={Object.entries(typesMap).map(([key, value]) => ({
-              value: value as string,
-              label: key,
-            }))}
+            options={typeOptions}
             value={agreementType ?? ""}
             onChange={(value) => handleChange("agreementType", value)}
             disabled={props.type === "saved" || isPending}

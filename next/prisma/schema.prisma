@@ -486,7 +486,8 @@ model ReservedVin {
 
 enum PenaltyCreditStatus {
   APPROVED
-  REJECTED
+  DRAFT
+  RETURNED_TO_ANALYST
   SUBMITTED_TO_DIRECTOR
 }
 

@@ -1,14 +1,12 @@
-import {
-  getStringsToModelYearsEnumsMap,
-  getStringsToVehicleClassEnumsMap,
-  getStringsToZevClassEnumsMap,
-} from "@/app/lib/utils/enumMaps";
 import { PenaltyCreditPayload } from "./actions";
 import { Decimal } from "decimal.js";
+import {
+  isModelYear,
+  isVehicleClass,
+  isZevClass,
+} from "@/app/lib/utils/typeGuards";
 
-const MissingInputError = new Error(
-  "All fields, except for the comment field, are required!",
-);
+const MissingInputError = new Error("All fields are required!");
 const InvalidInputError = new Error("Invalid Input Detected!");
 
 export const getPenaltyCreditPayload = (
@@ -20,7 +18,6 @@ export const getPenaltyCreditPayload = (
   const zevClass = data.zevClass;
   const modelYear = data.modelYear;
   const numberOfUnits = data.numberOfUnits;
-  const comment = data.comment;
 
   if (
     !organizationId ||
@@ -33,24 +30,16 @@ export const getPenaltyCreditPayload = (
     throw MissingInputError;
   }
 
-  const orgIdInt = parseInt(organizationId, 10);
+  const orgIdInt = Number.parseInt(organizationId, 10);
   if (Number.isNaN(orgIdInt)) {
     throw InvalidInputError;
   }
 
-  const modelYearsMap = getStringsToModelYearsEnumsMap();
-  const complianceYearEnum = modelYearsMap[complianceYear];
-  const modelYearEnum = modelYearsMap[modelYear];
-  const vehicleClassMap = getStringsToVehicleClassEnumsMap();
-  const vehicleClassEnum = vehicleClassMap[vehicleClass];
-  const zevClassMap = getStringsToZevClassEnumsMap();
-  const zevClassEnum = zevClassMap[zevClass];
-
   if (
-    !complianceYearEnum ||
-    !modelYearEnum ||
-    !vehicleClassEnum ||
-    !zevClassEnum
+    !isModelYear(complianceYear) ||
+    !isVehicleClass(vehicleClass) ||
+    !isZevClass(zevClass) ||
+    !isModelYear(modelYear)
   ) {
     throw InvalidInputError;
   }
@@ -68,11 +57,10 @@ export const getPenaltyCreditPayload = (
 
   return {
     organizationId: orgIdInt,
-    complianceYear: complianceYearEnum,
-    vehicleClass: vehicleClassEnum,
-    zevClass: zevClassEnum,
-    modelYear: modelYearEnum,
+    complianceYear: complianceYear,
+    vehicleClass: vehicleClass,
+    zevClass: zevClass,
+    modelYear: modelYear,
     numberOfUnits,
-    comment: comment === "" ? undefined : comment,
   };
 };

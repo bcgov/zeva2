@@ -3,7 +3,6 @@ import {
   getAdjacentYear,
   getComplianceDate,
   getCompliancePeriod,
-  getCurrentComplianceYear,
   getDominatedComplianceYears,
 } from "@/app/lib/utils/complianceYear";
 import { prisma } from "@/lib/prisma";
@@ -657,6 +656,7 @@ export const updateOrgSupplierClass = async (
   organizationId: number,
   modelYear: ModelYear,
   supplierClass: SupplierClass,
+  fromMyr: boolean,
   transactionClient?: TransactionClient,
 ) => {
   const updateClass = async () => {
@@ -670,22 +670,23 @@ export const updateOrgSupplierClass = async (
       },
     });
   };
-  const currentComplianceYear = getCurrentComplianceYear();
-  if (modelYear < currentComplianceYear) {
-    const dominatedYears = getDominatedComplianceYears(currentComplianceYear);
-    const betweenYears = dominatedYears.filter((y) => y > modelYear);
-    if (betweenYears.length > 0) {
-      const supplyGuard = await prisma.supplyVolume.findFirst({
-        where: { organizationId, modelYear: { in: betweenYears } },
-      });
-      const salesGuard = await prisma.legacySalesVolume.findFirst({
-        where: { organizationId, modelYear: { in: betweenYears } },
-      });
-      if (!supplyGuard && !salesGuard) {
-        await updateClass();
-      }
-    } else {
-      await updateClass();
+  if (fromMyr) {
+    updateClass();
+  } else {
+    const latestAssessedMyr = await prisma.modelYearReport.findFirst({
+      where: {
+        organizationId,
+        status: ModelYearReportStatus.ASSESSED,
+      },
+      select: {
+        modelYear: true,
+      },
+      orderBy: {
+        modelYear: "desc",
+      },
+    });
+    if (latestAssessedMyr && latestAssessedMyr.modelYear === modelYear) {
+      updateClass();
     }
   }
 };
@@ -787,6 +788,7 @@ export const assessReassessment = async (
     organizationId,
     modelYear,
     reassessmentData.supplierClass,
+    false,
     client,
   );
   await client.zevUnitTransaction.deleteMany({

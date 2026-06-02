@@ -23,11 +23,9 @@ import {
 
 export const TransactionAccordion = ({
   orgId,
-  userIsGov,
   complianceYears,
 }: {
   orgId: number;
-  userIsGov: boolean;
   complianceYears: ModelYear[];
 }) => {
   const [openYears, setOpenYears] = useState<ModelYear[]>([]);
@@ -87,7 +85,7 @@ export const TransactionAccordion = ({
       if (referenceType === ReferenceType.TRANSFER) {
         return `${Routes.CreditTransfers}/${referenceId}`;
       }
-      if (userIsGov && referenceType === ReferenceType.PENALTY_CREDITS) {
+      if (referenceType === ReferenceType.PENALTY_CREDITS) {
         return `${Routes.PenaltyCredits}/${referenceId}`;
       }
       if (
@@ -100,7 +98,7 @@ export const TransactionAccordion = ({
         return `${Routes.CreditAgreements}/${referenceId}`;
       }
     },
-    [userIsGov],
+    [],
   );
 
   const transactionTypesMap = useMemo(() => {

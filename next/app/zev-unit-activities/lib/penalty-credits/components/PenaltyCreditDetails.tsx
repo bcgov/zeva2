@@ -32,7 +32,7 @@ export const PenaltyCreditDetails = async (props: {
         Model Year: {modelYearsMap[penaltyCredit.modelYear]}
       </li>
       <li key={"numberOfUnits"}>
-        Number of Units: {penaltyCredit.numberOfUnits.toString()}
+        Number of Units: {penaltyCredit.numberOfUnits.toFixed(2)}
       </li>
     </ul>
   );

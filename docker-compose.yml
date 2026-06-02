@@ -55,6 +55,7 @@ services:
       - AUTH_KEYCLOAK_ID=zeva-2-5981
       - AUTH_KEYCLOAK_ISSUER=https://dev.loginproxy.gov.bc.ca/auth/realms/standard
       - DATABASE_URL=postgresql://postgres:postgres@db:5432/zeva?schema=public
+      - DATABASE_URL_FOR_MIGRATIONS=postgresql://postgres:postgres@db:5432/zeva?schema=public
       - DATABASE_URL_OLD=postgresql://postgres:postgres@host.docker.internal:5432/zeva?schema=public
       - START_WORKERS=false
       - TZ=America/Vancouver
