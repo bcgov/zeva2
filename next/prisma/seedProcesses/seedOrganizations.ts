@@ -37,6 +37,20 @@ export const seedOrganizations = async (tx: TransactionClient) => {
     Service: AddressType.SERVICE,
   };
 
+  type NewAddressSparse = {
+    addressLines: string | null;
+    city: string | null;
+    postalCode: string | null;
+    state: string | null;
+    county: string | null;
+    country: string | null;
+    representative: string | null;
+  };
+
+  const addressesMap: Partial<
+    Record<number, Partial<Record<AddressType, [Date, NewAddressSparse]>>>
+  > = {};
+
   for (const orgAddressOld of orgAddressesOld) {
     const orgIdNew = mapOfOldOrgIdsToNewOrgIds[orgAddressOld.organization_id];
     if (!orgIdNew) {
@@ -74,13 +88,45 @@ export const seedOrganizations = async (tx: TransactionClient) => {
             " with unknown address type!",
         );
       }
-      await tx.organizationAddress.create({
-        data: {
-          organizationId: orgIdNew,
-          addressType,
-          ...newAddressSparse,
-        },
-      });
+      const createTs = orgAddressOld.create_timestamp;
+      if (createTs) {
+        if (!addressesMap[orgIdNew]) {
+          addressesMap[orgIdNew] = {};
+        }
+        if (!addressesMap[orgIdNew][addressType]) {
+          addressesMap[orgIdNew][addressType] = [createTs, newAddressSparse];
+        }
+        const existingTs = addressesMap[orgIdNew][addressType][0];
+        if (existingTs < createTs) {
+          addressesMap[orgIdNew][addressType] = [createTs, newAddressSparse];
+        }
+      }
+    }
+  }
+
+  for (const [newOrgId, value] of Object.entries(addressesMap)) {
+    const idInt = Number.parseInt(newOrgId, 10);
+    if (value) {
+      const recordsAddress = value[AddressType.RECORDS];
+      const serviceAddress = value[AddressType.SERVICE];
+      if (recordsAddress) {
+        await tx.organizationAddress.create({
+          data: {
+            organizationId: idInt,
+            addressType: AddressType.RECORDS,
+            ...recordsAddress[1],
+          },
+        });
+      }
+      if (serviceAddress) {
+        await tx.organizationAddress.create({
+          data: {
+            organizationId: idInt,
+            addressType: AddressType.SERVICE,
+            ...serviceAddress[1],
+          },
+        });
+      }
     }
   }
 
