@@ -1,3 +1,4 @@
+import { Breadcrumbs } from "@/app/lib/components";
 import { SecondaryNavbar } from "@/app/lib/components/SecondaryNavbar";
 import { getVehicle } from "../../lib/data";
 
@@ -27,6 +28,12 @@ const Layout = async (props: {
 
   return (
     <>
+      <Breadcrumbs
+        items={[
+          { label: "ZEV Models", href: `/zev-models/${slug}` },
+          { label: vehicle.modelName || `ZEV Model ${id}` },
+        ]}
+      />
       <SecondaryNavbar items={items} />
       {props.children}
     </>
