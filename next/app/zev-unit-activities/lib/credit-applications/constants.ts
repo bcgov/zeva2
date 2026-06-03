@@ -70,5 +70,5 @@ export type CreditApplicationRecordSparse = Omit<
 
 export type CreditApplicationRecordSparseSerialized = Omit<
   CreditApplicationRecordSparse,
-  "timestamp"
-> & { timestamp: string };
+  "timestamp" | "icbcRegistrationTimestamp"
+> & { timestamp: string; icbcRegistrationTimestamp: string | null };

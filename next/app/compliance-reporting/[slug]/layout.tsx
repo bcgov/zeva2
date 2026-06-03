@@ -1,5 +1,4 @@
-// populate secondary navbar and wrap around children
-
+import { LowerNavbarWrapper } from "@/app/lib/components/LowerNavbarWrapper";
 import { SecondaryNavbar } from "@/app/lib/components/SecondaryNavbar";
 import { Routes } from "@/app/lib/constants";
 import { getUserInfo } from "@/auth";
@@ -20,7 +19,10 @@ const Layout = async (props: { children: React.ReactNode }) => {
   ];
   return (
     <>
-      <SecondaryNavbar items={items} />
+      <LowerNavbarWrapper
+        type="complianceReporting"
+        navbar={<SecondaryNavbar items={items} />}
+      />
       {props.children}
     </>
   );

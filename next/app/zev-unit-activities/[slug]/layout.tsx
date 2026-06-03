@@ -1,4 +1,5 @@
 import { SecondaryNavbar } from "@/app/lib/components/SecondaryNavbar";
+import { LowerNavbarWrapper } from "@/app/lib/components/LowerNavbarWrapper";
 import { Routes } from "@/app/lib/constants";
 import { getUserInfo } from "@/auth";
 
@@ -13,9 +14,10 @@ const Layout = async (props: { children: React.ReactNode }) => {
       ? [{ label: "ZEV Unit Transactions", route: Routes.ZevUnitTransactions }]
       : []),
   ];
+  const navbar = <SecondaryNavbar items={items} />;
   return (
     <>
-      <SecondaryNavbar items={items} />
+      <LowerNavbarWrapper type="zevUnitActivities" navbar={navbar} />
       {props.children}
     </>
   );

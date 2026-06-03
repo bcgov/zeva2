@@ -441,28 +441,29 @@ model CreditApplicationHistory {
 }
 
 model CreditApplicationRecord {
-  id                  Int               @id @default(autoincrement())
-  creditApplicationId Int               @map("credit_application_id")
-  creditApplication   CreditApplication @relation(fields: [creditApplicationId], references: [id])
-  vin                 String            @db.VarChar(17)
-  timestamp           DateTime          @db.Timestamptz(6)
-  vehicleClass        VehicleClass      @map("vehicle_class")
-  zevClass            ZevClass          @map("zev_class")
-  modelYear           ModelYear         @map("model_year")
-  numberOfUnits       Decimal           @map("number_of_units") @db.Decimal(65, 2)
-  make                String
-  modelName           String            @map("model_name")
-  zevType             ZevType           @map("zev_type")
-  range               Int
-  icbcMake            String?           @map("icbc_make")
-  icbcModelName       String?           @map("icbc_model_name")
-  icbcModelYear       ModelYear?        @map("icbc_model_year")
-  decodedMake         String?           @map("decoded_make")
-  decodedModelName    String?           @map("decoded_model_name")
-  decodedModelYear    ModelYear?        @map("decoded_model_year")
-  validated           Boolean
-  reason              String?
-  warnings            String[]
+  id                        Int               @id @default(autoincrement())
+  creditApplicationId       Int               @map("credit_application_id")
+  creditApplication         CreditApplication @relation(fields: [creditApplicationId], references: [id])
+  vin                       String            @db.VarChar(17)
+  timestamp                 DateTime          @db.Timestamptz(6)
+  vehicleClass              VehicleClass      @map("vehicle_class")
+  zevClass                  ZevClass          @map("zev_class")
+  modelYear                 ModelYear         @map("model_year")
+  numberOfUnits             Decimal           @map("number_of_units") @db.Decimal(65, 2)
+  make                      String
+  modelName                 String            @map("model_name")
+  zevType                   ZevType           @map("zev_type")
+  range                     Int
+  icbcMake                  String?           @map("icbc_make")
+  icbcModelName             String?           @map("icbc_model_name")
+  icbcModelYear             ModelYear?        @map("icbc_model_year")
+  icbcRegistrationTimestamp DateTime?         @map("icbc_registration_timestamp") @db.Timestamptz(6)
+  decodedMake               String?           @map("decoded_make")
+  decodedModelName          String?           @map("decoded_model_name")
+  decodedModelYear          ModelYear?        @map("decoded_model_year")
+  validated                 Boolean
+  reason                    String?
+  warnings                  String[]
 
   @@map("credit_application_record")
 }
