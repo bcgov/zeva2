@@ -19,6 +19,7 @@ export const LowerNavbarWrapper = (props: {
       ) {
         return props.navbar;
       }
+      break;
     case "zevUnitActivities":
       if (
         pathname === Routes.CreditApplications ||
@@ -29,6 +30,7 @@ export const LowerNavbarWrapper = (props: {
       ) {
         return props.navbar;
       }
+      break;
     case "complianceReporting":
       if (
         pathname === Routes.ComplianceCalculator ||
@@ -39,6 +41,7 @@ export const LowerNavbarWrapper = (props: {
       ) {
         return props.navbar;
       }
+      break;
   }
   return null;
 };
