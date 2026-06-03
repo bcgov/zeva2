@@ -81,7 +81,6 @@ const OrganizationEditForm = (props: {
       };
       if (props.orgId) {
         const orgUpdated = await saveOrganization(props.orgId, data);
-        console.log(orgUpdated);
         if (orgUpdated) {
           window.location.reload();
         }

@@ -198,6 +198,13 @@ export const RecordsTable = (props: {
           size: 100,
         },
       ),
+      columnHelper.accessor((row) => row.icbcRegistrationTimestamp, {
+        id: "icbcRegistrationTimestamp",
+        enableSorting: true,
+        enableColumnFilter: true,
+        header: () => <span>ICBC Registration Date</span>,
+        size: 150,
+      }),
       columnHelper.accessor((row) => row.decodedMake, {
         id: "decodedMake",
         enableSorting: true,
