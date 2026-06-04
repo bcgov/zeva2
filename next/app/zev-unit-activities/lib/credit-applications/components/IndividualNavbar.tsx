@@ -5,7 +5,7 @@ export const IndividualNavbar = (props: { creditApplicationId: string }) => {
   const items = [
     {
       label: `Credit Application ID ${props.creditApplicationId}`,
-      route: `${Routes.CreditApplications}/${props.creditApplicationId}`,
+      route: `${Routes.CreditApplications}/${props.creditApplicationId}/details`,
     },
     {
       label: "Audit History",
