@@ -4,7 +4,6 @@ import axios, { AxiosResponse } from "axios";
 import Excel from "exceljs";
 import { Dropzone } from "@/app/lib/components/Dropzone";
 import { Button, StatusBanner } from "@/app/lib/components";
-import { Modal } from "@/app/lib/components/Modal";
 import { useRouter } from "next/navigation";
 import { JSX, useCallback, useEffect, useState, useTransition } from "react";
 import { FileWithPath } from "react-dropzone";
@@ -152,7 +151,7 @@ export const CreditApplicationForm = (props: {
           throw new Error(response.message);
         }
         const applicationId = response.data;
-        router.push(`${Routes.CreditApplications}/${applicationId}`);
+        router.push(`${Routes.CreditApplications}/${applicationId}/details`);
       } catch (e) {
         if (e instanceof Error) {
           setError(e.message);
