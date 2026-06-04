@@ -14,7 +14,6 @@ import {
   getCreditApplicationPutData,
   getSupplierEligibleVehicles,
   getSupplierTemplateDownloadUrl,
-  supplierDelete,
   supplierSave,
 } from "../actions";
 import { SupplierTemplate } from "../constants";
@@ -173,28 +172,6 @@ export const CreditApplicationForm = (props: {
   const handleBack = useCallback(() => {
     router.push(Routes.CreditApplications);
   }, [router]);
-
-  const handleDelete = useCallback(async () => {
-    if (!props.creditApplication?.id) return;
-    const response = await supplierDelete(props.creditApplication.id);
-    if (response.responseType === "error") {
-      setError(response.message);
-    } else {
-      router.push(Routes.CreditApplications);
-    }
-    setModal(null);
-  }, [props.creditApplication?.id, router]);
-
-  const showDeleteModal = useCallback(() => {
-    setModal(
-      <Modal
-        showModal={true}
-        modalType="error"
-        handleSubmit={handleDelete}
-        handleCancel={() => setModal(null)}
-      />,
-    );
-  }, [handleDelete]);
 
   const fileSize = files[0] ? (files[0].size / 1024).toFixed(1) : "0";
 
@@ -399,17 +376,6 @@ export const CreditApplicationForm = (props: {
           >
             ← Back
           </Button>
-          {props.creditApplication?.id && (
-            <Button
-              variant="danger"
-              onClick={showDeleteModal}
-              disabled={isPending}
-              icon={<FontAwesomeIcon icon={faTrash} />}
-              iconPosition="right"
-            >
-              Delete
-            </Button>
-          )}
           <div className="flex-1" />
           <Button
             variant="primary"
