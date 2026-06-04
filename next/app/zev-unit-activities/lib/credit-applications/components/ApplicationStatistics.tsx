@@ -18,7 +18,7 @@ export const ApplicationStatistics = async (props: {
   const vehicleClassesMap = getVehicleClassEnumsToStringsMap();
   const zevClassMap = getZevClassEnumsToStringsMap();
   const modelYearsMap = getModelYearEnumsToStringsMap();
-  
+
   const getRecordsTable = (
     records: typeof stats.recordStats,
     type: "all" | "validated",
@@ -58,7 +58,10 @@ export const ApplicationStatistics = async (props: {
             <th key="range" className="border border-gray-300 px-4 py-2">
               Range
             </th>
-            <th key="numberOfUnits" className="border border-gray-300 px-4 py-2">
+            <th
+              key="numberOfUnits"
+              className="border border-gray-300 px-4 py-2"
+            >
               Number of Units p...
             </th>
             <th key="count" className="border border-gray-300 px-4 py-2">
@@ -73,13 +76,22 @@ export const ApplicationStatistics = async (props: {
                 <td key="make" className="border border-gray-300 px-4 py-2">
                   {record.make}
                 </td>
-                <td key="modelName" className="border border-gray-300 px-4 py-2">
+                <td
+                  key="modelName"
+                  className="border border-gray-300 px-4 py-2"
+                >
                   {record.modelName}
                 </td>
-                <td key="modelYear" className="border border-gray-300 px-4 py-2">
+                <td
+                  key="modelYear"
+                  className="border border-gray-300 px-4 py-2"
+                >
                   {modelYearsMap[record.modelYear]}
                 </td>
-                <td key="vehicleClass" className="border border-gray-300 px-4 py-2">
+                <td
+                  key="vehicleClass"
+                  className="border border-gray-300 px-4 py-2"
+                >
                   {vehicleClassesMap[record.vehicleClass]}
                 </td>
                 <td key="zevClass" className="border border-gray-300 px-4 py-2">
@@ -91,7 +103,10 @@ export const ApplicationStatistics = async (props: {
                 <td key="range" className="border border-gray-300 px-4 py-2">
                   {record.range}
                 </td>
-                <td key="numberOfUnits" className="border border-gray-300 px-4 py-2">
+                <td
+                  key="numberOfUnits"
+                  className="border border-gray-300 px-4 py-2"
+                >
                   {record.numberOfUnits.toFixed(2)}
                 </td>
                 <td key="count" className="border border-gray-300 px-4 py-2">
@@ -104,7 +119,7 @@ export const ApplicationStatistics = async (props: {
       </table>
     );
   };
-  
+
   const getCreditsTable = (
     records: typeof stats.creditStats,
     type: "all" | "validated",
@@ -132,7 +147,10 @@ export const ApplicationStatistics = async (props: {
             <th key="modelYear" className="border border-gray-300 px-4 py-2">
               Model Year
             </th>
-            <th key="numberOfUnits" className="border border-gray-300 px-4 py-2">
+            <th
+              key="numberOfUnits"
+              className="border border-gray-300 px-4 py-2"
+            >
               Number of Units
             </th>
           </tr>
@@ -142,16 +160,25 @@ export const ApplicationStatistics = async (props: {
             const numberOfUnits = record._sum.numberOfUnits;
             return (
               <tr key={crypto.randomUUID()}>
-                <td key="vehicleClass" className="border border-gray-300 px-4 py-2">
+                <td
+                  key="vehicleClass"
+                  className="border border-gray-300 px-4 py-2"
+                >
                   {vehicleClassesMap[record.vehicleClass]}
                 </td>
                 <td key="zevClass" className="border border-gray-300 px-4 py-2">
                   {zevClassMap[record.zevClass]}
                 </td>
-                <td key="modelYear" className="border border-gray-300 px-4 py-2">
+                <td
+                  key="modelYear"
+                  className="border border-gray-300 px-4 py-2"
+                >
                   {modelYearsMap[record.modelYear]}
                 </td>
-                <td key="numberOfUnits" className="border border-gray-300 px-4 py-2">
+                <td
+                  key="numberOfUnits"
+                  className="border border-gray-300 px-4 py-2"
+                >
                   {numberOfUnits ? numberOfUnits.toFixed(2) : "0"}
                 </td>
               </tr>
@@ -161,10 +188,10 @@ export const ApplicationStatistics = async (props: {
       </table>
     );
   };
-  
+
   const recordStatsValidated = stats.recordStatsValidated;
   const creditStatsValidated = stats.creditStatsValidated;
-  
+
   if (!props.userIsGov) {
     return (
       <>
@@ -191,7 +218,7 @@ export const ApplicationStatistics = async (props: {
       </>
     );
   }
-  
+
   return (
     <div className="space-y-3">
       {getRecordsTable(stats.recordStats, "all")}

@@ -136,7 +136,9 @@ export const SupplierActions = (props: {
   const commentCard = canAddComment ? (
     <div className="border border-gray-300 bg-white rounded mb-4">
       <div className="p-4 bg-gray-100 border-b border-gray-300">
-        <h2 className="text-base font-bold text-gray-900">Comment (optional)</h2>
+        <h2 className="text-base font-bold text-gray-900">
+          Comment (optional)
+        </h2>
       </div>
       <div className="p-6">
         <textarea
@@ -161,6 +163,9 @@ export const SupplierActions = (props: {
           </Button>
           <Button variant="danger" onClick={() => showModal("delete")}>
             Delete
+          </Button>
+          <Button variant="secondary" onClick={handleGoToEdit}>
+            Edit
           </Button>
           <div className="flex-1" />
           {canAddComment && (
@@ -188,24 +193,15 @@ export const SupplierActions = (props: {
   if (props.status === CreditApplicationSupplierStatus.REJECTED) {
     return (
       <>
-        {commentCard}
         {error && <p className="text-red-600 mb-2">{error}</p>}
         <div className="flex items-center gap-3 w-full pb-6">
           <Button variant="secondary" onClick={handleBack}>
             ← Back
           </Button>
+          <div className="flex-1" />
           <Button variant="danger" onClick={() => showModal("delete")}>
             Delete
           </Button>
-          <div className="flex-1" />
-          <Button variant="secondary" onClick={handleGoToEdit}>
-            Edit
-          </Button>
-          {canAddComment && (
-            <Button variant="primary" onClick={() => showModal("submit")}>
-              Resubmit
-            </Button>
-          )}
           {modal}
         </div>
       </>

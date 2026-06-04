@@ -1,5 +1,8 @@
 import { getUserInfo } from "@/auth";
-import { Role, CreditApplicationSupplierStatus } from "@/prisma/generated/enums";
+import {
+  Role,
+  CreditApplicationSupplierStatus,
+} from "@/prisma/generated/enums";
 import { getCreditApplication, getApplicationHistories } from "../data";
 import { ContentCard, StatusBanner } from "@/app/lib/components";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
@@ -112,25 +115,19 @@ export const IndividualPage = async (props: { id: string }) => {
 
   const histories = await getApplicationHistories(id);
   const latestRejectionComment = histories
-    .filter(h => h.userAction === 'REJECTED')
+    .filter((h) => h.userAction === "REJECTED")
     .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime())[0]?.comment;
 
   let statusBanner = null;
   if (applicationSupplierStatus === CreditApplicationSupplierStatus.DRAFT) {
-    statusBanner = (
-      <StatusBanner
-        title="STATUS - Draft"
-        primaryText=""
-      />
-    );
-  } else if (applicationSupplierStatus === CreditApplicationSupplierStatus.SUBMITTED) {
-    statusBanner = (
-      <StatusBanner
-        title="STATUS - Submitted"
-        primaryText=""
-      />
-    );
-  } else if (applicationSupplierStatus === CreditApplicationSupplierStatus.REJECTED) {
+    statusBanner = <StatusBanner title="STATUS - Draft" primaryText="" />;
+  } else if (
+    applicationSupplierStatus === CreditApplicationSupplierStatus.SUBMITTED
+  ) {
+    statusBanner = <StatusBanner title="STATUS - Submitted" primaryText="" />;
+  } else if (
+    applicationSupplierStatus === CreditApplicationSupplierStatus.REJECTED
+  ) {
     statusBanner = (
       <StatusBanner
         title="STATUS - Rejected"
@@ -138,7 +135,8 @@ export const IndividualPage = async (props: { id: string }) => {
         secondaryText={
           latestRejectionComment && (
             <div>
-              <strong>Official Comment from Government of B.C.:</strong> {latestRejectionComment}
+              <strong>Official Comment from Government of B.C.:</strong>{" "}
+              {latestRejectionComment}
             </div>
           )
         }
@@ -157,28 +155,30 @@ export const IndividualPage = async (props: { id: string }) => {
         </PrintDownloadButton>
       </div>
 
-      {statusBanner && (
-        <div className="px-6 pt-4 pb-2">
-          {statusBanner}
-        </div>
-      )}
+      {statusBanner && <div className="px-6 pt-4 pb-2">{statusBanner}</div>}
 
       <div className="px-6 pb-6 pt-4 space-y-6">
         <div className="border border-gray-300 bg-gray-50 rounded max-w-sm">
           <div className="p-6">
-            <h2 className="text-base font-bold mb-4 text-gray-900">Supplier Information</h2>
+            <h2 className="text-base font-bold mb-4 text-gray-900">
+              Supplier Information
+            </h2>
             <div className="space-y-2 text-sm text-gray-900">
               <div>
-                <span className="font-semibold">Legal Name:</span> {creditApplication.legalName}
+                <span className="font-semibold">Legal Name:</span>{" "}
+                {creditApplication.legalName}
               </div>
               <div>
-                <span className="font-semibold">Record Address:</span> {creditApplication.recordsAddress}
+                <span className="font-semibold">Record Address:</span>{" "}
+                {creditApplication.recordsAddress}
               </div>
               <div>
-                <span className="font-semibold">Service Address:</span> {creditApplication.serviceAddress}
+                <span className="font-semibold">Service Address:</span>{" "}
+                {creditApplication.serviceAddress}
               </div>
               <div>
-                <span className="font-semibold">Makes:</span> {creditApplication.makes}
+                <span className="font-semibold">Makes:</span>{" "}
+                {creditApplication.makes}
               </div>
             </div>
           </div>
@@ -186,13 +186,17 @@ export const IndividualPage = async (props: { id: string }) => {
 
         <div className="border border-gray-300 bg-white rounded">
           <div className="p-4 bg-gray-100 border-b border-gray-300">
-            <h2 className="text-base font-bold text-gray-900">Credit Application Details</h2>
+            <h2 className="text-base font-bold text-gray-900">
+              Credit Application Details
+            </h2>
           </div>
           <div className="p-6 space-y-4">
             <div className="space-y-2">
               <p className="text-sm">
                 <span className="font-semibold">Credit Application:</span>{" "}
-                <span className="text-blue-600">{creditApplication.fileName}</span>
+                <span className="text-blue-600">
+                  {creditApplication.fileName}
+                </span>
               </p>
               <Attachments
                 attachments={[{ fileName: creditApplication.fileName }]}
@@ -212,7 +216,9 @@ export const IndividualPage = async (props: { id: string }) => {
 
         <div className="border border-gray-300 bg-white rounded">
           <div className="p-4 bg-gray-100 border-b border-gray-300">
-            <h2 className="text-base font-bold text-gray-900">Supporting Documents (optional)</h2>
+            <h2 className="text-base font-bold text-gray-900">
+              Supporting Documents (optional)
+            </h2>
           </div>
           <div className="p-6">
             <Attachments

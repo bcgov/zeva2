@@ -422,10 +422,10 @@ export const supplierSubmit = async (
           },
         });
       }
-    await addJobToEmailQueue({
-      historyId,
-      notificationType: Notification.CREDIT_APPLICATION,
-    })
+      await addJobToEmailQueue({
+        historyId,
+        notificationType: Notification.CREDIT_APPLICATION,
+      });
     });
   } catch (e) {
     if (e instanceof Error) {

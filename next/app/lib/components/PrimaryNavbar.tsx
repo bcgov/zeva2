@@ -6,8 +6,12 @@ import { Row } from "./layout";
 import Link from "next/link";
 import { keycloakSignOut } from "../actions/keycloak";
 import { Routes } from "../constants";
+import { Role } from "@/prisma/generated/enums";
 
-export const PrimaryNavbar = (props: { userIsGov: boolean }) => {
+export const PrimaryNavbar = (props: {
+  userIsGov: boolean;
+  userRoles: Role[];
+}) => {
   const pathname = usePathname();
   const [activeLabel, setActiveLabel] = useState<string>();
 
@@ -32,12 +36,13 @@ export const PrimaryNavbar = (props: { userIsGov: boolean }) => {
       ...(props.userIsGov
         ? [{ label: "Vehicle Suppliers", route: Routes.VehicleSuppliers }]
         : []),
-      {
-        label: "Administration",
-        route: props.userIsGov
-          ? `${Routes.Administration}/idir`
-          : Routes.Administration,
-      },
+      ...(props.userIsGov && props.userRoles.includes(Role.ADMINISTRATOR)
+        ? [{ label: "Administration", route: `${Routes.Administration}/idir` }]
+        : []),
+      ...(!props.userIsGov &&
+      props.userRoles.includes(Role.ORGANIZATION_ADMINISTRATOR)
+        ? [{ label: "Administration", route: Routes.Administration }]
+        : []),
     ];
   }, [props]);
 

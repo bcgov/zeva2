@@ -5,7 +5,7 @@ import Excel from "exceljs";
 import { Dropzone } from "@/app/lib/components/Dropzone";
 import { Button, StatusBanner } from "@/app/lib/components";
 import { useRouter } from "next/navigation";
-import { JSX, useCallback, useEffect, useState, useTransition } from "react";
+import { useCallback, useEffect, useState, useTransition } from "react";
 import { FileWithPath } from "react-dropzone";
 import { CreditApplicationSupplierStatus } from "@/prisma/generated/enums";
 import {
@@ -21,7 +21,11 @@ import { downloadBuffer, getFiles } from "@/app/lib/utils/download";
 import { Routes } from "@/app/lib/constants";
 import { Attachment, AttachmentDownload } from "@/app/lib/constants/attachment";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faDownload, faFloppyDisk, faTrash } from "@fortawesome/free-solid-svg-icons";
+import {
+  faDownload,
+  faFloppyDisk,
+  faTrash,
+} from "@fortawesome/free-solid-svg-icons";
 
 export const CreditApplicationForm = (props: {
   legalName: string;
@@ -41,7 +45,6 @@ export const CreditApplicationForm = (props: {
   const [attachments, setAttachments] = useState<FileWithPath[]>([]);
   const [error, setError] = useState<string>("");
   const [showUploadSuccess, setShowUploadSuccess] = useState(false);
-  const [modal, setModal] = useState<JSX.Element | null>(null);
 
   useEffect(() => {
     const loadPrev = async () => {
@@ -169,21 +172,23 @@ export const CreditApplicationForm = (props: {
   ]);
 
   const handleBack = useCallback(() => {
-    router.push(Routes.CreditApplications);
-  }, [router]);
+    if (props.creditApplication) {
+      router.push(`${Routes.CreditApplications}/${props.creditApplication.id}`);
+    } else {
+      router.push(Routes.CreditApplications);
+    }
+  }, [props.creditApplication]);
 
   const fileSize = files[0] ? (files[0].size / 1024).toFixed(1) : "0";
 
   const getStatusBanner = () => {
-    if (!props.supplierStatus || props.supplierStatus === CreditApplicationSupplierStatus.DRAFT) {
-      return (
-        <StatusBanner
-          title="STATUS - Draft"
-          primaryText=""
-        />
-      );
+    if (
+      !props.supplierStatus ||
+      props.supplierStatus === CreditApplicationSupplierStatus.DRAFT
+    ) {
+      return <StatusBanner title="STATUS - Draft" primaryText="" />;
     }
-    
+
     switch (props.supplierStatus) {
       case CreditApplicationSupplierStatus.SUBMITTED:
         return (
@@ -207,12 +212,7 @@ export const CreditApplicationForm = (props: {
           />
         );
       default:
-        return (
-          <StatusBanner
-            title="STATUS - Draft"
-            primaryText=""
-          />
-        );
+        return <StatusBanner title="STATUS - Draft" primaryText="" />;
     }
   };
 
@@ -233,25 +233,28 @@ export const CreditApplicationForm = (props: {
         </Button>
       </div>
 
-      <div className="px-6 pt-4 pb-2">
-        {getStatusBanner()}
-      </div>
+      <div className="px-6 pt-4 pb-2">{getStatusBanner()}</div>
 
       <div className="px-6 pb-6 pt-4 space-y-6">
         {error && <p className="text-red-600">{error}</p>}
-        
+
         <div className="border border-gray-300 bg-gray-50 rounded max-w-sm">
           <div className="p-6">
-            <h2 className="text-base font-bold mb-4 text-gray-900">Supplier Information</h2>
+            <h2 className="text-base font-bold mb-4 text-gray-900">
+              Supplier Information
+            </h2>
             <div className="space-y-2 text-sm text-gray-900">
               <div>
-                <span className="font-semibold">Legal Name:</span> {props.legalName}
+                <span className="font-semibold">Legal Name:</span>{" "}
+                {props.legalName}
               </div>
               <div>
-                <span className="font-semibold">Record Address:</span> {props.recordsAddress}
+                <span className="font-semibold">Record Address:</span>{" "}
+                {props.recordsAddress}
               </div>
               <div>
-                <span className="font-semibold">Service Address:</span> {props.serviceAddress}
+                <span className="font-semibold">Service Address:</span>{" "}
+                {props.serviceAddress}
               </div>
               <div>
                 <span className="font-semibold">Makes:</span> {props.makes}
@@ -262,13 +265,18 @@ export const CreditApplicationForm = (props: {
 
         <div className="border border-gray-300 bg-white rounded">
           <div className="p-4 bg-gray-100 border-b border-gray-300">
-            <h2 className="text-base font-bold text-gray-900">Credit Application Details</h2>
+            <h2 className="text-base font-bold text-gray-900">
+              Credit Application Details
+            </h2>
           </div>
-          
+
           <div className="p-6 border-b border-gray-300">
-            <h3 className="text-sm font-bold mb-2 text-gray-900">Step 1: Download the Credit Application Template</h3>
+            <h3 className="text-sm font-bold mb-2 text-gray-900">
+              Step 1: Download the Credit Application Template
+            </h3>
             <p className="text-sm text-gray-700 mb-3">
-              Use this template to complete your credit application before uploading.
+              Use this template to complete your credit application before
+              uploading.
             </p>
             <Button
               variant="secondary"
@@ -281,7 +289,9 @@ export const CreditApplicationForm = (props: {
           </div>
 
           <div className="p-6">
-            <h3 className="text-sm font-bold mb-2 text-gray-900">Step 2: Upload Credit Application</h3>
+            <h3 className="text-sm font-bold mb-2 text-gray-900">
+              Step 2: Upload Credit Application
+            </h3>
             <p className="text-sm text-gray-700 mb-3">
               Upload the completed file using template above.
             </p>
@@ -303,7 +313,9 @@ export const CreditApplicationForm = (props: {
                 <table className="w-full mt-3 text-sm">
                   <thead>
                     <tr className="border-b border-gray-300">
-                      <th className="text-left py-2 font-semibold">Uploaded File</th>
+                      <th className="text-left py-2 font-semibold">
+                        Uploaded File
+                      </th>
                       <th className="text-left py-2 font-semibold">Size</th>
                       <th className="text-right py-2 font-semibold">Delete</th>
                     </tr>
@@ -353,7 +365,9 @@ export const CreditApplicationForm = (props: {
 
         <div className="border border-gray-300 bg-white rounded">
           <div className="p-4 bg-gray-100 border-b border-gray-300">
-            <h2 className="text-base font-bold text-gray-900">Supporting Documents (optional)</h2>
+            <h2 className="text-base font-bold text-gray-900">
+              Supporting Documents (optional)
+            </h2>
           </div>
           <div className="p-6">
             <div className="border-2 border-dashed border-gray-300 rounded bg-white p-8">
@@ -368,11 +382,7 @@ export const CreditApplicationForm = (props: {
         </div>
 
         <div className="flex items-center gap-3 pb-6">
-          <Button
-            variant="secondary"
-            onClick={handleBack}
-            disabled={isPending}
-          >
+          <Button variant="secondary" onClick={handleBack} disabled={isPending}>
             ← Back
           </Button>
           <div className="flex-1" />
@@ -386,7 +396,6 @@ export const CreditApplicationForm = (props: {
             Save
           </Button>
         </div>
-        {modal}
       </div>
     </div>
   );
