@@ -16,7 +16,7 @@ export const CreditApplicationList = async (props: {
   const { userIsGov } = await getUserInfo();
   const navigationAction = async (id: number) => {
     "use server";
-    redirect(`${Routes.CreditApplications}/${id}`);
+    redirect(`${Routes.CreditApplications}/${id}/details`);
   };
   const [applications, totalNumberOfApplications] = await getCreditApplications(
     props.page,

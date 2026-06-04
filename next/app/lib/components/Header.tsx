@@ -5,7 +5,7 @@ import { PrimaryNavbar } from "./PrimaryNavbar";
 
 /** Basic Header component containing the BCGOV logo and title of the application. */
 export const Header = async () => {
-  const { userName, userIsGov, userOrgName, userOrgId, userId } =
+  const { userName, userIsGov, userOrgName, userOrgId, userId, userRoles } =
     await getUserInfo();
 
   let balance: Awaited<ReturnType<typeof getReportableBalanceAB>> | undefined;
@@ -49,7 +49,9 @@ export const Header = async () => {
           </div>
         )}
       </Row>
-      {userId !== -1 && <PrimaryNavbar userIsGov={userIsGov} />}
+      {userId !== -1 && (
+        <PrimaryNavbar userIsGov={userIsGov} userRoles={userRoles} />
+      )}
     </div>
   );
 };
