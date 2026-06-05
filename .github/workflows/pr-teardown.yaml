@@ -14,6 +14,7 @@ permissions:
   contents: read
 
 env:
+  TOOLS_NAMESPACE: ${{ secrets.OPENSHIFT_NAMESPACE_PLATE }}-tools
   DEV_NAMESPACE: ${{ secrets.OPENSHIFT_NAMESPACE_PLATE }}-dev
   PR_NUMBER: ${{ github.event.pull_request.number }}
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
@@ -65,3 +66,7 @@ jobs:
           oc -n ${{ env.DEV_NAMESPACE }} delete pvc -l app.kubernetes.io/instance=zeva2-postgresql-dev-${{ env.PR_NUMBER }} || true
           oc -n ${{ env.DEV_NAMESPACE }} delete pvc -l app.kubernetes.io/instance=zeva2-redis-dev-${{ env.PR_NUMBER }} || true
           oc -n ${{ env.DEV_NAMESPACE }} delete pvc -l app.kubernetes.io/instance=zeva2-minio-dev-${{ env.PR_NUMBER }} || true
+          oc -n ${{ env.DEV_NAMESPACE }} delete istag zeva2-next:pr${{ env.PR_NUMBER }} || true
+          oc -n ${{ env.DEV_NAMESPACE }} delete istag zeva2-bullmq:pr${{ env.PR_NUMBER }} || true
+          oc -n ${{ env.TOOLS_NAMESPACE }} delete istag zeva2-next:pr${{ env.PR_NUMBER }} || true
+          oc -n ${{ env.TOOLS_NAMESPACE }} delete istag zeva2-bullmq:pr${{ env.PR_NUMBER }} || true
