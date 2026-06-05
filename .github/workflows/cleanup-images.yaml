@@ -66,6 +66,10 @@ jobs:
           all_next_kept="${{ needs.cleanup-dev.outputs.next_tags_to_keep }},${{ needs.cleanup-test.outputs.next_tags_to_keep }},${{ needs.cleanup-prod.outputs.next_tags_to_keep }}"
           all_bullmq_kept="${{ needs.cleanup-dev.outputs.bullmq_tags_to_keep }},${{ needs.cleanup-test.outputs.bullmq_tags_to_keep }},${{ needs.cleanup-prod.outputs.bullmq_tags_to_keep }}"
 
+          # Deduplicate the comma-separated tag lists
+          all_next_kept=$(echo "$all_next_kept" | tr ',' '\n' | grep -v '^$' | sort -u | tr '\n' ',' | sed 's/,$//')
+          all_bullmq_kept=$(echo "$all_bullmq_kept" | tr ',' '\n' | grep -v '^$' | sort -u | tr '\n' ',' | sed 's/,$//')
+
           echo "Kept zeva2-next tags (union):   $all_next_kept"
           echo "Kept zeva2-bullmq tags (union): $all_bullmq_kept"
 
