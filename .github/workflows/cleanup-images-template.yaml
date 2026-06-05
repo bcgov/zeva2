@@ -1,0 +1,146 @@
+# Reusable workflow to clean up unused/expired images in an OpenShift namespace.
+# Called by cleanup-images.yaml for each of the dev, test, and prod environments.
+
+name: Cleanup Images Template
+
+on:
+  workflow_call:
+    inputs:
+      environment:
+        description: "Environment name (dev, test, or prod)"
+        required: true
+        type: string
+    outputs:
+      next_tags_to_keep:
+        description: "Comma-separated list of zeva2-next image tags to keep"
+        value: ${{ jobs.cleanup.outputs.next_tags_to_keep }}
+      bullmq_tags_to_keep:
+        description: "Comma-separated list of zeva2-bullmq image tags to keep"
+        value: ${{ jobs.cleanup.outputs.bullmq_tags_to_keep }}
+
+permissions:
+  contents: read
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+jobs:
+  cleanup:
+    name: Cleanup images in ${{ inputs.environment }} namespace
+    runs-on: ubuntu-latest
+    outputs:
+      next_tags_to_keep: ${{ steps.collect-keep.outputs.next_tags_to_keep }}
+      bullmq_tags_to_keep: ${{ steps.collect-keep.outputs.bullmq_tags_to_keep }}
+
+    steps:
+      - name: Restore oc CLI from cache
+        uses: actions/cache@v5.0.4
+        with:
+          path: /usr/local/bin/oc
+          key: oc-cli-${{ runner.os }}
+
+      - name: Log in to OpenShift
+        uses: redhat-actions/oc-login@v1.3
+        with:
+          openshift_server_url: ${{ secrets.OPENSHIFT_SERVER }}
+          openshift_token: ${{ secrets.OPENSHIFT_TOKEN }}
+          insecure_skip_tls_verify: true
+          namespace: ${{ secrets.OPENSHIFT_NAMESPACE_PLATE }}-${{ inputs.environment }}
+
+      - name: Collect image tags to keep
+        id: collect-keep
+        run: |
+          namespace="${{ secrets.OPENSHIFT_NAMESPACE_PLATE }}-${{ inputs.environment }}"
+          env="${{ inputs.environment }}"
+
+          echo "=== Collecting image tags to keep in $namespace ==="
+
+          # Get the image tag currently used by each deployment (extract tag from full image ref)
+          next_current_image=$(oc get deployment "zeva2-next-${env}" -n "$namespace" \
+            -o jsonpath='{.spec.template.spec.containers[0].image}' 2>/dev/null || echo "")
+          next_current_tag="${next_current_image##*:}"
+
+          bullmq_current_image=$(oc get deployment "zeva2-bullmq-${env}" -n "$namespace" \
+            -o jsonpath='{.spec.template.spec.containers[0].image}' 2>/dev/null || echo "")
+          bullmq_current_tag="${bullmq_current_image##*:}"
+
+          echo "Current zeva2-next tag in deployment:   $next_current_tag"
+          echo "Current zeva2-bullmq tag in deployment: $bullmq_current_tag"
+
+          # ── zeva2-next: get top 3 semantic-version release tags ──────────────
+          next_all_tags=$(oc get is zeva2-next -n "$namespace" \
+            -o jsonpath='{.status.tags[*].tag}' 2>/dev/null || echo "")
+          next_semver_tags=()
+          for tag in $next_all_tags; do
+            if [[ $tag =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+              next_semver_tags+=("$tag")
+            fi
+          done
+          if [ ${#next_semver_tags[@]} -gt 0 ]; then
+            next_top3=$(printf '%s\n' "${next_semver_tags[@]}" | sort -V | tail -3 | tr '\n' ',')
+          else
+            next_top3=""
+          fi
+
+          # ── zeva2-bullmq: get top 3 semantic-version release tags ────────────
+          bullmq_all_tags=$(oc get is zeva2-bullmq -n "$namespace" \
+            -o jsonpath='{.status.tags[*].tag}' 2>/dev/null || echo "")
+          bullmq_semver_tags=()
+          for tag in $bullmq_all_tags; do
+            if [[ $tag =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+              bullmq_semver_tags+=("$tag")
+            fi
+          done
+          if [ ${#bullmq_semver_tags[@]} -gt 0 ]; then
+            bullmq_top3=$(printf '%s\n' "${bullmq_semver_tags[@]}" | sort -V | tail -3 | tr '\n' ',')
+          else
+            bullmq_top3=""
+          fi
+
+          # ── Combine current deployment tag + top 3, then deduplicate ─────────
+          next_keep=$(printf '%s\n' "$next_current_tag" "$next_top3" \
+            | tr ',' '\n' | grep -v '^$' | sort -u | tr '\n' ',' | sed 's/,$//')
+          bullmq_keep=$(printf '%s\n' "$bullmq_current_tag" "$bullmq_top3" \
+            | tr ',' '\n' | grep -v '^$' | sort -u | tr '\n' ',' | sed 's/,$//')
+
+          echo "zeva2-next tags to keep:   $next_keep"
+          echo "zeva2-bullmq tags to keep: $bullmq_keep"
+
+          echo "next_tags_to_keep=$next_keep"     >> $GITHUB_OUTPUT
+          echo "bullmq_tags_to_keep=$bullmq_keep" >> $GITHUB_OUTPUT
+
+      # - name: Delete unused zeva2-next image tags
+      #   run: |
+      #     namespace="${{ secrets.OPENSHIFT_NAMESPACE_PLATE }}-${{ inputs.environment }}"
+      #     tags_to_keep="${{ steps.collect-keep.outputs.next_tags_to_keep }}"
+
+      #     echo "=== Deleting unused zeva2-next image tags from $namespace ==="
+      #     all_tags=$(oc get is zeva2-next -n "$namespace" \
+      #       -o jsonpath='{.status.tags[*].tag}' 2>/dev/null || echo "")
+
+      #     for tag in $all_tags; do
+      #       if echo "$tags_to_keep" | tr ',' '\n' | grep -qx "$tag"; then
+      #         echo "Keeping  zeva2-next:$tag"
+      #       else
+      #         echo "Deleting zeva2-next:$tag"
+      #         oc delete istag "zeva2-next:$tag" -n "$namespace" --ignore-not-found=true
+      #       fi
+      #     done
+
+      # - name: Delete unused zeva2-bullmq image tags
+      #   run: |
+      #     namespace="${{ secrets.OPENSHIFT_NAMESPACE_PLATE }}-${{ inputs.environment }}"
+      #     tags_to_keep="${{ steps.collect-keep.outputs.bullmq_tags_to_keep }}"
+
+      #     echo "=== Deleting unused zeva2-bullmq image tags from $namespace ==="
+      #     all_tags=$(oc get is zeva2-bullmq -n "$namespace" \
+      #       -o jsonpath='{.status.tags[*].tag}' 2>/dev/null || echo "")
+
+      #     for tag in $all_tags; do
+      #       if echo "$tags_to_keep" | tr ',' '\n' | grep -qx "$tag"; then
+      #         echo "Keeping  zeva2-bullmq:$tag"
+      #       else
+      #         echo "Deleting zeva2-bullmq:$tag"
+      #         oc delete istag "zeva2-bullmq:$tag" -n "$namespace" --ignore-not-found=true
+      #       fi
+      #     done
