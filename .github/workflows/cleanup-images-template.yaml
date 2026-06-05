@@ -109,38 +109,38 @@ jobs:
           echo "next_tags_to_keep=$next_keep"     >> $GITHUB_OUTPUT
           echo "bullmq_tags_to_keep=$bullmq_keep" >> $GITHUB_OUTPUT
 
-      # - name: Delete unused zeva2-next image tags
-      #   run: |
-      #     namespace="${{ secrets.OPENSHIFT_NAMESPACE_PLATE }}-${{ inputs.environment }}"
-      #     tags_to_keep="${{ steps.collect-keep.outputs.next_tags_to_keep }}"
+      - name: Delete unused zeva2-next image tags
+        run: |
+          namespace="${{ secrets.OPENSHIFT_NAMESPACE_PLATE }}-${{ inputs.environment }}"
+          tags_to_keep="${{ steps.collect-keep.outputs.next_tags_to_keep }}"
 
-      #     echo "=== Deleting unused zeva2-next image tags from $namespace ==="
-      #     all_tags=$(oc get is zeva2-next -n "$namespace" \
-      #       -o jsonpath='{.status.tags[*].tag}' 2>/dev/null || echo "")
+          echo "=== Deleting unused zeva2-next image tags from $namespace ==="
+          all_tags=$(oc get is zeva2-next -n "$namespace" \
+            -o jsonpath='{.status.tags[*].tag}' 2>/dev/null || echo "")
 
-      #     for tag in $all_tags; do
-      #       if echo "$tags_to_keep" | tr ',' '\n' | grep -qx "$tag"; then
-      #         echo "Keeping  zeva2-next:$tag"
-      #       else
-      #         echo "Deleting zeva2-next:$tag"
-      #         oc delete istag "zeva2-next:$tag" -n "$namespace" --ignore-not-found=true
-      #       fi
-      #     done
+          for tag in $all_tags; do
+            if echo "$tags_to_keep" | tr ',' '\n' | grep -qx "$tag"; then
+              echo "Keeping  zeva2-next:$tag"
+            else
+              echo "Deleting zeva2-next:$tag"
+              oc delete istag "zeva2-next:$tag" -n "$namespace" --ignore-not-found=true
+            fi
+          done
 
-      # - name: Delete unused zeva2-bullmq image tags
-      #   run: |
-      #     namespace="${{ secrets.OPENSHIFT_NAMESPACE_PLATE }}-${{ inputs.environment }}"
-      #     tags_to_keep="${{ steps.collect-keep.outputs.bullmq_tags_to_keep }}"
+      - name: Delete unused zeva2-bullmq image tags
+        run: |
+          namespace="${{ secrets.OPENSHIFT_NAMESPACE_PLATE }}-${{ inputs.environment }}"
+          tags_to_keep="${{ steps.collect-keep.outputs.bullmq_tags_to_keep }}"
 
-      #     echo "=== Deleting unused zeva2-bullmq image tags from $namespace ==="
-      #     all_tags=$(oc get is zeva2-bullmq -n "$namespace" \
-      #       -o jsonpath='{.status.tags[*].tag}' 2>/dev/null || echo "")
+          echo "=== Deleting unused zeva2-bullmq image tags from $namespace ==="
+          all_tags=$(oc get is zeva2-bullmq -n "$namespace" \
+            -o jsonpath='{.status.tags[*].tag}' 2>/dev/null || echo "")
 
-      #     for tag in $all_tags; do
-      #       if echo "$tags_to_keep" | tr ',' '\n' | grep -qx "$tag"; then
-      #         echo "Keeping  zeva2-bullmq:$tag"
-      #       else
-      #         echo "Deleting zeva2-bullmq:$tag"
-      #         oc delete istag "zeva2-bullmq:$tag" -n "$namespace" --ignore-not-found=true
-      #       fi
-      #     done
+          for tag in $all_tags; do
+            if echo "$tags_to_keep" | tr ',' '\n' | grep -qx "$tag"; then
+              echo "Keeping  zeva2-bullmq:$tag"
+            else
+              echo "Deleting zeva2-bullmq:$tag"
+              oc delete istag "zeva2-bullmq:$tag" -n "$namespace" --ignore-not-found=true
+            fi
+          done

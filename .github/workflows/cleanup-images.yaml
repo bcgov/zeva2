@@ -66,34 +66,38 @@ jobs:
           all_next_kept="${{ needs.cleanup-dev.outputs.next_tags_to_keep }},${{ needs.cleanup-test.outputs.next_tags_to_keep }},${{ needs.cleanup-prod.outputs.next_tags_to_keep }}"
           all_bullmq_kept="${{ needs.cleanup-dev.outputs.bullmq_tags_to_keep }},${{ needs.cleanup-test.outputs.bullmq_tags_to_keep }},${{ needs.cleanup-prod.outputs.bullmq_tags_to_keep }}"
 
+          # Deduplicate the comma-separated tag lists
+          all_next_kept=$(echo "$all_next_kept" | tr ',' '\n' | grep -v '^$' | sort -u | tr '\n' ',' | sed 's/,$//')
+          all_bullmq_kept=$(echo "$all_bullmq_kept" | tr ',' '\n' | grep -v '^$' | sort -u | tr '\n' ',' | sed 's/,$//')
+
           echo "Kept zeva2-next tags (union):   $all_next_kept"
           echo "Kept zeva2-bullmq tags (union): $all_bullmq_kept"
 
-          # # ── zeva2-next ───────────────────────────────────────────────────────
-          # echo "=== Cleaning up zeva2-next in tools namespace ==="
-          # next_all_tags=$(oc get is zeva2-next -n "$namespace" \
-          #   -o jsonpath='{.status.tags[*].tag}' 2>/dev/null || echo "")
-          # for tag in $next_all_tags; do
-          #   if echo "$all_next_kept" | tr ',' '\n' | grep -qx "$tag"; then
-          #     echo "Keeping  zeva2-next:$tag in tools"
-          #   else
-          #     echo "Deleting zeva2-next:$tag from tools"
-          #     oc delete istag "zeva2-next:$tag" -n "$namespace" --ignore-not-found=true
-          #   fi
-          # done
+          # ── zeva2-next ───────────────────────────────────────────────────────
+          echo "=== Cleaning up zeva2-next in tools namespace ==="
+          next_all_tags=$(oc get is zeva2-next -n "$namespace" \
+            -o jsonpath='{.status.tags[*].tag}' 2>/dev/null || echo "")
+          for tag in $next_all_tags; do
+            if echo "$all_next_kept" | tr ',' '\n' | grep -qx "$tag"; then
+              echo "Keeping  zeva2-next:$tag in tools"
+            else
+              echo "Deleting zeva2-next:$tag from tools"
+              oc delete istag "zeva2-next:$tag" -n "$namespace" --ignore-not-found=true
+            fi
+          done
 
-          # # ── zeva2-bullmq ─────────────────────────────────────────────────────
-          # echo "=== Cleaning up zeva2-bullmq in tools namespace ==="
-          # bullmq_all_tags=$(oc get is zeva2-bullmq -n "$namespace" \
-          #   -o jsonpath='{.status.tags[*].tag}' 2>/dev/null || echo "")
-          # for tag in $bullmq_all_tags; do
-          #   if echo "$all_bullmq_kept" | tr ',' '\n' | grep -qx "$tag"; then
-          #     echo "Keeping  zeva2-bullmq:$tag in tools"
-          #   else
-          #     echo "Deleting zeva2-bullmq:$tag from tools"
-          #     oc delete istag "zeva2-bullmq:$tag" -n "$namespace" --ignore-not-found=true
-          #   fi
-          # done
+          # ── zeva2-bullmq ─────────────────────────────────────────────────────
+          echo "=== Cleaning up zeva2-bullmq in tools namespace ==="
+          bullmq_all_tags=$(oc get is zeva2-bullmq -n "$namespace" \
+            -o jsonpath='{.status.tags[*].tag}' 2>/dev/null || echo "")
+          for tag in $bullmq_all_tags; do
+            if echo "$all_bullmq_kept" | tr ',' '\n' | grep -qx "$tag"; then
+              echo "Keeping  zeva2-bullmq:$tag in tools"
+            else
+              echo "Deleting zeva2-bullmq:$tag from tools"
+              oc delete istag "zeva2-bullmq:$tag" -n "$namespace" --ignore-not-found=true
+            fi
+          done
 
       - name: Cleanup expired builds in tools namespace
         run: |
@@ -109,7 +113,7 @@ jobs:
               age=$((current_time - creation_timestamp))
               if [ $age -gt $expiration_seconds ]; then
                 echo "Deleting expired build: $build_name (age: $((age / 86400)) days)"
-                # oc delete build "$build_name" -n "$namespace" --ignore-not-found=true
+                oc delete build "$build_name" -n "$namespace" --ignore-not-found=true
               fi
             done
 
@@ -135,7 +139,7 @@ jobs:
                   bc_age=$((current_time - bc_timestamp))
                   if [ $bc_age -gt $expiration_seconds ]; then
                     echo "Deleting expired build config: $bc_name (age: $((bc_age / 86400)) days)"
-                    # oc delete buildconfig "$bc_name" -n "$namespace" --ignore-not-found=true
+                    oc delete buildconfig "$bc_name" -n "$namespace" --ignore-not-found=true
                   fi
                 fi
               fi
