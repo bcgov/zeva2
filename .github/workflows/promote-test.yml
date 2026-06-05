@@ -53,8 +53,8 @@ jobs:
               exit 1
             fi
           done
-          oc tag ${{ env.TOOLS_NAMESPACE }}/zeva2-next:${{ inputs.version }} ${{ env.TEST_NAMESPACE}}/zeva2-next:${{ inputs.version }}
-          oc tag ${{ env.TOOLS_NAMESPACE }}/zeva2-bullmq:${{ inputs.version }} ${{ env.TEST_NAMESPACE }}/zeva2-bullmq:${{ inputs.version }}
+          oc tag ${{ env.TOOLS_NAMESPACE }}/zeva2-next:${{ inputs.version }} ${{ env.TEST_NAMESPACE}}/zeva2-next:${{ inputs.version }} --reference-policy=local
+          oc tag ${{ env.TOOLS_NAMESPACE }}/zeva2-bullmq:${{ inputs.version }} ${{ env.TEST_NAMESPACE }}/zeva2-bullmq:${{ inputs.version }} --reference-policy=local
 
   deploy-test:
     name: Deploy Zeva2 to Test
