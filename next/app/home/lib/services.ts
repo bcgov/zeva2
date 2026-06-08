@@ -323,7 +323,7 @@ export const getSupplierCaActionRequiredItems = async (
         ? getIsoYmdString(ca.CreditApplicationHistory[0].timestamp)
         : undefined,
       status: statusMap[caMap[ca.status]] ?? "",
-      route: `${Routes.CreditApplications}/${ca.id}/details`,
+      route: `${Routes.CreditApplications}/${ca.id}`,
       cta: "View",
     };
   });
@@ -545,7 +545,7 @@ export const getSupplierCaInProgressItems = async (
         ? getIsoYmdString(ca.CreditApplicationHistory[0].timestamp)
         : undefined,
       status: statusMap[caMap[ca.status]] ?? "",
-      route: `${Routes.CreditApplications}/${ca.id}/details`,
+      route: `${Routes.CreditApplications}/${ca.id}`,
       cta: "View",
     };
   });
@@ -780,7 +780,7 @@ export const getSupplierCaForAwarenessItems = async (
         ? getIsoYmdString(ca.CreditApplicationHistory[0].timestamp)
         : undefined,
       status: statusMap[caMap[ca.status]] ?? "",
-      route: `${Routes.CreditApplications}/${ca.id}/details`,
+      route: `${Routes.CreditApplications}/${ca.id}`,
       cta: "View",
     };
   });

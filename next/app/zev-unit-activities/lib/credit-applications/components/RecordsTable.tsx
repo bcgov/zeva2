@@ -17,7 +17,13 @@ import {
 } from "../actions";
 import { useRouter } from "next/navigation";
 import { getModelYearEnumsToStringsMap } from "@/app/lib/utils/enumMaps";
-import { CreditApplicationRecordSparseSerialized } from "../constants";
+import {
+  CreditApplicationRecordSparseSerialized,
+  InvalidReason,
+  isInvalidReason,
+  isValidReason,
+  ValidReason,
+} from "../constants";
 import { ModelYear } from "@/prisma/generated/enums";
 import { isModelYear } from "@/app/lib/utils/typeGuards";
 
@@ -44,11 +50,8 @@ export const RecordsTable = (props: {
 
   const getReasonsJSX = useCallback((id: number, reason: string | null) => {
     const reasons = [
-      "Evidence provided",
-      "Validated by other means as being registered in BC",
-      "Error in ICBC data",
-      "Invalid Model Year",
-      "Other, explained in comments",
+      ...Object.values(ValidReason),
+      ...Object.values(InvalidReason),
     ];
     return (
       <Dropdown
@@ -61,7 +64,15 @@ export const RecordsTable = (props: {
         onChange={(value) => {
           const newValue = value ? value : null;
           setMapOfData((prev) => {
-            return { ...prev, [id]: [prev[id][0], newValue] };
+            let newValidationStatus = prev[id][0];
+            if (newValue) {
+              if (isValidReason(newValue)) {
+                newValidationStatus = true;
+              } else if (isInvalidReason(newValue)) {
+                newValidationStatus = false;
+              }
+            }
+            return { ...prev, [id]: [newValidationStatus, newValue] };
           });
         }}
       />

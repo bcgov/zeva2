@@ -72,3 +72,27 @@ export type CreditApplicationRecordSparseSerialized = Omit<
   CreditApplicationRecordSparse,
   "timestamp" | "icbcRegistrationTimestamp"
 > & { timestamp: string; icbcRegistrationTimestamp: string | null };
+
+export enum ValidReason {
+  EvidenceProvided = "Evidence provided",
+  OtherMeans = "Validated by other means as being registered in BC",
+  IcbcError = "Error in ICBC data",
+  Other = "Valid for another reason, explained in comments",
+}
+
+export enum InvalidReason {
+  ModelYear = "Invalid Model Year",
+  Other = "Invalid for another reason, explained in comments",
+}
+
+export const isValidReason = (s: string): s is ValidReason => {
+  return Object.values(ValidReason).some((reason) => {
+    return reason === s;
+  });
+};
+
+export const isInvalidReason = (s: string): s is InvalidReason => {
+  return Object.values(InvalidReason).some((reason) => {
+    return reason === s;
+  });
+};

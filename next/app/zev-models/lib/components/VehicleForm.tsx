@@ -121,7 +121,7 @@ export const VehicleForm = (props: {
           throw new Error(response.message);
         }
         const vehicleId = response.data;
-        router.push(`${Routes.SubmittedZevModels}/${vehicleId}/details`);
+        router.push(`${Routes.SubmittedZevModels}/${vehicleId}`);
       } catch (e) {
         if (e instanceof Error) {
           setError(e.message);

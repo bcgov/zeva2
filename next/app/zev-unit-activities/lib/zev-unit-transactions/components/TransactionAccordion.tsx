@@ -80,7 +80,7 @@ export const TransactionAccordion = ({
   const getLink = useCallback(
     (referenceType: ReferenceType, referenceId: number) => {
       if (referenceType === ReferenceType.SUPPLY_CREDITS) {
-        return `${Routes.CreditApplications}/${referenceId}/details`;
+        return `${Routes.CreditApplications}/${referenceId}`;
       }
       if (referenceType === ReferenceType.TRANSFER) {
         return `${Routes.CreditTransfers}/${referenceId}`;

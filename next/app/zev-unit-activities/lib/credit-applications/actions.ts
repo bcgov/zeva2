@@ -27,7 +27,7 @@ import {
   createAttachments,
   getDecodedVinsMap,
 } from "./services";
-import { ErrorsTemplate, SupplierTemplate } from "./constants";
+import { ErrorsTemplate, InvalidReason, SupplierTemplate } from "./constants";
 import {
   Directory,
   getAttachmentPutData,
@@ -704,7 +704,7 @@ export const invalidateRecords = async (
       },
       data: {
         validated: false,
-        reason: "Invalid Model Year",
+        reason: InvalidReason.ModelYear,
       },
     });
     await tx.creditApplication.update({
