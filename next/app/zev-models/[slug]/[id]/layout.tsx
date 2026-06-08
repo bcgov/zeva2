@@ -1,13 +1,12 @@
-import { Breadcrumbs } from "@/app/lib/components";
-import { SecondaryNavbar } from "@/app/lib/components/SecondaryNavbar";
 import { getVehicle } from "../../lib/data";
+import { IndividualNavbar } from "../../lib/components/IndividualNavbar";
 
 const Layout = async (props: {
   children: React.ReactNode;
   params: Promise<{ slug: string; id: string }>;
 }) => {
   const args = await props.params;
-  const id = Number.parseInt(args.id);
+  const id = Number.parseInt(args.id, 10);
   const slug = args.slug;
   const vehicle = await getVehicle(id);
 
@@ -15,26 +14,13 @@ const Layout = async (props: {
     return null;
   }
 
-  const items = [
-    {
-      label: `ZEV Model ${vehicle.modelName || id}`,
-      route: `/zev-models/${slug}/${id}/details`,
-    },
-    {
-      label: "Audit History",
-      route: `/zev-models/${slug}/${id}/audit-history`,
-    },
-  ];
-
   return (
     <>
-      <Breadcrumbs
-        items={[
-          { label: "ZEV Models", href: `/zev-models/${slug}` },
-          { label: vehicle.modelName || `ZEV Model ${id}` },
-        ]}
+      <IndividualNavbar
+        slug={slug}
+        vehicleId={id}
+        modelName={vehicle.modelName}
       />
-      <SecondaryNavbar items={items} />
       {props.children}
     </>
   );

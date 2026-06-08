@@ -23,7 +23,7 @@ export const VehicleList = async (props: {
   const { userIsGov } = await getUserInfo();
   const navigationAction = async (id: number) => {
     "use server";
-    redirect(`${getZevModelTabRoute(props.type)}/${id}/details`);
+    redirect(`${getZevModelTabRoute(props.type)}/${id}`);
   };
   const [vehicles, totalNumberOfVehicles] = await getVehicles(
     props.type,

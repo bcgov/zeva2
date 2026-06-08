@@ -34,8 +34,8 @@ export const getZevModelDetailsRoute = (vehicle: {
   if (vehicle.status === VehicleStatus.VALIDATED) {
     return `${
       vehicle.isActive ? Routes.ValidatedZevModels : Routes.InactiveZevModels
-    }/${vehicle.id}/details`;
+    }/${vehicle.id}`;
   }
 
-  return `${Routes.SubmittedZevModels}/${vehicle.id}/details`;
+  return `${Routes.SubmittedZevModels}/${vehicle.id}`;
 };

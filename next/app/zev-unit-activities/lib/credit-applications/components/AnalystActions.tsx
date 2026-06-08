@@ -144,48 +144,61 @@ export const AnalystActions = (props: {
   }
   return (
     <>
-      {error && <p className="text-red-600">{error}</p>}
       <Textarea value={comment} onChange={setComment} />
-      <Button variant="primary" onClick={() => showModal("validate")}>
-        Validate
-      </Button>
-      <Button variant="primary" onClick={() => showModal("reject")}>
-        Reject
-      </Button>
-      {props.validatedBefore && (
-        <>
-          <Button
-            variant="secondary"
-            onClick={() => {
-              handleGoToValidated(false);
-            }}
-          >
-            View Validated Records
+      {error && <p className="text-red-600">{error}</p>}
+      {props.validatedBefore ? (
+        <div className="flex flex-row justify-between">
+          <div className="flex flex-row items-center gap-3">
+            <Button variant="danger" onClick={() => showModal("reject")}>
+              Reject
+            </Button>
+            <Button
+              variant="secondary"
+              onClick={() => {
+                handleGoToValidated(false);
+              }}
+            >
+              View Validated Records
+            </Button>
+            <Button
+              variant="secondary"
+              onClick={() => {
+                handleGoToValidated(true);
+              }}
+            >
+              Edit Validated Records
+            </Button>
+            <Button variant="primary" onClick={() => showModal("validate")}>
+              Validate
+            </Button>
+          </div>
+          <div className="flex flex-row items-center gap-3">
+            <Dropdown
+              options={props.complianceYears.map((cy) => {
+                return {
+                  value: cy,
+                  label: modelYearsMap[cy] ?? "",
+                };
+              })}
+              onChange={(value) => {
+                handleSelectCy(value);
+              }}
+              value={complianceYear}
+            />
+            <Button variant="primary" onClick={() => showModal("recommend")}>
+              Recommend Approval
+            </Button>
+          </div>
+        </div>
+      ) : (
+        <div className="flex flex-row justify-between">
+          <Button variant="danger" onClick={() => showModal("reject")}>
+            Reject
           </Button>
-          <Button
-            variant="secondary"
-            onClick={() => {
-              handleGoToValidated(true);
-            }}
-          >
-            Edit Validated Records
+          <Button variant="primary" onClick={() => showModal("validate")}>
+            Validate
           </Button>
-          <Dropdown
-            options={props.complianceYears.map((cy) => {
-              return {
-                value: cy,
-                label: modelYearsMap[cy] ?? "",
-              };
-            })}
-            onChange={(value) => {
-              handleSelectCy(value);
-            }}
-            value={complianceYear}
-          />
-          <Button variant="primary" onClick={() => showModal("recommend")}>
-            Recommend Approval
-          </Button>
-        </>
+        </div>
       )}
       {modal}
     </>

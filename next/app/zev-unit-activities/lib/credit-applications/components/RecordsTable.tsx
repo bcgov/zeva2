@@ -17,7 +17,13 @@ import {
 } from "../actions";
 import { useRouter } from "next/navigation";
 import { getModelYearEnumsToStringsMap } from "@/app/lib/utils/enumMaps";
-import { CreditApplicationRecordSparseSerialized } from "../constants";
+import {
+  CreditApplicationRecordSparseSerialized,
+  InvalidReason,
+  isInvalidReason,
+  isValidReason,
+  ValidReason,
+} from "../constants";
 import { ModelYear } from "@/prisma/generated/enums";
 import { isModelYear } from "@/app/lib/utils/typeGuards";
 
@@ -37,18 +43,16 @@ export const RecordsTable = (props: {
   useEffect(() => {
     const mapOfDataToSet: MapOfValidatedAndReasons = {};
     for (const record of props.records) {
-      mapOfDataToSet[record.id] = [record.validated, record.reason];
+      mapOfDataToSet[record.id] = [record.validated, record.reason || ""];
     }
     setMapOfData(mapOfDataToSet);
   }, [props.records]);
 
-  const getReasonsJSX = useCallback((id: number, reason: string | null) => {
+  const getReasonsJSX = useCallback((id: number, reason: string) => {
     const reasons = [
-      "Evidence provided",
-      "Validated by other means as being registered in BC",
-      "Error in ICBC data",
-      "Invalid Model Year",
-      "Other, explained in comments",
+      "",
+      ...Object.values(ValidReason),
+      ...Object.values(InvalidReason),
     ];
     return (
       <Dropdown
@@ -57,11 +61,18 @@ export const RecordsTable = (props: {
           value: reason,
           label: reason,
         }))}
-        value={reason ?? ""}
+        value={reason}
         onChange={(value) => {
-          const newValue = value ? value : null;
           setMapOfData((prev) => {
-            return { ...prev, [id]: [prev[id][0], newValue] };
+            let newValidationStatus = prev[id][0];
+            if (value) {
+              if (isValidReason(value)) {
+                newValidationStatus = true;
+              } else if (isInvalidReason(value)) {
+                newValidationStatus = false;
+              }
+            }
+            return { ...prev, [id]: [newValidationStatus, value] };
           });
         }}
       />

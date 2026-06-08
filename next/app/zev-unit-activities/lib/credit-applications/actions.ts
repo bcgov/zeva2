@@ -27,7 +27,7 @@ import {
   createAttachments,
   getDecodedVinsMap,
 } from "./services";
-import { ErrorsTemplate, SupplierTemplate } from "./constants";
+import { ErrorsTemplate, InvalidReason, SupplierTemplate } from "./constants";
 import {
   Directory,
   getAttachmentPutData,
@@ -527,7 +527,7 @@ export const validateCreditApplication = async (
   return getSuccessActionResponse();
 };
 
-export type MapOfValidatedAndReasons = Record<number, [boolean, string | null]>;
+export type MapOfValidatedAndReasons = Record<number, [boolean, string]>;
 
 export const updateValidatedRecords = async (
   creditApplicationId: number,
@@ -603,7 +603,7 @@ export const updateValidatedRecords = async (
       }
     }
     record.validated = newValidated;
-    record.reason = mapOfData[id][1];
+    record.reason = mapOfData[id][1] || null;
   }
   await prisma.$transaction(async (tx) => {
     await tx.creditApplicationRecord.deleteMany({
@@ -704,7 +704,7 @@ export const invalidateRecords = async (
       },
       data: {
         validated: false,
-        reason: "Invalid Model Year",
+        reason: InvalidReason.ModelYear,
       },
     });
     await tx.creditApplication.update({
