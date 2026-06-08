@@ -43,13 +43,14 @@ export const RecordsTable = (props: {
   useEffect(() => {
     const mapOfDataToSet: MapOfValidatedAndReasons = {};
     for (const record of props.records) {
-      mapOfDataToSet[record.id] = [record.validated, record.reason];
+      mapOfDataToSet[record.id] = [record.validated, record.reason || ""];
     }
     setMapOfData(mapOfDataToSet);
   }, [props.records]);
 
-  const getReasonsJSX = useCallback((id: number, reason: string | null) => {
+  const getReasonsJSX = useCallback((id: number, reason: string) => {
     const reasons = [
+      "",
       ...Object.values(ValidReason),
       ...Object.values(InvalidReason),
     ];
@@ -60,19 +61,18 @@ export const RecordsTable = (props: {
           value: reason,
           label: reason,
         }))}
-        value={reason ?? ""}
+        value={reason}
         onChange={(value) => {
-          const newValue = value ? value : null;
           setMapOfData((prev) => {
             let newValidationStatus = prev[id][0];
-            if (newValue) {
-              if (isValidReason(newValue)) {
+            if (value) {
+              if (isValidReason(value)) {
                 newValidationStatus = true;
-              } else if (isInvalidReason(newValue)) {
+              } else if (isInvalidReason(value)) {
                 newValidationStatus = false;
               }
             }
-            return { ...prev, [id]: [newValidationStatus, newValue] };
+            return { ...prev, [id]: [newValidationStatus, value] };
           });
         }}
       />
