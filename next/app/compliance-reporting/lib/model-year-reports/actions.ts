@@ -32,9 +32,6 @@ import {
   getSupplierClassAndVolumes,
   getVehicleStatistics,
   updateOrgSupplierClass,
-  checkReassessmentGuard,
-  createReassessmentGuard,
-  deleteReassessmentGuard,
   assessReassessment,
 } from "./services";
 import {
@@ -957,7 +954,6 @@ export const submitReassessment = async (
   const organizationId = reassessment.organizationId;
   try {
     await getDataForReassessment(organizationId, reassessment.modelYear);
-    await checkReassessmentGuard(organizationId);
   } catch {
     return getErrorActionResponse("Invalid Action!");
   }
@@ -977,7 +973,6 @@ export const submitReassessment = async (
       comment,
       tx,
     );
-    await createReassessmentGuard(organizationId, tx);
   });
   return getSuccessActionResponse();
 };
@@ -1019,7 +1014,6 @@ export const returnReassessment = async (
       comment,
       tx,
     );
-    await deleteReassessmentGuard(reassessment.organizationId, tx);
   });
   return getSuccessActionResponse();
 };
@@ -1071,7 +1065,6 @@ export const issueReassessment = async (
       comment,
       tx,
     );
-    await deleteReassessmentGuard(organizationId, tx);
   });
   return getSuccessActionResponse();
 };
@@ -1440,7 +1433,6 @@ export const submitSupplementaryToDirector = async (
   }
   try {
     await getDataForReassessment(supp.organizationId, supp.modelYear);
-    await checkReassessmentGuard(supp.organizationId);
   } catch {
     return getErrorActionResponse("Invalid Action!");
   }
@@ -1460,7 +1452,6 @@ export const submitSupplementaryToDirector = async (
       comment,
       tx,
     );
-    await createReassessmentGuard(supp.organizationId, tx);
   });
   return getSuccessActionResponse();
 };
@@ -1501,7 +1492,6 @@ export const returnSupplementaryToAnalyst = async (
       comment,
       tx,
     );
-    await deleteReassessmentGuard(supp.organizationId, tx);
   });
   return getSuccessActionResponse();
 };
@@ -1567,7 +1557,6 @@ export const assessSupplementary = async (
       comment,
       tx,
     );
-    await deleteReassessmentGuard(organizationId, tx);
   });
   return getSuccessActionResponse();
 };

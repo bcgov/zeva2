@@ -174,6 +174,7 @@ export const AnalystActions = (props: {
           </div>
           <div className="flex flex-row items-center gap-3">
             <Dropdown
+              label="Compliance Year"
               options={props.complianceYears.map((cy) => {
                 return {
                   value: cy,

@@ -102,6 +102,7 @@ export const ApplicationsTable = (props: {
       columns={columns}
       data={props.applications}
       totalNumberOfRecords={props.totalNumberOfApplications}
+      defaultPageSize={10}
       navigationAction={props.navigationAction}
       headerContent={props.headerContent}
     />
