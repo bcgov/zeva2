@@ -21,39 +21,64 @@ import { getObjectAsBuffer } from "@/app/lib/services/s3";
 import { getSupplierDetails, getVehicleStatistics } from "./services";
 import { getAddressAsString } from "./utils";
 import { MyrRecord } from "./constants";
+import {
+  getAdjacentYear,
+  getCurrentComplianceYear,
+  within20DayPeriod,
+} from "@/app/lib/utils/complianceYear";
 
-export const modelYearReportExists = async (modelYear: ModelYear) => {
-  const { userOrgId } = await getUserInfo();
-  const report = await prisma.modelYearReport.findUnique({
+// returns MY of their next MYR; returns null if they cannot create a new MYR
+export const getMyrModelYear = async () => {
+  const { userIsGov, userOrgId } = await getUserInfo();
+  if (userIsGov) {
+    return null;
+  }
+  const currentCy = getCurrentComplianceYear();
+  const prevCy = getAdjacentYear("prev", currentCy);
+  const latestMyr = await prisma.modelYearReport.findFirst({
     where: {
-      organizationId_modelYear: {
-        organizationId: userOrgId,
-        modelYear,
-      },
+      organizationId: userOrgId,
     },
     select: {
-      id: true,
+      modelYear: true,
+      status: true,
+    },
+    orderBy: {
+      modelYear: "desc",
     },
   });
-  if (report) {
-    return true;
-  }
-  const legacyAssessedReport =
-    await prisma.legacyAssessedModelYearReport.findUnique({
+  const latestAssessedLegacyMyr =
+    await prisma.legacyAssessedModelYearReport.findFirst({
       where: {
-        organizationId_modelYear: {
-          organizationId: userOrgId,
-          modelYear,
-        },
+        organizationId: userOrgId,
       },
       select: {
-        id: true,
+        modelYear: true,
+      },
+      orderBy: {
+        modelYear: "desc",
       },
     });
-  if (legacyAssessedReport) {
-    return true;
+  let nextMy;
+  if (latestMyr) {
+    if (latestMyr.status !== ModelYearReportStatus.ASSESSED) {
+      return null;
+    }
+    nextMy = getAdjacentYear("next", latestMyr.modelYear);
+  } else if (latestAssessedLegacyMyr) {
+    nextMy = getAdjacentYear("next", latestAssessedLegacyMyr.modelYear);
   }
-  return false;
+  if (nextMy) {
+    if (nextMy < prevCy) {
+      return prevCy;
+    }
+    return nextMy;
+  }
+  // latest myr does not exist and no legacy assessed myr
+  if (within20DayPeriod()) {
+    return prevCy;
+  }
+  return currentCy;
 };
 
 export const getModelYearReport = async (myrId: number) => {

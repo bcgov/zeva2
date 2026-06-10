@@ -51,10 +51,7 @@ import {
   UnitsAsString,
 } from "./utilsServer";
 import { prisma } from "@/lib/prisma";
-import {
-  getComplianceDate,
-  getModelYearReportModelYear,
-} from "@/app/lib/utils/complianceYear";
+import { getComplianceDate } from "@/app/lib/utils/complianceYear";
 import { addJobToEmailQueue } from "@/app/lib/services/queue";
 import { Attachment, AttachmentDownload } from "@/app/lib/constants/attachment";
 
@@ -323,10 +320,6 @@ export const submitReports = async (
     },
   });
   if (!myr) {
-    return getErrorActionResponse("Invalid Action!");
-  }
-  const reportYear = getModelYearReportModelYear();
-  if (reportYear !== myr.modelYear) {
     return getErrorActionResponse("Invalid Action!");
   }
   const existingLegacyAssessedReport =

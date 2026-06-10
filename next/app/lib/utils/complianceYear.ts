@@ -64,12 +64,6 @@ export const getCompliancePeriod = (complianceYear: ModelYear) => {
   };
 };
 
-export const getModelYearReportModelYear = () => {
-  const currentComplianceYear = getCurrentComplianceYear();
-  const reportYear = getAdjacentYear("prev", currentComplianceYear);
-  return reportYear;
-};
-
 export const getComplianceDate = (modelYear: ModelYear): Date => {
   const modelYearsMap = getModelYearEnumsToStringsMap();
   const year = getAdjacentYear("next", modelYear);
@@ -80,4 +74,24 @@ export const getComplianceDate = (modelYear: ModelYear): Date => {
 
 export const getDominatedComplianceYears = (complianceYear: ModelYear) => {
   return Object.values(ModelYear).filter((cy) => cy < complianceYear);
+};
+
+export const within20DayPeriod = () => {
+  const now = new Date();
+  const nowMonth = now.getMonth();
+  const nowDay = now.getDate();
+  // any year will do
+  const beginningOfCy = new Date(
+    `2019-${process.env.BEGINNING_OF_COMPLIANCE_YEAR}`,
+  );
+  const beginningOfCyMonth = beginningOfCy.getMonth();
+  const beginningOfCyDay = beginningOfCy.getDate();
+  if (
+    nowMonth === beginningOfCyMonth &&
+    nowDay >= beginningOfCyDay &&
+    nowDay <= beginningOfCyDay + 19
+  ) {
+    return true;
+  }
+  return false;
 };
