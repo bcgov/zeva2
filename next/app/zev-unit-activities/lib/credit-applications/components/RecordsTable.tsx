@@ -257,10 +257,10 @@ export const RecordsTable = (props: {
         enableSorting: true,
         enableColumnFilter: true,
         cell: (cellProps) => {
-          if (Object.keys(mapOfData).length === 0) {
+          const id = cellProps.row.original.id;
+          if (!mapOfData[id]) {
             return null;
           }
-          const id = cellProps.row.original.id;
           const warnings = cellProps.row.original.warnings;
           const value = (
             <input
@@ -282,10 +282,10 @@ export const RecordsTable = (props: {
         enableSorting: true,
         enableColumnFilter: true,
         cell: (cellProps) => {
-          if (Object.keys(mapOfData).length === 0) {
+          const id = cellProps.row.original.id;
+          if (!mapOfData[id]) {
             return null;
           }
-          const id = cellProps.row.original.id;
           const reason = mapOfData[id][1];
           if (props.readOnly) {
             return cellProps.row.original.reason;
@@ -313,6 +313,7 @@ export const RecordsTable = (props: {
         columns={columns}
         data={props.records}
         totalNumberOfRecords={props.totalNumbeOfRecords}
+        defaultPageSize={100}
         explicitSizing={true}
         paramsToPreserve={["readOnly"]}
         stackHeaderContents={true}

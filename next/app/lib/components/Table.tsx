@@ -24,6 +24,7 @@ interface ITableProps<T> {
   columns: ColumnDef<T, any>[];
   data: T[];
   totalNumberOfRecords: number;
+  defaultPageSize: number;
   navigationAction?: (id: number) => Promise<void>;
   explicitSizing?: boolean;
   paramsToPreserve?: string[];
@@ -41,6 +42,7 @@ export const Table = <T extends ZevaObject>({
   columns,
   data,
   totalNumberOfRecords,
+  defaultPageSize,
   navigationAction,
   explicitSizing,
   paramsToPreserve,
@@ -84,8 +86,8 @@ export const Table = <T extends ZevaObject>({
 
   const currentPageSize = React.useMemo(() => {
     const pageSize = searchParams.get("pageSize");
-    return parseInt(pageSize ?? "") || 10;
-  }, [searchParams]);
+    return Number.parseInt(pageSize ?? "") || defaultPageSize;
+  }, [searchParams, defaultPageSize]);
 
   const handlePageSizeChange = React.useCallback(
     (pageSize: string) => {
@@ -99,7 +101,7 @@ export const Table = <T extends ZevaObject>({
 
   const currentPage = React.useMemo(() => {
     const page = searchParams.get("page");
-    return page ? parseInt(page, 10) : 1;
+    return page ? Number.parseInt(page, 10) : 1;
   }, [searchParams]);
 
   const numberOfPages = React.useMemo(() => {
