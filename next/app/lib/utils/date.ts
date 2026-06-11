@@ -61,3 +61,24 @@ export const getTimeWithTz = (d: Date): string => {
   }
   return `${padZeros(d.getHours().toString(), 2)}:${padZeros(d.getMinutes().toString(), 2)} ${tz}`;
 };
+
+const MONTH_ABBR = [
+  "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+  "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
+];
+
+export const getFormattedDateTime = (d: Date): string => {
+  const day = d.getDate();
+  const month = MONTH_ABBR[d.getMonth()];
+  const year = d.getFullYear();
+  const hours = padZeros(d.getHours().toString(), 2);
+  const minutes = padZeros(d.getMinutes().toString(), 2);
+  const tzOffset = d.getTimezoneOffset();
+  let tz = "";
+  if (tzOffset === 480) {
+    tz = " PST";
+  } else if (tzOffset === 420) {
+    tz = " PDT";
+  }
+  return `${day} ${month} ${year}, ${hours}:${minutes}${tz}`;
+};

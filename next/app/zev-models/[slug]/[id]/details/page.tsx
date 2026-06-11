@@ -16,6 +16,7 @@ import {
 import { VehicleDetailsPrintButton } from "@/app/zev-models/lib/components/VehicleDetailsPrintButton";
 import { VehicleDetailsAttachments } from "@/app/zev-models/lib/components/VehicleDetailsAttachments";
 import { VehicleDetailsBackButton } from "@/app/zev-models/lib/components/VehicleDetailsBackButton";
+import { AnalystDetailsPage } from "@/app/zev-models/lib/components/AnalystDetailsPage";
 
 const DetailSection = (props: {
   title: string;
@@ -99,7 +100,16 @@ const Page = async (props: {
 }) => {
   const { userIsGov, userRoles } = await getUserInfo();
   const args = await props.params;
-  const id = Number.parseInt(args.id, 10);
+  const id = Number.parseInt(args.id);
+
+  if (userIsGov && userRoles.includes(Role.ZEVA_IDIR_USER)) {
+    return (
+      <Suspense fallback={<LoadingSkeleton />}>
+        <AnalystDetailsPage vehicleId={id} />
+      </Suspense>
+    );
+  }
+
   const vehicle = await getVehicle(id);
 
   if (!vehicle) {
@@ -131,8 +141,6 @@ const Page = async (props: {
         userRoles={userRoles}
       />
     );
-  } else if (userIsGov && userRoles.includes(Role.ZEVA_IDIR_USER)) {
-    actions = <AnalystActions vehicleId={id} status={status} />;
   }
 
   const vehicleClassesMap = getVehicleClassEnumsToStringsMap();

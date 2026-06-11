@@ -76,7 +76,8 @@ function getStatusBannerVariant(title: string): StatusBannerVariant {
 
   if (
     normalizedTitle.includes("issued") ||
-    normalizedTitle.includes("success")
+    normalizedTitle.includes("success") ||
+    normalizedTitle.includes("validated")
   ) {
     return "success";
   }
