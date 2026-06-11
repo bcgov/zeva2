@@ -8,7 +8,7 @@ import { Role } from "@/prisma/generated/enums";
 import { getAttachmentDownloadUrls } from "@/app/zev-models/lib/actions";
 import { Attachments } from "@/app/lib/components/Attachments";
 import { SupplierActions } from "@/app/zev-models/lib/components/SupplierActions";
-import { AnalystActions } from "@/app/zev-models/lib/components/AnalystActions";
+import { AnalystDetailsPage } from "@/app/zev-models/lib/components/AnalystDetailsPage";
 
 const Page = async (props: {
   params: Promise<{ slug: string; id: string }>;
@@ -16,6 +16,15 @@ const Page = async (props: {
   const { userIsGov, userRoles } = await getUserInfo();
   const args = await props.params;
   const id = Number.parseInt(args.id);
+
+  if (userIsGov && userRoles.includes(Role.ZEVA_IDIR_USER)) {
+    return (
+      <Suspense fallback={<LoadingSkeleton />}>
+        <AnalystDetailsPage vehicleId={id} />
+      </Suspense>
+    );
+  }
+
   const vehicle = await getVehicle(id);
   if (!vehicle) {
     return null;
@@ -35,8 +44,6 @@ const Page = async (props: {
         userRoles={userRoles}
       />
     );
-  } else if (userIsGov && userRoles.includes(Role.ZEVA_IDIR_USER)) {
-    actions = <AnalystActions vehicleId={id} status={status} />;
   }
   return (
     <div className="flex flex-col w-1/3">
