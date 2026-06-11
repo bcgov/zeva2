@@ -122,35 +122,35 @@ export const AnalystDetailsPage = async ({
             <table className="w-full text-sm text-gray-900">
               <tbody>
                 <tr className="border-b border-gray-100">
-                  <td className="px-4 py-2 text-gray-500 w-1/2">Make:</td>
+                  <th scope="row" className="px-4 py-2 text-gray-500 font-normal text-left w-1/2">Make:</th>
                   <td className="px-4 py-2 font-medium">{vehicle.make}</td>
                 </tr>
                 <tr className="border-b border-gray-100">
-                  <td className="px-4 py-2 text-gray-500">Model Name:</td>
+                  <th scope="row" className="px-4 py-2 text-gray-500 font-normal text-left">Model Name:</th>
                   <td className="px-4 py-2 font-medium">{vehicle.modelName}</td>
                 </tr>
                 <tr className="border-b border-gray-100">
-                  <td className="px-4 py-2 text-gray-500">Model Year:</td>
+                  <th scope="row" className="px-4 py-2 text-gray-500 font-normal text-left">Model Year:</th>
                   <td className="px-4 py-2 font-medium">
                     {modelYearsMap[vehicle.modelYear]}
                   </td>
                 </tr>
                 <tr className="border-b border-gray-100">
-                  <td className="px-4 py-2 text-gray-500">Body Type:</td>
+                  <th scope="row" className="px-4 py-2 text-gray-500 font-normal text-left">Body Type:</th>
                   <td className="px-4 py-2 font-medium">
                     {classCodesMap[vehicle.vehicleClassCode]}
                   </td>
                 </tr>
                 <tr className="border-b border-gray-100">
-                  <td className="px-4 py-2 text-gray-500">Weight:</td>
+                  <th scope="row" className="px-4 py-2 text-gray-500 font-normal text-left">Weight:</th>
                   <td className="px-4 py-2 font-medium">
                     {vehicle.weight} kg
                   </td>
                 </tr>
                 <tr>
-                  <td className="px-4 py-2 text-gray-500">
+                  <th scope="row" className="px-4 py-2 text-gray-500 font-normal text-left">
                     Electric EPA Range (km):
-                  </td>
+                  </th>
                   <td className="px-4 py-2 font-medium">{vehicle.range}</td>
                 </tr>
               </tbody>
@@ -166,33 +166,33 @@ export const AnalystDetailsPage = async ({
             <table className="w-full text-sm text-gray-900">
               <tbody>
                 <tr className="border-b border-gray-100">
-                  <td className="px-4 py-2 text-gray-500 w-1/2">ZEV Type:</td>
+                  <th scope="row" className="px-4 py-2 text-gray-500 font-normal text-left w-1/2">ZEV Type:</th>
                   <td className="px-4 py-2 font-medium">{vehicle.zevType}</td>
                 </tr>
                 <tr className="border-b border-gray-100">
-                  <td className="px-4 py-2 text-gray-500">ZEV Class:</td>
+                  <th scope="row" className="px-4 py-2 text-gray-500 font-normal text-left">ZEV Class:</th>
                   <td className="px-4 py-2 font-medium">
                     {zevClassesMap[vehicle.zevClass]}
                   </td>
                 </tr>
                 <tr className="border-b border-gray-100">
-                  <td className="px-4 py-2 text-gray-500">Vehicle class:</td>
+                  <th scope="row" className="px-4 py-2 text-gray-500 font-normal text-left">Vehicle class:</th>
                   <td className="px-4 py-2 font-medium">
                     {vehicleClassesMap[vehicle.vehicleClass]}
                   </td>
                 </tr>
                 <tr className="border-b border-gray-100">
-                  <td className="px-4 py-2 text-gray-500">
+                  <th scope="row" className="px-4 py-2 text-gray-500 font-normal text-left">
                     US06 Range ≥ 16 km:
-                  </td>
+                  </th>
                   <td className="px-4 py-2 font-medium">
                     {vehicle.us06RangeGte16 ? "Yes" : "NO or N/A"}
                   </td>
                 </tr>
                 <tr>
-                  <td className="px-4 py-2 text-gray-500">
+                  <th scope="row" className="px-4 py-2 text-gray-500 font-normal text-left">
                     Credit Entitlement:
-                  </td>
+                  </th>
                   <td className="px-4 py-2 font-medium">
                     {vehicle.numberOfUnits.toString()}
                   </td>
