@@ -1,9 +1,8 @@
-import { getModelYearReportModelYear } from "@/app/lib/utils/complianceYear";
 import { getUserInfo } from "@/auth";
 import {
+  getMyrModelYear,
   getSupplierOwnData,
   getSupplierOwnVehicleStats,
-  modelYearReportExists,
 } from "../data";
 import { ModelYearReportForm } from "./ModelYearReportForm";
 import { MyrSuppBanner } from "./MyrSuppBanner";
@@ -13,9 +12,8 @@ export const NewPage = async () => {
   if (userIsGov) {
     return null;
   }
-  const modelYear = getModelYearReportModelYear();
-  const reportExists = await modelYearReportExists(modelYear);
-  if (reportExists) {
+  const modelYear = await getMyrModelYear();
+  if (!modelYear) {
     return null;
   }
   const supplierData = await getSupplierOwnData();

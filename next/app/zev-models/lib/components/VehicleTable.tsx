@@ -120,6 +120,7 @@ export const VehicleTable = (props: {
       columns={columns}
       data={props.vehicles}
       totalNumberOfRecords={props.totalNumbeOfVehicles}
+      defaultPageSize={10}
       navigationAction={props.navigationAction}
       headerContent={props.headerContent}
     />

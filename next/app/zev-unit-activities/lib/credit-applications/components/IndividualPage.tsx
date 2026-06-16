@@ -86,7 +86,7 @@ export const IndividualPage = async (props: { id: string }) => {
       const submittedCy = getComplianceYear(caSubmittedDate);
       const dominatedCys = getDominatedComplianceYears(currentCy);
       return (
-        <div className="flex flex-col w-1/3">
+        <div className="flex flex-col">
           {applicationData}
           <ContentCard title="Actions">
             <AnalystActions
@@ -103,7 +103,7 @@ export const IndividualPage = async (props: { id: string }) => {
       );
     } else if (userRoles.includes(Role.DIRECTOR)) {
       return (
-        <div className="flex flex-col w-1/3">
+        <div className="flex flex-col">
           {applicationData}
           <ContentCard title="Actions">
             <DirectorActions id={id} status={applicationStatus} />

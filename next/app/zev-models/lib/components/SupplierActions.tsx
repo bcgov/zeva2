@@ -75,7 +75,7 @@ export const SupplierActions = (props: {
             type === "activate"
               ? Routes.ValidatedZevModels
               : Routes.InactiveZevModels
-          }/${props.vehicleId}/details`,
+          }/${props.vehicleId}`,
         );
       }
       setModal(null);

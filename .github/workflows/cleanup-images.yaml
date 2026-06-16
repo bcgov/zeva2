@@ -1,0 +1,146 @@
+name: Cleanup Unused/Expired Images and Build Configs
+
+on:
+  workflow_dispatch:
+  schedule:
+    # Run at 1am PST (UTC-8) every Thursday → 9am UTC
+    - cron: "0 9 * * 4"
+
+permissions:
+  contents: read
+
+jobs:
+  # ── Install oc CLI and cache it for all downstream jobs ──────────────────────
+  install-oc:
+    uses: ./.github/workflows/install-oc-template.yaml
+
+  # ── Clean up images in dev / test / prod namespaces (run in parallel) ────────
+  cleanup-dev:
+    needs: install-oc
+    uses: ./.github/workflows/cleanup-images-template.yaml
+    with:
+      environment: dev
+    secrets: inherit
+
+  cleanup-test:
+    needs: install-oc
+    uses: ./.github/workflows/cleanup-images-template.yaml
+    with:
+      environment: test
+    secrets: inherit
+
+  cleanup-prod:
+    needs: install-oc
+    uses: ./.github/workflows/cleanup-images-template.yaml
+    with:
+      environment: prod
+    secrets: inherit
+
+  # ── Clean up tools namespace after all env cleanups have reported kept tags ──
+  cleanup-tools:
+    needs: [cleanup-dev, cleanup-test, cleanup-prod]
+    runs-on: ubuntu-latest
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+    steps:
+      - name: Restore oc CLI from cache
+        uses: actions/cache@v5.0.4
+        with:
+          path: /usr/local/bin/oc
+          key: oc-cli-${{ runner.os }}
+
+      - name: Log in to OpenShift
+        uses: redhat-actions/oc-login@v1.3
+        with:
+          openshift_server_url: ${{ secrets.OPENSHIFT_SERVER }}
+          openshift_token: ${{ secrets.OPENSHIFT_TOKEN }}
+          insecure_skip_tls_verify: true
+          namespace: ${{ secrets.OPENSHIFT_NAMESPACE_PLATE }}-tools
+
+      - name: Cleanup unused images in tools namespace
+        run: |
+          namespace="${{ secrets.OPENSHIFT_NAMESPACE_PLATE }}-tools"
+
+          # Union of all kept tags reported by the three environment jobs
+          all_next_kept="${{ needs.cleanup-dev.outputs.next_tags_to_keep }},${{ needs.cleanup-test.outputs.next_tags_to_keep }},${{ needs.cleanup-prod.outputs.next_tags_to_keep }}"
+          all_bullmq_kept="${{ needs.cleanup-dev.outputs.bullmq_tags_to_keep }},${{ needs.cleanup-test.outputs.bullmq_tags_to_keep }},${{ needs.cleanup-prod.outputs.bullmq_tags_to_keep }}"
+
+          # Deduplicate the comma-separated tag lists
+          all_next_kept=$(echo "$all_next_kept" | tr ',' '\n' | grep -v '^$' | sort -u | tr '\n' ',' | sed 's/,$//')
+          all_bullmq_kept=$(echo "$all_bullmq_kept" | tr ',' '\n' | grep -v '^$' | sort -u | tr '\n' ',' | sed 's/,$//')
+
+          echo "Kept zeva2-next tags (union):   $all_next_kept"
+          echo "Kept zeva2-bullmq tags (union): $all_bullmq_kept"
+
+          # ── zeva2-next ───────────────────────────────────────────────────────
+          echo "=== Cleaning up zeva2-next in tools namespace ==="
+          next_all_tags=$(oc get is zeva2-next -n "$namespace" \
+            -o jsonpath='{.status.tags[*].tag}' 2>/dev/null || echo "")
+          for tag in $next_all_tags; do
+            if echo "$all_next_kept" | tr ',' '\n' | grep -qx "$tag"; then
+              echo "Keeping  zeva2-next:$tag in tools"
+            else
+              echo "Deleting zeva2-next:$tag from tools"
+              oc delete istag "zeva2-next:$tag" -n "$namespace" --ignore-not-found=true
+            fi
+          done
+
+          # ── zeva2-bullmq ─────────────────────────────────────────────────────
+          echo "=== Cleaning up zeva2-bullmq in tools namespace ==="
+          bullmq_all_tags=$(oc get is zeva2-bullmq -n "$namespace" \
+            -o jsonpath='{.status.tags[*].tag}' 2>/dev/null || echo "")
+          for tag in $bullmq_all_tags; do
+            if echo "$all_bullmq_kept" | tr ',' '\n' | grep -qx "$tag"; then
+              echo "Keeping  zeva2-bullmq:$tag in tools"
+            else
+              echo "Deleting zeva2-bullmq:$tag from tools"
+              oc delete istag "zeva2-bullmq:$tag" -n "$namespace" --ignore-not-found=true
+            fi
+          done
+
+      - name: Cleanup expired builds in tools namespace
+        run: |
+          namespace="${{ secrets.OPENSHIFT_NAMESPACE_PLATE }}-tools"
+          current_time=$(date +%s)
+          expiration_seconds=$((7 * 86400))
+
+          echo "=== Identifying and deleting expired builds (older than 7 days, not Running) ==="
+          oc get builds -n "$namespace" -o json | \
+            jq -r '.items[] | select(.status.phase != "Running") | "\(.metadata.name)|\(.metadata.creationTimestamp)"' | \
+            while IFS='|' read -r build_name creation_time; do
+              creation_timestamp=$(date -d "$creation_time" +%s)
+              age=$((current_time - creation_timestamp))
+              if [ $age -gt $expiration_seconds ]; then
+                echo "Deleting expired build: $build_name (age: $((age / 86400)) days)"
+                oc delete build "$build_name" -n "$namespace" --ignore-not-found=true
+              fi
+            done
+
+      - name: Cleanup expired build configs in tools namespace
+        run: |
+          namespace="${{ secrets.OPENSHIFT_NAMESPACE_PLATE }}-tools"
+          current_time=$(date +%s)
+          expiration_seconds=$((7 * 86400))
+
+          echo "=== Identifying and deleting expired build configs (no running builds, older than 7 days) ==="
+          oc get buildconfigs -n "$namespace" -o json | \
+            jq -r '.items[].metadata.name' | \
+            while read -r bc_name; do
+              running_builds=$(oc get builds -n "$namespace" -l "buildconfig=$bc_name" \
+                -o json 2>/dev/null | \
+                jq '[.items[] | select(.status.phase == "Running")] | length')
+
+              if [ "${running_builds}" = "0" ]; then
+                bc_creation_time=$(oc get buildconfig "$bc_name" -n "$namespace" \
+                  -o jsonpath='{.metadata.creationTimestamp}' 2>/dev/null || echo "")
+                if [ -n "$bc_creation_time" ]; then
+                  bc_timestamp=$(date -d "$bc_creation_time" +%s)
+                  bc_age=$((current_time - bc_timestamp))
+                  if [ $bc_age -gt $expiration_seconds ]; then
+                    echo "Deleting expired build config: $bc_name (age: $((bc_age / 86400)) days)"
+                    oc delete buildconfig "$bc_name" -n "$namespace" --ignore-not-found=true
+                  fi
+                fi
+              fi
+            done

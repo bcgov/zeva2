@@ -69,7 +69,6 @@ model Organization {
   Reassessment                  Reassessment[]
   SupplementaryReport           SupplementaryReport[]
   LegacyAssessedModelYearReport LegacyAssessedModelYearReport[]
-  reassessmentGuard             ReassessmentGuard?
 
   @@map("organization")
 }
@@ -762,12 +761,4 @@ model ReassessmentHistory {
   comment        String?
 
   @@map("reassessment_history")
-}
-
-model ReassessmentGuard {
-  id             Int          @id @default(autoincrement())
-  organization   Organization @relation(fields: [organizationId], references: [id])
-  organizationId Int          @unique @map("organization_id")
-
-  @@map("reassessment_guard")
 }

@@ -40,9 +40,7 @@ export const AnalystActions = (props: {
         setError(response.message);
       } else {
         if (newStatus === VehicleStatus.VALIDATED) {
-          router.push(
-            `${Routes.ValidatedZevModels}/${props.vehicleId}/details`,
-          );
+          router.push(`${Routes.ValidatedZevModels}/${props.vehicleId}`);
         } else {
           router.push(Routes.SubmittedZevModels);
         }

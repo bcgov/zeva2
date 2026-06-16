@@ -691,45 +691,6 @@ export const updateOrgSupplierClass = async (
   }
 };
 
-// call this when submitting a reassessment to the director;
-// will throw an error if doing so is not allowed
-export const checkReassessmentGuard = async (organizationId: number) => {
-  const guard = await prisma.reassessmentGuard.findUnique({
-    where: {
-      organizationId,
-    },
-  });
-  if (guard) {
-    throw new Error();
-  }
-};
-
-export const createReassessmentGuard = async (
-  organizationId: number,
-  transactionClient?: TransactionClient,
-) => {
-  const client = transactionClient ?? prisma;
-  await client.reassessmentGuard.create({
-    data: {
-      organizationId,
-    },
-  });
-};
-
-// if the reassessment guard does not exist,
-// an error will be thrown
-export const deleteReassessmentGuard = async (
-  organizationId: number,
-  transactionClient?: TransactionClient,
-) => {
-  const client = transactionClient ?? prisma;
-  await client.reassessmentGuard.delete({
-    where: {
-      organizationId,
-    },
-  });
-};
-
 export const assessReassessment = async (
   modelYearReportId: number | null,
   organizationId: number,
