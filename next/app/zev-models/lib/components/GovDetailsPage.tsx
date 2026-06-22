@@ -1,8 +1,8 @@
 import { getVehicle, getVehicleHistories } from "../data";
-import { VehicleStatus } from "@/prisma/generated/enums";
+import { Role, VehicleStatus } from "@/prisma/generated/enums";
 import { StatusBanner } from "@/app/lib/components/StatusBanner";
 import { AnalystActions } from "./AnalystActions";
-import { BackButton } from "./BackButton";
+import { BackButton } from "@/app/lib/components/BackButton";
 import { Attachments } from "@/app/lib/components/Attachments";
 import { getFormattedDateTime } from "@/app/lib/utils/date";
 import { getAttachmentDownloadUrls } from "../actions";
@@ -14,12 +14,14 @@ import {
 } from "@/app/lib/utils/enumMaps";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faDownload } from "@fortawesome/free-solid-svg-icons";
-import { PrintDownloadButton } from "@/app/zev-unit-activities/lib/credit-applications/components/PrintDownloadButton";
+import { PrintDownloadButton } from "@/app/lib/components/PrintDownloadButton";
 
-export const AnalystDetailsPage = async ({
+export const GovDetailsPage = async ({
   vehicleId,
+  userRoles,
 }: {
   vehicleId: number;
+  userRoles: Role[];
 }) => {
   const vehicle = await getVehicle(vehicleId);
   if (!vehicle) return null;
@@ -107,9 +109,7 @@ export const AnalystDetailsPage = async ({
         )}
       </div>
 
-      {statusBanner && (
-        <div className="px-6 pt-4 pb-2">{statusBanner}</div>
-      )}
+      {statusBanner && <div className="px-6 pt-4 pb-2">{statusBanner}</div>}
 
       <div className="px-6 pb-6 pt-4 space-y-6">
         <div className="grid grid-cols-2 gap-4">
@@ -122,33 +122,59 @@ export const AnalystDetailsPage = async ({
             <table className="w-full text-sm text-gray-900">
               <tbody>
                 <tr className="border-b border-gray-100">
-                  <th scope="row" className="px-4 py-2 text-gray-500 font-normal text-left w-1/2">Make:</th>
+                  <th
+                    scope="row"
+                    className="px-4 py-2 text-gray-500 font-normal text-left w-1/2"
+                  >
+                    Make:
+                  </th>
                   <td className="px-4 py-2 font-medium">{vehicle.make}</td>
                 </tr>
                 <tr className="border-b border-gray-100">
-                  <th scope="row" className="px-4 py-2 text-gray-500 font-normal text-left">Model Name:</th>
+                  <th
+                    scope="row"
+                    className="px-4 py-2 text-gray-500 font-normal text-left"
+                  >
+                    Model Name:
+                  </th>
                   <td className="px-4 py-2 font-medium">{vehicle.modelName}</td>
                 </tr>
                 <tr className="border-b border-gray-100">
-                  <th scope="row" className="px-4 py-2 text-gray-500 font-normal text-left">Model Year:</th>
+                  <th
+                    scope="row"
+                    className="px-4 py-2 text-gray-500 font-normal text-left"
+                  >
+                    Model Year:
+                  </th>
                   <td className="px-4 py-2 font-medium">
                     {modelYearsMap[vehicle.modelYear]}
                   </td>
                 </tr>
                 <tr className="border-b border-gray-100">
-                  <th scope="row" className="px-4 py-2 text-gray-500 font-normal text-left">Body Type:</th>
+                  <th
+                    scope="row"
+                    className="px-4 py-2 text-gray-500 font-normal text-left"
+                  >
+                    Body Type:
+                  </th>
                   <td className="px-4 py-2 font-medium">
                     {classCodesMap[vehicle.vehicleClassCode]}
                   </td>
                 </tr>
                 <tr className="border-b border-gray-100">
-                  <th scope="row" className="px-4 py-2 text-gray-500 font-normal text-left">Weight:</th>
-                  <td className="px-4 py-2 font-medium">
-                    {vehicle.weight} kg
-                  </td>
+                  <th
+                    scope="row"
+                    className="px-4 py-2 text-gray-500 font-normal text-left"
+                  >
+                    Weight:
+                  </th>
+                  <td className="px-4 py-2 font-medium">{vehicle.weight} kg</td>
                 </tr>
                 <tr>
-                  <th scope="row" className="px-4 py-2 text-gray-500 font-normal text-left">
+                  <th
+                    scope="row"
+                    className="px-4 py-2 text-gray-500 font-normal text-left"
+                  >
                     Electric EPA Range (km):
                   </th>
                   <td className="px-4 py-2 font-medium">{vehicle.range}</td>
@@ -166,23 +192,41 @@ export const AnalystDetailsPage = async ({
             <table className="w-full text-sm text-gray-900">
               <tbody>
                 <tr className="border-b border-gray-100">
-                  <th scope="row" className="px-4 py-2 text-gray-500 font-normal text-left w-1/2">ZEV Type:</th>
+                  <th
+                    scope="row"
+                    className="px-4 py-2 text-gray-500 font-normal text-left w-1/2"
+                  >
+                    ZEV Type:
+                  </th>
                   <td className="px-4 py-2 font-medium">{vehicle.zevType}</td>
                 </tr>
                 <tr className="border-b border-gray-100">
-                  <th scope="row" className="px-4 py-2 text-gray-500 font-normal text-left">ZEV Class:</th>
+                  <th
+                    scope="row"
+                    className="px-4 py-2 text-gray-500 font-normal text-left"
+                  >
+                    ZEV Class:
+                  </th>
                   <td className="px-4 py-2 font-medium">
                     {zevClassesMap[vehicle.zevClass]}
                   </td>
                 </tr>
                 <tr className="border-b border-gray-100">
-                  <th scope="row" className="px-4 py-2 text-gray-500 font-normal text-left">Vehicle class:</th>
+                  <th
+                    scope="row"
+                    className="px-4 py-2 text-gray-500 font-normal text-left"
+                  >
+                    Vehicle class:
+                  </th>
                   <td className="px-4 py-2 font-medium">
                     {vehicleClassesMap[vehicle.vehicleClass]}
                   </td>
                 </tr>
                 <tr className="border-b border-gray-100">
-                  <th scope="row" className="px-4 py-2 text-gray-500 font-normal text-left">
+                  <th
+                    scope="row"
+                    className="px-4 py-2 text-gray-500 font-normal text-left"
+                  >
                     US06 Range ≥ 16 km:
                   </th>
                   <td className="px-4 py-2 font-medium">
@@ -190,7 +234,10 @@ export const AnalystDetailsPage = async ({
                   </td>
                 </tr>
                 <tr>
-                  <th scope="row" className="px-4 py-2 text-gray-500 font-normal text-left">
+                  <th
+                    scope="row"
+                    className="px-4 py-2 text-gray-500 font-normal text-left"
+                  >
                     Credit Entitlement:
                   </th>
                   <td className="px-4 py-2 font-medium">
@@ -237,7 +284,7 @@ export const AnalystDetailsPage = async ({
           </div>
         )}
 
-        {isSubmitted && (
+        {isSubmitted && userRoles.includes(Role.ZEVA_IDIR_USER) && (
           <AnalystActions vehicleId={vehicleId} status={vehicle.status} />
         )}
 

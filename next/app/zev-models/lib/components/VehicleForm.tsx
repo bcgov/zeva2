@@ -339,7 +339,9 @@ export const VehicleForm = (props: {
           <Button
             type="button"
             variant="secondary"
-            icon={<FontAwesomeIcon icon={faArrowLeft} className="h-3.5 w-3.5" />}
+            icon={
+              <FontAwesomeIcon icon={faArrowLeft} className="h-3.5 w-3.5" />
+            }
             iconPosition="left"
             className="border-primaryBlue bg-white font-semibold text-primaryText hover:border-primaryBlue hover:text-primaryText active:text-primaryText"
             onClick={() => router.back()}
@@ -351,7 +353,9 @@ export const VehicleForm = (props: {
             variant="primary"
             onClick={handleSubmit}
             disabled={isPending}
-            icon={<FontAwesomeIcon icon={faFloppyDisk} className="h-3.5 w-3.5" />}
+            icon={
+              <FontAwesomeIcon icon={faFloppyDisk} className="h-3.5 w-3.5" />
+            }
             iconPosition="right"
             className="font-semibold"
           >

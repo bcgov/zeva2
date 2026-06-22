@@ -64,15 +64,19 @@ export const RecordsTable = (props: {
         value={reason}
         onChange={(value) => {
           setMapOfData((prev) => {
-            let newValidationStatus = prev[id][0];
-            if (value) {
-              if (isValidReason(value)) {
-                newValidationStatus = true;
-              } else if (isInvalidReason(value)) {
-                newValidationStatus = false;
+            let data = prev[id];
+            if (data) {
+              let newValidationStatus = data[0];
+              if (value) {
+                if (isValidReason(value)) {
+                  newValidationStatus = true;
+                } else if (isInvalidReason(value)) {
+                  newValidationStatus = false;
+                }
               }
+              return { ...prev, [id]: [newValidationStatus, value] };
             }
-            return { ...prev, [id]: [newValidationStatus, value] };
+            return prev;
           });
         }}
       />
@@ -81,7 +85,11 @@ export const RecordsTable = (props: {
 
   const handleValidateChange = useCallback((id: number) => {
     setMapOfData((prev) => {
-      return { ...prev, [id]: [!prev[id][0], prev[id][1]] };
+      let data = prev[id];
+      if (data) {
+        return { ...prev, [id]: [!data[0], data[1]] };
+      }
+      return prev;
     });
   }, []);
 
