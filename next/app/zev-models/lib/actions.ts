@@ -108,7 +108,6 @@ export const supplierSave = async (
     const dataToSave = {
       ...data,
       organizationId: userOrgId,
-      status: VehicleStatus.DRAFT,
       isActive: false,
       vehicleClass,
       zevClass,
@@ -124,7 +123,7 @@ export const supplierSave = async (
         });
       } else {
         const newVehicle = await tx.vehicle.create({
-          data: dataToSave,
+          data: { ...dataToSave, status: VehicleStatus.DRAFT },
           select: {
             id: true,
           },

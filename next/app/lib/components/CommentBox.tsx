@@ -5,12 +5,13 @@ import { Dispatch, SetStateAction } from "react";
 export const CommentBox = (props: {
   comment: string;
   setComment: Dispatch<SetStateAction<string>>;
+  subtext?: string;
 }) => {
   return (
     <div className="border border-gray-300 bg-white rounded mb-4">
       <div className="p-4 bg-disabledBG border-b border-gray-300">
         <h2 className="text-base font-bold text-gray-900">
-          Comment (optional)
+          {`Comment (${props.subtext ? props.subtext : "optional"})`}
         </h2>
       </div>
       <div className="p-6">
