@@ -6,7 +6,6 @@ import { StatusBanner } from "@/app/lib/components";
 import { getAttachmentDownloadUrls } from "../actions";
 import { PrintDownloadButton } from "@/app/lib/components/PrintDownloadButton";
 import { Attachments } from "@/app/lib/components/Attachments";
-import { BackButton } from "@/app/lib/components/BackButton";
 import {
   getModelYearEnumsToStringsMap,
   getVehicleClassCodeEnumsToStringsMap,
@@ -45,7 +44,7 @@ const DetailSection = (props: {
 const PageSection = (props: { title: string; children: ReactNode }) => {
   return (
     <section className="overflow-hidden rounded border border-dividerMedium/10 bg-white shadow-level-1">
-      <h2 className="bg-[#eeeceb] px-5 py-4 text-lg font-bold text-black">
+      <h2 className="bg-disabledBG px-5 py-4 text-lg font-bold text-black">
         {props.title}
       </h2>
       <div className="p-5">{props.children}</div>
@@ -54,9 +53,6 @@ const PageSection = (props: { title: string; children: ReactNode }) => {
 };
 
 const getStatusMessage = (status: VehicleStatus) => {
-  if (status === VehicleStatus.DRAFT) {
-    return "This model meets all verification criteria. Credits may now be issued for this model.";
-  }
   if (status === VehicleStatus.SUBMITTED) {
     return "This model has been submitted and is awaiting review.";
   }
@@ -117,8 +113,6 @@ export const SupplierDetailsPage = async (props: {
 
   return (
     <div className="space-y-6 p-4">
-      <h1 className="text-2xl font-bold text-primaryText">Create a Vehicle</h1>
-
       <section className="overflow-hidden border border-dividerMedium bg-white">
         <div className="flex items-center justify-between bg-[#eeeceb] px-5 py-5">
           <h2 className="text-2xl font-bold text-black">Model {vehicle.id}</h2>
@@ -206,30 +200,29 @@ export const SupplierDetailsPage = async (props: {
         />
       </PageSection>
 
-      <PageSection title="Comment (optional)">
-        {latestComment ? (
-          <div className="grid grid-cols-1 gap-4 text-sm md:grid-cols-[12rem_1fr]">
-            <span className="text-secondaryText">
-              {`${getIsoYmdString(latestComment.timestamp)}, ${getTimeWithTz(latestComment.timestamp)}`}
-            </span>
-            <span className="text-primaryText">"{latestComment.comment}"</span>
-          </div>
-        ) : (
-          <p className="text-sm text-secondaryText">No comments</p>
-        )}
-      </PageSection>
+      {status !== VehicleStatus.DRAFT && (
+        <PageSection title="Latest Comment">
+          {latestComment ? (
+            <div className="grid grid-cols-1 gap-4 text-sm md:grid-cols-[12rem_1fr]">
+              <span className="text-secondaryText">
+                {`${getIsoYmdString(latestComment.timestamp)}, ${getTimeWithTz(latestComment.timestamp)}`}
+              </span>
+              <span className="text-primaryText">
+                "{latestComment.comment}"
+              </span>
+            </div>
+          ) : (
+            <p className="text-sm text-secondaryText">No comments</p>
+          )}
+        </PageSection>
+      )}
 
-      <div className="flex flex-col gap-4 bg-gray-100 p-5 md:flex-row md:items-center md:justify-between">
-        <BackButton />
-        <div className="flex flex-wrap items-center gap-3">
-          <SupplierActions
-            vehicleId={props.vehicleId}
-            status={status}
-            isActive={vehicle.isActive}
-            userRoles={props.userRoles}
-          />
-        </div>
-      </div>
+      <SupplierActions
+        vehicleId={props.vehicleId}
+        status={status}
+        isActive={vehicle.isActive}
+        userRoles={props.userRoles}
+      />
     </div>
   );
 };

@@ -20,6 +20,7 @@ import { ErrorsTemplate } from "../constants";
 import { downloadBuffer } from "@/app/lib/utils/download";
 import { Modal, ModalType } from "@/app/lib/components/Modal";
 import { getNormalizedComment } from "@/app/lib/utils/comment";
+import { CommentBox } from "@/app/lib/components/CommentBox";
 
 export const SupplierActions = (props: {
   creditApplicationId: number;
@@ -133,29 +134,12 @@ export const SupplierActions = (props: {
 
   const canAddComment = props.userRoles.includes(Role.SIGNING_AUTHORITY);
 
-  const commentCard = canAddComment ? (
-    <div className="border border-gray-300 bg-white rounded mb-4">
-      <div className="p-4 bg-gray-100 border-b border-gray-300">
-        <h2 className="text-base font-bold text-gray-900">
-          Comment (optional)
-        </h2>
-      </div>
-      <div className="p-6">
-        <textarea
-          value={comment}
-          onChange={(e) => setComment(e.target.value)}
-          placeholder="Enter a description..."
-          rows={5}
-          className="w-full max-w-[560px] rounded border border-gray-300 p-3 text-sm text-gray-900 placeholder:text-gray-400 focus:border-blue-600 focus:outline-none"
-        />
-      </div>
-    </div>
-  ) : null;
-
   if (props.status === CreditApplicationSupplierStatus.DRAFT) {
     return (
       <>
-        {commentCard}
+        {canAddComment && (
+          <CommentBox comment={comment} setComment={setComment} />
+        )}
         {error && <p className="text-red-600 mb-2">{error}</p>}
         <div className="flex items-center gap-3 w-full pb-6">
           <Button variant="secondary" onClick={handleBack}>

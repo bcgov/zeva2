@@ -73,26 +73,34 @@ export const Dropzone = (props: {
         </span>
       </div>
       {props.files.length > 0 && (
-        <div className="flex flex-col gap-2 p-2 border-t border-b border-dividerMedium/40">
-          <div className="flex flex-row justify-between"></div>
-          {props.files.map((file, index) => {
-            return (
-              <div key={index} className="flex flex-row justify-between">
-                <span>{file.name}</span>
-                <span>{file.size} Bytes</span>
-                <FontAwesomeIcon
-                  icon={faTrash}
-                  onClick={() => {
-                    if (!props.disabled) {
-                      removeFile(file);
-                    }
-                  }}
-                  className={`text-primaryRed ${props.disabled ? "" : "cursor-pointer"}`}
-                />
-              </div>
-            );
-          })}
-        </div>
+        <table className="mt-4 w-full text-sm text-primaryText">
+          <thead>
+            <tr className="border-b border-dividerMedium">
+              <th className="py-3 text-left font-bold">Uploaded File</th>
+              <th className="py-3 text-left font-bold">Size</th>
+              <th className="py-3 text-right font-bold">Delete</th>
+            </tr>
+          </thead>
+          <tbody>
+            {props.files.map((file) => (
+              <tr key={`${file.name}-${file.size}-${file.lastModified}`}>
+                <td className="py-3">{file.name}</td>
+                <td className="py-3">{(file.size / 1024).toFixed(1)} KB</td>
+                <td className="py-3 text-right">
+                  <button
+                    type="button"
+                    onClick={() => removeFile(file)}
+                    disabled={props.disabled}
+                    className="m-0 border-none bg-transparent p-0 text-primaryRed hover:bg-transparent hover:text-primaryRedHover disabled:opacity-50"
+                    aria-label={`Delete ${file.name}`}
+                  >
+                    <FontAwesomeIcon icon={faTrash} />
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       )}
     </div>
   );

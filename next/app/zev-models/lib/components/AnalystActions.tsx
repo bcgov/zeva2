@@ -86,7 +86,7 @@ export const AnalystActions = (props: {
       <div className="border border-gray-300 rounded">
         <div className="p-4 bg-gray-100 border-b border-gray-300">
           <h2 className="text-sm font-bold text-gray-900">
-            Comment (Required)
+            Comment (Required when returning)
           </h2>
         </div>
         <div className="p-4">
