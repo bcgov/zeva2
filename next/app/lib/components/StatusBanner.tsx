@@ -16,7 +16,13 @@ export interface IStatusBannerProps extends HTMLAttributes<HTMLDivElement> {
   secondaryText?: ReactNode;
 }
 
-type StatusBannerVariant = "info" | "draft" | "warning" | "success" | "error";
+type StatusBannerVariant =
+  | "info"
+  | "draft"
+  | "warning"
+  | "returned"
+  | "success"
+  | "error";
 
 const statusBannerStyles: Record<
   StatusBannerVariant,
@@ -36,6 +42,12 @@ const statusBannerStyles: Record<
       <FontAwesomeIcon icon={faCircleExclamation} className="text-warning" />
     ),
   },
+  returned: {
+    container: "border-error bg-white",
+    icon: (
+      <FontAwesomeIcon icon={faTriangleExclamation} className="text-error" />
+    ),
+  },
   success: {
     container: "border-success bg-[#F0FAF2]",
     icon: <FontAwesomeIcon icon={faSquareCheck} className="text-success" />,
@@ -50,6 +62,10 @@ const statusBannerStyles: Record<
 
 function getStatusBannerVariant(title: string): StatusBannerVariant {
   const normalizedTitle = title.toLowerCase();
+
+  if (normalizedTitle.includes("returned")) {
+    return "returned";
+  }
 
   if (
     normalizedTitle.includes("rejected") ||
