@@ -4,7 +4,6 @@ import { StatusBanner } from "@/app/lib/components/StatusBanner";
 import { AnalystActions } from "./AnalystActions";
 import { BackButton } from "@/app/lib/components/BackButton";
 import { Attachments } from "@/app/lib/components/Attachments";
-import { getFormattedDateTime } from "@/app/lib/utils/date";
 import { getAttachmentDownloadUrls } from "../actions";
 import {
   getModelYearEnumsToStringsMap,
@@ -15,6 +14,7 @@ import {
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faDownload } from "@fortawesome/free-solid-svg-icons";
 import { PrintDownloadButton } from "@/app/lib/components/PrintDownloadButton";
+import { getIsoYmdString, getTimeWithTz } from "@/app/lib/utils/date";
 
 export const GovDetailsPage = async ({
   vehicleId,
@@ -45,20 +45,17 @@ export const GovDetailsPage = async ({
     .reverse()
     .find((h) => h.userAction === VehicleStatus.VALIDATED);
 
-  const commentHistories = histories.filter(
-    (h) => h.userAction === VehicleStatus.SUBMITTED && !!h.comment,
-  );
-
   const isSubmitted = vehicle.status === VehicleStatus.SUBMITTED;
   const isValidated = vehicle.status === VehicleStatus.VALIDATED;
+  const mostRecentHistoryEntry = histories.at(-1);
 
   const metaDateLabel = isSubmitted ? "Date of Submission" : "Validation Date";
   const metaDate = isSubmitted
     ? submissionHistory
-      ? getFormattedDateTime(submissionHistory.timestamp)
+      ? `${getIsoYmdString(submissionHistory.timestamp)}, ${getTimeWithTz(submissionHistory.timestamp)}`
       : null
     : validationHistory
-      ? getFormattedDateTime(validationHistory.timestamp)
+      ? `${getIsoYmdString(validationHistory.timestamp)}, ${getTimeWithTz(validationHistory.timestamp)}`
       : null;
 
   let statusBanner;
@@ -264,25 +261,25 @@ export const GovDetailsPage = async ({
           </div>
         </div>
 
-        {isSubmitted && commentHistories.length > 0 && (
-          <div className="border border-gray-300 rounded">
-            <div className="p-4 bg-gray-100 border-b border-gray-300">
-              <h2 className="text-sm font-bold text-gray-900">
-                Comment (optional)
-              </h2>
-            </div>
-            <div className="p-4 space-y-3">
-              {commentHistories.map((h) => (
-                <div key={h.id} className="flex gap-6 text-sm text-gray-900">
+        {isSubmitted &&
+          mostRecentHistoryEntry &&
+          mostRecentHistoryEntry.comment && (
+            <div className="border border-gray-300 rounded">
+              <div className="p-4 bg-gray-100 border-b border-gray-300">
+                <h2 className="text-sm font-bold text-gray-900">
+                  Latest Submission Comment
+                </h2>
+              </div>
+              <div className="p-4 space-y-3">
+                <div className="flex gap-6 text-sm text-gray-900">
                   <span className="text-gray-500 shrink-0">
-                    {getFormattedDateTime(h.timestamp)}
+                    {`${getIsoYmdString(mostRecentHistoryEntry.timestamp)}, ${getTimeWithTz(mostRecentHistoryEntry.timestamp)}`}
                   </span>
-                  <span>&ldquo;{h.comment}&rdquo;</span>
+                  <span>&ldquo;{mostRecentHistoryEntry.comment}&rdquo;</span>
                 </div>
-              ))}
+              </div>
             </div>
-          </div>
-        )}
+          )}
 
         {isSubmitted && userRoles.includes(Role.ZEVA_IDIR_USER) && (
           <AnalystActions vehicleId={vehicleId} status={vehicle.status} />

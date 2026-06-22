@@ -101,13 +101,14 @@ export const SupplierDetailsPage = async (props: {
   const zevClassesMap = getZevClassEnumsToStringsMap();
   const modelYearsMap = getModelYearEnumsToStringsMap();
   const classCodesMap = getVehicleClassCodeEnumsToStringsMap();
-  const latestComment = histories.filter((history) => history.comment).at(-1);
+  const latestSubmitHistoryEntry = histories
+    .filter((history) => history.userAction === VehicleStatus.SUBMITTED)
+    .at(-1);
   const latestReturnComment = histories
     .filter(
       (history) =>
         history.userAction === VehicleStatus.RETURNED_TO_SUPPLIER &&
-        history.comment &&
-        history.user.organization.isGovernment,
+        history.comment,
     )
     .at(-1);
 
@@ -200,22 +201,21 @@ export const SupplierDetailsPage = async (props: {
         />
       </PageSection>
 
-      {status !== VehicleStatus.DRAFT && (
-        <PageSection title="Latest Comment">
-          {latestComment ? (
+      {status !== VehicleStatus.DRAFT &&
+        status !== VehicleStatus.VALIDATED &&
+        latestSubmitHistoryEntry &&
+        latestSubmitHistoryEntry.comment && (
+          <PageSection title="Latest Submission Comment">
             <div className="grid grid-cols-1 gap-4 text-sm md:grid-cols-[12rem_1fr]">
               <span className="text-secondaryText">
-                {`${getIsoYmdString(latestComment.timestamp)}, ${getTimeWithTz(latestComment.timestamp)}`}
+                {`${getIsoYmdString(latestSubmitHistoryEntry.timestamp)}, ${getTimeWithTz(latestSubmitHistoryEntry.timestamp)}`}
               </span>
               <span className="text-primaryText">
-                "{latestComment.comment}"
+                "{latestSubmitHistoryEntry.comment}"
               </span>
             </div>
-          ) : (
-            <p className="text-sm text-secondaryText">No comments</p>
-          )}
-        </PageSection>
-      )}
+          </PageSection>
+        )}
 
       <SupplierActions
         vehicleId={props.vehicleId}

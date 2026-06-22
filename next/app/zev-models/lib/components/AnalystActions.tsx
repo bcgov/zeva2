@@ -11,6 +11,7 @@ import { Routes } from "@/app/lib/constants";
 import { Modal, ModalType } from "@/app/lib/components/Modal";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faArrowLeft } from "@fortawesome/free-solid-svg-icons";
+import { CommentBox } from "@/app/lib/components/CommentBox";
 
 export const AnalystActions = (props: {
   vehicleId: number;
@@ -83,20 +84,11 @@ export const AnalystActions = (props: {
   return (
     <>
       {error && <p className="mb-2 text-sm text-red-600">{error}</p>}
-      <div className="border border-gray-300 rounded">
-        <div className="p-4 bg-gray-100 border-b border-gray-300">
-          <h2 className="text-sm font-bold text-gray-900">
-            Comment (Required when returning)
-          </h2>
-        </div>
-        <div className="p-4">
-          <Textarea
-            value={comment}
-            onChange={setComment}
-            placeholder="Enter a description..."
-          />
-        </div>
-      </div>
+      <CommentBox
+        comment={comment}
+        setComment={setComment}
+        subtext="required when returning"
+      />
       <div className="flex justify-between items-center pt-2">
         <Button
           variant="secondary"
