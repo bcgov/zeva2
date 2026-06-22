@@ -15,6 +15,12 @@ import { Routes } from "@/app/lib/constants";
 import { Modal, ModalType } from "@/app/lib/components/Modal";
 import { CommentBox } from "@/app/lib/components/CommentBox";
 import { BackButton } from "@/app/lib/components/BackButton";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import {
+  faPaperPlane,
+  faPenToSquare,
+  faTrash,
+} from "@fortawesome/free-solid-svg-icons";
 
 export const SupplierActions = (props: {
   vehicleId: number;
@@ -150,16 +156,31 @@ export const SupplierActions = (props: {
         <CommentBox comment={comment} setComment={setComment} />
         {error && <p className="text-red-600">{error}</p>}
         <div className={buttonBarClassName}>
-          <BackButton />
           <div className="flex flex-row items-center gap-3">
-            <Button variant="danger" onClick={() => showModal("delete")}>
+            <BackButton />
+            <Button
+              variant="danger"
+              onClick={() => showModal("delete")}
+              icon={<FontAwesomeIcon icon={faTrash} />}
+            >
               Delete
             </Button>
-            <Button variant="secondary" onClick={handleGoToEdit}>
+          </div>
+          <div className="flex flex-row items-center gap-3">
+            <Button
+              variant="secondary"
+              onClick={handleGoToEdit}
+              icon={<FontAwesomeIcon icon={faPenToSquare} />}
+            >
               Edit
             </Button>
             {props.userRoles.includes(Role.SIGNING_AUTHORITY) && (
-              <Button variant="primary" onClick={() => showModal("submit")}>
+              <Button
+                variant="primary"
+                onClick={() => showModal("submit")}
+                icon={<FontAwesomeIcon icon={faPaperPlane} />}
+                iconPosition="right"
+              >
                 Submit
               </Button>
             )}
