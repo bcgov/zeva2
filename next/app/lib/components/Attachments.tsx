@@ -5,6 +5,8 @@ import { useCallback, useState, useTransition } from "react";
 import { DataOrErrorActionResponse } from "../utils/actionResponse";
 import { downloadMultiple } from "../utils/download";
 import { Attachment, AttachmentDownload } from "../constants/attachment";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faDownload } from "@fortawesome/free-solid-svg-icons";
 
 export const Attachments = (props: {
   attachments: Omit<Attachment, "objectName">[];
@@ -48,6 +50,8 @@ export const Attachments = (props: {
             variant="secondary"
             onClick={handleDownload}
             disabled={isPending}
+            icon={<FontAwesomeIcon icon={faDownload} />}
+            iconPosition="right"
           >
             {isPending ? "..." : "Download"}
           </Button>

@@ -3,7 +3,7 @@
 import { Button } from "@/app/lib/components";
 import { Role, VehicleStatus } from "@/prisma/generated/enums";
 import { useRouter } from "next/navigation";
-import { JSX, useCallback, useState, useTransition } from "react";
+import { JSX, useCallback, useMemo, useState } from "react";
 import {
   supplierActivate,
   supplierDeactivate,
@@ -12,8 +12,9 @@ import {
 } from "../actions";
 import { getNormalizedComment } from "@/app/lib/utils/comment";
 import { Routes } from "@/app/lib/constants";
-import { Textarea } from "@/app/lib/components/inputs/Textarea";
 import { Modal, ModalType } from "@/app/lib/components/Modal";
+import { CommentBox } from "@/app/lib/components/CommentBox";
+import { BackButton } from "@/app/lib/components/BackButton";
 
 export const SupplierActions = (props: {
   vehicleId: number;
@@ -114,24 +115,30 @@ export const SupplierActions = (props: {
     [handleDelete, handleSubmit, handleActivateDeactivate],
   );
 
+  const buttonBarClassName = useMemo(() => {
+    return "flex flex-row bg-gray-100 p-5 justify-between";
+  }, []);
+
   if (props.status === VehicleStatus.VALIDATED && props.isActive) {
     return (
-      <>
+      <div className={buttonBarClassName}>
+        <BackButton />
         <Button variant="secondary" onClick={() => showModal("deactivate")}>
           Deactivate
         </Button>
         {modal}
-      </>
+      </div>
     );
   }
   if (props.status === VehicleStatus.VALIDATED && !props.isActive) {
     return (
-      <>
+      <div className={buttonBarClassName}>
+        <BackButton />
         <Button variant="secondary" onClick={() => showModal("activate")}>
           Activate
         </Button>
         {modal}
-      </>
+      </div>
     );
   }
   if (
@@ -140,19 +147,24 @@ export const SupplierActions = (props: {
   ) {
     return (
       <>
+        <CommentBox comment={comment} setComment={setComment} />
         {error && <p className="text-red-600">{error}</p>}
-        <Textarea value={comment} onChange={setComment} />
-        <Button variant="danger" onClick={() => showModal("delete")}>
-          Delete
-        </Button>
-        <Button variant="secondary" onClick={handleGoToEdit}>
-          Edit
-        </Button>
-        {props.userRoles.includes(Role.SIGNING_AUTHORITY) && (
-          <Button variant="primary" onClick={() => showModal("submit")}>
-            Submit
-          </Button>
-        )}
+        <div className={buttonBarClassName}>
+          <BackButton />
+          <div className="flex flex-row items-center gap-3">
+            <Button variant="danger" onClick={() => showModal("delete")}>
+              Delete
+            </Button>
+            <Button variant="secondary" onClick={handleGoToEdit}>
+              Edit
+            </Button>
+            {props.userRoles.includes(Role.SIGNING_AUTHORITY) && (
+              <Button variant="primary" onClick={() => showModal("submit")}>
+                Submit
+              </Button>
+            )}
+          </div>
+        </div>
         {modal}
       </>
     );

@@ -14,7 +14,7 @@ const Page = async () => {
       <h1 className="mb-6 mt-4 text-2xl font-bold text-primaryText">
         Create a Vehicle
       </h1>
-      <VehicleForm variant="full" />
+      <VehicleForm />
     </div>
   );
 };

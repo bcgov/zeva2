@@ -527,7 +527,9 @@ export const validateCreditApplication = async (
   return getSuccessActionResponse();
 };
 
-export type MapOfValidatedAndReasons = Record<number, [boolean, string]>;
+export type MapOfValidatedAndReasons = Partial<
+  Record<number, [boolean, string]>
+>;
 
 export const updateValidatedRecords = async (
   creditApplicationId: number,
@@ -580,11 +582,15 @@ export const updateValidatedRecords = async (
   const recordIds: number[] = [];
   for (const record of records) {
     const id = record.id;
+    const data = mapOfData[id];
+    if (!data) {
+      throw new Error();
+    }
     recordIds.push(record.id);
     const zevClass = record.zevClass;
     const numberOfUnits = record.numberOfUnits;
     const oldValidated = record.validated;
-    const newValidated = mapOfData[id][0];
+    const newValidated = data[0];
     if (oldValidated && !newValidated) {
       eligibleVinsCount = eligibleVinsCount - 1;
       ineligibleVinsCount = ineligibleVinsCount + 1;
@@ -603,7 +609,7 @@ export const updateValidatedRecords = async (
       }
     }
     record.validated = newValidated;
-    record.reason = mapOfData[id][1] || null;
+    record.reason = data[1] || null;
   }
   await prisma.$transaction(async (tx) => {
     await tx.creditApplicationRecord.deleteMany({

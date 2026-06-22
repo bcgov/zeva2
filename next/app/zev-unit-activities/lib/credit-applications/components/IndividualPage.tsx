@@ -20,7 +20,7 @@ import { SupplierActions } from "./SupplierActions";
 import { DirectorActions } from "./DirectorActions";
 import { AnalystActions } from "./AnalystActions";
 import { ApplicationStatistics } from "./ApplicationStatistics";
-import { PrintDownloadButton } from "./PrintDownloadButton";
+import { PrintDownloadButton } from "@/app/lib/components/PrintDownloadButton";
 import {
   getComplianceYear,
   getCurrentComplianceYear,

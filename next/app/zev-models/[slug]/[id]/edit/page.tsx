@@ -44,13 +44,13 @@ const Page = async (props: {
     us06: vehicle.us06RangeGte16.toString(),
   };
   return (
-    <div className="max-w-xl mx-auto p-4">
-      <h1 className="text-xl font-bold mb-4">Edit a Vehicle</h1>
-      <div className="bg-white rounded-lg shadow-level-1 p-6">
-        <Suspense>
-          <VehicleForm vehicle={serializedVehicle} />
-        </Suspense>
-      </div>
+    <div className="p-4">
+      <h1 className="mb-6 mt-4 text-2xl font-bold text-primaryText">
+        Edit a Vehicle
+      </h1>
+      <Suspense>
+        <VehicleForm vehicle={serializedVehicle} />
+      </Suspense>
     </div>
   );
 };
