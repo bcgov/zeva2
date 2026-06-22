@@ -1,4 +1,5 @@
 import { IndividualNavbar } from "@/app/zev-unit-activities/lib/credit-applications/components/IndividualNavbar";
+import { CreditTransferNavbar } from "@/app/zev-unit-activities/lib/credit-transfers/components/CreditTransferNavbar";
 
 const Layout = async (props: {
   children: React.ReactNode;
@@ -10,6 +11,15 @@ const Layout = async (props: {
     return (
       <>
         <IndividualNavbar creditApplicationId={id} />
+        {props.children}
+      </>
+    );
+  }
+
+  if (slug === "credit-transfers") {
+    return (
+      <>
+        <CreditTransferNavbar creditTransferId={id} />
         {props.children}
       </>
     );
