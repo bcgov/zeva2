@@ -86,23 +86,20 @@ export const GovDetailsPage = async ({
         </PrintDownloadButton>
       </div>
 
-      <div className="px-6 py-3 text-sm text-gray-700 border-b border-gray-200">
-        <span className="font-semibold">ID:</span> {vehicle.id}
+      <div className="flex items-center gap-6 px-5 py-3 text-sm text-gray-700 border-b border-gray-200">
+        <span><span className="font-semibold">ID:</span> {vehicle.id}</span>
         {vehicle.legacyId != null && (
-          <>
-            {"  "}
-            <span className="font-semibold">Legacy ID:</span> {vehicle.legacyId}
-          </>
+          <span><span className="font-semibold">Legacy ID:</span> {vehicle.legacyId}</span>
         )}
-        {"  "}
-        <span className="font-semibold">Supplier:</span>{" "}
-        <strong>{vehicle.organization.name}</strong>
+        <span>
+          <span className="font-semibold">Supplier:</span>{" "}
+          <strong>{vehicle.organization.name}</strong>
+        </span>
         {metaDate && (
-          <>
-            {"  "}
+          <span>
             <span className="font-semibold">{metaDateLabel}:</span>{" "}
             <strong>{metaDate}</strong>
-          </>
+          </span>
         )}
       </div>
 
