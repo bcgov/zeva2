@@ -5,7 +5,6 @@ import { VehicleStatus } from "@/prisma/generated/enums";
 import { useRouter } from "next/navigation";
 import { JSX, useCallback, useState } from "react";
 import { analystUpdate } from "../actions";
-import { Textarea } from "@/app/lib/components/inputs/Textarea";
 import { getNormalizedComment } from "@/app/lib/utils/comment";
 import { Routes } from "@/app/lib/constants";
 import { Modal, ModalType } from "@/app/lib/components/Modal";

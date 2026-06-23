@@ -104,13 +104,14 @@ export const SupplierDetailsPage = async (props: {
   const latestSubmitHistoryEntry = histories
     .filter((history) => history.userAction === VehicleStatus.SUBMITTED)
     .at(-1);
-  const latestReturnComment = histories
-    .filter(
-      (history) =>
-        history.userAction === VehicleStatus.RETURNED_TO_SUPPLIER &&
-        history.comment,
-    )
-    .at(-1);
+  let latestReturnComment: string | undefined | null;
+  if (status === VehicleStatus.RETURNED_TO_SUPPLIER) {
+    latestReturnComment = histories
+      .filter(
+        (history) => history.userAction === VehicleStatus.RETURNED_TO_SUPPLIER,
+      )
+      .at(-1)?.comment;
+  }
 
   return (
     <div className="space-y-6 p-4">
@@ -135,16 +136,16 @@ export const SupplierDetailsPage = async (props: {
           <StatusBanner
             title={getStatusBannerTitle(vehicle.status)}
             primaryText={
-              vehicle.status === VehicleStatus.RETURNED_TO_SUPPLIER
+              status === VehicleStatus.RETURNED_TO_SUPPLIER
                 ? ""
                 : getStatusMessage(vehicle.status)
             }
             secondaryText={
-              vehicle.status === VehicleStatus.RETURNED_TO_SUPPLIER &&
-              latestReturnComment?.comment ? (
+              status === VehicleStatus.RETURNED_TO_SUPPLIER &&
+              latestReturnComment ? (
                 <span>
                   <strong>Official Comment from Government of B.C.</strong> "
-                  {latestReturnComment.comment}"
+                  {latestReturnComment}"
                 </span>
               ) : undefined
             }
