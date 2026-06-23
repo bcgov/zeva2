@@ -70,7 +70,7 @@ export const VehicleForm = (props: {
         };
         setFormData(formDataToSet);
         const attachments = vehicle.attachments;
-        if (attachments.length > 0 && vehicle.us06 === "true") {
+        if (attachments.length > 0) {
           const downloadedFiles = await getFiles(attachments);
           const filesToSet = downloadedFiles.map((file) => {
             return new File([file.data], file.fileName);
