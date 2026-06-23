@@ -30,6 +30,14 @@ export const ComplianceReportingBreadcrumbs = (props: {
     return /^\d+$/.test(s);
   }, []);
 
+  const complianceReportingItem = useMemo(
+    () => ({
+      label: "Compliance Reporting",
+      href: Routes.ModelYearReports,
+    }),
+    [],
+  );
+
   useEffect(() => {
     if (props.slug === "model-year-reports") {
       if (segments.length === 0) {
@@ -282,5 +290,9 @@ export const ComplianceReportingBreadcrumbs = (props: {
     }
   }, [segments, props.slug, props.id, isId]);
 
-  return <Breadcrumbs items={items} />;
+  return (
+    <Breadcrumbs
+      items={items.length > 0 ? [complianceReportingItem, ...items] : items}
+    />
+  );
 };

@@ -1,4 +1,4 @@
-import { IndividualNavbar } from "@/app/zev-unit-activities/lib/credit-applications/components/IndividualNavbar";
+import { ActivityDetailNav } from "@/app/zev-unit-activities/lib/components/ActivityDetailNav";
 
 const Layout = async (props: {
   children: React.ReactNode;
@@ -6,16 +6,12 @@ const Layout = async (props: {
 }) => {
   const { slug, id } = await props.params;
 
-  if (slug === "credit-applications") {
-    return (
-      <>
-        <IndividualNavbar creditApplicationId={id} />
-        {props.children}
-      </>
-    );
-  }
-
-  return <>{props.children}</>;
+  return (
+    <>
+      <ActivityDetailNav slug={slug} id={id} />
+      {props.children}
+    </>
+  );
 };
 
 export default Layout;
