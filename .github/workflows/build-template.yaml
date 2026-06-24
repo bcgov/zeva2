@@ -26,9 +26,6 @@ on:
 permissions:
   contents: read
 
-env:
-  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
-
 jobs:
   build:
     name: Build Zeva2
@@ -48,12 +45,9 @@ jobs:
           key: oc-cli-${{ runner.os }}
 
       - name: Log in to Openshift
-        uses: redhat-actions/oc-login@v1.3
-        with:
-          openshift_server_url: ${{ secrets.openshift-server }}
-          openshift_token: ${{ secrets.openshift-token }}
-          insecure_skip_tls_verify: true
-          namespace: ${{ secrets.tools-namespace }}
+        run: |
+          oc login --server="${{ secrets.openshift-server }}" --token="${{ secrets.openshift-token }}" --insecure-skip-tls-verify=true
+          oc project "${{ secrets.tools-namespace }}"
 
       - name: Build Next
         run: |
