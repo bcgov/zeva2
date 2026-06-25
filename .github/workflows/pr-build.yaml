@@ -19,7 +19,6 @@ env:
   TOOLS_NAMESPACE: ${{ secrets.OPENSHIFT_NAMESPACE_PLATE }}-tools
   DEV_NAMESPACE: ${{ secrets.OPENSHIFT_NAMESPACE_PLATE }}-dev
   PR_NUMBER: ${{ github.event.pull_request.number }}
-  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 concurrency:
   group: pr-build-${{ github.event.pull_request.number }}
@@ -126,12 +125,9 @@ jobs:
           key: oc-cli-${{ runner.os }}
 
       - name: Log in to Openshift
-        uses: redhat-actions/oc-login@v1.3
-        with:
-          openshift_server_url: ${{ secrets.OPENSHIFT_SERVER }}
-          openshift_token: ${{ secrets.OPENSHIFT_TOKEN }}
-          insecure_skip_tls_verify: true
-          namespace: ${{ env.TOOLS_NAMESPACE }}
+        run: |
+          oc login --server="${{ secrets.OPENSHIFT_SERVER }}" --token="${{ secrets.OPENSHIFT_TOKEN }}" --insecure-skip-tls-verify=true
+          oc project "${{ env.TOOLS_NAMESPACE }}"
 
       - name: Tag images to target namespace
         run: |
@@ -184,12 +180,9 @@ jobs:
           key: oc-cli-${{ runner.os }}
 
       - name: Log in to Openshift
-        uses: redhat-actions/oc-login@v1.3
-        with:
-          openshift_server_url: ${{ secrets.OPENSHIFT_SERVER }}
-          openshift_token: ${{ secrets.OPENSHIFT_TOKEN }}
-          insecure_skip_tls_verify: true
-          namespace: ${{ env.DEV_NAMESPACE }}
+        run: |
+          oc login --server="${{ secrets.OPENSHIFT_SERVER }}" --token="${{ secrets.OPENSHIFT_TOKEN }}" --insecure-skip-tls-verify=true
+          oc project "${{ env.DEV_NAMESPACE }}"
 
       - name: Deploy zeva2 apps
         run: |
