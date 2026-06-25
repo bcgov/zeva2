@@ -21,9 +21,6 @@ on:
 permissions:
   contents: read
 
-env:
-  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
-
 jobs:
   cleanup:
     name: Cleanup images in ${{ inputs.environment }} namespace
@@ -40,12 +37,9 @@ jobs:
           key: oc-cli-${{ runner.os }}
 
       - name: Log in to OpenShift
-        uses: redhat-actions/oc-login@v1.3
-        with:
-          openshift_server_url: ${{ secrets.OPENSHIFT_SERVER }}
-          openshift_token: ${{ secrets.OPENSHIFT_TOKEN }}
-          insecure_skip_tls_verify: true
-          namespace: ${{ secrets.OPENSHIFT_NAMESPACE_PLATE }}-${{ inputs.environment }}
+        run: |
+          oc login --server="${{ secrets.OPENSHIFT_SERVER }}" --token="${{ secrets.OPENSHIFT_TOKEN }}" --insecure-skip-tls-verify=true
+          oc project "${{ secrets.OPENSHIFT_NAMESPACE_PLATE }}-${{ inputs.environment }}"
 
       - name: Collect image tags to keep
         id: collect-keep
