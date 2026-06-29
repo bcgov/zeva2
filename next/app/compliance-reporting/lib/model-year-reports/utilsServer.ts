@@ -33,6 +33,7 @@ import {
 import { penaltyRates } from "@/app/lib/constants/penaltyRate";
 import { isVehicleClass, isZevClass } from "@/app/lib/utils/typeGuards";
 import {
+  getModelYearEnumsToStringsMap,
   getStringsToBalanceTypeEnumsMap,
   getStringsToModelYearsEnumsMap,
   getStringsToSupplierClassEnumsMap,
@@ -612,6 +613,20 @@ export const getEmptyBalance = (modelYear: ModelYear) => {
         });
       }
     }
+  }
+  return result;
+};
+
+export const getSerializedVolumes = (
+  volumes: [ModelYear, VehicleClass, number][],
+) => {
+  const result: { modelYear: string; volume: string }[] = [];
+  const modelYearsMap = getModelYearEnumsToStringsMap();
+  for (const volume of volumes) {
+    result.push({
+      modelYear: modelYearsMap[volume[0]] ?? "",
+      volume: volume[2].toString(),
+    });
   }
   return result;
 };

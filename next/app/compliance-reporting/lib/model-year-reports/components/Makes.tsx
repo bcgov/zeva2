@@ -9,6 +9,7 @@ export const Makes = (props: {
   makes: string[];
   setMakes?: Dispatch<SetStateAction<string[]>>;
   disabled: boolean;
+  supplierName?: string;
 }) => {
   const [newMake, setNewMake] = useState<string>("");
 
@@ -37,51 +38,63 @@ export const Makes = (props: {
   );
 
   return (
-    <div className="flex flex-col border border-dividerMedium/40">
-      <div className="p-2 bg-gray-100 font-lg font-semibold">Vehicle Makes</div>
-      {props.setMakes && (
-        <div className="flex flex-row gap-2 p-2 items-end">
-          <TextInput
-            label="Makes"
-            placeholder="Enter Make"
-            value={newMake}
-            onChange={(enteredMake) => setNewMake(enteredMake)}
-            disabled={props.disabled}
-          />
-          <Button
-            onClick={() => handleAdd(newMake)}
-            variant="secondary"
-            disabled={props.disabled}
-          >
-            Add Make
-          </Button>
-        </div>
-      )}
-      <div className="flex flex-col divide-y divide-dividerMedium/30 p-2">
-        <div className="flex flex-row justify-between p-2">
-          <span className="font-semibold">Make</span>
-          {props.setMakes && <span className="font-semibold">Delete</span>}
-        </div>
-        {props.makes.map((make, index) => {
-          return (
-            <div
-              key={index}
-              className={`flex flex-row justify-between p-2 ${index % 2 === 0 ? "bg-gray-50" : ""}`}
+    <div className="flex flex-col border border-dividerMedium rounded">
+      <div className="flex flex-col px-5 py-4 bg-disabledBG gap-2">
+        <span className="text-xl font-bold">Vehicle Makes</span>
+        {props.supplierName && (
+          <span>
+            Enter all vehicle makes for which {props.supplierName} is the
+            supplier.
+          </span>
+        )}
+      </div>
+      <div className=" w-1/3 flex flex-col gap-5 p-5">
+        {props.setMakes && (
+          <div className="flex flex-row gap-4 justify-between items-end">
+            <TextInput
+              label="Makes"
+              placeholder="Enter Make"
+              value={newMake}
+              onChange={(enteredMake) => setNewMake(enteredMake)}
+              disabled={props.disabled}
+            />
+            <Button
+              onClick={() => handleAdd(newMake)}
+              variant="secondary"
+              disabled={props.disabled}
             >
-              <span>{make}</span>
-              {props.setMakes &&
-                (props.disabled ? (
-                  <FontAwesomeIcon icon={faTrash} className="text-gray-500" />
-                ) : (
-                  <FontAwesomeIcon
-                    icon={faTrash}
-                    className="text-primaryRed cursor-pointer"
-                    onClick={() => handleDelete(index)}
-                  />
-                ))}
-            </div>
-          );
-        })}
+              Add Make
+            </Button>
+          </div>
+        )}
+        <div className="flex flex-col divide-y divide-dividerMedium border border-dividerMedium rounded">
+          <div className="flex flex-row justify-between px-4 py-3">
+            <span className="text-sm font-bold">Make</span>
+            {props.setMakes && (
+              <span className="text-sm font-bold">Delete</span>
+            )}
+          </div>
+          {props.makes.map((make, index) => {
+            return (
+              <div
+                key={index}
+                className={`flex flex-row justify-between px-4 py-3 ${index % 2 === 0 ? "bg-lightGrey" : ""}`}
+              >
+                <span>{make}</span>
+                {props.setMakes &&
+                  (props.disabled ? (
+                    <FontAwesomeIcon icon={faTrash} className="text-gray-500" />
+                  ) : (
+                    <FontAwesomeIcon
+                      icon={faTrash}
+                      className="text-primaryRed cursor-pointer"
+                      onClick={() => handleDelete(index)}
+                    />
+                  ))}
+              </div>
+            );
+          })}
+        </div>
       </div>
     </div>
   );

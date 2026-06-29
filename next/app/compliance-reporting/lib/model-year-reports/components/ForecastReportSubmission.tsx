@@ -2,7 +2,7 @@
 
 import axios from "axios";
 import { Dispatch, SetStateAction, useCallback, useTransition } from "react";
-import { Button } from "@/app/lib/components";
+import { Button, StatusBanner } from "@/app/lib/components";
 import { Dropzone } from "@/app/lib/components/Dropzone";
 import { ModelYear } from "@/prisma/generated/enums";
 import { getForecastTemplateUrl } from "../actions";
@@ -38,12 +38,17 @@ export const ForecastReportSubmission = (props: {
   }, [props.modelYear]);
 
   return (
-    <div className="flex flex-col border border-dividerMedium/40">
-      <div className="p-2 font-bold font-lg bg-gray-100">Forecast Report</div>
-      <div className="p-2 font-semibold bg-gray-50">
-        Step 1: Download the Forecast Report Template and fill it out
+    <div className="flex flex-col border border-dividerMedium rounded">
+      <div className="px-5 py-4 font-bold text-xl bg-disabledBG">
+        Forecast Report
       </div>
-      <div className="p-2">
+      <div className="flex flex-col gap-2 px-5 py-4 bg-[#F4F4F4]">
+        <span className="font-bold text-lg">
+          Step 1: Download the Forecast Report Template
+        </span>
+        <span>After downloading the template, please fill it out.</span>
+      </div>
+      <div className="px-5 py-4">
         <Button
           onClick={handleDownloadForecastTemplate}
           variant="secondary"
@@ -53,20 +58,32 @@ export const ForecastReportSubmission = (props: {
           Download Template
         </Button>
       </div>
-      <div className="p-2 font-semibold bg-gray-50">
-        Step 2: Upload Forecast Report
+      <div className="flex flex-col gap-2 px-5 py-4 bg-[#F4F4F4]">
+        <span className="font-bold text-lg">
+          Step 2: Upload Forecast Report
+        </span>
+        <span>Upload the filled out forecast report template.</span>
       </div>
-      <div className="p-2">
-        <Dropzone
-          files={props.forecasts}
-          setFiles={props.setForecasts}
-          maxNumberOfFiles={1}
-          allowedFileTypes={{
-            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet":
-              [".xlsx"],
-          }}
-          disabled={props.disabled}
-        />
+      <div className="px-5 py-4">
+        <div className="flex flex-col gap-5">
+          {props.forecasts.length === 1 && (
+            <StatusBanner
+              variant="success"
+              title="File uploaded successfully."
+              primaryText="To upload a new file, delete the current one."
+            />
+          )}
+          <Dropzone
+            files={props.forecasts}
+            setFiles={props.setForecasts}
+            maxNumberOfFiles={1}
+            allowedFileTypes={{
+              "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet":
+                [".xlsx"],
+            }}
+            disabled={props.disabled}
+          />
+        </div>
       </div>
     </div>
   );

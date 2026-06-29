@@ -210,7 +210,7 @@ export const IndividualPage = async (props: { id: string }) => {
   }
 
   return (
-    <div className="flex flex-col gap-2">
+    <div className="flex flex-col gap-4">
       {banner}
       <Suspense fallback={<LoadingSkeleton />}>
         <ModelYearReportDetails id={myrId} />

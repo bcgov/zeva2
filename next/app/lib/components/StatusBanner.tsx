@@ -14,6 +14,7 @@ export interface IStatusBannerProps extends HTMLAttributes<HTMLDivElement> {
   title: string;
   primaryText: ReactNode;
   secondaryText?: ReactNode;
+  variant?: StatusBannerVariant;
 }
 
 type StatusBannerVariant =
@@ -101,10 +102,14 @@ export const StatusBanner = ({
   primaryText,
   secondaryText,
   className = "",
+  variant,
   ...rest
 }: IStatusBannerProps) => {
-  const variant = getStatusBannerVariant(title);
-  const styles = statusBannerStyles[variant];
+  let variantToUse = variant;
+  if (!variantToUse) {
+    variantToUse = getStatusBannerVariant(title);
+  }
+  const styles = statusBannerStyles[variantToUse];
 
   return (
     <div

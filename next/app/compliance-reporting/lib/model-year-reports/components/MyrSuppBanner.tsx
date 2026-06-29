@@ -8,6 +8,9 @@ import {
   getModelYearEnumsToStringsMap,
   getMyrStatusEnumsToStringsMap,
 } from "@/app/lib/utils/enumMaps";
+import { StatusBanner } from "@/app/lib/components";
+import { Routes } from "@/app/lib/constants";
+import { getAdjacentYear } from "@/app/lib/utils/complianceYear";
 
 export const MyrSuppBanner = (props: {
   type: "myr" | "supp";
@@ -19,6 +22,7 @@ export const MyrSuppBanner = (props: {
   tabIndicators: Partial<Record<number, keyof typeof myrSuppBannerIndicators>>;
   modelYear?: ModelYear;
   status?: ModelYearReportStatus;
+  includeGenerationinfo?: boolean;
 }) => {
   const router = useRouter();
 
@@ -36,8 +40,22 @@ export const MyrSuppBanner = (props: {
   const statusHeading = useMemo(() => {
     if (props.status) {
       const statusMap = getMyrStatusEnumsToStringsMap();
-      return statusMap[props.status];
+      const statusToShow = statusMap[props.status];
+      if (statusToShow) {
+        return (
+          <StatusBanner
+            variant="warning"
+            title={`STATUS - ${statusToShow}`}
+            primaryText=""
+          />
+        );
+      }
+    } else {
+      return (
+        <StatusBanner variant="warning" title="STATUS - Draft" primaryText="" />
+      );
     }
+    return null;
   }, [props.status]);
 
   // indices used in props are wrt this array
@@ -65,7 +83,7 @@ export const MyrSuppBanner = (props: {
         result.push(
           <div
             key={index}
-            className={`flex-1 border-b-4 py-0.5 text-center ${indicatorClasses} ${link ? "cursor-pointer" : ""} ${isCurrentTab ? "font-semibold" : ""}`}
+            className={`flex-1 border-b-8 pb-1 text-center ${indicatorClasses} ${link ? "cursor-pointer" : ""} ${isCurrentTab ? "font-bold" : ""}`}
             onClick={
               link
                 ? () => {
@@ -88,11 +106,56 @@ export const MyrSuppBanner = (props: {
     props.tabIndicators,
   ]);
 
+  const infoJSX = useMemo(() => {
+    if (props.includeGenerationinfo && props.modelYear) {
+      const modelYearsMap = getModelYearEnumsToStringsMap();
+      const myString = modelYearsMap[props.modelYear];
+      const nextMyString =
+        modelYearsMap[getAdjacentYear("next", props.modelYear)];
+      const text = (
+        <div className="flex flex-col gap-3">
+          <span>
+            If you have {myString} model year ZEVs supplied or leased before Oct
+            1, {nextMyString} that have not yet been applied for credits, please
+            submit a{" "}
+            <a
+              href={`${Routes.CreditApplications}/new`}
+              className="font-bold underline text-primaryBlue"
+            >
+              Consumer Vehicle Supplied credit application
+            </a>{" "}
+            first.
+          </span>
+          <span className="text-sm">
+            <span className="font-bold">Submitted</span> - VINs included in
+            credit applications that are awaiting government review.
+          </span>
+          <span className="text-sm">
+            <span className="font-bold">Issued</span> - VINs that have been
+            verified and issued credits.
+          </span>
+        </div>
+      );
+      return (
+        <StatusBanner
+          variant="info"
+          title="Before generating your report:"
+          primaryText=""
+          secondaryText={text}
+        />
+      );
+    }
+    return null;
+  }, [props.includeGenerationinfo, props.modelYear]);
+
   return (
-    <div className="flex flex-col gap-2">
-      <div className="text-lg font-bold">{heading}</div>
-      <div>{statusHeading}</div>
+    <div className="flex flex-col gap-4">
+      <div className="text-2xl font-bold">{heading}</div>
+      {statusHeading}
+      <hr className="border-dividerMedium"></hr>
       <div className="flex flex-row">{tabsJSX}</div>
+      {infoJSX}
+      <hr className="border-dividerMedium"></hr>
     </div>
   );
 };

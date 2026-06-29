@@ -1,6 +1,6 @@
 import { getUserInfo } from "@/auth";
 import { ModelYearReportForm } from "./ModelYearReportForm";
-import { getModelYearReport } from "../data";
+import { getModelYearReport, getSupplierOwnData } from "../data";
 import { ModelYearReportStatus } from "@/prisma/generated/enums";
 import { getPresignedGetObjectUrl } from "@/app/lib/services/s3";
 import { AttachmentDownload } from "@/app/lib/constants/attachment";
@@ -14,6 +14,7 @@ export const EditPage = async (props: { id: string }) => {
   if (userIsGov) {
     return null;
   }
+  const { mostRecentSupplierClass } = await getSupplierOwnData();
   const myr = await getModelYearReport(myrId);
   if (
     !myr ||
@@ -28,7 +29,7 @@ export const EditPage = async (props: { id: string }) => {
     attachments.push(...attachmentsResp.data);
   }
   return (
-    <div className="flex flex-col gap-2 p-2">
+    <div className="flex flex-col gap-4 p-2">
       <MyrSuppBanner
         type="myr"
         currentTabIndex={0}
@@ -43,9 +44,11 @@ export const EditPage = async (props: { id: string }) => {
           4: "disabled",
         }}
         modelYear={myr.modelYear}
+        includeGenerationinfo={true}
       />
       <ModelYearReportForm
         type="savedMyr"
+        mostRecentSupplierClass={mostRecentSupplierClass}
         myrId={myrId}
         modelYear={myr.modelYear}
         myrUrl={await getPresignedGetObjectUrl(myr.objectName)}

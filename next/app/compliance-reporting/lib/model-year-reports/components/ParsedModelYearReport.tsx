@@ -13,6 +13,7 @@ import { PreviousVolumes } from "./PreviousVolumes";
 import { Makes } from "./Makes";
 import { ZevClassOrder } from "./ZevClassOrder";
 import { ZevStatistics } from "./ZevStatistics";
+import { StatusBanner } from "@/app/lib/components";
 
 export const ParsedModelYearReport = (props: {
   type: "myr" | "supp";
@@ -29,37 +30,39 @@ export const ParsedModelYearReport = (props: {
     props.myr.supplierDetails.zevClassOrdering,
   );
   return (
-    <div className="flex flex-col gap-2 border border-dividerMedium/40 pb-2">
-      <div className="p-2 font-semibold font-lg bg-gray-100">
-        {modelYearsMap[props.modelYear]} {reportType}
+    <div className="flex flex-col border border-dividerMedium rounded">
+      <div className="p-5 flex flex-col bg-disabledBG gap-2">
+        <span className="font-bold text-xl">
+          {modelYearsMap[props.modelYear]} {reportType}
+        </span>
+        <StatusBanner
+          variant="info"
+          title="Review the information before submitting"
+          primaryText="If anything is incorrect, please return to the Report Information section, update the data, and regenerate the report."
+        />
       </div>
-      <div className="flex flex-row gap-2 px-2">
-        <div className="flex-1">
-          <SupplierInformation details={props.myr.supplierDetails} />
-        </div>
-        <div className="flex-1">
-          <PreviousVolumes
-            modelYear={props.modelYear}
-            volumes={props.myr.previousVolumes}
-          />
-        </div>
+      <div className="p-5 grid grid-cols-2 gap-x-6 gap-y-5">
+        <SupplierInformation
+          legalName={props.myr.supplierDetails.legalName}
+          recordsAddress={props.myr.supplierDetails.recordsAddress}
+          serviceAddress={props.myr.supplierDetails.serviceAddress}
+          classification={props.myr.supplierDetails.classification}
+        />
+        <PreviousVolumes
+          modelYear={props.modelYear}
+          volumes={props.myr.previousVolumes}
+        />
+        <Makes makes={props.myr.supplierDetails.makes} disabled={true} />
+        <ZevClassOrder
+          modelYear={props.modelYear}
+          zevClassOrder={zevClassOrder}
+          disabled={true}
+        />
       </div>
-      <div className="flex flex-row flex-1 gap-2 px-2">
-        <div className="flex-1">
-          <Makes makes={props.myr.supplierDetails.makes} disabled={true} />
-        </div>
-        <div className="flex-1">
-          <ZevClassOrder
-            modelYear={props.modelYear}
-            zevClassOrder={zevClassOrder}
-            disabled={true}
-          />
-        </div>
-      </div>
-      <div className="p-2 font-semibold font-lg bg-gray-100">
+      <div className="p-5 font-bold text-xl bg-disabledBG">
         Compliance Obligation
       </div>
-      <div className="flex flex-col gap-2 px-2">
+      <div className="flex flex-col gap-10 p-5">
         <ParsedComplianceReductions
           reductions={props.myr.complianceReductions}
         />
@@ -95,7 +98,7 @@ export const ParsedModelYearReport = (props: {
           records={props.myr.suggestedAdjustments}
         />
         <ParsedZevUnitRecords
-          caption="Transfers Away"
+          caption="Offsets and Transfers Away"
           records={props.myr.offsetsAndTransfersAway}
         />
         <ParsedZevUnitRecords

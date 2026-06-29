@@ -1,6 +1,6 @@
 "use client";
 
-import { TextInput } from "@/app/lib/components";
+import { StatusBanner, TextInput } from "@/app/lib/components";
 import {
   getModelYearEnumsToStringsMap,
   getVehicleClassEnumsToStringsMap,
@@ -40,32 +40,36 @@ export const NvValuesSubmission = (props: {
   }, []);
 
   return (
-    <div className="flex flex-col gap-2 border border-dividerMedium/40">
-      <div className="flex flex-col gap-1 p-2 bg-gray-100">
-        <span className="font-bold font-lg">
+    <div className="flex flex-col border border-dividerMedium rounded">
+      <div className="flex flex-col p-5 bg-disabledBG gap-2">
+        <span className="font-bold text-xl">
           {modelYearsMap[props.modelYear]} Model Year {salesOrSupplied}
         </span>
-        <span>
-          The submitted number should not include any vehicle with a gross
-          vehicle weight rating of more than 3856 kg if that vehicle was
-          supplied before October 1, 2024.
-        </span>
+        {vehicleClasses.includes(VehicleClass.REPORTABLE) && (
+          <StatusBanner
+            variant="info"
+            title="Important:"
+            primaryText="With respect to the Reportable Vehicle Class, do not include any vehicle with a gross vehicle weight over 3,865 kg if they were supplied before Oct 1, 2024."
+          />
+        )}
       </div>
-      {vehicleClasses.map((vc, index) => {
-        return (
-          <div key={index} className="p-2">
-            <TextInput
-              label={`Enter number of ${salesOrSupplied} of the ${vehicleClassesMap[vc]} vehicle class`}
-              placeholder="Enter number"
-              value={props.nvValues[vc]}
-              onChange={(value: string) =>
-                props.handleNvValuesChange(vc, value)
-              }
-              disabled={props.disabled}
-            />
-          </div>
-        );
-      })}
+      <div className="p-5 flex flex-col gap-5">
+        {vehicleClasses.map((vc, index) => {
+          return (
+            <div key={index} className="w-1/2">
+              <TextInput
+                label={`Enter number of ${salesOrSupplied} of the ${vehicleClassesMap[vc]} vehicle class`}
+                placeholder="Enter number"
+                value={props.nvValues[vc]}
+                onChange={(value: string) =>
+                  props.handleNvValuesChange(vc, value)
+                }
+                disabled={props.disabled}
+              />
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 };
