@@ -77,7 +77,7 @@ export const GovDetailsPage = async ({
 
   return (
     <div className="bg-white">
-      <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
+      <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 bg-gray-100">
         <h1 className="text-xl font-bold text-gray-900">
           Model {vehicle.modelName}
         </h1>
@@ -87,12 +87,12 @@ export const GovDetailsPage = async ({
       </div>
 
       <div className="flex items-center gap-6 px-5 py-3 text-sm text-gray-700 border-b border-gray-200">
-        <span><span className="font-semibold">ID:</span> {vehicle.id}</span>
+        <span><span>ID:</span> <strong>{vehicle.id}</strong></span>
         {vehicle.legacyId != null && (
-          <span><span className="font-semibold">Legacy ID:</span> {vehicle.legacyId}</span>
+          <span><span>Legacy ID:</span> <strong>{vehicle.legacyId}</strong></span>
         )}
         <span>
-          <span className="font-semibold">Supplier:</span>{" "}
+          <span>Supplier:</span>{" "}
           <strong>{vehicle.organization.name}</strong>
         </span>
         {metaDate && (
