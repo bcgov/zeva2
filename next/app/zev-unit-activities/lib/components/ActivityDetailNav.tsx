@@ -37,7 +37,6 @@ const activityTabs: Record<
 };
 
 const segmentLabels: Record<string, string> = {
-  "audit-history": "Audit History",
   edit: "Edit",
   "model-name-mismatches": "Model Name Mismatches",
   validated: "Validated Records",
