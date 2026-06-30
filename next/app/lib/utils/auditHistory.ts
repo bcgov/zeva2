@@ -49,29 +49,31 @@ export const processAuditHistories = (
 ): ProcessedAuditData => {
   const { histories, userIsGov, statusMap } = params;
 
-  const entries: IAuditEntry[] = histories.map((history) => {
-    let name = `${history.user.firstName} ${history.user.lastName}`;
-    if (!userIsGov && history.user.organization.isGovernment) {
-      name = "Government of BC";
-    }
-
-    const status = statusMap[history.userAction] || history.userAction;
-
-    return {
-      id: history.id,
-      timestamp: `${getIsoYmdString(history.timestamp)}, ${getTimeWithTz(history.timestamp)}`,
-      actor: name,
-      role: name,
-      status: status,
-      statusVariant: getStatusVariant(status),
-      comment: history.comment || undefined,
-    };
-  });
-
-  const approvedEntry = entries
+  const entries: IAuditEntry[] = histories
     .slice()
-    .reverse()
-    .find((entry) => entry.statusVariant === "approved");
+    .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime())
+    .map((history) => {
+      let name = `${history.user.firstName} ${history.user.lastName}`;
+      if (!userIsGov && history.user.organization.isGovernment) {
+        name = "Government of BC";
+      }
+
+      const status = statusMap[history.userAction] || history.userAction;
+
+      return {
+        id: history.id,
+        timestamp: `${getIsoYmdString(history.timestamp)}, ${getTimeWithTz(history.timestamp)}`,
+        actor: name,
+        role: name,
+        status: status,
+        statusVariant: getStatusVariant(status),
+        comment: history.comment || undefined,
+      };
+    });
+
+  const approvedEntry = entries.find(
+    (entry) => entry.statusVariant === "approved",
+  );
 
   const summary: IAuditSummary | undefined = approvedEntry
     ? {

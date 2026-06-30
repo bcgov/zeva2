@@ -14,7 +14,9 @@ export const PenaltyCreditHistory = async (props: {
   const { userIsGov } = await getUserInfo();
   const statusMap = getPenaltyCreditStatusEnumsToStringsMap();
   const entries: JSX.Element[] = [];
-  for (const history of histories) {
+  for (const history of histories
+    .slice()
+    .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime())) {
     let name = `${history.user.firstName} ${history.user.lastName}`;
     if (!userIsGov && history.user.organization.isGovernment) {
       name = "Government of BC";
