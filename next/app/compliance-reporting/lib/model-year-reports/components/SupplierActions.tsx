@@ -1,7 +1,6 @@
 "use client";
 
-import { Button } from "@/app/lib/components";
-import { Textarea } from "@/app/lib/components/inputs/Textarea";
+import { Button, StatusBanner } from "@/app/lib/components";
 import { Routes } from "@/app/lib/constants";
 import { useRouter } from "next/navigation";
 import { JSX, useCallback, useMemo, useState } from "react";
@@ -9,9 +8,11 @@ import { deleteReports, submitReports } from "../actions";
 import { getNormalizedComment } from "@/app/lib/utils/comment";
 import { ModelYear, ModelYearReportStatus } from "@/prisma/generated/enums";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faTrash, faArrowPointer } from "@fortawesome/free-solid-svg-icons";
+import { faTrash, faPaperPlane } from "@fortawesome/free-solid-svg-icons";
 import { getModelYearEnumsToStringsMap } from "@/app/lib/utils/enumMaps";
 import { Modal, ModalType } from "@/app/lib/components/Modal";
+import { CommentBox } from "@/app/lib/components/CommentBox";
+import { BackButton } from "@/app/lib/components/BackButton";
 
 export const SupplierActions = (props: {
   myrId: number;
@@ -100,28 +101,28 @@ export const SupplierActions = (props: {
       disabledAndChecked = false;
     }
     return (
-      <div className="p-2 flex flex-col gap-2">
-        <div className="p-1 flex flex-row gap-1">
+      <div className="p-5 flex flex-col gap-5">
+        <div className="px-4 py-3 flex flex-row gap-3 border border-dividerMedium rounded">
           <input
             type="checkbox"
             checked={disabledAndChecked ? true : checkboxesStatus[0]}
             onChange={() => handleCheck(0)}
             disabled={disabledAndChecked}
           />
-          <span className="font-semibold">
+          <span className="font-bold">
             I confirm that all required {salesOrSupplied} credit applications
             for {modelYearsMap[props.modelYear]} model year vehicles have been
             submitted.
           </span>
         </div>
-        <div className="p-1 flex flex-row gap-1">
+        <div className="px-4 py-3 flex flex-row gap-3 border border-dividerMedium">
           <input
             type="checkbox"
             checked={disabledAndChecked ? true : checkboxesStatus[1]}
             onChange={() => handleCheck(1)}
             disabled={disabledAndChecked}
           />
-          <span className="font-semibold">
+          <span className="font-bold">
             On behalf of {props.supplierName}, I confirm that information
             included in this report is complete and accurate.
           </span>
@@ -166,29 +167,24 @@ export const SupplierActions = (props: {
     props.status === ModelYearReportStatus.RETURNED_TO_SUPPLIER
   ) {
     return (
-      <div className="flex flex-col gap-2">
-        <div className="flex flex-col border border-dividerMedium/40">
-          <div className="p-2 bg-gray-100">
-            <span className="font-semibold">Comments (optional)</span>
-          </div>
-          <div className="p-2">
-            <Textarea
-              value={comment}
-              onChange={setComment}
-              placeholder="Comment"
-            />
-          </div>
-        </div>
-        <div className="flex flex-col border border-dividerMedium/40">
-          <div className="p-2 bg-gray-100">
-            <span className="font-semibold">
+      <div className="flex flex-col gap-4">
+        <CommentBox comment={comment} setComment={setComment} />
+        <div className="flex flex-col border border-dividerMedium rounded">
+          <div className="flex flex-col gap-2 p-5 bg-disabledBG">
+            <span className="font-bold text-xl">
               Confirmation before Submission
             </span>
+            <StatusBanner
+              variant="warning"
+              title="Before submitting, please review the statements below and confirm that they are true."
+              primaryText=""
+            />
           </div>
           {checkboxes}
         </div>
-        <div className="flex flex-row p-2 bg-gray-50 justify-between">
-          <div className="flex flex-row gap-1 items-center">
+        <div className="flex flex-row p-5 bg-lightGrey justify-between">
+          <div className="flex flex-row gap-4 items-center">
+            <BackButton route={`${Routes.ModelYearReports}/${props.myrId}/edit`} />
             <Button
               onClick={() => showModal("delete")}
               variant="danger"
@@ -201,12 +197,12 @@ export const SupplierActions = (props: {
               Start Over
             </Button>
           </div>
-          <div className="flex flex-row gap-1 items-center">
+          <div className="flex flex-row gap-4 items-center">
             {error && <span className="text-red-600">{error}</span>}
             <Button
               onClick={() => showModal("submit")}
               variant="primary"
-              icon={<FontAwesomeIcon icon={faArrowPointer} />}
+              icon={<FontAwesomeIcon icon={faPaperPlane} />}
               iconPosition="right"
               disabled={checkboxesStatus.includes(false)}
             >
@@ -219,11 +215,16 @@ export const SupplierActions = (props: {
     );
   }
   return (
-    <div className="flex flex-col border border-dividerMedium/40">
-      <div className="p-2 bg-gray-100">
-        <span className="font-semibold">Confirmation before Submission</span>
+    <div className="flex flex-col gap-4">
+      <div className="flex flex-col border border-dividerMedium rounded">
+        <div className="p-5 bg-disabledBG font-bold text-xl">
+          Confirmation before Submission
+        </div>
+        {checkboxes}
       </div>
-      {checkboxes}
+      <div className="flex flex-row p-5 bg-lightGrey">
+        <BackButton route={`${Routes.ModelYearReports}`} />
+      </div>
     </div>
   );
 };

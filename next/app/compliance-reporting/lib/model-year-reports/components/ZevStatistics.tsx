@@ -11,14 +11,15 @@ export const ZevStatistics = (props: {
   if (props.modelYear < ModelYear.MY_2024) {
     title = "ZEV Consumer Sales";
   }
-  const headerClasses = "p-2 border-b border-dividerMedium/30 font-semibold";
-  const entryClasses = "p-2 border-b border-dividerMedium/30";
+  const headerClasses =
+    "px-4 py-3 border-b border-dividerMedium font-bold text-sm";
+  const entryClasses = "px-4 py-3 text-sm border-b border-dividerMedium";
   const entries: JSX.Element[] = [];
   let totalIssued = new Decimal(0);
   let totalPending = new Decimal(0);
   let parsingError = false;
   for (const [index, record] of props.records.entries()) {
-    const backgroundClasses = index % 2 === 1 ? "bg-gray-100" : "";
+    const backgroundClasses = index % 2 === 0 ? "bg-lightGrey" : "";
     entries.push(
       <div
         key={`${index}-vc`}
@@ -82,13 +83,12 @@ export const ZevStatistics = (props: {
       parsingError = true;
     }
   }
-  if (entries.length === 0) {
-    return null;
-  }
   if (!parsingError && totalIssued.isInteger() && totalPending.isInteger()) {
-    const classNames = "p-2 bg-primaryBlue/10";
+    const classNames = "px-4 py-3 text-sm font-bold bg-[#F7F9FC]";
     entries.push(
-      <div key="vc" className={classNames}></div>,
+      <div key="vc" className={classNames}>
+        Total
+      </div>,
       <div key="ic" className={classNames}>
         {totalIssued.toFixed(0)}
       </div>,
@@ -104,8 +104,8 @@ export const ZevStatistics = (props: {
     );
   }
   return (
-    <div className="flex flex-col border border-dividerMedium/40">
-      <div className="p-2 font-lg font-semibold border-b border-dividerMedium/30 bg-gray-100">
+    <div className="flex flex-col border border-dividerMedium rounded">
+      <div className="px-5 py-4 font-bold text-xl bg-disabledBG border-b border-dividerMedium">
         {title}
       </div>
       <div className="grid grid-cols-9">

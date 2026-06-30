@@ -4,9 +4,11 @@ import { FileZevUnitRecord } from "../utils";
 export const ParsedZevUnitRecords = (props: {
   caption: string;
   records: FileZevUnitRecord[];
+  hideIfEmpty?: boolean;
 }) => {
   const headerClasses =
     "px-4 py-3 border-b border-dividerMedium font-bold text-sm";
+  const cellClasses = "px-4 py-3 text-sm";
   const entries: JSX.Element[] = [];
   for (const [index, record] of props.records.entries()) {
     const borderClasses =
@@ -15,38 +17,47 @@ export const ParsedZevUnitRecords = (props: {
     entries.push(
       <div
         key={`${index}-type`}
-        className={`px-4 py-3 text-sm ${borderClasses} ${backgroundClasses}`}
+        className={`${cellClasses} ${borderClasses} ${backgroundClasses}`}
       >
         {record.type}
       </div>,
       <div
         key={`${index}-vc`}
-        className={`px-4 py-3 text-sm ${borderClasses} ${backgroundClasses}`}
+        className={`${cellClasses} ${borderClasses} ${backgroundClasses}`}
       >
         {record.vehicleClass}
       </div>,
       <div
         key={`${index}-zc`}
-        className={`px-4 py-3 text-sm ${borderClasses} ${backgroundClasses}`}
+        className={`${cellClasses} ${borderClasses} ${backgroundClasses}`}
       >
         {record.zevClass}
       </div>,
       <div
         key={`${index}-my`}
-        className={`px-4 py-3 text-sm ${borderClasses} ${backgroundClasses}`}
+        className={`${cellClasses} ${borderClasses} ${backgroundClasses}`}
       >
         {record.modelYear}
       </div>,
       <div
         key={`${index}-nou`}
-        className={`px-4 py-3 text-sm ${borderClasses} ${backgroundClasses}`}
+        className={`${cellClasses} ${borderClasses} ${backgroundClasses}`}
       >
         {record.numberOfUnits}
       </div>,
     );
   }
   if (entries.length === 0) {
-    return null;
+    if (props.hideIfEmpty) {
+      return null;
+    }
+    for (let i = 0; i < 5; i++) {
+      entries.push(
+        <div key={i} className={`${cellClasses}`}>
+          -
+        </div>,
+      );
+    }
   }
   return (
     <div className="flex flex-col border border-dividerMedium rounded">

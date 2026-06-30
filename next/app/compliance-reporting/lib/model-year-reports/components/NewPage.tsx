@@ -41,6 +41,10 @@ export const NewPage = async () => {
           4: "disabled",
         }}
         modelYear={modelYear}
+        statusBanner={{
+          variant: "warning",
+          title: "STATUS - Draft",
+        }}
         includeGenerationinfo={true}
       />
       <ModelYearReportForm

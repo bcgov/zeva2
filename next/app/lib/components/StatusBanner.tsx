@@ -17,7 +17,7 @@ export interface IStatusBannerProps extends HTMLAttributes<HTMLDivElement> {
   variant?: StatusBannerVariant;
 }
 
-type StatusBannerVariant =
+export type StatusBannerVariant =
   | "info"
   | "draft"
   | "warning"

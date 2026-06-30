@@ -2,13 +2,10 @@
 
 import { useRouter } from "next/navigation";
 import { JSX, useMemo } from "react";
-import { ModelYear, ModelYearReportStatus } from "@/prisma/generated/enums";
+import { ModelYear } from "@/prisma/generated/enums";
 import { myrSuppBannerIndicators } from "../constants";
-import {
-  getModelYearEnumsToStringsMap,
-  getMyrStatusEnumsToStringsMap,
-} from "@/app/lib/utils/enumMaps";
-import { StatusBanner } from "@/app/lib/components";
+import { getModelYearEnumsToStringsMap } from "@/app/lib/utils/enumMaps";
+import { StatusBanner, StatusBannerVariant } from "@/app/lib/components";
 import { Routes } from "@/app/lib/constants";
 import { getAdjacentYear } from "@/app/lib/utils/complianceYear";
 
@@ -21,8 +18,12 @@ export const MyrSuppBanner = (props: {
   // map of tab indices to keys that maps to utility classes
   tabIndicators: Partial<Record<number, keyof typeof myrSuppBannerIndicators>>;
   modelYear?: ModelYear;
-  status?: ModelYearReportStatus;
   includeGenerationinfo?: boolean;
+  statusBanner?: {
+    variant: StatusBannerVariant;
+    title: string;
+    primaryText?: string;
+  };
 }) => {
   const router = useRouter();
 
@@ -38,25 +39,17 @@ export const MyrSuppBanner = (props: {
   }, [props.type, props.modelYear]);
 
   const statusHeading = useMemo(() => {
-    if (props.status) {
-      const statusMap = getMyrStatusEnumsToStringsMap();
-      const statusToShow = statusMap[props.status];
-      if (statusToShow) {
-        return (
-          <StatusBanner
-            variant="warning"
-            title={`STATUS - ${statusToShow}`}
-            primaryText=""
-          />
-        );
-      }
-    } else {
+    if (props.statusBanner) {
       return (
-        <StatusBanner variant="warning" title="STATUS - Draft" primaryText="" />
+        <StatusBanner
+          variant={props.statusBanner.variant}
+          title={props.statusBanner.title}
+          primaryText={props.statusBanner.primaryText}
+        />
       );
     }
     return null;
-  }, [props.status]);
+  }, [props.statusBanner]);
 
   // indices used in props are wrt this array
   const tabs = useMemo(() => {

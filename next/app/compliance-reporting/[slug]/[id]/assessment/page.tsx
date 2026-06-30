@@ -49,7 +49,6 @@ const Page = async (props: { params: Promise<{ id: string }> }) => {
           5: "pending",
         }}
         modelYear={myr.modelYear}
-        status={ModelYearReportStatus.ASSESSED}
       />
     );
   } else if (userIsGov && userRoles.includes(Role.ZEVA_IDIR_USER)) {
@@ -72,7 +71,6 @@ const Page = async (props: { params: Promise<{ id: string }> }) => {
             4: "inProgress",
           }}
           modelYear={myr.modelYear}
-          status={status}
         />
       );
     } else if (status === ModelYearReportStatus.SUBMITTED_TO_DIRECTOR) {
@@ -90,7 +88,6 @@ const Page = async (props: { params: Promise<{ id: string }> }) => {
             4: "currentComplete",
           }}
           modelYear={myr.modelYear}
-          status={status}
         />
       );
     } else if (status === ModelYearReportStatus.ASSESSED) {
@@ -110,7 +107,6 @@ const Page = async (props: { params: Promise<{ id: string }> }) => {
             5: "pending",
           }}
           modelYear={myr.modelYear}
-          status={status}
         />
       );
     }
@@ -129,7 +125,6 @@ const Page = async (props: { params: Promise<{ id: string }> }) => {
             4: "inProgress",
           }}
           modelYear={myr.modelYear}
-          status={status}
         />
       );
     } else if (status === ModelYearReportStatus.ASSESSED) {
@@ -148,7 +143,6 @@ const Page = async (props: { params: Promise<{ id: string }> }) => {
             5: "pending",
           }}
           modelYear={myr.modelYear}
-          status={status}
         />
       );
     }

@@ -44,6 +44,10 @@ export const EditPage = async (props: { id: string }) => {
           4: "disabled",
         }}
         modelYear={myr.modelYear}
+        statusBanner={{
+          variant: "warning",
+          title: "STATUS - Draft",
+        }}
         includeGenerationinfo={true}
       />
       <ModelYearReportForm

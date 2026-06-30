@@ -62,7 +62,10 @@ export const IndividualPage = async (props: { id: string }) => {
             4: "disabled",
           }}
           modelYear={myr.modelYear}
-          status={status}
+          statusBanner={{
+            variant: "warning",
+            title: `STATUS - ${status === ModelYearReportStatus.DRAFT ? "Draft" : "Returned To Supplier"}.`,
+          }}
         />
       );
     } else if (status === ModelYearReportStatus.SUBMITTED_TO_GOVERNMENT) {
@@ -79,7 +82,12 @@ export const IndividualPage = async (props: { id: string }) => {
             4: "disabled",
           }}
           modelYear={myr.modelYear}
-          status={status}
+          statusBanner={{
+            variant: "success",
+            title: "Report Submitted Successfully.",
+            primaryText:
+              "Your report is now under review. You will be notified once the assessment is complete",
+          }}
         />
       );
     } else if (status === ModelYearReportStatus.ASSESSED) {
@@ -100,7 +108,10 @@ export const IndividualPage = async (props: { id: string }) => {
             5: "pending",
           }}
           modelYear={myr.modelYear}
-          status={status}
+          statusBanner={{
+            variant: "success",
+            title: "Report Assessed.",
+          }}
         />
       );
     }
@@ -127,7 +138,6 @@ export const IndividualPage = async (props: { id: string }) => {
             4: assessmentExists ? "pending" : "disabled",
           }}
           modelYear={myr.modelYear}
-          status={status}
         />
       );
     } else if (status === ModelYearReportStatus.SUBMITTED_TO_DIRECTOR) {
@@ -145,7 +155,6 @@ export const IndividualPage = async (props: { id: string }) => {
             4: "currentComplete",
           }}
           modelYear={myr.modelYear}
-          status={status}
         />
       );
     } else if (status === ModelYearReportStatus.ASSESSED) {
@@ -165,7 +174,6 @@ export const IndividualPage = async (props: { id: string }) => {
             5: "pending",
           }}
           modelYear={myr.modelYear}
-          status={status}
         />
       );
     }
@@ -184,7 +192,6 @@ export const IndividualPage = async (props: { id: string }) => {
             4: "inProgress",
           }}
           modelYear={myr.modelYear}
-          status={status}
         />
       );
     } else if (status === ModelYearReportStatus.ASSESSED) {
@@ -203,7 +210,6 @@ export const IndividualPage = async (props: { id: string }) => {
             5: "pending",
           }}
           modelYear={myr.modelYear}
-          status={status}
         />
       );
     }

@@ -92,10 +92,12 @@ export const ParsedModelYearReport = (props: {
         <ParsedZevUnitRecords
           caption="Adjustments"
           records={props.myr.adjustments}
+          hideIfEmpty={true}
         />
         <ParsedZevUnitRecords
           caption="Suggested Adjustments"
           records={props.myr.suggestedAdjustments}
+          hideIfEmpty={true}
         />
         <ParsedZevUnitRecords
           caption="Offsets and Transfers Away"

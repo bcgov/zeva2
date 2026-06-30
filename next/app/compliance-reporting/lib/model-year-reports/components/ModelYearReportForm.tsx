@@ -577,7 +577,7 @@ export const ModelYearReportForm = (
           disabled={isPending}
         />
       )}
-      <div className="flex flex-row p-2 bg-gray-50 justify-between">
+      <div className="flex flex-row p-5 bg-lightGrey justify-between">
         <span></span>
         <div className="flex flex-row gap-1 items-center">
           {error && <span className="text-red-600">{error}</span>}

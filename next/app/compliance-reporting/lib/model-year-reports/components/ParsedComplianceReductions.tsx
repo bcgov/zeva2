@@ -4,7 +4,9 @@ import { FileReductionRecord } from "../utils";
 export const ParsedComplianceReductions = (props: {
   reductions: FileReductionRecord[];
 }) => {
-  const headerClasses = "px-4 py-3 border-b border-dividerMedium font-bold text-sm";
+  const headerClasses =
+    "px-4 py-3 border-b border-dividerMedium font-bold text-sm";
+  const cellClasses = "px-4 py-3 text-sm";
   const entries: JSX.Element[] = [];
   for (const [index, record] of props.reductions.entries()) {
     const borderClasses =
@@ -15,44 +17,50 @@ export const ParsedComplianceReductions = (props: {
     entries.push(
       <div
         key={`${index}-vc`}
-        className={`px-4 py-3 text-sm ${borderClasses} ${backgroundClasses}`}
+        className={`${cellClasses} ${borderClasses} ${backgroundClasses}`}
       >
         {record.vehicleClass}
       </div>,
       <div
         key={`${index}-ratio`}
-        className={`px-4 py-3 text-sm ${borderClasses} ${backgroundClasses}`}
+        className={`${cellClasses} ${borderClasses} ${backgroundClasses}`}
       >
         {record.ratio}
       </div>,
       <div
         key={`${index}-nv`}
-        className={`px-4 py-3 text-sm ${borderClasses} ${backgroundClasses}`}
+        className={`${cellClasses} ${borderClasses} ${backgroundClasses}`}
       >
         {record.nv}
       </div>,
       <div
         key={`${index}-zc`}
-        className={`px-4 py-3 text-sm ${borderClasses} ${backgroundClasses}`}
+        className={`${cellClasses} ${borderClasses} ${backgroundClasses}`}
       >
         {record.zevClass}
       </div>,
       <div
         key={`${index}-my`}
-        className={`px-4 py-3 text-sm ${borderClasses} ${backgroundClasses}`}
+        className={`${cellClasses} ${borderClasses} ${backgroundClasses}`}
       >
         {record.modelYear}
       </div>,
       <div
         key={`${index}-nou`}
-        className={`px-4 py-3 text-sm ${borderClasses} ${backgroundClasses}`}
+        className={`${cellClasses} ${borderClasses} ${backgroundClasses}`}
       >
         {record.numberOfUnits}
       </div>,
     );
   }
   if (entries.length === 0) {
-    return null;
+    for (let i = 0; i < 6; i++) {
+      entries.push(
+        <div key={i} className={`${cellClasses}`}>
+          -
+        </div>,
+      );
+    }
   }
   return (
     <div className="flex flex-col border border-dividerMedium rounded">

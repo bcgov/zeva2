@@ -74,7 +74,7 @@ export const ZevClassOrder = (props: {
     <div className="flex flex-col border border-dividerMedium rounded">
       <div className="flex flex-col p-5 bg-disabledBG gap-2">
         <span className="font-bold text-xl">
-          Compliance Ratio Credit Reduction
+          Compliance Ratio Reduction - ZEV Class Choice
         </span>
         {props.setZevClassOrder && (
           <span>
