@@ -5,6 +5,7 @@ import {
   ModelYearReportStatus,
   ReassessmentStatus,
   Role,
+  SupplierClass,
 } from "@/prisma/generated/enums";
 import {
   ModelYearReportWhereUniqueInput,
@@ -26,6 +27,7 @@ import {
   getCurrentComplianceYear,
   within20DayPeriod,
 } from "@/app/lib/utils/complianceYear";
+import { getSupplierClassEnumsToStringsMap } from "@/app/lib/utils/enumMaps";
 
 // returns MY of their next MYR; returns null if they cannot create a new MYR
 export const getMyrModelYear = async () => {
@@ -575,17 +577,22 @@ export type SupplierData = {
   makes: string[];
   recordsAddress: string;
   serviceAddress: string;
+  mostRecentSupplierClass: string | null;
 };
 
 export const getSupplierOwnData = async (): Promise<SupplierData> => {
   const { userOrgId } = await getUserInfo();
-  const { legalName, makes, recordsAddress, serviceAddress } =
+  const supplierClassMap = getSupplierClassEnumsToStringsMap();
+  const { legalName, makes, recordsAddress, serviceAddress, supplierClass } =
     await getSupplierDetails(userOrgId);
   return {
     legalName,
     makes,
     recordsAddress: recordsAddress ? getAddressAsString(recordsAddress) : "",
     serviceAddress: serviceAddress ? getAddressAsString(serviceAddress) : "",
+    mostRecentSupplierClass: supplierClass
+      ? (supplierClassMap[supplierClass] ?? null)
+      : null,
   };
 };
 

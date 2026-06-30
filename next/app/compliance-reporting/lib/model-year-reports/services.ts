@@ -57,6 +57,7 @@ export const getSupplierDetails = async (organizationId: number) => {
           make: true,
         },
       },
+      supplierClass: true,
     },
   });
   const makes = new Set<string>();
@@ -77,6 +78,7 @@ export const getSupplierDetails = async (organizationId: number) => {
     makes: Array.from(makes),
     recordsAddress,
     serviceAddress,
+    supplierClass: organization.supplierClass,
   };
 };
 
@@ -134,6 +136,7 @@ export const getSupplierClassAndVolumes = async (
       precedingMys.push(precedingMy);
     }
   }
+  precedingMys.reverse();
   if (precedingMys.length !== 3) {
     throw new Error("Error getting supplier class!");
   }

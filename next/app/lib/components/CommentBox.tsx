@@ -8,19 +8,17 @@ export const CommentBox = (props: {
   subtext?: string;
 }) => {
   return (
-    <div className="border border-gray-300 bg-white rounded mb-4">
-      <div className="p-4 bg-disabledBG border-b border-gray-300">
-        <h2 className="text-base font-bold text-gray-900">
-          {`Comment (${props.subtext ? props.subtext : "optional"})`}
-        </h2>
+    <div className="border border-dividerMedium rounded">
+      <div className="px-5 py-4 bg-disabledBG font-bold text-xl">
+        Comment ({props.subtext ? props.subtext : "optional"})
       </div>
-      <div className="p-6">
+      <div className="p-5">
         <textarea
           value={props.comment}
           onChange={(e) => props.setComment(e.target.value)}
-          placeholder="Enter a description..."
+          placeholder="Enter a comment"
           rows={5}
-          className="w-full max-w-[560px] rounded border border-gray-300 p-3 text-sm text-gray-900 placeholder:text-gray-400 focus:border-blue-600 focus:outline-none"
+          className="w-1/2 rounded border border-dividerMedium px-4 py-3 placeholder:text-disabledIcon"
         />
       </div>
     </div>

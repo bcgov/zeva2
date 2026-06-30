@@ -24,7 +24,7 @@ const Page = async (props: { params: Promise<{ id: string }> }) => {
   }
 
   return (
-    <div className="flex flex-col gap-2 p-2">
+    <div className="flex flex-col gap-4 p-2">
       <MyrSuppBanner
         type="myr"
         currentTabIndex={3}

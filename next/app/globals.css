@@ -120,7 +120,7 @@ body {
 
 @layer components {
   button {
-    @apply m-1 bg-primaryBlue text-white hover:bg-primaryBlueHover;
+    @apply bg-primaryBlue text-white hover:bg-primaryBlueHover;
   }
 
   .form-input-base {

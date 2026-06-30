@@ -6,9 +6,11 @@ import {
 } from "../data";
 import { ModelYearReportForm } from "./ModelYearReportForm";
 import { MyrSuppBanner } from "./MyrSuppBanner";
+import { getSupplierClassAndVolumes } from "../services";
+import { getSerializedVolumes } from "../utilsServer";
 
 export const NewPage = async () => {
-  const { userIsGov } = await getUserInfo();
+  const { userIsGov, userOrgId } = await getUserInfo();
   if (userIsGov) {
     return null;
   }
@@ -17,9 +19,16 @@ export const NewPage = async () => {
     return null;
   }
   const supplierData = await getSupplierOwnData();
+  // pass in "0" as we're interested in just the prev volumes
+  const { volumes } = await getSupplierClassAndVolumes(
+    userOrgId,
+    modelYear,
+    "0",
+  );
+  const serializedVolumes = getSerializedVolumes(volumes);
   const vehicleStats = await getSupplierOwnVehicleStats(modelYear);
   return (
-    <div className="flex flex-col gap-2 p-2">
+    <div className="flex flex-col gap-4 p-2">
       <MyrSuppBanner
         type="myr"
         currentTabIndex={0}
@@ -32,11 +41,17 @@ export const NewPage = async () => {
           4: "disabled",
         }}
         modelYear={modelYear}
+        statusBanner={{
+          variant: "warning",
+          title: "STATUS - Draft",
+        }}
+        includeGenerationinfo={true}
       />
       <ModelYearReportForm
         type="newMyr"
         modelYear={modelYear}
         supplierData={supplierData}
+        prevVolumes={serializedVolumes}
         vehicleStatistics={vehicleStats}
       />
     </div>

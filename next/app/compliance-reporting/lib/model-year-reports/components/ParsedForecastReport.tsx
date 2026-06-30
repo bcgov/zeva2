@@ -77,26 +77,25 @@ export const ParsedForecastTables = (props: { forecast: ParsedForecast }) => {
   );
 
   const headerClasses = useMemo(() => {
-    return "p-2 border-b border-dividerMedium/30 font-semibold";
+    return "px-4 py-3 border-b border-dividerMedium font-bold text-sm";
   }, []);
 
   const entries = useMemo(() => {
     const result: JSX.Element[] = [];
     for (const index of [1, 2, 3]) {
       const records = props.forecast.statistics[index];
-      const borderClasses =
-        index === 3 ? "" : "border-b border-dividerMedium/30";
-      let backgroundClasses = "bg-gray-100";
+      const borderClasses = index === 3 ? "" : "border-b border-dividerMedium";
+      let backgroundClasses = "bg-lightGrey";
       if (index === 2) {
         backgroundClasses = "";
       } else if (index === 3) {
-        backgroundClasses = "bg-primaryBlue/10";
+        backgroundClasses = "bg-[#F7F9FC]";
       }
       for (const i of [0, 1, 2, 3]) {
         result.push(
           <div
             key={`${index}-${i}-type`}
-            className={`p-2 ${borderClasses} ${backgroundClasses}`}
+            className={`px-4 py-3 text-sm ${i === 0 ? "font-bold" : ""} ${borderClasses} ${backgroundClasses}`}
           >
             {records[i]}
           </div>,
@@ -107,11 +106,11 @@ export const ParsedForecastTables = (props: { forecast: ParsedForecast }) => {
   }, [props.forecast]);
 
   return (
-    <div className="flex flex-col gap-2 border border-dividerMedium/40 pb-2">
-      <div className="p-2 font-semibold font-lg bg-gray-100">
+    <div className="flex flex-col border border-dividerMedium rounded">
+      <div className="px-5 py-4 font-bold text-xl bg-disabledBG border-b border-dividerMedium">
         Forecast Report
       </div>
-      <div className="flex flex-col gap-2 px-2">
+      <div className="flex flex-col gap-4 p-5">
         <ClientSideTable<TableZevForecastRecord>
           columns={zevColumns}
           data={zevRecordsWithId}
@@ -120,8 +119,8 @@ export const ParsedForecastTables = (props: { forecast: ParsedForecast }) => {
           initialPageSize={10}
           headerContent="ZEV Records"
         />
-        <div className="flex flex-col border border-dividerMedium/40">
-          <div className="p-2 font-lg font-semibold border-b border-dividerMedium/30 bg-gray-100">
+        <div className="flex flex-col border border-dividerMedium rounded">
+          <div className="px-5 py-4 font-bold border-b border-dividerMedium bg-disabledBG">
             Total Vehicle Supply Forecast
           </div>
           <div className="grid grid-cols-4">

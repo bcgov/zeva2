@@ -4,59 +4,67 @@ import { FileReductionRecord } from "../utils";
 export const ParsedComplianceReductions = (props: {
   reductions: FileReductionRecord[];
 }) => {
-  const headerClasses = "p-2 border-b border-dividerMedium/30 font-semibold";
+  const headerClasses =
+    "px-4 py-3 border-b border-dividerMedium font-bold text-sm";
+  const cellClasses = "px-4 py-3 text-sm";
   const entries: JSX.Element[] = [];
   for (const [index, record] of props.reductions.entries()) {
     const borderClasses =
       index === props.reductions.length - 1
         ? ""
-        : "border-b border-dividerMedium/30";
-    const backgroundClasses = index % 2 === 1 ? "bg-gray-100" : "";
+        : "border-b border-dividerMedium";
+    const backgroundClasses = index % 2 === 0 ? "bg-lightGrey" : "";
     entries.push(
       <div
         key={`${index}-vc`}
-        className={`p-2 ${borderClasses} ${backgroundClasses}`}
+        className={`${cellClasses} ${borderClasses} ${backgroundClasses}`}
       >
         {record.vehicleClass}
       </div>,
       <div
         key={`${index}-ratio`}
-        className={`p-2 ${borderClasses} ${backgroundClasses}`}
+        className={`${cellClasses} ${borderClasses} ${backgroundClasses}`}
       >
         {record.ratio}
       </div>,
       <div
         key={`${index}-nv`}
-        className={`p-2 ${borderClasses} ${backgroundClasses}`}
+        className={`${cellClasses} ${borderClasses} ${backgroundClasses}`}
       >
         {record.nv}
       </div>,
       <div
         key={`${index}-zc`}
-        className={`p-2 ${borderClasses} ${backgroundClasses}`}
+        className={`${cellClasses} ${borderClasses} ${backgroundClasses}`}
       >
         {record.zevClass}
       </div>,
       <div
         key={`${index}-my`}
-        className={`p-2 ${borderClasses} ${backgroundClasses}`}
+        className={`${cellClasses} ${borderClasses} ${backgroundClasses}`}
       >
         {record.modelYear}
       </div>,
       <div
         key={`${index}-nou`}
-        className={`p-2 ${borderClasses} ${backgroundClasses}`}
+        className={`${cellClasses} ${borderClasses} ${backgroundClasses}`}
       >
         {record.numberOfUnits}
       </div>,
     );
   }
   if (entries.length === 0) {
-    return null;
+    for (let i = 0; i < 6; i++) {
+      entries.push(
+        <div key={i} className={`${cellClasses}`}>
+          -
+        </div>,
+      );
+    }
   }
   return (
-    <div className="flex flex-col border border-dividerMedium/40">
-      <div className="p-2 font-lg font-semibold border-b border-dividerMedium/30 bg-gray-100">
+    <div className="flex flex-col border border-dividerMedium rounded">
+      <div className="px-5 py-4 font-bold text-xl bg-disabledBG border-b border-dividerMedium">
         Compliance Ratio Reductions
       </div>
       <div className="grid grid-cols-6">

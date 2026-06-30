@@ -4,7 +4,7 @@ import {
   getStringsToModelYearsEnumsMap,
 } from "./enumMaps";
 
-// please only use these functions server-side, where the TZ is set to "America/Vancouver",
+// please, unless otherwise stated, only use these functions server-side, where the TZ is set to "America/Vancouver",
 // and where certain env vars are defined.
 
 export const getComplianceYear = (date: Date) => {
@@ -32,6 +32,7 @@ export const getPreviousComplianceYear = (date: Date) => {
   return getAdjacentYear("prev", nowYear);
 };
 
+// may be used client-side
 export const getAdjacentYear = (
   type: "prev" | "next",
   modelYear: ModelYear,
@@ -72,6 +73,7 @@ export const getComplianceDate = (modelYear: ModelYear): Date => {
   );
 };
 
+// may be used client-side
 export const getDominatedComplianceYears = (complianceYear: ModelYear) => {
   return Object.values(ModelYear).filter((cy) => cy < complianceYear);
 };
