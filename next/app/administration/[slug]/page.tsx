@@ -10,6 +10,17 @@ import { userIsAdmin } from "@/app/administration/lib/utilsServer";
 import { getUser } from "../lib/data";
 import { UserForm } from "../lib/components/UserForm";
 import { getGovOrgId } from "@/app/vehicle-suppliers/lib/data";
+import { Breadcrumbs } from "@/app/lib/components";
+import { Routes } from "@/app/lib/constants";
+
+const userLabel = (user: Awaited<ReturnType<typeof getUser>>, id: string) => {
+  if (!user) {
+    return `User ${id}`;
+  }
+
+  const name = [user.firstName, user.lastName].filter(Boolean).join(" ");
+  return name || user.idpUsername || `User ${id}`;
+};
 
 const Page = async (props: { params: Promise<{ slug: string }> }) => {
   const args = await props.params;
@@ -44,6 +55,13 @@ const Page = async (props: { params: Promise<{ slug: string }> }) => {
     const govOrgId = await getGovOrgId();
     return (
       <div className="w-full">
+        <Breadcrumbs
+          items={[
+            { label: "Administration", href: Routes.Administration },
+            { label: "User Management", href: Routes.Administration },
+            { label: userLabel(user, slug) },
+          ]}
+        />
         <div className="p-4 bg-gray-100 text-2xl font-bold">
           User Management
         </div>
