@@ -108,7 +108,7 @@ export const StatusBanner = ({
 
   return (
     <div
-      className={`w-full rounded-sm border px-4 py-3 text-primaryText ${styles.container} ${className}`}
+      className="flex items-start self-stretch gap-3 px-4 py-3 rounded-sm border border-[#053662] bg-white"
       role="status"
       {...rest}
     >

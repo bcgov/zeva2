@@ -145,73 +145,91 @@ export const IndividualPage = async (props: { id: string }) => {
   }
 
   return (
-    <div className="bg-white">
-      <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
-        <h1 className="text-xl font-bold text-gray-900">
+    <div className="flex flex-col items-start self-stretch gap-4">
+      <div className="flex self-stretch items-center justify-between p-5 rounded-t bg-[#E7E7E7]">
+        <div className="text-black font-['BC Sans'] text-[26px] leading-7 font-bold">
           Credit Application ID {id}
-        </h1>
-        <PrintDownloadButton icon={<FontAwesomeIcon icon={faDownload} />}>
-          Print/Download Page
-        </PrintDownloadButton>
+        </div>
+        <div className="flex h-10 items-center justify-center gap-2 px-4 py-[5px]">
+          <PrintDownloadButton icon={<FontAwesomeIcon icon={faDownload} />}>
+            Print/Download Page
+          </PrintDownloadButton>
+        </div>
       </div>
 
-      {statusBanner && <div className="px-6 pt-4 pb-2">{statusBanner}</div>}
-
-      <div className="px-6 pb-6 pt-4 space-y-6">
-        <div className="border border-gray-300 bg-gray-50 rounded max-w-sm">
-          <div className="p-6">
-            <h2 className="text-base font-bold mb-4 text-gray-900">
-              Supplier Information
-            </h2>
-            <div className="space-y-2 text-sm text-gray-900">
-              <div>
-                <span className="font-semibold">Legal Name:</span>{" "}
-                {creditApplication.legalName}
+      {statusBanner && 
+        <>
+          {statusBanner}
+        </>}
+      <div className="self-stretch h-px bg-[#898785]"></div>
+      <div className="flex flex-col items-start gap-6 self-stretch bg-white">
+        <div className="flex items-start gap-6 shadow-[0_2px_4px_0_rgba(0,0,0,0.08)]">
+          <div className="flex w-[619px] flex-col items-start rounded-sm border border-[#898785]">
+            <div className="flex flex-col items-start self-stretch gap-1 rounded-t bg-[#EDEBE9] px-5 py-4">
+              <div className="self-stretch text-black font-['BC Sans'] text-[20px] leading-7 font-bold">
+                Supplier Information
               </div>
-              <div>
-                <span className="font-semibold">Record Address:</span>{" "}
-                {creditApplication.recordsAddress}
-              </div>
-              <div>
-                <span className="font-semibold">Service Address:</span>{" "}
-                {creditApplication.serviceAddress}
-              </div>
-              <div>
-                <span className="font-semibold">Makes:</span>{" "}
-                {creditApplication.makes}
+            </div>
+            <div className="flex flex-col items-start gap-5 rounded p-5 shadow-[0_4px_20px_0_rgba(177,177,177,0.10)]">
+              <div className="flex flex-col items-start gap-3">
+                <div className="flex items-center gap-4 self-stretch">
+                  <div className="font-semibold w-[200px]">Legal Name:</div>{" "}
+                  <div className="w-[345px]">{creditApplication.legalName}</div>
+                </div>
+                <div className="w-[561px] h-px bg-[#EDEBE9]"></div>
+                <div className="flex items-center gap-4 self-stretch">
+                  <div className="font-semibold w-[200px]">Record Address:</div>{" "}
+                  <div className="w-[345px]">{creditApplication.recordsAddress}</div>
+                </div>
+                <div className="w-[561px] h-px bg-[#EDEBE9]"></div>
+                <div className="flex items-center gap-4 self-stretch">
+                  <div className="font-semibold w-[200px]">Service Address:</div>{" "}
+                  <div className="w-[345px]">{creditApplication.serviceAddress}</div>
+                </div>
+                <div className="w-[561px] h-px bg-[#EDEBE9]"></div>
+                <div className="flex items-center gap-4 self-stretch">
+                  <div className="font-semibold w-[200px]">Makes:</div>{" "}
+                  <div className="w-[345px]">{creditApplication.makes}</div>
+                </div>
               </div>
             </div>
           </div>
         </div>
 
-        <div className="border border-gray-300 bg-white rounded">
-          <div className="p-4 bg-gray-100 border-b border-gray-300">
-            <h2 className="text-base font-bold text-gray-900">
-              Credit Application Details
-            </h2>
-          </div>
-          <div className="p-6 space-y-4">
-            <div className="space-y-2">
-              <p className="text-sm">
-                <span className="font-semibold">Credit Application:</span>{" "}
-                <span className="text-blue-600">
-                  {creditApplication.fileName}
-                </span>
-              </p>
-              <Attachments
-                attachments={[{ fileName: creditApplication.fileName }]}
-                download={downloadApplication}
-                zipName={`credit-application-${id}`}
-                className="[&_ul]:hidden"
-              />
+        <div className="flex flex-col items-start self-stretch rounded border border-[#898785] shadow-[0_2px_4px_0_rgba(0,0,0,0.08)]">
+          <div className="flex flex-col items-start self-stretch">
+            <div className="flex flex-col items-start self-stretch gap-2 px-5 py-4 rounded-t border-b border-[#898785] bg-[#EDEBE9]">
+              <div className="self-stretch text-[#2D2D2D] font-['BC Sans'] text-[20px] leading-7 font-bold">
+                Credit Application Details
+              </div>
             </div>
-            <Suspense fallback={<LoadingSkeleton />}>
-              <ApplicationStatistics
-                creditApplicationId={id}
-                userIsGov={false}
-              />
-            </Suspense>
+            <div className="flex flex-col items-start self-stretch gap-3 p-5">
+              <div className="flex items-center gap-4 self-stretch">
+                <div className="w-[138px] text-[#474543] font-['BC Sans'] text-base leading-6 font-normal">
+                  Credit Application: 
+                </div>
+                <div className="flex-1 self-stretch text-[#255A90] font-['BC Sans'] text-base leading-6 font-normal underline">
+                  {creditApplication.fileName}
+                </div>
+              </div>
+              <div className="self-stretch h-px bg-[#EDEBE9]"></div>
+              <div className="flex items-center">
+                <Attachments
+                  attachments={[{ fileName: creditApplication.fileName }]}
+                  download={downloadApplication}
+                  zipName={`credit-application-${id}`}
+                  className="[&_ul]:hidden"
+                  />
+              </div>
+              <div className="self-stretch h-px bg-[#EDEBE9]"></div>
+            </div>
           </div>
+          <Suspense fallback={<LoadingSkeleton />}>
+            <ApplicationStatistics
+              creditApplicationId={id}
+              userIsGov={false}
+            />
+          </Suspense>
         </div>
 
         <div className="border border-gray-300 bg-white rounded">

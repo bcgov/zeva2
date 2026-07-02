@@ -24,99 +24,54 @@ export const ApplicationStatistics = async (props: {
     type: "all" | "validated",
   ) => {
     return (
-      <table
+      <div
         key={type === "all" ? "allRecords" : "validatedRecords"}
-        className="w-full text-left border-collapse"
+        className="flex flex-col items-start self-stretch"
       >
-        <caption className="text-left font-semibold mb-2">
-          {type === "all"
-            ? "VINs Claimed"
-            : status === CreditApplicationStatus.APPROVED
-              ? "VINs Issued"
-              : "VINs to be Issued"}
-        </caption>
-        <thead className="bg-gray-100">
-          <tr key="headers">
-            <th key="make" className="border border-gray-300 px-4 py-2">
-              Make
-            </th>
-            <th key="modelName" className="border border-gray-300 px-4 py-2">
-              Model Name
-            </th>
-            <th key="modelYear" className="border border-gray-300 px-4 py-2">
-              Model Year
-            </th>
-            <th key="vehicleClass" className="border border-gray-300 px-4 py-2">
-              Vehicle Class
-            </th>
-            <th key="zevClass" className="border border-gray-300 px-4 py-2">
-              ZEV Class
-            </th>
-            <th key="zevType" className="border border-gray-300 px-4 py-2">
-              ZEV Type
-            </th>
-            <th key="range" className="border border-gray-300 px-4 py-2">
-              Range
-            </th>
-            <th
-              key="numberOfUnits"
-              className="border border-gray-300 px-4 py-2"
-            >
-              Number of Units p...
-            </th>
-            <th key="count" className="border border-gray-300 px-4 py-2">
-              Count
-            </th>
-          </tr>
-        </thead>
-        <tbody>
-          {records.map((record) => {
-            return (
-              <tr key={crypto.randomUUID()}>
-                <td key="make" className="border border-gray-300 px-4 py-2">
-                  {record.make}
-                </td>
-                <td
-                  key="modelName"
-                  className="border border-gray-300 px-4 py-2"
-                >
-                  {record.modelName}
-                </td>
-                <td
-                  key="modelYear"
-                  className="border border-gray-300 px-4 py-2"
-                >
-                  {modelYearsMap[record.modelYear]}
-                </td>
-                <td
-                  key="vehicleClass"
-                  className="border border-gray-300 px-4 py-2"
-                >
-                  {vehicleClassesMap[record.vehicleClass]}
-                </td>
-                <td key="zevClass" className="border border-gray-300 px-4 py-2">
-                  {zevClassMap[record.zevClass]}
-                </td>
-                <td key="zevType" className="border border-gray-300 px-4 py-2">
-                  {record.zevType}
-                </td>
-                <td key="range" className="border border-gray-300 px-4 py-2">
-                  {record.range}
-                </td>
-                <td
-                  key="numberOfUnits"
-                  className="border border-gray-300 px-4 py-2"
-                >
-                  {record.numberOfUnits.toFixed(2)}
-                </td>
-                <td key="count" className="border border-gray-300 px-4 py-2">
-                  {record._count.id}
-                </td>
+        {/* Header — Figma: padding 16px 20px, rounded-t, border #1E5189, bg #EDEBE9 */}
+        <div className="flex flex-col items-start self-stretch gap-1 px-5 py-4 rounded-t border border-[#9F9D9C] bg-[#EDEBE9]">
+          <span className="self-stretch text-black font-['BC_Sans'] text-base font-bold leading-[22px]">
+            {type === "all"
+              ? "VIN's Claimed"
+              : status === CreditApplicationStatus.APPROVED
+                ? "VINs Issued"
+                : "VINs to be Issued"}
+          </span>
+        </div>
+        {/* Table body — Figma: border #9F9D9C; th drops border-t so header's blue bottom is the only divider */}
+        <div className="overflow-x-auto self-stretch border-b border-l border-r border-[#9F9D9C]">
+          <table className="w-full min-w-max border-collapse">
+            <thead>
+              <tr>
+                <th className="h-[60px] px-4 py-3 text-left font-bold border-b border-[#9F9D9C] whitespace-nowrap">MAKE</th>
+                <th className="h-[60px] px-4 py-3 text-left font-bold border-b border-[#9F9D9C] whitespace-nowrap">Model Name</th>
+                <th className="h-[60px] px-4 py-3 text-left font-bold border-b border-[#9F9D9C] whitespace-nowrap">Model Year</th>
+                <th className="h-[60px] px-4 py-3 text-left font-bold border-b border-[#9F9D9C] whitespace-nowrap">Vehicle Class</th>
+                <th className="h-[60px] px-4 py-3 text-left font-bold border-b border-[#9F9D9C] whitespace-nowrap">ZEV Class</th>
+                <th className="h-[60px] px-4 py-3 text-left font-bold border-b border-[#9F9D9C] whitespace-nowrap">ZEV Type</th>
+                <th className="h-[60px] px-4 py-3 text-left font-bold border-b border-[#9F9D9C] whitespace-nowrap">Range</th>
+                <th className="h-[60px] px-4 py-3 text-left font-bold border-b border-[#9F9D9C] whitespace-nowrap">Number of Units p...</th>
+                <th className="h-[60px] px-4 py-3 text-left font-bold border-b border-[#9F9D9C] whitespace-nowrap">Count</th>
               </tr>
-            );
-          })}
-        </tbody>
-      </table>
+            </thead>
+            <tbody>
+              {records.map((record) => (
+                <tr key={crypto.randomUUID()} className="odd:bg-[#FAF9F8] even:bg-white">
+                  <td className="px-4 py-3 border-b border-[#9F9D9C] whitespace-nowrap">{record.make}</td>
+                  <td className="px-4 py-3 border-b border-[#9F9D9C] whitespace-nowrap">{record.modelName}</td>
+                  <td className="px-4 py-3 border-b border-[#9F9D9C] whitespace-nowrap">{modelYearsMap[record.modelYear]}</td>
+                  <td className="px-4 py-3 border-b border-[#9F9D9C] whitespace-nowrap">{vehicleClassesMap[record.vehicleClass]}</td>
+                  <td className="px-4 py-3 border-b border-[#9F9D9C] whitespace-nowrap">{zevClassMap[record.zevClass]}</td>
+                  <td className="px-4 py-3 border-b border-[#9F9D9C] whitespace-nowrap">{record.zevType}</td>
+                  <td className="px-4 py-3 border-b border-[#9F9D9C] whitespace-nowrap">{record.range}</td>
+                  <td className="px-4 py-3 border-b border-[#9F9D9C] whitespace-nowrap">{record.numberOfUnits.toFixed(2)}</td>
+                  <td className="px-4 py-3 border-b border-[#9F9D9C] whitespace-nowrap">{record._count.id}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
     );
   };
 
@@ -125,67 +80,45 @@ export const ApplicationStatistics = async (props: {
     type: "all" | "validated",
   ) => {
     return (
-      <table
+      <div
         key={type === "all" ? "allCredits" : "validatedCredits"}
-        className="w-full text-left border-collapse"
+        className="self-stretch border border-[#898785] overflow-hidden"
       >
-        <caption className="text-left font-semibold mb-2">
-          {type === "all"
-            ? "Credits Claimed"
-            : status === CreditApplicationStatus.APPROVED
-              ? "Credits Issued"
-              : "Credits to be Issued"}
-        </caption>
-        <thead className="bg-gray-100">
-          <tr key="headers">
-            <th key="vehicleClass" className="border border-gray-300 px-4 py-2">
-              Vehicle Class
-            </th>
-            <th key="zevClass" className="border border-gray-300 px-4 py-2">
-              ZEV Class
-            </th>
-            <th key="modelYear" className="border border-gray-300 px-4 py-2">
-              Model Year
-            </th>
-            <th
-              key="numberOfUnits"
-              className="border border-gray-300 px-4 py-2"
-            >
-              Number of Units
-            </th>
-          </tr>
-        </thead>
-        <tbody>
-          {records.map((record) => {
-            const numberOfUnits = record._sum.numberOfUnits;
-            return (
-              <tr key={crypto.randomUUID()}>
-                <td
-                  key="vehicleClass"
-                  className="border border-gray-300 px-4 py-2"
-                >
-                  {vehicleClassesMap[record.vehicleClass]}
-                </td>
-                <td key="zevClass" className="border border-gray-300 px-4 py-2">
-                  {zevClassMap[record.zevClass]}
-                </td>
-                <td
-                  key="modelYear"
-                  className="border border-gray-300 px-4 py-2"
-                >
-                  {modelYearsMap[record.modelYear]}
-                </td>
-                <td
-                  key="numberOfUnits"
-                  className="border border-gray-300 px-4 py-2"
-                >
-                  {numberOfUnits ? numberOfUnits.toFixed(2) : "0"}
-                </td>
+        <div className="px-5 py-3 bg-[#EDEBE9] border-b border-[#898785]">
+          <span className="font-bold text-sm">
+            {type === "all"
+              ? "Credits Claimed"
+              : status === CreditApplicationStatus.APPROVED
+                ? "Credits Issued"
+                : "Credits to be Issued"}
+          </span>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="w-full border-collapse text-sm">
+            <thead>
+              <tr>
+                <th className="border border-gray-300 px-4 py-2 text-left font-bold">Vehicle Class</th>
+                <th className="border border-gray-300 px-4 py-2 text-left font-bold">ZEV Class</th>
+                <th className="border border-gray-300 px-4 py-2 text-left font-bold">Model Year</th>
+                <th className="border border-gray-300 px-4 py-2 text-left font-bold">Number of Units</th>
               </tr>
-            );
-          })}
-        </tbody>
-      </table>
+            </thead>
+            <tbody>
+              {records.map((record) => {
+                const numberOfUnits = record._sum.numberOfUnits;
+                return (
+                  <tr key={crypto.randomUUID()}>
+                    <td className="border border-gray-300 px-4 py-2">{vehicleClassesMap[record.vehicleClass]}</td>
+                    <td className="border border-gray-300 px-4 py-2">{zevClassMap[record.zevClass]}</td>
+                    <td className="border border-gray-300 px-4 py-2">{modelYearsMap[record.modelYear]}</td>
+                    <td className="border border-gray-300 px-4 py-2">{numberOfUnits ? numberOfUnits.toFixed(2) : "0"}</td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      </div>
     );
   };
 
@@ -194,33 +127,23 @@ export const ApplicationStatistics = async (props: {
 
   if (!props.userIsGov) {
     return (
-      <>
-        {stats.recordStats.length > 0 && (
-          <div className="border border-gray-300 rounded p-4 mb-4 overflow-x-auto">
-            {getRecordsTable(stats.recordStats, "all")}
-          </div>
-        )}
-        {recordStatsValidated && recordStatsValidated.length > 0 && (
-          <div className="border border-gray-300 rounded p-4 mb-4 overflow-x-auto">
-            {getRecordsTable(recordStatsValidated, "validated")}
-          </div>
-        )}
-        {stats.creditStats.length > 0 && (
-          <div className="border border-gray-300 rounded p-4 mb-4 overflow-x-auto">
-            {getCreditsTable(stats.creditStats, "all")}
-          </div>
-        )}
-        {creditStatsValidated && creditStatsValidated.length > 0 && (
-          <div className="border border-gray-300 rounded p-4 mb-4 overflow-x-auto">
-            {getCreditsTable(creditStatsValidated, "validated")}
-          </div>
-        )}
-      </>
+      <div className="flex flex-col items-start self-stretch gap-[26px] p-5">
+        {stats.recordStats.length > 0 &&
+          getRecordsTable(stats.recordStats, "all")}
+        {recordStatsValidated &&
+          recordStatsValidated.length > 0 &&
+          getRecordsTable(recordStatsValidated, "validated")}
+        {stats.creditStats.length > 0 &&
+          getCreditsTable(stats.creditStats, "all")}
+        {creditStatsValidated &&
+          creditStatsValidated.length > 0 &&
+          getCreditsTable(creditStatsValidated, "validated")}
+      </div>
     );
   }
 
   return (
-    <div className="space-y-3">
+    <div className="flex flex-col items-start self-stretch gap-[26px] p-5">
       {getRecordsTable(stats.recordStats, "all")}
       {recordStatsValidated && recordStatsValidated.length > 0
         ? getRecordsTable(recordStatsValidated, "validated")
