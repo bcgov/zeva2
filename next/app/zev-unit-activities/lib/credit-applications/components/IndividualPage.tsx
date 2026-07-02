@@ -239,13 +239,13 @@ export const IndividualPage = async (props: { id: string }) => {
                 Supporting Documents (optional)
               </div>
             </div>
-            <div className="flex flex-col items-start self-stretch gap-3 p-5">
-              <Attachments
-                attachments={creditApplication.CreditApplicationAttachment}
-                download={downloadAttachments}
-                zipName={`credit-application-attachments-${id}`}
-              />
-            </div>
+            <Attachments
+              attachments={creditApplication.CreditApplicationAttachment}
+              download={downloadAttachments}
+              zipName={`credit-application-attachments-${id}`}
+              className="flex flex-col items-start self-stretch gap-3 p-5"
+              label="Proof of Range: "
+            />
           </div>
         </div>
 
