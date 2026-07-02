@@ -1,4 +1,6 @@
 import { IndividualNavbar } from "@/app/zev-unit-activities/lib/credit-applications/components/IndividualNavbar";
+import { Breadcrumbs } from "@/app/lib/components";
+import { Routes } from "@/app/lib/constants";
 
 const Layout = async (props: {
   children: React.ReactNode;
@@ -9,6 +11,12 @@ const Layout = async (props: {
   if (slug === "credit-applications") {
     return (
       <>
+        <Breadcrumbs
+          items={[
+            { label: "Credit Applications", href: Routes.CreditApplications },
+            { label: `Credit Application ID ${id}` },
+          ]}
+        />
         <IndividualNavbar creditApplicationId={id} />
         {props.children}
       </>
