@@ -82,10 +82,10 @@ export const ApplicationStatistics = async (props: {
     return (
       <div
         key={type === "all" ? "allCredits" : "validatedCredits"}
-        className="self-stretch border border-[#898785] overflow-hidden"
+        className="flex flex-col items-start self-stretch"
       >
-        <div className="px-5 py-3 bg-[#EDEBE9] border-b border-[#898785]">
-          <span className="font-bold text-sm">
+        <div className="flex flex-col items-start self-stretch gap-1 px-5 py-4 rounded-t border border-[#9F9D9C] bg-[#EDEBE9]">
+          <span className="self-stretch text-black font-['BC_Sans'] text-base font-bold leading-[22px]">
             {type === "all"
               ? "Credits Claimed"
               : status === CreditApplicationStatus.APPROVED
@@ -93,25 +93,25 @@ export const ApplicationStatistics = async (props: {
                 : "Credits to be Issued"}
           </span>
         </div>
-        <div className="overflow-x-auto">
-          <table className="w-full border-collapse text-sm">
+        <div className="overflow-x-auto self-stretch border-b border-l border-r border-[#9F9D9C]">
+          <table className="w-full min-w-max border-collapse">
             <thead>
               <tr>
-                <th className="border border-gray-300 px-4 py-2 text-left font-bold">Vehicle Class</th>
-                <th className="border border-gray-300 px-4 py-2 text-left font-bold">ZEV Class</th>
-                <th className="border border-gray-300 px-4 py-2 text-left font-bold">Model Year</th>
-                <th className="border border-gray-300 px-4 py-2 text-left font-bold">Number of Units</th>
+                <th className="h-[60px] px-4 py-3 text-left font-bold border-b border-[#9F9D9C] whitespace-nowrap">Vehicle Class</th>
+                <th className="h-[60px] px-4 py-3 text-left font-bold border-b border-[#9F9D9C] whitespace-nowrap">ZEV Class</th>
+                <th className="h-[60px] px-4 py-3 text-left font-bold border-b border-[#9F9D9C] whitespace-nowrap">Model Year</th>
+                <th className="h-[60px] px-4 py-3 text-left font-bold border-b border-[#9F9D9C] whitespace-nowrap">Number of Units</th>
               </tr>
             </thead>
             <tbody>
               {records.map((record) => {
                 const numberOfUnits = record._sum.numberOfUnits;
                 return (
-                  <tr key={crypto.randomUUID()}>
-                    <td className="border border-gray-300 px-4 py-2">{vehicleClassesMap[record.vehicleClass]}</td>
-                    <td className="border border-gray-300 px-4 py-2">{zevClassMap[record.zevClass]}</td>
-                    <td className="border border-gray-300 px-4 py-2">{modelYearsMap[record.modelYear]}</td>
-                    <td className="border border-gray-300 px-4 py-2">{numberOfUnits ? numberOfUnits.toFixed(2) : "0"}</td>
+                  <tr key={crypto.randomUUID()} className="odd:bg-[#FAF9F8] even:bg-white">
+                    <td className="px-4 py-3 border-b border-[#9F9D9C] whitespace-nowrap">{vehicleClassesMap[record.vehicleClass]}</td>
+                    <td className="px-4 py-3 border-b border-[#9F9D9C] whitespace-nowrap">{zevClassMap[record.zevClass]}</td>
+                    <td className="px-4 py-3 border-b border-[#9F9D9C] whitespace-nowrap">{modelYearsMap[record.modelYear]}</td>
+                    <td className="px-4 py-3 border-b border-[#9F9D9C] whitespace-nowrap">{numberOfUnits ? numberOfUnits.toFixed(2) : "0"}</td>
                   </tr>
                 );
               })}
