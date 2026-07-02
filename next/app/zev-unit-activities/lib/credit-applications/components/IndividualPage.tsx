@@ -232,18 +232,20 @@ export const IndividualPage = async (props: { id: string }) => {
           </Suspense>
         </div>
 
-        <div className="border border-gray-300 bg-white rounded">
-          <div className="p-4 bg-gray-100 border-b border-gray-300">
-            <h2 className="text-base font-bold text-gray-900">
-              Supporting Documents (optional)
-            </h2>
-          </div>
-          <div className="p-6">
-            <Attachments
-              attachments={creditApplication.CreditApplicationAttachment}
-              download={downloadAttachments}
-              zipName={`credit-application-attachments-${id}`}
-            />
+        <div className="flex items-start self-stretch gap-6 shadow-[0_2px_4px_0_rgba(0,0,0,0.08)]">
+          <div className="flex flex-1 flex-col items-start rounded border border-[#898785]">
+            <div className="flex flex-col items-start self-stretch gap-1 rounded-t bg-[#EDEBE9] px-5 py-4">
+              <div className="self-stretch text-black font-['BC Sans'] text-[20px] font-bold leading-7">
+                Supporting Documents (optional)
+              </div>
+            </div>
+            <div className="flex flex-col items-start self-stretch gap-3 p-5">
+              <Attachments
+                attachments={creditApplication.CreditApplicationAttachment}
+                download={downloadAttachments}
+                zipName={`credit-application-attachments-${id}`}
+              />
+            </div>
           </div>
         </div>
 
