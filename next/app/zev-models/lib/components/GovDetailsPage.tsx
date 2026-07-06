@@ -87,13 +87,16 @@ export const GovDetailsPage = async ({
       </div>
 
       <div className="flex items-center gap-6 px-5 py-3 text-sm text-gray-700 border-b border-gray-200">
-        <span><span>ID:</span> <strong>{vehicle.id}</strong></span>
+        <span>
+          <span>ID:</span> <strong>{vehicle.id}</strong>
+        </span>
         {vehicle.legacyId != null && (
-          <span><span>Legacy ID:</span> <strong>{vehicle.legacyId}</strong></span>
+          <span>
+            <span>Legacy ID:</span> <strong>{vehicle.legacyId}</strong>
+          </span>
         )}
         <span>
-          <span>Supplier:</span>{" "}
-          <strong>{vehicle.organization.name}</strong>
+          <span>Supplier:</span> <strong>{vehicle.organization.name}</strong>
         </span>
         {metaDate && (
           <span>

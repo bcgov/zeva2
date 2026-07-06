@@ -24,10 +24,6 @@ export const ApplicationAuditHistory = ({
   statusOptions = [],
   roleOptions = [],
 }: ApplicationAuditHistoryProps) => {
-  const handlePrintDownload = () => {
-    window.print();
-  };
-
   return (
     <div className="p-6">
       <AuditHistory
@@ -36,7 +32,7 @@ export const ApplicationAuditHistory = ({
         entries={entries}
         statusOptions={statusOptions}
         roleOptions={roleOptions}
-        onPrintDownload={handlePrintDownload}
+        printable={true}
       />
     </div>
   );

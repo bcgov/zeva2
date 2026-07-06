@@ -71,9 +71,9 @@ export const ZevClassOrder = (props: {
     return null;
   }
   return (
-    <div className="flex flex-col gap-2 border border-dividerMedium/40">
-      <div className="flex flex-col gap-1 p-2 bg-gray-100">
-        <span className="font-lg font-bold">
+    <div className="flex flex-col border border-dividerMedium rounded">
+      <div className="flex flex-col p-5 bg-disabledBG gap-2">
+        <span className="font-bold text-xl">
           Compliance Ratio Reduction - ZEV Class Choice
         </span>
         {props.setZevClassOrder && (
@@ -83,19 +83,17 @@ export const ZevClassOrder = (props: {
           </span>
         )}
       </div>
-      <div className="flex flex-col p-2 gap-1">
+      <div className="flex flex-col p-5 gap-5">
         {zevClassChoices.map((zc, index) => {
           return (
-            <div key={index} className="flex flex-row gap-1">
+            <div key={index} className="flex flex-row gap-3">
               <input
                 type="radio"
                 checked={choice === zc}
                 onChange={() => handleSelect(zc)}
                 disabled={props.disabled || !props.setZevClassOrder}
               />
-              <span className="font-semibold">
-                Zev Class {zevClassesMap[zc]}
-              </span>
+              <span className="font-bold">Zev Class {zevClassesMap[zc]}</span>
             </div>
           );
         })}

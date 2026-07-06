@@ -17,6 +17,7 @@ export const SupplementaryReportDetails = async (props: { suppId: number }) => {
     <ParsedModelYearReport
       type="supp"
       modelYear={report.modelYear}
+      status={report.status}
       myr={parsedSupp}
     />
   );

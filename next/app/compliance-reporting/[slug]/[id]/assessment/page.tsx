@@ -3,7 +3,9 @@ import { AssessmentDetails } from "@/app/compliance-reporting/lib/model-year-rep
 import { DirectorActions } from "@/app/compliance-reporting/lib/model-year-reports/components/DirectorActions";
 import { MyrSuppBanner } from "@/app/compliance-reporting/lib/model-year-reports/components/MyrSuppBanner";
 import { getModelYearReport } from "@/app/compliance-reporting/lib/model-year-reports/data";
+import { SecondaryNavbar } from "@/app/lib/components/SecondaryNavbar";
 import { Routes } from "@/app/lib/constants";
+import { getModelYearEnumsToStringsMap } from "@/app/lib/utils/enumMaps";
 import { getUserInfo } from "@/auth";
 import { ModelYearReportStatus, Role } from "@/prisma/generated/enums";
 import { JSX } from "react";
@@ -19,7 +21,7 @@ const Page = async (props: { params: Promise<{ id: string }> }) => {
   if (!userIsGov && myr.status !== ModelYearReportStatus.ASSESSED) {
     return null;
   }
-
+  const myrMap = getModelYearEnumsToStringsMap();
   const status = myr.status;
   let actionComponent: JSX.Element | null = null;
   if (userIsGov && userRoles.includes(Role.ZEVA_IDIR_USER)) {
@@ -49,7 +51,6 @@ const Page = async (props: { params: Promise<{ id: string }> }) => {
           5: "pending",
         }}
         modelYear={myr.modelYear}
-        status={ModelYearReportStatus.ASSESSED}
       />
     );
   } else if (userIsGov && userRoles.includes(Role.ZEVA_IDIR_USER)) {
@@ -72,7 +73,6 @@ const Page = async (props: { params: Promise<{ id: string }> }) => {
             4: "inProgress",
           }}
           modelYear={myr.modelYear}
-          status={status}
         />
       );
     } else if (status === ModelYearReportStatus.SUBMITTED_TO_DIRECTOR) {
@@ -90,7 +90,6 @@ const Page = async (props: { params: Promise<{ id: string }> }) => {
             4: "currentComplete",
           }}
           modelYear={myr.modelYear}
-          status={status}
         />
       );
     } else if (status === ModelYearReportStatus.ASSESSED) {
@@ -110,7 +109,6 @@ const Page = async (props: { params: Promise<{ id: string }> }) => {
             5: "pending",
           }}
           modelYear={myr.modelYear}
-          status={status}
         />
       );
     }
@@ -129,7 +127,6 @@ const Page = async (props: { params: Promise<{ id: string }> }) => {
             4: "inProgress",
           }}
           modelYear={myr.modelYear}
-          status={status}
         />
       );
     } else if (status === ModelYearReportStatus.ASSESSED) {
@@ -148,14 +145,26 @@ const Page = async (props: { params: Promise<{ id: string }> }) => {
             5: "pending",
           }}
           modelYear={myr.modelYear}
-          status={status}
         />
       );
     }
   }
 
   return (
-    <div className="flex-flex-col gap-2">
+    <div className="flex-flex-col gap-4">
+      <SecondaryNavbar
+        items={[
+          {
+            label: `Model Year Report ${myrMap[myr.modelYear]}`,
+            route: `${Routes.ModelYearReports}/${myrId}/assessment`,
+          },
+          {
+            label: `Audit History`,
+            route: `${Routes.ModelYearReports}/${myrId}/audit-history?modelYear=${myrMap[myr.modelYear]}&detailsType=assessment`,
+          },
+        ]}
+        activeIndex={0}
+      />
       {banner}
       <AssessmentDetails type="assessment" id={myrId} />
       {actionComponent}
