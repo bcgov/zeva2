@@ -84,7 +84,7 @@ export const ZevStatistics = (props: {
     }
   }
   if (!parsingError && totalIssued.isInteger() && totalPending.isInteger()) {
-    const classNames = "px-4 py-3 text-sm font-bold bg-[#F7F9FC]";
+    const classNames = "px-4 py-3 text-sm font-bold bg-infoBG";
     entries.push(
       <div key="vc" className={classNames}>
         Total

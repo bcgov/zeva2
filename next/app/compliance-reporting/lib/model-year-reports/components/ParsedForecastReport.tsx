@@ -89,7 +89,7 @@ export const ParsedForecastTables = (props: { forecast: ParsedForecast }) => {
       if (index === 2) {
         backgroundClasses = "";
       } else if (index === 3) {
-        backgroundClasses = "bg-[#F7F9FC]";
+        backgroundClasses = "bg-infoBG";
       }
       for (const i of [0, 1, 2, 3]) {
         result.push(

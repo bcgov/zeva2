@@ -18,12 +18,12 @@ export const MyrSuppBanner = (props: {
   // map of tab indices to keys that maps to utility classes
   tabIndicators: Partial<Record<number, keyof typeof myrSuppBannerIndicators>>;
   modelYear?: ModelYear;
-  includeGenerationinfo?: boolean;
   statusBanner?: {
     variant: StatusBannerVariant;
     title: string;
     primaryText?: string;
   };
+  bottomBanner?: JSX.Element;
 }) => {
   const router = useRouter();
 
@@ -99,55 +99,13 @@ export const MyrSuppBanner = (props: {
     props.tabIndicators,
   ]);
 
-  const infoJSX = useMemo(() => {
-    if (props.includeGenerationinfo && props.modelYear) {
-      const modelYearsMap = getModelYearEnumsToStringsMap();
-      const myString = modelYearsMap[props.modelYear];
-      const nextMyString =
-        modelYearsMap[getAdjacentYear("next", props.modelYear)];
-      const text = (
-        <div className="flex flex-col gap-3">
-          <span>
-            If you have {myString} model year ZEVs supplied or leased before Oct
-            1, {nextMyString} that have not yet been applied for credits, please
-            submit a{" "}
-            <a
-              href={`${Routes.CreditApplications}/new`}
-              className="font-bold underline text-primaryBlue"
-            >
-              Consumer Vehicle Supplied credit application
-            </a>{" "}
-            first.
-          </span>
-          <span className="text-sm">
-            <span className="font-bold">Submitted</span> - VINs included in
-            credit applications that are awaiting government review.
-          </span>
-          <span className="text-sm">
-            <span className="font-bold">Issued</span> - VINs that have been
-            verified and issued credits.
-          </span>
-        </div>
-      );
-      return (
-        <StatusBanner
-          variant="info"
-          title="Before generating your report:"
-          primaryText=""
-          secondaryText={text}
-        />
-      );
-    }
-    return null;
-  }, [props.includeGenerationinfo, props.modelYear]);
-
   return (
     <div className="flex flex-col gap-4">
       <div className="text-2xl font-bold">{heading}</div>
       {statusHeading}
       <hr className="border-dividerMedium"></hr>
       <div className="flex flex-row">{tabsJSX}</div>
-      {infoJSX}
+      {props.bottomBanner}
       <hr className="border-dividerMedium"></hr>
     </div>
   );

@@ -1,4 +1,4 @@
-import { ModelYear } from "@/prisma/generated/enums";
+import { ModelYear, ModelYearReportStatus } from "@/prisma/generated/enums";
 import { getZevClassOrder, ParsedMyr, prevBalancesEqual } from "../utils";
 import { ParsedComplianceReductions } from "./ParsedComplianceReductions";
 import { ParsedZevUnitRecords } from "./ParsedZevUnitRecords";
@@ -18,6 +18,7 @@ import { StatusBanner } from "@/app/lib/components";
 export const ParsedModelYearReport = (props: {
   type: "myr" | "supp";
   modelYear: ModelYear;
+  status: ModelYearReportStatus;
   myr: ParsedMyr;
 }) => {
   const prevCy = getAdjacentYear("prev", props.modelYear);
@@ -35,11 +36,14 @@ export const ParsedModelYearReport = (props: {
         <span className="font-bold text-xl">
           {modelYearsMap[props.modelYear]} {reportType}
         </span>
-        <StatusBanner
-          variant="info"
-          title="Review the information before submitting"
-          primaryText="If anything is incorrect, please return to the Report Information section, update the data, and regenerate the report."
-        />
+        {(props.status === ModelYearReportStatus.DRAFT ||
+          props.status === ModelYearReportStatus.RETURNED_TO_SUPPLIER) && (
+          <StatusBanner
+            variant="info"
+            title="Review the information before submitting"
+            primaryText="If anything is incorrect, please return to the Report Information section, update the data, and regenerate the report."
+          />
+        )}
       </div>
       <div className="p-5 grid grid-cols-2 gap-x-6 gap-y-5">
         <SupplierInformation

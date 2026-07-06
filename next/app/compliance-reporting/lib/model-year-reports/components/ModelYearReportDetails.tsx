@@ -16,6 +16,7 @@ export const ModelYearReportDetails = async (props: { id: number }) => {
     <ParsedModelYearReport
       type="myr"
       modelYear={report.modelYear}
+      status={report.status}
       myr={parsedMyr}
     />
   );

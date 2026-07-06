@@ -81,10 +81,7 @@ export const ActivityDetailNav = (props: { slug: string; id: string }) => {
     { label: "ZEV Unit Activities", href: Routes.CreditApplications },
     { label: tab.label, href: tab.route },
     ...(currentLabel
-      ? [
-          { label: objectLabel, href: objectHref },
-          { label: currentLabel },
-        ]
+      ? [{ label: objectLabel, href: objectHref }, { label: currentLabel }]
       : [{ label: objectLabel }]),
   ];
 

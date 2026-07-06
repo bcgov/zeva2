@@ -1,3 +1,4 @@
+// caution: imported into a client component
 import { ModelYear } from "@/prisma/generated/enums";
 import Decimal from "decimal.js";
 

@@ -7,6 +7,9 @@ import { AttachmentDownload } from "@/app/lib/constants/attachment";
 import { getMyrAttachmentDownloadUrls } from "../actions";
 import { MyrSuppBanner } from "./MyrSuppBanner";
 import { Routes } from "@/app/lib/constants";
+import { ReportGenerationInfo } from "./ReportGenerationInfo";
+import { SecondaryNavbar } from "@/app/lib/components/SecondaryNavbar";
+import { getModelYearEnumsToStringsMap } from "@/app/lib/utils/enumMaps";
 
 export const EditPage = async (props: { id: string }) => {
   const myrId = Number.parseInt(props.id, 10);
@@ -23,6 +26,7 @@ export const EditPage = async (props: { id: string }) => {
   ) {
     return null;
   }
+  const myrMap = getModelYearEnumsToStringsMap();
   const attachments: AttachmentDownload[] = [];
   const attachmentsResp = await getMyrAttachmentDownloadUrls(myrId);
   if (attachmentsResp.responseType === "data") {
@@ -30,6 +34,19 @@ export const EditPage = async (props: { id: string }) => {
   }
   return (
     <div className="flex flex-col gap-4 p-2">
+      <SecondaryNavbar
+        items={[
+          {
+            label: `Model Year Report ${myrMap[myr.modelYear]}`,
+            route: `${Routes.ModelYearReports}/${myrId}/edit`,
+          },
+          {
+            label: "Audit History",
+            route: `${Routes.ModelYearReports}/${myrId}/audit-history?modelYear=${myrMap[myr.modelYear]}&detailsType=edit`,
+          },
+        ]}
+        activeIndex={0}
+      />
       <MyrSuppBanner
         type="myr"
         currentTabIndex={0}
@@ -48,7 +65,7 @@ export const EditPage = async (props: { id: string }) => {
           variant: "warning",
           title: "STATUS - Draft",
         }}
-        includeGenerationinfo={true}
+        bottomBanner={<ReportGenerationInfo modelYear={myr.modelYear} />}
       />
       <ModelYearReportForm
         type="savedMyr"

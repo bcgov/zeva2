@@ -184,7 +184,9 @@ export const SupplierActions = (props: {
         </div>
         <div className="flex flex-row p-5 bg-lightGrey justify-between">
           <div className="flex flex-row gap-4 items-center">
-            <BackButton route={`${Routes.ModelYearReports}/${props.myrId}/edit`} />
+            <BackButton
+              route={`${Routes.ModelYearReports}/${props.myrId}/edit`}
+            />
             <Button
               onClick={() => showModal("delete")}
               variant="danger"

@@ -10,7 +10,7 @@ export const BackButton = (props: { route?: string }) => {
   return (
     <Button
       variant="secondary"
-      onClick={() => props.route ? router.push(props.route) : router.back()}
+      onClick={() => (props.route ? router.push(props.route) : router.back())}
       icon={<FontAwesomeIcon icon={faArrowLeft} />}
     >
       Back

@@ -20,7 +20,7 @@ export interface IAuditHistoryProps {
   entries: IAuditEntry[];
   statusOptions?: DropdownOption[];
   roleOptions?: DropdownOption[];
-  onPrintDownload?: () => void;
+  printable?: boolean;
   customContent?: React.ReactNode;
 }
 
@@ -30,7 +30,7 @@ export const AuditHistory: FC<IAuditHistoryProps> = ({
   entries,
   statusOptions = [],
   roleOptions = [],
-  onPrintDownload,
+  printable,
   customContent,
 }) => {
   const [statusFilter, setStatusFilter] = useState<string>("");
@@ -73,11 +73,11 @@ export const AuditHistory: FC<IAuditHistoryProps> = ({
       <div className="bg-white border border-gray-300 rounded-md">
         <div className="flex items-center justify-between p-4 border-b border-gray-300">
           <h1 className="text-xl font-bold">{title}</h1>
-          {onPrintDownload && (
+          {printable && (
             <Button
               variant="secondary"
               size="regular"
-              onClick={onPrintDownload}
+              onClick={() => globalThis.print()}
               icon={<FontAwesomeIcon icon={faDownload} />}
               iconPosition="left"
             >

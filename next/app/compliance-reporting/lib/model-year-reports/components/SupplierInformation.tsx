@@ -1,3 +1,4 @@
+// caution: imported into a client component
 export const SupplierInformation = (props: {
   legalName: string;
   recordsAddress: string;

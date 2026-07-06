@@ -5,6 +5,8 @@ import { getUserInfo } from "@/auth";
 import { ModelYearReportStatus, Role } from "@/prisma/generated/enums";
 import { MyrSuppBanner } from "@/app/compliance-reporting/lib/model-year-reports/components/MyrSuppBanner";
 import { Routes } from "@/app/lib/constants";
+import { SecondaryNavbar } from "@/app/lib/components/SecondaryNavbar";
+import { getModelYearEnumsToStringsMap } from "@/app/lib/utils/enumMaps";
 
 const Page = async (props: { params: Promise<{ id: string }> }) => {
   const { userIsGov, userRoles } = await getUserInfo();
@@ -22,9 +24,23 @@ const Page = async (props: { params: Promise<{ id: string }> }) => {
   ) {
     return null;
   }
+  const myrMap = getModelYearEnumsToStringsMap();
 
   return (
     <div className="flex flex-col gap-4 p-2">
+      <SecondaryNavbar
+        items={[
+          {
+            label: `Model Year Report ${myrMap[report.modelYear]}`,
+            route: `${Routes.ModelYearReports}/${myrId}/assessment/edit`,
+          },
+          {
+            label: `Audit History`,
+            route: `${Routes.ModelYearReports}/${myrId}/audit-history?modelYear=${myrMap[report.modelYear]}&detailsType=editAssessment`,
+          },
+        ]}
+        activeIndex={0}
+      />
       <MyrSuppBanner
         type="myr"
         currentTabIndex={3}
