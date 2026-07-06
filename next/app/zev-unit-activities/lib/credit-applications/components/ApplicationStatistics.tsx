@@ -28,7 +28,6 @@ export const ApplicationStatistics = async (props: {
         key={type === "all" ? "allRecords" : "validatedRecords"}
         className="flex flex-col items-start self-stretch"
       >
-        {/* Header — Figma: padding 16px 20px, rounded-t, border #1E5189, bg #EDEBE9 */}
         <div className="flex flex-col items-start self-stretch gap-1 px-5 py-4 rounded-t border border-[#9F9D9C] bg-[#EDEBE9]">
           <span className="self-stretch text-black font-['BC_Sans'] text-base font-bold leading-[22px]">
             {type === "all"
@@ -38,7 +37,6 @@ export const ApplicationStatistics = async (props: {
                 : "VINs to be Issued"}
           </span>
         </div>
-        {/* Table body — Figma: border #9F9D9C; th drops border-t so header's blue bottom is the only divider */}
         <div className="overflow-x-auto self-stretch border-b border-l border-r border-[#9F9D9C]">
           <table className="w-full min-w-max border-collapse">
             <thead>
