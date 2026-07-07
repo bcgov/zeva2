@@ -21,6 +21,14 @@ module.exports = {
     ],
     "@semantic-release/release-notes-generator",
     [
+      "@semantic-release/changelog",
+      {
+        changelogFile: "CHANGELOG.md",
+        changelogTitle:
+          "# Changelog\n\nAll notable changes to this project are documented in this file.",
+      },
+    ],
+    [
       "@semantic-release/npm",
       {
         npmPublish: false,
@@ -34,6 +42,16 @@ module.exports = {
         failComment: false,
         releasedLabels: false,
         addReleases: "bottom",
+      },
+    ],
+    // Must be last: commits CHANGELOG.md/package.json to the hotfix branch.
+    // These changes then reach main through the automated hotfix -> main PR.
+    [
+      "@semantic-release/git",
+      {
+        assets: ["CHANGELOG.md", "package.json", "package-lock.json"],
+        message:
+          "chore(release): ${nextRelease.version} [skip ci]\n\n${nextRelease.notes}",
       },
     ],
   ],
