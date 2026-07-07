@@ -95,28 +95,24 @@ export const CreditTransferForm = (props: {
   }, []);
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col items-start gap-6 self-stretch">
       {error && (
         <p className="rounded border border-error bg-red-50 px-4 py-2 text-sm text-error">
           {error}
         </p>
       )}
-
-      {/* Transfer Details card */}
-      <div className="overflow-hidden rounded-lg border border-gray-200 bg-white shadow-level-1">
-        {/* Gray header */}
-        <div className="border-b border-gray-200 bg-gray-100 px-6 py-3">
-          <span className="font-semibold text-primaryText">Transfer Details</span>
+      <div className="flex flex-col items-start self-stretch rounded border border-[#898785] shadow-[0_4px_20px_0_rgba(177,177,177,0.10)]">
+        <div className="flex flex-col items-start self-stretch rounded-t px-5 py-4 gap-1 bg-[#EDEBE9]">
+          <div className="self-stretch text-black font-['BC_Sans'] text-xl font-bold leading-7">Transfer Details</div>
         </div>
-
-        <div className="p-6">
-          {/* Transfer To dropdown */}
-          <div className="mb-6 max-w-sm">
-            <label className="mb-1 block text-sm font-medium text-primaryText">
+        <div className="flex flex-col items-start self-stretch gap-5 p-5 rounded shadow-[0_4px_20px_0_rgba(177,177,177,0.10)]">
+          <div className="flex flex-col items-start gap-2 self-stretch">
+            <div className="self-stretch text-[#2D2D2D] font-['BC_Sans'] text-base font-normal leading-6">
               Transfer to
-            </label>
+            </div>
             <Dropdown
               id="transferToOrg"
+              className="flex h-10 min-w-[248px] max-w-[600px] flex-col items-center justify-center self-stretch gap-[10px] py-3 bg-white"
               placeholder="Select an Option"
               options={Object.entries(props.transferCandidatesMap).map(
                 ([id, name]) => ({
@@ -129,8 +125,7 @@ export const CreditTransferForm = (props: {
               disabled={!!props.creditTransfer || isPending}
             />
           </div>
-
-          {/* Line items table */}
+          <div className="self-stretch h-px bg-[#EDEBE9]"></div>
           <CreditTransferLines
             lines={lines}
             addLine={handleAddLine}
@@ -138,9 +133,7 @@ export const CreditTransferForm = (props: {
             handleLineChange={handleLineChange}
             disabled={isPending}
           />
-
-          {/* Add Another Line button */}
-          <div className="mt-4">
+          <div className="flex h-10 items-center justify-center gap-2 py-[5px] bg-white">
             <Button
               variant="secondary"
               onClick={handleAddLine}
@@ -152,9 +145,7 @@ export const CreditTransferForm = (props: {
           </div>
         </div>
       </div>
-
-      {/* Footer buttons */}
-      <div className="flex items-center justify-between">
+      <div className="flex h-20 p-5 justify-between items-center self-stretch rounded border border-[#898785]">
         <Button
           variant="secondary"
           onClick={handleBack}

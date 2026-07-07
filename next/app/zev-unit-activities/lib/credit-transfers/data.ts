@@ -91,6 +91,23 @@ export const getCreditTransfer = async (id: number) => {
       creditTransferContent: true,
       transferFrom: true,
       transferTo: true,
+      creditTransferHistory: {
+        where: {
+          userAction: {
+            in: [
+              CreditTransferStatus.SUBMITTED_TO_TRANSFER_TO,
+              CreditTransferStatus.APPROVED_BY_TRANSFER_TO,
+            ],
+          },
+        },
+        select: {
+          userAction: true,
+          timestamp: true,
+        },
+        orderBy: {
+          timestamp: "asc",
+        },
+      },
     },
   });
 };

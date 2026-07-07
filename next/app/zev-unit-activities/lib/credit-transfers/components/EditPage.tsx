@@ -18,20 +18,8 @@ export const EditPage = async (props: { id: string }) => {
   }
   const transferCandidatesMap = await getOrgsMap(userOrgId, true);
   return (
-    <div className="p-4">
-      <Breadcrumbs
-        items={[
-          { label: "Compliance Transactions", href: Routes.CreditTransfers },
-          {
-            label: `Credit Transfer ID ${creditTransferId}`,
-            href: `${Routes.CreditTransfers}/${creditTransferId}`,
-          },
-          { label: "Edit" },
-        ]}
-      />
-      <h1 className="mb-4 mt-2 text-2xl font-bold text-primaryText">
-        Create New Credit Transfer
-      </h1>
+    <div className="flex self-stretch flex-col items-start gap-4">
+      <div className="self-stretch h-px bg-[#898785]"></div>
       <CreditTransferForm
         transferCandidatesMap={transferCandidatesMap}
         creditTransfer={{

@@ -39,6 +39,8 @@ export const DraftTransferReview = (props: {
     });
   }, []);
 
+  const authorityStatement = `I confirm that I am an officer or employee of ${props.transferFromSupplierName}, and that records evidencing my authority to submit this notice are available on request.`;
+
   const handleDelete = useCallback(async () => {
     setError("");
     try {
@@ -55,8 +57,7 @@ export const DraftTransferReview = (props: {
   const handleSubmit = useCallback(async () => {
     setError("");
     try {
-      const statement1 = `I confirm that I am an officer or employee of ${props.transferFromSupplierName}, and that records evidencing my authority to submit this notice are available on request.`;
-      const response = await submitTransfer(props.id, statement1);
+      const response = await submitTransfer(props.id, authorityStatement);
       if (response.responseType === "error") {
         throw new Error(response.message);
       }
@@ -101,60 +102,54 @@ export const DraftTransferReview = (props: {
   }, []);
 
   const statements = [
-    `I confirm that I am an officer or employee of ${props.transferFromSupplierName}, and that records evidencing my authority to submit this notice are available on request.`,
+    authorityStatement,
     `${props.transferFromSupplierName} certifies that the information provided in this notice is accurate and complete.`,
     `${props.transferFromSupplierName} consents to the transfer of credits in this notice.`,
   ];
 
   return (
-    <div className="flex flex-col gap-4">
+    <>
       {error && (
         <p className="rounded border border-error bg-red-50 px-4 py-2 text-sm text-error">
           {error}
         </p>
       )}
-
-      {/* Review & Confirm section */}
-      <div className="overflow-hidden rounded-lg border border-gray-200 bg-white shadow-level-1">
-        <div className="border-b border-gray-200 bg-gray-100 px-6 py-3">
-          <span className="font-semibold text-primaryText">
+      <div className="flex self-stretch flex-col items-start rounded border border-[#898785]">
+        <div className="flex flex-col items-start gap-2 self-stretch p-5 rounded-t border-b border-[#898785] bg-[#EDEBE9]">
+          <div className="self-stretch text-[#2D2D2D] font-['BC_Sans'] text-xl font-bold leading-7">
             Review &amp; Confirm
-          </span>
-        </div>
-        <div className="p-6">
-          <div className="mb-4 rounded border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+          </div>
+          <div className="flex self-stretch items-start gap-3 px-4 py-3 rounded-sm border border-[#8E5E06] bg-[#FEF1D8]">
             Please review the statements below and confirm they are accurate
             before submitting.
           </div>
-          <div className="flex flex-col gap-3">
-            {statements.map((statement, index) => (
-              <label
-                key={index}
-                className="flex cursor-pointer items-start gap-3 rounded border border-gray-200 p-4 hover:bg-gray-50"
-              >
-                <input
-                  type="checkbox"
-                  checked={confirmations[index]}
-                  onChange={() => toggleConfirmation(index)}
-                  className="mt-0.5 h-4 w-4 shrink-0 cursor-pointer accent-primaryBlue"
-                />
-                <span className="text-sm text-primaryText">{statement}</span>
-              </label>
-            ))}
-          </div>
+        </div>
+        <div className="flex flex-col items-start gap-4 self-stretch p-5 rounded shadow-[0_4px_20px_0_rgba(177,177,177,0.10)]">
+          {statements.map((statement, index) => (
+            <label
+              key={index}
+              className="flex w-full cursor-pointer items-start gap-3 rounded border border-gray-200 p-4 hover:bg-gray-50"
+            >
+              <input
+                type="checkbox"
+                checked={confirmations[index]}
+                onChange={() => toggleConfirmation(index)}
+                className="mt-0.5 h-4 w-4 shrink-0 cursor-pointer accent-primaryBlue"
+              />
+              <span className="text-sm text-primaryText">{statement}</span>
+            </label>
+          ))}
         </div>
       </div>
-
-      {/* Footer action buttons */}
-      <div className="flex items-center justify-between">
-        <Button
+      <div className="flex h-20 p-5 justify-between items-center self-stretch rounded border border-[#898785]">
+        <div className="flex w-[420.75px] items-center gap-6">
+          <Button
           variant="secondary"
           onClick={handleBack}
           icon={<FontAwesomeIcon icon={faArrowLeft} className="h-3.5 w-3.5" />}
-        >
-          Back
-        </Button>
-        <div className="flex items-center gap-3">
+          >
+            Back
+          </Button>
           <Button
             variant="secondary"
             onClick={handleGoToEdit}
@@ -171,6 +166,8 @@ export const DraftTransferReview = (props: {
           >
             Delete
           </Button>
+        </div>
+        <div className="flex w-[726.5px] justify-end items-center gap-4">
           <Button
             variant="primary"
             disabled={!allConfirmed}
@@ -188,6 +185,6 @@ export const DraftTransferReview = (props: {
         </div>
       </div>
       {modal}
-    </div>
+    </>
   );
 };
