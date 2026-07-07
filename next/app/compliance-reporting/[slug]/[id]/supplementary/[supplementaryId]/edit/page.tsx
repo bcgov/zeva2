@@ -28,7 +28,7 @@ const Page = async (props: {
     attachments.push(...attachmentsResp.data);
   }
   return (
-    <div className="max-w-xl mx-auto p-4">
+    <div className="p-4">
       <h1 className="text-xl font-bold mb-4">Edit a Supplementary Report</h1>
       <ModelYearReportForm
         type="nonLegacySavedSupp"

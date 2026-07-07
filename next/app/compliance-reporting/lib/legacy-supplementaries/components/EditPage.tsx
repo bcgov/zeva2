@@ -24,7 +24,7 @@ export const EditPage = async (props: { id: string }) => {
     attachments.push(...attachmentsResp.data);
   }
   return (
-    <div className="max-w-xl mx-auto p-4">
+    <div className="p-4">
       <h1 className="text-xl font-bold mb-4">
         Edit a Legacy Supplementary Report
       </h1>

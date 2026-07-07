@@ -21,7 +21,7 @@ const Page = async (props: { params: Promise<{ id: string }> }) => {
   const supplierData = await getSupplierOwnData();
   const vehicleStats = await getSupplierOwnVehicleStats(report.modelYear);
   return (
-    <div className="max-w-xl mx-auto p-4">
+    <div className="p-4">
       <h1 className="text-xl font-bold mb-4">Create a Supplementary Report</h1>
       <ModelYearReportForm
         type="nonLegacyNewSupp"
