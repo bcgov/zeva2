@@ -1,23 +1,31 @@
-import { ParsedMyr } from "../utils";
-
+// caution: imported into a client component
 export const SupplierInformation = (props: {
-  details: ParsedMyr["supplierDetails"];
+  legalName: string;
+  recordsAddress: string;
+  serviceAddress: string;
+  classification?: string;
 }) => {
-  const cellClass = "p-2 border-b border-dividerMedium/30";
   return (
-    <div className="flex flex-col border border-dividerMedium/40">
-      <div className="p-2 font-lg font-semibold bg-gray-100">
+    <div className="flex flex-col border border-dividerMedium rounded">
+      <div className="px-5 py-4 text-xl font-bold bg-disabledBG">
         Supplier Information
       </div>
-      <div className="grid grid-cols-2">
-        <div className={cellClass}>Legal Name:</div>
-        <div className={cellClass}>{props.details.legalName}</div>
-        <div className={cellClass}>Records Address:</div>
-        <div className={cellClass}>{props.details.recordsAddress}</div>
-        <div className={cellClass}>Service Address</div>
-        <div className={cellClass}>{props.details.serviceAddress}</div>
-        <div className="p-2">Class:</div>
-        <div className="p-2">{props.details.classification}</div>
+      <div className="p-5 grid grid-cols-2 gap-y-3">
+        <div className="font-bold">Legal Name:</div>
+        <div>{props.legalName}</div>
+        <hr className="col-span-2 border-disabledBG"></hr>
+        <div className="font-bold">Records Address:</div>
+        <div>{props.recordsAddress}</div>
+        <hr className="col-span-2 border-disabledBG"></hr>
+        <div className="font-bold">Service Address</div>
+        <div>{props.serviceAddress}</div>
+        {props.classification && (
+          <>
+            <hr className="col-span-2 border-disabledBG"></hr>
+            <div className="font-bold">Class:</div>
+            <div>{props.classification}</div>
+          </>
+        )}
       </div>
     </div>
   );

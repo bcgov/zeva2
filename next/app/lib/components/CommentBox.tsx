@@ -19,7 +19,7 @@ export const CommentBox = (props: {
           <textarea
             value={props.comment}
             onChange={(e) => props.setComment(e.target.value)}
-            placeholder="Enter a description..."
+            placeholder="Enter a comment..."
             rows={5}
             className="w-full rounded border border-gray-300 p-3 text-sm text-gray-900 placeholder:text-gray-400 focus:border-blue-600 focus:outline-none"
           />

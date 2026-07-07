@@ -39,6 +39,7 @@
   --color-white: #ffffff;
   --color-lightGrey: #faf9f8;
   --color-disabledSurface: #edebe9;
+  --color-infoBG: #f7f9fc;
 
   /* Dividers/borders/overlays */
   --color-dividerMedium: #898785;
@@ -120,7 +121,7 @@ body {
 
 @layer components {
   button {
-    @apply m-1 bg-primaryBlue text-white hover:bg-primaryBlueHover;
+    @apply bg-primaryBlue text-white hover:bg-primaryBlueHover;
   }
 
   .form-input-base {

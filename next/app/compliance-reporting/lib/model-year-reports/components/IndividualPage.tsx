@@ -10,6 +10,8 @@ import { ForecastReportDetails } from "./ForecastReportDetails";
 import { mapOfStatusToSupplierStatus } from "../constants";
 import { MyrSuppBanner } from "./MyrSuppBanner";
 import { Routes } from "@/app/lib/constants";
+import { SecondaryNavbar } from "@/app/lib/components/SecondaryNavbar";
+import { getModelYearEnumsToStringsMap } from "@/app/lib/utils/enumMaps";
 
 export const IndividualPage = async (props: { id: string }) => {
   const myrId = Number.parseInt(props.id, 10);
@@ -17,6 +19,7 @@ export const IndividualPage = async (props: { id: string }) => {
   if (!myr) {
     return null;
   }
+  const myrMap = getModelYearEnumsToStringsMap();
   const { userIsGov, userRoles } = await getUserInfo();
   const status = userIsGov
     ? myr.status
@@ -62,7 +65,10 @@ export const IndividualPage = async (props: { id: string }) => {
             4: "disabled",
           }}
           modelYear={myr.modelYear}
-          status={status}
+          statusBanner={{
+            variant: "warning",
+            title: `STATUS - ${status === ModelYearReportStatus.DRAFT ? "Draft" : "Returned To Supplier"}.`,
+          }}
         />
       );
     } else if (status === ModelYearReportStatus.SUBMITTED_TO_GOVERNMENT) {
@@ -79,7 +85,12 @@ export const IndividualPage = async (props: { id: string }) => {
             4: "disabled",
           }}
           modelYear={myr.modelYear}
-          status={status}
+          statusBanner={{
+            variant: "success",
+            title: "Report Submitted Successfully.",
+            primaryText:
+              "Your report is now under review. You will be notified once the assessment is complete",
+          }}
         />
       );
     } else if (status === ModelYearReportStatus.ASSESSED) {
@@ -100,7 +111,10 @@ export const IndividualPage = async (props: { id: string }) => {
             5: "pending",
           }}
           modelYear={myr.modelYear}
-          status={status}
+          statusBanner={{
+            variant: "success",
+            title: "Report Assessed.",
+          }}
         />
       );
     }
@@ -127,7 +141,6 @@ export const IndividualPage = async (props: { id: string }) => {
             4: assessmentExists ? "pending" : "disabled",
           }}
           modelYear={myr.modelYear}
-          status={status}
         />
       );
     } else if (status === ModelYearReportStatus.SUBMITTED_TO_DIRECTOR) {
@@ -145,7 +158,6 @@ export const IndividualPage = async (props: { id: string }) => {
             4: "currentComplete",
           }}
           modelYear={myr.modelYear}
-          status={status}
         />
       );
     } else if (status === ModelYearReportStatus.ASSESSED) {
@@ -165,7 +177,6 @@ export const IndividualPage = async (props: { id: string }) => {
             5: "pending",
           }}
           modelYear={myr.modelYear}
-          status={status}
         />
       );
     }
@@ -184,7 +195,6 @@ export const IndividualPage = async (props: { id: string }) => {
             4: "inProgress",
           }}
           modelYear={myr.modelYear}
-          status={status}
         />
       );
     } else if (status === ModelYearReportStatus.ASSESSED) {
@@ -203,14 +213,26 @@ export const IndividualPage = async (props: { id: string }) => {
             5: "pending",
           }}
           modelYear={myr.modelYear}
-          status={status}
         />
       );
     }
   }
 
   return (
-    <div className="flex flex-col gap-2">
+    <div className="flex flex-col gap-4">
+      <SecondaryNavbar
+        items={[
+          {
+            label: `Model Year Report ${myrMap[myr.modelYear]}`,
+            route: `${Routes.ModelYearReports}/${myrId}`,
+          },
+          {
+            label: `Audit History`,
+            route: `${Routes.ModelYearReports}/${myrId}/audit-history?modelYear=${myrMap[myr.modelYear]}&detailsType=myr`,
+          },
+        ]}
+        activeIndex={0}
+      />
       {banner}
       <Suspense fallback={<LoadingSkeleton />}>
         <ModelYearReportDetails id={myrId} />

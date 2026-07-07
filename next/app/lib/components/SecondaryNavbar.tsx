@@ -5,8 +5,10 @@ import { usePathname } from "next/navigation";
 import { Row } from "./layout";
 import Link from "next/link";
 
+// activeIndex overrides the derived activeLabel
 export const SecondaryNavbar = (props: {
   items: { label: string; route: string }[];
+  activeIndex?: number;
 }) => {
   const pathname = usePathname();
   const [activeLabel, setActiveLabel] = useState<string>();
@@ -23,7 +25,10 @@ export const SecondaryNavbar = (props: {
   return (
     <Row className="m-2 gap-2 border-b border-gray-400">
       {props.items.map((item, index) => {
-        const isActive = activeLabel === item.label;
+        let isActive = activeLabel === item.label;
+        if (props.activeIndex !== undefined) {
+          isActive = props.activeIndex === index;
+        }
         return (
           <Link
             key={index}

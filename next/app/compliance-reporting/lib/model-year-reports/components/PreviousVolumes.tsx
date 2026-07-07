@@ -1,17 +1,17 @@
+// caution: imported into a client component
 import { ModelYear } from "@/prisma/generated/enums";
-import { ParsedMyr } from "../utils";
 import Decimal from "decimal.js";
 
 export const PreviousVolumes = (props: {
   modelYear: ModelYear;
-  volumes: ParsedMyr["previousVolumes"];
+  volumes: { modelYear: string; volume: string }[];
 }) => {
   if (props.volumes.length !== 3) {
     return null;
   }
   let salesOrSupplied = "Vehicles Supplied";
   if (props.modelYear < ModelYear.MY_2024) {
-    salesOrSupplied = "Consumer Sales";
+    salesOrSupplied = "Consumer Vehicle Sales";
   }
   let sum = new Decimal(0);
   for (const volume of props.volumes) {
@@ -24,21 +24,23 @@ export const PreviousVolumes = (props: {
   } else {
     avgStr = avg.toFixed(2);
   }
-  const cellClass = "p-2 border-b border-dividerMedium/30";
   return (
-    <div className="flex flex-col border border-dividerMedium/40">
-      <div className="p-2 font-lg font-semibold bg-gray-100">
+    <div className="flex flex-col border border-dividerMedium rounded">
+      <div className="px-5 py-4 text-xl font-bold bg-disabledBG">
         3 Year Average {salesOrSupplied}
       </div>
-      <div className="grid grid-cols-2">
-        <div className={cellClass}>{props.volumes[0].modelYear}</div>
-        <div className={cellClass}>{props.volumes[0].volume}</div>
-        <div className={cellClass}>{props.volumes[1].modelYear}</div>
-        <div className={cellClass}>{props.volumes[1].volume}</div>
-        <div className={cellClass}>{props.volumes[2].modelYear}</div>
-        <div className={cellClass}>{props.volumes[2].volume}</div>
-        <div className="p-2">3 Year Average {salesOrSupplied}</div>
-        <div className="p-2">{avgStr}</div>
+      <div className="p-5 grid grid-cols-2 gap-y-3">
+        <div className="font-bold">{props.volumes[0].modelYear}</div>
+        <div>{props.volumes[0].volume}</div>
+        <hr className="col-span-2 border-disabledBG"></hr>
+        <div className="font-bold">{props.volumes[1].modelYear}</div>
+        <div>{props.volumes[1].volume}</div>
+        <hr className="col-span-2 border-disabledBG"></hr>
+        <div className="font-bold">{props.volumes[2].modelYear}</div>
+        <div>{props.volumes[2].volume}</div>
+        <hr className="col-span-2 border-disabledBG"></hr>
+        <div className="font-bold">3 Year Average {salesOrSupplied}</div>
+        <div>{avgStr}</div>
       </div>
     </div>
   );

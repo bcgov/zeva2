@@ -52,16 +52,20 @@ import { NvValuesSubmission } from "./NvValuesSubmission";
 import { ZevClassOrder } from "./ZevClassOrder";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faFileArrowUp } from "@fortawesome/free-solid-svg-icons";
+import { SupplierInformation } from "./SupplierInformation";
+import { PreviousVolumes } from "./PreviousVolumes";
 
 type NewMyrProps = {
   type: "newMyr";
   modelYear: ModelYear;
   supplierData: SupplierData;
+  prevVolumes: { modelYear: string; volume: string }[];
   vehicleStatistics: VehicleStatistic[];
 };
 
 type SavedMyrProps = {
   type: "savedMyr";
+  mostRecentSupplierClass: string | null;
   myrId: number;
   modelYear: ModelYear;
   forecast: AttachmentDownload;
@@ -116,6 +120,11 @@ export const ModelYearReportForm = (
   const [legalName, setLegalName] = useState<string>();
   const [serviceAddress, setServiceAddress] = useState<string>();
   const [recordsAddress, setRecordsAddress] = useState<string>();
+  const [mostRecentSupplierClass, setMostRecentSupplierClass] =
+    useState<string>();
+  const [prevVolumes, setPrevVolumes] = useState<
+    { modelYear: string; volume: string }[]
+  >([]);
   const [makes, setMakes] = useState<string[]>([]);
   const [vehicleStats, setVehicleStats] = useState<VehicleStatString[]>([]);
   const [nvValues, setNvValues] = useState<NvValues>({});
@@ -140,11 +149,16 @@ export const ModelYearReportForm = (
         setMakes(props.supplierData.makes);
         setRecordsAddress(props.supplierData.recordsAddress);
         setServiceAddress(props.supplierData.serviceAddress);
+        setMostRecentSupplierClass(
+          props.supplierData.mostRecentSupplierClass ?? "",
+        );
+        setPrevVolumes(props.prevVolumes);
         setVehicleStats(getVehicleStatsAsStrings(props.vehicleStatistics));
         break;
       case "savedMyr":
         setMyrId(props.myrId);
         setModelYear(props.modelYear);
+        setMostRecentSupplierClass(props.mostRecentSupplierClass ?? "");
         break;
       case "nonLegacyNewSupp":
         setMyrId(props.myrId);
@@ -206,11 +220,13 @@ export const ModelYearReportForm = (
         }
         if (report) {
           const savedDetails = report.supplierDetails;
+          const savedPrevVolumes = report.previousVolumes;
           const savedVehicleStats = report.vehicleStatistics;
           setLegalName(savedDetails.legalName);
           setMakes(savedDetails.makes);
           setRecordsAddress(savedDetails.recordsAddress);
           setServiceAddress(savedDetails.serviceAddress);
+          setPrevVolumes(savedPrevVolumes);
           setVehicleStats(savedVehicleStats);
           setSuggestedAdjustments(report.suggestedAdjustments);
           setNvValues(getNvValues(report.complianceReductions));
@@ -459,7 +475,7 @@ export const ModelYearReportForm = (
   }, [generateReport, saveReport]);
 
   return (
-    <div className="flex flex-col gap-2">
+    <div className="flex flex-col gap-4">
       {props.type === "legacyNewSupp" && (
         <Dropdown
           placeholder="Select an Option"
@@ -516,7 +532,27 @@ export const ModelYearReportForm = (
           </div>
         </div>
       )}
-      <Makes makes={makes} setMakes={setMakes} disabled={isPending} />
+      {(props.type === "newMyr" || props.type === "savedMyr") && modelYear && (
+        <div className="flex flex-row gap-6">
+          <div className="flex-1">
+            <SupplierInformation
+              legalName={legalName ?? ""}
+              recordsAddress={recordsAddress ?? ""}
+              serviceAddress={serviceAddress ?? ""}
+              classification={mostRecentSupplierClass}
+            />
+          </div>
+          <div className="flex-1">
+            <PreviousVolumes modelYear={modelYear} volumes={prevVolumes} />
+          </div>
+        </div>
+      )}
+      <Makes
+        makes={makes}
+        setMakes={setMakes}
+        disabled={isPending}
+        supplierName={legalName}
+      />
       {(props.type === "newMyr" || props.type === "savedMyr") && modelYear && (
         <ForecastReportSubmission
           modelYear={modelYear}
@@ -539,9 +575,10 @@ export const ModelYearReportForm = (
           zevClassOrder={zevClassOrder}
           setZevClassOrder={setZevClassOrder}
           disabled={isPending}
+          showBalance={props.type === "newMyr" || props.type === "savedMyr"}
         />
       )}
-      <div className="flex flex-row p-2 bg-gray-50 justify-between">
+      <div className="flex flex-row p-5 bg-lightGrey justify-between">
         <span></span>
         <div className="flex flex-row gap-1 items-center">
           {error && <span className="text-red-600">{error}</span>}

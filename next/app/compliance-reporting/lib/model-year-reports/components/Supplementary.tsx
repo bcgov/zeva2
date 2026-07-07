@@ -69,7 +69,7 @@ export const Supplementary = async (props: {
   }
   const statusMap = getMyrStatusEnumsToStringsMap();
   return (
-    <div className="flex flex-col w-1/3">
+    <div className="flex flex-col">
       <ContentCard title="Supplementary Report History">
         <Suspense fallback={<LoadingSkeleton />}>
           <SupplementaryReportHistory suppId={props.suppId} />

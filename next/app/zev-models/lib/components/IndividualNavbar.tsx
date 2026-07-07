@@ -4,6 +4,7 @@ import { Breadcrumbs } from "@/app/lib/components";
 import { SecondaryNavbar } from "@/app/lib/components/SecondaryNavbar";
 import { usePathname } from "next/navigation";
 import { useMemo } from "react";
+import { zevModelTabs } from "../routes";
 
 export const IndividualNavbar = (props: {
   slug: string;
@@ -11,6 +12,11 @@ export const IndividualNavbar = (props: {
   modelName: string;
 }) => {
   const pathname = usePathname();
+  const tab = useMemo(() => {
+    return zevModelTabs.find((item) => item.slug === props.slug);
+  }, [props.slug]);
+  const listHref = tab?.route ?? `/zev-models/${props.slug}`;
+  const tabLabel = tab?.label ?? props.slug;
   const items = useMemo(() => {
     return [
       {
@@ -29,7 +35,8 @@ export const IndividualNavbar = (props: {
       <>
         <Breadcrumbs
           items={[
-            { label: "ZEV Models", href: `/zev-models/${props.slug}` },
+            { label: "ZEV Models", href: listHref },
+            { label: tabLabel, href: listHref },
             { label: props.modelName },
           ]}
         />
@@ -40,7 +47,8 @@ export const IndividualNavbar = (props: {
     return (
       <Breadcrumbs
         items={[
-          { label: "ZEV Models", href: `/zev-models/${props.slug}` },
+          { label: "ZEV Models", href: listHref },
+          { label: tabLabel, href: listHref },
           {
             label: props.modelName,
             href: `/zev-models/${props.slug}/${props.vehicleId}`,

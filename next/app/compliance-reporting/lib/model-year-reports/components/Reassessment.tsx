@@ -39,7 +39,7 @@ export const Reassessment = async (props: {
   }
   const statusMap = getReassessmentStatusEnumsToStringsMap();
   return (
-    <div className="flex flex-col w-1/3">
+    <div className="flex flex-col">
       <ContentCard title="Reassessment History">
         <Suspense fallback={<LoadingSkeleton />}>
           <ReassessmentHistory reassessmentId={props.reassessmentId} />

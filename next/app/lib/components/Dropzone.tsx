@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, Dispatch, SetStateAction } from "react";
+import { useCallback, Dispatch, SetStateAction, useMemo } from "react";
 import { useDropzone, FileWithPath } from "react-dropzone";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
@@ -36,11 +36,18 @@ export const Dropzone = (props: {
     [props.setFiles, props.maxNumberOfFiles, props.handleDrop],
   );
 
+  const maxFilesReached = useMemo(() => {
+    if (props.files.length === props.maxNumberOfFiles) {
+      return true;
+    }
+    return false;
+  }, [props.files, props.maxNumberOfFiles]);
+
   const { getRootProps, getInputProps } = useDropzone({
     onDrop,
     maxFiles: props.maxNumberOfFiles,
     accept: props.allowedFileTypes,
-    disabled: props.disabled,
+    disabled: props.disabled || maxFilesReached,
   });
 
   const removeFile = useCallback(
@@ -59,14 +66,16 @@ export const Dropzone = (props: {
     <div className="flex flex-col gap-2">
       <div
         {...getRootProps()}
-        className={`flex flex-col items-center justify-center p-2 gap-1 ${props.disabled ? "bg-gray-100" : "border border-dashed border-primaryBlue/40"}`}
+        className={`flex flex-col items-center justify-center p-2 gap-1 ${props.disabled || maxFilesReached ? "bg-gray-100" : "border border-dashed border-primaryBlue/40"}`}
       >
         <input {...getInputProps()} />
         <FontAwesomeIcon icon={faArrowUpFromBracket} />
         <span>Drag and Drop files here, or</span>
         <span
           className={
-            props.disabled ? "" : "text-primaryBlue underline cursor-pointer"
+            props.disabled || maxFilesReached
+              ? ""
+              : "text-primaryBlue underline cursor-pointer"
           }
         >
           Browse to select a file from your device to upload

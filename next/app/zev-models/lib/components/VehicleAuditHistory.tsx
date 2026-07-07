@@ -24,10 +24,6 @@ export const VehicleAuditHistory = ({
   statusOptions = [],
   roleOptions = [],
 }: VehicleAuditHistoryProps) => {
-  const handlePrintDownload = () => {
-    window.print();
-  };
-
   return (
     <div className="p-6">
       <AuditHistory
@@ -36,7 +32,7 @@ export const VehicleAuditHistory = ({
         entries={entries}
         statusOptions={statusOptions}
         roleOptions={roleOptions}
-        onPrintDownload={handlePrintDownload}
+        printable={true}
       />
     </div>
   );

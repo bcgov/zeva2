@@ -128,10 +128,10 @@ export const mapOfStatusToSupplierStatus: Readonly<
 
 export const myrSuppBannerIndicators = {
   inProgress: "border-primaryGold",
-  pending: "border-primaryGold/20",
+  pending: "border-primaryGold/15",
   prevComplete: "border-primaryBlue",
   currentComplete: "border-success",
-  disabled: "border-dividerMedium/60 text-dividerMedium/60",
+  disabled: "border-[#F2F2F2] text-[#494949]/30",
 } as const;
 
 export const nvMap: Readonly<Partial<Record<ModelYear, VehicleClass[]>>> = {
