@@ -141,7 +141,7 @@ export const SupplierActions = (props: {
           <CommentBox comment={comment} setComment={setComment} />
         )}
         {error && <p className="text-red-600 mb-2">{error}</p>}
-        <div className="flex self-stretch h-20 items-center justify-between p-5 bg-[#FAF9F8]">
+        <div className="flex self-stretch h-20 items-center justify-between p-5 bg-[#FAF9F8] gap-4">
           <Button variant="secondary" onClick={handleBack}>
             ← Back
           </Button>
