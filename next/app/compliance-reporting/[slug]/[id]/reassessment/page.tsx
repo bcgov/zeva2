@@ -50,7 +50,7 @@ const Page = async (props: {
   }
   if (slug === "legacy-supplementaries") {
     return (
-      <div className="max-w-xl mx-auto p-4">
+      <div className="p-4">
         <h1 className="text-xl font-bold mb-4">
           Create an associated Reassessment
         </h1>
@@ -65,7 +65,7 @@ const Page = async (props: {
     );
   } else if (slug === "model-year-reports") {
     return (
-      <div className="max-w-xl mx-auto p-4">
+      <div className="p-4">
         <h1 className="text-xl font-bold mb-4">Create a Reassessment</h1>
         <AssessmentForm
           type="nonLegacyNewReassessment"

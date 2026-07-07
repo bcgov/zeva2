@@ -575,6 +575,7 @@ export const ModelYearReportForm = (
           zevClassOrder={zevClassOrder}
           setZevClassOrder={setZevClassOrder}
           disabled={isPending}
+          showBalance={props.type === "newMyr" || props.type === "savedMyr"}
         />
       )}
       <div className="flex flex-row p-5 bg-lightGrey justify-between">

@@ -29,7 +29,7 @@ const Page = async (props: {
     return null;
   }
   return (
-    <div className="max-w-xl mx-auto p-4">
+    <div className="p-4">
       <h1 className="text-xl font-bold mb-4">Create a Reassessment</h1>
       <AssessmentForm
         type="legacySavedSuppReassessment"
