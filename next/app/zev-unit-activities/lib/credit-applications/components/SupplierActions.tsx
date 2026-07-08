@@ -141,7 +141,7 @@ export const SupplierActions = (props: {
           <CommentBox comment={comment} setComment={setComment} />
         )}
         {error && <p className="text-red-600 mb-2">{error}</p>}
-        <div className="flex self-stretch h-20 items-center justify-between p-5 bg-[#FAF9F8] gap-4">
+        <div className="flex self-stretch h-20 items-center justify-between p-5 bg-lightGrey gap-4">
           <Button variant="secondary" onClick={handleBack}>
             ← Back
           </Button>
@@ -165,7 +165,7 @@ export const SupplierActions = (props: {
 
   if (props.status === CreditApplicationSupplierStatus.SUBMITTED) {
     return (
-      <div className="flex self-stretch h-20 items-center justify-between p-5 bg-[#FAF9F8]">
+      <div className="flex self-stretch h-20 items-center justify-between p-5 bg-lightGrey">
         {error && <p className="text-red-600 mb-2">{error}</p>}
         <Button variant="secondary" onClick={handleBack}>
           ← Back
@@ -178,7 +178,7 @@ export const SupplierActions = (props: {
     return (
       <>
         {error && <p className="text-red-600 mb-2">{error}</p>}
-        <div className="flex self-stretch h-20 items-center justify-between p-5 bg-[#FAF9F8]">
+        <div className="flex self-stretch h-20 items-center justify-between p-5 bg-lightGrey">
           <Button variant="secondary" onClick={handleBack}>
             ← Back
           </Button>
@@ -197,7 +197,7 @@ export const SupplierActions = (props: {
     props.hasInvalidatedRecords
   ) {
     return (
-      <div className="flex self-stretch h-20 items-center justify-between p-5 bg-[#FAF9F8]">
+      <div className="flex self-stretch h-20 items-center justify-between p-5 bg-lightGrey">
         {error && <p className="text-red-600 mb-2">{error}</p>}
         <Button variant="secondary" onClick={handleBack}>
           ← Back
@@ -215,7 +215,7 @@ export const SupplierActions = (props: {
   }
 
   return (
-    <div className="flex self-stretch h-20 items-center justify-between p-5 bg-[#FAF9F8]">
+    <div className="flex self-stretch h-20 items-center justify-between p-5 bg-lightGrey">
       <Button variant="secondary" onClick={handleBack}>
         ← Back
       </Button>

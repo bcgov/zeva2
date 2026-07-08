@@ -85,9 +85,9 @@ export const Dropzone = (props: {
         <table className="mt-4 w-full table-fixed text-sm text-primaryText">
           <thead>
             <tr className="border-gray-200">
-              <th className="w-1/3 py-3 text-left font-semibold">Uploaded File</th>
-              <th className="w-1/3 py-3 text-center font-semibold">Size</th>
-              <th className="w-1/3 py-3 text-right font-semibold">Delete</th>
+              <th className="w-1/3 py-3 text-left font-bold">Uploaded File</th>
+              <th className="w-1/3 py-3 text-center font-bold">Size</th>
+              <th className="w-1/3 py-3 text-right font-bold">Delete</th>
             </tr>
           </thead>
           <tbody>

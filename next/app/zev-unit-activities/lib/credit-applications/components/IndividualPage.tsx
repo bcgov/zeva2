@@ -147,7 +147,7 @@ export const IndividualPage = async (props: { id: string }) => {
   return (
     <div className="flex flex-col items-start self-stretch gap-4">
       <div className="flex self-stretch items-center justify-between p-5 rounded-t bg-[#E7E7E7]">
-        <div className="text-black font-['BC Sans'] text-[26px] leading-7 font-bold">
+        <div className="text-black text-[26px] leading-7 font-bold">
           Credit Application ID {id}
         </div>
         <div className="flex h-10 items-center justify-center gap-2 px-4 py-[5px]">
@@ -161,12 +161,12 @@ export const IndividualPage = async (props: { id: string }) => {
         <>
           {statusBanner}
         </>}
-      <div className="self-stretch h-px bg-[#898785]"></div>
+      <div className="self-stretch h-px bg-dividerMedium"></div>
       <div className="flex flex-col items-start gap-6 self-stretch bg-white">
         <div className="flex items-start gap-6 shadow-[0_2px_4px_0_rgba(0,0,0,0.08)]">
-          <div className="flex w-[619px] flex-col items-start rounded-sm border border-[#898785]">
-            <div className="flex flex-col items-start self-stretch gap-1 rounded-t bg-[#EDEBE9] px-5 py-4">
-              <div className="self-stretch text-black font-['BC Sans'] text-[20px] leading-7 font-bold">
+          <div className="flex w-[619px] flex-col items-start rounded-sm border border-dividerMedium">
+            <div className="flex flex-col items-start self-stretch gap-1 rounded-t bg-disabledSurface px-5 py-4">
+              <div className="self-stretch text-black text-xl leading-7 font-bold">
                 Supplier Information
               </div>
             </div>
@@ -176,17 +176,17 @@ export const IndividualPage = async (props: { id: string }) => {
                   <div className="font-semibold w-[200px]">Legal Name:</div>{" "}
                   <div className="w-[345px]">{creditApplication.legalName}</div>
                 </div>
-                <div className="w-[561px] h-px bg-[#EDEBE9]"></div>
+                <div className="w-[561px] h-px bg-disabledSurface"></div>
                 <div className="flex items-center gap-4 self-stretch">
                   <div className="font-semibold w-[200px]">Record Address:</div>{" "}
                   <div className="w-[345px]">{creditApplication.recordsAddress}</div>
                 </div>
-                <div className="w-[561px] h-px bg-[#EDEBE9]"></div>
+                <div className="w-[561px] h-px bg-disabledSurface"></div>
                 <div className="flex items-center gap-4 self-stretch">
                   <div className="font-semibold w-[200px]">Service Address:</div>{" "}
                   <div className="w-[345px]">{creditApplication.serviceAddress}</div>
                 </div>
-                <div className="w-[561px] h-px bg-[#EDEBE9]"></div>
+                <div className="w-[561px] h-px bg-disabledSurface"></div>
                 <div className="flex items-center gap-4 self-stretch">
                   <div className="font-semibold w-[200px]">Makes:</div>{" "}
                   <div className="w-[345px]">{creditApplication.makes}</div>
@@ -196,23 +196,23 @@ export const IndividualPage = async (props: { id: string }) => {
           </div>
         </div>
 
-        <div className="flex flex-col items-start self-stretch rounded border border-[#898785] shadow-[0_2px_4px_0_rgba(0,0,0,0.08)]">
+        <div className="flex flex-col items-start self-stretch rounded border border-dividerMedium shadow-[0_2px_4px_0_rgba(0,0,0,0.08)]">
           <div className="flex flex-col items-start self-stretch">
-            <div className="flex flex-col items-start self-stretch gap-2 px-5 py-4 rounded-t border-b border-[#898785] bg-[#EDEBE9]">
-              <div className="self-stretch text-[#2D2D2D] font-['BC Sans'] text-[20px] leading-7 font-bold">
+            <div className="flex flex-col items-start self-stretch gap-2 px-5 py-4 rounded-t border-b border-dividerMedium bg-disabledSurface">
+              <div className="self-stretch text-primaryText text-xl leading-7 font-bold">
                 Credit Application Details
               </div>
             </div>
             <div className="flex flex-col items-start self-stretch gap-3 p-5">
               <div className="flex items-center gap-4 self-stretch">
-                <div className="w-[138px] text-[#474543] font-['BC Sans'] text-base leading-6 font-normal">
+                <div className="w-[138px] text-secondaryText leading-6 font-normal">
                   Credit Application: 
                 </div>
-                <div className="flex-1 self-stretch text-[#255A90] font-['BC Sans'] text-base leading-6 font-normal underline">
+                <div className="flex-1 self-stretch text-link leading-6 font-normal underline">
                   {creditApplication.fileName}
                 </div>
               </div>
-              <div className="self-stretch h-px bg-[#EDEBE9]"></div>
+              <div className="self-stretch h-px bg-disabledSurface"></div>
               <div className="flex items-center">
                 <Attachments
                   attachments={[{ fileName: creditApplication.fileName }]}
@@ -221,7 +221,7 @@ export const IndividualPage = async (props: { id: string }) => {
                   className="[&_ul]:hidden"
                   />
               </div>
-              <div className="self-stretch h-px bg-[#EDEBE9]"></div>
+              <div className="self-stretch h-px bg-disabledSurface"></div>
             </div>
           </div>
           <Suspense fallback={<LoadingSkeleton />}>
@@ -233,9 +233,9 @@ export const IndividualPage = async (props: { id: string }) => {
         </div>
 
         <div className="flex items-start self-stretch gap-6 shadow-[0_2px_4px_0_rgba(0,0,0,0.08)]">
-          <div className="flex flex-1 flex-col items-start rounded border border-[#898785]">
-            <div className="flex flex-col items-start self-stretch gap-1 rounded-t bg-[#EDEBE9] px-5 py-4">
-              <div className="self-stretch text-black font-['BC Sans'] text-[20px] font-bold leading-7">
+          <div className="flex flex-1 flex-col items-start rounded border border-dividerMedium">
+            <div className="flex flex-col items-start self-stretch gap-1 rounded-t bg-disabledSurface px-5 py-4">
+              <div className="self-stretch text-black text-xl font-bold leading-7">
                 Supporting Documents (optional)
               </div>
             </div>

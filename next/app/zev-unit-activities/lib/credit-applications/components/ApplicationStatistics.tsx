@@ -28,8 +28,8 @@ export const ApplicationStatistics = async (props: {
         key={type === "all" ? "allRecords" : "validatedRecords"}
         className="flex flex-col items-start self-stretch"
       >
-        <div className="flex flex-col items-start self-stretch gap-1 px-5 py-4 rounded-t border border-[#9F9D9C] bg-[#EDEBE9]">
-          <span className="self-stretch text-black font-['BC_Sans'] text-base font-bold leading-[22px]">
+        <div className="flex flex-col items-start self-stretch gap-1 px-5 py-4 rounded-t border border-disabledIcon bg-disabledSurface">
+          <span className="self-stretch text-black font-bold leading-[22px]">
             {type === "all"
               ? "VIN's Claimed"
               : status === CreditApplicationStatus.APPROVED
@@ -37,33 +37,33 @@ export const ApplicationStatistics = async (props: {
                 : "VINs to be Issued"}
           </span>
         </div>
-        <div className="overflow-x-auto self-stretch border-b border-l border-r border-[#9F9D9C]">
+        <div className="overflow-x-auto self-stretch border-b border-l border-r border-disabledIcon">
           <table className="w-full min-w-max border-collapse">
             <thead>
               <tr>
-                <th className="h-[60px] px-4 py-3 text-left font-bold border-b border-[#9F9D9C] whitespace-nowrap">MAKE</th>
-                <th className="h-[60px] px-4 py-3 text-left font-bold border-b border-[#9F9D9C] whitespace-nowrap">Model Name</th>
-                <th className="h-[60px] px-4 py-3 text-left font-bold border-b border-[#9F9D9C] whitespace-nowrap">Model Year</th>
-                <th className="h-[60px] px-4 py-3 text-left font-bold border-b border-[#9F9D9C] whitespace-nowrap">Vehicle Class</th>
-                <th className="h-[60px] px-4 py-3 text-left font-bold border-b border-[#9F9D9C] whitespace-nowrap">ZEV Class</th>
-                <th className="h-[60px] px-4 py-3 text-left font-bold border-b border-[#9F9D9C] whitespace-nowrap">ZEV Type</th>
-                <th className="h-[60px] px-4 py-3 text-left font-bold border-b border-[#9F9D9C] whitespace-nowrap">Range</th>
-                <th className="h-[60px] px-4 py-3 text-left font-bold border-b border-[#9F9D9C] whitespace-nowrap">Number of Units p...</th>
-                <th className="h-[60px] px-4 py-3 text-left font-bold border-b border-[#9F9D9C] whitespace-nowrap">Count</th>
+                <th className="h-[60px] px-4 py-3 text-left font-bold border-b border-disabledIcon whitespace-nowrap">MAKE</th>
+                <th className="h-[60px] px-4 py-3 text-left font-bold border-b border-disabledIcon whitespace-nowrap">Model Name</th>
+                <th className="h-[60px] px-4 py-3 text-left font-bold border-b border-disabledIcon whitespace-nowrap">Model Year</th>
+                <th className="h-[60px] px-4 py-3 text-left font-bold border-b border-disabledIcon whitespace-nowrap">Vehicle Class</th>
+                <th className="h-[60px] px-4 py-3 text-left font-bold border-b border-disabledIcon whitespace-nowrap">ZEV Class</th>
+                <th className="h-[60px] px-4 py-3 text-left font-bold border-b border-disabledIcon whitespace-nowrap">ZEV Type</th>
+                <th className="h-[60px] px-4 py-3 text-left font-bold border-b border-disabledIcon whitespace-nowrap">Range</th>
+                <th className="h-[60px] px-4 py-3 text-left font-bold border-b border-disabledIcon whitespace-nowrap">Number of Units p...</th>
+                <th className="h-[60px] px-4 py-3 text-left font-bold border-b border-disabledIcon whitespace-nowrap">Count</th>
               </tr>
             </thead>
             <tbody>
               {records.map((record) => (
-                <tr key={crypto.randomUUID()} className="odd:bg-[#FAF9F8] even:bg-white">
-                  <td className="px-4 py-3 border-b border-[#9F9D9C] whitespace-nowrap">{record.make}</td>
-                  <td className="px-4 py-3 border-b border-[#9F9D9C] whitespace-nowrap">{record.modelName}</td>
-                  <td className="px-4 py-3 border-b border-[#9F9D9C] whitespace-nowrap">{modelYearsMap[record.modelYear]}</td>
-                  <td className="px-4 py-3 border-b border-[#9F9D9C] whitespace-nowrap">{vehicleClassesMap[record.vehicleClass]}</td>
-                  <td className="px-4 py-3 border-b border-[#9F9D9C] whitespace-nowrap">{zevClassMap[record.zevClass]}</td>
-                  <td className="px-4 py-3 border-b border-[#9F9D9C] whitespace-nowrap">{record.zevType}</td>
-                  <td className="px-4 py-3 border-b border-[#9F9D9C] whitespace-nowrap">{record.range}</td>
-                  <td className="px-4 py-3 border-b border-[#9F9D9C] whitespace-nowrap">{record.numberOfUnits.toFixed(2)}</td>
-                  <td className="px-4 py-3 border-b border-[#9F9D9C] whitespace-nowrap">{record._count.id}</td>
+                <tr key={crypto.randomUUID()} className="odd:bg-lightGrey even:bg-white">
+                  <td className="px-4 py-3 border-b border-disabledIcon whitespace-nowrap">{record.make}</td>
+                  <td className="px-4 py-3 border-b border-disabledIcon whitespace-nowrap">{record.modelName}</td>
+                  <td className="px-4 py-3 border-b border-disabledIcon whitespace-nowrap">{modelYearsMap[record.modelYear]}</td>
+                  <td className="px-4 py-3 border-b border-disabledIcon whitespace-nowrap">{vehicleClassesMap[record.vehicleClass]}</td>
+                  <td className="px-4 py-3 border-b border-disabledIcon whitespace-nowrap">{zevClassMap[record.zevClass]}</td>
+                  <td className="px-4 py-3 border-b border-disabledIcon whitespace-nowrap">{record.zevType}</td>
+                  <td className="px-4 py-3 border-b border-disabledIcon whitespace-nowrap">{record.range}</td>
+                  <td className="px-4 py-3 border-b border-disabledIcon whitespace-nowrap">{record.numberOfUnits.toFixed(2)}</td>
+                  <td className="px-4 py-3 border-b border-disabledIcon whitespace-nowrap">{record._count.id}</td>
                 </tr>
               ))}
             </tbody>
@@ -82,8 +82,8 @@ export const ApplicationStatistics = async (props: {
         key={type === "all" ? "allCredits" : "validatedCredits"}
         className="flex flex-col items-start self-stretch"
       >
-        <div className="flex flex-col items-start self-stretch gap-1 px-5 py-4 rounded-t border border-[#9F9D9C] bg-[#EDEBE9]">
-          <span className="self-stretch text-black font-['BC_Sans'] text-base font-bold leading-[22px]">
+        <div className="flex flex-col items-start self-stretch gap-1 px-5 py-4 rounded-t border border-disabledIcon bg-disabledSurface">
+          <span className="self-stretch text-black font-bold leading-[22px]">
             {type === "all"
               ? "Credits Claimed"
               : status === CreditApplicationStatus.APPROVED
@@ -91,25 +91,25 @@ export const ApplicationStatistics = async (props: {
                 : "Credits to be Issued"}
           </span>
         </div>
-        <div className="overflow-x-auto self-stretch border-b border-l border-r border-[#9F9D9C]">
+        <div className="overflow-x-auto self-stretch border-b border-l border-r border-disabledIcon">
           <table className="w-full min-w-max border-collapse">
             <thead>
               <tr>
-                <th className="h-[60px] px-4 py-3 text-left font-bold border-b border-[#9F9D9C] whitespace-nowrap">Vehicle Class</th>
-                <th className="h-[60px] px-4 py-3 text-left font-bold border-b border-[#9F9D9C] whitespace-nowrap">ZEV Class</th>
-                <th className="h-[60px] px-4 py-3 text-left font-bold border-b border-[#9F9D9C] whitespace-nowrap">Model Year</th>
-                <th className="h-[60px] px-4 py-3 text-left font-bold border-b border-[#9F9D9C] whitespace-nowrap">Number of Units</th>
+                <th className="h-[60px] px-4 py-3 text-left font-bold border-b border-disabledIcon whitespace-nowrap">Vehicle Class</th>
+                <th className="h-[60px] px-4 py-3 text-left font-bold border-b border-disabledIcon whitespace-nowrap">ZEV Class</th>
+                <th className="h-[60px] px-4 py-3 text-left font-bold border-b border-disabledIcon whitespace-nowrap">Model Year</th>
+                <th className="h-[60px] px-4 py-3 text-left font-bold border-b border-disabledIcon whitespace-nowrap">Number of Units</th>
               </tr>
             </thead>
             <tbody>
               {records.map((record) => {
                 const numberOfUnits = record._sum.numberOfUnits;
                 return (
-                  <tr key={crypto.randomUUID()} className="odd:bg-[#FAF9F8] even:bg-white">
-                    <td className="px-4 py-3 border-b border-[#9F9D9C] whitespace-nowrap">{vehicleClassesMap[record.vehicleClass]}</td>
-                    <td className="px-4 py-3 border-b border-[#9F9D9C] whitespace-nowrap">{zevClassMap[record.zevClass]}</td>
-                    <td className="px-4 py-3 border-b border-[#9F9D9C] whitespace-nowrap">{modelYearsMap[record.modelYear]}</td>
-                    <td className="px-4 py-3 border-b border-[#9F9D9C] whitespace-nowrap">{numberOfUnits ? numberOfUnits.toFixed(2) : "0"}</td>
+                  <tr key={crypto.randomUUID()} className="odd:bg-lightGrey even:bg-white">
+                    <td className="px-4 py-3 border-b border-disabledIcon whitespace-nowrap">{vehicleClassesMap[record.vehicleClass]}</td>
+                    <td className="px-4 py-3 border-b border-disabledIcon whitespace-nowrap">{zevClassMap[record.zevClass]}</td>
+                    <td className="px-4 py-3 border-b border-disabledIcon whitespace-nowrap">{modelYearsMap[record.modelYear]}</td>
+                    <td className="px-4 py-3 border-b border-disabledIcon whitespace-nowrap">{numberOfUnits ? numberOfUnits.toFixed(2) : "0"}</td>
                   </tr>
                 );
               })}

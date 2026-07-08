@@ -220,7 +220,7 @@ export const CreditApplicationForm = (props: {
   return (
     <div className="flex flex-col items-start self-stretch gap-4">
       <div className="flex self-stretch items-center justify-between p-5 rounded-t bg-[#E7E7E7]">
-        <div className="text-black font-['BC Sans'] text-[26px] leading-7 font-bold">
+        <div className="text-black text-[26px] leading-7 font-bold">
           {props.creditApplication?.id
             ? `Credit Application ID ${props.creditApplication.id}`
             : "New Credit Application"}
@@ -233,15 +233,15 @@ export const CreditApplicationForm = (props: {
       </div>
 
       {getStatusBanner()}
-      <div className="self-stretch h-px bg-[#898785]"></div>
+      <div className="self-stretch h-px bg-dividerMedium"></div>
 
       <div className="flex flex-col items-start gap-6 self-stretch bg-white">
         {error && <p className="text-red-600">{error}</p>}
 
         <div className="flex items-start gap-6 shadow-[0_2px_4px_0_rgba(0,0,0,0.08)]">
-          <div className="flex w-[619px] flex-col items-start rounded-sm border border-[#898785]">
-            <div className="flex flex-col items-start self-stretch gap-1 rounded-t bg-[#EDEBE9] px-5 py-4">
-              <div className="self-stretch text-black font-['BC Sans'] text-[20px] leading-7 font-bold">
+          <div className="flex w-[619px] flex-col items-start rounded-sm border border-dividerMedium">
+            <div className="flex flex-col items-start self-stretch gap-1 rounded-t bg-disabledSurface px-5 py-4">
+              <div className="self-stretch text-black text-xl leading-7 font-bold">
                 Supplier Information
               </div>
             </div>
@@ -251,17 +251,17 @@ export const CreditApplicationForm = (props: {
                   <div className="font-semibold w-[200px]">Legal Name:</div>{" "}
                   <div className="w-[345px]">{props.legalName}</div>
                 </div>
-                <div className="w-[561px] h-px bg-[#EDEBE9]"></div>
+                <div className="w-[561px] h-px bg-disabledSurface"></div>
                 <div className="flex items-center gap-4 self-stretch">
                   <div className="font-semibold w-[200px]">Record Address:</div>{" "}
                   <div className="w-[345px]">{props.recordsAddress}</div>
                 </div>
-                <div className="w-[561px] h-px bg-[#EDEBE9]"></div>
+                <div className="w-[561px] h-px bg-disabledSurface"></div>
                 <div className="flex items-center gap-4 self-stretch">
                   <div className="font-semibold w-[200px]">Service Address:</div>{" "}
                   <div className="w-[345px]">{props.serviceAddress}</div>
                 </div>
-                <div className="w-[561px] h-px bg-[#EDEBE9]"></div>
+                <div className="w-[561px] h-px bg-disabledSurface"></div>
                 <div className="flex items-center gap-4 self-stretch">
                   <div className="font-semibold w-[200px]">Makes:</div>{" "}
                   <div className="w-[345px]">{props.makes}</div>
@@ -271,18 +271,18 @@ export const CreditApplicationForm = (props: {
           </div>
         </div>
 
-        <div className="flex flex-col items-start self-stretch rounded border border-[#898785] shadow-[0_2px_4px_0_rgba(0,0,0,0.08)]">
-          <div className="flex flex-col items-start self-stretch gap-1 rounded-t bg-[#EDEBE9] px-5 py-4">
-            <div className="self-stretch text-black font-['BC Sans'] text-[20px] leading-7 font-bold">
+        <div className="flex flex-col items-start self-stretch rounded border border-dividerMedium shadow-[0_2px_4px_0_rgba(0,0,0,0.08)]">
+          <div className="flex flex-col items-start self-stretch gap-1 rounded-t bg-disabledSurface px-5 py-4">
+            <div className="self-stretch text-black text-xl leading-7 font-bold">
               Credit Application Details
             </div>
           </div>
 
           <div className="flex flex-col items-start self-stretch gap-2 px-5 py-4 rounded-t bg-[#F4F4F4]">
-            <div className="self-stretch text-black font-['BC Sans'] text-sm font-bold">
+            <div className="self-stretch text-black text-sm font-bold">
               Step 1: Download the Credit Application Template
             </div>
-            <p className="text-sm text-[#474543]">
+            <p className="text-sm text-secondaryText">
               Use this template to complete your credit application before uploading.
             </p>
           </div>
@@ -298,13 +298,13 @@ export const CreditApplicationForm = (props: {
             </Button>
           </div>
 
-          <div className="self-stretch h-px bg-[#EDEBE9]"></div>
+          <div className="self-stretch h-px bg-disabledSurface"></div>
 
           <div className="flex flex-col items-start self-stretch gap-2 px-5 py-4 rounded-t bg-[#F4F4F4]">
-            <div className="self-stretch text-black font-['BC Sans'] text-sm font-bold">
+            <div className="self-stretch text-black text-sm font-bold">
               Step 2: Upload Credit Application
             </div>
-            <p className="text-sm text-[#474543]">
+            <p className="text-sm text-secondaryText">
               Upload the completed file using template above.
             </p>
           </div>
@@ -324,7 +324,7 @@ export const CreditApplicationForm = (props: {
                     maxNumberOfFiles={1}
                   />
                 </div>
-                <div className="self-stretch h-px bg-[#EDEBE9]"></div>
+                <div className="self-stretch h-px bg-disabledSurface"></div>
                 <table className="w-full table-fixed text-sm">
                   <thead>
                     <tr className="border-gray-200">
@@ -377,9 +377,9 @@ export const CreditApplicationForm = (props: {
         </div>
 
         <div className="flex items-start self-stretch gap-6 shadow-[0_2px_4px_0_rgba(0,0,0,0.08)]">
-          <div className="flex flex-1 flex-col items-start rounded border border-[#898785]">
-            <div className="flex flex-col items-start self-stretch gap-1 rounded-t bg-[#EDEBE9] px-5 py-4">
-              <div className="self-stretch text-black font-['BC Sans'] text-[20px] leading-7 font-bold">
+          <div className="flex flex-1 flex-col items-start rounded border border-dividerMedium">
+            <div className="flex flex-col items-start self-stretch gap-1 rounded-t bg-disabledSurface px-5 py-4">
+              <div className="self-stretch text-black text-xl leading-7 font-bold">
                 Supporting Documents (optional)
               </div>
             </div>

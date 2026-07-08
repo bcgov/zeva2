@@ -46,15 +46,15 @@ export const Attachments = (props: {
               <li key={index} className="flex flex-col">
                 <div className="py-3">
                   {props.label && (
-                    <span className="text-[#474543] font-['BC_Sans'] text-base leading-6">
+                    <span className="text-secondaryText leading-6">
                       {props.label}
                     </span>
                   )}
-                  <span className="text-[#255A90] font-['BC_Sans'] text-base leading-6 underline">
+                  <span className="text-link leading-6 underline">
                     {attachment.fileName}
                   </span>
                 </div>
-                <div className="self-stretch h-px bg-[#EDEBE9]" />
+                <div className="self-stretch h-px bg-disabledSurface" />
               </li>
             ))}
           </ul>

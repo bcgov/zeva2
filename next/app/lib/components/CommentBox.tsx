@@ -9,9 +9,9 @@ export const CommentBox = (props: {
 }) => {
   return (
     <div className="flex items-start self-stretch gap-6 shadow-[0_2px_4px_0_rgba(0,0,0,0.08)]">
-      <div className="flex flex-[1_0_0] flex-col items-start rounded border border-[#898785]">
-        <div className="flex flex-col items-start self-stretch gap-1 rounded-t bg-[#EDEBE9] px-5 py-4">
-          <div className="self-stretch text-black font-['BC Sans'] text-[20px] font-bold leading-7">
+      <div className="flex flex-[1_0_0] flex-col items-start rounded border border-dividerMedium">
+        <div className="flex flex-col items-start self-stretch gap-1 rounded-t bg-disabledSurface px-5 py-4">
+          <div className="self-stretch text-black text-xl font-bold leading-7">
             {`Comment (${props.subtext ? props.subtext : "optional"})`}
           </div>
         </div>
