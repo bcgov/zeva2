@@ -19,7 +19,7 @@ export const EditPage = async (props: { id: string }) => {
   const transferCandidatesMap = await getOrgsMap(userOrgId, true);
   return (
     <div className="flex self-stretch flex-col items-start gap-4">
-      <div className="self-stretch h-px bg-[#898785]"></div>
+      <div className="self-stretch h-px bg-dividerMedium"></div>
       <CreditTransferForm
         transferCandidatesMap={transferCandidatesMap}
         creditTransfer={{

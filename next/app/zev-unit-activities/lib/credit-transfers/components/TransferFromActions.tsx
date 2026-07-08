@@ -142,12 +142,12 @@ export const TransferFromActions = (props: {
               {error}
             </p>
           )}
-          <div className="flex self-stretch flex-col items-start rounded border border-[#898785]">
-            <div className="flex flex-col items-start gap-2 self-stretch p-5 rounded-t border-b border-[#898785] bg-[#EDEBE9]">
-              <div className="self-stretch text-[#2D2D2D] font-['BC_Sans'] text-xl font-bold leading-7">
+          <div className="flex self-stretch flex-col items-start rounded border border-dividerMedium">
+            <div className="flex flex-col items-start gap-2 self-stretch p-5 rounded-t border-b border-dividerMedium bg-disabledSurface">
+              <div className="self-stretch text-primaryText text-xl font-bold leading-7">
                 Review &amp; Confirm
               </div>
-              <div className="flex self-stretch items-start gap-3 px-4 py-3 rounded-sm border border-[#8E5E06] bg-[#FEF1D8]">
+              <div className="flex self-stretch items-start gap-3 px-4 py-3 rounded-sm border border-warning bg-[#FEF1D8]">
                 Please review the statements below and confirm they are accurate
                 before submitting.
               </div>
@@ -169,7 +169,7 @@ export const TransferFromActions = (props: {
               ))}
             </div>
           </div>
-          <div className="flex h-20 p-5 justify-between items-center self-stretch rounded border border-[#898785]">
+          <div className="flex h-20 p-5 justify-between items-center self-stretch rounded border border-dividerMedium">
             <div className="flex items-center gap-6">
               <Button variant="danger" onClick={() => showModal("delete")}>
                 Delete
@@ -199,12 +199,12 @@ export const TransferFromActions = (props: {
               {error}
             </p>
           )}
-          <div className="flex self-stretch flex-col items-start rounded border border-[#898785]">
-            <div className="flex flex-col items-start gap-2 self-stretch p-5 rounded-t border-b border-[#898785] bg-[#EDEBE9]">
-              <div className="self-stretch text-[#2D2D2D] font-['BC_Sans'] text-xl font-bold leading-7">
+          <div className="flex self-stretch flex-col items-start rounded border border-dividerMedium">
+            <div className="flex flex-col items-start gap-2 self-stretch p-5 rounded-t border-b border-dividerMedium bg-disabledSurface">
+              <div className="self-stretch text-primaryText text-xl font-bold leading-7">
                 Rescind Credit Transfer
               </div>
-              <div className="self-stretch text-[#474543] font-['BC_Sans'] text-sm font-normal leading-5">
+              <div className="self-stretch text-secondaryText text-sm font-normal leading-5">
                 If you need to rescind this credit transfer notice please enter a reason to your transfer partner.
               </div>
             </div>
@@ -212,7 +212,7 @@ export const TransferFromActions = (props: {
               <Textarea value={comment} onChange={setComment} />
             </div>
           </div>
-          <div className="flex h-20 p-5 justify-between items-center self-stretch rounded border border-[#898785]">
+          <div className="flex h-20 p-5 justify-between items-center self-stretch rounded border border-dividerMedium">
             <Button
               variant="secondary"
               onClick={handleBack}

@@ -1,13 +1,14 @@
 import { getUserInfo } from "@/auth";
 import { prisma } from "@/lib/prisma";
-import { CreditTransferStatus, Role, ZevClass } from "@/prisma/generated/enums";
+import { CreditTransferStatus, Role, TransactionType, ZevClass } from "@/prisma/generated/enums";
 import {
   CreditTransferWhereUniqueInput,
   CreditTransferHistoryWhereInput,
   CreditTransferWhereInput,
 } from "@/prisma/generated/models";
 import { CreditTransferWithRelated } from "./constants";
-import { getReportableBalanceAB } from "@/app/zev-unit-activities/lib/zev-unit-transactions/data";
+import { transferIsCovered } from "./services";
+import { flattenZevUnitRecords, UncoveredTransfer } from "@/lib/utils/zevUnit";
 import Decimal from "decimal.js";
 
 export const getCreditTransfers = async (): Promise<
@@ -167,18 +168,10 @@ export const getCreditTransferHistories = async (transferId: number) => {
 export const getProjectedBalanceAfterTransfer = async (
   transferId: number,
 ): Promise<{ A: string; B: string } | null> => {
-  const { userOrgId } = await getUserInfo();
-
   const transfer = await prisma.creditTransfer.findUnique({
     where: { id: transferId },
-    select: {
-      transferFromId: true,
-      creditTransferContent: {
-        select: {
-          zevClass: true,
-          numberOfUnits: true,
-        },
-      },
+    include: {
+      creditTransferContent: true,
     },
   });
 
@@ -186,25 +179,32 @@ export const getProjectedBalanceAfterTransfer = async (
     return null;
   }
 
-  const balance = await getReportableBalanceAB(transfer.transferFromId);
-  if (balance === "deficit") {
-    return { A: "0.00", B: "0.00" };
-  }
+  try {
+    const projectedRecords = await transferIsCovered(transfer);
+    const flattened = flattenZevUnitRecords(projectedRecords);
 
-  let aBalance = new Decimal(balance.A);
-  let bBalance = new Decimal(balance.B);
+    let aBalance = new Decimal(0);
+    let bBalance = new Decimal(0);
 
-  for (const content of transfer.creditTransferContent) {
-    if (content.zevClass === ZevClass.A) {
-      aBalance = aBalance.minus(content.numberOfUnits);
-    } else if (content.zevClass === ZevClass.B) {
-      bBalance = bBalance.minus(content.numberOfUnits);
+    for (const record of flattened) {
+      if (record.type === TransactionType.CREDIT) {
+        if (record.zevClass === ZevClass.A) {
+          aBalance = aBalance.plus(record.numberOfUnits);
+        } else if (record.zevClass === ZevClass.B) {
+          bBalance = bBalance.plus(record.numberOfUnits);
+        }
+      }
     }
-  }
 
-  return {
-    A: aBalance.toFixed(2),
-    B: bBalance.toFixed(2),
-  };
+    return {
+      A: aBalance.toFixed(2),
+      B: bBalance.toFixed(2),
+    };
+  } catch (e) {
+    if (e instanceof UncoveredTransfer) {
+      return null;
+    }
+    throw e;
+  }
 };
 

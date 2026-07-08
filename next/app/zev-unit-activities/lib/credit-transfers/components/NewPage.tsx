@@ -23,13 +23,13 @@ export const NewPage = async () => {
       <div className="flex flex-col items-start gap-4 self-stretch bg-white">
         <div className="flex flex-col items-start gap-4 self-stretch">
           <div className="flex flex-col items-start gap-2">
-            <div className="font-bold text-2xl leading-[34px] text-[#474543]">
+            <div className="font-bold text-2xl leading-[34px] text-secondaryText">
               Create New Credit Transfer
             </div>
           </div>
         </div>
       </div>
-      <div className="self-stretch h-px bg-[#898785]"></div>
+      <div className="self-stretch h-px bg-dividerMedium"></div>
       <CreditTransferForm transferCandidatesMap={transferCandidatesMap} />
     </div>
   );

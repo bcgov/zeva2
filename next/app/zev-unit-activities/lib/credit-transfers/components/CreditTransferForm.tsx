@@ -101,13 +101,13 @@ export const CreditTransferForm = (props: {
           {error}
         </p>
       )}
-      <div className="flex flex-col items-start self-stretch rounded border border-[#898785] shadow-[0_4px_20px_0_rgba(177,177,177,0.10)]">
-        <div className="flex flex-col items-start self-stretch rounded-t px-5 py-4 gap-1 bg-[#EDEBE9]">
-          <div className="self-stretch text-black font-['BC_Sans'] text-xl font-bold leading-7">Transfer Details</div>
+      <div className="flex flex-col items-start self-stretch rounded border border-dividerMedium shadow-[0_4px_20px_0_rgba(177,177,177,0.10)]">
+        <div className="flex flex-col items-start self-stretch rounded-t px-5 py-4 gap-1 bg-disabledSurface">
+          <div className="self-stretch text-black text-xl font-bold leading-7">Transfer Details</div>
         </div>
         <div className="flex flex-col items-start self-stretch gap-5 p-5 rounded shadow-[0_4px_20px_0_rgba(177,177,177,0.10)]">
           <div className="flex flex-col items-start gap-2 self-stretch">
-            <div className="self-stretch text-[#2D2D2D] font-['BC_Sans'] text-base font-normal leading-6">
+            <div className="self-stretch text-primaryText font-normal leading-6">
               Transfer to
             </div>
             <Dropdown
@@ -125,7 +125,7 @@ export const CreditTransferForm = (props: {
               disabled={!!props.creditTransfer || isPending}
             />
           </div>
-          <div className="self-stretch h-px bg-[#EDEBE9]"></div>
+          <div className="self-stretch h-px bg-disabledSurface"></div>
           <CreditTransferLines
             lines={lines}
             addLine={handleAddLine}

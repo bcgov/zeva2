@@ -157,17 +157,17 @@ export const IndividualPage = async (props: { id: string }) => {
       </div>
       <div className="flex flex-col items-start gap-6 self-stretch">
         <div className="flex flex-col items-start self-stretch">
-          <div className="flex self-stretch h-20 p-5 justify-between items-center rounded-t border border-[#898785] bg-[#E7E7E7]">
-            <div className="text-black font-['BC_Sans'] text-2xl font-bold leading-[34px]">
+          <div className="flex self-stretch h-20 p-5 justify-between items-center rounded-t border border-dividerMedium bg-[#E7E7E7]">
+            <div className="text-black text-2xl font-bold leading-[34px]">
               Credit Transfer ID {id}
             </div>
             <div className="flex h-10 items-center justify-center gap-2 py-[5px]">
               <PrintDownloadPageButton />
             </div>
           </div>
-          <div className="flex flex-col items-start self-stretch rounded border border-[#898785] shadow-[0_4px_20px_0_rgba(177,177,177,0.10)]">
-            <div className="flex flex-col items-start self-stretch rounded-t px-5 py-4 gap-1 bg-[#EDEBE9]">
-              <div className="self-stretch text-black font-['BC_Sans'] text-xl font-bold leading-7">
+          <div className="flex flex-col items-start self-stretch rounded border border-dividerMedium shadow-[0_4px_20px_0_rgba(177,177,177,0.10)]">
+            <div className="flex flex-col items-start self-stretch rounded-t px-5 py-4 gap-1 bg-disabledSurface">
+              <div className="self-stretch text-black text-xl font-bold leading-7">
                 Transfer Details
               </div>
             </div>
@@ -175,51 +175,51 @@ export const IndividualPage = async (props: { id: string }) => {
               <div className="flex flex-col items-start gap-3 self-stretch">
                 <div className="flex w-[1091px] items-center gap-6">
                   <div className="flex items-center gap-2">
-                    <div className="text-[#474543] font-['BC_Sans'] text-lg font-normal leading-6">
+                    <div className="text-secondaryText text-lg font-normal leading-6">
                       Transfer From:
                     </div>
-                    <div className="text-black font-['BC_Sans'] text-lg font-bold leading-6">
+                    <div className="text-black text-lg font-bold leading-6">
                       {transfer.transferFrom.name}
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
-                    <div className="text-[#474543] font-['BC_Sans'] text-lg font-normal leading-6">
+                    <div className="text-secondaryText text-lg font-normal leading-6">
                       Transfer To:
                     </div>
-                    <div className="text-black font-['BC_Sans'] text-lg font-bold leading-6">
+                    <div className="text-black text-lg font-bold leading-6">
                       {transfer.transferTo.name}
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
-                    <div className="text-[#474543] font-['BC_Sans'] text-lg font-normal leading-6">
+                    <div className="text-secondaryText text-lg font-normal leading-6">
                       ID:
                     </div>
-                    <div className="text-black font-['BC_Sans'] text-lg font-bold leading-6">
+                    <div className="text-black text-lg font-bold leading-6">
                       {id}
                     </div>
                   </div>
                 </div>
               </div>
             </div>
-            <div className="self-stretch h-px bg-[#898785]"></div>
+            <div className="self-stretch h-px bg-dividerMedium"></div>
             <div className="flex self-stretch flex-col gap-5 px-5 py-6">
-              <div className="w-full overflow-hidden rounded border border-[#898785]">
+              <div className="w-full overflow-hidden rounded border border-dividerMedium">
                 <table className="w-full border-collapse">
                   <thead>
-                    <tr className="h-[60px] border-b border-[#898785] bg-white">
-                      <th className="px-4 text-left font-['BC_Sans'] text-base font-bold leading-6 text-[#2D2D2D]">
+                    <tr className="h-[60px] border-b border-dividerMedium bg-white">
+                      <th className="px-4 text-left font-bold leading-6 text-primaryText">
                         Vehicle Class
                       </th>
-                      <th className="px-4 text-left font-['BC_Sans'] text-base font-bold leading-6 text-[#2D2D2D]">
+                      <th className="px-4 text-left font-bold leading-6 text-primaryText">
                         ZEV Class
                       </th>
-                      <th className="px-4 text-left font-['BC_Sans'] text-base font-bold leading-6 text-[#2D2D2D]">
+                      <th className="px-4 text-left font-bold leading-6 text-primaryText">
                         Model Year
                       </th>
-                      <th className="px-4 text-left font-['BC_Sans'] text-base font-bold leading-6 text-[#2D2D2D]">
+                      <th className="px-4 text-left font-bold leading-6 text-primaryText">
                         Number of Units
                       </th>
-                      <th className="px-4 text-left font-['BC_Sans'] text-base font-bold leading-6 text-[#2D2D2D]">
+                      <th className="px-4 text-left font-bold leading-6 text-primaryText">
                         Dollar per Value Unit
                       </th>
                     </tr>
@@ -229,21 +229,21 @@ export const IndividualPage = async (props: { id: string }) => {
                     {transfer.creditTransferContent.map((content) => (
                       <tr
                         key={crypto.randomUUID()}
-                        className="h-[60px] border-b border-[#898785] last:border-b-0 even:bg-white odd:bg-[#FAF9F8]"
+                        className="h-[60px] border-b border-dividerMedium last:border-b-0 even:bg-white odd:bg-lightGrey"
                       >
-                        <td className="px-4 text-left font-['BC_Sans'] text-base font-normal leading-6 text-[#2D2D2D]">
+                        <td className="px-4 text-left font-normal leading-6 text-primaryText">
                           {content.vehicleClass}
                         </td>
-                        <td className="px-4 text-left font-['BC_Sans'] text-base font-normal leading-6 text-[#2D2D2D]">
+                        <td className="px-4 text-left font-normal leading-6 text-primaryText">
                           {content.zevClass}
                         </td>
-                        <td className="px-4 text-left font-['BC_Sans'] text-base font-normal leading-6 text-[#2D2D2D]">
+                        <td className="px-4 text-left font-normal leading-6 text-primaryText">
                           {content.modelYear}
                         </td>
-                        <td className="px-4 text-left font-['BC_Sans'] text-base font-normal leading-6 text-[#2D2D2D]">
+                        <td className="px-4 text-left font-normal leading-6 text-primaryText">
                           {content.numberOfUnits.toString()}
                         </td>
-                        <td className="px-4 text-left font-['BC_Sans'] text-base font-normal leading-6 text-[#2D2D2D]">
+                        <td className="px-4 text-left font-normal leading-6 text-primaryText">
                           {content.dollarValuePerUnit.toString()}
                         </td>
                       </tr>
@@ -252,14 +252,14 @@ export const IndividualPage = async (props: { id: string }) => {
                 </table>
               </div>
             </div>
-            <div className="flex flex-col items-start self-stretch gap-5 p-5 rounded-b border-t border-[#898785] shadow-[0_4px_20px_0_rgba(177,177,177,0.10)]">
+            <div className="flex flex-col items-start self-stretch gap-5 p-5 rounded-b border-t border-dividerMedium shadow-[0_4px_20px_0_rgba(177,177,177,0.10)]">
               <div className="flex flex-col items-start gap-3 self-stretch">
                 <div className="flex self-stretch items-center gap-6">
                   <div className="flex items-center gap-2">
-                    <div className="text-[#474543] font-['BC_Sans'] text-lg font-normal leading-6">
+                    <div className="text-secondaryText text-lg font-normal leading-6">
                       Total CAD: {" "}
                     </div>
-                    <div className="text-black font-['BC_Sans'] text-lg font-bold leading-6">
+                    <div className="text-black text-lg font-bold leading-6">
                       {new Intl.NumberFormat("en-CA", {
                         minimumFractionDigits: 2,
                         maximumFractionDigits: 2,
@@ -273,28 +273,28 @@ export const IndividualPage = async (props: { id: string }) => {
         </div>
 
         {projectedBalance && (
-          <div className="flex w-[452px] flex-col items-start gap-5 pb-5 rounded border border-[#898785] shadow-[0_4px_20px_0_rgba(177,177,177,0.10)]">
+          <div className="flex w-[452px] flex-col items-start gap-5 pb-5 rounded border border-dividerMedium shadow-[0_4px_20px_0_rgba(177,177,177,0.10)]">
             <div className="flex flex-col items-start gap-3 self-stretch">
-              <div className="flex flex-col items-start gap-2 self-stretch p-5 rounded-t bg-[#EDEBE9]">
-                <div className="self-stretch text-black font-['BC_Sans'] text-xl font-bold leading-7">
+              <div className="flex flex-col items-start gap-2 self-stretch p-5 rounded-t bg-disabledSurface">
+                <div className="self-stretch text-black text-xl font-bold leading-7">
                   Credit Balance After Transfer
                 </div>
               </div>
               <div className="flex flex-col items-start gap-3 self-stretch px-5">
                 <div className="flex items-center gap-4 self-stretch">
-                  <div className="text-[#474543] font-['BC_Sans'] text-base font-bold leading-6">
+                  <div className="text-secondaryText font-bold leading-6">
                     Category A:
                   </div>
-                  <div className="self-stretch text-black font-['BC_Sans'] text-lg font-bold leading-[27px]">
+                  <div className="self-stretch text-black text-lg font-bold leading-[27px]">
                     {projectedBalance.A}
                   </div>
                 </div>
-                <div className="self-stretch h-px bg-[#EDEBE9]"></div>
+                <div className="self-stretch h-px bg-disabledSurface"></div>
                 <div className="flex items-center gap-4 self-stretch">
-                  <div className="text-[#474543] font-['BC_Sans'] text-base font-bold leading-6">
+                  <div className="text-secondaryText font-bold leading-6">
                     Category B:
                   </div>
-                  <div className="self-stretch text-black font-['BC_Sans'] text-lg font-bold leading-[27px]">
+                  <div className="self-stretch text-black text-lg font-bold leading-[27px]">
                     {projectedBalance.B}
                   </div>
                 </div>
@@ -313,9 +313,9 @@ export const IndividualPage = async (props: { id: string }) => {
         )}
 
         {!isDraft && visibleSigningSections.length > 0 && (
-          <div className="flex self-stretch flex-col items-start rounded border border-[#898785]">
-            <div className="flex p-5 flex-col items-start gap-2 self-stretch rounded-t border-b border-[#898785] bg-[#EDEBE9]">
-              <div className="self-stretch text-[#2D2D2D] font-['BC_Sans'] text-xl font-bold leading-7">
+          <div className="flex self-stretch flex-col items-start rounded border border-dividerMedium">
+            <div className="flex p-5 flex-col items-start gap-2 self-stretch rounded-t border-b border-dividerMedium bg-disabledSurface">
+              <div className="self-stretch text-primaryText text-xl font-bold leading-7">
                 Review &amp; Confirm
               </div>
             </div>
@@ -326,14 +326,14 @@ export const IndividualPage = async (props: { id: string }) => {
                     key={section.title}
                     className="flex self-stretch flex-col items-start gap-4"
                   >
-                    <div className="self-stretch text-[#474543] font-['BC_Sans'] text-base font-bold leading-6">
+                    <div className="self-stretch text-secondaryText font-bold leading-6">
                       {section.title}
                     </div>
                     <div className="flex self-stretch flex-col items-start gap-4">
                       {section.statements.map((statement) => (
                         <div
                           key={`${section.title}-${statement}`}
-                          className="self-stretch text-black font-['BC_Sans'] text-base font-normal leading-6"
+                          className="self-stretch text-black font-normal leading-6"
                         >
                           {statement}
                         </div>
@@ -347,9 +347,9 @@ export const IndividualPage = async (props: { id: string }) => {
         )}
 
         {!isDraft && signingInfo.length > 0 && (
-          <div className="flex self-stretch flex-col items-start rounded border border-[#898785]">
-            <div className="flex p-5 flex-col items-start gap-2 self-stretch rounded-t border-b border-[#898785] bg-[#EDEBE9]">
-              <div className="self-stretch text-[#2D2D2D] font-['BC_Sans'] text-xl font-bold leading-7">
+          <div className="flex self-stretch flex-col items-start rounded border border-dividerMedium">
+            <div className="flex p-5 flex-col items-start gap-2 self-stretch rounded-t border-b border-dividerMedium bg-disabledSurface">
+              <div className="self-stretch text-primaryText text-xl font-bold leading-7">
                 Signing Information
               </div>
             </div>
@@ -357,7 +357,7 @@ export const IndividualPage = async (props: { id: string }) => {
               {signingInfo.map((info) => (
                 <div
                   key={info.label}
-                  className="self-stretch text-black font-['BC_Sans'] text-base font-normal leading-6"
+                  className="self-stretch text-black font-normal leading-6"
                 >
                   {info.label} {formatSigningDate(info.timestamp)}
                 </div>

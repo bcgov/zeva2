@@ -43,18 +43,17 @@ export const CreditTransferLines = (props: {
   }, []);
 
   return (
-    <div className="flex items-center self-stretch rounded border border-[#898785]">
-      {/* Vehicle Class */}
+    <div className="flex items-center self-stretch rounded border border-dividerMedium">
       <div className="flex flex-col items-start flex-1">
-        <div className="flex h-[60px] items-center self-stretch gap-3 px-4 pt-3 pb-[13px] rounded-tl border-b border-[#898785] bg-white">
-          <span className="text-[#2D2D2D] font-['BC_Sans'] text-sm font-bold leading-[21px]">
+        <div className="flex h-[60px] items-center self-stretch gap-3 px-4 pt-3 pb-[13px] rounded-tl border-b border-dividerMedium bg-white">
+          <span className="text-primaryText text-sm font-bold leading-[21px]">
             Vehicle Class
           </span>
         </div>
         {props.lines.map((line, index) => (
           <div
             key={index}
-            className="flex h-[60px] items-center self-stretch gap-[10px] px-4 py-3 rounded-bl bg-[#F7F9FC]"
+            className="flex h-[60px] items-center self-stretch gap-[10px] px-4 py-3 rounded-bl bg-infoBG"
           >
             <Dropdown
               id={`vehicleClass-${index}`}
@@ -73,17 +72,16 @@ export const CreditTransferLines = (props: {
         ))}
       </div>
 
-      {/* ZEV Class */}
       <div className="flex flex-col items-start flex-1">
-        <div className="flex h-[60px] items-center self-stretch gap-3 px-4 pt-3 pb-[13px] border-b border-[#898785] bg-white">
-          <span className="text-[#2D2D2D] font-['BC_Sans'] text-sm font-bold leading-[21px]">
+        <div className="flex h-[60px] items-center self-stretch gap-3 px-4 pt-3 pb-[13px] border-b border-dividerMedium bg-white">
+          <span className="text-primaryText text-sm font-bold leading-[21px]">
             ZEV Class
           </span>
         </div>
         {props.lines.map((line, index) => (
           <div
             key={index}
-            className="flex h-[60px] items-center self-stretch gap-[10px] px-4 py-3 bg-[#F7F9FC]"
+            className="flex h-[60px] items-center self-stretch gap-[10px] px-4 py-3 bg-infoBG"
           >
             <Dropdown
               id={`zevClass-${index}`}
@@ -102,17 +100,16 @@ export const CreditTransferLines = (props: {
         ))}
       </div>
 
-      {/* Model Year */}
       <div className="flex flex-col items-start flex-1">
-        <div className="flex h-[60px] items-center self-stretch gap-3 px-4 pt-3 pb-[13px] border-b border-[#898785] bg-white">
-          <span className="text-[#2D2D2D] font-['BC_Sans'] text-sm font-bold leading-[21px]">
+        <div className="flex h-[60px] items-center self-stretch gap-3 px-4 pt-3 pb-[13px] border-b border-dividerMedium bg-white">
+          <span className="text-primaryText text-sm font-bold leading-[21px]">
             Model Year
           </span>
         </div>
         {props.lines.map((line, index) => (
           <div
             key={index}
-            className="flex h-[60px] items-center self-stretch gap-[10px] px-4 py-3 bg-[#F7F9FC]"
+            className="flex h-[60px] items-center self-stretch gap-[10px] px-4 py-3 bg-infoBG"
           >
             <Dropdown
               id={`modelYear-${index}`}
@@ -138,22 +135,21 @@ export const CreditTransferLines = (props: {
         ))}
       </div>
 
-      {/* Number of Units */}
       <div className="flex flex-col items-start flex-1">
-        <div className="flex h-[60px] items-center self-stretch gap-3 px-4 pt-3 pb-[13px] border-b border-[#898785] bg-white">
-          <span className="text-[#2D2D2D] font-['BC_Sans'] text-sm font-bold leading-[21px]">
+        <div className="flex h-[60px] items-center self-stretch gap-3 px-4 pt-3 pb-[13px] border-b border-dividerMedium bg-white">
+          <span className="text-primaryText text-sm font-bold leading-[21px]">
             Number of Units
           </span>
         </div>
         {props.lines.map((line, index) => (
           <div
             key={index}
-            className="flex h-[60px] items-center self-stretch gap-[10px] px-4 py-3 bg-[#F7F9FC]"
+            className="flex h-[60px] items-center self-stretch gap-[10px] px-4 py-3 bg-infoBG"
           >
             <input
               type="text"
               placeholder="Search.."
-              className="h-10 min-w-[100px] flex-1 px-4 py-3 rounded border border-[#898785] bg-white text-sm"
+              className="h-10 min-w-[100px] flex-1 px-4 py-3 rounded border border-dividerMedium bg-white text-sm"
               value={line.numberOfUnits}
               onChange={(e) =>
                 props.handleLineChange(index, "numberOfUnits", e.target.value)
@@ -164,22 +160,21 @@ export const CreditTransferLines = (props: {
         ))}
       </div>
 
-      {/* Dollar per Value Unit */}
       <div className="flex flex-col items-start flex-1">
-        <div className="flex h-[60px] items-center self-stretch gap-3 px-4 pt-3 pb-[13px] border-b border-[#898785] bg-white">
-          <span className="text-[#2D2D2D] font-['BC_Sans'] text-sm font-bold leading-[21px]">
+        <div className="flex h-[60px] items-center self-stretch gap-3 px-4 pt-3 pb-[13px] border-b border-dividerMedium bg-white">
+          <span className="text-primaryText text-sm font-bold leading-[21px]">
             Dollar per Value Unit
           </span>
         </div>
         {props.lines.map((line, index) => (
           <div
             key={index}
-            className="flex h-[60px] items-center self-stretch gap-[10px] px-4 py-3 bg-[#F7F9FC]"
+            className="flex h-[60px] items-center self-stretch gap-[10px] px-4 py-3 bg-infoBG"
           >
             <input
               type="text"
               placeholder="Search.."
-              className="h-10 min-w-[100px] flex-1 px-4 py-3 rounded border border-[#898785] bg-white text-sm"
+              className="h-10 min-w-[100px] flex-1 px-4 py-3 rounded border border-dividerMedium bg-white text-sm"
               value={line.dollarValuePerUnit}
               onChange={(e) =>
                 props.handleLineChange(
@@ -194,17 +189,16 @@ export const CreditTransferLines = (props: {
         ))}
       </div>
 
-      {/* Delete */}
       <div className="flex flex-col items-start">
-        <div className="flex h-[60px] items-center self-stretch gap-3 px-4 pt-3 pb-[13px] rounded-tr border-b border-[#898785] bg-white">
-          <span className="text-[#2D2D2D] font-['BC_Sans'] text-sm font-bold leading-[21px]">
+        <div className="flex h-[60px] items-center self-stretch gap-3 px-4 pt-3 pb-[13px] rounded-tr border-b border-dividerMedium bg-white">
+          <span className="text-primaryText text-sm font-bold leading-[21px]">
             Delete
           </span>
         </div>
         {props.lines.map((line, index) => (
           <div
             key={index}
-            className="flex h-[60px] items-center self-stretch gap-[10px] px-4 py-3 rounded-br bg-[#F7F9FC]"
+            className="flex h-[60px] items-center self-stretch gap-[10px] px-4 py-3 rounded-br bg-infoBG"
           >
             <button
               type="button"
