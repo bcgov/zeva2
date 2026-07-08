@@ -8,3 +8,577 @@ All notable changes to this project are documented in this file.
 ### Features
 
 * myr styling part 4 ([59fecf3](https://github.com/bcgov/zeva2/commit/59fecf392be189c001e55515bb7898d5ac5f7a19))
+
+
+# [1.41.0](https://github.com/bcgov/zeva2/compare/v1.40.0...v1.41.0) (2026-07-07)
+
+
+### Features
+
+* myr styling part 3 ([ea583c9](https://github.com/bcgov/zeva2/commit/ea583c967b8047b9608b06d4091ed1e8032411c4))
+
+
+# [1.40.0](https://github.com/bcgov/zeva2/compare/v1.39.1...v1.40.0) (2026-07-06)
+
+
+### Features
+
+* MYR styling part 2 ([#524](https://github.com/bcgov/zeva2/issues/524)) ([aab983a](https://github.com/bcgov/zeva2/commit/aab983ab83c6d05055d91b440f2ab841b5b14474))
+
+
+## [1.39.1](https://github.com/bcgov/zeva2/compare/v1.39.0...v1.39.1) (2026-06-30)
+
+
+### Bug Fixes
+
+* Breadcrumb Navigation ([#516](https://github.com/bcgov/zeva2/issues/516)) ([6b5d496](https://github.com/bcgov/zeva2/commit/6b5d496c552ac460e81732e78f5f01e63c59c26a))
+
+
+# [1.39.0](https://github.com/bcgov/zeva2/compare/v1.38.5...v1.39.0) (2026-06-30)
+
+
+### Features
+
+* Making comment order display properly ([#523](https://github.com/bcgov/zeva2/issues/523)) ([7cf1e4b](https://github.com/bcgov/zeva2/commit/7cf1e4bd03477665ab52ac6247436d8c18bb8102))
+
+
+## [1.38.5](https://github.com/bcgov/zeva2/compare/v1.38.4...v1.38.5) (2026-06-30)
+
+
+### Bug Fixes
+
+* 484 styling update ([#522](https://github.com/bcgov/zeva2/issues/522)) ([e6e8fbb](https://github.com/bcgov/zeva2/commit/e6e8fbb22ee244d81267567ac9b8fbc2379a7d3d))
+
+
+## [1.38.4](https://github.com/bcgov/zeva2/compare/v1.38.3...v1.38.4) (2026-06-23)
+
+
+### Bug Fixes
+
+* space between metadata ([#514](https://github.com/bcgov/zeva2/issues/514)) ([d4801f7](https://github.com/bcgov/zeva2/commit/d4801f73bb88a748cd7fa033c1e5fffd9e6f0b74))
+
+
+## [1.38.3](https://github.com/bcgov/zeva2/compare/v1.38.2...v1.38.3) (2026-06-23)
+
+
+### Bug Fixes
+
+* some fixes ([#513](https://github.com/bcgov/zeva2/issues/513)) ([7d6841a](https://github.com/bcgov/zeva2/commit/7d6841aac0b6afb5901370dc93cbbdcd49796e36))
+
+
+## [1.38.2](https://github.com/bcgov/zeva2/compare/v1.38.1...v1.38.2) (2026-06-23)
+
+
+### Bug Fixes
+
+* Updating supplier actions bar to correctly reflect mockups ([#512](https://github.com/bcgov/zeva2/issues/512)) ([6f2e635](https://github.com/bcgov/zeva2/commit/6f2e635d739c481f01f93332dc17f0239e3ecc56))
+
+
+## [1.38.1](https://github.com/bcgov/zeva2/compare/v1.38.0...v1.38.1) (2026-06-22)
+
+
+### Bug Fixes
+
+* some fixes ([#511](https://github.com/bcgov/zeva2/issues/511)) ([fb81eff](https://github.com/bcgov/zeva2/commit/fb81efff2d65112c7f8226d479b0fd2f7e52d15d))
+
+
+# [1.38.0](https://github.com/bcgov/zeva2/compare/v1.37.0...v1.38.0) (2026-06-22)
+
+
+### Features
+
+* 483 and 484 merged and cleaned up ([#510](https://github.com/bcgov/zeva2/issues/510)) ([9897440](https://github.com/bcgov/zeva2/commit/9897440467858894c3d819fbe5a8617050564c57))
+
+
+# [1.37.0](https://github.com/bcgov/zeva2/compare/v1.36.1...v1.37.0) (2026-06-22)
+
+
+### Features
+
+* 483 - BCEID User Interface UI/UX Update for ZEV Models details page ([6c0fa4f](https://github.com/bcgov/zeva2/commit/6c0fa4faca93e671b7dbcb9a7c9dd1a310fe7444))
+
+
+## [1.36.1](https://github.com/bcgov/zeva2/compare/v1.36.0...v1.36.1) (2026-06-10)
+
+
+### Bug Fixes
+
+* some misc. fixes ([#507](https://github.com/bcgov/zeva2/issues/507)) ([932d9d4](https://github.com/bcgov/zeva2/commit/932d9d46e41f70facce90d29de4139a928263227))
+
+
+# [1.36.0](https://github.com/bcgov/zeva2/compare/v1.35.0...v1.36.0) (2026-06-08)
+
+
+### Features
+
+* 446 - CA reasons ([#506](https://github.com/bcgov/zeva2/issues/506)) ([5448cdd](https://github.com/bcgov/zeva2/commit/5448cdd6d0af9a5fd9d7f0bb40e61807800ff8c6))
+
+
+# [1.35.0](https://github.com/bcgov/zeva2/compare/v1.34.0...v1.35.0) (2026-06-04)
+
+
+### Features
+
+* 482 - CA styling ([#502](https://github.com/bcgov/zeva2/issues/502)) ([5ce3e1e](https://github.com/bcgov/zeva2/commit/5ce3e1eb142b4b7923172d3e522112d709ecf64b))
+
+
+# [1.34.0](https://github.com/bcgov/zeva2/compare/v1.33.2...v1.34.0) (2026-06-03)
+
+
+### Features
+
+* 467 - ICBC Registration Date ([#501](https://github.com/bcgov/zeva2/issues/501)) ([0d77c39](https://github.com/bcgov/zeva2/commit/0d77c3985a736f13c9c30e6c42848d1120ff433e))
+
+
+## [1.33.2](https://github.com/bcgov/zeva2/compare/v1.33.1...v1.33.2) (2026-06-03)
+
+
+### Bug Fixes
+
+* use Zeva1 CSS settings ([#500](https://github.com/bcgov/zeva2/issues/500)) ([7d4056f](https://github.com/bcgov/zeva2/commit/7d4056f2e1a36130e90b17d44b345bf250acdeb3))
+
+
+## [1.33.1](https://github.com/bcgov/zeva2/compare/v1.33.0...v1.33.1) (2026-06-02)
+
+
+### Bug Fixes
+
+* update seed scripts ([#499](https://github.com/bcgov/zeva2/issues/499)) ([b3ebb0f](https://github.com/bcgov/zeva2/commit/b3ebb0f37a3da8ffb0f8b8985ef0d2e06112bb73))
+
+
+# [1.33.0](https://github.com/bcgov/zeva2/compare/v1.32.0...v1.33.0) (2026-06-02)
+
+
+### Features
+
+* 422 - convert certain tables to client side tables ([#498](https://github.com/bcgov/zeva2/issues/498)) ([646f2e6](https://github.com/bcgov/zeva2/commit/646f2e638533e2402cc809db8561f484907e570c))
+
+
+# [1.32.0](https://github.com/bcgov/zeva2/compare/v1.31.2...v1.32.0) (2026-06-02)
+
+
+### Features
+
+* Adding breadcrumbs to every tab in zeva 2 ([#497](https://github.com/bcgov/zeva2/issues/497)) ([48dcedc](https://github.com/bcgov/zeva2/commit/48dcedc23ed818bc4627f0efe3df6bb2551f5653))
+
+
+## [1.31.2](https://github.com/bcgov/zeva2/compare/v1.31.1...v1.31.2) (2026-05-28)
+
+
+### Bug Fixes
+
+* trigger a new next build as a new secret has been added ([#496](https://github.com/bcgov/zeva2/issues/496)) ([0b3318d](https://github.com/bcgov/zeva2/commit/0b3318db06fb1a0095c0269c6867fe0512ad3781))
+
+
+## [1.31.1](https://github.com/bcgov/zeva2/compare/v1.31.0...v1.31.1) (2026-05-25)
+
+
+### Bug Fixes
+
+* misc fixes ([#490](https://github.com/bcgov/zeva2/issues/490)) ([f14893c](https://github.com/bcgov/zeva2/commit/f14893c904ba7f309f33e51b44879c203b8c5e6c))
+
+
+# [1.31.0](https://github.com/bcgov/zeva2/compare/v1.30.0...v1.31.0) (2026-05-25)
+
+
+### Features
+
+* 439 - modals and misc. ([#489](https://github.com/bcgov/zeva2/issues/489)) ([223b94e](https://github.com/bcgov/zeva2/commit/223b94ede9bbde063e92b2301c4828710ec79b06))
+
+
+# [1.30.0](https://github.com/bcgov/zeva2/compare/v1.29.0...v1.30.0) (2026-05-19)
+
+
+### Features
+
+* small change ([#488](https://github.com/bcgov/zeva2/issues/488)) ([7d20ff5](https://github.com/bcgov/zeva2/commit/7d20ff55beffb6aa2036b4d6258a04bfcfd3674b))
+
+
+# [1.29.0](https://github.com/bcgov/zeva2/compare/v1.28.0...v1.29.0) (2026-05-19)
+
+
+### Features
+
+* Updating table component placeholder text ([#487](https://github.com/bcgov/zeva2/issues/487)) ([a263547](https://github.com/bcgov/zeva2/commit/a263547997285a5a9aeff25e39ef8cd81ef321c0))
+* Updating zev model tabs ([#486](https://github.com/bcgov/zeva2/issues/486)) ([0936b96](https://github.com/bcgov/zeva2/commit/0936b96218431ecd608825814fd3736e4964682b))
+
+
+# [1.28.0](https://github.com/bcgov/zeva2/compare/v1.27.0...v1.28.0) (2026-05-13)
+
+
+### Features
+
+* 421 - user changes ([#485](https://github.com/bcgov/zeva2/issues/485)) ([004267f](https://github.com/bcgov/zeva2/commit/004267f7f8db24d2eac83ba014eb90d2ac150dec))
+
+
+# [1.27.0](https://github.com/bcgov/zeva2/compare/v1.26.0...v1.27.0) (2026-05-13)
+
+
+### Features
+
+* reusable selectioncard component ([#480](https://github.com/bcgov/zeva2/issues/480)) ([fa3e60a](https://github.com/bcgov/zeva2/commit/fa3e60a992ac43c826bead9c2dca8f140666ea42))
+
+
+# [1.26.0](https://github.com/bcgov/zeva2/compare/v1.25.1...v1.26.0) (2026-05-12)
+
+
+### Features
+
+* myr styling follow up ([#481](https://github.com/bcgov/zeva2/issues/481)) ([400ff3f](https://github.com/bcgov/zeva2/commit/400ff3ff2fdbef7d3b41d53ed746cbe99bad052c))
+
+
+## [1.25.1](https://github.com/bcgov/zeva2/compare/v1.25.0...v1.25.1) (2026-05-11)
+
+
+### Bug Fixes
+
+* routes fix ([#479](https://github.com/bcgov/zeva2/issues/479)) ([27c6dd1](https://github.com/bcgov/zeva2/commit/27c6dd12fd2334879a7e306e6fe7e9b90a837588))
+
+
+# [1.25.0](https://github.com/bcgov/zeva2/compare/v1.24.0...v1.25.0) (2026-05-11)
+
+
+### Features
+
+* small fix ([#478](https://github.com/bcgov/zeva2/issues/478)) ([3666c39](https://github.com/bcgov/zeva2/commit/3666c398ae65fd16e08b7d35e842af519e599cdf))
+
+
+# [1.24.0](https://github.com/bcgov/zeva2/compare/v1.23.0...v1.24.0) (2026-05-11)
+
+
+### Features
+
+* myr styling ([#476](https://github.com/bcgov/zeva2/issues/476)) ([b4b8dbd](https://github.com/bcgov/zeva2/commit/b4b8dbdce4a19da1110a5502853ccca8f9012b13))
+
+
+# [1.23.0](https://github.com/bcgov/zeva2/compare/v1.22.0...v1.23.0) (2026-05-11)
+
+
+### Features
+
+* formatting-and-changes ([#477](https://github.com/bcgov/zeva2/issues/477)) ([cd7e3d2](https://github.com/bcgov/zeva2/commit/cd7e3d2e9263d692d323c8e84cb98b076c1d5bde))
+
+
+# [1.22.0](https://github.com/bcgov/zeva2/compare/v1.21.0...v1.22.0) (2026-05-11)
+
+
+### Features
+
+* audit history tab ([#473](https://github.com/bcgov/zeva2/issues/473)) ([7d85d54](https://github.com/bcgov/zeva2/commit/7d85d54c2babf3594d71ee375a552b13dcb725e8))
+
+
+# [1.21.0](https://github.com/bcgov/zeva2/compare/v1.20.0...v1.21.0) (2026-04-27)
+
+
+### Features
+
+* supplier dashboard ([#465](https://github.com/bcgov/zeva2/issues/465)) ([d9baa46](https://github.com/bcgov/zeva2/commit/d9baa468c8647059c1188f39f8491e317920f722))
+
+
+# [1.20.0](https://github.com/bcgov/zeva2/compare/v1.19.0...v1.20.0) (2026-04-20)
+
+
+### Features
+
+* text input common component ([#457](https://github.com/bcgov/zeva2/issues/457)) ([99fae8b](https://github.com/bcgov/zeva2/commit/99fae8b18b6f9afa1ec4dc50ef0ec39f522f29ff))
+
+
+# [1.19.0](https://github.com/bcgov/zeva2/compare/v1.18.2...v1.19.0) (2026-04-15)
+
+
+### Features
+
+* upgrades and refinements ([#449](https://github.com/bcgov/zeva2/issues/449)) ([4b01f99](https://github.com/bcgov/zeva2/commit/4b01f994e5e59a73ba9a09858d4ba276ddd3cad3))
+
+
+## [1.18.2](https://github.com/bcgov/zeva2/compare/v1.18.1...v1.18.2) (2026-04-08)
+
+
+### Bug Fixes
+
+* transactions ([#438](https://github.com/bcgov/zeva2/issues/438)) ([86e8e1e](https://github.com/bcgov/zeva2/commit/86e8e1e9e485054b0a22d91225c027dc000a7cd3))
+
+
+## [1.18.1](https://github.com/bcgov/zeva2/compare/v1.18.0...v1.18.1) (2026-04-08)
+
+
+### Bug Fixes
+
+* incorrect link ([#436](https://github.com/bcgov/zeva2/issues/436)) ([82314e0](https://github.com/bcgov/zeva2/commit/82314e0cc96910007dfab1d206afe72db6687725))
+
+
+# [1.18.0](https://github.com/bcgov/zeva2/compare/v1.17.0...v1.18.0) (2026-04-08)
+
+
+### Features
+
+* refactoring - directory and navigation structure ([#435](https://github.com/bcgov/zeva2/issues/435)) ([5f5242c](https://github.com/bcgov/zeva2/commit/5f5242cecae54d91dffcae520dda640c5a0a1388))
+
+
+# [1.17.0](https://github.com/bcgov/zeva2/compare/v1.16.1...v1.17.0) (2026-04-08)
+
+
+### Features
+
+* Tooltip Component [#337](https://github.com/bcgov/zeva2/issues/337) ([#432](https://github.com/bcgov/zeva2/issues/432)) ([68f74df](https://github.com/bcgov/zeva2/commit/68f74df473ce21bb4a9bd2312875945fef1d464c))
+
+
+## [1.16.1](https://github.com/bcgov/zeva2/compare/v1.16.0...v1.16.1) (2026-03-27)
+
+
+### Bug Fixes
+
+* a few nav bug fixes ([#424](https://github.com/bcgov/zeva2/issues/424)) ([282aa33](https://github.com/bcgov/zeva2/commit/282aa332b3797468d451674e963e1ae1dbb5f14e))
+
+
+# [1.16.0](https://github.com/bcgov/zeva2/compare/v1.15.0...v1.16.0) (2026-03-27)
+
+
+### Features
+
+* Updating Button.tsx to make icons centered with text. Updating Back button to be more readable ([#423](https://github.com/bcgov/zeva2/issues/423)) ([8adbd5b](https://github.com/bcgov/zeva2/commit/8adbd5bff4657aee7684b41085c49f6d026c6c9e))
+
+
+# [1.15.0](https://github.com/bcgov/zeva2/compare/v1.14.0...v1.15.0) (2026-03-27)
+
+
+### Features
+
+* textarea component added ([#419](https://github.com/bcgov/zeva2/issues/419)) ([6accf48](https://github.com/bcgov/zeva2/commit/6accf48b9e20b14117ec26bdc7958c43955b37ab))
+
+
+# [1.14.0](https://github.com/bcgov/zeva2/compare/v1.13.2...v1.14.0) (2026-03-27)
+
+
+### Features
+
+* Adding footer and version number ([#418](https://github.com/bcgov/zeva2/issues/418)) ([bed5524](https://github.com/bcgov/zeva2/commit/bed55249c6852e885ea9e66904a35b0736c77ee8))
+
+
+## [1.13.2](https://github.com/bcgov/zeva2/compare/v1.13.1...v1.13.2) (2026-03-23)
+
+
+### Bug Fixes
+
+* some fixes ([#417](https://github.com/bcgov/zeva2/issues/417)) ([b8e612f](https://github.com/bcgov/zeva2/commit/b8e612f7105ade6ac6a1961be5de475cc46a7a47))
+
+
+## [1.13.1](https://github.com/bcgov/zeva2/compare/v1.13.0...v1.13.1) (2026-03-19)
+
+
+### Bug Fixes
+
+* update dockerfile-openshift ([#407](https://github.com/bcgov/zeva2/issues/407)) ([de9e9c4](https://github.com/bcgov/zeva2/commit/de9e9c4aa64b570eb73972f6d0364f86aae343ed))
+
+
+# [1.13.0](https://github.com/bcgov/zeva2/compare/v1.12.4...v1.13.0) (2026-03-19)
+
+
+### Features
+
+* 390 - call cthub for icbc and decoded vins data ([#401](https://github.com/bcgov/zeva2/issues/401)) ([2d19e27](https://github.com/bcgov/zeva2/commit/2d19e2775bc3b087bca2770613c3fa4b1f0ef182))
+
+
+## [1.12.4](https://github.com/bcgov/zeva2/compare/v1.12.3...v1.12.4) (2026-03-19)
+
+
+### Bug Fixes
+
+* some fixes and formatting ([#406](https://github.com/bcgov/zeva2/issues/406)) ([6d61ad6](https://github.com/bcgov/zeva2/commit/6d61ad69a2e8cf140561ccb25b1bbe4b57b6747b))
+
+
+## [1.12.3](https://github.com/bcgov/zeva2/compare/v1.12.2...v1.12.3) (2026-03-19)
+
+
+### Bug Fixes
+
+* dropdown component styling ([#400](https://github.com/bcgov/zeva2/issues/400)) ([11657d2](https://github.com/bcgov/zeva2/commit/11657d28bc5cedcaf0e89e0750148a4a79190ae1))
+
+
+## [1.12.2](https://github.com/bcgov/zeva2/compare/v1.12.1...v1.12.2) (2026-03-17)
+
+
+### Bug Fixes
+
+* some fixes and formatting ([#399](https://github.com/bcgov/zeva2/issues/399)) ([b794de5](https://github.com/bcgov/zeva2/commit/b794de58b35b1b0735e19498cd50893d843f12e0))
+
+
+## [1.12.1](https://github.com/bcgov/zeva2/compare/v1.12.0...v1.12.1) (2026-03-17)
+
+
+### Bug Fixes
+
+* styling update for common table components ([#392](https://github.com/bcgov/zeva2/issues/392)) ([eae4186](https://github.com/bcgov/zeva2/commit/eae41862cff318caac2be8bb6111a177937409d9))
+
+
+# [1.12.0](https://github.com/bcgov/zeva2/compare/v1.11.1...v1.12.0) (2026-03-13)
+
+
+### Features
+
+* 364 - final tasks - part 2 ([#397](https://github.com/bcgov/zeva2/issues/397)) ([149fcdb](https://github.com/bcgov/zeva2/commit/149fcdb8bf2421caecaf7c3613625a4782df5f12))
+
+
+## [1.11.1](https://github.com/bcgov/zeva2/compare/v1.11.0...v1.11.1) (2026-03-05)
+
+
+### Bug Fixes
+
+* updated styling for nav ([#381](https://github.com/bcgov/zeva2/issues/381)) ([7848f4e](https://github.com/bcgov/zeva2/commit/7848f4ea0263758c5e2838b02c1c236fc1e2b23d))
+
+
+# [1.11.0](https://github.com/bcgov/zeva2/compare/v1.10.1...v1.11.0) (2026-03-04)
+
+
+### Features
+
+* 364 - misc updates ([#380](https://github.com/bcgov/zeva2/issues/380)) ([539a463](https://github.com/bcgov/zeva2/commit/539a463e8a9f0357142707c62ab6e463686fa3aa))
+
+
+## [1.10.1](https://github.com/bcgov/zeva2/compare/v1.10.0...v1.10.1) (2026-03-02)
+
+
+### Bug Fixes
+
+* ts errors + formatting + some refinements ([#379](https://github.com/bcgov/zeva2/issues/379)) ([8f156d9](https://github.com/bcgov/zeva2/commit/8f156d90d44b56d1ad52b09ac354ddfa655c0800))
+
+
+# [1.10.0](https://github.com/bcgov/zeva2/compare/v1.9.0...v1.10.0) (2026-03-02)
+
+
+### Features
+
+* Header & Nav Bar Design [#285](https://github.com/bcgov/zeva2/issues/285) ([648ec81](https://github.com/bcgov/zeva2/commit/648ec81e8693560812a2d83977e3155f2556c056))
+
+
+# [1.9.0](https://github.com/bcgov/zeva2/compare/v1.8.0...v1.9.0) (2026-03-02)
+
+
+### Features
+
+* compliance ratios ([#375](https://github.com/bcgov/zeva2/issues/375)) ([88a7e20](https://github.com/bcgov/zeva2/commit/88a7e20df4c3713dd4b90ff20b5f150528f9894d))
+
+
+# [1.8.0](https://github.com/bcgov/zeva2/compare/v1.7.1...v1.8.0) (2026-02-23)
+
+
+### Features
+
+* 283 - compliance calculator ([f7b913d](https://github.com/bcgov/zeva2/commit/f7b913d7ec10a101386f1dd72df9e141c9f1cc29))
+
+
+## [1.7.1](https://github.com/bcgov/zeva2/compare/v1.7.0...v1.7.1) (2026-02-18)
+
+
+### Bug Fixes
+
+* update prisma clients ([#367](https://github.com/bcgov/zeva2/issues/367)) ([a9f1d86](https://github.com/bcgov/zeva2/commit/a9f1d86e1528e2160626e75333dff89c1c1e6324))
+
+
+# [1.7.0](https://github.com/bcgov/zeva2/compare/v1.6.0...v1.7.0) (2026-02-18)
+
+
+### Features
+
+* revert last commit ([#366](https://github.com/bcgov/zeva2/issues/366)) ([806ce0a](https://github.com/bcgov/zeva2/commit/806ce0ac1308cf051f53f3c6f2e4e9936d976709))
+
+
+# [1.6.0](https://github.com/bcgov/zeva2/compare/v1.5.0...v1.6.0) (2026-02-18)
+
+
+### Features
+
+* update openshift dockerfile ([#365](https://github.com/bcgov/zeva2/issues/365)) ([3b71dec](https://github.com/bcgov/zeva2/commit/3b71dec9de42dc054f14dfe1e7c4163bbea27b83))
+
+
+# [1.5.0](https://github.com/bcgov/zeva2/compare/v1.4.0...v1.5.0) (2026-02-18)
+
+
+### Features
+
+* 276 - prisma v7 and migrations ([#358](https://github.com/bcgov/zeva2/issues/358)) ([250ca90](https://github.com/bcgov/zeva2/commit/250ca90eb8b4238a9118f4d784ff534a2b8a1b75))
+
+
+# [1.4.0](https://github.com/bcgov/zeva2/compare/v1.3.0...v1.4.0) (2026-02-17)
+
+
+### Features
+
+* trigger release 2026-02-17 ([#360](https://github.com/bcgov/zeva2/issues/360)) ([442373e](https://github.com/bcgov/zeva2/commit/442373ecd700bbb642ae509016b84ae1824bdb98))
+
+
+# [1.3.0](https://github.com/bcgov/zeva2/compare/v1.2.0...v1.3.0) (2026-02-17)
+
+
+### Features
+
+* 257 - admin page updates ([#359](https://github.com/bcgov/zeva2/issues/359)) ([ed19411](https://github.com/bcgov/zeva2/commit/ed194119ba587a1ee46d5cda5ec07d067eb86622))
+
+
+# [1.2.0](https://github.com/bcgov/zeva2/compare/v1.1.1...v1.2.0) (2026-02-14)
+
+
+### Features
+
+* trigger release ([#355](https://github.com/bcgov/zeva2/issues/355)) ([ceac07c](https://github.com/bcgov/zeva2/commit/ceac07cb3927b325345dd677993bfc4df887f7b9))
+
+
+## [1.1.1](https://github.com/bcgov/zeva2/compare/v1.1.0...v1.1.1) (2026-02-12)
+
+
+### Reverts
+
+* Revert "chore(deps): bump axios from 1.13.2 to 1.13.5 in /next ([#325](https://github.com/bcgov/zeva2/issues/325))" ([#344](https://github.com/bcgov/zeva2/issues/344)) ([5789b2b](https://github.com/bcgov/zeva2/commit/5789b2b1140015b51db484015b249357765faff2))
+
+
+# [1.1.0](https://github.com/bcgov/zeva2/compare/v1.0.2...v1.1.0) (2026-02-11)
+
+
+### Features
+
+* MYR refinements ([#334](https://github.com/bcgov/zeva2/issues/334)) ([0acdead](https://github.com/bcgov/zeva2/commit/0acdead71692b13d93d902c8049f25d7432bc60a))
+
+
+## [1.0.2](https://github.com/bcgov/zeva2/compare/v1.0.1...v1.0.2) (2026-02-10)
+
+
+### Bug Fixes
+
+* version logics, require approval if input version is earlier than the current version ([#326](https://github.com/bcgov/zeva2/issues/326)) ([88f5992](https://github.com/bcgov/zeva2/commit/88f599205ef27fb42d71d2ded9d47f316dd1c026))
+
+
+## [1.0.1](https://github.com/bcgov/zeva2/compare/v1.0.0...v1.0.1) (2026-02-04)
+
+
+### Bug Fixes
+
+* dev-release deploys images on dev directly ([#311](https://github.com/bcgov/zeva2/issues/311)) ([e7a08b3](https://github.com/bcgov/zeva2/commit/e7a08b3ccc9d4171c23df6fe30e727f88ed33e27))
+
+
+# 1.0.0 (2026-02-04)
+
+
+### Features
+
+* merge develop to main ([#309](https://github.com/bcgov/zeva2/issues/309)) ([fc8c2d7](https://github.com/bcgov/zeva2/commit/fc8c2d77d45e7f65eb125e2ecab70df4c04c0b80)), closes [#280](https://github.com/bcgov/zeva2/issues/280)
+
+
+## What's Changed
+* Merge release/0.4.0 to main by @kuanfandevops in https://github.com/bcgov/zeva2/pull/294
+
+
+**Full Changelog**: https://github.com/bcgov/zeva2/compare/0.3.0...0.4.0
+
+## What's Changed
+* ZEVA2-1,2: Add theme for bcgov/tailwind and header component by @jdtoombs in https://github.com/bcgov/zeva2/pull/5
+* Add eslint/prettier by @jdtoombs in https://github.com/bcgov/zeva2/pull/6
+* Fix text colour in header by @jdtoombs in https://github.com/bcgov/zeva2/pull/8
+* ZEVA2: Navigation bar by @jdtoombs in https://github.com/bcgov/zeva2/pull/9
+* CSS Tweak by @jdtoombs in https://github.com/bcgov/zeva2/pull/13
+* utilities for handling zev unit records by @tim738745 in https://github.com/bcgov/zeva2/pull/14
+* Skeleton Dashboard Work by @jdtoombs in https://github.com/bcgov/zeva2/pull/20
+* Add ZEV-Unit (Credit) Transfer data models by @rogerlcleung in https://github.com/bcgov/zeva2/pull/22
+* Merge Release/0.3.0 to main by @kuanfandevops in https://github.com/bcgov/zeva2/pull/198
+
+
+**Full Changelog**: https://github.com/bcgov/zeva2/commits/0.3.0
