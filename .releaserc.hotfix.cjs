@@ -21,14 +21,6 @@ module.exports = {
     ],
     "@semantic-release/release-notes-generator",
     [
-      "@semantic-release/changelog",
-      {
-        changelogFile: "CHANGELOG.md",
-        changelogTitle:
-          "# Changelog\n\nAll notable changes to this project are documented in this file.",
-      },
-    ],
-    [
       "@semantic-release/npm",
       {
         npmPublish: false,
@@ -44,6 +36,10 @@ module.exports = {
         addReleases: "bottom",
       },
     ],
+    // Rewrites CHANGELOG.md as a single Markdown table (one row per change).
+    // Runs before @semantic-release/git so the update is part of the release
+    // commit. GitHub Release notes are unaffected (they keep the pretty format).
+    "./scripts/changelog-table-plugin.cjs",
     // Must be last: commits CHANGELOG.md/package.json to the hotfix branch.
     // These changes then reach main through the automated hotfix -> main PR.
     [
