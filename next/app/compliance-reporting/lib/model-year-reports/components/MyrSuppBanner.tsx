@@ -1,13 +1,11 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { JSX, useMemo } from "react";
+import { JSX, ReactNode, useMemo } from "react";
 import { ModelYear } from "@/prisma/generated/enums";
 import { myrSuppBannerIndicators } from "../constants";
 import { getModelYearEnumsToStringsMap } from "@/app/lib/utils/enumMaps";
 import { StatusBanner, StatusBannerVariant } from "@/app/lib/components";
-import { Routes } from "@/app/lib/constants";
-import { getAdjacentYear } from "@/app/lib/utils/complianceYear";
 
 export const MyrSuppBanner = (props: {
   type: "myr" | "supp";
@@ -21,7 +19,8 @@ export const MyrSuppBanner = (props: {
   statusBanner?: {
     variant: StatusBannerVariant;
     title: string;
-    primaryText?: string;
+    primaryText?: ReactNode;
+    secondaryText?: ReactNode;
   };
   bottomBanner?: JSX.Element;
 }) => {
@@ -45,6 +44,7 @@ export const MyrSuppBanner = (props: {
           variant={props.statusBanner.variant}
           title={props.statusBanner.title}
           primaryText={props.statusBanner.primaryText}
+          secondaryText={props.statusBanner.secondaryText}
         />
       );
     }

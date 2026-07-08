@@ -2,7 +2,7 @@ import { LoadingSkeleton } from "@/app/lib/components/skeletons";
 import { getUserInfo } from "@/auth";
 import { JSX, Suspense } from "react";
 import { ModelYearReportDetails } from "./ModelYearReportDetails";
-import { getModelYearReport } from "../data";
+import { getModelYearReport, getMyrHistory } from "../data";
 import { SupplierActions } from "./SupplierActions";
 import { ModelYearReportStatus, Role } from "@/prisma/generated/enums";
 import { AnalystMyrActions } from "./AnalystMyrActions";
@@ -12,10 +12,14 @@ import { MyrSuppBanner } from "./MyrSuppBanner";
 import { Routes } from "@/app/lib/constants";
 import { SecondaryNavbar } from "@/app/lib/components/SecondaryNavbar";
 import { getModelYearEnumsToStringsMap } from "@/app/lib/utils/enumMaps";
+import { ReadonlyCommentBox } from "@/app/lib/components/ReadonlyCommentBox";
 
 export const IndividualPage = async (props: { id: string }) => {
   const myrId = Number.parseInt(props.id, 10);
-  const myr = await getModelYearReport(myrId);
+  const [myr, myrHistory] = await Promise.all([
+    getModelYearReport(myrId),
+    getMyrHistory(myrId),
+  ]);
   if (!myr) {
     return null;
   }
@@ -44,6 +48,16 @@ export const IndividualPage = async (props: { id: string }) => {
     );
   }
 
+  // assumes myrHistory is in asc order
+  const latestSubmittedEntryComment = myrHistory.findLast(
+    (history) =>
+      history.userAction === ModelYearReportStatus.SUBMITTED_TO_GOVERNMENT,
+  )?.comment;
+  const latestReturnedToSupplierEntryComment = myrHistory.findLast(
+    (history) =>
+      history.userAction === ModelYearReportStatus.RETURNED_TO_SUPPLIER,
+  )?.comment;
+
   let banner: JSX.Element | null = null;
   if (!userIsGov) {
     if (
@@ -66,8 +80,19 @@ export const IndividualPage = async (props: { id: string }) => {
           }}
           modelYear={myr.modelYear}
           statusBanner={{
-            variant: "warning",
+            variant:
+              status === ModelYearReportStatus.DRAFT ? "warning" : "error",
             title: `STATUS - ${status === ModelYearReportStatus.DRAFT ? "Draft" : "Returned To Supplier"}.`,
+            secondaryText:
+              status === ModelYearReportStatus.RETURNED_TO_SUPPLIER &&
+              latestReturnedToSupplierEntryComment ? (
+                <span>
+                  <span className="font-bold">
+                    Official Comment from Government of B.C.:
+                  </span>{" "}
+                  {latestReturnedToSupplierEntryComment}
+                </span>
+              ) : null,
           }}
         />
       );
@@ -240,6 +265,15 @@ export const IndividualPage = async (props: { id: string }) => {
       <Suspense fallback={<LoadingSkeleton />}>
         <ForecastReportDetails myrId={myrId} />
       </Suspense>
+      {status !== ModelYearReportStatus.DRAFT &&
+        status !== ModelYearReportStatus.RETURNED_TO_SUPPLIER && (
+          <ReadonlyCommentBox
+            comment={
+              latestSubmittedEntryComment ? latestSubmittedEntryComment : "N/A"
+            }
+            title={userIsGov ? "Supplier Comment" : undefined}
+          />
+        )}
       <Suspense fallback={<LoadingSkeleton />}>{actionComponent}</Suspense>
     </div>
   );

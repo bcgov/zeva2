@@ -47,7 +47,12 @@ export const ComplianceReportingBreadcrumbs = (props: {
         ]);
       } else if (segments.length === 1) {
         const segmentOne = segments[0];
-        if (segmentOne === "assessment") {
+        if (segmentOne === "audit-history") {
+          setItems([
+            { label: "Model Year Reports", href: Routes.ModelYearReports },
+            { label: `MYR ${props.id}` },
+          ]);
+        } else if (segmentOne === "assessment") {
           setItems([
             { label: "Model Year Reports", href: Routes.ModelYearReports },
             {
@@ -226,7 +231,12 @@ export const ComplianceReportingBreadcrumbs = (props: {
         ]);
       } else if (segments.length === 1) {
         const segmentOne = segments[0];
-        if (segmentOne === "edit") {
+        if (segmentOne === "audit-history") {
+          setItems([
+            { label: "Legacy Reassessments", href: Routes.LegacyReassessments },
+            { label: `Legacy Reassessment ${props.id}` },
+          ]);
+        } else if (segmentOne === "edit") {
           setItems([
             { label: "Legacy Reassessments", href: Routes.LegacyReassessments },
             {
@@ -245,7 +255,15 @@ export const ComplianceReportingBreadcrumbs = (props: {
         ]);
       } else if (segments.length === 1) {
         const segmentOne = segments[0];
-        if (segmentOne === "edit") {
+        if (segmentOne === "audit-history") {
+          setItems([
+            {
+              label: "Legacy Supplementaries",
+              href: Routes.LegacySupplementary,
+            },
+            { label: `Legacy Supplementary ${props.id}` },
+          ]);
+        } else if (segmentOne === "edit") {
           setItems([
             {
               label: "Legacy Supplementaries",
