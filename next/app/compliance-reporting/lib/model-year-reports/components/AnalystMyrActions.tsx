@@ -7,8 +7,8 @@ import { useRouter } from "next/navigation";
 import { JSX, useCallback, useState } from "react";
 import { returnModelYearReport } from "../actions";
 import { getNormalizedComment } from "@/app/lib/utils/comment";
-import { Textarea } from "@/app/lib/components/inputs/Textarea";
 import { Modal, ModalType } from "@/app/lib/components/Modal";
+import { CommentBox } from "@/app/lib/components/CommentBox";
 
 export const AnalystMyrActions = (props: {
   myrId: number;
@@ -23,6 +23,9 @@ export const AnalystMyrActions = (props: {
   const handleReturnToSupplier = useCallback(async () => {
     setError("");
     try {
+      if (!comment) {
+        throw new Error("Comment Required!");
+      }
       const response = await returnModelYearReport(
         props.myrId,
         ModelYearReportStatus.RETURNED_TO_SUPPLIER,
@@ -71,24 +74,17 @@ export const AnalystMyrActions = (props: {
     props.status === ModelYearReportStatus.SUBMITTED_TO_GOVERNMENT
   ) {
     return (
-      <div className="flex flex-col gap-2">
-        <div className="flex flex-col border border-dividerMedium/40">
-          <div className="p-2 bg-gray-100">
-            <span className="font-semibold">Comments (optional)</span>
-          </div>
-          <div className="p-2">
-            <Textarea
-              value={comment}
-              onChange={setComment}
-              placeholder="Comment"
-            />
-          </div>
-        </div>
-        <div className="flex flex-row p-2 bg-gray-50 justify-between">
-          <Button onClick={() => showModal("return")} variant="secondary">
+      <div className="flex flex-col gap-4">
+        <CommentBox
+          comment={comment}
+          setComment={setComment}
+          subtext="required when returning"
+        />
+        <div className="flex flex-row p-5 bg-lightGrey justify-between">
+          <Button onClick={() => showModal("return")} variant="danger">
             Return to Supplier
           </Button>
-          <div className="flex flex-row gap-1 items-center">
+          <div className="flex flex-row gap-4 items-center">
             {error && <span className="text-red-600">{error}</span>}
             {!props.assessmentExists && (
               <Button onClick={handleGoToCreateAssessment} variant="primary">
