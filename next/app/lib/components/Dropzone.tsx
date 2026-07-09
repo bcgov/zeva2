@@ -94,7 +94,9 @@ export const Dropzone = (props: {
             {props.files.map((file) => (
               <tr key={`${file.name}-${file.size}-${file.lastModified}`}>
                 <td className="py-3">{file.name}</td>
-                <td className="py-3 text-center">{(file.size / 1000).toFixed(1)} KB</td>
+                <td className="py-3 text-center">
+                  {(file.size / 1000).toFixed(1)} KB
+                </td>
                 <td className="py-3 text-right">
                   <button
                     type="button"

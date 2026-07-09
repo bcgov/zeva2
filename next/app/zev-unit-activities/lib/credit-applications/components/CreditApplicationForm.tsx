@@ -21,11 +21,7 @@ import { downloadBuffer, getFiles } from "@/app/lib/utils/download";
 import { Routes } from "@/app/lib/constants";
 import { Attachment, AttachmentDownload } from "@/app/lib/constants/attachment";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import {
-  faDownload,
-  faFloppyDisk,
-  faTrash,
-} from "@fortawesome/free-solid-svg-icons";
+import { faDownload, faFloppyDisk } from "@fortawesome/free-solid-svg-icons";
 import { PrintDownloadButton } from "@/app/lib/components/PrintDownloadButton";
 
 export const CreditApplicationForm = (props: {
@@ -45,7 +41,6 @@ export const CreditApplicationForm = (props: {
   const [files, setFiles] = useState<FileWithPath[]>([]);
   const [attachments, setAttachments] = useState<FileWithPath[]>([]);
   const [error, setError] = useState<string>("");
-  const [showUploadSuccess, setShowUploadSuccess] = useState(false);
 
   useEffect(() => {
     const loadPrev = async () => {
@@ -60,7 +55,6 @@ export const CreditApplicationForm = (props: {
           return new File([file.data], file.fileName);
         });
         setFiles([toSet[0]]);
-        setShowUploadSuccess(true);
         if (toSet.length > 1) {
           setAttachments(toSet.slice(1));
         }
@@ -218,8 +212,8 @@ export const CreditApplicationForm = (props: {
   };
 
   return (
-    <div className="flex flex-col items-start self-stretch gap-4">
-      <div className="flex self-stretch items-center justify-between p-5 rounded-t bg-[#E7E7E7]">
+    <div className="flex flex-col gap-4">
+      <div className="flex items-center justify-between p-5 rounded-t bg-[#E7E7E7]">
         <div className="text-black text-[26px] leading-7 font-bold">
           {props.creditApplication?.id
             ? `Credit Application ID ${props.creditApplication.id}`
@@ -233,61 +227,46 @@ export const CreditApplicationForm = (props: {
       </div>
 
       {getStatusBanner()}
-      <div className="self-stretch h-px bg-dividerMedium"></div>
+      <hr className="border-dividerMedium"></hr>
 
-      <div className="flex flex-col items-start gap-6 self-stretch bg-white">
-        {error && <p className="text-red-600">{error}</p>}
-
-        <div className="flex items-start gap-6 shadow-[0_2px_4px_0_rgba(0,0,0,0.08)]">
-          <div className="flex w-[619px] flex-col items-start rounded-sm border border-dividerMedium">
-            <div className="flex flex-col items-start self-stretch gap-1 rounded-t bg-disabledSurface px-5 py-4">
-              <div className="self-stretch text-black text-xl leading-7 font-bold">
-                Supplier Information
-              </div>
+      <div className="flex flex-col gap-6">
+        <div className="flex flex-col gap-6 self-start">
+          <div className="flex flex-col border border-dividerMedium rounded">
+            <div className="px-5 py-4 text-xl font-bold bg-disabledBG">
+              Supplier Information
             </div>
-            <div className="flex flex-col items-start gap-5 rounded p-5 shadow-[0_4px_20px_0_rgba(177,177,177,0.10)]">
-              <div className="flex flex-col items-start gap-3">
-                <div className="flex items-center gap-4 self-stretch">
-                  <div className="font-semibold w-[200px]">Legal Name:</div>{" "}
-                  <div className="w-[345px]">{props.legalName}</div>
-                </div>
-                <div className="w-[561px] h-px bg-disabledSurface"></div>
-                <div className="flex items-center gap-4 self-stretch">
-                  <div className="font-semibold w-[200px]">Record Address:</div>{" "}
-                  <div className="w-[345px]">{props.recordsAddress}</div>
-                </div>
-                <div className="w-[561px] h-px bg-disabledSurface"></div>
-                <div className="flex items-center gap-4 self-stretch">
-                  <div className="font-semibold w-[200px]">Service Address:</div>{" "}
-                  <div className="w-[345px]">{props.serviceAddress}</div>
-                </div>
-                <div className="w-[561px] h-px bg-disabledSurface"></div>
-                <div className="flex items-center gap-4 self-stretch">
-                  <div className="font-semibold w-[200px]">Makes:</div>{" "}
-                  <div className="w-[345px]">{props.makes}</div>
-                </div>
-              </div>
+            <div className="p-5 grid grid-cols-2 items-center gap-y-3">
+              <div className="font-bold">Legal Name:</div>
+              <div>{props.legalName}</div>
+              <hr className="col-span-2 border-disabledBG"></hr>
+              <div className="font-bold">Records Address:</div>
+              <div>{props.recordsAddress}</div>
+              <hr className="col-span-2 border-disabledBG"></hr>
+              <div className="font-bold">Service Address:</div>
+              <div>{props.serviceAddress}</div>
+              <hr className="col-span-2 border-disabledBG"></hr>
+              <div className="font-bold">Makes:</div>
+              <div>{props.makes}</div>
             </div>
           </div>
         </div>
 
-        <div className="flex flex-col items-start self-stretch rounded border border-dividerMedium shadow-[0_2px_4px_0_rgba(0,0,0,0.08)]">
-          <div className="flex flex-col items-start self-stretch gap-1 rounded-t bg-disabledSurface px-5 py-4">
-            <div className="self-stretch text-black text-xl leading-7 font-bold">
-              Credit Application Details
-            </div>
+        <div className="flex flex-col rounded border border-dividerMedium">
+          <div className="px-5 py-4 text-xl font-bold bg-disabledSurface">
+            Credit Application Details
           </div>
 
-          <div className="flex flex-col items-start self-stretch gap-2 px-5 py-4 rounded-t bg-[#F4F4F4]">
-            <div className="self-stretch text-black text-sm font-bold">
+          <div className="flex flex-col gap-2 px-5 py-4 rounded-t bg-[#F4F4F4]">
+            <span className="text-sm font-bold">
               Step 1: Download the Credit Application Template
-            </div>
-            <p className="text-sm text-secondaryText">
-              Use this template to complete your credit application before uploading.
-            </p>
+            </span>
+            <span className="text-sm">
+              Use this template to complete your credit application before
+              uploading.
+            </span>
           </div>
 
-          <div className="flex flex-col items-start self-stretch gap-5 p-5 rounded shadow-[0_4px_20px_0_rgba(177,177,177,0.10)]">
+          <div className="flex flex-row justify-start p-5">
             <Button
               variant="secondary"
               onClick={handleDownload}
@@ -298,117 +277,65 @@ export const CreditApplicationForm = (props: {
             </Button>
           </div>
 
-          <div className="self-stretch h-px bg-disabledSurface"></div>
-
-          <div className="flex flex-col items-start self-stretch gap-2 px-5 py-4 rounded-t bg-[#F4F4F4]">
-            <div className="self-stretch text-black text-sm font-bold">
+          <div className="flex flex-col gap-2 px-5 py-4 rounded-t bg-[#F4F4F4]">
+            <span className="text-sm font-bold">
               Step 2: Upload Credit Application
-            </div>
-            <p className="text-sm text-secondaryText">
+            </span>
+            <span className="text-sm">
               Upload the completed file using template above.
-            </p>
+            </span>
           </div>
 
-          <div className="flex flex-col items-start self-stretch gap-3 p-5">
-            {showUploadSuccess && files.length > 0 ? (
-              <>
-                <StatusBanner
-                  title="File uploaded successfully."
-                  primaryText="Review the data below before saving. To upload a new file, delete the current one."
-                />
-                <div className="self-stretch pointer-events-none">
-                  <Dropzone
-                    files={[]}
-                    setFiles={setFiles}
-                    disabled
-                    maxNumberOfFiles={1}
-                  />
-                </div>
-                <div className="self-stretch h-px bg-disabledSurface"></div>
-                <table className="w-full table-fixed text-sm">
-                  <thead>
-                    <tr className="border-gray-200">
-                      <th className="w-1/3 text-left py-2 font-semibold">Uploaded File</th>
-                      <th className="w-1/3 text-center py-2 font-semibold">Size</th>
-                      <th className="w-1/3 text-right py-2 font-semibold">Delete</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr>
-                      <td className="py-2">{files[0].name}</td>
-                      <td className="py-2 text-center">{fileSize} KB</td>
-                      <td className="py-2 text-right">
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setFiles([]);
-                            setShowUploadSuccess(false);
-                          }}
-                          disabled={isPending}
-                          className="text-red-500 hover:text-red-700 disabled:opacity-50 bg-transparent border-none p-0"
-                        >
-                          <FontAwesomeIcon icon={faTrash} />
-                        </button>
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
-              </>
-            ) : (
-              <div className="self-stretch">
-                <Dropzone
-                  files={files}
-                  setFiles={setFiles}
-                  disabled={isPending}
-                  maxNumberOfFiles={1}
-                  allowedFileTypes={{
-                    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet":
-                      [".xlsx"],
-                  }}
-                  handleDrop={(acceptedFiles) => {
-                    if (acceptedFiles.length > 0) {
-                      setShowUploadSuccess(true);
-                    }
-                  }}
-                />
-              </div>
+          <div className="flex flex-col gap-3 p-5">
+            {files.length > 0 && (
+              <StatusBanner
+                title="File uploaded successfully."
+                primaryText="Review the data below before saving. To upload a new file, delete the current one."
+              />
             )}
+            <Dropzone
+              files={files}
+              setFiles={setFiles}
+              disabled={isPending}
+              maxNumberOfFiles={1}
+              allowedFileTypes={{
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet":
+                  [".xlsx"],
+              }}
+            />
           </div>
         </div>
 
-        <div className="flex items-start self-stretch gap-6 shadow-[0_2px_4px_0_rgba(0,0,0,0.08)]">
-          <div className="flex flex-1 flex-col items-start rounded border border-dividerMedium">
-            <div className="flex flex-col items-start self-stretch gap-1 rounded-t bg-disabledSurface px-5 py-4">
-              <div className="self-stretch text-black text-xl leading-7 font-bold">
-                Supporting Documents (optional)
-              </div>
-            </div>
-            <div className="flex flex-col items-start self-stretch gap-3 p-5">
-              <div className="self-stretch">
-                <Dropzone
-                  files={attachments}
-                  setFiles={setAttachments}
-                  disabled={isPending}
-                  maxNumberOfFiles={10}
-                />
-              </div>
-            </div>
+        <div className="flex flex-col rounded border border-dividerMedium">
+          <div className="bg-disabledSurface px-5 py-4 text-xl font-bold">
+            Supporting Documents (optional)
+          </div>
+          <div className="p-5">
+            <Dropzone
+              files={attachments}
+              setFiles={setAttachments}
+              disabled={isPending}
+              maxNumberOfFiles={10}
+            />
           </div>
         </div>
 
-        <div className="flex items-center justify-between self-stretch pb-2">
+        <div className="flex flex-row items-center justify-between p-5 bg-lightGrey">
           <Button variant="secondary" onClick={handleBack} disabled={isPending}>
             ← Back
           </Button>
-          <Button
-            variant="primary"
-            onClick={handleSave}
-            disabled={isPending || files.length === 0}
-            icon={<FontAwesomeIcon icon={faFloppyDisk} />}
-            iconPosition="right"
-          >
-            Save
-          </Button>
+          <div className="flex flex-row gap-3 items-center">
+            {error && <p className="text-red-600">{error}</p>}
+            <Button
+              variant="primary"
+              onClick={handleSave}
+              disabled={isPending || files.length === 0}
+              icon={<FontAwesomeIcon icon={faFloppyDisk} />}
+              iconPosition="right"
+            >
+              Save
+            </Button>
+          </div>
         </div>
       </div>
     </div>

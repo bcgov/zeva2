@@ -145,119 +145,73 @@ export const IndividualPage = async (props: { id: string }) => {
   }
 
   return (
-    <div className="flex flex-col items-start self-stretch gap-4">
-      <div className="flex self-stretch items-center justify-between p-5 rounded-t bg-[#E7E7E7]">
-        <div className="text-black text-[26px] leading-7 font-bold">
-          Credit Application ID {id}
-        </div>
-        <div className="flex h-10 items-center justify-center gap-2 px-4 py-[5px]">
+    <div className="flex flex-col gap-4">
+      <div className="flex flex-row items-center justify-between p-5 rounded-t bg-[#E7E7E7]">
+        <div className="text-[26px] font-bold">Credit Application ID {id}</div>
+        <div className="px-4 py-1">
           <PrintDownloadButton icon={<FontAwesomeIcon icon={faDownload} />}>
             Print/Download Page
           </PrintDownloadButton>
         </div>
       </div>
 
-      {statusBanner && 
-        <>
-          {statusBanner}
-        </>}
-      <div className="self-stretch h-px bg-dividerMedium"></div>
-      <div className="flex flex-col items-start gap-6 self-stretch bg-white">
-        <div className="flex items-start gap-6 shadow-[0_2px_4px_0_rgba(0,0,0,0.08)]">
-          <div className="flex w-[619px] flex-col items-start rounded-sm border border-dividerMedium">
-            <div className="flex flex-col items-start self-stretch gap-1 rounded-t bg-disabledSurface px-5 py-4">
-              <div className="self-stretch text-black text-xl leading-7 font-bold">
-                Supplier Information
-              </div>
-            </div>
-            <div className="flex flex-col items-start gap-5 rounded p-5 shadow-[0_4px_20px_0_rgba(177,177,177,0.10)]">
-              <div className="flex flex-col items-start gap-3">
-                <div className="flex items-center gap-4 self-stretch">
-                  <div className="font-semibold w-[200px]">Legal Name:</div>{" "}
-                  <div className="w-[345px]">{creditApplication.legalName}</div>
-                </div>
-                <div className="w-[561px] h-px bg-disabledSurface"></div>
-                <div className="flex items-center gap-4 self-stretch">
-                  <div className="font-semibold w-[200px]">Record Address:</div>{" "}
-                  <div className="w-[345px]">{creditApplication.recordsAddress}</div>
-                </div>
-                <div className="w-[561px] h-px bg-disabledSurface"></div>
-                <div className="flex items-center gap-4 self-stretch">
-                  <div className="font-semibold w-[200px]">Service Address:</div>{" "}
-                  <div className="w-[345px]">{creditApplication.serviceAddress}</div>
-                </div>
-                <div className="w-[561px] h-px bg-disabledSurface"></div>
-                <div className="flex items-center gap-4 self-stretch">
-                  <div className="font-semibold w-[200px]">Makes:</div>{" "}
-                  <div className="w-[345px]">{creditApplication.makes}</div>
-                </div>
-              </div>
-            </div>
+      {statusBanner && <>{statusBanner}</>}
+      <hr className="border-dividerMedium"></hr>
+      <div className="flex flex-col gap-6 self-start">
+        <div className="flex flex-col border border-dividerMedium rounded">
+          <div className="px-5 py-4 text-xl font-bold bg-disabledBG">
+            Supplier Information
+          </div>
+          <div className="p-5 grid grid-cols-2 items-center gap-y-3">
+            <div className="font-bold">Legal Name:</div>
+            <div>{creditApplication.legalName}</div>
+            <hr className="col-span-2 border-disabledBG"></hr>
+            <div className="font-bold">Records Address:</div>
+            <div>{creditApplication.recordsAddress}</div>
+            <hr className="col-span-2 border-disabledBG"></hr>
+            <div className="font-bold">Service Address:</div>
+            <div>{creditApplication.serviceAddress}</div>
+            <hr className="col-span-2 border-disabledBG"></hr>
+            <div className="font-bold">Makes:</div>
+            <div>{creditApplication.makes}</div>
           </div>
         </div>
+      </div>
 
-        <div className="flex flex-col items-start self-stretch rounded border border-dividerMedium shadow-[0_2px_4px_0_rgba(0,0,0,0.08)]">
-          <div className="flex flex-col items-start self-stretch">
-            <div className="flex flex-col items-start self-stretch gap-2 px-5 py-4 rounded-t border-b border-dividerMedium bg-disabledSurface">
-              <div className="self-stretch text-primaryText text-xl leading-7 font-bold">
-                Credit Application Details
-              </div>
-            </div>
-            <div className="flex flex-col items-start self-stretch gap-3 p-5">
-              <div className="flex items-center gap-4 self-stretch">
-                <div className="w-[138px] text-secondaryText leading-6 font-normal">
-                  Credit Application: 
-                </div>
-                <div className="flex-1 self-stretch text-link leading-6 font-normal underline">
-                  {creditApplication.fileName}
-                </div>
-              </div>
-              <div className="self-stretch h-px bg-disabledSurface"></div>
-              <div className="flex items-center">
-                <Attachments
-                  attachments={[{ fileName: creditApplication.fileName }]}
-                  download={downloadApplication}
-                  zipName={`credit-application-${id}`}
-                  className="[&_ul]:hidden"
-                  />
-              </div>
-              <div className="self-stretch h-px bg-disabledSurface"></div>
-            </div>
-          </div>
-          <Suspense fallback={<LoadingSkeleton />}>
-            <ApplicationStatistics
-              creditApplicationId={id}
-              userIsGov={false}
-            />
-          </Suspense>
+      <div className="flex flex-col rounded border border-dividerMedium">
+        <div className="px-5 py-4 text-xl font-bold bg-disabledSurface">
+          Credit Application Details
         </div>
+        <Attachments
+          attachments={[{ fileName: creditApplication.fileName }]}
+          download={downloadApplication}
+          zipName={`credit-application-${id}`}
+          includeBottomBorder={true}
+        />
+        <Suspense fallback={<LoadingSkeleton />}>
+          <ApplicationStatistics creditApplicationId={id} userIsGov={false} />
+        </Suspense>
+      </div>
 
-        <div className="flex items-start self-stretch gap-6 shadow-[0_2px_4px_0_rgba(0,0,0,0.08)]">
-          <div className="flex flex-1 flex-col items-start rounded border border-dividerMedium">
-            <div className="flex flex-col items-start self-stretch gap-1 rounded-t bg-disabledSurface px-5 py-4">
-              <div className="self-stretch text-black text-xl font-bold leading-7">
-                Supporting Documents (optional)
-              </div>
-            </div>
-            <Attachments
-              attachments={creditApplication.CreditApplicationAttachment}
-              download={downloadAttachments}
-              zipName={`credit-application-attachments-${id}`}
-              className="flex flex-col items-start self-stretch gap-3 p-5"
-              label="Proof of Range: "
-            />
-          </div>
+      <div className="flex flex-col rounded border border-dividerMedium">
+        <div className="px-5 py-4 text-xl font-bold bg-disabledSurface">
+          Supporting Documents (optional)
         </div>
-
-        <SupplierActions
-          creditApplicationId={id}
-          status={applicationSupplierStatus}
-          userRoles={userRoles}
-          hasInvalidatedRecords={
-            creditApplication._count.CreditApplicationRecord > 0
-          }
+        <Attachments
+          attachments={creditApplication.CreditApplicationAttachment}
+          download={downloadAttachments}
+          zipName={`credit-application-attachments-${id}`}
         />
       </div>
+
+      <SupplierActions
+        creditApplicationId={id}
+        status={applicationSupplierStatus}
+        userRoles={userRoles}
+        hasInvalidatedRecords={
+          creditApplication._count.CreditApplicationRecord > 0
+        }
+      />
     </div>
   );
 };
