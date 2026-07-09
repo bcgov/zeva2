@@ -82,19 +82,21 @@ export const Dropzone = (props: {
         </span>
       </div>
       {props.files.length > 0 && (
-        <table className="mt-4 w-full text-sm text-primaryText">
+        <table className="mt-4 w-full table-fixed text-sm text-primaryText">
           <thead>
-            <tr className="border-b border-dividerMedium">
-              <th className="py-3 text-left font-bold">Uploaded File</th>
-              <th className="py-3 text-left font-bold">Size</th>
-              <th className="py-3 text-right font-bold">Delete</th>
+            <tr className="border-gray-200">
+              <th className="w-1/3 py-3 text-left font-bold">Uploaded File</th>
+              <th className="w-1/3 py-3 text-center font-bold">Size</th>
+              <th className="w-1/3 py-3 text-right font-bold">Delete</th>
             </tr>
           </thead>
           <tbody>
             {props.files.map((file) => (
               <tr key={`${file.name}-${file.size}-${file.lastModified}`}>
                 <td className="py-3">{file.name}</td>
-                <td className="py-3">{(file.size / 1000).toFixed(1)} KB</td>
+                <td className="py-3 text-center">
+                  {(file.size / 1000).toFixed(1)} KB
+                </td>
                 <td className="py-3 text-right">
                   <button
                     type="button"

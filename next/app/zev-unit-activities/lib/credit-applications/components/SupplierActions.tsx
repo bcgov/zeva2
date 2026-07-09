@@ -132,30 +132,34 @@ export const SupplierActions = (props: {
     [handleDelete, handleSubmit],
   );
 
-  const canAddComment = props.userRoles.includes(Role.SIGNING_AUTHORITY);
+  const isSigningAuthority = props.userRoles.includes(Role.SIGNING_AUTHORITY);
 
   if (props.status === CreditApplicationSupplierStatus.DRAFT) {
     return (
       <>
-        {canAddComment && (
+        {isSigningAuthority && (
           <CommentBox comment={comment} setComment={setComment} />
         )}
-        {error && <p className="text-red-600 mb-2">{error}</p>}
-        <div className="flex items-center gap-3 w-full pb-6">
-          <Button variant="secondary" onClick={handleBack}>
-            ← Back
-          </Button>
-          <Button variant="danger" onClick={() => showModal("delete")}>
-            Delete
-          </Button>
-          <Button variant="secondary" onClick={handleGoToEdit}>
-            Edit
-          </Button>
-          <div className="flex-1" />
-          {canAddComment && (
-            <Button variant="primary" onClick={() => showModal("submit")}>
-              Submit
+
+        <div className="flex flex-row items-center justify-between p-5 bg-lightGrey">
+          <div className="flex flex-row items-center gap-4">
+            <Button variant="secondary" onClick={handleBack}>
+              ← Back
             </Button>
+            <Button variant="danger" onClick={() => showModal("delete")}>
+              Delete
+            </Button>
+            <Button variant="secondary" onClick={handleGoToEdit}>
+              Edit
+            </Button>
+          </div>
+          {isSigningAuthority && (
+            <div className="flex flex-row items-center gap-4">
+              {error && <p className="text-red-600 mb-2">{error}</p>}
+              <Button variant="primary" onClick={() => showModal("submit")}>
+                Submit
+              </Button>
+            </div>
           )}
           {modal}
         </div>
@@ -165,8 +169,7 @@ export const SupplierActions = (props: {
 
   if (props.status === CreditApplicationSupplierStatus.SUBMITTED) {
     return (
-      <div className="flex items-center gap-3 w-full pb-6">
-        {error && <p className="text-red-600 mb-2">{error}</p>}
+      <div className="flex flex-row items-center justify-start p-5 bg-lightGrey">
         <Button variant="secondary" onClick={handleBack}>
           ← Back
         </Button>
@@ -176,19 +179,18 @@ export const SupplierActions = (props: {
 
   if (props.status === CreditApplicationSupplierStatus.REJECTED) {
     return (
-      <>
-        {error && <p className="text-red-600 mb-2">{error}</p>}
-        <div className="flex items-center gap-3 w-full pb-6">
-          <Button variant="secondary" onClick={handleBack}>
-            ← Back
-          </Button>
-          <div className="flex-1" />
+      <div className="flex flex-row items-center justify-between p-5 bg-lightGrey">
+        <Button variant="secondary" onClick={handleBack}>
+          ← Back
+        </Button>
+        <div className="flex flex-row items-center gap-4">
+          {error && <p className="text-red-600 mb-2">{error}</p>}
           <Button variant="danger" onClick={() => showModal("delete")}>
             Delete
           </Button>
-          {modal}
         </div>
-      </>
+        {modal}
+      </div>
     );
   }
 
@@ -197,25 +199,26 @@ export const SupplierActions = (props: {
     props.hasInvalidatedRecords
   ) {
     return (
-      <div className="flex items-center gap-3 w-full pb-6">
-        {error && <p className="text-red-600 mb-2">{error}</p>}
+      <div className="flex flex-row items-center justify-between p-5 bg-lightGrey">
         <Button variant="secondary" onClick={handleBack}>
           ← Back
         </Button>
-        <div className="flex-1" />
-        <Button
-          variant="primary"
-          onClick={handleDownloadErrors}
-          disabled={isPending}
-        >
-          {isPending ? "..." : "Download VIN Errors"}
-        </Button>
+        <div className="flex flex-row items-center gap-4">
+          {error && <p className="text-red-600 mb-2">{error}</p>}
+          <Button
+            variant="primary"
+            onClick={handleDownloadErrors}
+            disabled={isPending}
+          >
+            {isPending ? "..." : "Download VIN Errors"}
+          </Button>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="flex items-center gap-3 w-full pb-6">
+    <div className="flex flex-row items-center justify-start p-5 bg-lightGrey">
       <Button variant="secondary" onClick={handleBack}>
         ← Back
       </Button>

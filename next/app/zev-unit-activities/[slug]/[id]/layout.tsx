@@ -5,7 +5,6 @@ const Layout = async (props: {
   params: Promise<{ slug: string; id: string }>;
 }) => {
   const { slug, id } = await props.params;
-
   return (
     <>
       <ActivityDetailNav slug={slug} id={id} />

@@ -24,99 +24,89 @@ export const ApplicationStatistics = async (props: {
     type: "all" | "validated",
   ) => {
     return (
-      <table
+      <div
         key={type === "all" ? "allRecords" : "validatedRecords"}
-        className="w-full text-left border-collapse"
+        className="flex flex-col border-t border-l border-r border-disabledIcon rounded-t"
       >
-        <caption className="text-left font-semibold mb-2">
+        <div className="flex flex-col px-5 py-4 bg-disabledSurface font-bold">
           {type === "all"
-            ? "VINs Claimed"
+            ? "VIN's Claimed"
             : status === CreditApplicationStatus.APPROVED
               ? "VINs Issued"
               : "VINs to be Issued"}
-        </caption>
-        <thead className="bg-gray-100">
-          <tr key="headers">
-            <th key="make" className="border border-gray-300 px-4 py-2">
-              Make
-            </th>
-            <th key="modelName" className="border border-gray-300 px-4 py-2">
-              Model Name
-            </th>
-            <th key="modelYear" className="border border-gray-300 px-4 py-2">
-              Model Year
-            </th>
-            <th key="vehicleClass" className="border border-gray-300 px-4 py-2">
-              Vehicle Class
-            </th>
-            <th key="zevClass" className="border border-gray-300 px-4 py-2">
-              ZEV Class
-            </th>
-            <th key="zevType" className="border border-gray-300 px-4 py-2">
-              ZEV Type
-            </th>
-            <th key="range" className="border border-gray-300 px-4 py-2">
-              Range
-            </th>
-            <th
-              key="numberOfUnits"
-              className="border border-gray-300 px-4 py-2"
-            >
-              Number of Units p...
-            </th>
-            <th key="count" className="border border-gray-300 px-4 py-2">
-              Count
-            </th>
-          </tr>
-        </thead>
-        <tbody>
-          {records.map((record) => {
-            return (
-              <tr key={crypto.randomUUID()}>
-                <td key="make" className="border border-gray-300 px-4 py-2">
-                  {record.make}
-                </td>
-                <td
-                  key="modelName"
-                  className="border border-gray-300 px-4 py-2"
-                >
-                  {record.modelName}
-                </td>
-                <td
-                  key="modelYear"
-                  className="border border-gray-300 px-4 py-2"
-                >
-                  {modelYearsMap[record.modelYear]}
-                </td>
-                <td
-                  key="vehicleClass"
-                  className="border border-gray-300 px-4 py-2"
-                >
-                  {vehicleClassesMap[record.vehicleClass]}
-                </td>
-                <td key="zevClass" className="border border-gray-300 px-4 py-2">
-                  {zevClassMap[record.zevClass]}
-                </td>
-                <td key="zevType" className="border border-gray-300 px-4 py-2">
-                  {record.zevType}
-                </td>
-                <td key="range" className="border border-gray-300 px-4 py-2">
-                  {record.range}
-                </td>
-                <td
-                  key="numberOfUnits"
-                  className="border border-gray-300 px-4 py-2"
-                >
-                  {record.numberOfUnits.toFixed(2)}
-                </td>
-                <td key="count" className="border border-gray-300 px-4 py-2">
-                  {record._count.id}
-                </td>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr>
+                <th className="h-[60px] px-4 py-3 text-left font-bold border-b border-disabledIcon whitespace-nowrap">
+                  Make
+                </th>
+                <th className="h-[60px] px-4 py-3 text-left font-bold border-b border-disabledIcon whitespace-nowrap">
+                  Model Name
+                </th>
+                <th className="h-[60px] px-4 py-3 text-left font-bold border-b border-disabledIcon whitespace-nowrap">
+                  Model Year
+                </th>
+                <th className="h-[60px] px-4 py-3 text-left font-bold border-b border-disabledIcon whitespace-nowrap">
+                  Vehicle Class
+                </th>
+                <th className="h-[60px] px-4 py-3 text-left font-bold border-b border-disabledIcon whitespace-nowrap">
+                  ZEV Class
+                </th>
+                <th className="h-[60px] px-4 py-3 text-left font-bold border-b border-disabledIcon whitespace-nowrap">
+                  ZEV Type
+                </th>
+                <th className="h-[60px] px-4 py-3 text-left font-bold border-b border-disabledIcon whitespace-nowrap">
+                  Range
+                </th>
+                <th className="h-[60px] px-4 py-3 text-left font-bold border-b border-disabledIcon whitespace-nowrap">
+                  Number of Units per Vehicle
+                </th>
+                <th className="h-[60px] px-4 py-3 text-left font-bold border-b border-disabledIcon whitespace-nowrap">
+                  Count
+                </th>
               </tr>
-            );
-          })}
-        </tbody>
-      </table>
+            </thead>
+            <tbody>
+              {records.map((record) => (
+                <tr
+                  key={crypto.randomUUID()}
+                  className="odd:bg-lightGrey even:bg-white"
+                >
+                  <td className="px-4 py-3 border-b border-disabledIcon whitespace-nowrap">
+                    {record.make}
+                  </td>
+                  <td className="px-4 py-3 border-b border-disabledIcon whitespace-nowrap">
+                    {record.modelName}
+                  </td>
+                  <td className="px-4 py-3 border-b border-disabledIcon whitespace-nowrap">
+                    {modelYearsMap[record.modelYear]}
+                  </td>
+                  <td className="px-4 py-3 border-b border-disabledIcon whitespace-nowrap">
+                    {vehicleClassesMap[record.vehicleClass]}
+                  </td>
+                  <td className="px-4 py-3 border-b border-disabledIcon whitespace-nowrap">
+                    {zevClassMap[record.zevClass]}
+                  </td>
+                  <td className="px-4 py-3 border-b border-disabledIcon whitespace-nowrap">
+                    {record.zevType}
+                  </td>
+                  <td className="px-4 py-3 border-b border-disabledIcon whitespace-nowrap">
+                    {record.range}
+                  </td>
+                  <td className="px-4 py-3 border-b border-disabledIcon whitespace-nowrap">
+                    {record.numberOfUnits.toFixed(2)}
+                  </td>
+                  <td className="px-4 py-3 border-b border-disabledIcon whitespace-nowrap">
+                    {record._count.id}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
     );
   };
 
@@ -125,67 +115,62 @@ export const ApplicationStatistics = async (props: {
     type: "all" | "validated",
   ) => {
     return (
-      <table
+      <div
         key={type === "all" ? "allCredits" : "validatedCredits"}
-        className="w-full text-left border-collapse"
+        className="flex flex-col border-t border-l border-r border-disabledIcon rounded-t"
       >
-        <caption className="text-left font-semibold mb-2">
+        <div className="flex flex-col px-5 py-4 bg-disabledSurface font-bold">
           {type === "all"
             ? "Credits Claimed"
             : status === CreditApplicationStatus.APPROVED
               ? "Credits Issued"
               : "Credits to be Issued"}
-        </caption>
-        <thead className="bg-gray-100">
-          <tr key="headers">
-            <th key="vehicleClass" className="border border-gray-300 px-4 py-2">
-              Vehicle Class
-            </th>
-            <th key="zevClass" className="border border-gray-300 px-4 py-2">
-              ZEV Class
-            </th>
-            <th key="modelYear" className="border border-gray-300 px-4 py-2">
-              Model Year
-            </th>
-            <th
-              key="numberOfUnits"
-              className="border border-gray-300 px-4 py-2"
-            >
-              Number of Units
-            </th>
-          </tr>
-        </thead>
-        <tbody>
-          {records.map((record) => {
-            const numberOfUnits = record._sum.numberOfUnits;
-            return (
-              <tr key={crypto.randomUUID()}>
-                <td
-                  key="vehicleClass"
-                  className="border border-gray-300 px-4 py-2"
-                >
-                  {vehicleClassesMap[record.vehicleClass]}
-                </td>
-                <td key="zevClass" className="border border-gray-300 px-4 py-2">
-                  {zevClassMap[record.zevClass]}
-                </td>
-                <td
-                  key="modelYear"
-                  className="border border-gray-300 px-4 py-2"
-                >
-                  {modelYearsMap[record.modelYear]}
-                </td>
-                <td
-                  key="numberOfUnits"
-                  className="border border-gray-300 px-4 py-2"
-                >
-                  {numberOfUnits ? numberOfUnits.toFixed(2) : "0"}
-                </td>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr>
+                <th className="h-[60px] px-4 py-3 text-left font-bold border-b border-disabledIcon whitespace-nowrap">
+                  Vehicle Class
+                </th>
+                <th className="h-[60px] px-4 py-3 text-left font-bold border-b border-disabledIcon whitespace-nowrap">
+                  ZEV Class
+                </th>
+                <th className="h-[60px] px-4 py-3 text-left font-bold border-b border-disabledIcon whitespace-nowrap">
+                  Model Year
+                </th>
+                <th className="h-[60px] px-4 py-3 text-left font-bold border-b border-disabledIcon whitespace-nowrap">
+                  Number of Units
+                </th>
               </tr>
-            );
-          })}
-        </tbody>
-      </table>
+            </thead>
+            <tbody>
+              {records.map((record) => {
+                const numberOfUnits = record._sum.numberOfUnits;
+                return (
+                  <tr
+                    key={crypto.randomUUID()}
+                    className="odd:bg-lightGrey even:bg-white"
+                  >
+                    <td className="px-4 py-3 border-b border-disabledIcon whitespace-nowrap">
+                      {vehicleClassesMap[record.vehicleClass]}
+                    </td>
+                    <td className="px-4 py-3 border-b border-disabledIcon whitespace-nowrap">
+                      {zevClassMap[record.zevClass]}
+                    </td>
+                    <td className="px-4 py-3 border-b border-disabledIcon whitespace-nowrap">
+                      {modelYearsMap[record.modelYear]}
+                    </td>
+                    <td className="px-4 py-3 border-b border-disabledIcon whitespace-nowrap">
+                      {numberOfUnits ? numberOfUnits.toFixed(2) : "0"}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      </div>
     );
   };
 
@@ -194,33 +179,23 @@ export const ApplicationStatistics = async (props: {
 
   if (!props.userIsGov) {
     return (
-      <>
-        {stats.recordStats.length > 0 && (
-          <div className="border border-gray-300 rounded p-4 mb-4 overflow-x-auto">
-            {getRecordsTable(stats.recordStats, "all")}
-          </div>
-        )}
-        {recordStatsValidated && recordStatsValidated.length > 0 && (
-          <div className="border border-gray-300 rounded p-4 mb-4 overflow-x-auto">
-            {getRecordsTable(recordStatsValidated, "validated")}
-          </div>
-        )}
-        {stats.creditStats.length > 0 && (
-          <div className="border border-gray-300 rounded p-4 mb-4 overflow-x-auto">
-            {getCreditsTable(stats.creditStats, "all")}
-          </div>
-        )}
-        {creditStatsValidated && creditStatsValidated.length > 0 && (
-          <div className="border border-gray-300 rounded p-4 mb-4 overflow-x-auto">
-            {getCreditsTable(creditStatsValidated, "validated")}
-          </div>
-        )}
-      </>
+      <div className="flex flex-col gap-6 p-5">
+        {stats.recordStats.length > 0 &&
+          getRecordsTable(stats.recordStats, "all")}
+        {recordStatsValidated &&
+          recordStatsValidated.length > 0 &&
+          getRecordsTable(recordStatsValidated, "validated")}
+        {stats.creditStats.length > 0 &&
+          getCreditsTable(stats.creditStats, "all")}
+        {creditStatsValidated &&
+          creditStatsValidated.length > 0 &&
+          getCreditsTable(creditStatsValidated, "validated")}
+      </div>
     );
   }
 
   return (
-    <div className="space-y-3">
+    <div className="flex flex-col gap-6 p-5">
       {getRecordsTable(stats.recordStats, "all")}
       {recordStatsValidated && recordStatsValidated.length > 0
         ? getRecordsTable(recordStatsValidated, "validated")

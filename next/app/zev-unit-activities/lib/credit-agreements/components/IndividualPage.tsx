@@ -44,7 +44,6 @@ export const IndividualPage = async (props: { id: string }) => {
         </p>
         <div className={"p-2 border border-gray-300 rounded bg-white"}>
           <Attachments
-            className="mb-3"
             attachments={agreement.agreementAttachment}
             download={download}
             zipName={`agreement_${agreementId}_attachments.zip`}

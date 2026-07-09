@@ -103,7 +103,6 @@ export const StatusBanner = ({
   secondaryText,
   className = "",
   variant,
-  ...rest
 }: IStatusBannerProps) => {
   let variantToUse = variant;
   if (!variantToUse) {
@@ -113,23 +112,14 @@ export const StatusBanner = ({
 
   return (
     <div
-      className={`w-full rounded-sm border px-4 py-3 text-primaryText ${styles.container} ${className}`}
-      role="status"
-      {...rest}
+      className={`flex flex-row items-center gap-3 px-4 py-3 rounded-sm border ${styles.container} ${className}`}
     >
-      <div className="flex gap-3">
-        <span className="mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center text-xl">
-          {styles.icon}
+      <span className="text-xl">{styles.icon}</span>
+      <div className="flex flex-col gap-3">
+        <span>
+          <span className="font-bold">{title}</span> {primaryText}
         </span>
-        <div className="min-w-0 flex-1">
-          <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1 text-base leading-6">
-            <span className="font-bold">{title}</span>
-            <span>{primaryText}</span>
-          </div>
-          {secondaryText && (
-            <div className="mt-2 text-sm leading-5">{secondaryText}</div>
-          )}
-        </div>
+        {secondaryText && <span className="text-sm">{secondaryText}</span>}
       </div>
     </div>
   );

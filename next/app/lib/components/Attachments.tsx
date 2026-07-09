@@ -1,7 +1,7 @@
 "use client";
 
 import { Button } from "@/app/lib/components";
-import { useCallback, useState, useTransition } from "react";
+import { Fragment, useCallback, useState, useTransition } from "react";
 import { DataOrErrorActionResponse } from "../utils/actionResponse";
 import { downloadMultiple } from "../utils/download";
 import { Attachment, AttachmentDownload } from "../constants/attachment";
@@ -12,7 +12,7 @@ export const Attachments = (props: {
   attachments: Omit<Attachment, "objectName">[];
   download: () => Promise<DataOrErrorActionResponse<AttachmentDownload[]>>;
   zipName: string;
-  className?: string;
+  includeBottomBorder?: boolean;
 }) => {
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
@@ -35,27 +35,41 @@ export const Attachments = (props: {
   }, [props.download, props.zipName]);
 
   return (
-    <div className={props.className}>
+    <div className="flex flex-col p-5 gap-3">
       {props.attachments.length === 0 ? (
-        <p className="text-sm text-gray-500">No attachments</p>
+        <span className="text-sm text-gray-500">No attachments</span>
       ) : (
         <>
-          <ul className="list-disc list-inside text-sm text-gray-600">
+          <div className="flex flex-col gap-3">
             {props.attachments.map((attachment, index) => (
-              <li key={index}>{attachment.fileName}</li>
+              <Fragment key={index}>
+                <span className="text-link underline">
+                  {attachment.fileName}
+                </span>
+                <hr className="border-disabledSurface"></hr>
+              </Fragment>
             ))}
-          </ul>
+          </div>
           {error && <p className="mt-2 text-sm text-red-600">{error}</p>}
-          <Button
-            variant="secondary"
-            onClick={handleDownload}
-            disabled={isPending}
-            icon={<FontAwesomeIcon icon={faDownload} />}
-            iconPosition="right"
-          >
-            {isPending ? "..." : "Download"}
-          </Button>
+          <div className="flex flex-row justify-between">
+            <Button
+              variant="secondary"
+              onClick={handleDownload}
+              disabled={isPending}
+              icon={<FontAwesomeIcon icon={faDownload} />}
+              iconPosition="right"
+            >
+              {isPending
+                ? "..."
+                : props.attachments.length > 1
+                  ? "Download All"
+                  : "Download"}
+            </Button>
+          </div>
         </>
+      )}
+      {props.includeBottomBorder && (
+        <hr className="border-disabledSurface"></hr>
       )}
     </div>
   );

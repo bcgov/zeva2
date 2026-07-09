@@ -145,99 +145,73 @@ export const IndividualPage = async (props: { id: string }) => {
   }
 
   return (
-    <div className="bg-white">
-      <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
-        <h1 className="text-xl font-bold text-gray-900">
-          Credit Application ID {id}
-        </h1>
-        <PrintDownloadButton icon={<FontAwesomeIcon icon={faDownload} />}>
-          Print/Download Page
-        </PrintDownloadButton>
+    <div className="flex flex-col gap-4">
+      <div className="flex flex-row items-center justify-between p-5 rounded-t bg-[#E7E7E7]">
+        <div className="text-[26px] font-bold">Credit Application ID {id}</div>
+        <div className="px-4 py-1">
+          <PrintDownloadButton icon={<FontAwesomeIcon icon={faDownload} />}>
+            Print/Download Page
+          </PrintDownloadButton>
+        </div>
       </div>
 
-      {statusBanner && <div className="px-6 pt-4 pb-2">{statusBanner}</div>}
-
-      <div className="px-6 pb-6 pt-4 space-y-6">
-        <div className="border border-gray-300 bg-gray-50 rounded max-w-sm">
-          <div className="p-6">
-            <h2 className="text-base font-bold mb-4 text-gray-900">
-              Supplier Information
-            </h2>
-            <div className="space-y-2 text-sm text-gray-900">
-              <div>
-                <span className="font-semibold">Legal Name:</span>{" "}
-                {creditApplication.legalName}
-              </div>
-              <div>
-                <span className="font-semibold">Record Address:</span>{" "}
-                {creditApplication.recordsAddress}
-              </div>
-              <div>
-                <span className="font-semibold">Service Address:</span>{" "}
-                {creditApplication.serviceAddress}
-              </div>
-              <div>
-                <span className="font-semibold">Makes:</span>{" "}
-                {creditApplication.makes}
-              </div>
-            </div>
+      {statusBanner && <>{statusBanner}</>}
+      <hr className="border-dividerMedium"></hr>
+      <div className="flex flex-col gap-6 self-start">
+        <div className="flex flex-col border border-dividerMedium rounded">
+          <div className="px-5 py-4 text-xl font-bold bg-disabledBG">
+            Supplier Information
+          </div>
+          <div className="p-5 grid grid-cols-2 items-center gap-y-3">
+            <div className="font-bold">Legal Name:</div>
+            <div>{creditApplication.legalName}</div>
+            <hr className="col-span-2 border-disabledBG"></hr>
+            <div className="font-bold">Records Address:</div>
+            <div>{creditApplication.recordsAddress}</div>
+            <hr className="col-span-2 border-disabledBG"></hr>
+            <div className="font-bold">Service Address:</div>
+            <div>{creditApplication.serviceAddress}</div>
+            <hr className="col-span-2 border-disabledBG"></hr>
+            <div className="font-bold">Makes:</div>
+            <div>{creditApplication.makes}</div>
           </div>
         </div>
+      </div>
 
-        <div className="border border-gray-300 bg-white rounded">
-          <div className="p-4 bg-gray-100 border-b border-gray-300">
-            <h2 className="text-base font-bold text-gray-900">
-              Credit Application Details
-            </h2>
-          </div>
-          <div className="p-6 space-y-4">
-            <div className="space-y-2">
-              <p className="text-sm">
-                <span className="font-semibold">Credit Application:</span>{" "}
-                <span className="text-blue-600">
-                  {creditApplication.fileName}
-                </span>
-              </p>
-              <Attachments
-                attachments={[{ fileName: creditApplication.fileName }]}
-                download={downloadApplication}
-                zipName={`credit-application-${id}`}
-                className="[&_ul]:hidden"
-              />
-            </div>
-            <Suspense fallback={<LoadingSkeleton />}>
-              <ApplicationStatistics
-                creditApplicationId={id}
-                userIsGov={false}
-              />
-            </Suspense>
-          </div>
+      <div className="flex flex-col rounded border border-dividerMedium">
+        <div className="px-5 py-4 text-xl font-bold bg-disabledSurface">
+          Credit Application Details
         </div>
+        <Attachments
+          attachments={[{ fileName: creditApplication.fileName }]}
+          download={downloadApplication}
+          zipName={`credit-application-${id}`}
+          includeBottomBorder={true}
+        />
+        <Suspense fallback={<LoadingSkeleton />}>
+          <ApplicationStatistics creditApplicationId={id} userIsGov={false} />
+        </Suspense>
+      </div>
 
-        <div className="border border-gray-300 bg-white rounded">
-          <div className="p-4 bg-gray-100 border-b border-gray-300">
-            <h2 className="text-base font-bold text-gray-900">
-              Supporting Documents (optional)
-            </h2>
-          </div>
-          <div className="p-6">
-            <Attachments
-              attachments={creditApplication.CreditApplicationAttachment}
-              download={downloadAttachments}
-              zipName={`credit-application-attachments-${id}`}
-            />
-          </div>
+      <div className="flex flex-col rounded border border-dividerMedium">
+        <div className="px-5 py-4 text-xl font-bold bg-disabledSurface">
+          Supporting Documents (optional)
         </div>
-
-        <SupplierActions
-          creditApplicationId={id}
-          status={applicationSupplierStatus}
-          userRoles={userRoles}
-          hasInvalidatedRecords={
-            creditApplication._count.CreditApplicationRecord > 0
-          }
+        <Attachments
+          attachments={creditApplication.CreditApplicationAttachment}
+          download={downloadAttachments}
+          zipName={`credit-application-attachments-${id}`}
         />
       </div>
+
+      <SupplierActions
+        creditApplicationId={id}
+        status={applicationSupplierStatus}
+        userRoles={userRoles}
+        hasInvalidatedRecords={
+          creditApplication._count.CreditApplicationRecord > 0
+        }
+      />
     </div>
   );
 };
