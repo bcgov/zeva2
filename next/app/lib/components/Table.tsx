@@ -179,13 +179,12 @@ export const Table = <T extends ZevaObject>({
       } else if (!currentDirection) {
         newDirection = "asc";
       }
+      const newSortsObject: Record<string, string> = {};
       if (newDirection) {
-        sortsObject[column] = newDirection;
-      } else {
-        delete sortsObject[column];
+        newSortsObject[column] = newDirection;
       }
-      const legalSorts = getLegalPairs(sortsObject);
-      if (Object.keys(legalSorts).length > 0) {
+      const legalSorts = getLegalPairs(newSortsObject);
+      if (Object.keys(newSortsObject).length > 0) {
         params.set("sorts", getString(legalSorts));
       } else {
         params.delete("sorts");
