@@ -301,9 +301,7 @@ export const supplierDelete = async (
     where: {
       id: creditApplicationId,
       organizationId: userOrgId,
-      status: {
-        in: [CreditApplicationStatus.DRAFT, CreditApplicationStatus.REJECTED],
-      },
+      status: CreditApplicationStatus.DRAFT,
     },
   });
   if (!creditApplication) {
@@ -827,6 +825,27 @@ export const analystReject = async (
       CreditApplicationStatus.REJECTED,
       tx,
     );
+    await tx.creditApplication.update({
+      where: {
+        id: creditApplicationId,
+      },
+      data: {
+        eligibleVinsCount: null,
+        ineligibleVinsCount: null,
+        aCredits: null,
+        bCredits: null,
+      },
+    });
+    await tx.creditApplicationRecord.updateMany({
+      where: {
+        creditApplicationId,
+      },
+      data: {
+        validated: false,
+        reason: null,
+        warnings: [],
+      },
+    });
     await unreserveVins(vinsToUnreserve, tx);
     const historyId = await createHistory(
       userId,
