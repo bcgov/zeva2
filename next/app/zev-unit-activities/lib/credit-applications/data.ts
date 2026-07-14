@@ -45,9 +45,7 @@ export const getCreditApplication = async (
   if (userIsGov) {
     const notClause: CreditApplicationWhereInput[] = [
       {
-        status: {
-          in: [CreditApplicationStatus.DRAFT, CreditApplicationStatus.REJECTED],
-        },
+        status: CreditApplicationStatus.DRAFT,
       },
     ];
     if (userRoles.includes(Role.DIRECTOR)) {
@@ -202,9 +200,7 @@ export const getCreditApplications = async (
   if (userIsGov) {
     where.NOT = [
       {
-        status: {
-          in: [CreditApplicationStatus.DRAFT, CreditApplicationStatus.REJECTED],
-        },
+        status: CreditApplicationStatus.DRAFT,
       },
     ];
     if (userRoles.includes(Role.DIRECTOR)) {
@@ -340,11 +336,7 @@ export const getApplicationStatistics = async (creditApplicationId: number) => {
   const whereClause: CreditApplicationWhereUniqueInput = {
     id: creditApplicationId,
   };
-  if (userIsGov) {
-    whereClause.status = {
-      notIn: [CreditApplicationStatus.DRAFT, CreditApplicationStatus.REJECTED],
-    };
-  } else {
+  if (!userIsGov) {
     whereClause.organizationId = userOrgId;
   }
   const creditApplication = await prisma.creditApplication.findUnique({

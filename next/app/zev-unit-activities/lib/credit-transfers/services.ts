@@ -14,7 +14,10 @@ import {
   UncoveredTransfer,
   ZevUnitRecord,
 } from "@/lib/utils/zevUnit";
-import { getCompliancePeriod } from "@/app/lib/utils/complianceYear";
+import {
+  getAdjacentYear,
+  getCompliancePeriod,
+} from "@/app/lib/utils/complianceYear";
 import { TransactionClient } from "@/types/prisma";
 
 export type CreditTransferHistoryCreateData = Omit<
@@ -74,7 +77,7 @@ export type CreditTransferWithContent = CreditTransferModel & {
   creditTransferContent: CreditTransferContentModel[];
 };
 
-export const transferIsCovered = async (
+export const getProjectedBalance = async (
   transfer: CreditTransferWithContent,
 ): Promise<ZevUnitRecord[]> => {
   const endingBalanceRecord = await prisma.zevUnitEndingBalance.findFirst({
@@ -102,7 +105,7 @@ export const transferIsCovered = async (
       where: {
         organizationId: transfer.transferFromId,
         timestamp: {
-          gte: compliancePeriod.closedLowerBound,
+          gte: compliancePeriod.openUpperBound,
         },
       },
     });

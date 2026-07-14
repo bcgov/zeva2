@@ -167,33 +167,6 @@ export const SupplierActions = (props: {
     );
   }
 
-  if (props.status === CreditApplicationSupplierStatus.SUBMITTED) {
-    return (
-      <div className="flex flex-row items-center justify-start p-5 bg-lightGrey">
-        <Button variant="secondary" onClick={handleBack}>
-          ← Back
-        </Button>
-      </div>
-    );
-  }
-
-  if (props.status === CreditApplicationSupplierStatus.REJECTED) {
-    return (
-      <div className="flex flex-row items-center justify-between p-5 bg-lightGrey">
-        <Button variant="secondary" onClick={handleBack}>
-          ← Back
-        </Button>
-        <div className="flex flex-row items-center gap-4">
-          {error && <p className="text-red-600 mb-2">{error}</p>}
-          <Button variant="danger" onClick={() => showModal("delete")}>
-            Delete
-          </Button>
-        </div>
-        {modal}
-      </div>
-    );
-  }
-
   if (
     props.status === CreditApplicationSupplierStatus.APPROVED &&
     props.hasInvalidatedRecords

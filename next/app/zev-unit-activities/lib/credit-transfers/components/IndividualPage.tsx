@@ -6,12 +6,21 @@ import { TransferToActions } from "./TransferToActions";
 import { CreditTransferStatus, Role } from "@/prisma/generated/enums";
 import { DirectorActions } from "./DirectorActions";
 import { AnalystActions } from "./AnalystActions";
-import { transferFromSupplierRescindableStatuses, mapOfStatusToSupplierStatus } from "../constants";
+import {
+  transferFromSupplierRescindableStatuses,
+  mapOfStatusToSupplierStatus,
+} from "../constants";
 import { getCreditTransfer, getProjectedBalanceAfterTransfer } from "../data";
-import { getCreditTransferStatusEnumsToStringsMap } from "@/app/lib/utils/enumMaps";
+import {
+  getCreditTransferStatusEnumsToStringsMap,
+  getModelYearEnumsToStringsMap,
+  getVehicleClassEnumsToStringsMap,
+  getZevClassEnumsToStringsMap,
+} from "@/app/lib/utils/enumMaps";
 import { DraftTransferReview } from "./DraftTransferReview";
 import { PrintDownloadPageButton } from "./PrintDownloadPageButton";
 import Decimal from "decimal.js";
+import { getIsoYmdString, getTimeWithTz } from "@/app/lib/utils/date";
 
 export const IndividualPage = async (props: { id: string }) => {
   const id = Number.parseInt(props.id, 10);
@@ -118,7 +127,9 @@ export const IndividualPage = async (props: { id: string }) => {
         label: `Signed and submitted by ${transfer.transferFrom.name}`,
         timestamp: entry.timestamp,
       });
-    } else if (entry.userAction === CreditTransferStatus.APPROVED_BY_TRANSFER_TO) {
+    } else if (
+      entry.userAction === CreditTransferStatus.APPROVED_BY_TRANSFER_TO
+    ) {
       signingInfo.push({
         label: `Signed and submitted by ${transfer.transferTo.name}`,
         timestamp: entry.timestamp,
@@ -150,10 +161,17 @@ export const IndividualPage = async (props: { id: string }) => {
     actionComponent = <AnalystActions id={id} status={status} />;
   }
 
+  const vehicleClassMap = getVehicleClassEnumsToStringsMap();
+  const zevClassMap = getZevClassEnumsToStringsMap();
+  const modelYearsMap = getModelYearEnumsToStringsMap();
+
   return (
     <div className="flex self-stretch flex-col items-start gap-4">
       <div className="flex items-start self-stretch gap-3 py-3 bg-white">
-        <StatusBanner title={`STATUS - ${statusLabel}.`} primaryText={statusPrimaryText} />
+        <StatusBanner
+          title={`STATUS - ${statusLabel}.`}
+          primaryText={statusPrimaryText}
+        />
       </div>
       <div className="flex flex-col items-start gap-6 self-stretch">
         <div className="flex flex-col items-start self-stretch">
@@ -232,13 +250,13 @@ export const IndividualPage = async (props: { id: string }) => {
                         className="h-[60px] border-b border-dividerMedium last:border-b-0 even:bg-white odd:bg-lightGrey"
                       >
                         <td className="px-4 text-left font-normal leading-6 text-primaryText">
-                          {content.vehicleClass}
+                          {vehicleClassMap[content.vehicleClass]}
                         </td>
                         <td className="px-4 text-left font-normal leading-6 text-primaryText">
-                          {content.zevClass}
+                          {zevClassMap[content.zevClass]}
                         </td>
                         <td className="px-4 text-left font-normal leading-6 text-primaryText">
-                          {content.modelYear}
+                          {modelYearsMap[content.modelYear]}
                         </td>
                         <td className="px-4 text-left font-normal leading-6 text-primaryText">
                           {content.numberOfUnits.toString()}
@@ -257,7 +275,7 @@ export const IndividualPage = async (props: { id: string }) => {
                 <div className="flex self-stretch items-center gap-6">
                   <div className="flex items-center gap-2">
                     <div className="text-secondaryText text-lg font-normal leading-6">
-                      Total CAD: {" "}
+                      Total CAD:{" "}
                     </div>
                     <div className="text-black text-lg font-bold leading-6">
                       {new Intl.NumberFormat("en-CA", {
@@ -359,7 +377,8 @@ export const IndividualPage = async (props: { id: string }) => {
                   key={info.label}
                   className="self-stretch text-black font-normal leading-6"
                 >
-                  {info.label} {formatSigningDate(info.timestamp)}
+                  {info.label} {getIsoYmdString(info.timestamp)}{" "}
+                  {getTimeWithTz(info.timestamp)}
                 </div>
               ))}
             </div>
@@ -377,7 +396,9 @@ export const IndividualPage = async (props: { id: string }) => {
 
         {!isDraft && actionComponent && (
           <ContentCard title="Actions">
-            <Suspense fallback={<LoadingSkeleton />}>{actionComponent}</Suspense>
+            <Suspense fallback={<LoadingSkeleton />}>
+              {actionComponent}
+            </Suspense>
           </ContentCard>
         )}
 
@@ -410,20 +431,3 @@ const RescindableActions = async (props: {
     />
   );
 };
-
-const formatSigningDate = (date: Date): string => {
-  const parts = new Intl.DateTimeFormat("en-CA", {
-    timeZone: "America/Vancouver",
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-    timeZoneName: "short",
-    hour12: false,
-  }).formatToParts(date);
-  const get = (type: string) =>
-    parts.find((p) => p.type === type)?.value ?? "";
-  return `${get("year")}-${get("month")}-${get("day")} ${get("hour")}:${get("minute")} ${get("timeZoneName")}`;
-};
-

@@ -15,7 +15,6 @@ import {
   getMyrTemplateUrl,
   getSuppAttachmentsPutData,
   getSuppPutData,
-  NvValues,
   retrieveVehicleStatistics,
   saveReports,
   saveSupplementary,
@@ -23,18 +22,18 @@ import {
 import {
   generateMyr,
   getAdjustmentsPayload,
+  getNvValuesFromZevAndIceCounts,
   getWorkbook,
   validateForecastReport,
-  validateNvValues,
 } from "../utilsClient";
 import { getFiles } from "@/app/lib/utils/download";
 import { Dropzone } from "@/app/lib/components/Dropzone";
-import { legacyModelYearsMap } from "../constants";
+import { legacyModelYearsMap, ZevAndIceCounts } from "../constants";
 import { Routes } from "@/app/lib/constants";
 import { Workbook } from "exceljs";
 import {
-  getNvValues,
   getVehicleStatsAsStrings,
+  getZevAndIceCounts,
   getZevClassOrder,
   ParsedMyr,
   parseMyr,
@@ -127,7 +126,7 @@ export const ModelYearReportForm = (
   >([]);
   const [makes, setMakes] = useState<string[]>([]);
   const [vehicleStats, setVehicleStats] = useState<VehicleStatString[]>([]);
-  const [nvValues, setNvValues] = useState<NvValues>({});
+  const [zevAndIceCounts, setZevAndIceCounts] = useState<ZevAndIceCounts>({});
   const [zevClassOrder, setZevClassOrder] = useState<ZevClass[]>([
     ZevClass.UNSPECIFIED,
     ZevClass.B,
@@ -229,7 +228,7 @@ export const ModelYearReportForm = (
           setPrevVolumes(savedPrevVolumes);
           setVehicleStats(savedVehicleStats);
           setSuggestedAdjustments(report.suggestedAdjustments);
-          setNvValues(getNvValues(report.complianceReductions));
+          setZevAndIceCounts(getZevAndIceCounts(report.zevAndIceCounts));
           setZevClassOrder(getZevClassOrder(savedDetails.zevClassOrdering));
         }
       };
@@ -262,10 +261,19 @@ export const ModelYearReportForm = (
     }
   }, [props.type, modelYear]);
 
-  const handleNvValuesChange = useCallback(
-    (vc: VehicleClass, value: string) => {
-      setNvValues((prev) => {
-        return { ...prev, [vc]: value };
+  const handleZevAndIceCountsChange = useCallback(
+    (vc: VehicleClass, type: "zev" | "ice", value: string) => {
+      setZevAndIceCounts((prev) => {
+        const prevCounts = prev[vc];
+        const countsCopy = prevCounts
+          ? { ...prevCounts }
+          : { zev: "", ice: "" };
+        if (type === "zev") {
+          countsCopy["zev"] = value;
+        } else {
+          countsCopy["ice"] = value;
+        }
+        return { ...prev, [vc]: countsCopy };
       });
     },
     [],
@@ -288,7 +296,7 @@ export const ModelYearReportForm = (
         throw new Error("A vehicle make may not contain the pipe symbol!");
       }
     }
-    validateNvValues(nvValues);
+    const nvValues = getNvValuesFromZevAndIceCounts(zevAndIceCounts);
     const adjustmentsPayload = getAdjustmentsPayload(suggestedAdjustments);
     const [templateUrl, myrDataResponse] = await Promise.all([
       getMyrTemplateUrl(),
@@ -304,6 +312,7 @@ export const ModelYearReportForm = (
     const workbook = await generateMyr(
       template,
       myrDataResponse.data,
+      zevAndIceCounts,
       zevClassOrder,
       legalName,
       makes,
@@ -320,7 +329,7 @@ export const ModelYearReportForm = (
     recordsAddress,
     serviceAddress,
     vehicleStats,
-    nvValues,
+    zevAndIceCounts,
     zevClassOrder,
     suggestedAdjustments,
   ]);
@@ -564,8 +573,8 @@ export const ModelYearReportForm = (
       {modelYear && (
         <NvValuesSubmission
           modelYear={modelYear}
-          nvValues={nvValues}
-          handleNvValuesChange={handleNvValuesChange}
+          zevAndIceCounts={zevAndIceCounts}
+          handleZevAndIceCountsChange={handleZevAndIceCountsChange}
           disabled={isPending}
         />
       )}

@@ -1,5 +1,10 @@
 import Excel, { Workbook } from "exceljs";
-import { AssessmentTemplate, ForecastTemplate, MyrTemplate } from "./constants";
+import {
+  AssessmentTemplate,
+  ForecastTemplate,
+  MyrTemplate,
+  ZevAndIceCounts,
+} from "./constants";
 import {
   ModelYear,
   ReferenceType,
@@ -20,7 +25,6 @@ import {
   getZevClassEnumsToStringsMap,
 } from "@/app/lib/utils/enumMaps";
 import { VehicleStatistic } from "./services";
-import { NvValues } from "./actions";
 import { OrganizationAddressModel } from "@/prisma/generated/models";
 
 export const getMyrSheets = (workbook: Workbook) => {
@@ -35,6 +39,9 @@ export const getMyrSheets = (workbook: Workbook) => {
   );
   const complianceReductionsSheet = workbook.getWorksheet(
     MyrTemplate.ComplianceReductionsSheetName,
+  );
+  const zevAndIceCountsSheet = workbook.getWorksheet(
+    MyrTemplate.ZevAndIceCounts,
   );
   const prevEndOfCdBalanceSheet = workbook.getWorksheet(
     MyrTemplate.PrevEndOfCdBalanceSheetName,
@@ -63,6 +70,7 @@ export const getMyrSheets = (workbook: Workbook) => {
     !previousVolumesSheet ||
     !vehicleStatisticsSheet ||
     !complianceReductionsSheet ||
+    !zevAndIceCountsSheet ||
     !prevEndOfCdBalanceSheet ||
     !prevAfterCdBalanceSheet ||
     !creditsSheet ||
@@ -79,6 +87,7 @@ export const getMyrSheets = (workbook: Workbook) => {
     previousVolumesSheet,
     vehicleStatisticsSheet,
     complianceReductionsSheet,
+    zevAndIceCountsSheet,
     prevEndOfCdBalanceSheet,
     prevAfterCdBalanceSheet,
     creditsSheet,
@@ -113,11 +122,18 @@ export type FileReductionRecord = {
   nv: string;
 } & Omit<FileZevUnitRecord, "type">;
 
+export type FileZevAndIceCountRecord = {
+  vehicleClass: string;
+  zevCount: string;
+  iceCount: string;
+};
+
 export type ParsedMyr = {
   supplierDetails: FileMyrSupplierDetails;
   previousVolumes: FileMyrPreviousVolumes[];
   vehicleStatistics: FileVehicleStatistic[];
   complianceReductions: FileReductionRecord[];
+  zevAndIceCounts: FileZevAndIceCountRecord[];
   prevEndOfCdBalance: FileZevUnitRecord[];
   prevAfterCdBalance: FileZevUnitRecord[];
   credits: FileZevUnitRecord[];
@@ -137,6 +153,7 @@ export const parseMyr = (workbook: Workbook): ParsedMyr => {
     complianceReductions: parseComplianceReductions(
       sheets.complianceReductionsSheet,
     ),
+    zevAndIceCounts: parseZevAndIceCounts(sheets.zevAndIceCountsSheet),
     prevEndOfCdBalance: parseZevUnitRecords(sheets.prevEndOfCdBalanceSheet),
     prevAfterCdBalance: parseZevUnitRecords(sheets.prevAfterCdBalanceSheet),
     credits: parseZevUnitRecords(sheets.creditsSheet),
@@ -256,13 +273,32 @@ const parseComplianceReductions = (
   return result;
 };
 
-export const getNvValues = (reductions: FileReductionRecord[]) => {
-  const result: NvValues = {};
+const parseZevAndIceCounts = (
+  sheet: Excel.Worksheet,
+): FileZevAndIceCountRecord[] => {
+  const result: FileZevAndIceCountRecord[] = [];
+  sheet.eachRow((row, rowNumber) => {
+    if (rowNumber > 1) {
+      result.push({
+        vehicleClass: row.getCell(1).toString(),
+        zevCount: row.getCell(2).toString(),
+        iceCount: row.getCell(3).toString(),
+      });
+    }
+  });
+  return result;
+};
+
+export const getZevAndIceCounts = (records: FileZevAndIceCountRecord[]) => {
+  const result: ZevAndIceCounts = {};
   const vehicleClassesMap = getStringsToVehicleClassEnumsMap();
-  for (const reduction of reductions) {
-    const vehicleClass = vehicleClassesMap[reduction.vehicleClass];
+  for (const record of records) {
+    const vehicleClass = vehicleClassesMap[record.vehicleClass];
     if (vehicleClass) {
-      result[vehicleClass] = reduction.nv;
+      result[vehicleClass] = {
+        zev: record.zevCount,
+        ice: record.iceCount,
+      };
     }
   }
   return result;
@@ -313,6 +349,9 @@ export const getAssessmentSheets = (workbook: Workbook) => {
   const complianceReductionsSheet = workbook.getWorksheet(
     AssessmentTemplate.ComplianceReductionsSheetName,
   );
+  const zevAndIceCountsSheet = workbook.getWorksheet(
+    AssessmentTemplate.ZevAndIceCounts,
+  );
   const beginningBalanceSheet = workbook.getWorksheet(
     AssessmentTemplate.BeginningBalanceSheetName,
   );
@@ -337,6 +376,7 @@ export const getAssessmentSheets = (workbook: Workbook) => {
   if (
     !detailsSheet ||
     !complianceReductionsSheet ||
+    !zevAndIceCountsSheet ||
     !beginningBalanceSheet ||
     !creditsSheet ||
     !previousAdjustmentsSheet ||
@@ -350,6 +390,7 @@ export const getAssessmentSheets = (workbook: Workbook) => {
   return {
     detailsSheet,
     complianceReductionsSheet,
+    zevAndIceCountsSheet,
     beginningBalanceSheet,
     creditsSheet,
     previousAdjustmentsSheet,
@@ -363,6 +404,7 @@ export const getAssessmentSheets = (workbook: Workbook) => {
 export type ParsedAssmnt = {
   details: FileAssessmentDetails;
   complianceReductions: FileReductionRecord[];
+  zevAndIceCounts: FileZevAndIceCountRecord[];
   beginningBalance: FileZevUnitRecord[];
   credits: FileZevUnitRecord[];
   previousAdjustments: FileZevUnitRecord[];
@@ -385,6 +427,7 @@ export const parseAssessment = (workbook: Workbook): ParsedAssmnt => {
     complianceReductions: parseComplianceReductions(
       sheets.complianceReductionsSheet,
     ),
+    zevAndIceCounts: parseZevAndIceCounts(sheets.zevAndIceCountsSheet),
     beginningBalance: parseZevUnitRecords(sheets.beginningBalanceSheet),
     credits: parseZevUnitRecords(sheets.creditsSheet),
     previousAdjustments: parseZevUnitRecords(sheets.previousAdjustmentsSheet),

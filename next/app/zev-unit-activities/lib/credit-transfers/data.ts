@@ -1,13 +1,18 @@
 import { getUserInfo } from "@/auth";
 import { prisma } from "@/lib/prisma";
-import { CreditTransferStatus, Role, TransactionType, ZevClass } from "@/prisma/generated/enums";
+import {
+  CreditTransferStatus,
+  Role,
+  TransactionType,
+  ZevClass,
+} from "@/prisma/generated/enums";
 import {
   CreditTransferWhereUniqueInput,
   CreditTransferHistoryWhereInput,
   CreditTransferWhereInput,
 } from "@/prisma/generated/models";
 import { CreditTransferWithRelated } from "./constants";
-import { transferIsCovered } from "./services";
+import { getProjectedBalance } from "./services";
 import { flattenZevUnitRecords, UncoveredTransfer } from "@/lib/utils/zevUnit";
 import Decimal from "decimal.js";
 
@@ -180,7 +185,7 @@ export const getProjectedBalanceAfterTransfer = async (
   }
 
   try {
-    const projectedRecords = await transferIsCovered(transfer);
+    const projectedRecords = await getProjectedBalance(transfer);
     const flattened = flattenZevUnitRecords(projectedRecords);
 
     let aBalance = new Decimal(0);
@@ -207,4 +212,3 @@ export const getProjectedBalanceAfterTransfer = async (
     throw e;
   }
 };
-

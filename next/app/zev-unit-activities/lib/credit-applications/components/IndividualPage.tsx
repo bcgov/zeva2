@@ -9,7 +9,6 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faDownload } from "@fortawesome/free-solid-svg-icons";
 import { Suspense } from "react";
 import { LoadingSkeleton } from "@/app/lib/components/skeletons";
-import { ApplicationHistories } from "./ApplicationHistories";
 import { ApplicationDetails } from "./ApplicationDetails";
 import {
   getCreditApplicationAttachmentDownloadUrls,
@@ -48,11 +47,6 @@ export const IndividualPage = async (props: { id: string }) => {
   if (userIsGov) {
     const applicationData = (
       <>
-        <ContentCard title="Application History">
-          <Suspense fallback={<LoadingSkeleton />}>
-            <ApplicationHistories id={id} />
-          </Suspense>
-        </ContentCard>
         <ContentCard title="Application Details">
           <ApplicationDetails
             application={creditApplication}

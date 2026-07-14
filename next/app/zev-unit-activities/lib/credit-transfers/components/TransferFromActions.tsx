@@ -20,9 +20,9 @@ export const TransferFromActions = (props: {
   const [comment, setComment] = useState<string>("");
   const [error, setError] = useState<string>("");
   const [modal, setModal] = useState<JSX.Element | null>(null);
-  const [confirmations, setConfirmations] = useState<[boolean, boolean, boolean]>(
-    [false, false, false],
-  );
+  const [confirmations, setConfirmations] = useState<
+    [boolean, boolean, boolean]
+  >([false, false, false]);
 
   const signingStatements = useMemo(() => {
     const authorityStatement = `I confirm that I am an officer or employee of ${props.transferFromSupplierName}, and that records evidencing my authority to submit this notice are available on request.`;
@@ -205,7 +205,8 @@ export const TransferFromActions = (props: {
                 Rescind Credit Transfer
               </div>
               <div className="self-stretch text-secondaryText text-sm font-normal leading-5">
-                If you need to rescind this credit transfer notice please enter a reason to your transfer partner.
+                If you need to rescind this credit transfer notice please enter
+                a reason to your transfer partner.
               </div>
             </div>
             <div className="flex flex-col items-start gap-4 self-stretch p-5 rounded-b shadow-[0_4px_20px_0_rgba(177,177,177,0.10)]">
@@ -216,7 +217,9 @@ export const TransferFromActions = (props: {
             <Button
               variant="secondary"
               onClick={handleBack}
-              icon={<FontAwesomeIcon icon={faArrowLeft} className="h-3.5 w-3.5" />}
+              icon={
+                <FontAwesomeIcon icon={faArrowLeft} className="h-3.5 w-3.5" />
+              }
             >
               Back
             </Button>

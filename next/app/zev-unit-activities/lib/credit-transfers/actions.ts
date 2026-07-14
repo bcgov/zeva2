@@ -14,7 +14,7 @@ import {
 } from "@/prisma/generated/enums";
 import {
   createTransferHistory,
-  transferIsCovered,
+  getProjectedBalance,
   updateTransferStatusAndCreateHistory,
 } from "./services";
 import { UncoveredTransfer } from "@/lib/utils/zevUnit";
@@ -381,7 +381,7 @@ export const directorIssueTransfer = async (
     return getErrorActionResponse("Invalid Action!");
   }
   try {
-    await transferIsCovered(transfer);
+    await getProjectedBalance(transfer);
   } catch (e) {
     if (e instanceof UncoveredTransfer) {
       return getErrorActionResponse("Transfer not covered!");
