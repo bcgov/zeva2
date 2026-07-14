@@ -31,7 +31,9 @@ export const CreditTransferForm = (props: {
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string>("");
   const [transferTo, setTransferTo] = useState<string>("");
-  const [lines, setLines] = useState<CreditTransferLine[]>([{ ...defaultLine }]);
+  const [lines, setLines] = useState<CreditTransferLine[]>([
+    { ...defaultLine },
+  ]);
   const [needsSave, setNeedsSave] = useState<boolean>(false);
 
   useEffect(() => {
@@ -103,7 +105,9 @@ export const CreditTransferForm = (props: {
       )}
       <div className="flex flex-col items-start self-stretch rounded border border-dividerMedium shadow-[0_4px_20px_0_rgba(177,177,177,0.10)]">
         <div className="flex flex-col items-start self-stretch rounded-t px-5 py-4 gap-1 bg-disabledSurface">
-          <div className="self-stretch text-black text-xl font-bold leading-7">Transfer Details</div>
+          <div className="self-stretch text-black text-xl font-bold leading-7">
+            Transfer Details
+          </div>
         </div>
         <div className="flex flex-col items-start self-stretch gap-5 p-5 rounded shadow-[0_4px_20px_0_rgba(177,177,177,0.10)]">
           <div className="flex flex-col items-start gap-2 self-stretch">
@@ -167,4 +171,3 @@ export const CreditTransferForm = (props: {
     </div>
   );
 };
-

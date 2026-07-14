@@ -17,9 +17,9 @@ export const TransferToActions = (props: {
   const [comment, setComment] = useState<string>("");
   const [error, setError] = useState<string>("");
   const [modal, setModal] = useState<JSX.Element | null>(null);
-  const [confirmations, setConfirmations] = useState<[boolean, boolean, boolean]>(
-    [false, false, false],
-  );
+  const [confirmations, setConfirmations] = useState<
+    [boolean, boolean, boolean]
+  >([false, false, false]);
 
   const signingStatements = useMemo(() => {
     const authorityStatement = `I confirm that I am an officer or employee of ${props.transferToSupplierName}, and that records evidencing my authority to submit this notice are available on request.`;
@@ -101,55 +101,55 @@ export const TransferToActions = (props: {
   );
 
   return (
-        <>
-          {error && (
-            <p className="rounded border border-error bg-red-50 px-4 py-2 text-sm text-error">
-              {error}
-            </p>
-          )}
-          <div className="flex self-stretch flex-col items-start rounded border border-dividerMedium">
-            <div className="flex flex-col items-start gap-2 self-stretch p-5 rounded-t border-b border-dividerMedium bg-disabledSurface">
-              <div className="self-stretch text-primaryText text-xl font-bold leading-7">
-                Review &amp; Confirm
-              </div>
-              <div className="flex self-stretch items-start gap-3 px-4 py-3 rounded-sm border border-warning bg-[#FEF1D8]">
-                Please review the statements below and confirm they are accurate
-                before approving.
-              </div>
-            </div>
-            <div className="flex flex-col items-start gap-4 self-stretch p-5 rounded shadow-[0_4px_20px_0_rgba(177,177,177,0.10)]">
-              {signingStatements.statements.map((statement, index) => (
-                <label
-                  key={statement}
-                  className="flex w-full cursor-pointer items-start gap-3 rounded border border-gray-200 p-4 hover:bg-gray-50"
-                >
-                  <input
-                    type="checkbox"
-                    checked={confirmations[index]}
-                    onChange={() => toggleConfirmation(index)}
-                    className="mt-0.5 h-4 w-4 shrink-0 cursor-pointer accent-primaryBlue"
-                  />
-                  <span className="text-sm text-primaryText">{statement}</span>
-                </label>
-              ))}
-            </div>
+    <>
+      {error && (
+        <p className="rounded border border-error bg-red-50 px-4 py-2 text-sm text-error">
+          {error}
+        </p>
+      )}
+      <div className="flex self-stretch flex-col items-start rounded border border-dividerMedium">
+        <div className="flex flex-col items-start gap-2 self-stretch p-5 rounded-t border-b border-dividerMedium bg-disabledSurface">
+          <div className="self-stretch text-primaryText text-xl font-bold leading-7">
+            Review &amp; Confirm
           </div>
-          <div className="flex h-20 p-5 justify-between items-center self-stretch rounded border border-dividerMedium">
-            <div className="flex items-center gap-4">
-              <Button variant="danger" onClick={() => showModal("reject")}>
-                Reject
-              </Button>
-            </div>
-            <div className="flex items-center gap-4">
-              <Button
-                variant="primary"
-                disabled={!allConfirmed}
-                onClick={() => showModal("approve")}
-              >
-                Approve
-              </Button>
-            </div>
+          <div className="flex self-stretch items-start gap-3 px-4 py-3 rounded-sm border border-warning bg-[#FEF1D8]">
+            Please review the statements below and confirm they are accurate
+            before approving.
           </div>
+        </div>
+        <div className="flex flex-col items-start gap-4 self-stretch p-5 rounded shadow-[0_4px_20px_0_rgba(177,177,177,0.10)]">
+          {signingStatements.statements.map((statement, index) => (
+            <label
+              key={statement}
+              className="flex w-full cursor-pointer items-start gap-3 rounded border border-gray-200 p-4 hover:bg-gray-50"
+            >
+              <input
+                type="checkbox"
+                checked={confirmations[index]}
+                onChange={() => toggleConfirmation(index)}
+                className="mt-0.5 h-4 w-4 shrink-0 cursor-pointer accent-primaryBlue"
+              />
+              <span className="text-sm text-primaryText">{statement}</span>
+            </label>
+          ))}
+        </div>
+      </div>
+      <div className="flex h-20 p-5 justify-between items-center self-stretch rounded border border-dividerMedium">
+        <div className="flex items-center gap-4">
+          <Button variant="danger" onClick={() => showModal("reject")}>
+            Reject
+          </Button>
+        </div>
+        <div className="flex items-center gap-4">
+          <Button
+            variant="primary"
+            disabled={!allConfirmed}
+            onClick={() => showModal("approve")}
+          >
+            Approve
+          </Button>
+        </div>
+      </div>
       {modal}
     </>
   );

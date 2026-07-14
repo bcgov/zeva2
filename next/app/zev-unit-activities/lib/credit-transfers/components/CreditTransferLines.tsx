@@ -58,10 +58,12 @@ export const CreditTransferLines = (props: {
             <Dropdown
               id={`vehicleClass-${index}`}
               className="flex-1"
-              options={Object.entries(vehicleClassesMap).map(([key, value]) => ({
-                value: value as string,
-                label: key,
-              }))}
+              options={Object.entries(vehicleClassesMap).map(
+                ([key, value]) => ({
+                  value: value as string,
+                  label: key,
+                }),
+              )}
               value={line.vehicleClass}
               onChange={(value) =>
                 props.handleLineChange(index, "vehicleClass", value)

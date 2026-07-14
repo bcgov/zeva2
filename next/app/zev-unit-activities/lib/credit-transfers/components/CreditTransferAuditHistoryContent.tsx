@@ -1,8 +1,6 @@
 import { getCreditTransfer, getCreditTransferHistories } from "../data";
 import { getUserInfo } from "@/auth";
-import {
-  getCreditTransferStatusEnumsToStringsMap,
-} from "@/app/lib/utils/enumMaps";
+import { getCreditTransferStatusEnumsToStringsMap } from "@/app/lib/utils/enumMaps";
 import { processAuditHistories } from "@/app/lib/utils/auditHistory";
 import { ApplicationAuditHistory } from "@/app/zev-unit-activities/lib/credit-applications/components/ApplicationAuditHistory";
 

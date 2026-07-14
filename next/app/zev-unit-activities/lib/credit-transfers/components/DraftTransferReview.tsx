@@ -21,9 +21,9 @@ export const DraftTransferReview = (props: {
   const router = useRouter();
   const [error, setError] = useState<string>("");
   const [modal, setModal] = useState<JSX.Element | null>(null);
-  const [confirmations, setConfirmations] = useState<[boolean, boolean, boolean]>(
-    [false, false, false],
-  );
+  const [confirmations, setConfirmations] = useState<
+    [boolean, boolean, boolean]
+  >([false, false, false]);
 
   const allConfirmed = confirmations.every(Boolean);
 
@@ -144,9 +144,11 @@ export const DraftTransferReview = (props: {
       <div className="flex h-20 p-5 justify-between items-center self-stretch rounded border border-dividerMedium">
         <div className="flex w-[420.75px] items-center gap-6">
           <Button
-          variant="secondary"
-          onClick={handleBack}
-          icon={<FontAwesomeIcon icon={faArrowLeft} className="h-3.5 w-3.5" />}
+            variant="secondary"
+            onClick={handleBack}
+            icon={
+              <FontAwesomeIcon icon={faArrowLeft} className="h-3.5 w-3.5" />
+            }
           >
             Back
           </Button>

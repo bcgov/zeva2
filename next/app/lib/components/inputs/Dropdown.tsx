@@ -100,7 +100,11 @@ export const Dropdown: FC<IDropdownProps> = ({
       case "Enter":
       case " ":
         e.preventDefault();
-        if (isOpen) { setIsOpen(false); } else { openMenu(); }
+        if (isOpen) {
+          setIsOpen(false);
+        } else {
+          openMenu();
+        }
         break;
       case "Escape":
         setIsOpen(false);
@@ -147,8 +151,13 @@ export const Dropdown: FC<IDropdownProps> = ({
       }
       case "ArrowUp": {
         e.preventDefault();
-        const prev = e.currentTarget.previousElementSibling as HTMLButtonElement;
-        if (prev) { prev.focus(); } else { triggerRef.current?.focus(); }
+        const prev = e.currentTarget
+          .previousElementSibling as HTMLButtonElement;
+        if (prev) {
+          prev.focus();
+        } else {
+          triggerRef.current?.focus();
+        }
         break;
       }
     }
@@ -199,7 +208,9 @@ export const Dropdown: FC<IDropdownProps> = ({
                   onClick={() => handleOptionClick(option.value)}
                   onKeyDown={(e) => handleOptionKeyDown(e, option.value, index)}
                   className={`w-full text-left px-3 py-2.5 text-sm transition-colors duration-150 bg-white m-0 ${
-                    isSelected ? "text-primaryText font-medium" : "text-primaryText"
+                    isSelected
+                      ? "text-primaryText font-medium"
+                      : "text-primaryText"
                   } hover:bg-lightGrey active:bg-disabledSurface focus:outline-none focus:bg-lightGrey`}
                 >
                   {option.label}
@@ -235,7 +246,9 @@ export const Dropdown: FC<IDropdownProps> = ({
         aria-disabled={disabled}
         className={`${baseTriggerStyles} ${getTriggerStyles()}`}
       >
-        <span className={`truncate ${!selectedOption ? "text-placeholder" : ""}`}>
+        <span
+          className={`truncate ${!selectedOption ? "text-placeholder" : ""}`}
+        >
           {displayValue}
         </span>
         <svg
