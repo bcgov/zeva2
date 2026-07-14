@@ -76,8 +76,7 @@ export type CreditTransferWithContent = CreditTransferModel & {
 
 export const transferIsCovered = async (
   transfer: CreditTransferWithContent,
-) => {
-  let result = true;
+): Promise<ZevUnitRecord[]> => {
   const endingBalanceRecord = await prisma.zevUnitEndingBalance.findFirst({
     where: {
       organizationId: transfer.transferFromId,
@@ -122,14 +121,5 @@ export const transferIsCovered = async (
       type: TransactionType.TRANSFER_AWAY,
     });
   }
-  try {
-    applyTransfersAway(zevUnitRecords);
-  } catch (e) {
-    if (e instanceof UncoveredTransfer) {
-      result = false;
-    } else {
-      throw e;
-    }
-  }
-  return result;
+  return applyTransfersAway(zevUnitRecords);
 };

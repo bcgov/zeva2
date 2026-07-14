@@ -47,20 +47,33 @@ export const ActivityDetailNav = (props: { slug: string; id: string }) => {
   const tab = activityTabs[props.slug];
 
   const secondaryNavItems = useMemo(() => {
-    if (props.slug !== "credit-applications") {
-      return [];
+    if (props.slug === "credit-applications") {
+      return [
+        {
+          label: `Credit Application ID ${props.id}`,
+          route: `${Routes.CreditApplications}/${props.id}/details`,
+        },
+        {
+          label: "Audit History",
+          route: `${Routes.CreditApplications}/${props.id}/audit-history`,
+        },
+      ];
     }
 
-    return [
-      {
-        label: `Credit Application ID ${props.id}`,
-        route: `${Routes.CreditApplications}/${props.id}/details`,
-      },
-      {
-        label: "Audit History",
-        route: `${Routes.CreditApplications}/${props.id}/audit-history`,
-      },
-    ];
+    if (props.slug === "credit-transfers") {
+      return [
+        {
+          label: `Credit Transfer ID ${props.id}`,
+          route: `${Routes.CreditTransfers}/${props.id}/details`,
+        },
+        {
+          label: "Audit History",
+          route: `${Routes.CreditTransfers}/${props.id}/audit-history`,
+        },
+      ];
+    }
+
+    return [];
   }, [props.slug, props.id]);
 
   if (!tab) {
@@ -86,7 +99,8 @@ export const ActivityDetailNav = (props: { slug: string; id: string }) => {
   ];
 
   const showSecondaryNav =
-    props.slug === "credit-applications" &&
+    (props.slug === "credit-applications" ||
+      props.slug === "credit-transfers") &&
     (pathname.endsWith("details") || pathname.endsWith("audit-history"));
 
   return (
