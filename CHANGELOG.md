@@ -4,6 +4,7 @@ All notable changes to this project are documented in this file.
 
 | Version | Date | Type | Change |
 | --- | --- | --- | --- |
+| [1.43.0](https://github.com/bcgov/zeva2/compare/v1.42.2...v1.43.0) | 2026-07-14 | ✨ Feature | credit transfer styling and flow update ([#527](https://github.com/bcgov/zeva2/issues/527)) ([5eb6dba](https://github.com/bcgov/zeva2/commit/5eb6dbac81234bfc4f93e3db2b0bc8e77bb1af6b)) |
 | [1.42.2](https://github.com/bcgov/zeva2/compare/v1.42.1...v1.42.2) | 2026-07-13 | 🐛 Fix | table fix ([#542](https://github.com/bcgov/zeva2/issues/542)) ([a844757](https://github.com/bcgov/zeva2/commit/a8447576adec80cac57f9ae38bcb333e03bff45a)) |
 | [1.42.1](https://github.com/bcgov/zeva2/compare/v1.42.0...v1.42.1) | 2026-07-09 | 🐛 Fix | styling fix for credit application ([#525](https://github.com/bcgov/zeva2/issues/525)) ([e834818](https://github.com/bcgov/zeva2/commit/e834818eafd3734781e4fa5adad42779d9f110a0)), closes [#532](https://github.com/bcgov/zeva2/issues/532) |
 | [1.42.0](https://github.com/bcgov/zeva2/compare/v1.41.0...v1.42.0) | 2026-07-08 | ✨ Feature | myr styling part 4 ([59fecf3](https://github.com/bcgov/zeva2/commit/59fecf392be189c001e55515bb7898d5ac5f7a19)) |
