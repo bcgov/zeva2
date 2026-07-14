@@ -20,7 +20,6 @@ import {
   getAssessmentTemplateUrl,
   getReassessmentPutData,
   getSupplementaryReassessmentPutData,
-  NvValues,
   saveReassessment,
 } from "../actions";
 import { NvValuesSubmission } from "./NvValuesSubmission";
@@ -29,20 +28,20 @@ import { Dropdown } from "@/app/lib/components/inputs";
 import {
   generateAssessment,
   getAdjustmentsPayload,
+  getNvValuesFromZevAndIceCounts,
   getWorkbook,
-  validateNvValues,
 } from "../utilsClient";
 import { Adjustment, Adjustments } from "./Adjustments";
 import { Routes } from "@/app/lib/constants";
 import { Workbook } from "exceljs";
 import {
-  getNvValues,
+  getZevAndIceCounts,
   getZevClassOrder,
   parseAssessment,
   parseMyr,
 } from "../utils";
 import { isModelYear } from "@/app/lib/utils/typeGuards";
-import { legacyModelYearsMap } from "../constants";
+import { legacyModelYearsMap, ZevAndIceCounts } from "../constants";
 import { ZevClassOrder } from "./ZevClassOrder";
 import { getFiles } from "@/app/lib/utils/download";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
@@ -157,7 +156,7 @@ export const AssessmentForm = (
   const [orgName, setOrgName] = useState<string>();
   const [reassessmentId, setReassessmentId] = useState<number>();
   const [suppId, setSuppId] = useState<number>();
-  const [nvValues, setNvValues] = useState<NvValues>({});
+  const [zevAndIceCounts, setZevAndIceCounts] = useState<ZevAndIceCounts>({});
   const [zevClassOrder, setZevClassOrder] = useState<ZevClass[]>([
     ZevClass.UNSPECIFIED,
     ZevClass.B,
@@ -218,7 +217,7 @@ export const AssessmentForm = (
           const myr = files[0];
           const myrWorkbook = await getWorkbook(myr.data);
           const parsedMyr = parseMyr(myrWorkbook);
-          setNvValues(getNvValues(parsedMyr.complianceReductions));
+          setZevAndIceCounts(getZevAndIceCounts(parsedMyr.zevAndIceCounts));
           setZevClassOrder(
             getZevClassOrder(parsedMyr.supplierDetails.zevClassOrdering),
           );
@@ -238,7 +237,7 @@ export const AssessmentForm = (
           const assmnt = files[0];
           const assmntWorkbook = await getWorkbook(assmnt.data);
           const parsedAssmnt = parseAssessment(assmntWorkbook);
-          setNvValues(getNvValues(parsedAssmnt.complianceReductions));
+          setZevAndIceCounts(getZevAndIceCounts(parsedAssmnt.zevAndIceCounts));
           setZevClassOrder(
             getZevClassOrder(parsedAssmnt.details.zevClassOrdering),
           );
@@ -249,10 +248,19 @@ export const AssessmentForm = (
     }
   }, []);
 
-  const handleNvValuesChange = useCallback(
-    (key: VehicleClass, value: string) => {
-      setNvValues((prev) => {
-        return { ...prev, [key]: value };
+  const handleZevAndIceCountsChange = useCallback(
+    (vc: VehicleClass, type: "zev" | "ice", value: string) => {
+      setZevAndIceCounts((prev) => {
+        const prevCounts = prev[vc];
+        const countsCopy = prevCounts
+          ? { ...prevCounts }
+          : { zev: "", ice: "" };
+        if (type === "zev") {
+          countsCopy["zev"] = value;
+        } else {
+          countsCopy["ice"] = value;
+        }
+        return { ...prev, [vc]: countsCopy };
       });
     },
     [],
@@ -262,7 +270,7 @@ export const AssessmentForm = (
     if (!orgId || !modelYear) {
       throw new Error("Supplier and Model Year are required!");
     }
-    validateNvValues(nvValues);
+    const nvValues = getNvValuesFromZevAndIceCounts(zevAndIceCounts);
     const adjustmentsPayload = getAdjustmentsPayload(adjustments);
     const [templateUrl, assessmentResponse] = await Promise.all([
       getAssessmentTemplateUrl(),
@@ -285,11 +293,19 @@ export const AssessmentForm = (
       template,
       assessmentResponse.data,
       modelYear,
+      zevAndIceCounts,
       zevClassOrder,
       adjustmentsPayload,
     );
     return assessment;
-  }, [props.type, orgId, modelYear, nvValues, zevClassOrder, adjustments]);
+  }, [
+    props.type,
+    orgId,
+    modelYear,
+    zevAndIceCounts,
+    zevClassOrder,
+    adjustments,
+  ]);
 
   const saveAssmnt = useCallback(
     async (assessment: Workbook) => {
@@ -488,8 +504,8 @@ export const AssessmentForm = (
       {modelYear && (
         <NvValuesSubmission
           modelYear={modelYear}
-          nvValues={nvValues}
-          handleNvValuesChange={handleNvValuesChange}
+          zevAndIceCounts={zevAndIceCounts}
+          handleZevAndIceCountsChange={handleZevAndIceCountsChange}
           disabled={isPending}
         />
       )}

@@ -18,7 +18,12 @@ import {
   AdjustmentPayload,
   AssessmentData,
 } from "./actions";
-import { divisors, interiorVolumes, IsCompliant } from "./constants";
+import {
+  divisors,
+  interiorVolumes,
+  IsCompliant,
+  ZevAndIceCounts,
+} from "./constants";
 import { Adjustment } from "./components/Adjustments";
 import { ComplianceInfo, UnitsAsString } from "./utilsServer";
 import {
@@ -37,21 +42,27 @@ import {
   getStringsToVehicleClassEnumsMap,
   getStringsToZevClassEnumsMap,
 } from "@/app/lib/utils/enumMaps";
+import { isVehicleClass } from "@/app/lib/utils/typeGuards";
 
-export const validateNvValues = (nvValues: NvValues) => {
-  if (!nvValues.REPORTABLE) {
-    throw new Error("NV value for Reportable vehicles not found!");
-  }
-  Object.values(nvValues).forEach((value) => {
-    try {
-      const valueDecimal = new Decimal(value);
-      if (!valueDecimal.isInteger()) {
-        throw new Error();
+export const getNvValuesFromZevAndIceCounts = (
+  zevAndIceCounts: ZevAndIceCounts,
+): NvValues => {
+  const result: NvValues = {};
+  for (const [vc, counts] of Object.entries(zevAndIceCounts)) {
+    if (isVehicleClass(vc)) {
+      try {
+        const zevDecimal = new Decimal(counts.zev);
+        const iceDecimal = new Decimal(counts.ice);
+        if (!zevDecimal.isInteger() || !iceDecimal.isInteger()) {
+          throw new Error();
+        }
+        result[vc] = zevDecimal.plus(iceDecimal).toFixed(0);
+      } catch (e) {
+        throw new Error("Invalid ZEV or ICE number!");
       }
-    } catch (e) {
-      throw new Error("Invalid NV value!");
     }
-  });
+  }
+  return result;
 };
 
 export const getAdjustmentsPayload = (
@@ -91,6 +102,7 @@ export const getAdjustmentsPayload = (
 export const generateMyr = async (
   template: Excel.Buffer,
   myrData: MyrData,
+  zevAndIceCounts: ZevAndIceCounts,
   zevClassOrdering: ZevClass[],
   legalName: string,
   makes: string[],
@@ -122,6 +134,11 @@ export const generateMyr = async (
   writeComplianceReductions(
     sheets.complianceReductionsSheet,
     myrData.complianceReductions,
+    helpingMaps,
+  );
+  writeZevAndIceCounts(
+    sheets.zevAndIceCountsSheet,
+    zevAndIceCounts,
     helpingMaps,
   );
   writeBalance(
@@ -262,6 +279,18 @@ const writeComplianceReductions = (
   });
 };
 
+const writeZevAndIceCounts = (
+  sheet: Excel.Worksheet,
+  zevAndIceCounts: ZevAndIceCounts,
+  helpingMaps: MyrHelpingMaps,
+) => {
+  for (const [vc, counts] of Object.entries(zevAndIceCounts)) {
+    if (isVehicleClass(vc)) {
+      sheet.addRow([helpingMaps.vehicleClassesMap[vc], counts.zev, counts.ice]);
+    }
+  }
+};
+
 const writeOffsetsAndTransfersAway = (
   sheet: Excel.Worksheet,
   offsets: MyrOffsets,
@@ -331,6 +360,7 @@ export const generateAssessment = async (
   template: Excel.Buffer,
   assessmentData: AssessmentData,
   modelYear: ModelYear,
+  zevAndIceCounts: ZevAndIceCounts,
   zevClassOrdering: ZevClass[],
   adjustments: AdjustmentPayload[],
 ) => {
@@ -348,6 +378,11 @@ export const generateAssessment = async (
   writeComplianceReductions(
     sheets.complianceReductionsSheet,
     assessmentData.complianceReductions,
+    helpingMaps,
+  );
+  writeZevAndIceCounts(
+    sheets.zevAndIceCountsSheet,
+    zevAndIceCounts,
     helpingMaps,
   );
   writeBalance(

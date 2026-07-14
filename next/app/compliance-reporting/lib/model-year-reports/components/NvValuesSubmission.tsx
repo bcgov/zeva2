@@ -7,13 +7,16 @@ import {
 } from "@/app/lib/utils/enumMaps";
 import { ModelYear, VehicleClass } from "@/prisma/generated/enums";
 import { useMemo } from "react";
-import { NvValues } from "../actions";
-import { nvMap } from "../constants";
+import { nvMap, ZevAndIceCounts } from "../constants";
 
 export const NvValuesSubmission = (props: {
   modelYear: ModelYear;
-  nvValues: NvValues;
-  handleNvValuesChange: (vc: VehicleClass, value: string) => void;
+  zevAndIceCounts: ZevAndIceCounts;
+  handleZevAndIceCountsChange: (
+    vc: VehicleClass,
+    type: "zev" | "ice",
+    value: string,
+  ) => void;
   disabled: boolean;
 }) => {
   const vehicleClasses = useMemo(() => {
@@ -30,9 +33,17 @@ export const NvValuesSubmission = (props: {
 
   const salesOrSupplied = useMemo(() => {
     if (props.modelYear < ModelYear.MY_2024) {
-      return "Consumer Sales";
+      return {
+        keyword: "Consumer Sales",
+        zev: "ZEV Consumer Sales",
+        ice: "ICE consumer Sales",
+      };
     }
-    return "Vehicles Supplied";
+    return {
+      keyword: "Supplied",
+      zev: "ZEVs Supplied",
+      ice: "ICE Vehicles Supplied",
+    };
   }, [props.modelYear]);
 
   const modelYearsMap = useMemo(() => {
@@ -43,7 +54,7 @@ export const NvValuesSubmission = (props: {
     <div className="flex flex-col border border-dividerMedium rounded">
       <div className="flex flex-col p-5 bg-disabledBG gap-2">
         <span className="font-bold text-xl">
-          {modelYearsMap[props.modelYear]} Model Year {salesOrSupplied}
+          {modelYearsMap[props.modelYear]} Model Year {salesOrSupplied.keyword}
         </span>
         {vehicleClasses.includes(VehicleClass.REPORTABLE) && (
           <StatusBanner
@@ -56,16 +67,29 @@ export const NvValuesSubmission = (props: {
       <div className="p-5 flex flex-col gap-5">
         {vehicleClasses.map((vc, index) => {
           return (
-            <div key={index} className="w-1/2">
-              <TextInput
-                label={`Enter number of ${salesOrSupplied} of the ${vehicleClassesMap[vc]} vehicle class`}
-                placeholder="Enter number"
-                value={props.nvValues[vc]}
-                onChange={(value: string) =>
-                  props.handleNvValuesChange(vc, value)
-                }
-                disabled={props.disabled}
-              />
+            <div key={index} className="flex flex-row gap-5">
+              <div className="flex-1">
+                <TextInput
+                  label={`Enter total number of ${salesOrSupplied.zev} of the ${vehicleClassesMap[vc]} vehicle class`}
+                  placeholder="Enter number"
+                  value={props.zevAndIceCounts[vc]?.["zev"]}
+                  onChange={(value: string) =>
+                    props.handleZevAndIceCountsChange(vc, "zev", value)
+                  }
+                  disabled={props.disabled}
+                />
+              </div>
+              <div className="flex-1">
+                <TextInput
+                  label={`Enter total number of ${salesOrSupplied.ice} of the ${vehicleClassesMap[vc]} vehicle class`}
+                  placeholder="Enter number"
+                  value={props.zevAndIceCounts[vc]?.["ice"]}
+                  onChange={(value: string) =>
+                    props.handleZevAndIceCountsChange(vc, "ice", value)
+                  }
+                  disabled={props.disabled}
+                />
+              </div>
             </div>
           );
         })}

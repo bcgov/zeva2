@@ -69,6 +69,7 @@ export const ParsedModelYearReport = (props: {
       <div className="flex flex-col gap-10 p-5">
         <ParsedComplianceReductions
           reductions={props.myr.complianceReductions}
+          zevAndIceCounts={props.myr.zevAndIceCounts}
         />
         <ParsedZevUnitRecords
           caption={`Balance at end of ${prevCdString}`}

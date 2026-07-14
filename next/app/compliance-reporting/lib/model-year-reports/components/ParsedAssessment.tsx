@@ -25,6 +25,7 @@ export const ParsedAssessment = (props: { assessment: ParsedAssmnt }) => {
       </table>
       <ParsedComplianceReductions
         reductions={props.assessment.complianceReductions}
+        zevAndIceCounts={props.assessment.zevAndIceCounts}
       />
       <ParsedZevUnitRecords
         caption="Beginning Balance"
