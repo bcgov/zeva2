@@ -144,6 +144,7 @@ export const ItemsPanel = (props: {
                           {item.timestamp ? item.timestamp : "Unknown"}
                         </span>
                         {iconsMap[key]}
+                        <span className="font-bold">ID {item.id}</span>
                         <span>
                           <span className="font-bold">
                             {key.endsWith("s") ? key.slice(0, -1) : key} -{" "}
