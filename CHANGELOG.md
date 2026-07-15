@@ -4,6 +4,7 @@ All notable changes to this project are documented in this file.
 
 | Version | Date | Type | Change |
 | --- | --- | --- | --- |
+| [1.45.0](https://github.com/bcgov/zeva2/compare/v1.44.0...v1.45.0) | 2026-07-15 | ✨ Feature | BCEID Site Wide Legal Disclosure [#533](https://github.com/bcgov/zeva2/issues/533) ([#546](https://github.com/bcgov/zeva2/issues/546)) ([04f1832](https://github.com/bcgov/zeva2/commit/04f1832333d19a8565435c28a5fbcf49711bba99)) |
 | [1.44.0](https://github.com/bcgov/zeva2/compare/v1.43.1...v1.44.0) | 2026-07-15 | ✨ Feature | add object IDs to dashboard items ([#543](https://github.com/bcgov/zeva2/issues/543)) ([b24040d](https://github.com/bcgov/zeva2/commit/b24040dd25febee01efe56d783916484f3a1eb8a)) |
 | [1.43.1](https://github.com/bcgov/zeva2/compare/v1.43.0...v1.43.1) | 2026-07-14 | 🐛 Fix | 2026-07-14 - misc fixes ([#544](https://github.com/bcgov/zeva2/issues/544)) ([4c036c2](https://github.com/bcgov/zeva2/commit/4c036c2751bd75f2dd4dc8e7c9a0000a1e8cb621)) |
 | [1.43.0](https://github.com/bcgov/zeva2/compare/v1.42.2...v1.43.0) | 2026-07-14 | ✨ Feature | credit transfer styling and flow update ([#527](https://github.com/bcgov/zeva2/issues/527)) ([5eb6dba](https://github.com/bcgov/zeva2/commit/5eb6dbac81234bfc4f93e3db2b0bc8e77bb1af6b)) |
