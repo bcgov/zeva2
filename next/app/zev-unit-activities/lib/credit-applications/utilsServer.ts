@@ -28,6 +28,7 @@ import {
   getComplianceDate,
   getCurrentComplianceYear,
 } from "@/app/lib/utils/complianceYear";
+import { ValidationError } from "@/app/lib/utils/actionResponse";
 
 export const getWhereClause = (
   filters: Record<string, string>,
@@ -299,7 +300,20 @@ export const getSerializedApplications = (
   return result;
 };
 
-export const parseSupplierSubmission = (sheet: Excel.Worksheet) => {
+export const parseSupplierSubmission = (
+  sheet: Excel.Worksheet,
+): {
+  data: Record<
+    string,
+    {
+      make: string;
+      modelName: string;
+      modelYear: ModelYear;
+      timestamp: Date;
+    }
+  >;
+  errors: ValidationError[];
+} => {
   const data: Record<
     string,
     {
@@ -309,9 +323,12 @@ export const parseSupplierSubmission = (sheet: Excel.Worksheet) => {
       timestamp: Date;
     }
   > = {};
-  const duplicateVins: Set<string> = new Set();
-  const invalidRows: number[] = [];
+  const errors: ValidationError[] = [];
+  const seenVins = new Set<string>();
+  const duplicateVins = new Set<string>();
   const modelYearsMap = getStringsToModelYearsEnumsMap();
+  const minDate = new Date("2018-01-02T00:00:00");
+
   for (let i = 2; i <= SupplierTemplate.ZEVsSuppliedSheetNumberOfRows; i++) {
     const row = sheet.getRow(i);
     const make = row.getCell(1).value?.toString();
@@ -319,47 +336,100 @@ export const parseSupplierSubmission = (sheet: Excel.Worksheet) => {
     const modelYear = row.getCell(3).value?.toString();
     const vin = row.getCell(4).value?.toString();
     const date = row.getCell(5).value?.toString();
+
     if (!make && !modelName && !modelYear && !vin && !date) {
       continue;
     }
-    if (vin && vin.length === 17 && make && modelName && modelYear && date) {
-      if (data[vin]) {
-        duplicateVins.add(vin);
-        continue;
-      }
-      const modelYearEnum = modelYearsMap[modelYear];
-      const [isValidDate, timestamp] = validateDate(date);
-      if (
-        modelYearEnum &&
-        isValidDate &&
-        timestamp >= new Date("2018-01-02T00:00:00")
-      ) {
-        data[vin] = {
-          make,
-          modelName,
-          modelYear: modelYearEnum,
-          timestamp,
-        };
-      } else {
-        invalidRows.push(i);
-      }
+
+    const vinIsValid = !!vin && vin.length === 17;
+    const recordId = vinIsValid ? vin : `Row ${i}`;
+    let rowHasError = false;
+
+    if (!vinIsValid) {
+      errors.push({
+        errorType: "Invalid VIN",
+        record: `Row ${i}`,
+        details: vin ? `"${vin}" must be exactly 17 characters` : "VIN is missing",
+      });
+      rowHasError = true;
+    }
+
+    if (!make) {
+      errors.push({ errorType: "Missing data", record: recordId, details: "Make is missing" });
+      rowHasError = true;
+    }
+
+    if (!modelName) {
+      errors.push({ errorType: "Missing data", record: recordId, details: "Model name is missing" });
+      rowHasError = true;
+    }
+
+    let modelYearEnum: ModelYear | undefined;
+    if (!modelYear) {
+      errors.push({ errorType: "Missing data", record: recordId, details: "Model year is missing" });
+      rowHasError = true;
     } else {
-      invalidRows.push(i);
+      modelYearEnum = modelYearsMap[modelYear];
+      if (!modelYearEnum) {
+        errors.push({
+          errorType: "Invalid model year",
+          record: recordId,
+          details: `"${modelYear}" is not a recognized model year`,
+        });
+        rowHasError = true;
+      }
+    }
+
+    let timestamp: Date | undefined;
+    if (!date) {
+      errors.push({ errorType: "Missing data", record: recordId, details: "Date is missing" });
+      rowHasError = true;
+    } else {
+      const [isValidDate, ts] = validateDate(date);
+      if (!isValidDate) {
+        errors.push({
+          errorType: "Invalid date format",
+          record: recordId,
+          details: `"${date}" is not a valid date (expected YYYY-MM-DD)`,
+        });
+        rowHasError = true;
+      } else if (ts < minDate) {
+        errors.push({
+          errorType: "Date out of range",
+          record: recordId,
+          details: `Date must be on or after 2018-01-02`,
+        });
+        rowHasError = true;
+      } else {
+        timestamp = ts;
+      }
+    }
+
+    if (vinIsValid) {
+      if (seenVins.has(vin)) {
+        duplicateVins.add(vin);
+      } else {
+        seenVins.add(vin);
+        if (!rowHasError && make && modelName && modelYearEnum && timestamp) {
+          data[vin] = { make, modelName, modelYear: modelYearEnum, timestamp };
+        }
+      }
     }
   }
-  if (duplicateVins.size > 0) {
-    throw new Error(`Duplicate VINs: ${[...duplicateVins].join(", ")}`);
+
+  for (const vin of duplicateVins) {
+    delete data[vin];
+    errors.push({ errorType: "Duplicate VIN", record: vin });
   }
-  if (invalidRows.length > 0) {
-    throw new Error(
-      `Rows with missing or invalid data: ${invalidRows.join(", ")}. Please refer to the instructions sheet for guidance.`,
-    );
+
+  if (errors.length === 0 && Object.keys(data).length === 0) {
+    errors.push({
+      errorType: "Empty submission",
+      details: "Submission must have at least one VIN",
+    });
   }
-  const numberOfVins = Object.keys(data).length;
-  if (numberOfVins === 0) {
-    throw new Error("Submission must have at least one VIN!");
-  }
-  return data;
+
+  return { data, errors };
 };
 
 export const getWarningsMap = (

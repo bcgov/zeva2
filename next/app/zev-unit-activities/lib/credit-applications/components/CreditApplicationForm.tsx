@@ -23,6 +23,7 @@ import { Attachment, AttachmentDownload } from "@/app/lib/constants/attachment";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faDownload, faFloppyDisk } from "@fortawesome/free-solid-svg-icons";
 import { PrintDownloadButton } from "@/app/lib/components/PrintDownloadButton";
+import { ValidationError } from "@/app/lib/utils/actionResponse";
 
 export const CreditApplicationForm = (props: {
   legalName: string;
@@ -41,6 +42,9 @@ export const CreditApplicationForm = (props: {
   const [files, setFiles] = useState<FileWithPath[]>([]);
   const [attachments, setAttachments] = useState<FileWithPath[]>([]);
   const [error, setError] = useState<string>("");
+  const [validationErrors, setValidationErrors] = useState<ValidationError[]>(
+    [],
+  );
 
   useEffect(() => {
     const loadPrev = async () => {
@@ -105,6 +109,7 @@ export const CreditApplicationForm = (props: {
 
   const handleSave = useCallback(() => {
     setError("");
+    setValidationErrors([]);
     startTransition(async () => {
       try {
         if (files.length !== 1) {
@@ -145,6 +150,10 @@ export const CreditApplicationForm = (props: {
           attachmentsPayload,
           props.creditApplication?.id,
         );
+        if (response.responseType === "validationErrors") {
+          setValidationErrors(response.errors);
+          return;
+        }
         if (response.responseType === "error") {
           throw new Error(response.message);
         }
@@ -337,6 +346,26 @@ export const CreditApplicationForm = (props: {
             </Button>
           </div>
         </div>
+        {validationErrors.length > 0 && (
+          <div className="border border-red-300 rounded p-4 bg-red-50">
+            <p className="font-semibold text-red-700 mb-2">
+              The following errors must be resolved before saving:
+            </p>
+            <ul className="list-disc pl-5 space-y-1 text-sm text-red-700">
+              {validationErrors.map((err, i) => (
+                <li key={i}>
+                  <span className="font-medium">{err.errorType}</span>
+                  {err.record && (
+                    <span className="text-red-600"> — {err.record}</span>
+                  )}
+                  {err.details && (
+                    <span className="text-red-500">: {err.details}</span>
+                  )}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
       </div>
     </div>
   );
