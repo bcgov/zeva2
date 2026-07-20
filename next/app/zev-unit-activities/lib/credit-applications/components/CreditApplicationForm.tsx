@@ -24,6 +24,7 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faDownload, faFloppyDisk } from "@fortawesome/free-solid-svg-icons";
 import { PrintDownloadButton } from "@/app/lib/components/PrintDownloadButton";
 import { ValidationError } from "@/app/lib/utils/actionResponse";
+import { ValidationErrorsList } from "@/app/lib/components/ValidationErrorsList";
 
 export const CreditApplicationForm = (props: {
   legalName: string;
@@ -346,26 +347,10 @@ export const CreditApplicationForm = (props: {
             </Button>
           </div>
         </div>
-        {validationErrors.length > 0 && (
-          <div className="border border-red-300 rounded p-4 bg-red-50">
-            <p className="font-semibold text-red-700 mb-2">
-              The following errors must be resolved before saving:
-            </p>
-            <ul className="list-disc pl-5 space-y-1 text-sm text-red-700">
-              {validationErrors.map((err, i) => (
-                <li key={i}>
-                  <span className="font-medium">{err.errorType}</span>
-                  {err.record && (
-                    <span className="text-red-600"> — {err.record}</span>
-                  )}
-                  {err.details && (
-                    <span className="text-red-500">: {err.details}</span>
-                  )}
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
+        <ValidationErrorsList
+          errors={validationErrors}
+          heading="The following errors must be resolved before saving:"
+        />
       </div>
     </div>
   );

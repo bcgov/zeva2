@@ -22,6 +22,7 @@ import { Modal, ModalType } from "@/app/lib/components/Modal";
 import { getNormalizedComment } from "@/app/lib/utils/comment";
 import { CommentBox } from "@/app/lib/components/CommentBox";
 import { ValidationError } from "@/app/lib/utils/actionResponse";
+import { ValidationErrorsList } from "@/app/lib/components/ValidationErrorsList";
 
 export const SupplierActions = (props: {
   creditApplicationId: number;
@@ -142,27 +143,14 @@ export const SupplierActions = (props: {
 
   const isSigningAuthority = props.userRoles.includes(Role.SIGNING_AUTHORITY);
 
-  const validationErrorsList =
-    validationErrors.length > 0 ? (
-      <div className="border border-red-300 rounded p-4 bg-red-50 mx-5 mb-2">
-        <p className="font-semibold text-red-700 mb-2">
-          Please resolve the following errors before submitting:
-        </p>
-        <ul className="list-disc pl-5 space-y-1 text-sm text-red-700">
-          {validationErrors.map((err, i) => (
-            <li key={i}>
-              <span className="font-medium">{err.errorType}</span>
-              {err.record && (
-                <span className="text-red-600"> — {err.record}</span>
-              )}
-              {err.details && (
-                <span className="text-red-500">: {err.details}</span>
-              )}
-            </li>
-          ))}
-        </ul>
-      </div>
-    ) : null;
+  const validationErrorsList = (
+    <div className="mx-5 mb-2">
+      <ValidationErrorsList
+        errors={validationErrors}
+        heading="Please resolve the following errors before submitting:"
+      />
+    </div>
+  );
 
   if (props.status === CreditApplicationSupplierStatus.DRAFT) {
     return (
