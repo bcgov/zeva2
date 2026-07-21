@@ -6,3 +6,4 @@ export * from "./ClientSideTable";
 export * from "./Tooltip";
 export * from "./Breadcrumbs";
 export * from "./LegalDisclaimer";
+export * from "./ValidationErrorsList";

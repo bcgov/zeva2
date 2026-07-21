@@ -14,13 +14,25 @@ export type SuccessActionResponse = {
   responseType: "success";
 };
 
+export type ValidationError = {
+  errorType: string;
+  record?: string;
+  details?: string;
+};
+
+export type ValidationErrorsActionResponse = {
+  responseType: "validationErrors";
+  errors: ValidationError[];
+};
+
 export type ErrorOrSuccessActionResponse =
   | ErrorActionResponse
   | SuccessActionResponse;
 
 export type DataOrErrorActionResponse<T> =
   | DataActionResponse<T>
-  | ErrorActionResponse;
+  | ErrorActionResponse
+  | ValidationErrorsActionResponse;
 
 export const getDataActionResponse = <T>(data: T): DataActionResponse<T> => {
   return {
@@ -37,4 +49,10 @@ export const getErrorActionResponse = (
 
 export const getSuccessActionResponse = (): SuccessActionResponse => {
   return { responseType: "success" };
+};
+
+export const getValidationErrorsActionResponse = (
+  errors: ValidationError[],
+): ValidationErrorsActionResponse => {
+  return { responseType: "validationErrors", errors };
 };

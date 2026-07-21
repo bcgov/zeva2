@@ -37,9 +37,12 @@ import {
 import {
   DataOrErrorActionResponse,
   ErrorOrSuccessActionResponse,
+  ValidationError,
+  ValidationErrorsActionResponse,
   getDataActionResponse,
   getErrorActionResponse,
   getSuccessActionResponse,
+  getValidationErrorsActionResponse,
 } from "@/app/lib/utils/actionResponse";
 import { Attachment, AttachmentDownload } from "@/app/lib/constants/attachment";
 import { addJobToEmailQueue } from "@/app/lib/services/queue";
@@ -183,31 +186,48 @@ export const supplierSave = async (
     const applicationBuf = await getObjectAsBuffer(applicationObjectName);
     const workbook = new Excel.Workbook();
     await workbook.xlsx.load(applicationBuf);
-    const recordsToCreatePrelim: Omit<
-      CreditApplicationRecordCreateManyInput,
-      "creditApplicationId"
-    >[] = [];
-    const modelYears: Set<ModelYear> = new Set();
     const dataSheet = workbook.getWorksheet(
       SupplierTemplate.ZEVsSuppliedSheetName,
     );
     if (!dataSheet) {
       throw new Error("Expected sheet not found!");
     }
-    const data = parseSupplierSubmission(dataSheet);
-    for (const [_vin, info] of Object.entries(data)) {
+
+    const { data, errors: parseErrors } = parseSupplierSubmission(dataSheet);
+    const allErrors: ValidationError[] = [...parseErrors];
+
+    const modelYears: Set<ModelYear> = new Set();
+    for (const info of Object.values(data)) {
       modelYears.add(info.modelYear);
     }
-    const vehiclesMap = await getEligibleVehiclesMap(
-      userOrgId,
-      Array.from(modelYears),
-    );
-    const vinsMissingVehicles: string[] = [];
+
+    const vinsToCheck = Object.keys(data);
+    const [vehiclesMap, reservedVins] = await Promise.all([
+      modelYears.size > 0
+        ? getEligibleVehiclesMap(userOrgId, Array.from(modelYears))
+        : Promise.resolve(
+            {} as Awaited<ReturnType<typeof getEligibleVehiclesMap>>,
+          ),
+      vinsToCheck.length > 0
+        ? getReservedVins(vinsToCheck)
+        : Promise.resolve([]),
+    ]);
+
+    const recordsToCreatePrelim: Omit<
+      CreditApplicationRecordCreateManyInput,
+      "creditApplicationId"
+    >[] = [];
+    const finalModelYears: Set<ModelYear> = new Set();
+
     for (const [vin, info] of Object.entries(data)) {
       const vehicleInfo =
         vehiclesMap[info.make]?.[info.modelName]?.[info.modelYear];
       if (!vehicleInfo) {
-        vinsMissingVehicles.push(vin);
+        allErrors.push({
+          errorType: "No matching vehicle",
+          record: vin,
+          details: `${info.make} ${info.modelName} ${info.modelYear} is not in your approved vehicle list`,
+        });
       } else {
         recordsToCreatePrelim.push({
           vin,
@@ -222,14 +242,22 @@ export const supplierSave = async (
           range: vehicleInfo[5],
           validated: false,
         });
-        modelYears.add(info.modelYear);
+        finalModelYears.add(info.modelYear);
       }
     }
-    if (vinsMissingVehicles.length > 0) {
-      throw new Error(
-        `System vehicles not found for the following VINs: ${vinsMissingVehicles.join(", ")}`,
-      );
+
+    for (const vin of reservedVins) {
+      allErrors.push({
+        errorType: "Already reserved VIN",
+        record: vin,
+        details: "This VIN has already been reserved by another application",
+      });
     }
+
+    if (allErrors.length > 0) {
+      return getValidationErrorsActionResponse(allErrors);
+    }
+
     await prisma.$transaction(async (tx) => {
       if (creditApplicationId) {
         await tx.creditApplication.update({
@@ -239,7 +267,7 @@ export const supplierSave = async (
           data: {
             objectName: applicationObjectName,
             fileName: applicationFileName,
-            modelYears: Array.from(modelYears),
+            modelYears: Array.from(finalModelYears),
             legalName,
             makes,
             serviceAddress,
@@ -259,7 +287,7 @@ export const supplierSave = async (
             fileName: applicationFileName,
             status: CreditApplicationStatus.DRAFT,
             supplierStatus: CreditApplicationStatus.DRAFT,
-            modelYears: Array.from(modelYears),
+            modelYears: Array.from(finalModelYears),
             legalName,
             makes,
             serviceAddress,
@@ -335,7 +363,7 @@ export const supplierDelete = async (
 export const supplierSubmit = async (
   creditApplicationId: number,
   comment?: string,
-): Promise<ErrorOrSuccessActionResponse> => {
+): Promise<ErrorOrSuccessActionResponse | ValidationErrorsActionResponse> => {
   const { userIsGov, userOrgId, userId, userRoles } = await getUserInfo();
   if (userIsGov || !userRoles.includes(Role.SIGNING_AUTHORITY)) {
     return getErrorActionResponse("Unauthorized!");
@@ -367,23 +395,34 @@ export const supplierSubmit = async (
     return getErrorActionResponse("Invalid Action!");
   }
   const records = application.CreditApplicationRecord;
+  const vins = records.map((r) => r.vin);
+
   try {
-    const invalidDateVins: string[] = [];
+    const allErrors: ValidationError[] = [];
+
     for (const record of records) {
       if (record.timestamp > new Date()) {
-        invalidDateVins.push(record.vin);
+        allErrors.push({
+          errorType: "Future date",
+          record: record.vin,
+          details: `Sale date ${getIsoYmdString(record.timestamp)} is in the future`,
+        });
       }
     }
-    if (invalidDateVins.length > 0) {
-      throw new Error(`VINs with future dates: ${invalidDateVins.join(", ")}`);
-    }
-    const vins = records.reduce((acc: string[], cv) => {
-      return [...acc, cv.vin];
-    }, []);
+
     const reservedVins = await getReservedVins(vins);
-    if (reservedVins.length > 0) {
-      throw new Error(`Reserved VINs: ${reservedVins.join(", ")}`);
+    for (const vin of reservedVins) {
+      allErrors.push({
+        errorType: "Already reserved VIN",
+        record: vin,
+        details: "This VIN has already been reserved by another application",
+      });
     }
+
+    if (allErrors.length > 0) {
+      return getValidationErrorsActionResponse(allErrors);
+    }
+
     const vehicleCounts = await getVehicleCounts(creditApplicationId, "all");
     await prisma.$transaction(async (tx) => {
       await tx.creditApplication.update({

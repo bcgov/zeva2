@@ -21,6 +21,8 @@ import { downloadBuffer } from "@/app/lib/utils/download";
 import { Modal, ModalType } from "@/app/lib/components/Modal";
 import { getNormalizedComment } from "@/app/lib/utils/comment";
 import { CommentBox } from "@/app/lib/components/CommentBox";
+import { ValidationError } from "@/app/lib/utils/actionResponse";
+import { ValidationErrorsList } from "@/app/lib/components/ValidationErrorsList";
 
 export const SupplierActions = (props: {
   creditApplicationId: number;
@@ -31,6 +33,9 @@ export const SupplierActions = (props: {
   const [isPending, startTransition] = useTransition();
   const router = useRouter();
   const [error, setError] = useState<string>("");
+  const [validationErrors, setValidationErrors] = useState<ValidationError[]>(
+    [],
+  );
   const [comment, setComment] = useState<string>("");
   const [modal, setModal] = useState<JSX.Element | null>(null);
 
@@ -55,11 +60,15 @@ export const SupplierActions = (props: {
   }, [props.creditApplicationId, router]);
 
   const handleSubmit = useCallback(async () => {
+    setError("");
+    setValidationErrors([]);
     const response = await supplierSubmit(
       props.creditApplicationId,
       getNormalizedComment(comment),
     );
-    if (response.responseType === "error") {
+    if (response.responseType === "validationErrors") {
+      setValidationErrors(response.errors);
+    } else if (response.responseType === "error") {
       setError(response.message);
     } else {
       router.refresh();
@@ -134,6 +143,15 @@ export const SupplierActions = (props: {
 
   const isSigningAuthority = props.userRoles.includes(Role.SIGNING_AUTHORITY);
 
+  const validationErrorsList = (
+    <div className="mx-5 mb-2">
+      <ValidationErrorsList
+        errors={validationErrors}
+        heading="Please resolve the following errors before submitting:"
+      />
+    </div>
+  );
+
   if (props.status === CreditApplicationSupplierStatus.DRAFT) {
     return (
       <>
@@ -163,6 +181,7 @@ export const SupplierActions = (props: {
           )}
           {modal}
         </div>
+        {validationErrorsList}
       </>
     );
   }

@@ -23,6 +23,8 @@ import { Attachment, AttachmentDownload } from "@/app/lib/constants/attachment";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faDownload, faFloppyDisk } from "@fortawesome/free-solid-svg-icons";
 import { PrintDownloadButton } from "@/app/lib/components/PrintDownloadButton";
+import { ValidationError } from "@/app/lib/utils/actionResponse";
+import { ValidationErrorsList } from "@/app/lib/components/ValidationErrorsList";
 
 export const CreditApplicationForm = (props: {
   legalName: string;
@@ -41,6 +43,9 @@ export const CreditApplicationForm = (props: {
   const [files, setFiles] = useState<FileWithPath[]>([]);
   const [attachments, setAttachments] = useState<FileWithPath[]>([]);
   const [error, setError] = useState<string>("");
+  const [validationErrors, setValidationErrors] = useState<ValidationError[]>(
+    [],
+  );
 
   useEffect(() => {
     const loadPrev = async () => {
@@ -105,6 +110,7 @@ export const CreditApplicationForm = (props: {
 
   const handleSave = useCallback(() => {
     setError("");
+    setValidationErrors([]);
     startTransition(async () => {
       try {
         if (files.length !== 1) {
@@ -145,6 +151,10 @@ export const CreditApplicationForm = (props: {
           attachmentsPayload,
           props.creditApplication?.id,
         );
+        if (response.responseType === "validationErrors") {
+          setValidationErrors(response.errors);
+          return;
+        }
         if (response.responseType === "error") {
           throw new Error(response.message);
         }
@@ -337,6 +347,10 @@ export const CreditApplicationForm = (props: {
             </Button>
           </div>
         </div>
+        <ValidationErrorsList
+          errors={validationErrors}
+          heading="The following errors must be resolved before saving:"
+        />
       </div>
     </div>
   );
