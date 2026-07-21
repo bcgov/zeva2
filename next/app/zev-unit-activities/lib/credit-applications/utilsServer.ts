@@ -300,6 +300,10 @@ export const getSerializedApplications = (
   return result;
 };
 
+// in the returned object,
+// "data" consists of valid records,
+// and "seenVins" consist of all encountered, 17 character VINs,
+// regardless of whether the record they belong to is valid
 export const parseSupplierSubmission = (
   sheet: Excel.Worksheet,
 ): {
@@ -313,6 +317,7 @@ export const parseSupplierSubmission = (
     }
   >;
   errors: ValidationError[];
+  seenVins: Set<string>;
 } => {
   const data: Record<
     string,
@@ -329,6 +334,7 @@ export const parseSupplierSubmission = (
   const modelYearsMap = getStringsToModelYearsEnumsMap();
   const minDate = new Date("2018-01-02T00:00:00");
 
+  let atLeastOneRow = false;
   for (let i = 2; i <= SupplierTemplate.ZEVsSuppliedSheetNumberOfRows; i++) {
     const row = sheet.getRow(i);
     const make = row.getCell(1).value?.toString();
@@ -340,6 +346,7 @@ export const parseSupplierSubmission = (
     if (!make && !modelName && !modelYear && !vin && !date) {
       continue;
     }
+    atLeastOneRow = true;
 
     const vinIsValid = !!vin && vin.length === 17;
     const recordId = vinIsValid ? vin : `Row ${i}`;
@@ -349,24 +356,38 @@ export const parseSupplierSubmission = (
       errors.push({
         errorType: "Invalid VIN",
         record: `Row ${i}`,
-        details: vin ? `"${vin}" must be exactly 17 characters` : "VIN is missing",
+        details: vin
+          ? `"${vin}" must be exactly 17 characters`
+          : "VIN is missing",
       });
       rowHasError = true;
     }
 
     if (!make) {
-      errors.push({ errorType: "Missing data", record: recordId, details: "Make is missing" });
+      errors.push({
+        errorType: "Missing data",
+        record: recordId,
+        details: "Make is missing",
+      });
       rowHasError = true;
     }
 
     if (!modelName) {
-      errors.push({ errorType: "Missing data", record: recordId, details: "Model name is missing" });
+      errors.push({
+        errorType: "Missing data",
+        record: recordId,
+        details: "Model name is missing",
+      });
       rowHasError = true;
     }
 
     let modelYearEnum: ModelYear | undefined;
     if (!modelYear) {
-      errors.push({ errorType: "Missing data", record: recordId, details: "Model year is missing" });
+      errors.push({
+        errorType: "Missing data",
+        record: recordId,
+        details: "Model year is missing",
+      });
       rowHasError = true;
     } else {
       modelYearEnum = modelYearsMap[modelYear];
@@ -382,7 +403,11 @@ export const parseSupplierSubmission = (
 
     let timestamp: Date | undefined;
     if (!date) {
-      errors.push({ errorType: "Missing data", record: recordId, details: "Date is missing" });
+      errors.push({
+        errorType: "Missing data",
+        record: recordId,
+        details: "Date is missing",
+      });
       rowHasError = true;
     } else {
       const [isValidDate, ts] = validateDate(date);
@@ -417,19 +442,25 @@ export const parseSupplierSubmission = (
     }
   }
 
+  if (!atLeastOneRow) {
+    return {
+      data: {},
+      errors: [
+        {
+          errorType: "Empty submission",
+          details: "Submission must have at least one VIN",
+        },
+      ],
+      seenVins: new Set(),
+    };
+  }
+
   for (const vin of duplicateVins) {
     delete data[vin];
     errors.push({ errorType: "Duplicate VIN", record: vin });
   }
 
-  if (errors.length === 0 && Object.keys(data).length === 0) {
-    errors.push({
-      errorType: "Empty submission",
-      details: "Submission must have at least one VIN",
-    });
-  }
-
-  return { data, errors };
+  return { data, errors, seenVins };
 };
 
 export const getWarningsMap = (

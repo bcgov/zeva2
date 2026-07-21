@@ -68,6 +68,13 @@ export const CreditApplicationForm = (props: {
     loadPrev();
   }, [props.creditApplication]);
 
+  useEffect(() => {
+    if (files.length === 0) {
+      setError("");
+      setValidationErrors([]);
+    }
+  }, [files]);
+
   const handleDownload = useCallback(() => {
     setError("");
     startTransition(async () => {
@@ -102,10 +109,6 @@ export const CreditApplicationForm = (props: {
         }
       }
     });
-  }, []);
-
-  const handlePrintDownload = useCallback(() => {
-    globalThis.print();
   }, []);
 
   const handleSave = useCallback(() => {
@@ -151,15 +154,19 @@ export const CreditApplicationForm = (props: {
           attachmentsPayload,
           props.creditApplication?.id,
         );
-        if (response.responseType === "validationErrors") {
-          setValidationErrors(response.errors);
-          return;
+        if (response.responseType === "data") {
+          const data = response.data;
+          if (data.creditApplicationId) {
+            router.push(
+              `${Routes.CreditApplications}/${data.creditApplicationId}`,
+            );
+          } else if (data.validationErrors.length > 0) {
+            setValidationErrors(data.validationErrors);
+          }
         }
         if (response.responseType === "error") {
           throw new Error(response.message);
         }
-        const applicationId = response.data;
-        router.push(`${Routes.CreditApplications}/${applicationId}`);
       } catch (e) {
         if (e instanceof Error) {
           setError(e.message);

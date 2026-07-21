@@ -28,24 +28,10 @@ export const getVehiclePayload = (data: VehicleFormData): VehiclePayload => {
   if (!classCode) {
     throw new Error("Invalid Body type!");
   }
-  try {
-    const rangeDec = new Decimal(data.range);
-    if (!rangeDec.isInteger()) {
-      throw new Error();
-    }
-  } catch (e) {
-    throw new Error("Range must be an integer!");
-  }
-  const range = new Decimal(data.range).toNumber();
-  try {
-    const gvwrDec = new Decimal(data.gvwr);
-    if (!gvwrDec.isInteger()) {
-      throw new Error();
-    }
-  } catch (e) {
-    throw new Error("GVWR must be an integer!");
-  }
+  gvwrCheck(data.gvwr);
   const weight = new Decimal(data.gvwr).toNumber();
+  rangeCheck(data.range);
+  const range = new Decimal(data.range).toNumber();
   return {
     modelYear: data.modelYear,
     make: data.make,
@@ -56,4 +42,26 @@ export const getVehiclePayload = (data: VehicleFormData): VehiclePayload => {
     zevType: data.zevType,
     weight,
   };
+};
+
+export const gvwrCheck = (gvwr: string) => {
+  try {
+    const gvwrDec = new Decimal(gvwr);
+    if (!gvwrDec.isInteger() || gvwrDec.lte(0) || gvwrDec.gt(4536)) {
+      throw new Error();
+    }
+  } catch (e) {
+    throw new Error("Invalid GVWR!");
+  }
+};
+
+export const rangeCheck = (range: string) => {
+  try {
+    const rangeDec = new Decimal(range);
+    if (!rangeDec.isInteger() || rangeDec.lte(0)) {
+      throw new Error();
+    }
+  } catch (e) {
+    throw new Error("Invalid Electric EPA Range!");
+  }
 };
