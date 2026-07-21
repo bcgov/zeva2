@@ -37,12 +37,11 @@ import {
 import {
   DataOrErrorActionResponse,
   ErrorOrSuccessActionResponse,
+  DataActionResponse,
   ValidationError,
-  ValidationErrorsActionResponse,
   getDataActionResponse,
   getErrorActionResponse,
   getSuccessActionResponse,
-  getValidationErrorsActionResponse,
 } from "@/app/lib/utils/actionResponse";
 import { Attachment, AttachmentDownload } from "@/app/lib/constants/attachment";
 import { addJobToEmailQueue } from "@/app/lib/services/queue";
@@ -161,7 +160,12 @@ export const supplierSave = async (
   applicationFileName: string,
   attachments: Attachment[],
   creditApplicationId?: number,
-): Promise<DataOrErrorActionResponse<number>> => {
+): Promise<
+  DataOrErrorActionResponse<{
+    creditApplicationId: number | null;
+    validationErrors: ValidationError[];
+  }>
+> => {
   const { userIsGov, userOrgId, userRoles } = await getUserInfo();
   if (userIsGov || !userRoles.includes(Role.ZEVA_BCEID_USER)) {
     return getErrorActionResponse("Unauthorized!");
@@ -193,7 +197,11 @@ export const supplierSave = async (
       throw new Error("Expected sheet not found!");
     }
 
-    const { data, errors: parseErrors } = parseSupplierSubmission(dataSheet);
+    const {
+      data,
+      errors: parseErrors,
+      seenVins,
+    } = parseSupplierSubmission(dataSheet);
     const allErrors: ValidationError[] = [...parseErrors];
 
     const modelYears: Set<ModelYear> = new Set();
@@ -201,23 +209,24 @@ export const supplierSave = async (
       modelYears.add(info.modelYear);
     }
 
-    const vinsToCheck = Object.keys(data);
     const [vehiclesMap, reservedVins] = await Promise.all([
-      modelYears.size > 0
-        ? getEligibleVehiclesMap(userOrgId, Array.from(modelYears))
-        : Promise.resolve(
-            {} as Awaited<ReturnType<typeof getEligibleVehiclesMap>>,
-          ),
-      vinsToCheck.length > 0
-        ? getReservedVins(vinsToCheck)
-        : Promise.resolve([]),
+      getEligibleVehiclesMap(userOrgId, Array.from(modelYears)),
+      getReservedVins(Array.from(seenVins)),
     ]);
+
+    for (const vin of reservedVins) {
+      allErrors.push({
+        errorType: "Already reserved VIN",
+        record: vin,
+        details: "This VIN has already been reserved by another application",
+      });
+    }
 
     const recordsToCreatePrelim: Omit<
       CreditApplicationRecordCreateManyInput,
       "creditApplicationId"
     >[] = [];
-    const finalModelYears: Set<ModelYear> = new Set();
+    const modelYearsMap = getModelYearEnumsToStringsMap();
 
     for (const [vin, info] of Object.entries(data)) {
       const vehicleInfo =
@@ -226,7 +235,7 @@ export const supplierSave = async (
         allErrors.push({
           errorType: "No matching vehicle",
           record: vin,
-          details: `${info.make} ${info.modelName} ${info.modelYear} is not in your approved vehicle list`,
+          details: `${info.make} ${info.modelName} ${modelYearsMap[info.modelYear]} is not in your approved vehicle list`,
         });
       } else {
         recordsToCreatePrelim.push({
@@ -242,20 +251,14 @@ export const supplierSave = async (
           range: vehicleInfo[5],
           validated: false,
         });
-        finalModelYears.add(info.modelYear);
       }
     }
 
-    for (const vin of reservedVins) {
-      allErrors.push({
-        errorType: "Already reserved VIN",
-        record: vin,
-        details: "This VIN has already been reserved by another application",
-      });
-    }
-
     if (allErrors.length > 0) {
-      return getValidationErrorsActionResponse(allErrors);
+      return getDataActionResponse({
+        creditApplicationId: null,
+        validationErrors: allErrors,
+      });
     }
 
     await prisma.$transaction(async (tx) => {
@@ -267,7 +270,7 @@ export const supplierSave = async (
           data: {
             objectName: applicationObjectName,
             fileName: applicationFileName,
-            modelYears: Array.from(finalModelYears),
+            modelYears: Array.from(modelYears),
             legalName,
             makes,
             serviceAddress,
@@ -287,7 +290,7 @@ export const supplierSave = async (
             fileName: applicationFileName,
             status: CreditApplicationStatus.DRAFT,
             supplierStatus: CreditApplicationStatus.DRAFT,
-            modelYears: Array.from(finalModelYears),
+            modelYears: Array.from(modelYears),
             legalName,
             makes,
             serviceAddress,
@@ -315,7 +318,10 @@ export const supplierSave = async (
     }
     throw e;
   }
-  return getDataActionResponse(applicationId);
+  return getDataActionResponse({
+    creditApplicationId: applicationId,
+    validationErrors: [],
+  });
 };
 
 export const supplierDelete = async (
@@ -363,7 +369,9 @@ export const supplierDelete = async (
 export const supplierSubmit = async (
   creditApplicationId: number,
   comment?: string,
-): Promise<ErrorOrSuccessActionResponse | ValidationErrorsActionResponse> => {
+): Promise<
+  ErrorOrSuccessActionResponse | DataActionResponse<ValidationError[]>
+> => {
   const { userIsGov, userOrgId, userId, userRoles } = await getUserInfo();
   if (userIsGov || !userRoles.includes(Role.SIGNING_AUTHORITY)) {
     return getErrorActionResponse("Unauthorized!");
@@ -405,7 +413,7 @@ export const supplierSubmit = async (
         allErrors.push({
           errorType: "Future date",
           record: record.vin,
-          details: `Sale date ${getIsoYmdString(record.timestamp)} is in the future`,
+          details: `Date ${getIsoYmdString(record.timestamp)} is in the future`,
         });
       }
     }
@@ -420,7 +428,7 @@ export const supplierSubmit = async (
     }
 
     if (allErrors.length > 0) {
-      return getValidationErrorsActionResponse(allErrors);
+      return getDataActionResponse(allErrors);
     }
 
     const vehicleCounts = await getVehicleCounts(creditApplicationId, "all");

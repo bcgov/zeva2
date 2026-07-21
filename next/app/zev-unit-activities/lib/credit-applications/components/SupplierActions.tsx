@@ -66,8 +66,8 @@ export const SupplierActions = (props: {
       props.creditApplicationId,
       getNormalizedComment(comment),
     );
-    if (response.responseType === "validationErrors") {
-      setValidationErrors(response.errors);
+    if (response.responseType === "data") {
+      setValidationErrors(response.data);
     } else if (response.responseType === "error") {
       setError(response.message);
     } else {
