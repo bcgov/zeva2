@@ -373,7 +373,7 @@ export const getVehicleCounts = async (
   creditApplicationId: number,
   type: "all" | "validated",
 ) => {
-  const result: Record<number, [number, number]> = {};
+  const subResult: Record<number, [number, number]> = {};
   const application = await prisma.creditApplication.findUnique({
     where: {
       id: creditApplicationId,
@@ -415,17 +415,17 @@ export const getVehicleCounts = async (
       vinsMissingVehicles.push(record.vin);
       continue;
     }
-    if (!result[vehicleId]) {
-      result[vehicleId] = [vehicleId, 0];
+    if (!subResult[vehicleId]) {
+      subResult[vehicleId] = [vehicleId, 0];
     }
-    result[vehicleId][1] = result[vehicleId][1] + 1;
+    subResult[vehicleId][1] = subResult[vehicleId][1] + 1;
   }
   if (vinsMissingVehicles.length > 0) {
     throw new Error(
       `System vehicles not found for the following VINs: ${vinsMissingVehicles.join(", ")}`,
     );
   }
-  return Object.values(result);
+  return Object.values(subResult);
 };
 
 export const getRecordStats = async (
