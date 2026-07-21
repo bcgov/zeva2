@@ -13,6 +13,7 @@ export enum MyrTemplate {
   PreviousVolumesSheetName = "Previous Volumes",
   VehicleStatisticsSheetName = "Vehicle Statistics",
   ComplianceReductionsSheetName = "Compliance Ratio Reductions",
+  ZevAndIceCounts = "ZEV and ICE Counts",
   PrevEndOfCdBalanceSheetName = "Balance at end of prev CD",
   PrevAfterCdBalanceSheetName = "Balance after prev CD",
   CreditsSheetName = "Credits",
@@ -33,6 +34,7 @@ export enum AssessmentTemplate {
   Name = "assessment_template.xlsx",
   DetailsSheetName = "Details",
   ComplianceReductionsSheetName = "Compliance Ratio Reductions",
+  ZevAndIceCounts = "ZEV and ICE Counts",
   BeginningBalanceSheetName = "Beginning Balance",
   CreditsSheetName = "Credits",
   PreviousAdjustmentsSheetName = "Previous Adjustments",
@@ -175,3 +177,7 @@ export const zevClassChoiceMap: Readonly<
   [ModelYear.MY_2034]: [ZevClass.A, ZevClass.B],
   [ModelYear.MY_2035]: [ZevClass.A, ZevClass.B],
 };
+
+export type ZevAndIceCounts = Partial<
+  Record<VehicleClass, { zev: string; ice: string }>
+>;

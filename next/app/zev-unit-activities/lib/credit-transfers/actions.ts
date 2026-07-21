@@ -14,9 +14,10 @@ import {
 } from "@/prisma/generated/enums";
 import {
   createTransferHistory,
-  transferIsCovered,
+  getProjectedBalance,
   updateTransferStatusAndCreateHistory,
 } from "./services";
+import { UncoveredTransfer } from "@/lib/utils/zevUnit";
 import { transferFromSupplierRescindableStatuses } from "./constants";
 import {
   DataOrErrorActionResponse,
@@ -379,9 +380,13 @@ export const directorIssueTransfer = async (
   if (!transfer) {
     return getErrorActionResponse("Invalid Action!");
   }
-  const isTransferCovered = await transferIsCovered(transfer);
-  if (!isTransferCovered) {
-    return getErrorActionResponse("Transfer not covered!");
+  try {
+    await getProjectedBalance(transfer);
+  } catch (e) {
+    if (e instanceof UncoveredTransfer) {
+      return getErrorActionResponse("Transfer not covered!");
+    }
+    throw e;
   }
   await prisma.$transaction(async (tx) => {
     const historyId = await updateTransferStatusAndCreateHistory(

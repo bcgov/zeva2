@@ -1,5 +1,5 @@
 import { JSX } from "react";
-import { FileReductionRecord } from "../utils";
+import { FileReductionRecord, FileZevAndIceCountRecord } from "../utils";
 import { ModelYear, ZevClass } from "@/prisma/generated/enums";
 import {
   getStringsToModelYearsEnumsMap,
@@ -9,6 +9,7 @@ import Decimal from "decimal.js";
 
 export const ParsedComplianceReductions = (props: {
   reductions: FileReductionRecord[];
+  zevAndIceCounts: FileZevAndIceCountRecord[];
 }) => {
   const headerClasses =
     "px-4 py-3 border-b border-dividerMedium font-bold text-sm";
@@ -79,6 +80,9 @@ export const ParsedComplianceReductions = (props: {
     ) {
       return null;
     }
+    if (props.zevAndIceCounts.length !== 1) {
+      return null;
+    }
     const modelYearsMap = getStringsToModelYearsEnumsMap();
     const zevClassMap = getStringsToZevClassEnumsMap();
     let salesOrSupplied = "Supplied";
@@ -116,9 +120,13 @@ export const ParsedComplianceReductions = (props: {
         </div>
         <div className="p-5 flex flex-row gap-8">
           <div className="w-1/3 grid grid-cols-2 gap-y-3">
-            <div className="font-bold">Total:</div>
+            <div className="font-bold">ZEV Total:</div>
             <div className="font-bold justify-self-end">
-              {Array.from(nvValues)[0]}
+              {props.zevAndIceCounts[0].zevCount}
+            </div>
+            <div className="font-bold">ICE Total:</div>
+            <div className="font-bold justify-self-end">
+              {props.zevAndIceCounts[0].iceCount}
             </div>
             <hr className="col-span-2 border-disabledBG"></hr>
             <div className="font-bold">Compliance Ratio:</div>

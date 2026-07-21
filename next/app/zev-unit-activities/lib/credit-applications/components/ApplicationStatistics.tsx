@@ -30,7 +30,7 @@ export const ApplicationStatistics = async (props: {
       >
         <div className="flex flex-col px-5 py-4 bg-disabledSurface font-bold">
           {type === "all"
-            ? "VIN's Claimed"
+            ? "VINs Claimed"
             : status === CreditApplicationStatus.APPROVED
               ? "VINs Issued"
               : "VINs to be Issued"}

@@ -81,14 +81,23 @@ export const AnalystActions = (props: {
   }, [props.id, complianceYear, comment]);
 
   const handleReject = useCallback(async () => {
-    const response = await analystReject(
-      props.id,
-      getNormalizedComment(comment),
-    );
-    if (response.responseType === "error") {
-      setError(response.message);
-    } else {
-      router.push(Routes.CreditApplications);
+    try {
+      if (!comment) {
+        throw new Error("Comment required when rejecting!");
+      }
+      const response = await analystReject(
+        props.id,
+        getNormalizedComment(comment),
+      );
+      if (response.responseType === "error") {
+        setError(response.message);
+      } else {
+        router.refresh();
+      }
+    } catch (e) {
+      if (e instanceof Error) {
+        setError(e.message);
+      }
     }
     setModal(null);
   }, [props.id, comment]);
