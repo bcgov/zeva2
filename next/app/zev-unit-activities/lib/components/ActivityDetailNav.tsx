@@ -5,6 +5,7 @@ import { SecondaryNavbar } from "@/app/lib/components/SecondaryNavbar";
 import { Routes } from "@/app/lib/constants";
 import { usePathname } from "next/navigation";
 import { useMemo } from "react";
+import { CreditApplicationTabs } from "../credit-applications/components/CreditApplicationTabs";
 
 const activityTabs: Record<
   string,
@@ -42,7 +43,12 @@ const segmentLabels: Record<string, string> = {
   validated: "Validated Records",
 };
 
-export const ActivityDetailNav = (props: { slug: string; id: string }) => {
+export const ActivityDetailNav = (props: {
+  slug: string;
+  id: string;
+  showCreditApplicationTabs?: boolean;
+  validatedBefore?: boolean;
+}) => {
   const pathname = usePathname();
   const tab = activityTabs[props.slug];
 
@@ -103,10 +109,25 @@ export const ActivityDetailNav = (props: { slug: string; id: string }) => {
       props.slug === "credit-transfers") &&
     (pathname.endsWith("details") || pathname.endsWith("audit-history"));
 
+  const showCreditApplicationTabs =
+    props.slug === "credit-applications" &&
+    props.showCreditApplicationTabs &&
+    (pathname.endsWith("details") ||
+      pathname.endsWith("validated") ||
+      pathname.endsWith("model-name-mismatches") ||
+      pathname.endsWith("audit-history"));
+
   return (
     <>
       <Breadcrumbs items={breadcrumbItems} />
-      {showSecondaryNav && <SecondaryNavbar items={secondaryNavItems} />}
+      {showCreditApplicationTabs ? (
+        <CreditApplicationTabs
+          creditApplicationId={props.id}
+          validatedBefore={props.validatedBefore ?? false}
+        />
+      ) : (
+        showSecondaryNav && <SecondaryNavbar items={secondaryNavItems} />
+      )}
     </>
   );
 };
