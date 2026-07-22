@@ -1,5 +1,10 @@
 ---
-on: daily
+on:
+  schedule:
+    # 10:00 PM PST (UTC-8), Monday-Friday.
+    # PST is UTC-8, so 22:00 PST = 06:00 UTC the next day,
+    # and Mon-Fri PST maps to Tue-Sat UTC (cron days 2-6).
+    - cron: "0 6 * * 2-6"
 
 permissions:
   contents: read
@@ -17,6 +22,7 @@ safe-outputs:
   create-issue:
 
 ---
+
 # Daily Repo Status Report
 
 Review recent activity in the repository, including issues, pull requests, discussions, and code changes.
