@@ -33,13 +33,23 @@ Keep the summary concise. Adjust the level of detail based on how much activity 
 
 ## Formatting rules
 
+These rules apply to **every** section of the report, including narrative
+sections like "Recommended Next Steps", "Blockers", and "Progress".
+
 - Put **each issue, pull request, or discussion on its own line** as a separate
   Markdown list item (`- `). Never combine multiple issues or PRs into a single
   line or paragraph.
-- When several related items belong together, use a nested bullet list (one item
-  per line) instead of running them together with slashes or commas.
+- **At most one issue/PR link per bullet.** If a recommendation or note touches
+  several issues or PRs, split it into one bullet per item — do not join them
+  with "and", commas, slashes, or en/em dashes (e.g. never write
+  "#557–#561" or "#563 and #567" on one line).
+- When several related items belong together, use a **nested bullet list** (one
+  item per line) under a short parent bullet instead of running them together.
 - Reference each item with its title and number so it renders as a link (for
   example `- ZEVA 2 - Add ... #549`).
 - Use short section headings (e.g. `### Open Issues`, `### Blockers`,
   `### Progress`) and keep prose to one or two sentences per item.
-
+- Prefer a grouped structure like:
+  - Review and merge open PRs:
+    - fix: supplier name in header for credit application #568
+    - fix: banner fix #554
