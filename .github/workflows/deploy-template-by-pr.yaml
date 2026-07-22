@@ -123,7 +123,7 @@ jobs:
       - name: Create pull request to main
         uses: peter-evans/create-pull-request@v8
         with:
-          token: ${{ secrets.manifest-repo-key }}
+          token: ${{ secrets.manifest-repo-deploy-key }}
           commit-message: "${{ steps.pr_info.outputs.title }}"
           title: "${{ steps.pr_info.outputs.title }}"
           body: "${{ steps.pr_info.outputs.body }}"
