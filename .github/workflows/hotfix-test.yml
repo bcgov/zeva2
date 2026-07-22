@@ -206,7 +206,8 @@ jobs:
       version: ${{ needs.release.outputs.release_version }}
       values_file: values-test.yaml
     secrets:
-      manifest-repo-deploykey: ${{ secrets.MANIFEST_REPO_DEPLOY_KEY }}
+      manifest-repo-deploy-key: ${{ secrets.MANIFEST_REPO_DEPLOY_KEY }}
+      manifest-repo-token: ${{ secrets.MANIFEST_REPO_TOKEN }}
 
   create-pr-to-main:
     name: Create PR from hotfix branch to main

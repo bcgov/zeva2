@@ -22,6 +22,9 @@ on:
       # the key used to checkout CD repository
       manifest-repo-deploy-key:
         required: true
+      # the token used to create a pull request in the CD repository
+      manifest-repo-token:
+        required: true
 
 permissions:
   contents: read
@@ -123,7 +126,7 @@ jobs:
       - name: Create pull request to main
         uses: peter-evans/create-pull-request@v8
         with:
-          token: ${{ secrets.manifest-repo-deploy-key }}
+          token: ${{ secrets.manifest-repo-token }}
           commit-message: "${{ steps.pr_info.outputs.title }}"
           title: "${{ steps.pr_info.outputs.title }}"
           body: "${{ steps.pr_info.outputs.body }}"
