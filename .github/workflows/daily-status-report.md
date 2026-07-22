@@ -30,3 +30,16 @@ Review recent activity in the repository, including issues, pull requests, discu
 Create a GitHub issue summarizing what changed in the last 24 hours (merged pull requests, closed issues, and new discussions), any blockers or open questions mentioned in comments, progress toward visible goals, and recommended next steps for maintainers.
 
 Keep the summary concise. Adjust the level of detail based on how much activity occurred.
+
+## Formatting rules
+
+- Put **each issue, pull request, or discussion on its own line** as a separate
+  Markdown list item (`- `). Never combine multiple issues or PRs into a single
+  line or paragraph.
+- When several related items belong together, use a nested bullet list (one item
+  per line) instead of running them together with slashes or commas.
+- Reference each item with its title and number so it renders as a link (for
+  example `- ZEVA 2 - Add ... #549`).
+- Use short section headings (e.g. `### Open Issues`, `### Blockers`,
+  `### Progress`) and keep prose to one or two sentences per item.
+
