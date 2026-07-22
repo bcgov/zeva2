@@ -20,7 +20,7 @@ on:
         type: string
     secrets:
       # the key used to checkout CD repository
-      manifest-repo-token:
+      manifest-repo-deploy-key:
         required: true
 
 permissions:
@@ -45,7 +45,7 @@ jobs:
         with:
           repository: bcgov-c/tenant-gitops-ea8eab
           ref: main
-          token: ${{ secrets.manifest-repo-token }}
+          ssh-key: ${{ secrets.manifest-repo-deploy-key }}
 
       - name: Check if the tag has been released
         id: check_version
@@ -123,7 +123,7 @@ jobs:
       - name: Create pull request to main
         uses: peter-evans/create-pull-request@v8
         with:
-          token: ${{ secrets.manifest-repo-token }}
+          token: ${{ secrets.manifest-repo-key }}
           commit-message: "${{ steps.pr_info.outputs.title }}"
           title: "${{ steps.pr_info.outputs.title }}"
           body: "${{ steps.pr_info.outputs.body }}"
