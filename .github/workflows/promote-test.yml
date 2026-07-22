@@ -62,3 +62,4 @@ jobs:
       values_file: values-test.yaml
     secrets:
       manifest-repo-deploy-key: ${{ secrets.MANIFEST_REPO_DEPLOY_KEY }}
+      manifest-repo-token: ${{ secrets.MANIFEST_REPO_TOKEN }}
