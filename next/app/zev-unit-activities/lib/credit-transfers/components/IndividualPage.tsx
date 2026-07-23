@@ -10,7 +10,11 @@ import {
   transferFromSupplierRescindableStatuses,
   mapOfStatusToSupplierStatus,
 } from "../constants";
-import { getCreditTransfer, getProjectedBalanceAfterTransfer } from "../data";
+import {
+  getCreditTransfer,
+  getCreditTransferHistories,
+  getProjectedBalanceAfterTransfer,
+} from "../data";
 import {
   getCreditTransferStatusEnumsToStringsMap,
   getModelYearEnumsToStringsMap,
@@ -25,7 +29,10 @@ import { getIsoYmdString, getTimeWithTz } from "@/app/lib/utils/date";
 export const IndividualPage = async (props: { id: string }) => {
   const id = Number.parseInt(props.id, 10);
   const { userIsGov, userOrgId, userRoles } = await getUserInfo();
-  const transfer = await getCreditTransfer(id);
+  const [transfer, histories] = await Promise.all([
+    getCreditTransfer(id),
+    getCreditTransferHistories(id),
+  ]);
   if (!transfer) {
     return null;
   }
@@ -38,43 +45,39 @@ export const IndividualPage = async (props: { id: string }) => {
   const statusMap = getCreditTransferStatusEnumsToStringsMap();
 
   const statusLabelOverrides: Partial<Record<CreditTransferStatus, string>> = {
-    [CreditTransferStatus.SUBMITTED_TO_TRANSFER_TO]: "Submitted To Transfer Partner",
+    [CreditTransferStatus.SUBMITTED_TO_TRANSFER_TO]:
+      "Submitted To Transfer Partner",
     [CreditTransferStatus.APPROVED_BY_TRANSFER_TO]: "Submitted to Government",
     [CreditTransferStatus.APPROVED_BY_GOV]: "Approved",
   };
-  const statusLabel = statusLabelOverrides[status] ?? statusMap[status] ?? String(status);
+  const statusLabel =
+    statusLabelOverrides[status] ?? statusMap[status] ?? String(status);
 
   const fromName = transfer.transferFrom.name;
   const toName = transfer.transferTo.name;
   const ctLabel = `Credit Transfer ${id}`;
 
-  const formatHistoryDate = (d: Date) =>
-    d.toLocaleDateString("en-CA", {
-      month: "short",
-      day: "numeric",
-      year: "numeric",
-      timeZone: "America/Vancouver",
-    });
-
-  const submissionEntry = transfer.creditTransferHistory.find(
-    (entry) => entry.userAction === CreditTransferStatus.SUBMITTED_TO_TRANSFER_TO,
+  const submissionEntry = histories.find(
+    (entry) =>
+      entry.userAction === CreditTransferStatus.SUBMITTED_TO_TRANSFER_TO,
   );
   const submissionDate = submissionEntry?.timestamp
-    ? formatHistoryDate(submissionEntry.timestamp)
+    ? getIsoYmdString(submissionEntry.timestamp)
     : null;
 
-  const approvedByTransferToEntry = transfer.creditTransferHistory.find(
-    (entry) => entry.userAction === CreditTransferStatus.APPROVED_BY_TRANSFER_TO,
+  const approvedByTransferToEntry = histories.find(
+    (entry) =>
+      entry.userAction === CreditTransferStatus.APPROVED_BY_TRANSFER_TO,
   );
   const approvedByTransferToDate = approvedByTransferToEntry?.timestamp
-    ? formatHistoryDate(approvedByTransferToEntry.timestamp)
+    ? getIsoYmdString(approvedByTransferToEntry.timestamp)
     : null;
 
-  const approvedByGovEntry = transfer.creditTransferHistory.find(
+  const approvedByGovEntry = histories.find(
     (entry) => entry.userAction === CreditTransferStatus.APPROVED_BY_GOV,
   );
   const approvedByGovDate = approvedByGovEntry?.timestamp
-    ? formatHistoryDate(approvedByGovEntry.timestamp)
+    ? getIsoYmdString(approvedByGovEntry.timestamp)
     : null;
 
   let statusPrimaryText: string;
@@ -153,7 +156,7 @@ export const IndividualPage = async (props: { id: string }) => {
   );
 
   const signingInfo: { label: string; timestamp: Date }[] = [];
-  for (const entry of transfer.creditTransferHistory) {
+  for (const entry of histories) {
     if (entry.userAction === CreditTransferStatus.SUBMITTED_TO_TRANSFER_TO) {
       signingInfo.push({
         label: `Signed and submitted by ${transfer.transferFrom.name}`,

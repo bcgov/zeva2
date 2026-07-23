@@ -4,8 +4,7 @@ import { Breadcrumbs } from "@/app/lib/components";
 import { SecondaryNavbar } from "@/app/lib/components/SecondaryNavbar";
 import { Routes } from "@/app/lib/constants";
 import { usePathname } from "next/navigation";
-import { useMemo } from "react";
-import { CreditApplicationTabs } from "../credit-applications/components/CreditApplicationTabs";
+import { JSX, useMemo } from "react";
 
 const activityTabs: Record<
   string,
@@ -43,11 +42,11 @@ const segmentLabels: Record<string, string> = {
   validated: "Validated Records",
 };
 
+// secondaryNavbar, if passed in, overrides the secondaryNavbar instantiated in this component (if any)
 export const ActivityDetailNav = (props: {
   slug: string;
   id: string;
-  showCreditApplicationTabs?: boolean;
-  validatedBefore?: boolean;
+  secondaryNavbar?: JSX.Element;
 }) => {
   const pathname = usePathname();
   const tab = activityTabs[props.slug];
@@ -82,6 +81,16 @@ export const ActivityDetailNav = (props: {
     return [];
   }, [props.slug, props.id]);
 
+  const secondaryNavbar: JSX.Element | null = useMemo(() => {
+    if (props.secondaryNavbar) {
+      return props.secondaryNavbar;
+    }
+    if (secondaryNavItems) {
+      return <SecondaryNavbar items={secondaryNavItems} />;
+    }
+    return null;
+  }, [props.secondaryNavbar, secondaryNavItems]);
+
   if (!tab) {
     return null;
   }
@@ -104,30 +113,10 @@ export const ActivityDetailNav = (props: {
       : [{ label: objectLabel }]),
   ];
 
-  const showSecondaryNav =
-    (props.slug === "credit-applications" ||
-      props.slug === "credit-transfers") &&
-    (pathname.endsWith("details") || pathname.endsWith("audit-history"));
-
-  const showCreditApplicationTabs =
-    props.slug === "credit-applications" &&
-    props.showCreditApplicationTabs &&
-    (pathname.endsWith("details") ||
-      pathname.endsWith("validated") ||
-      pathname.endsWith("model-name-mismatches") ||
-      pathname.endsWith("audit-history"));
-
   return (
     <>
       <Breadcrumbs items={breadcrumbItems} />
-      {showCreditApplicationTabs ? (
-        <CreditApplicationTabs
-          creditApplicationId={props.id}
-          validatedBefore={props.validatedBefore ?? false}
-        />
-      ) : (
-        showSecondaryNav && <SecondaryNavbar items={secondaryNavItems} />
-      )}
+      {secondaryNavbar}
     </>
   );
 };
