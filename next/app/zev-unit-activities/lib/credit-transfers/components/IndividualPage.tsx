@@ -37,27 +37,59 @@ export const IndividualPage = async (props: { id: string }) => {
 
   const statusMap = getCreditTransferStatusEnumsToStringsMap();
 
-  const statusLabel = statusMap[status] ?? String(status);
+  const statusLabelOverrides: Partial<Record<CreditTransferStatus, string>> = {
+    [CreditTransferStatus.SUBMITTED_TO_TRANSFER_TO]: "Submitted To Transfer Partner",
+    [CreditTransferStatus.APPROVED_BY_TRANSFER_TO]: "Submitted to Government",
+    [CreditTransferStatus.APPROVED_BY_GOV]: "Approved",
+  };
+  const statusLabel = statusLabelOverrides[status] ?? statusMap[status] ?? String(status);
 
   const fromName = transfer.transferFrom.name;
   const toName = transfer.transferTo.name;
   const ctLabel = `Credit Transfer ${id}`;
 
+  const formatHistoryDate = (d: Date) =>
+    d.toLocaleDateString("en-CA", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+      timeZone: "America/Vancouver",
+    });
+
+  const submissionEntry = transfer.creditTransferHistory.find(
+    (entry) => entry.userAction === CreditTransferStatus.SUBMITTED_TO_TRANSFER_TO,
+  );
+  const submissionDate = submissionEntry?.timestamp
+    ? formatHistoryDate(submissionEntry.timestamp)
+    : null;
+
+  const approvedByTransferToEntry = transfer.creditTransferHistory.find(
+    (entry) => entry.userAction === CreditTransferStatus.APPROVED_BY_TRANSFER_TO,
+  );
+  const approvedByTransferToDate = approvedByTransferToEntry?.timestamp
+    ? formatHistoryDate(approvedByTransferToEntry.timestamp)
+    : null;
+
+  const approvedByGovEntry = transfer.creditTransferHistory.find(
+    (entry) => entry.userAction === CreditTransferStatus.APPROVED_BY_GOV,
+  );
+  const approvedByGovDate = approvedByGovEntry?.timestamp
+    ? formatHistoryDate(approvedByGovEntry.timestamp)
+    : null;
+
   let statusPrimaryText: string;
   switch (transfer.status) {
     case CreditTransferStatus.DRAFT:
-      statusPrimaryText = `${ctLabel} is a draft. Review and submit to ${toName} when ready.`;
+      statusPrimaryText = "";
       break;
     case CreditTransferStatus.SUBMITTED_TO_TRANSFER_TO:
       statusPrimaryText =
         !userIsGov && userOrgId === transfer.transferToId
-          ? `${ctLabel} was submitted by ${fromName} and requires your review and acceptance.`
-          : `${ctLabel} was submitted by ${fromName} and is awaiting ${toName}'s acceptance.`;
+          ? `CT ID ${id}${submissionDate ? ` submitted ${submissionDate}` : ""} by ${fromName}, requires your review and acceptance.`
+          : `CT ID ${id}${submissionDate ? ` submitted ${submissionDate}` : ""} by ${fromName}, awaiting ${toName} acceptance.`;
       break;
     case CreditTransferStatus.APPROVED_BY_TRANSFER_TO:
-      statusPrimaryText = userIsGov
-        ? `${ctLabel} has been signed by both parties and is awaiting analyst review.`
-        : `${ctLabel} has been signed by both parties and is awaiting government approval.`;
+      statusPrimaryText = `CT ID ${id}${approvedByTransferToDate ? ` submitted to the Government of B.C. ${approvedByTransferToDate}` : ""}, awaiting government review.`;
       break;
     case CreditTransferStatus.RECOMMEND_APPROVAL_GOV:
       statusPrimaryText = `${ctLabel} has been recommended for approval by an analyst and is awaiting the director's decision.`;
@@ -69,7 +101,7 @@ export const IndividualPage = async (props: { id: string }) => {
       statusPrimaryText = `${ctLabel} has been returned to the analyst for further review.`;
       break;
     case CreditTransferStatus.APPROVED_BY_GOV:
-      statusPrimaryText = `${ctLabel} has been approved and issued by the government.`;
+      statusPrimaryText = `CT ID ${id}${approvedByGovDate ? ` recorded ${approvedByGovDate}` : ""} by the Government of B.C., credit balances have been adjusted.`;
       break;
     case CreditTransferStatus.REJECTED_BY_GOV:
       statusPrimaryText = `${ctLabel} was rejected by the government.`;
@@ -167,12 +199,6 @@ export const IndividualPage = async (props: { id: string }) => {
 
   return (
     <div className="flex self-stretch flex-col items-start gap-4">
-      <div className="flex items-start self-stretch gap-3 py-3 bg-white">
-        <StatusBanner
-          title={`STATUS - ${statusLabel}.`}
-          primaryText={statusPrimaryText}
-        />
-      </div>
       <div className="flex flex-col items-start gap-6 self-stretch">
         <div className="flex flex-col items-start self-stretch">
           <div className="flex self-stretch h-20 p-5 justify-between items-center rounded-t border border-dividerMedium bg-[#E7E7E7]">
@@ -182,6 +208,13 @@ export const IndividualPage = async (props: { id: string }) => {
             <div className="flex h-10 items-center justify-center gap-2 py-[5px]">
               <PrintDownloadPageButton />
             </div>
+          </div>
+          <div className="flex items-start self-stretch gap-3 py-3 bg-white">
+            <StatusBanner
+              title={`STATUS - ${statusLabel}.`}
+              primaryText={statusPrimaryText}
+              className="w-full"
+            />
           </div>
           <div className="flex flex-col items-start self-stretch rounded border border-dividerMedium shadow-[0_4px_20px_0_rgba(177,177,177,0.10)]">
             <div className="flex flex-col items-start self-stretch rounded-t px-5 py-4 gap-1 bg-disabledSurface">
