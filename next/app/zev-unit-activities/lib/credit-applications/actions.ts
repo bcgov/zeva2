@@ -58,6 +58,8 @@ import {
 import { getPresignedGetObjectUrl } from "@/app/lib/services/s3";
 import { getModelYearEnumsToStringsMap } from "@/app/lib/utils/enumMaps";
 import { getIsoYmdString } from "@/app/lib/utils/date";
+import { revalidatePath } from "next/cache";
+import { Routes } from "@/app/lib/constants";
 
 export const getSupplierTemplateDownloadUrl = async () => {
   return await getTemplateDownloadUrl(SupplierTemplate.Name);
@@ -569,6 +571,7 @@ export const validateCreditApplication = async (
       },
     });
   });
+  revalidatePath(`${Routes.CreditApplications}/[id]`, "layout");
   return getSuccessActionResponse();
 };
 
