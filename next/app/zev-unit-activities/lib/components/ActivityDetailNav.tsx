@@ -81,6 +81,16 @@ export const ActivityDetailNav = (props: {
     return [];
   }, [props.slug, props.id]);
 
+  const secondaryNavbar: JSX.Element | null = useMemo(() => {
+    if (props.secondaryNavbar) {
+      return props.secondaryNavbar;
+    }
+    if (secondaryNavItems) {
+      return <SecondaryNavbar items={secondaryNavItems} />;
+    }
+    return null;
+  }, [props.secondaryNavbar, secondaryNavItems]);
+
   if (!tab) {
     return null;
   }
@@ -102,16 +112,6 @@ export const ActivityDetailNav = (props: {
       ? [{ label: objectLabel, href: objectHref }, { label: currentLabel }]
       : [{ label: objectLabel }]),
   ];
-
-  const secondaryNavbar: JSX.Element | null = useMemo(() => {
-    if (props.secondaryNavbar) {
-      return props.secondaryNavbar;
-    }
-    if (secondaryNavItems) {
-      return <SecondaryNavbar items={secondaryNavItems} />;
-    }
-    return null;
-  }, [props.secondaryNavbar, secondaryNavItems]);
 
   return (
     <>
