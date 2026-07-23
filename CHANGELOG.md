@@ -4,6 +4,8 @@ All notable changes to this project are documented in this file.
 
 | Version | Date | Type | Change |
 | --- | --- | --- | --- |
+| [1.46.0](https://github.com/bcgov/zeva2/compare/v1.45.4...v1.46.0) | 2026-07-23 | 🐛 Fix | supplier name in header for credit application ([#568](https://github.com/bcgov/zeva2/issues/568)) ([a9aa6e3](https://github.com/bcgov/zeva2/commit/a9aa6e30ee112f42445bba7e0e981faa2a031ade)) |
+| [1.46.0](https://github.com/bcgov/zeva2/compare/v1.45.4...v1.46.0) | 2026-07-23 | ✨ Feature | adding navigation tabs to credit applications ([#575](https://github.com/bcgov/zeva2/issues/575)) ([ecc3fb7](https://github.com/bcgov/zeva2/commit/ecc3fb77177845c0b2d762b01956cd3d969208a2)) |
 | [1.45.4](https://github.com/bcgov/zeva2/compare/v1.45.3...v1.45.4) | 2026-07-23 | 🐛 Fix | banner fix ([#554](https://github.com/bcgov/zeva2/issues/554)) ([8981c4c](https://github.com/bcgov/zeva2/commit/8981c4c4112539d57450f260dd38aec398667637)) |
 | [1.45.3](https://github.com/bcgov/zeva2/compare/v1.45.2...v1.45.3) | 2026-07-21 | 🐛 Fix | some small fixes ([#553](https://github.com/bcgov/zeva2/issues/553)) ([e787cb2](https://github.com/bcgov/zeva2/commit/e787cb2580ec5b0b8f4ae629db8dab8328110b04)) |
 | [1.45.2](https://github.com/bcgov/zeva2/compare/v1.45.1...v1.45.2) | 2026-07-21 | 🐛 Fix | misc. validation changes and other fixes ([#552](https://github.com/bcgov/zeva2/issues/552)) ([feb27c9](https://github.com/bcgov/zeva2/commit/feb27c991e5b2d94523985651c4beb6d81aa88bb)) |
