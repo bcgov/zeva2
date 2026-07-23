@@ -4,6 +4,7 @@ All notable changes to this project are documented in this file.
 
 | Version | Date | Type | Change |
 | --- | --- | --- | --- |
+| [1.45.4](https://github.com/bcgov/zeva2/compare/v1.45.3...v1.45.4) | 2026-07-23 | 🐛 Fix | banner fix ([#554](https://github.com/bcgov/zeva2/issues/554)) ([8981c4c](https://github.com/bcgov/zeva2/commit/8981c4c4112539d57450f260dd38aec398667637)) |
 | [1.45.3](https://github.com/bcgov/zeva2/compare/v1.45.2...v1.45.3) | 2026-07-21 | 🐛 Fix | some small fixes ([#553](https://github.com/bcgov/zeva2/issues/553)) ([e787cb2](https://github.com/bcgov/zeva2/commit/e787cb2580ec5b0b8f4ae629db8dab8328110b04)) |
 | [1.45.2](https://github.com/bcgov/zeva2/compare/v1.45.1...v1.45.2) | 2026-07-21 | 🐛 Fix | misc. validation changes and other fixes ([#552](https://github.com/bcgov/zeva2/issues/552)) ([feb27c9](https://github.com/bcgov/zeva2/commit/feb27c991e5b2d94523985651c4beb6d81aa88bb)) |
 | [1.45.1](https://github.com/bcgov/zeva2/compare/v1.45.0...v1.45.1) | 2026-07-21 | 🐛 Fix | credit application validation errors ([#551](https://github.com/bcgov/zeva2/issues/551)) ([4cf8c91](https://github.com/bcgov/zeva2/commit/4cf8c91d5d53eb7fe39c2aaee313e2fb5179e038)) |
