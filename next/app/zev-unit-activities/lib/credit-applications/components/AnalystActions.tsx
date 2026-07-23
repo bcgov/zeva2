@@ -47,8 +47,6 @@ export const AnalystActions = (props: {
       setError(response.message);
     } else {
       router.push(`${Routes.CreditApplications}/${props.id}/validated`);
-      // force layout.js to re-render:
-      router.refresh();
     }
     setModal(null);
   }, [props.id]);
