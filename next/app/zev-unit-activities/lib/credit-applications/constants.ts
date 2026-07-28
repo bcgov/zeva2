@@ -85,6 +85,12 @@ export enum InvalidReason {
   Other = "Invalid for another reason, explained in comments",
 }
 
+export const warningDescriptions: Readonly<Record<string, string>> = {
+  "1": "VIN not found in ICBC records",
+  "2": "Make does not match ICBC records",
+  "3": "Model year does not match ICBC records",
+};
+
 export const isValidReason = (s: string): s is ValidReason => {
   return Object.values(ValidReason).some((reason) => {
     return reason === s;
