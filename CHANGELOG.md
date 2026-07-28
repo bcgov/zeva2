@@ -4,6 +4,7 @@ All notable changes to this project are documented in this file.
 
 | Version | Date | Type | Change |
 | --- | --- | --- | --- |
+| [1.47.0](https://github.com/bcgov/zeva2/compare/v1.46.2...v1.47.0) | 2026-07-28 | ✨ Feature | CA - Gov table ([#591](https://github.com/bcgov/zeva2/issues/591)) ([e7cedfa](https://github.com/bcgov/zeva2/commit/e7cedfa9691b090b01d84c82ba3c99f143ee4173)) |
 | [1.46.2](https://github.com/bcgov/zeva2/compare/v1.46.1...v1.46.2) | 2026-07-23 | 🐛 Fix | some small fixes ([#582](https://github.com/bcgov/zeva2/issues/582)) ([ffa3a09](https://github.com/bcgov/zeva2/commit/ffa3a098ed88b8fbf034446b072c4cace10708f5)) |
 | [1.46.1](https://github.com/bcgov/zeva2/compare/v1.46.0...v1.46.1) | 2026-07-23 | 🐛 Fix | some fixes and changes ([#581](https://github.com/bcgov/zeva2/issues/581)) ([bde323e](https://github.com/bcgov/zeva2/commit/bde323e368f983feb83afc7e2ab3ab072c3f837d)) |
 | [1.46.0](https://github.com/bcgov/zeva2/compare/v1.45.4...v1.46.0) | 2026-07-23 | 🐛 Fix | supplier name in header for credit application ([#568](https://github.com/bcgov/zeva2/issues/568)) ([a9aa6e3](https://github.com/bcgov/zeva2/commit/a9aa6e30ee112f42445bba7e0e981faa2a031ade)) |
