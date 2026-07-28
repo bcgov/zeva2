@@ -1,10 +1,6 @@
 import { getUserInfo } from "@/auth";
 import { CreditApplicationSupplierStatus } from "@/prisma/generated/enums";
-import {
-  getCreditApplication,
-  getApplicationHistories,
-  getApplicationStatisticsGov,
-} from "../data";
+import { getCreditApplication, getApplicationHistories } from "../data";
 import { StatusBanner } from "@/app/lib/components";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faDownload } from "@fortawesome/free-solid-svg-icons";
