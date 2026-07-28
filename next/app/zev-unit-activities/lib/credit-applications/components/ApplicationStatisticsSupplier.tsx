@@ -1,16 +1,17 @@
 import { CreditApplicationStatus } from "@/prisma/generated/enums";
-import { getApplicationStatistics } from "../data";
+import { getApplicationStatisticsSupplier } from "../data";
 import {
   getModelYearEnumsToStringsMap,
   getVehicleClassEnumsToStringsMap,
   getZevClassEnumsToStringsMap,
 } from "@/app/lib/utils/enumMaps";
 
-export const ApplicationStatistics = async (props: {
+export const ApplicationStatisticsSupplier = async (props: {
   creditApplicationId: number;
-  userIsGov: boolean;
 }) => {
-  const stats = await getApplicationStatistics(props.creditApplicationId);
+  const stats = await getApplicationStatisticsSupplier(
+    props.creditApplicationId,
+  );
   if (!stats) {
     return null;
   }
@@ -176,23 +177,6 @@ export const ApplicationStatistics = async (props: {
 
   const recordStatsValidated = stats.recordStatsValidated;
   const creditStatsValidated = stats.creditStatsValidated;
-
-  if (!props.userIsGov) {
-    return (
-      <div className="flex flex-col gap-6 p-5">
-        {stats.recordStats.length > 0 &&
-          getRecordsTable(stats.recordStats, "all")}
-        {recordStatsValidated &&
-          recordStatsValidated.length > 0 &&
-          getRecordsTable(recordStatsValidated, "validated")}
-        {stats.creditStats.length > 0 &&
-          getCreditsTable(stats.creditStats, "all")}
-        {creditStatsValidated &&
-          creditStatsValidated.length > 0 &&
-          getCreditsTable(creditStatsValidated, "validated")}
-      </div>
-    );
-  }
 
   return (
     <div className="flex flex-col gap-6 p-5">

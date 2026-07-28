@@ -11,13 +11,14 @@ import {
   ZevClass,
 } from "@/prisma/generated/enums";
 import { CreditApplicationRecordWhereInput } from "@/prisma/generated/models";
-import { mapOfStatusToSupplierStatus } from "./constants";
+import { GovCaStatRecord, mapOfStatusToSupplierStatus } from "./constants";
 import { Attachment } from "@/app/lib/constants/attachment";
 import { TransactionClient } from "@/types/prisma";
 import { Decimal } from "decimal.js";
 import { flattenZevUnitRecords, ZevUnitRecord } from "@/lib/utils/zevUnit";
 import { getStringsToModelYearsEnumsMap } from "@/app/lib/utils/enumMaps";
 import { validateDate } from "@/app/lib/utils/date";
+import { CreditApplicationRecordScalarFieldEnum } from "@/prisma/generated/internal/prismaNamespace";
 
 export const getOrgInfo = async (orgId: number) => {
   const orgInfo = await prisma.organization.findUnique({
@@ -473,4 +474,93 @@ export const getCreditStats = async (
       numberOfUnits: true,
     },
   });
+};
+
+export const getStats = async (creditApplicationId: number) => {
+  const result: GovCaStatRecord[] = [];
+  const byClause: CreditApplicationRecordScalarFieldEnum[] = [
+    "make",
+    "modelName",
+    "modelYear",
+    "vehicleClass",
+    "zevClass",
+    "zevType",
+    "range",
+    "numberOfUnits",
+  ];
+  const [allRecords, validatedRecords] = await Promise.all([
+    prisma.creditApplicationRecord.groupBy({
+      where: {
+        creditApplicationId,
+      },
+      by: byClause,
+      _count: {
+        id: true,
+      },
+      _sum: {
+        numberOfUnits: true,
+      },
+    }),
+    prisma.creditApplicationRecord.groupBy({
+      where: {
+        creditApplicationId,
+        validated: true,
+      },
+      by: byClause,
+      _count: {
+        id: true,
+      },
+      _sum: {
+        numberOfUnits: true,
+      },
+    }),
+  ]);
+  for (const [index, record] of allRecords.entries()) {
+    const make = record.make;
+    const modelName = record.modelName;
+    const modelYear = record.modelYear;
+    const vehicleClass = record.vehicleClass;
+    const zevClass = record.zevClass;
+    const zevType = record.zevType;
+    const range = record.range;
+    const numberOfUnits = record.numberOfUnits;
+    const resultItem = {
+      id: index,
+      make,
+      modelName,
+      modelYear,
+      vehicleClass,
+      zevClass,
+      zevType,
+      range,
+      numberOfUnits: numberOfUnits.toFixed(2),
+      vinsCount: record._count.id,
+      validVinsCount: 0,
+      creditsSum: record._sum.numberOfUnits
+        ? record._sum.numberOfUnits.toFixed(2)
+        : "0",
+      validCreditsSum: "0",
+    };
+    for (const validatedRecord of validatedRecords) {
+      if (
+        make === validatedRecord.make &&
+        modelName === validatedRecord.modelName &&
+        modelYear === validatedRecord.modelYear &&
+        vehicleClass === validatedRecord.vehicleClass &&
+        zevClass === validatedRecord.zevClass &&
+        zevType === validatedRecord.zevType &&
+        range === validatedRecord.range &&
+        numberOfUnits.eq(validatedRecord.numberOfUnits)
+      ) {
+        resultItem.validVinsCount = validatedRecord._count.id;
+        const validCreditsSum = validatedRecord._sum.numberOfUnits;
+        if (validCreditsSum) {
+          resultItem.validCreditsSum = validCreditsSum.toFixed(2);
+        }
+        break;
+      }
+    }
+    result.push(resultItem);
+  }
+  return result;
 };

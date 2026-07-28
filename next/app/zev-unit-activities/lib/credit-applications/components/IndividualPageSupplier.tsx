@@ -1,40 +1,31 @@
 import { getUserInfo } from "@/auth";
-import {
-  Role,
-  CreditApplicationSupplierStatus,
-} from "@/prisma/generated/enums";
+import { CreditApplicationSupplierStatus } from "@/prisma/generated/enums";
 import { getCreditApplication, getApplicationHistories } from "../data";
-import { ContentCard, StatusBanner } from "@/app/lib/components";
+import { StatusBanner } from "@/app/lib/components";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faDownload } from "@fortawesome/free-solid-svg-icons";
 import { Suspense } from "react";
 import { LoadingSkeleton } from "@/app/lib/components/skeletons";
-import { ApplicationDetails } from "./ApplicationDetails";
 import {
   getCreditApplicationAttachmentDownloadUrls,
   getCreditApplicationDownloadUrl,
 } from "../actions";
 import { Attachments } from "@/app/lib/components/Attachments";
 import { SupplierActions } from "./SupplierActions";
-import { DirectorActions } from "./DirectorActions";
-import { AnalystActions } from "./AnalystActions";
-import { ApplicationStatistics } from "./ApplicationStatistics";
+import { ApplicationStatisticsSupplier } from "./ApplicationStatisticsSupplier";
 import { PrintDownloadButton } from "@/app/lib/components/PrintDownloadButton";
-import {
-  getComplianceYear,
-  getCurrentComplianceYear,
-  getDominatedComplianceYears,
-} from "@/app/lib/utils/complianceYear";
 
-export const IndividualPage = async (props: { id: string }) => {
+export const IndividualPageSupplier = async (props: { id: string }) => {
   const id = Number.parseInt(props.id, 10);
+  const { userIsGov, userRoles } = await getUserInfo();
+  if (userIsGov) {
+    return null;
+  }
   const creditApplication = await getCreditApplication(id);
   if (!creditApplication) {
     return null;
   }
-  const applicationStatus = creditApplication.status;
   const applicationSupplierStatus = creditApplication.supplierStatus;
-  const { userIsGov, userRoles } = await getUserInfo();
   const downloadApplication = async () => {
     "use server";
     return getCreditApplicationDownloadUrl(id);
@@ -43,69 +34,6 @@ export const IndividualPage = async (props: { id: string }) => {
     "use server";
     return getCreditApplicationAttachmentDownloadUrls(id);
   };
-
-  if (userIsGov) {
-    const applicationData = (
-      <>
-        <ContentCard title="Application Details">
-          <ApplicationDetails
-            application={creditApplication}
-            userIsGov={userIsGov}
-          />
-        </ContentCard>
-        <ContentCard title="Application Statistics">
-          <Suspense fallback={<LoadingSkeleton />}>
-            <ApplicationStatistics
-              creditApplicationId={id}
-              userIsGov={userIsGov}
-            />
-          </Suspense>
-        </ContentCard>
-        <ContentCard title="Supporting Documents">
-          <Attachments
-            attachments={creditApplication.CreditApplicationAttachment}
-            download={downloadAttachments}
-            zipName={`credit-application-attachments-${id}`}
-          />
-        </ContentCard>
-      </>
-    );
-
-    if (userRoles.includes(Role.ZEVA_IDIR_USER)) {
-      const caSubmittedDate = creditApplication.submissionTimestamp;
-      if (!caSubmittedDate) {
-        throw new Error();
-      }
-      const currentCy = getCurrentComplianceYear();
-      const submittedCy = getComplianceYear(caSubmittedDate);
-      const dominatedCys = getDominatedComplianceYears(currentCy);
-      return (
-        <div className="flex flex-col">
-          {applicationData}
-          <ContentCard title="Actions">
-            <AnalystActions
-              id={id}
-              status={applicationStatus}
-              validatedBefore={
-                creditApplication.lastValidatedTimestamp !== null
-              }
-              complianceYears={[...dominatedCys, currentCy]}
-              defaultComplianceYear={submittedCy}
-            />
-          </ContentCard>
-        </div>
-      );
-    } else if (userRoles.includes(Role.DIRECTOR)) {
-      return (
-        <div className="flex flex-col">
-          {applicationData}
-          <ContentCard title="Actions">
-            <DirectorActions id={id} status={applicationStatus} />
-          </ContentCard>
-        </div>
-      );
-    }
-  }
 
   const histories = await getApplicationHistories(id);
   const latestRejectionComment = histories
@@ -185,7 +113,7 @@ export const IndividualPage = async (props: { id: string }) => {
           includeBottomBorder={true}
         />
         <Suspense fallback={<LoadingSkeleton />}>
-          <ApplicationStatistics creditApplicationId={id} userIsGov={false} />
+          <ApplicationStatisticsSupplier creditApplicationId={id} />
         </Suspense>
       </div>
 
