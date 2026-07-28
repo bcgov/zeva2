@@ -1,6 +1,10 @@
 import {
   CreditApplicationStatus,
   CreditApplicationSupplierStatus,
+  ModelYear,
+  VehicleClass,
+  ZevClass,
+  ZevType,
 } from "@/prisma/generated/enums";
 import {
   CreditApplicationModel,
@@ -95,4 +99,20 @@ export const isInvalidReason = (s: string): s is InvalidReason => {
   return Object.values(InvalidReason).some((reason) => {
     return reason === s;
   });
+};
+
+export type GovCaStatRecord = {
+  id: number;
+  make: string;
+  modelName: string;
+  modelYear: ModelYear;
+  vehicleClass: VehicleClass;
+  zevClass: ZevClass;
+  zevType: ZevType;
+  range: number;
+  numberOfUnits: string;
+  vinsCount: number;
+  validVinsCount: number;
+  creditsSum: string;
+  validCreditsSum: string;
 };

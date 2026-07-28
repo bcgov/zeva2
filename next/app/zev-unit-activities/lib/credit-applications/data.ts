@@ -18,7 +18,7 @@ import {
   getWhereClause,
 } from "./utilsServer";
 import { ZevUnitRecord } from "@/lib/utils/zevUnit";
-import { getCreditStats, getRecordStats } from "./services";
+import { getCreditStats, getRecordStats, getStats } from "./services";
 import {
   CreditApplicationRecordSparse,
   CreditApplicationSparse,
@@ -331,16 +331,18 @@ export const getModelMismatchesMap = async (
   return result;
 };
 
-export const getApplicationStatistics = async (creditApplicationId: number) => {
+export const getApplicationStatisticsSupplier = async (
+  creditApplicationId: number,
+) => {
   const { userIsGov, userOrgId } = await getUserInfo();
-  const whereClause: CreditApplicationWhereUniqueInput = {
-    id: creditApplicationId,
-  };
-  if (!userIsGov) {
-    whereClause.organizationId = userOrgId;
+  if (userIsGov) {
+    return null;
   }
   const creditApplication = await prisma.creditApplication.findUnique({
-    where: whereClause,
+    where: {
+      id: creditApplicationId,
+      organizationId: userOrgId,
+    },
     select: {
       status: true,
     },
@@ -349,8 +351,7 @@ export const getApplicationStatistics = async (creditApplicationId: number) => {
     return null;
   }
   const status = creditApplication.status;
-  const getValidatedStats =
-    userIsGov || status === CreditApplicationStatus.APPROVED;
+  const getValidatedStats = status === CreditApplicationStatus.APPROVED;
   return {
     status,
     recordStats: await getRecordStats(creditApplicationId, "all"),
@@ -362,6 +363,31 @@ export const getApplicationStatistics = async (creditApplicationId: number) => {
       ? await getCreditStats(creditApplicationId, "validated")
       : null,
   };
+};
+
+export const getApplicationStatisticsGov = async (
+  creditApplicationId: number,
+) => {
+  const { userIsGov } = await getUserInfo();
+  if (!userIsGov) {
+    return null;
+  }
+  const creditApplication = await prisma.creditApplication.findUnique({
+    where: {
+      id: creditApplicationId,
+      status: {
+        not: CreditApplicationStatus.DRAFT,
+      },
+    },
+    select: {
+      status: true,
+      lastValidatedTimestamp: true,
+    },
+  });
+  if (!creditApplication) {
+    return null;
+  }
+  return await getStats(creditApplicationId);
 };
 
 export const getAttachmentsCount = async (creditApplicationId: number) => {

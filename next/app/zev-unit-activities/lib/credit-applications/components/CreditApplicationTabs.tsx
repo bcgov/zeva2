@@ -13,6 +13,7 @@ const itemKeys = [
   "modelNameMismatches",
   "auditHistory",
 ] as const;
+
 type Tab = {
   label: string;
   route: string;
@@ -52,7 +53,9 @@ export const CreditApplicationTabs = (props: {
             },
           ]
         : []),
-      ...(props.validatedBefore
+      ...(props.validatedBefore &&
+      props.creditApplicationStatus !== CreditApplicationStatus.DRAFT &&
+      props.creditApplicationStatus !== CreditApplicationStatus.REJECTED
         ? [
             {
               label: "View Validated Records",
@@ -61,7 +64,9 @@ export const CreditApplicationTabs = (props: {
             },
           ]
         : []),
-      ...(props.validatedBefore
+      ...(props.validatedBefore &&
+      props.creditApplicationStatus !== CreditApplicationStatus.DRAFT &&
+      props.creditApplicationStatus !== CreditApplicationStatus.REJECTED
         ? [
             {
               label: "Model Mismatches",
