@@ -4,6 +4,8 @@ All notable changes to this project are documented in this file.
 
 | Version | Date | Type | Change |
 | --- | --- | --- | --- |
+| [1.48.0](https://github.com/bcgov/zeva2/compare/v1.47.0...v1.48.0) | 2026-07-29 | ✨ Feature | CA analyst chat comments ([#593](https://github.com/bcgov/zeva2/issues/593)) ([f3187fe](https://github.com/bcgov/zeva2/commit/f3187fe605c8c3a2cc74bcc3de661e51e9f44352)) |
+| [1.48.0](https://github.com/bcgov/zeva2/compare/v1.47.0...v1.48.0) | 2026-07-29 | ✨ Feature | information icons for warnings ([#592](https://github.com/bcgov/zeva2/issues/592)) ([029cb78](https://github.com/bcgov/zeva2/commit/029cb78b0fd0b6c75ab14d112441718d5711541c)) |
 | [1.47.0](https://github.com/bcgov/zeva2/compare/v1.46.2...v1.47.0) | 2026-07-28 | ✨ Feature | CA - Gov table ([#591](https://github.com/bcgov/zeva2/issues/591)) ([e7cedfa](https://github.com/bcgov/zeva2/commit/e7cedfa9691b090b01d84c82ba3c99f143ee4173)) |
 | [1.46.2](https://github.com/bcgov/zeva2/compare/v1.46.1...v1.46.2) | 2026-07-23 | 🐛 Fix | some small fixes ([#582](https://github.com/bcgov/zeva2/issues/582)) ([ffa3a09](https://github.com/bcgov/zeva2/commit/ffa3a098ed88b8fbf034446b072c4cace10708f5)) |
 | [1.46.1](https://github.com/bcgov/zeva2/compare/v1.46.0...v1.46.1) | 2026-07-23 | 🐛 Fix | some fixes and changes ([#581](https://github.com/bcgov/zeva2/issues/581)) ([bde323e](https://github.com/bcgov/zeva2/commit/bde323e368f983feb83afc7e2ab3ab072c3f837d)) |
