@@ -379,10 +379,6 @@ export const getApplicationStatisticsGov = async (
         not: CreditApplicationStatus.DRAFT,
       },
     },
-    select: {
-      status: true,
-      lastValidatedTimestamp: true,
-    },
   });
   if (!creditApplication) {
     return null;
