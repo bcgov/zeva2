@@ -93,13 +93,15 @@ export const CommentChat = (props: {
   );
 
   const handleDelete = useCallback(
-    async (commentId: number) => {
-      const response = await props.editOrDeleteComment(commentId, "delete");
-      if (response.responseType === "error") {
-        setError(response.message);
-      } else {
-        setCounter((prev) => prev + 1);
-      }
+    (commentId: number) => {
+      startTransition(async () => {
+        const response = await props.editOrDeleteComment(commentId, "delete");
+        if (response.responseType === "error") {
+          setError(response.message);
+        } else {
+          setCounter((prev) => prev + 1);
+        }
+      });
     },
     [props.objectId, props.addComment, activeComment],
   );
@@ -164,6 +166,7 @@ export const CommentChat = (props: {
                   props.editable &&
                   props.userId === comment.userId && (
                     <div className="flex flex-row gap-3">
+                      {error && <div className="text-red-600">{error}</div>}
                       <Button
                         variant="danger"
                         onClick={() => handleDelete(comment.id)}
