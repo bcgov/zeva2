@@ -17,8 +17,13 @@ import { TransactionClient } from "@/types/prisma";
 import { Decimal } from "decimal.js";
 import { flattenZevUnitRecords, ZevUnitRecord } from "@/lib/utils/zevUnit";
 import { getStringsToModelYearsEnumsMap } from "@/app/lib/utils/enumMaps";
-import { validateDate } from "@/app/lib/utils/date";
+import {
+  getIsoYmdString,
+  getTimeWithTz,
+  validateDate,
+} from "@/app/lib/utils/date";
 import { CreditApplicationRecordScalarFieldEnum } from "@/prisma/generated/internal/prismaNamespace";
+import { ChatComment } from "@/app/lib/constants/chatComment";
 
 export const getOrgInfo = async (orgId: number) => {
   const orgInfo = await prisma.organization.findUnique({
@@ -561,6 +566,38 @@ export const getStats = async (creditApplicationId: number) => {
       }
     }
     result.push(resultItem);
+  }
+  return result;
+};
+
+export const getAnalystComments = async (
+  creditApplicationId: number,
+): Promise<ChatComment[]> => {
+  const result: ChatComment[] = [];
+  const comments = await prisma.creditApplicationAnalystComment.findMany({
+    where: {
+      creditApplicationId,
+    },
+    include: {
+      user: {
+        select: {
+          firstName: true,
+          lastName: true,
+        },
+      },
+    },
+    orderBy: {
+      timestamp: "asc",
+    },
+  });
+  for (const comment of comments) {
+    result.push({
+      id: comment.id,
+      userId: comment.userId,
+      name: `${comment.user.firstName} ${comment.user.lastName}`,
+      comment: comment.comment,
+      timestamp: `${getIsoYmdString(comment.timestamp)} ${getTimeWithTz(comment.timestamp)}`,
+    });
   }
   return result;
 };

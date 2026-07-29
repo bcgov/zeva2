@@ -1,6 +1,7 @@
 export const getNormalizedComment = (comment: string) => {
-  if (comment === "") {
+  const trimmedComment = comment.trim();
+  if (trimmedComment === "") {
     return undefined;
   }
-  return comment;
+  return trimmedComment;
 };

@@ -26,6 +26,7 @@ import {
   updateStatus,
   createAttachments,
   getDecodedVinsMap,
+  getAnalystComments,
 } from "./services";
 import { ErrorsTemplate, InvalidReason, SupplierTemplate } from "./constants";
 import {
@@ -60,6 +61,7 @@ import { getModelYearEnumsToStringsMap } from "@/app/lib/utils/enumMaps";
 import { getIsoYmdString } from "@/app/lib/utils/date";
 import { revalidatePath } from "next/cache";
 import { Routes } from "@/app/lib/constants";
+import { ChatComment } from "@/app/lib/constants/chatComment";
 
 export const getSupplierTemplateDownloadUrl = async () => {
   return await getTemplateDownloadUrl(SupplierTemplate.Name);
@@ -1140,4 +1142,96 @@ export const getNotValidatedRecords = async (
       };
     }),
   );
+};
+
+export const getAnalystCommentsAction = async (
+  creditApplicationId: number,
+): Promise<DataOrErrorActionResponse<ChatComment[]>> => {
+  const { userIsGov } = await getUserInfo();
+  if (!userIsGov) {
+    return getErrorActionResponse("Unauthorized!");
+  }
+  const comments = await getAnalystComments(creditApplicationId);
+  return getDataActionResponse(comments);
+};
+
+export const analystAddComment = async (
+  creditApplicationId: number,
+  comment: string,
+): Promise<ErrorOrSuccessActionResponse> => {
+  const { userIsGov, userRoles, userId } = await getUserInfo();
+  if (!userIsGov || !userRoles.includes(Role.ZEVA_IDIR_USER)) {
+    return getErrorActionResponse("Unauthorized!");
+  }
+  const creditApplication = await prisma.creditApplication.findUnique({
+    where: {
+      id: creditApplicationId,
+      status: {
+        in: [
+          CreditApplicationStatus.SUBMITTED,
+          CreditApplicationStatus.RETURNED_TO_ANALYST,
+        ],
+      },
+    },
+  });
+  if (!creditApplication) {
+    return getErrorActionResponse("Invalid Action!");
+  }
+  await prisma.creditApplicationAnalystComment.create({
+    data: {
+      creditApplicationId,
+      userId,
+      comment,
+    },
+  });
+  return getSuccessActionResponse();
+};
+
+export const analystEditOrDeleteComment = async (
+  commentId: number,
+  type: "edit" | "delete",
+  comment?: string,
+): Promise<ErrorOrSuccessActionResponse> => {
+  const { userIsGov, userRoles, userId } = await getUserInfo();
+  if (!userIsGov || !userRoles.includes(Role.ZEVA_IDIR_USER)) {
+    return getErrorActionResponse("Unauthorized!");
+  }
+  if (type === "edit" && !comment) {
+    return getErrorActionResponse("Invalid Action!");
+  }
+  const existingComment =
+    await prisma.creditApplicationAnalystComment.findUnique({
+      where: {
+        id: commentId,
+        userId,
+        creditApplication: {
+          status: {
+            in: [
+              CreditApplicationStatus.SUBMITTED,
+              CreditApplicationStatus.RETURNED_TO_ANALYST,
+            ],
+          },
+        },
+      },
+    });
+  if (!existingComment) {
+    return getErrorActionResponse("Invalid Action!");
+  }
+  if (type === "edit") {
+    await prisma.creditApplicationAnalystComment.update({
+      where: {
+        id: commentId,
+      },
+      data: {
+        comment,
+      },
+    });
+  } else {
+    await prisma.creditApplicationAnalystComment.delete({
+      where: {
+        id: commentId,
+      },
+    });
+  }
+  return getSuccessActionResponse();
 };

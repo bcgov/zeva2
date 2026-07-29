@@ -118,29 +118,30 @@ enum Notification {
 }
 
 model User {
-  id                         Int                          @id @default(autoincrement())
-  contactEmail               String?                      @map("contact_email")
-  idpSub                     String?                      @unique @map("idp_sub")
-  idp                        Idp                          @map("idp")
-  idpUsername                String                       @map("idp_username")
-  idpEmail                   String                       @map("idp_email")
-  isActive                   Boolean                      @default(true) @map("is_active")
-  organization               Organization                 @relation(fields: [organizationId], references: [id])
-  organizationId             Int                          @map("organization_id")
-  roles                      Role[]
-  notifications              Notification[]
-  firstName                  String                       @map("first_name")
-  lastName                   String                       @map("last_name")
-  title                      String                       @map("title")
-  VehicleHistory             VehicleHistory[]
-  CreditApplicationHistory   CreditApplicationHistory[]
-  PenaltyCreditHistory       PenaltyCreditHistory[]
-  AgreementHistory           AgreementHistory[]
-  ModelYearReportHistory     ModelYearReportHistory[]
-  ReassessmentHistory        ReassessmentHistory[]
-  CreditTransferHistory      CreditTransferHistory[]
-  SupplementaryReportHistory SupplementaryReportHistory[]
-  icbcFiles                  IcbcFile[]
+  id                               Int                               @id @default(autoincrement())
+  contactEmail                     String?                           @map("contact_email")
+  idpSub                           String?                           @unique @map("idp_sub")
+  idp                              Idp                               @map("idp")
+  idpUsername                      String                            @map("idp_username")
+  idpEmail                         String                            @map("idp_email")
+  isActive                         Boolean                           @default(true) @map("is_active")
+  organization                     Organization                      @relation(fields: [organizationId], references: [id])
+  organizationId                   Int                               @map("organization_id")
+  roles                            Role[]
+  notifications                    Notification[]
+  firstName                        String                            @map("first_name")
+  lastName                         String                            @map("last_name")
+  title                            String                            @map("title")
+  VehicleHistory                   VehicleHistory[]
+  CreditApplicationHistory         CreditApplicationHistory[]
+  PenaltyCreditHistory             PenaltyCreditHistory[]
+  AgreementHistory                 AgreementHistory[]
+  ModelYearReportHistory           ModelYearReportHistory[]
+  ReassessmentHistory              ReassessmentHistory[]
+  CreditTransferHistory            CreditTransferHistory[]
+  SupplementaryReportHistory       SupplementaryReportHistory[]
+  icbcFiles                        IcbcFile[]
+  creditApplicationAnalystComments CreditApplicationAnalystComment[]
 
   @@unique([idp, idpUsername])
   @@map("user")
@@ -399,29 +400,30 @@ enum CreditApplicationSupplierStatus {
 }
 
 model CreditApplication {
-  id                          Int                             @id @default(autoincrement())
-  organization                Organization                    @relation(fields: [organizationId], references: [id])
-  organizationId              Int                             @map("organization_id")
-  objectName                  String                          @unique @map("object_name")
-  fileName                    String                          @map("file_name")
-  submissionTimestamp         DateTime?                       @map("submission_timestamp") @db.Timestamptz(6)
-  transactionTimestamp        DateTime?                       @map("transaction_timestamp") @db.Timestamptz(6)
-  status                      CreditApplicationStatus         @map("status")
-  supplierStatus              CreditApplicationSupplierStatus @map("supplier_status")
-  modelYears                  ModelYear[]                     @map("model_years")
-  legalName                   String                          @map("legal_name")
-  makes                       String
-  serviceAddress              String                          @map("service_address")
-  recordsAddress              String                          @map("records_address")
-  eligibleVinsCount           Int?                            @map("eligible_vins_count")
-  ineligibleVinsCount         Int?                            @map("ineligible_vins_count")
-  aCredits                    Decimal?                        @map("a_credits") @db.Decimal(65, 2)
-  bCredits                    Decimal?                        @map("b_credits") @db.Decimal(65, 2)
-  lastValidatedTimestamp      DateTime?                       @map("last_validated_timestamp") @db.Timestamptz(6)
-  complianceYear              ModelYear?                      @map("compliance_year")
-  CreditApplicationHistory    CreditApplicationHistory[]
-  CreditApplicationRecord     CreditApplicationRecord[]
-  CreditApplicationAttachment CreditApplicationAttachment[]
+  id                               Int                               @id @default(autoincrement())
+  organization                     Organization                      @relation(fields: [organizationId], references: [id])
+  organizationId                   Int                               @map("organization_id")
+  objectName                       String                            @unique @map("object_name")
+  fileName                         String                            @map("file_name")
+  submissionTimestamp              DateTime?                         @map("submission_timestamp") @db.Timestamptz(6)
+  transactionTimestamp             DateTime?                         @map("transaction_timestamp") @db.Timestamptz(6)
+  status                           CreditApplicationStatus           @map("status")
+  supplierStatus                   CreditApplicationSupplierStatus   @map("supplier_status")
+  modelYears                       ModelYear[]                       @map("model_years")
+  legalName                        String                            @map("legal_name")
+  makes                            String
+  serviceAddress                   String                            @map("service_address")
+  recordsAddress                   String                            @map("records_address")
+  eligibleVinsCount                Int?                              @map("eligible_vins_count")
+  ineligibleVinsCount              Int?                              @map("ineligible_vins_count")
+  aCredits                         Decimal?                          @map("a_credits") @db.Decimal(65, 2)
+  bCredits                         Decimal?                          @map("b_credits") @db.Decimal(65, 2)
+  lastValidatedTimestamp           DateTime?                         @map("last_validated_timestamp") @db.Timestamptz(6)
+  complianceYear                   ModelYear?                        @map("compliance_year")
+  CreditApplicationHistory         CreditApplicationHistory[]
+  CreditApplicationRecord          CreditApplicationRecord[]
+  CreditApplicationAttachment      CreditApplicationAttachment[]
+  creditApplicationAnalystComments CreditApplicationAnalystComment[]
 
   @@map("credit_application")
 }
@@ -482,6 +484,16 @@ model ReservedVin {
   vin String @unique @db.VarChar(17)
 
   @@map("reserved_vin")
+}
+
+model CreditApplicationAnalystComment {
+  id                  Int               @id @default(autoincrement())
+  creditApplicationId Int               @map("credit_application_id")
+  creditApplication   CreditApplication @relation(fields: [creditApplicationId], references: [id])
+  userId              Int               @map("user_id")
+  user                User              @relation(fields: [userId], references: [id])
+  timestamp           DateTime          @default(now()) @db.Timestamptz(6)
+  comment             String
 }
 
 enum PenaltyCreditStatus {
