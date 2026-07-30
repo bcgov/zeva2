@@ -19,6 +19,7 @@ import { SupplierActions } from "./SupplierActions";
 import { DirectorActions } from "./DirectorActions";
 import { AnalystActions } from "./AnalystActions";
 import { ApplicationStatistics } from "./ApplicationStatistics";
+import { ApplicationSummaryCards } from "./ApplicationSummaryCards";
 import { PrintDownloadButton } from "@/app/lib/components/PrintDownloadButton";
 import {
   getComplianceYear,
@@ -47,6 +48,15 @@ export const IndividualPage = async (props: { id: string }) => {
   if (userIsGov) {
     const applicationData = (
       <>
+        <Suspense fallback={<LoadingSkeleton />}>
+          <ApplicationSummaryCards
+            creditApplicationId={id}
+            eligibleVinsCount={creditApplication.eligibleVinsCount}
+            ineligibleVinsCount={creditApplication.ineligibleVinsCount}
+            aCredits={creditApplication.aCredits}
+            bCredits={creditApplication.bCredits}
+          />
+        </Suspense>
         <ContentCard title="Application Details">
           <ApplicationDetails
             application={creditApplication}
@@ -150,6 +160,15 @@ export const IndividualPage = async (props: { id: string }) => {
       </div>
 
       {statusBanner && <>{statusBanner}</>}
+      <Suspense fallback={<LoadingSkeleton />}>
+        <ApplicationSummaryCards
+          creditApplicationId={id}
+          eligibleVinsCount={creditApplication.eligibleVinsCount}
+          ineligibleVinsCount={creditApplication.ineligibleVinsCount}
+          aCredits={creditApplication.aCredits}
+          bCredits={creditApplication.bCredits}
+        />
+      </Suspense>
       <hr className="border-dividerMedium"></hr>
       <div className="flex flex-col gap-6 self-start">
         <div className="flex flex-col border border-dividerMedium rounded">
