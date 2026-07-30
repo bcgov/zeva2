@@ -14,6 +14,12 @@ export type SuccessActionResponse = {
   responseType: "success";
 };
 
+export type ValidationError = {
+  errorType: string;
+  record?: string;
+  details?: string;
+};
+
 export type ErrorOrSuccessActionResponse =
   | ErrorActionResponse
   | SuccessActionResponse;

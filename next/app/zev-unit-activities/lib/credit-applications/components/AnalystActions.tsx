@@ -10,16 +10,15 @@ import {
   validateCreditApplication,
 } from "../actions";
 import { Routes } from "@/app/lib/constants";
-import { Textarea } from "@/app/lib/components/inputs/Textarea";
 import { getNormalizedComment } from "@/app/lib/utils/comment";
 import { getModelYearEnumsToStringsMap } from "@/app/lib/utils/enumMaps";
 import { Modal, ModalType } from "@/app/lib/components/Modal";
 import { isModelYear } from "@/app/lib/utils/typeGuards";
+import { CommentBox } from "@/app/lib/components/CommentBox";
 
 export const AnalystActions = (props: {
   id: number;
   status: CreditApplicationStatus;
-  validatedBefore: boolean;
   complianceYears: ModelYear[];
   defaultComplianceYear: ModelYear;
 }) => {
@@ -50,15 +49,6 @@ export const AnalystActions = (props: {
     }
     setModal(null);
   }, [props.id]);
-
-  const handleGoToValidated = useCallback(
-    (edit: boolean) => {
-      router.push(
-        `${Routes.CreditApplications}/${props.id}/validated${edit ? "" : "?readOnly=Y"}`,
-      );
-    },
-    [props.id, router],
-  );
 
   const handleRecommend = useCallback(async () => {
     try {
@@ -131,57 +121,21 @@ export const AnalystActions = (props: {
   );
 
   if (
-    props.status === CreditApplicationStatus.DRAFT ||
-    props.status === CreditApplicationStatus.REJECTED
-  ) {
-    return null;
-  }
-  if (
-    props.status === CreditApplicationStatus.APPROVED ||
-    props.status === CreditApplicationStatus.RECOMMEND_APPROVAL
+    props.status === CreditApplicationStatus.SUBMITTED ||
+    props.status === CreditApplicationStatus.RETURNED_TO_ANALYST
   ) {
     return (
-      <Button
-        variant="secondary"
-        onClick={() => {
-          handleGoToValidated(false);
-        }}
-      >
-        View Validated Records
-      </Button>
-    );
-  }
-  return (
-    <>
-      <Textarea value={comment} onChange={setComment} />
-      {error && <p className="text-red-600">{error}</p>}
-      {props.validatedBefore ? (
-        <div className="flex flex-row justify-between">
-          <div className="flex flex-row items-center gap-3">
-            <Button variant="danger" onClick={() => showModal("reject")}>
-              Reject
-            </Button>
-            <Button
-              variant="secondary"
-              onClick={() => {
-                handleGoToValidated(false);
-              }}
-            >
-              View Validated Records
-            </Button>
-            <Button
-              variant="secondary"
-              onClick={() => {
-                handleGoToValidated(true);
-              }}
-            >
-              Edit Validated Records
-            </Button>
+      <>
+        <CommentBox comment={comment} setComment={setComment} />
+        <div className="flex flex-row justify-between items-center p-5 bg-lightGrey">
+          <Button variant="danger" onClick={() => showModal("reject")}>
+            Reject
+          </Button>
+          <div className="flex flex-row items-center gap-4">
+            {error && <p className="text-red-600">{error}</p>}
             <Button variant="primary" onClick={() => showModal("validate")}>
               Validate
             </Button>
-          </div>
-          <div className="flex flex-row items-center gap-3">
             <Dropdown
               label="Compliance Year"
               options={props.complianceYears.map((cy) => {
@@ -200,17 +154,9 @@ export const AnalystActions = (props: {
             </Button>
           </div>
         </div>
-      ) : (
-        <div className="flex flex-row justify-between">
-          <Button variant="danger" onClick={() => showModal("reject")}>
-            Reject
-          </Button>
-          <Button variant="primary" onClick={() => showModal("validate")}>
-            Validate
-          </Button>
-        </div>
-      )}
-      {modal}
-    </>
-  );
+        {modal}
+      </>
+    );
+  }
+  return null;
 };

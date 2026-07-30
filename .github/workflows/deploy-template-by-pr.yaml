@@ -20,6 +20,9 @@ on:
         type: string
     secrets:
       # the key used to checkout CD repository
+      manifest-repo-deploy-key:
+        required: true
+      # the token used to create a pull request in the CD repository
       manifest-repo-token:
         required: true
 
@@ -45,7 +48,7 @@ jobs:
         with:
           repository: bcgov-c/tenant-gitops-ea8eab
           ref: main
-          token: ${{ secrets.manifest-repo-token }}
+          ssh-key: ${{ secrets.manifest-repo-deploy-key }}
 
       - name: Check if the tag has been released
         id: check_version

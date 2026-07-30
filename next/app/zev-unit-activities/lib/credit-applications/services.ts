@@ -11,13 +11,19 @@ import {
   ZevClass,
 } from "@/prisma/generated/enums";
 import { CreditApplicationRecordWhereInput } from "@/prisma/generated/models";
-import { mapOfStatusToSupplierStatus } from "./constants";
+import { GovCaStatRecord, mapOfStatusToSupplierStatus } from "./constants";
 import { Attachment } from "@/app/lib/constants/attachment";
 import { TransactionClient } from "@/types/prisma";
 import { Decimal } from "decimal.js";
 import { flattenZevUnitRecords, ZevUnitRecord } from "@/lib/utils/zevUnit";
 import { getStringsToModelYearsEnumsMap } from "@/app/lib/utils/enumMaps";
-import { validateDate } from "@/app/lib/utils/date";
+import {
+  getIsoYmdString,
+  getTimeWithTz,
+  validateDate,
+} from "@/app/lib/utils/date";
+import { CreditApplicationRecordScalarFieldEnum } from "@/prisma/generated/internal/prismaNamespace";
+import { ChatComment } from "@/app/lib/constants/chatComment";
 
 export const getOrgInfo = async (orgId: number) => {
   const orgInfo = await prisma.organization.findUnique({
@@ -373,7 +379,7 @@ export const getVehicleCounts = async (
   creditApplicationId: number,
   type: "all" | "validated",
 ) => {
-  const result: Record<number, [number, number]> = {};
+  const subResult: Record<number, [number, number]> = {};
   const application = await prisma.creditApplication.findUnique({
     where: {
       id: creditApplicationId,
@@ -415,17 +421,17 @@ export const getVehicleCounts = async (
       vinsMissingVehicles.push(record.vin);
       continue;
     }
-    if (!result[vehicleId]) {
-      result[vehicleId] = [vehicleId, 0];
+    if (!subResult[vehicleId]) {
+      subResult[vehicleId] = [vehicleId, 0];
     }
-    result[vehicleId][1] = result[vehicleId][1] + 1;
+    subResult[vehicleId][1] = subResult[vehicleId][1] + 1;
   }
   if (vinsMissingVehicles.length > 0) {
     throw new Error(
       `System vehicles not found for the following VINs: ${vinsMissingVehicles.join(", ")}`,
     );
   }
-  return Object.values(result);
+  return Object.values(subResult);
 };
 
 export const getRecordStats = async (
@@ -473,4 +479,125 @@ export const getCreditStats = async (
       numberOfUnits: true,
     },
   });
+};
+
+export const getStats = async (creditApplicationId: number) => {
+  const result: GovCaStatRecord[] = [];
+  const byClause: CreditApplicationRecordScalarFieldEnum[] = [
+    "make",
+    "modelName",
+    "modelYear",
+    "vehicleClass",
+    "zevClass",
+    "zevType",
+    "range",
+    "numberOfUnits",
+  ];
+  const [allRecords, validatedRecords] = await Promise.all([
+    prisma.creditApplicationRecord.groupBy({
+      where: {
+        creditApplicationId,
+      },
+      by: byClause,
+      _count: {
+        id: true,
+      },
+      _sum: {
+        numberOfUnits: true,
+      },
+    }),
+    prisma.creditApplicationRecord.groupBy({
+      where: {
+        creditApplicationId,
+        validated: true,
+      },
+      by: byClause,
+      _count: {
+        id: true,
+      },
+      _sum: {
+        numberOfUnits: true,
+      },
+    }),
+  ]);
+  for (const [index, record] of allRecords.entries()) {
+    const make = record.make;
+    const modelName = record.modelName;
+    const modelYear = record.modelYear;
+    const vehicleClass = record.vehicleClass;
+    const zevClass = record.zevClass;
+    const zevType = record.zevType;
+    const range = record.range;
+    const numberOfUnits = record.numberOfUnits;
+    const resultItem = {
+      id: index,
+      make,
+      modelName,
+      modelYear,
+      vehicleClass,
+      zevClass,
+      zevType,
+      range,
+      numberOfUnits: numberOfUnits.toFixed(2),
+      vinsCount: record._count.id,
+      validVinsCount: 0,
+      creditsSum: record._sum.numberOfUnits
+        ? record._sum.numberOfUnits.toFixed(2)
+        : "0",
+      validCreditsSum: "0",
+    };
+    for (const validatedRecord of validatedRecords) {
+      if (
+        make === validatedRecord.make &&
+        modelName === validatedRecord.modelName &&
+        modelYear === validatedRecord.modelYear &&
+        vehicleClass === validatedRecord.vehicleClass &&
+        zevClass === validatedRecord.zevClass &&
+        zevType === validatedRecord.zevType &&
+        range === validatedRecord.range &&
+        numberOfUnits.eq(validatedRecord.numberOfUnits)
+      ) {
+        resultItem.validVinsCount = validatedRecord._count.id;
+        const validCreditsSum = validatedRecord._sum.numberOfUnits;
+        if (validCreditsSum) {
+          resultItem.validCreditsSum = validCreditsSum.toFixed(2);
+        }
+        break;
+      }
+    }
+    result.push(resultItem);
+  }
+  return result;
+};
+
+export const getAnalystComments = async (
+  creditApplicationId: number,
+): Promise<ChatComment[]> => {
+  const result: ChatComment[] = [];
+  const comments = await prisma.creditApplicationAnalystComment.findMany({
+    where: {
+      creditApplicationId,
+    },
+    include: {
+      user: {
+        select: {
+          firstName: true,
+          lastName: true,
+        },
+      },
+    },
+    orderBy: {
+      timestamp: "asc",
+    },
+  });
+  for (const comment of comments) {
+    result.push({
+      id: comment.id,
+      userId: comment.userId,
+      name: `${comment.user.firstName} ${comment.user.lastName}`,
+      comment: comment.comment,
+      timestamp: `${getIsoYmdString(comment.timestamp)} ${getTimeWithTz(comment.timestamp)}`,
+    });
+  }
+  return result;
 };

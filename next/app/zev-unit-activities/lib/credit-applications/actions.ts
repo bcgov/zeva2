@@ -26,6 +26,7 @@ import {
   updateStatus,
   createAttachments,
   getDecodedVinsMap,
+  getAnalystComments,
 } from "./services";
 import { ErrorsTemplate, InvalidReason, SupplierTemplate } from "./constants";
 import {
@@ -37,6 +38,8 @@ import {
 import {
   DataOrErrorActionResponse,
   ErrorOrSuccessActionResponse,
+  DataActionResponse,
+  ValidationError,
   getDataActionResponse,
   getErrorActionResponse,
   getSuccessActionResponse,
@@ -56,6 +59,9 @@ import {
 import { getPresignedGetObjectUrl } from "@/app/lib/services/s3";
 import { getModelYearEnumsToStringsMap } from "@/app/lib/utils/enumMaps";
 import { getIsoYmdString } from "@/app/lib/utils/date";
+import { revalidatePath } from "next/cache";
+import { Routes } from "@/app/lib/constants";
+import { ChatComment } from "@/app/lib/constants/chatComment";
 
 export const getSupplierTemplateDownloadUrl = async () => {
   return await getTemplateDownloadUrl(SupplierTemplate.Name);
@@ -158,7 +164,12 @@ export const supplierSave = async (
   applicationFileName: string,
   attachments: Attachment[],
   creditApplicationId?: number,
-): Promise<DataOrErrorActionResponse<number>> => {
+): Promise<
+  DataOrErrorActionResponse<{
+    creditApplicationId: number | null;
+    validationErrors: ValidationError[];
+  }>
+> => {
   const { userIsGov, userOrgId, userRoles } = await getUserInfo();
   if (userIsGov || !userRoles.includes(Role.ZEVA_BCEID_USER)) {
     return getErrorActionResponse("Unauthorized!");
@@ -183,31 +194,53 @@ export const supplierSave = async (
     const applicationBuf = await getObjectAsBuffer(applicationObjectName);
     const workbook = new Excel.Workbook();
     await workbook.xlsx.load(applicationBuf);
-    const recordsToCreatePrelim: Omit<
-      CreditApplicationRecordCreateManyInput,
-      "creditApplicationId"
-    >[] = [];
-    const modelYears: Set<ModelYear> = new Set();
     const dataSheet = workbook.getWorksheet(
       SupplierTemplate.ZEVsSuppliedSheetName,
     );
     if (!dataSheet) {
       throw new Error("Expected sheet not found!");
     }
-    const data = parseSupplierSubmission(dataSheet);
-    for (const [_vin, info] of Object.entries(data)) {
+
+    const {
+      data,
+      errors: parseErrors,
+      seenVins,
+    } = parseSupplierSubmission(dataSheet);
+    const allErrors: ValidationError[] = [...parseErrors];
+
+    const modelYears: Set<ModelYear> = new Set();
+    for (const info of Object.values(data)) {
       modelYears.add(info.modelYear);
     }
-    const vehiclesMap = await getEligibleVehiclesMap(
-      userOrgId,
-      Array.from(modelYears),
-    );
-    const vinsMissingVehicles: string[] = [];
+
+    const [vehiclesMap, reservedVins] = await Promise.all([
+      getEligibleVehiclesMap(userOrgId, Array.from(modelYears)),
+      getReservedVins(Array.from(seenVins)),
+    ]);
+
+    for (const vin of reservedVins) {
+      allErrors.push({
+        errorType: "Already reserved VIN",
+        record: vin,
+        details: "This VIN has already been reserved by another application",
+      });
+    }
+
+    const recordsToCreatePrelim: Omit<
+      CreditApplicationRecordCreateManyInput,
+      "creditApplicationId"
+    >[] = [];
+    const modelYearsMap = getModelYearEnumsToStringsMap();
+
     for (const [vin, info] of Object.entries(data)) {
       const vehicleInfo =
         vehiclesMap[info.make]?.[info.modelName]?.[info.modelYear];
       if (!vehicleInfo) {
-        vinsMissingVehicles.push(vin);
+        allErrors.push({
+          errorType: "No matching vehicle",
+          record: vin,
+          details: `${info.make} ${info.modelName} ${modelYearsMap[info.modelYear]} is not in your approved vehicle list`,
+        });
       } else {
         recordsToCreatePrelim.push({
           vin,
@@ -222,14 +255,16 @@ export const supplierSave = async (
           range: vehicleInfo[5],
           validated: false,
         });
-        modelYears.add(info.modelYear);
       }
     }
-    if (vinsMissingVehicles.length > 0) {
-      throw new Error(
-        `System vehicles not found for the following VINs: ${vinsMissingVehicles.join(", ")}`,
-      );
+
+    if (allErrors.length > 0) {
+      return getDataActionResponse({
+        creditApplicationId: null,
+        validationErrors: allErrors,
+      });
     }
+
     await prisma.$transaction(async (tx) => {
       if (creditApplicationId) {
         await tx.creditApplication.update({
@@ -287,7 +322,10 @@ export const supplierSave = async (
     }
     throw e;
   }
-  return getDataActionResponse(applicationId);
+  return getDataActionResponse({
+    creditApplicationId: applicationId,
+    validationErrors: [],
+  });
 };
 
 export const supplierDelete = async (
@@ -335,7 +373,9 @@ export const supplierDelete = async (
 export const supplierSubmit = async (
   creditApplicationId: number,
   comment?: string,
-): Promise<ErrorOrSuccessActionResponse> => {
+): Promise<
+  ErrorOrSuccessActionResponse | DataActionResponse<ValidationError[]>
+> => {
   const { userIsGov, userOrgId, userId, userRoles } = await getUserInfo();
   if (userIsGov || !userRoles.includes(Role.SIGNING_AUTHORITY)) {
     return getErrorActionResponse("Unauthorized!");
@@ -367,23 +407,34 @@ export const supplierSubmit = async (
     return getErrorActionResponse("Invalid Action!");
   }
   const records = application.CreditApplicationRecord;
+  const vins = records.map((r) => r.vin);
+
   try {
-    const invalidDateVins: string[] = [];
+    const allErrors: ValidationError[] = [];
+
     for (const record of records) {
       if (record.timestamp > new Date()) {
-        invalidDateVins.push(record.vin);
+        allErrors.push({
+          errorType: "Future date",
+          record: record.vin,
+          details: `Date ${getIsoYmdString(record.timestamp)} is in the future`,
+        });
       }
     }
-    if (invalidDateVins.length > 0) {
-      throw new Error(`VINs with future dates: ${invalidDateVins.join(", ")}`);
-    }
-    const vins = records.reduce((acc: string[], cv) => {
-      return [...acc, cv.vin];
-    }, []);
+
     const reservedVins = await getReservedVins(vins);
-    if (reservedVins.length > 0) {
-      throw new Error(`Reserved VINs: ${reservedVins.join(", ")}`);
+    for (const vin of reservedVins) {
+      allErrors.push({
+        errorType: "Already reserved VIN",
+        record: vin,
+        details: "This VIN has already been reserved by another application",
+      });
     }
+
+    if (allErrors.length > 0) {
+      return getDataActionResponse(allErrors);
+    }
+
     const vehicleCounts = await getVehicleCounts(creditApplicationId, "all");
     await prisma.$transaction(async (tx) => {
       await tx.creditApplication.update({
@@ -522,6 +573,7 @@ export const validateCreditApplication = async (
       },
     });
   });
+  revalidatePath(`${Routes.CreditApplications}/[id]`, "layout");
   return getSuccessActionResponse();
 };
 
@@ -1090,4 +1142,96 @@ export const getNotValidatedRecords = async (
       };
     }),
   );
+};
+
+export const getAnalystCommentsAction = async (
+  creditApplicationId: number,
+): Promise<DataOrErrorActionResponse<ChatComment[]>> => {
+  const { userIsGov } = await getUserInfo();
+  if (!userIsGov) {
+    return getErrorActionResponse("Unauthorized!");
+  }
+  const comments = await getAnalystComments(creditApplicationId);
+  return getDataActionResponse(comments);
+};
+
+export const analystAddComment = async (
+  creditApplicationId: number,
+  comment: string,
+): Promise<ErrorOrSuccessActionResponse> => {
+  const { userIsGov, userRoles, userId } = await getUserInfo();
+  if (!userIsGov || !userRoles.includes(Role.ZEVA_IDIR_USER)) {
+    return getErrorActionResponse("Unauthorized!");
+  }
+  const creditApplication = await prisma.creditApplication.findUnique({
+    where: {
+      id: creditApplicationId,
+      status: {
+        in: [
+          CreditApplicationStatus.SUBMITTED,
+          CreditApplicationStatus.RETURNED_TO_ANALYST,
+        ],
+      },
+    },
+  });
+  if (!creditApplication) {
+    return getErrorActionResponse("Invalid Action!");
+  }
+  await prisma.creditApplicationAnalystComment.create({
+    data: {
+      creditApplicationId,
+      userId,
+      comment,
+    },
+  });
+  return getSuccessActionResponse();
+};
+
+export const analystEditOrDeleteComment = async (
+  commentId: number,
+  type: "edit" | "delete",
+  comment?: string,
+): Promise<ErrorOrSuccessActionResponse> => {
+  const { userIsGov, userRoles, userId } = await getUserInfo();
+  if (!userIsGov || !userRoles.includes(Role.ZEVA_IDIR_USER)) {
+    return getErrorActionResponse("Unauthorized!");
+  }
+  if (type === "edit" && !comment) {
+    return getErrorActionResponse("Invalid Action!");
+  }
+  const existingComment =
+    await prisma.creditApplicationAnalystComment.findUnique({
+      where: {
+        id: commentId,
+        userId,
+        creditApplication: {
+          status: {
+            in: [
+              CreditApplicationStatus.SUBMITTED,
+              CreditApplicationStatus.RETURNED_TO_ANALYST,
+            ],
+          },
+        },
+      },
+    });
+  if (!existingComment) {
+    return getErrorActionResponse("Invalid Action!");
+  }
+  if (type === "edit") {
+    await prisma.creditApplicationAnalystComment.update({
+      where: {
+        id: commentId,
+      },
+      data: {
+        comment,
+      },
+    });
+  } else {
+    await prisma.creditApplicationAnalystComment.delete({
+      where: {
+        id: commentId,
+      },
+    });
+  }
+  return getSuccessActionResponse();
 };

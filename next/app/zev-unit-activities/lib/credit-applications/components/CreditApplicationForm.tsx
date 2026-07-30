@@ -23,6 +23,8 @@ import { Attachment, AttachmentDownload } from "@/app/lib/constants/attachment";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faDownload, faFloppyDisk } from "@fortawesome/free-solid-svg-icons";
 import { PrintDownloadButton } from "@/app/lib/components/PrintDownloadButton";
+import { ValidationError } from "@/app/lib/utils/actionResponse";
+import { ValidationErrorsList } from "@/app/lib/components/ValidationErrorsList";
 
 export const CreditApplicationForm = (props: {
   legalName: string;
@@ -41,6 +43,9 @@ export const CreditApplicationForm = (props: {
   const [files, setFiles] = useState<FileWithPath[]>([]);
   const [attachments, setAttachments] = useState<FileWithPath[]>([]);
   const [error, setError] = useState<string>("");
+  const [validationErrors, setValidationErrors] = useState<ValidationError[]>(
+    [],
+  );
 
   useEffect(() => {
     const loadPrev = async () => {
@@ -62,6 +67,13 @@ export const CreditApplicationForm = (props: {
     };
     loadPrev();
   }, [props.creditApplication]);
+
+  useEffect(() => {
+    if (files.length === 0) {
+      setError("");
+      setValidationErrors([]);
+    }
+  }, [files]);
 
   const handleDownload = useCallback(() => {
     setError("");
@@ -99,12 +111,9 @@ export const CreditApplicationForm = (props: {
     });
   }, []);
 
-  const handlePrintDownload = useCallback(() => {
-    globalThis.print();
-  }, []);
-
   const handleSave = useCallback(() => {
     setError("");
+    setValidationErrors([]);
     startTransition(async () => {
       try {
         if (files.length !== 1) {
@@ -145,11 +154,19 @@ export const CreditApplicationForm = (props: {
           attachmentsPayload,
           props.creditApplication?.id,
         );
+        if (response.responseType === "data") {
+          const data = response.data;
+          if (data.creditApplicationId) {
+            router.push(
+              `${Routes.CreditApplications}/${data.creditApplicationId}`,
+            );
+          } else if (data.validationErrors.length > 0) {
+            setValidationErrors(data.validationErrors);
+          }
+        }
         if (response.responseType === "error") {
           throw new Error(response.message);
         }
-        const applicationId = response.data;
-        router.push(`${Routes.CreditApplications}/${applicationId}`);
       } catch (e) {
         if (e instanceof Error) {
           setError(e.message);
@@ -337,6 +354,10 @@ export const CreditApplicationForm = (props: {
             </Button>
           </div>
         </div>
+        <ValidationErrorsList
+          errors={validationErrors}
+          heading="The following errors must be resolved before saving:"
+        />
       </div>
     </div>
   );

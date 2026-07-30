@@ -7,8 +7,8 @@ import { JSX, useCallback, useState } from "react";
 import { directorApprove, directorReturnToAnalyst } from "../actions";
 import { getNormalizedComment } from "@/app/lib/utils/comment";
 import { Routes } from "@/app/lib/constants";
-import { Textarea } from "@/app/lib/components/inputs/Textarea";
 import { Modal, ModalType } from "@/app/lib/components/Modal";
+import { CommentBox } from "@/app/lib/components/CommentBox";
 
 export const DirectorActions = (props: {
   id: number;
@@ -18,12 +18,6 @@ export const DirectorActions = (props: {
   const [comment, setComment] = useState<string>("");
   const [error, setError] = useState<string>("");
   const [modal, setModal] = useState<JSX.Element | null>(null);
-
-  const handleViewValidated = useCallback(() => {
-    router.push(
-      `${Routes.CreditApplications}/${props.id}/validated?readOnly=Y`,
-    );
-  }, [props.id, router]);
 
   const handleReturn = useCallback(async () => {
     const response = await directorReturnToAnalyst(
@@ -74,27 +68,24 @@ export const DirectorActions = (props: {
     [handleReturn, handleApprove],
   );
 
-  return (
-    <>
-      {(props.status === CreditApplicationStatus.RECOMMEND_APPROVAL ||
-        props.status === CreditApplicationStatus.APPROVED) && (
-        <Button variant="secondary" onClick={handleViewValidated}>
-          View Validated Records
-        </Button>
-      )}
-      {props.status === CreditApplicationStatus.RECOMMEND_APPROVAL && (
-        <>
-          {error && <p className="text-red-600">{error}</p>}
-          <Textarea value={comment} onChange={setComment} />
-          <Button variant="primary" onClick={() => showModal("approve")}>
-            Approve
-          </Button>
+  if (props.status === CreditApplicationStatus.RECOMMEND_APPROVAL) {
+    return (
+      <>
+        <CommentBox comment={comment} setComment={setComment} />
+        <div className="flex flex-row items-center justify-between p-5 bg-lightGrey">
           <Button variant="secondary" onClick={() => showModal("return")}>
             Return to Analyst
           </Button>
-          {modal}
-        </>
-      )}
-    </>
-  );
+          <div className="flex flex-row items-center gap-4">
+            {error && <p className="text-red-600">{error}</p>}
+            <Button variant="primary" onClick={() => showModal("approve")}>
+              Approve
+            </Button>
+          </div>
+        </div>
+        {modal}
+      </>
+    );
+  }
+  return null;
 };

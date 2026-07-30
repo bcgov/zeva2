@@ -14,7 +14,7 @@ import { useRouter } from "next/navigation";
 import { getVehicleAttachmentsPutData, supplierSave } from "../actions";
 import { Routes } from "@/app/lib/constants";
 import { ModelYear, ZevType } from "@/prisma/generated/enums";
-import { getVehiclePayload } from "../utilsClient";
+import { getVehiclePayload, gvwrCheck, rangeCheck } from "../utilsClient";
 import {
   getStringsToModelYearsEnumsMap,
   getStringsToVehicleClassCodeEnumsMap,
@@ -44,6 +44,7 @@ export const VehicleForm = (props: {
 }) => {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
+  const [responsiveError, setResponsiveError] = useState<string>("");
   const [error, setError] = useState<string>("");
   const [formData, setFormData] = useState<VehicleFormData>({});
   const [files, setFiles] = useState<FileWithPath[]>([]);
@@ -81,6 +82,40 @@ export const VehicleForm = (props: {
     };
     initializeForm();
   }, []);
+
+  useEffect(() => {
+    const gvwr = formData.gvwr;
+    if (gvwr !== undefined && gvwr !== "") {
+      try {
+        gvwrCheck(gvwr);
+      } catch (e) {
+        if (e instanceof Error) {
+          setResponsiveError(e.message);
+          return;
+        }
+      }
+      setResponsiveError("");
+    } else {
+      setResponsiveError("");
+    }
+  }, [formData.gvwr]);
+
+  useEffect(() => {
+    const range = formData.range;
+    if (range !== undefined && range !== "") {
+      try {
+        rangeCheck(range);
+      } catch (e) {
+        if (e instanceof Error) {
+          setResponsiveError(e.message);
+          return;
+        }
+      }
+      setResponsiveError("");
+    } else {
+      setResponsiveError("");
+    }
+  }, [formData.range]);
 
   const classCodesMap = useMemo(() => {
     return getStringsToVehicleClassCodeEnumsMap();
@@ -186,6 +221,14 @@ export const VehicleForm = (props: {
             />
           </div>
 
+          {responsiveError && (
+            <StatusBanner
+              variant="error"
+              title={responsiveError}
+              primaryText=""
+            />
+          )}
+
           <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-4">
             <TextInput
               label="Make"
@@ -258,7 +301,7 @@ export const VehicleForm = (props: {
         </div>
       </section>
 
-      {error && <p className="text-red-600">{error}</p>}
+      {error && <StatusBanner variant="error" title={error} primaryText="" />}
 
       <div className="flex items-center justify-between bg-gray-100 p-5">
         <Button

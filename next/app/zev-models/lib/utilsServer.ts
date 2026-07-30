@@ -111,6 +111,9 @@ export const getNumberOfUnits = (
   range: number,
   us06RangeGte16: boolean,
 ): Decimal => {
+  if (zevClass === ZevClass.UNSPECIFIED) {
+    return new Decimal(0);
+  }
   const currentTs = new Date();
   const threshold = new Date(
     `2026-${process.env.BEGINNING_OF_COMPLIANCE_YEAR}`,
@@ -173,7 +176,9 @@ export const getVehicleClass = (
   ) {
     return VehicleClass.REPORTABLE;
   }
-  throw new Error("Cannot associate a vehicle class with this vehicle!");
+  throw new Error(
+    "Cannot associate a vehicle class with this vehicle! Please check the Model Year and GVWR!",
+  );
 };
 
 export const getZevClass = (
@@ -216,5 +221,5 @@ export const getZevClass = (
   ) {
     return ZevClass.B;
   }
-  throw new Error("Cannot associate a zev class with this vehicle!");
+  return ZevClass.UNSPECIFIED;
 };

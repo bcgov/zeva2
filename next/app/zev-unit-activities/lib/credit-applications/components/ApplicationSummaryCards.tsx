@@ -6,7 +6,7 @@ import {
   faFileLines,
 } from "@fortawesome/free-solid-svg-icons";
 import type { IconDefinition } from "@fortawesome/fontawesome-svg-core";
-import { getApplicationStatistics } from "../data";
+import type { GovCaStatRecord } from "../constants";
 
 type SummaryCard = {
   label: string;
@@ -22,38 +22,24 @@ const formatNumber = (value: number) =>
     maximumFractionDigits: 2,
   }).format(value);
 
-const sumCredits = (
-  records: {
-    _sum: {
-      numberOfUnits: { toString(): string } | null;
-    };
-  }[],
-) =>
-  records.reduce(
-    (total, record) => total + Number(record._sum.numberOfUnits ?? 0),
-    0,
-  );
+const sumCredits = (records: GovCaStatRecord[]) =>
+  records.reduce((total, record) => total + Number(record.creditsSum), 0);
 
 const formatPercentage = (value: number, total: number) =>
   `${formatNumber(total === 0 ? 0 : (value / total) * 100)}% of application`;
 
-export const ApplicationSummaryCards = async (props: {
-  creditApplicationId: number;
+export const ApplicationSummaryCards = (props: {
+  stats: GovCaStatRecord[];
   eligibleVinsCount: number | null;
   ineligibleVinsCount: number | null;
   aCredits: { toString(): string } | null;
   bCredits: { toString(): string } | null;
 }) => {
-  const stats = await getApplicationStatistics(props.creditApplicationId);
-  if (!stats) {
-    return null;
-  }
-
-  const submittedVins = stats.recordStats.reduce(
-    (total, record) => total + record._count.id,
+  const submittedVins = props.stats.reduce(
+    (total, record) => total + record.vinsCount,
     0,
   );
-  const creditsClaimed = sumCredits(stats.creditStats);
+  const creditsClaimed = sumCredits(props.stats);
   const creditsEligible =
     props.aCredits === null || props.bCredits === null
       ? null

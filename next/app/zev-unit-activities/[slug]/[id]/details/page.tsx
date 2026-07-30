@@ -1,14 +1,17 @@
 import { Suspense } from "react";
 import { LoadingSkeleton } from "@/app/lib/components/skeletons";
 import { IndividualPage as AgreementsPage } from "../../../lib/credit-agreements/components/IndividualPage";
-import { IndividualPage as ApplicationsPage } from "../../../lib/credit-applications/components/IndividualPage";
+import { IndividualPageSupplier as ApplicationsPageSupplier } from "../../../lib/credit-applications/components/IndividualPageSupplier";
+import { IndividualPageGov as ApplicationsPageGov } from "../../../lib/credit-applications/components/IndividualPageGov";
 import { IndividualPage as TransfersPage } from "../../../lib/credit-transfers/components/IndividualPage";
 import { IndividualPage as PenaltyCreditsPage } from "../../../lib/penalty-credits/components/IndividualPage";
+import { getUserInfo } from "@/auth";
 
 const Page = async (props: {
   params: Promise<{ slug: string; id: string }>;
 }) => {
   const args = await props.params;
+  const { userIsGov } = await getUserInfo();
   const slug = args.slug;
   const id = args.id;
 
@@ -18,7 +21,11 @@ const Page = async (props: {
       individualPage = <AgreementsPage id={id} />;
       break;
     case "credit-applications":
-      individualPage = <ApplicationsPage id={id} />;
+      if (userIsGov) {
+        individualPage = <ApplicationsPageGov id={id} />;
+      } else {
+        individualPage = <ApplicationsPageSupplier id={id} />;
+      }
       break;
     case "credit-transfers":
       individualPage = <TransfersPage id={id} />;

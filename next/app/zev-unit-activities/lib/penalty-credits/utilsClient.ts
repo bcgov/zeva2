@@ -46,12 +46,12 @@ export const getPenaltyCreditPayload = (
 
   try {
     const units = new Decimal(numberOfUnits);
-    if (!new Decimal(units.toFixed(2)).equals(units)) {
+    if (units.lte(0) || units.decimalPlaces() > 2) {
       throw new Error();
     }
   } catch (e) {
     throw new Error(
-      "Invalid Number of Units; Number of Units must be no more than 2 decimal places!",
+      "Invalid Number of Units; Number of Units must be a positive number with no more than 2 decimal places!",
     );
   }
 
