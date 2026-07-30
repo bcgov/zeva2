@@ -37,6 +37,14 @@ export const CreditApplicationForm = (props: {
     applicationFile: AttachmentDownload;
     attachments: AttachmentDownload[];
   };
+  statusInfo?: {
+    savedAt?: string;
+    savedBy?: string;
+    submittedAt?: string;
+    submittedBy?: string;
+    rejectedAt?: string;
+    issuedAt?: string;
+  };
 }) => {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -198,33 +206,43 @@ export const CreditApplicationForm = (props: {
       !props.supplierStatus ||
       props.supplierStatus === CreditApplicationSupplierStatus.DRAFT
     ) {
-      return <StatusBanner title="STATUS - Draft" primaryText="" />;
+      return (
+        <StatusBanner
+          title="STATUS - Draft."
+          primaryText="Your credit application is saved as a draft and has not been submitted."
+        />
+      );
     }
 
     switch (props.supplierStatus) {
       case CreditApplicationSupplierStatus.SUBMITTED:
         return (
           <StatusBanner
-            title="STATUS - Submitted"
+            title="STATUS - Submitted."
             primaryText="Your credit application has been submitted and is under review."
           />
         );
       case CreditApplicationSupplierStatus.REJECTED:
         return (
           <StatusBanner
-            title="STATUS - Rejected"
+            title="STATUS - Rejected."
             primaryText="Your credit application has been rejected. Please review the comments and resubmit."
           />
         );
       case CreditApplicationSupplierStatus.APPROVED:
         return (
           <StatusBanner
-            title="STATUS - Approved"
-            primaryText="Your credit application has been approved."
+            title="STATUS - Issued."
+            primaryText="Your credit application has been issued by Government of B.C."
           />
         );
       default:
-        return <StatusBanner title="STATUS - Draft" primaryText="" />;
+        return (
+          <StatusBanner
+            title="STATUS - Draft."
+            primaryText="Your credit application is saved as a draft and has not been submitted."
+          />
+        );
     }
   };
 

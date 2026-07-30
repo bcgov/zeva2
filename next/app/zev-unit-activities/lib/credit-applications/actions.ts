@@ -170,7 +170,7 @@ export const supplierSave = async (
     validationErrors: ValidationError[];
   }>
 > => {
-  const { userIsGov, userOrgId, userRoles } = await getUserInfo();
+  const { userIsGov, userOrgId, userId, userRoles } = await getUserInfo();
   if (userIsGov || !userRoles.includes(Role.ZEVA_BCEID_USER)) {
     return getErrorActionResponse("Unauthorized!");
   }
@@ -315,6 +315,13 @@ export const supplierSave = async (
       });
       await deleteAttachments(applicationId, tx);
       await createAttachments(applicationId, attachments, tx);
+      await createHistory(
+        userId,
+        applicationId,
+        CreditApplicationStatus.DRAFT,
+        undefined,
+        tx,
+      );
     });
   } catch (e) {
     if (e instanceof Error) {
