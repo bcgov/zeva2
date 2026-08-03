@@ -17,6 +17,7 @@ import { Attachments } from "@/app/lib/components/Attachments";
 import { DirectorActions } from "./DirectorActions";
 import { AnalystActions } from "./AnalystActions";
 import { ApplicationStatisticsGov } from "./ApplicationStatisticsGov";
+import { ApplicationSummaryCards } from "./ApplicationSummaryCards";
 import {
   getComplianceYear,
   getCurrentComplianceYear,
@@ -43,6 +44,15 @@ export const IndividualPageGov = async (props: { id: string }) => {
   const stats = await getApplicationStatisticsGov(id);
   const applicationData = (
     <>
+      {stats && (
+        <ApplicationSummaryCards
+          stats={stats}
+          eligibleVinsCount={creditApplication.eligibleVinsCount}
+          ineligibleVinsCount={creditApplication.ineligibleVinsCount}
+          aCredits={creditApplication.aCredits}
+          bCredits={creditApplication.bCredits}
+        />
+      )}
       <ContentCard title="Application Details">
         <ApplicationDetails
           application={creditApplication}
