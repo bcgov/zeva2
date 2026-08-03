@@ -4,6 +4,8 @@ All notable changes to this project are documented in this file.
 
 | Version | Date | Type | Change |
 | --- | --- | --- | --- |
+| [1.49.0](https://github.com/bcgov/zeva2/compare/v1.48.0...v1.49.0) | 2026-08-03 | 🐛 Fix | status banners for BCEID users ([#596](https://github.com/bcgov/zeva2/issues/596)) ([505dec5](https://github.com/bcgov/zeva2/commit/505dec52e18104d9da3954dc25d7b2f1fba76229)) |
+| [1.49.0](https://github.com/bcgov/zeva2/compare/v1.48.0...v1.49.0) | 2026-08-03 | ✨ Feature | added credit application summary cards ([#597](https://github.com/bcgov/zeva2/issues/597)) ([c9cbdbb](https://github.com/bcgov/zeva2/commit/c9cbdbb3155468686956bb5de2982bdff9472fea)) |
 | [1.48.0](https://github.com/bcgov/zeva2/compare/v1.47.0...v1.48.0) | 2026-07-29 | ✨ Feature | CA analyst chat comments ([#593](https://github.com/bcgov/zeva2/issues/593)) ([f3187fe](https://github.com/bcgov/zeva2/commit/f3187fe605c8c3a2cc74bcc3de661e51e9f44352)) |
 | [1.48.0](https://github.com/bcgov/zeva2/compare/v1.47.0...v1.48.0) | 2026-07-29 | ✨ Feature | information icons for warnings ([#592](https://github.com/bcgov/zeva2/issues/592)) ([029cb78](https://github.com/bcgov/zeva2/commit/029cb78b0fd0b6c75ab14d112441718d5711541c)) |
 | [1.47.0](https://github.com/bcgov/zeva2/compare/v1.46.2...v1.47.0) | 2026-07-28 | ✨ Feature | CA - Gov table ([#591](https://github.com/bcgov/zeva2/issues/591)) ([e7cedfa](https://github.com/bcgov/zeva2/commit/e7cedfa9691b090b01d84c82ba3c99f143ee4173)) |
