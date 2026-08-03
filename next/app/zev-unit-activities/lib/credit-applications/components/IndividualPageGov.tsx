@@ -44,15 +44,7 @@ export const IndividualPageGov = async (props: { id: string }) => {
   const stats = await getApplicationStatisticsGov(id);
   const applicationData = (
     <>
-      {stats && (
-        <ApplicationSummaryCards
-          stats={stats}
-          eligibleVinsCount={creditApplication.eligibleVinsCount}
-          ineligibleVinsCount={creditApplication.ineligibleVinsCount}
-          aCredits={creditApplication.aCredits}
-          bCredits={creditApplication.bCredits}
-        />
-      )}
+      {stats && <ApplicationSummaryCards stats={stats} />}
       <ContentCard title="Application Details">
         <ApplicationDetails
           application={creditApplication}

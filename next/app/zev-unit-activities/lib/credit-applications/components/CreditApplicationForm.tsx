@@ -37,14 +37,6 @@ export const CreditApplicationForm = (props: {
     applicationFile: AttachmentDownload;
     attachments: AttachmentDownload[];
   };
-  statusInfo?: {
-    savedAt?: string;
-    savedBy?: string;
-    submittedAt?: string;
-    submittedBy?: string;
-    rejectedAt?: string;
-    issuedAt?: string;
-  };
 }) => {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();

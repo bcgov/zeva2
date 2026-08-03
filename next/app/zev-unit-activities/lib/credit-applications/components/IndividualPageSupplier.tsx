@@ -18,14 +18,7 @@ import { Attachments } from "@/app/lib/components/Attachments";
 import { SupplierActions } from "./SupplierActions";
 import { ApplicationStatisticsSupplier } from "./ApplicationStatisticsSupplier";
 import { PrintDownloadButton } from "@/app/lib/components/PrintDownloadButton";
-
-const formatDate = (d: Date) =>
-  d.toLocaleDateString("en-CA", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-    timeZone: "America/Vancouver",
-  });
+import { getIsoYmdString } from "@/app/lib/utils/date";
 
 export const IndividualPageSupplier = async (props: { id: string }) => {
   const id = Number.parseInt(props.id, 10);
@@ -59,8 +52,9 @@ export const IndividualPageSupplier = async (props: { id: string }) => {
 
   const latestIssuedTimestamp = histories
     .filter((h) => h.userAction === "APPROVED")
-    .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime())[0]
-    ?.timestamp;
+    .sort(
+      (a, b) => b.timestamp.getTime() - a.timestamp.getTime(),
+    )[0]?.timestamp;
 
   const latestSubmission = histories
     .filter((h) => h.userAction === "SUBMITTED")
@@ -80,7 +74,7 @@ export const IndividualPageSupplier = async (props: { id: string }) => {
         title="STATUS - Draft."
         primaryText={
           draftHistory
-            ? `CA-${id} Excel template ${creditApplication.fileName} uploaded and auto-saved, ${formatDate(draftHistory.timestamp)} by ${draftSavedBy}, awaiting submission to Government of B.C.`
+            ? `CA-${id} Excel template ${creditApplication.fileName} uploaded and auto-saved, ${getIsoYmdString(draftHistory.timestamp)} by ${draftSavedBy}, awaiting submission to Government of B.C.`
             : `CA-${id} awaiting submission to Government of B.C.`
         }
       />
@@ -93,7 +87,7 @@ export const IndividualPageSupplier = async (props: { id: string }) => {
         title="STATUS - Submitted."
         primaryText={
           creditApplication.submissionTimestamp
-            ? `CA-${id} submitted to Government of B.C. ${formatDate(creditApplication.submissionTimestamp)}, by ${submitterName}. Awaiting review by Government of B.C.`
+            ? `CA-${id} submitted to Government of B.C. ${getIsoYmdString(creditApplication.submissionTimestamp)}, by ${submitterName}. Awaiting review by Government of B.C.`
             : `CA-${id} submitted to Government of B.C. Awaiting review by Government of B.C.`
         }
       />
@@ -106,7 +100,7 @@ export const IndividualPageSupplier = async (props: { id: string }) => {
         title="STATUS - Rejected."
         primaryText={
           latestRejectionTimestamp
-            ? `CA-${id} rejected ${formatDate(latestRejectionTimestamp)} by Government of B.C.`
+            ? `CA-${id} rejected ${getIsoYmdString(latestRejectionTimestamp)} by Government of B.C.`
             : "Your credit application has been rejected by Government of B.C."
         }
         secondaryText={
@@ -127,7 +121,7 @@ export const IndividualPageSupplier = async (props: { id: string }) => {
         title="STATUS - Issued."
         primaryText={
           latestIssuedTimestamp
-            ? `CA-${id} issued ${formatDate(latestIssuedTimestamp)} by Government of B.C.`
+            ? `CA-${id} issued ${getIsoYmdString(latestIssuedTimestamp)} by Government of B.C.`
             : "Your credit application has been issued by Government of B.C."
         }
       />

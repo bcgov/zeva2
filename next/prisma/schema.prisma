@@ -494,6 +494,8 @@ model CreditApplicationAnalystComment {
   user                User              @relation(fields: [userId], references: [id])
   timestamp           DateTime          @default(now()) @db.Timestamptz(6)
   comment             String
+
+  @@map("credit_application_analyst_comment")
 }
 
 enum PenaltyCreditStatus {
