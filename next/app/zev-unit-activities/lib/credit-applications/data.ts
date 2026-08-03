@@ -33,6 +33,10 @@ export type CreditApplicationWithOrgAndAttachmentNamesAndInvalidatedRecordsCount
     _count: {
       CreditApplicationRecord: number;
     };
+    validatedBy: {
+      firstName: string;
+      lastName: string;
+    } | null;
   };
 
 export const getCreditApplication = async (
@@ -69,6 +73,12 @@ export const getCreditApplication = async (
     where: whereClause,
     include: {
       organization: true,
+      validatedBy: {
+        select: {
+          firstName: true,
+          lastName: true,
+        },
+      },
       CreditApplicationAttachment: {
         select: {
           fileName: true,
@@ -269,6 +279,10 @@ export const getApplicationHistories = async (
         CreditApplicationStatus.REJECTED,
         CreditApplicationStatus.SUBMITTED,
       ],
+    };
+  } else {
+    where.userAction = {
+      not: CreditApplicationStatus.DRAFT,
     };
   }
   return await prisma.creditApplicationHistory.findMany({

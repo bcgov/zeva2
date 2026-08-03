@@ -4,8 +4,12 @@ import {
   ModelYear,
   Role,
 } from "@/prisma/generated/enums";
-import { getCreditApplication, getApplicationStatisticsGov } from "../data";
-import { ContentCard } from "@/app/lib/components";
+import {
+  getCreditApplication,
+  getApplicationStatisticsGov,
+  getApplicationHistories,
+} from "../data";
+import { ContentCard, StatusBanner } from "@/app/lib/components";
 import { ApplicationDetails } from "./ApplicationDetails";
 import {
   analystAddComment,
@@ -24,6 +28,8 @@ import {
   getDominatedComplianceYears,
 } from "@/app/lib/utils/complianceYear";
 import { CommentChat } from "@/app/lib/components/CommentChat";
+import { JSX } from "react";
+import { getIsoYmdString } from "@/app/lib/utils/date";
 
 export const IndividualPageGov = async (props: { id: string }) => {
   const id = Number.parseInt(props.id, 10);
@@ -36,14 +42,114 @@ export const IndividualPageGov = async (props: { id: string }) => {
     return null;
   }
   const applicationStatus = creditApplication.status;
+  const validationTs = creditApplication.lastValidatedTimestamp;
+  const validatedBy = creditApplication.validatedBy;
   const downloadAttachments = async () => {
     "use server";
     return getCreditApplicationAttachmentDownloadUrls(id);
   };
 
-  const stats = await getApplicationStatisticsGov(id);
+  const [stats, histories] = await Promise.all([
+    getApplicationStatisticsGov(id),
+    getApplicationHistories(id),
+  ]);
+
+  let statusBanner: JSX.Element | null = null;
+  if (
+    applicationStatus === CreditApplicationStatus.SUBMITTED &&
+    validationTs &&
+    validatedBy
+  ) {
+    const history = histories.find(
+      (h) => h.userAction === CreditApplicationStatus.SUBMITTED,
+    );
+    if (history) {
+      statusBanner = (
+        <StatusBanner
+          variant="info"
+          title="STATUS: Submitted and Validated"
+          primaryText={`CA-${id} checked against ICBC registration data ${getIsoYmdString(validationTs)} by ${validatedBy.firstName} ${validatedBy.lastName}.`}
+        />
+      );
+    }
+  } else if (
+    applicationStatus === CreditApplicationStatus.SUBMITTED &&
+    !validationTs &&
+    !validatedBy
+  ) {
+    const history = histories.find(
+      (h) => h.userAction === CreditApplicationStatus.SUBMITTED,
+    );
+    if (history) {
+      statusBanner = (
+        <StatusBanner
+          variant="draft"
+          title="STATUS: Submitted"
+          primaryText={`CA-${id} submitted to Government of B.C. ${getIsoYmdString(history.timestamp)}, by ${creditApplication.organization.name}. Awaiting review by Government of B.C.`}
+        />
+      );
+    }
+  } else if (
+    applicationStatus === CreditApplicationStatus.RETURNED_TO_ANALYST &&
+    validationTs &&
+    validatedBy
+  ) {
+    const history = histories.findLast(
+      (h) => h.userAction === CreditApplicationStatus.RETURNED_TO_ANALYST,
+    );
+    if (history) {
+      statusBanner = (
+        <StatusBanner
+          variant="returned"
+          title="STATUS: Returned to Analyst"
+          primaryText={`CA-${id} returned to analyst on ${getIsoYmdString(history.timestamp)}. Last checked against ICBC registration data on ${getIsoYmdString(validationTs)} by ${validatedBy.firstName} ${validatedBy.lastName}.`}
+          secondaryText={history.comment}
+        />
+      );
+    }
+  } else if (applicationStatus === CreditApplicationStatus.RECOMMEND_APPROVAL) {
+    const history = histories.findLast(
+      (h) => h.userAction === CreditApplicationStatus.RECOMMEND_APPROVAL,
+    );
+    if (history) {
+      statusBanner = (
+        <StatusBanner
+          variant="warning"
+          title="STATUS: Recommended"
+          primaryText={`CA-${id} reviewed and recommended to Director ${getIsoYmdString(history.timestamp)} by ${history.user.firstName} ${history.user.lastName}.`}
+        />
+      );
+    }
+  } else if (applicationStatus === CreditApplicationStatus.APPROVED) {
+    const history = histories.find(
+      (h) => h.userAction === CreditApplicationStatus.APPROVED,
+    );
+    if (history) {
+      statusBanner = (
+        <StatusBanner
+          variant="success"
+          title="STATUS: Issued"
+          primaryText={`CA-${id} issued ${getIsoYmdString(history.timestamp)} by ${history.user.firstName} ${history.user.lastName}.`}
+        />
+      );
+    }
+  } else if (applicationStatus === CreditApplicationStatus.REJECTED) {
+    const history = histories.findLast(
+      (h) => h.userAction === CreditApplicationStatus.REJECTED,
+    );
+    if (history) {
+      statusBanner = (
+        <StatusBanner
+          variant="error"
+          title="STATUS: Rejected"
+          primaryText={`CA-${id} rejected ${getIsoYmdString(history.timestamp)} by ${history.user.firstName} ${history.user.lastName}.`}
+        />
+      );
+    }
+  }
   const applicationData = (
     <>
+      {statusBanner}
       {stats && <ApplicationSummaryCards stats={stats} />}
       <ContentCard title="Application Details">
         <ApplicationDetails

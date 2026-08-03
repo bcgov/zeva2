@@ -3,11 +3,7 @@ import { CreditApplicationForm } from "./CreditApplicationForm";
 import { getCreditApplicationAttachmentDownloadUrls } from "../actions";
 import { AttachmentDownload } from "@/app/lib/constants/attachment";
 import { getOrgInfo } from "../services";
-import {
-  getCreditApplication,
-  getApplicationHistories,
-  getLatestDraftHistory,
-} from "../data";
+import { getCreditApplication } from "../data";
 import { getPresignedGetObjectUrl } from "@/app/lib/services/s3";
 import { CreditApplicationSupplierStatus } from "@/prisma/generated/enums";
 
@@ -27,13 +23,10 @@ export const ApplicationCreateOrEdit = async (props: {
   let attachments: AttachmentDownload[] = [];
 
   if (props.creditApplicationId) {
-    const [application, attachmentsResp, draftHistory, histories] =
-      await Promise.all([
-        getCreditApplication(props.creditApplicationId),
-        getCreditApplicationAttachmentDownloadUrls(props.creditApplicationId),
-        getLatestDraftHistory(props.creditApplicationId),
-        getApplicationHistories(props.creditApplicationId),
-      ]);
+    const [application, attachmentsResp] = await Promise.all([
+      getCreditApplication(props.creditApplicationId),
+      getCreditApplicationAttachmentDownloadUrls(props.creditApplicationId),
+    ]);
     if (!application) {
       return null;
     }
