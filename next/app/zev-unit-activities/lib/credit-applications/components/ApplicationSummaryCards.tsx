@@ -95,32 +95,27 @@ export const ApplicationSummaryCards = (props: {
   ];
 
   return (
-    <section
-      aria-label="Credit application summary"
-      className="grid grid-cols-1 gap-3 px-5 py-4 sm:grid-cols-2 xl:grid-cols-5"
-    >
+    <div className="flex flex-row gap-4">
       {cards.map((card) => (
-        <article
+        <div
           key={card.label}
-          className="flex min-h-24 items-center gap-3 rounded border border-dividerMedium bg-white px-4 py-3"
+          className="flex flex-row items-center gap-4 rounded border border-dividerMedium p-4"
         >
-          <div
-            className={`flex size-10 shrink-0 items-center justify-center rounded-full ${card.iconBackgroundClassName}`}
-          >
+          <div className={`p-2 rounded-full ${card.iconBackgroundClassName}`}>
             <FontAwesomeIcon
               icon={card.icon}
-              className={`size-4 ${card.iconClassName}`}
+              className={`size-6 ${card.iconClassName}`}
             />
           </div>
-          <div className="min-w-0">
-            <h2 className="text-sm font-bold leading-5">{card.label}</h2>
-            <div className="text-lg font-bold leading-6">{card.value}</div>
-            <p className="text-xs leading-5 text-secondaryText">
+          <div className="flex flex-col gap-1">
+            <span className="text-sm font-bold">{card.label}</span>
+            <span className="text-lg font-bold">{card.value}</span>
+            <span className="text-xs text-secondaryText">
               {card.supportingText}
-            </p>
+            </span>
           </div>
-        </article>
+        </div>
       ))}
-    </section>
+    </div>
   );
 };

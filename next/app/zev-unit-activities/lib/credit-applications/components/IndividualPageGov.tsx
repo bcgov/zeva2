@@ -68,7 +68,7 @@ export const IndividualPageGov = async (props: { id: string }) => {
       statusBanner = (
         <StatusBanner
           variant="validated"
-          title="STATUS: Validated"
+          title="STATUS: Validated."
           primaryText={`CA-${id} checked against ICBC registration data ${getIsoYmdString(validationTs)} by ${validatedBy.firstName} ${validatedBy.lastName}.`}
         />
       );
@@ -85,7 +85,7 @@ export const IndividualPageGov = async (props: { id: string }) => {
       statusBanner = (
         <StatusBanner
           variant="draft"
-          title="STATUS: Submitted"
+          title="STATUS: Submitted."
           primaryText={`CA-${id} submitted to Government of B.C. ${getIsoYmdString(history.timestamp)}, by ${creditApplication.organization.name}. Awaiting review by Government of B.C.`}
         />
       );
@@ -102,7 +102,7 @@ export const IndividualPageGov = async (props: { id: string }) => {
       statusBanner = (
         <StatusBanner
           variant="returned"
-          title="STATUS: Returned to Analyst"
+          title="STATUS: Returned to Analyst."
           primaryText={`CA-${id} returned to analyst on ${getIsoYmdString(history.timestamp)}. Last checked against ICBC registration data on ${getIsoYmdString(validationTs)} by ${validatedBy.firstName} ${validatedBy.lastName}.`}
           secondaryText={
             history.comment && (
@@ -123,7 +123,7 @@ export const IndividualPageGov = async (props: { id: string }) => {
       statusBanner = (
         <StatusBanner
           variant="warning"
-          title="STATUS: Recommended"
+          title="STATUS: Recommended."
           primaryText={`CA-${id} reviewed and recommended to Director ${getIsoYmdString(history.timestamp)} by ${history.user.firstName} ${history.user.lastName}.`}
         />
       );
@@ -136,7 +136,7 @@ export const IndividualPageGov = async (props: { id: string }) => {
       statusBanner = (
         <StatusBanner
           variant="success"
-          title="STATUS: Issued"
+          title="STATUS: Issued."
           primaryText={`CA-${id} issued ${getIsoYmdString(history.timestamp)} by ${history.user.firstName} ${history.user.lastName}.`}
         />
       );
@@ -149,7 +149,7 @@ export const IndividualPageGov = async (props: { id: string }) => {
       statusBanner = (
         <StatusBanner
           variant="error"
-          title="STATUS: Rejected"
+          title="STATUS: Rejected."
           primaryText={`CA-${id} rejected ${getIsoYmdString(history.timestamp)} by ${history.user.firstName} ${history.user.lastName}.`}
         />
       );
