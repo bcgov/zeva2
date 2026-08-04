@@ -142,6 +142,7 @@ model User {
   SupplementaryReportHistory       SupplementaryReportHistory[]
   icbcFiles                        IcbcFile[]
   creditApplicationAnalystComments CreditApplicationAnalystComment[]
+  creditApplications               CreditApplication[]
 
   @@unique([idp, idpUsername])
   @@map("user")
@@ -419,6 +420,8 @@ model CreditApplication {
   aCredits                         Decimal?                          @map("a_credits") @db.Decimal(65, 2)
   bCredits                         Decimal?                          @map("b_credits") @db.Decimal(65, 2)
   lastValidatedTimestamp           DateTime?                         @map("last_validated_timestamp") @db.Timestamptz(6)
+  validatedById                    Int?                              @map("validated_by_id")
+  validatedBy                      User?                             @relation(fields: [validatedById], references: [id])
   complianceYear                   ModelYear?                        @map("compliance_year")
   CreditApplicationHistory         CreditApplicationHistory[]
   CreditApplicationRecord          CreditApplicationRecord[]
@@ -494,6 +497,8 @@ model CreditApplicationAnalystComment {
   user                User              @relation(fields: [userId], references: [id])
   timestamp           DateTime          @default(now()) @db.Timestamptz(6)
   comment             String
+
+  @@map("credit_application_analyst_comment")
 }
 
 enum PenaltyCreditStatus {

@@ -494,7 +494,7 @@ export const supplierSubmit = async (
 export const validateCreditApplication = async (
   creditApplicationId: number,
 ): Promise<ErrorOrSuccessActionResponse> => {
-  const { userIsGov, userRoles } = await getUserInfo();
+  const { userIsGov, userId, userRoles } = await getUserInfo();
   if (!userIsGov || !userRoles.includes(Role.ZEVA_IDIR_USER)) {
     return getErrorActionResponse("Unauthorized!");
   }
@@ -573,6 +573,7 @@ export const validateCreditApplication = async (
       },
       data: {
         lastValidatedTimestamp: new Date(),
+        validatedById: userId,
         eligibleVinsCount,
         ineligibleVinsCount,
         aCredits,
@@ -800,6 +801,9 @@ export const analystRecommend = async (
   const creditApplication = await prisma.creditApplication.findUnique({
     where: {
       id: creditApplicationId,
+      lastValidatedTimestamp: {
+        not: null,
+      },
     },
   });
   if (

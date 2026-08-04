@@ -1,14 +1,13 @@
 import { getUserInfo } from "@/auth";
-import { CreditApplicationSupplierStatus } from "@/prisma/generated/enums";
 import {
-  getCreditApplication,
-  getApplicationHistories,
-  getLatestDraftHistory,
-} from "../data";
+  CreditApplicationStatus,
+  CreditApplicationSupplierStatus,
+} from "@/prisma/generated/enums";
+import { getCreditApplication, getApplicationHistories } from "../data";
 import { StatusBanner } from "@/app/lib/components";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faDownload } from "@fortawesome/free-solid-svg-icons";
-import { Suspense } from "react";
+import { JSX, Suspense } from "react";
 import { LoadingSkeleton } from "@/app/lib/components/skeletons";
 import {
   getCreditApplicationAttachmentDownloadUrls,
@@ -18,14 +17,7 @@ import { Attachments } from "@/app/lib/components/Attachments";
 import { SupplierActions } from "./SupplierActions";
 import { ApplicationStatisticsSupplier } from "./ApplicationStatisticsSupplier";
 import { PrintDownloadButton } from "@/app/lib/components/PrintDownloadButton";
-
-const formatDate = (d: Date) =>
-  d.toLocaleDateString("en-CA", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-    timeZone: "America/Vancouver",
-  });
+import { getIsoYmdString } from "@/app/lib/utils/date";
 
 export const IndividualPageSupplier = async (props: { id: string }) => {
   const id = Number.parseInt(props.id, 10);
@@ -47,91 +39,71 @@ export const IndividualPageSupplier = async (props: { id: string }) => {
     return getCreditApplicationAttachmentDownloadUrls(id);
   };
 
-  const [histories, draftHistory] = await Promise.all([
-    getApplicationHistories(id),
-    getLatestDraftHistory(id),
-  ]);
-  const latestRejection = histories
-    .filter((h) => h.userAction === "REJECTED")
-    .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime())[0];
-  const latestRejectionComment = latestRejection?.comment;
-  const latestRejectionTimestamp = latestRejection?.timestamp;
-
-  const latestIssuedTimestamp = histories
-    .filter((h) => h.userAction === "APPROVED")
-    .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime())[0]
-    ?.timestamp;
-
-  const latestSubmission = histories
-    .filter((h) => h.userAction === "SUBMITTED")
-    .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime())[0];
-  const submitterName = latestSubmission
-    ? `${latestSubmission.user.firstName} ${latestSubmission.user.lastName}`
-    : creditApplication.legalName;
-
-  const draftSavedBy = draftHistory
-    ? `${draftHistory.user.firstName} ${draftHistory.user.lastName}`
-    : creditApplication.legalName;
-
-  let statusBanner = null;
+  // assumes "histories" are in ascending order
+  const histories = await getApplicationHistories(id);
+  let statusBanner: JSX.Element | null = null;
   if (applicationSupplierStatus === CreditApplicationSupplierStatus.DRAFT) {
-    statusBanner = (
-      <StatusBanner
-        title="STATUS - Draft."
-        primaryText={
-          draftHistory
-            ? `CA-${id} Excel template ${creditApplication.fileName} uploaded and auto-saved, ${formatDate(draftHistory.timestamp)} by ${draftSavedBy}, awaiting submission to Government of B.C.`
-            : `CA-${id} awaiting submission to Government of B.C.`
-        }
-      />
+    const history = histories.findLast(
+      (h) => h.userAction === CreditApplicationStatus.DRAFT,
     );
+    if (history) {
+      statusBanner = (
+        <StatusBanner
+          title="STATUS - Draft."
+          primaryText={`CA-${id} Excel template ${creditApplication.fileName} uploaded and auto-saved, ${getIsoYmdString(history.timestamp)} by ${history.user.firstName} ${history.user.lastName}, awaiting submission to Government of B.C.`}
+        />
+      );
+    }
   } else if (
     applicationSupplierStatus === CreditApplicationSupplierStatus.SUBMITTED
   ) {
-    statusBanner = (
-      <StatusBanner
-        title="STATUS - Submitted."
-        primaryText={
-          creditApplication.submissionTimestamp
-            ? `CA-${id} submitted to Government of B.C. ${formatDate(creditApplication.submissionTimestamp)}, by ${submitterName}. Awaiting review by Government of B.C.`
-            : `CA-${id} submitted to Government of B.C. Awaiting review by Government of B.C.`
-        }
-      />
+    const history = histories.find(
+      (h) => h.userAction === CreditApplicationStatus.SUBMITTED,
     );
+    if (history) {
+      statusBanner = (
+        <StatusBanner
+          title="STATUS - Submitted."
+          primaryText={`CA-${id} submitted to Government of B.C. ${getIsoYmdString(history.timestamp)}, by ${history.user.firstName} ${history.user.lastName}. Awaiting review by Government of B.C.`}
+        />
+      );
+    }
   } else if (
     applicationSupplierStatus === CreditApplicationSupplierStatus.REJECTED
   ) {
-    statusBanner = (
-      <StatusBanner
-        title="STATUS - Rejected."
-        primaryText={
-          latestRejectionTimestamp
-            ? `CA-${id} rejected ${formatDate(latestRejectionTimestamp)} by Government of B.C.`
-            : "Your credit application has been rejected by Government of B.C."
-        }
-        secondaryText={
-          latestRejectionComment && (
-            <div>
-              <strong>Official Comment from Government of B.C.:</strong>{" "}
-              {latestRejectionComment}
-            </div>
-          )
-        }
-      />
+    const history = histories.find(
+      (h) => h.userAction === CreditApplicationStatus.REJECTED,
     );
+    if (history) {
+      statusBanner = (
+        <StatusBanner
+          title="STATUS - Rejected."
+          primaryText={`CA-${id} rejected ${getIsoYmdString(history.timestamp)} by Government of B.C.`}
+          secondaryText={
+            history.comment && (
+              <div>
+                <strong>Official Comment from Government of B.C.:</strong>{" "}
+                {history.comment}
+              </div>
+            )
+          }
+        />
+      );
+    }
   } else if (
     applicationSupplierStatus === CreditApplicationSupplierStatus.APPROVED
   ) {
-    statusBanner = (
-      <StatusBanner
-        title="STATUS - Issued."
-        primaryText={
-          latestIssuedTimestamp
-            ? `CA-${id} issued ${formatDate(latestIssuedTimestamp)} by Government of B.C.`
-            : "Your credit application has been issued by Government of B.C."
-        }
-      />
+    const history = histories.find(
+      (h) => h.userAction === CreditApplicationStatus.APPROVED,
     );
+    if (history) {
+      statusBanner = (
+        <StatusBanner
+          title="STATUS - Issued."
+          primaryText={`CA-${id} issued ${getIsoYmdString(history.timestamp)} by Government of B.C.`}
+        />
+      );
+    }
   }
 
   return (
@@ -147,7 +119,7 @@ export const IndividualPageSupplier = async (props: { id: string }) => {
         </div>
       </div>
 
-      {statusBanner && <>{statusBanner}</>}
+      {statusBanner}
       <hr className="border-dividerMedium"></hr>
       <div className="flex flex-col gap-6 self-start">
         <div className="flex flex-col border border-dividerMedium rounded">
