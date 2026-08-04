@@ -262,6 +262,7 @@ export type CreditApplicationHistoryWithUser = CreditApplicationHistoryModel & {
   };
 };
 
+// many calling functions rely on returned histories being in ascending order!
 export const getApplicationHistories = async (
   creditApplicationId: number,
 ): Promise<CreditApplicationHistoryWithUser[]> => {
@@ -276,6 +277,7 @@ export const getApplicationHistories = async (
     where.userAction = {
       in: [
         CreditApplicationStatus.APPROVED,
+        CreditApplicationStatus.DRAFT,
         CreditApplicationStatus.REJECTED,
         CreditApplicationStatus.SUBMITTED,
       ],
@@ -398,30 +400,6 @@ export const getApplicationStatisticsGov = async (
     return null;
   }
   return await getStats(creditApplicationId);
-};
-
-export const getLatestDraftHistory = async (
-  creditApplicationId: number,
-): Promise<{
-  timestamp: Date;
-  user: { firstName: string; lastName: string };
-} | null> => {
-  const { userIsGov, userOrgId } = await getUserInfo();
-  if (userIsGov) {
-    return null;
-  }
-  return await prisma.creditApplicationHistory.findFirst({
-    where: {
-      creditApplicationId,
-      creditApplication: { organizationId: userOrgId },
-      userAction: CreditApplicationStatus.DRAFT,
-    },
-    select: {
-      timestamp: true,
-      user: { select: { firstName: true, lastName: true } },
-    },
-    orderBy: { timestamp: "desc" },
-  });
 };
 
 export const getAttachmentsCount = async (creditApplicationId: number) => {

@@ -49,6 +49,7 @@ export const IndividualPageGov = async (props: { id: string }) => {
     return getCreditApplicationAttachmentDownloadUrls(id);
   };
 
+  // assumes "histories" are in ascending order
   const [stats, histories] = await Promise.all([
     getApplicationStatisticsGov(id),
     getApplicationHistories(id),
@@ -66,8 +67,8 @@ export const IndividualPageGov = async (props: { id: string }) => {
     if (history) {
       statusBanner = (
         <StatusBanner
-          variant="info"
-          title="STATUS: Submitted and Validated"
+          variant="validated"
+          title="STATUS: Validated"
           primaryText={`CA-${id} checked against ICBC registration data ${getIsoYmdString(validationTs)} by ${validatedBy.firstName} ${validatedBy.lastName}.`}
         />
       );
@@ -103,7 +104,14 @@ export const IndividualPageGov = async (props: { id: string }) => {
           variant="returned"
           title="STATUS: Returned to Analyst"
           primaryText={`CA-${id} returned to analyst on ${getIsoYmdString(history.timestamp)}. Last checked against ICBC registration data on ${getIsoYmdString(validationTs)} by ${validatedBy.firstName} ${validatedBy.lastName}.`}
-          secondaryText={history.comment}
+          secondaryText={
+            history.comment && (
+              <span>
+                <span className="font-bold">Comment from Director:</span>{" "}
+                {history.comment}
+              </span>
+            )
+          }
         />
       );
     }

@@ -23,7 +23,8 @@ export type StatusBannerVariant =
   | "warning"
   | "returned"
   | "success"
-  | "error";
+  | "error"
+  | "validated";
 
 const statusBannerStyles: Record<
   StatusBannerVariant,
@@ -58,6 +59,10 @@ const statusBannerStyles: Record<
     icon: (
       <FontAwesomeIcon icon={faTriangleExclamation} className="text-error" />
     ),
+  },
+  validated: {
+    container: "border-warning bg-[#FFF4D8]",
+    icon: <FontAwesomeIcon icon={faSquareCheck} className="text-warning" />,
   },
 };
 
