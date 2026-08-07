@@ -30,6 +30,7 @@ import {
 import { CommentChat } from "@/app/lib/components/CommentChat";
 import { JSX } from "react";
 import { getIsoYmdString } from "@/app/lib/utils/date";
+import { RecommendationSummary } from "./RecommendationSummary";
 
 export const IndividualPageGov = async (props: { id: string }) => {
   const id = Number.parseInt(props.id, 10);
@@ -223,6 +224,10 @@ export const IndividualPageGov = async (props: { id: string }) => {
         addComment={analystAddComment}
         editOrDeleteComment={analystEditOrDeleteComment}
       />
+      {stats &&
+        applicationStatus === CreditApplicationStatus.RECOMMEND_APPROVAL && (
+          <RecommendationSummary stats={stats} />
+        )}
       {actionComponent}
     </div>
   );
