@@ -4,6 +4,7 @@ All notable changes to this project are documented in this file.
 
 | Version | Date | Type | Change |
 | --- | --- | --- | --- |
+| [1.50.1](https://github.com/bcgov/zeva2/compare/v1.50.0...v1.50.1) | 2026-08-10 | 🐛 Fix | header added to idir credit application ([#603](https://github.com/bcgov/zeva2/issues/603)) ([00ba208](https://github.com/bcgov/zeva2/commit/00ba208c79757e894a4dbf3644b0c8927b5ee061)) |
 | [1.50.0](https://github.com/bcgov/zeva2/compare/v1.49.0...v1.50.0) | 2026-08-04 | ✨ Feature | 547 - CA statuses and cleanup ([#600](https://github.com/bcgov/zeva2/issues/600)) ([774b83b](https://github.com/bcgov/zeva2/commit/774b83be59fb3d93dbd961454ea7bf029dca1ab3)) |
 | [1.49.0](https://github.com/bcgov/zeva2/compare/v1.48.0...v1.49.0) | 2026-08-03 | 🐛 Fix | status banners for BCEID users ([#596](https://github.com/bcgov/zeva2/issues/596)) ([505dec5](https://github.com/bcgov/zeva2/commit/505dec52e18104d9da3954dc25d7b2f1fba76229)) |
 | [1.49.0](https://github.com/bcgov/zeva2/compare/v1.48.0...v1.49.0) | 2026-08-03 | ✨ Feature | added credit application summary cards ([#597](https://github.com/bcgov/zeva2/issues/597)) ([c9cbdbb](https://github.com/bcgov/zeva2/commit/c9cbdbb3155468686956bb5de2982bdff9472fea)) |
