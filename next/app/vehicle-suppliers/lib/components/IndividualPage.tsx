@@ -39,7 +39,6 @@ export const IndividualPage = async (props: { orgId: string }) => {
       supplierClass={supplierClass}
       saleVolumes={organization.LegacySalesVolume}
       supplyVolumes={organization.SupplyVolume}
-      users={organization.users}
       canEdit={canEdit}
     />
   );
