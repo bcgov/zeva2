@@ -42,6 +42,7 @@ A sample diagram illustrates this model:
 - Use hotfix branches only for urgent exceptions, then merge back to `main` quickly.
 - Keep deployment environments in sync by promoting versions forward.
 - Establish a team agreement for Conventional Commits (for example, when to use `feat`, `fix`, and other commit types).
+- Once the release on Test passed all the testing, release it to Prod as fast as possible unless the testing failed
 
 ## 2.2 Semantic Release
 
@@ -200,7 +201,18 @@ Please follow these guidelines when promoting releases:
 
 ![Hotfix Release](hotfix.png)
 
-# 5. Caller Workflows
+# 5. Promote a Release to the Prod Environment
+
+This procedure is same as promoting to Test environment.
+
+## Best Practices
+
+Please follow these guidelines when promoting releases:
+
+- Once the release on Test passed all the testing, release it to Prod as fast as possible unless the testing failed
+- Smoke test the Prod release once it is deployed on Prod
+
+# 6. Caller Workflows
 
 - [release-dev.yaml](../workflows/dev-release.yml)
 - [promote-test.yaml](../workflows/promote-test.yml)
@@ -213,7 +225,7 @@ Please follow these guidelines when promoting releases:
 - [hotfix-test.yaml](../workflows/hotfix-test.yml)
 - [pr-commit-lint.yaml](../workflows/pr-commit-lint.yaml)
 
-# 6. Reuseable Workflows
+# 7. Reuseable Workflows
 
 - [install-oc-template.yaml](../workflows/install-oc-template.yaml)
 - [build-template.yaml](../workflows/build-template.yaml)
