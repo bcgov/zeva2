@@ -1,7 +1,6 @@
 import { Breadcrumbs } from "@/app/lib/components";
 import { Routes } from "@/app/lib/constants";
-import { getUserInfo } from "@/auth";
-import { getUser } from "../../lib/data";
+import { getUser } from "@/app/administration/lib/data";
 
 const categoryLabels: Record<string, string> = {
   bceid: "BCeID",
@@ -22,13 +21,7 @@ const Layout = async (props: {
   children: React.ReactNode;
   params: Promise<{ slug: string; id: string }>;
 }) => {
-  const { userIsGov } = await getUserInfo();
   const { slug, id } = await props.params;
-
-  if (!userIsGov) {
-    return props.children;
-  }
-
   const user = await getUser(Number.parseInt(id, 10));
   const categoryLabel = categoryLabels[slug] ?? slug;
 
@@ -36,8 +29,8 @@ const Layout = async (props: {
     <>
       <Breadcrumbs
         items={[
-          { label: "Administration", href: `${Routes.Administration}/idir` },
-          { label: categoryLabel, href: `${Routes.Administration}/${slug}` },
+          { label: "Administration", href: `${Routes.GovAdministration}/idir` },
+          { label: categoryLabel, href: `${Routes.GovAdministration}/${slug}` },
           { label: userLabel(user, id) },
         ]}
       />

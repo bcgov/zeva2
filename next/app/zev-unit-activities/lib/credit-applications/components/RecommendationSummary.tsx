@@ -2,9 +2,7 @@ import { StatusBanner } from "@/app/lib/components";
 import Decimal from "decimal.js";
 import type { GovCaStatRecord } from "../constants";
 
-export const RecommendationSummary = (props: {
-  stats: GovCaStatRecord[];
-}) => {
+export const RecommendationSummary = (props: { stats: GovCaStatRecord[] }) => {
   const eligibleZevs = props.stats.reduce(
     (total, record) => total + record.validVinsCount,
     0,

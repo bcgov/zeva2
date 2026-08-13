@@ -237,10 +237,9 @@ export const IndividualPageGov = async (props: { id: string }) => {
         addComment={analystAddComment}
         editOrDeleteComment={analystEditOrDeleteComment}
       />
-      {stats &&
-        applicationStatus === CreditApplicationStatus.RECOMMEND_APPROVAL && (
-          <RecommendationSummary stats={stats} />
-        )}
+      {stats && applicationStatus !== CreditApplicationStatus.REJECTED && (
+        <RecommendationSummary stats={stats} />
+      )}
       {actionComponent}
     </div>
   );

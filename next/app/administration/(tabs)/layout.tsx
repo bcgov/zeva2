@@ -1,5 +1,4 @@
 import { getUserInfo } from "@/auth";
-import { Breadcrumbs } from "@/app/lib/components";
 import { SecondaryNavbar } from "@/app/lib/components/SecondaryNavbar";
 import { Routes } from "@/app/lib/constants";
 
@@ -22,7 +21,6 @@ const Layout = async (props: { children: React.ReactNode }) => {
 
   return (
     <>
-      <Breadcrumbs items={[{ label: "Administration" }]} />
       <SecondaryNavbar items={items} />
       <div className="p-6">{props.children}</div>
     </>

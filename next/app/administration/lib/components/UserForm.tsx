@@ -26,11 +26,13 @@ export const UserForm = ({
   orgsMap,
   userOrgId,
   govOrgId,
+  isAdmin,
 }: {
   user?: UserModel;
   orgsMap?: Record<number, string>;
   userOrgId: string;
   govOrgId: string;
+  isAdmin: boolean;
 }) => {
   const router = useRouter();
   const [error, setError] = useState<string>("");
@@ -182,7 +184,7 @@ export const UserForm = ({
             } else {
               slug = "bceid";
             }
-            router.push(`${Routes.Administration}/${slug}/${userId}`);
+            router.push(`${Routes.GovAdministration}/${slug}/${userId}`);
           } else {
             router.push(`${Routes.Administration}/${userId}`);
           }
@@ -236,7 +238,7 @@ export const UserForm = ({
           <UserFormFields
             form={form}
             onChange={handleChange}
-            disabled={isPending || formAndRolesDisabled}
+            disabled={isPending || formAndRolesDisabled || !isAdmin}
             type={
               userOrgId !== govOrgId ? "BCeID" : orgIsGov ? "IDIR" : "BCeID"
             }
@@ -271,6 +273,7 @@ export const UserForm = ({
                 accentColor="accent-success"
                 titleColor="text-success"
                 hoverBorderColor="hover:border-primaryBlue"
+                disabled={!isAdmin}
               />
               <SelectionCard
                 variant="radio"
@@ -282,6 +285,7 @@ export const UserForm = ({
                 accentColor="accent-error"
                 titleColor="text-error"
                 hoverBorderColor="hover:border-primaryRed"
+                disabled={!isAdmin}
               />
             </div>
           </section>
@@ -302,7 +306,7 @@ export const UserForm = ({
               roles={roles}
               setRoles={setRoles}
               setError={setError}
-              disabled={isPending || formAndRolesDisabled}
+              disabled={isPending || formAndRolesDisabled || !isAdmin}
             />
           </section>
         </div>
@@ -339,19 +343,21 @@ export const UserForm = ({
         >
           Back
         </Button>
-        <div className="flex items-center gap-4">
-          <Button
-            type="submit"
-            onClick={() => {
-              setGuardEnabled(false);
-              setSubmitClicked(true);
-            }}
-            disabled={isPending}
-            className="rounded-md bg-primaryBlue px-5 py-2 text-sm font-semibold text-textOnPrimary shadow-sm hover:bg-primaryBlueHover disabled:cursor-not-allowed disabled:bg-disabledBG disabled:text-disabledText"
-          >
-            {isPending ? "..." : user ? "Update" : "Create"}
-          </Button>
-        </div>
+        {isAdmin && (
+          <div className="flex items-center gap-4">
+            <Button
+              type="submit"
+              onClick={() => {
+                setGuardEnabled(false);
+                setSubmitClicked(true);
+              }}
+              disabled={isPending}
+              className="rounded-md bg-primaryBlue px-5 py-2 text-sm font-semibold text-textOnPrimary shadow-sm hover:bg-primaryBlueHover disabled:cursor-not-allowed disabled:bg-disabledBG disabled:text-disabledText"
+            >
+              {isPending ? "..." : user ? "Update" : "Create"}
+            </Button>
+          </div>
+        )}
       </div>
     </div>
   );

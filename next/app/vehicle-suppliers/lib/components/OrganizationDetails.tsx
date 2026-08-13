@@ -13,7 +13,9 @@ import {
 const formattedAddress = (address: OrganizationAddressSparse | undefined) => {
   if (!address) return <span>N/A</span>;
   const { addressLines, city, state, postalCode, country } = address;
-  const parts = [addressLines, city, state, postalCode, country].filter(Boolean);
+  const parts = [addressLines, city, state, postalCode, country].filter(
+    Boolean,
+  );
   if (parts.length === 0) return <span>N/A</span>;
   return <span>{parts.join(", ")}</span>;
 };
@@ -103,33 +105,33 @@ export const OrganizationDetails = (props: {
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-col gap-6 self-start">
-      <div className="flex flex-col border border-dividerMedium rounded">
-        <div className="px-5 py-4 text-xl font-bold bg-disabledBG flex justify-between items-center">
-          Supplier Information
-          {props.canEdit && (
-            <Button
-              variant="secondary"
-              size="small"
-              onClick={() => setMode("edit")}
-            >
-              Edit
-            </Button>
-          )}
+        <div className="flex flex-col border border-dividerMedium rounded">
+          <div className="px-5 py-4 text-xl font-bold bg-disabledBG flex justify-between items-center">
+            Supplier Information
+            {props.canEdit && (
+              <Button
+                variant="secondary"
+                size="small"
+                onClick={() => setMode("edit")}
+              >
+                Edit
+              </Button>
+            )}
+          </div>
+          <div className="p-5 grid grid-cols-2 items-center gap-y-3">
+            <div className="font-bold">Common Name:</div>
+            <div>{props.shortName ?? "N/A"}</div>
+            <hr className="col-span-2 border-disabledBG" />
+            <div className="font-bold">Records Address:</div>
+            <div>{formattedAddress(props.recordsAddress)}</div>
+            <hr className="col-span-2 border-disabledBG" />
+            <div className="font-bold">Service Address:</div>
+            <div>{formattedAddress(props.serviceAddress)}</div>
+            <hr className="col-span-2 border-disabledBG" />
+            <div className="font-bold">Class:</div>
+            <div>{props.supplierClass}</div>
+          </div>
         </div>
-        <div className="p-5 grid grid-cols-2 items-center gap-y-3">
-          <div className="font-bold">Common Name:</div>
-          <div>{props.shortName ?? "N/A"}</div>
-          <hr className="col-span-2 border-disabledBG" />
-          <div className="font-bold">Records Address:</div>
-          <div>{formattedAddress(props.recordsAddress)}</div>
-          <hr className="col-span-2 border-disabledBG" />
-          <div className="font-bold">Service Address:</div>
-          <div>{formattedAddress(props.serviceAddress)}</div>
-          <hr className="col-span-2 border-disabledBG" />
-          <div className="font-bold">Class:</div>
-          <div>{props.supplierClass}</div>
-        </div>
-      </div>
       </div>
 
       <div className="flex gap-6">
