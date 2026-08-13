@@ -1,6 +1,6 @@
 "use client";
 
-import { ModelYear, Role, VehicleClass } from "@/prisma/generated/enums";
+import { ModelYear, VehicleClass } from "@/prisma/generated/enums";
 import { Button } from "@/app/lib/components";
 import { useState } from "react";
 import OrganizationEditForm from "./OrganizationEditForm";
@@ -8,67 +8,65 @@ import { OrganizationAddressSparse } from "../data";
 import {
   getModelYearEnumsToStringsMap,
   getVehicleClassEnumsToStringsMap,
-  getRoleEnumsToStringsMap,
 } from "@/app/lib/utils/enumMaps";
-import { useRouter } from "next/navigation";
-import { Routes } from "@/app/lib/constants";
-
-type OrganizationUser = {
-  id: number;
-  firstName: string;
-  lastName: string;
-  isActive: boolean;
-  roles: Role[];
-};
 
 const formattedAddress = (address: OrganizationAddressSparse | undefined) => {
   if (!address) return <span>N/A</span>;
-  const { addressLines, city, state, postalCode, country, representative } =
-    address;
-  return (
-    <div>
-      {representative && <p>{representative}</p>}
-      {addressLines &&
-        addressLines
-          .split("\n")
-          .map((line, index) => <p key={index}>{line}</p>)}
-      {(city || state || postalCode) && (
-        <p>
-          {city}, {state} {postalCode}
-        </p>
-      )}
-      {country && <p>{country}</p>}
-    </div>
-  );
-};
-
-const organizationUsers = (users: OrganizationUser[]) => {
-  if (users.length === 0) {
-    return <span>N/A</span>;
-  }
-  const rolesMap = getRoleEnumsToStringsMap();
-  return (
-    <ul>
-      {users.map((user) => (
-        <li key={user.id}>
-          <a
-            href={`${Routes.Administration}/${user.id}`}
-            className="text-primaryBlue hover:underline"
-          >
-            {user.firstName} {user.lastName} -{" "}
-            {user.isActive ? "Active" : "Inactive"} [
-            {user.roles.map((role) => rolesMap[role]).join(" | ")}]
-          </a>
-        </li>
-      ))}
-    </ul>
-  );
+  const { addressLines, city, state, postalCode, country } = address;
+  const parts = [addressLines, city, state, postalCode, country].filter(Boolean);
+  if (parts.length === 0) return <span>N/A</span>;
+  return <span>{parts.join(", ")}</span>;
 };
 
 type Volume = {
   vehicleClass: VehicleClass;
   modelYear: ModelYear;
   volume: number;
+};
+
+const VolumeTable = (props: { title: string; volumes: Volume[] }) => {
+  const vehicleClassMap = getVehicleClassEnumsToStringsMap();
+  const modelYearsMap = getModelYearEnumsToStringsMap();
+
+  return (
+    <div className="w-[455px] flex flex-col border border-disabledIcon rounded">
+      <div className="px-5 py-4 bg-disabledSurface font-bold">
+        {props.title}
+      </div>
+      <div className="overflow-x-auto">
+        <table className="w-full text-sm">
+          <thead>
+            <tr>
+              <th className="h-[60px] px-4 py-3 text-left font-bold border-b border-disabledIcon whitespace-nowrap">
+                Model Year
+              </th>
+              <th className="h-[60px] px-4 py-3 text-left font-bold border-b border-disabledIcon whitespace-nowrap">
+                Vehicle Class
+              </th>
+              <th className="h-[60px] px-4 py-3 text-left font-bold border-b border-disabledIcon whitespace-nowrap">
+                Volume
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            {props.volumes.map((volume, index) => (
+              <tr key={index} className="odd:bg-lightGrey even:bg-white">
+                <td className="px-4 py-3 border-b border-disabledIcon whitespace-nowrap">
+                  {modelYearsMap[volume.modelYear]}
+                </td>
+                <td className="px-4 py-3 border-b border-disabledIcon whitespace-nowrap">
+                  {vehicleClassMap[volume.vehicleClass]}
+                </td>
+                <td className="px-4 py-3 border-b border-disabledIcon whitespace-nowrap">
+                  {volume.volume}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
 };
 
 export const OrganizationDetails = (props: {
@@ -82,10 +80,8 @@ export const OrganizationDetails = (props: {
   supplierClass: string;
   saleVolumes: Volume[];
   supplyVolumes: Volume[];
-  users: OrganizationUser[];
   canEdit: boolean;
 }) => {
-  const router = useRouter();
   const [mode, setMode] = useState<"view" | "edit">("view");
 
   if (mode === "edit") {
@@ -104,111 +100,41 @@ export const OrganizationDetails = (props: {
     );
   }
 
-  const vehicleClassMap = getVehicleClassEnumsToStringsMap();
-  const modelYearsMap = getModelYearEnumsToStringsMap();
-
   return (
-    <div className="space-y-4">
-      <div className="flex flex-row gap-8">
-        <h2 className="text-xl font-semibold text-primaryBlue py-1">
-          {props.organizationName}
-        </h2>
-        {props.canEdit && (
-          <Button variant="secondary" onClick={() => setMode("edit")}>
-            Edit
-          </Button>
-        )}
+    <div className="flex flex-col gap-6">
+      <div className="flex flex-col gap-6 self-start">
+      <div className="flex flex-col border border-dividerMedium rounded">
+        <div className="px-5 py-4 text-xl font-bold bg-disabledBG flex justify-between items-center">
+          Supplier Information
+          {props.canEdit && (
+            <Button
+              variant="secondary"
+              size="small"
+              onClick={() => setMode("edit")}
+            >
+              Edit
+            </Button>
+          )}
+        </div>
+        <div className="p-5 grid grid-cols-2 items-center gap-y-3">
+          <div className="font-bold">Common Name:</div>
+          <div>{props.shortName ?? "N/A"}</div>
+          <hr className="col-span-2 border-disabledBG" />
+          <div className="font-bold">Records Address:</div>
+          <div>{formattedAddress(props.recordsAddress)}</div>
+          <hr className="col-span-2 border-disabledBG" />
+          <div className="font-bold">Service Address:</div>
+          <div>{formattedAddress(props.serviceAddress)}</div>
+          <hr className="col-span-2 border-disabledBG" />
+          <div className="font-bold">Class:</div>
+          <div>{props.supplierClass}</div>
+        </div>
+      </div>
       </div>
 
-      <div>
-        <span className="font-semibold mr-2">Common Name:</span>
-        {props.shortName ?? "N/A"}
-      </div>
-
-      <div className="flex flex-row">
-        <div className="w-1/3">
-          <h3 className="font-semibold">Service Address</h3>
-          {formattedAddress(props.serviceAddress)}
-        </div>
-        <div className="w-1/3">
-          <h3 className="font-semibold">Records Address</h3>
-          {formattedAddress(props.recordsAddress)}
-        </div>
-      </div>
-
-      {!props.userIsGov && (
-        <div>
-          <div className="flex flex-row gap-8">
-            <h3 className="font-semibold mr-2">User(s):</h3>
-            {props.canEdit && (
-              <Button
-                variant="secondary"
-                onClick={() => router.push(`${Routes.Administration}/new`)}
-              >
-                Add User
-              </Button>
-            )}
-          </div>
-          {organizationUsers(props.users)}
-        </div>
-      )}
-
-      <div>
-        <span className="font-semibold mr-2">Class:</span>
-        {props.supplierClass}
-      </div>
-
-      <div className="flex flex-row">
-        <div className="w-1/3">
-          <h3 className="font-semibold">Legacy Sales Volumes</h3>
-          <table>
-            <thead>
-              <tr>
-                <th className="border border-gray-300">Vehicle Class</th>
-                <th className="border border-gray-300">Model Year</th>
-                <th className="border border-gray-300">Volume</th>
-              </tr>
-            </thead>
-            <tbody>
-              {props.saleVolumes.map((volume, index) => (
-                <tr key={index}>
-                  <td className="border border-gray-300">
-                    {vehicleClassMap[volume.vehicleClass]}
-                  </td>
-                  <td className="border border-gray-300">
-                    {modelYearsMap[volume.modelYear]}
-                  </td>
-                  <td className="border border-gray-300">{volume.volume}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-        <div className="w-1/3">
-          <h3 className="font-semibold">Supply Volumes</h3>
-          <table>
-            <thead>
-              <tr>
-                <th className="border border-gray-300">Vehicle Class</th>
-                <th className="border border-gray-300">Model Year</th>
-                <th className="border border-gray-300">Volume</th>
-              </tr>
-            </thead>
-            <tbody>
-              {props.supplyVolumes.map((volume, index) => (
-                <tr key={index}>
-                  <td className="border border-gray-300">
-                    {vehicleClassMap[volume.vehicleClass]}
-                  </td>
-                  <td className="border border-gray-300">
-                    {modelYearsMap[volume.modelYear]}
-                  </td>
-                  <td className="border border-gray-300">{volume.volume}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+      <div className="flex gap-6">
+        <VolumeTable title="Legacy Sales Volumes" volumes={props.saleVolumes} />
+        <VolumeTable title="Supply Volumes" volumes={props.supplyVolumes} />
       </div>
     </div>
   );
