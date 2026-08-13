@@ -1,15 +1,14 @@
 import { getUserInfo } from "@/auth";
-import { getUser } from "../../lib/data";
-import { UserForm } from "../../lib/components/UserForm";
+import { getUser } from "@/app/administration/lib/data";
+import { UserForm } from "@/app/administration/lib/components/UserForm";
 import { getGovOrgId } from "@/app/vehicle-suppliers/lib/data";
+import { userIsAdmin } from "@/app/administration/lib/utilsServer";
 
 const Page = async (props: {
   params: Promise<{ slug: string; id: string }>;
 }) => {
-  const { userIsGov, userOrgId } = await getUserInfo();
-  if (!userIsGov) {
-    return null;
-  }
+  const { userOrgId } = await getUserInfo();
+  const isAdmin = await userIsAdmin();
   const args = await props.params;
   const id = Number.parseInt(args.id, 10);
   const user = await getUser(id);
@@ -20,14 +19,13 @@ const Page = async (props: {
   return (
     <div className="w-full">
       <div className="p-4 bg-gray-100 text-2xl font-bold">
-        {user.organizationId === govOrgId
-          ? "Government User Management"
-          : "User Management"}
+        Government User Management
       </div>
       <UserForm
         user={user}
         userOrgId={userOrgId.toString()}
         govOrgId={govOrgId.toString()}
+        isAdmin={isAdmin}
       />
     </div>
   );

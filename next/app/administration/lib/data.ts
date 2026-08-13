@@ -1,7 +1,6 @@
 import { getUserInfo } from "@/auth";
 import { prisma } from "@/lib/prisma";
-import { userIsAdmin } from "./utilsServer";
-import { Role, Idp } from "@/prisma/generated/enums";
+import { Idp } from "@/prisma/generated/enums";
 import { UserModel, UserWhereInput } from "@/prisma/generated/models";
 
 export type UserWithOrgName = Omit<UserModel, "idpSub"> & {
@@ -12,8 +11,7 @@ export const fetchUsers = async (
   category: "bceid" | "idir" | "inactive",
 ): Promise<UserWithOrgName[]> => {
   const { userIsGov } = await getUserInfo();
-  const isAdmin = await userIsAdmin();
-  if (!userIsGov || !isAdmin) {
+  if (!userIsGov) {
     return [];
   }
   const whereClause: UserWhereInput = {};
@@ -49,7 +47,7 @@ export const fetchUsers = async (
 };
 
 export async function getUser(id: number) {
-  const { userIsGov, userOrgId, userRoles } = await getUserInfo();
+  const { userIsGov, userOrgId } = await getUserInfo();
   const include = {
     organization: {
       select: {
@@ -58,19 +56,14 @@ export async function getUser(id: number) {
     },
   };
 
-  if (userIsGov && userRoles.includes(Role.ADMINISTRATOR)) {
+  if (userIsGov) {
     return await prisma.user.findUnique({
       where: { id },
       include,
     });
   }
-
-  if (!userIsGov && userRoles.includes(Role.ORGANIZATION_ADMINISTRATOR)) {
-    return await prisma.user.findUnique({
-      where: { id, organizationId: userOrgId },
-      include,
-    });
-  }
-
-  return null;
+  return await prisma.user.findUnique({
+    where: { id, organizationId: userOrgId },
+    include,
+  });
 }

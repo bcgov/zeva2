@@ -36,11 +36,15 @@ export const PrimaryNavbar = (props: {
       ...(props.userIsGov
         ? [{ label: "Vehicle Suppliers", route: Routes.VehicleSuppliers }]
         : []),
-      ...(props.userIsGov && props.userRoles.includes(Role.ADMINISTRATOR)
-        ? [{ label: "Administration", route: `${Routes.Administration}/idir` }]
+      ...(props.userIsGov
+        ? [
+            {
+              label: "Administration",
+              route: `${Routes.GovAdministration}/idir`,
+            },
+          ]
         : []),
-      ...(!props.userIsGov &&
-      props.userRoles.includes(Role.ORGANIZATION_ADMINISTRATOR)
+      ...(!props.userIsGov
         ? [{ label: "Administration", route: Routes.Administration }]
         : []),
     ];

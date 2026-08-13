@@ -3,7 +3,7 @@
 import { useCallback, useMemo } from "react";
 import { ColumnDef, createColumnHelper } from "@tanstack/react-table";
 import { ClientSideTable, Button } from "@/app/lib/components";
-import { UserWithOrgName } from "../data";
+import { UserWithOrgName } from "@/app/administration/lib/data";
 import { getRoleEnumsToStringsMap } from "@/app/lib/utils/enumMaps";
 import { useRouter } from "next/navigation";
 import { Routes } from "@/app/lib/constants";
@@ -13,21 +13,15 @@ import { Idp } from "@/prisma/generated/enums";
 
 export interface UserTableProps {
   users: UserWithOrgName[];
-  userIsGov: boolean;
   category: "bceid" | "idir" | "inactive";
   isAdmin?: boolean;
 }
 
-export const UserTable = ({
-  users,
-  userIsGov,
-  category,
-  isAdmin,
-}: UserTableProps) => {
+export const UserTable = ({ users, category, isAdmin }: UserTableProps) => {
   const router = useRouter();
   const navigationAction = useCallback(
     (id: number) => {
-      router.push(`${Routes.Administration}/${category}/${id}`);
+      router.push(`${Routes.GovAdministration}/${category}/${id}`);
     },
     [category],
   );
@@ -103,30 +97,28 @@ export const UserTable = ({
       ),
     ];
 
-    if (userIsGov) {
-      if (category === "inactive") {
-        base.unshift(
-          columnHelper.accessor((row) => idpMap[row.idp], {
-            id: "idp",
-            header: () => <span>User Type</span>,
-            enableSorting: true,
-            enableColumnFilter: true,
-          }),
-        );
-      }
-      if (category === "bceid" || category === "inactive") {
-        base.unshift(
-          columnHelper.accessor((row) => row.organization.name, {
-            id: "organization",
-            header: () => <span>Organization</span>,
-            enableSorting: true,
-            enableColumnFilter: true,
-          }),
-        );
-      }
+    if (category === "inactive") {
+      base.unshift(
+        columnHelper.accessor((row) => idpMap[row.idp], {
+          id: "idp",
+          header: () => <span>User Type</span>,
+          enableSorting: true,
+          enableColumnFilter: true,
+        }),
+      );
+    }
+    if (category === "bceid" || category === "inactive") {
+      base.unshift(
+        columnHelper.accessor((row) => row.organization.name, {
+          id: "organization",
+          header: () => <span>Organization</span>,
+          enableSorting: true,
+          enableColumnFilter: true,
+        }),
+      );
     }
     return base;
-  }, [columnHelper, rolesMap, userIsGov, category]);
+  }, [columnHelper, rolesMap, category]);
 
   return (
     <ClientSideTable<UserWithOrgName>
@@ -143,7 +135,7 @@ export const UserTable = ({
             <Button
               variant="primary"
               size="regular"
-              onClick={() => router.push(`${Routes.Administration}/new`)}
+              onClick={() => router.push(`${Routes.GovAdministration}/new`)}
             >
               <FontAwesomeIcon icon={faPlus} className="mr-2" />
               Create new user

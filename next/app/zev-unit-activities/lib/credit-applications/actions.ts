@@ -125,10 +125,7 @@ export const getCreditApplicationAttachmentDownloadUrls = async (
   if (userIsGov) {
     whereClause.creditApplication = {
       status: {
-        notIn: [
-          CreditApplicationStatus.DRAFT,
-          CreditApplicationStatus.REJECTED,
-        ],
+        not: CreditApplicationStatus.DRAFT,
       },
     };
   }
