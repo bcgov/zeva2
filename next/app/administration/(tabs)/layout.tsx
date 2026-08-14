@@ -1,13 +1,7 @@
-import { getUserInfo } from "@/auth";
 import { SecondaryNavbar } from "@/app/lib/components/SecondaryNavbar";
 import { Routes } from "@/app/lib/constants";
 
 const Layout = async (props: { children: React.ReactNode }) => {
-  const { userIsGov } = await getUserInfo();
-  if (userIsGov) {
-    return <>{props.children}</>;
-  }
-
   const items = [
     {
       label: "Supplier Information",
