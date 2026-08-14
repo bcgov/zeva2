@@ -4,6 +4,7 @@ All notable changes to this project are documented in this file.
 
 | Version | Date | Type | Change |
 | --- | --- | --- | --- |
+| [1.53.0](https://github.com/bcgov/zeva2/compare/v1.52.0...v1.53.0) | 2026-08-14 | ✨ Feature | BCEID User Admin Page Design [#586](https://github.com/bcgov/zeva2/issues/586) ([#614](https://github.com/bcgov/zeva2/issues/614)) ([84665e3](https://github.com/bcgov/zeva2/commit/84665e3c0262ff9742d60b099538e320d9580216)) |
 | [1.52.0](https://github.com/bcgov/zeva2/compare/v1.51.0...v1.52.0) | 2026-08-13 | ✨ Feature | administration refactoring ([#612](https://github.com/bcgov/zeva2/issues/612)) ([aea951b](https://github.com/bcgov/zeva2/commit/aea951bd49fdad478787526143503215836fea15)) |
 | [1.51.0](https://github.com/bcgov/zeva2/compare/v1.50.1...v1.51.0) | 2026-08-13 | ✨ Feature | administration page style update ([#609](https://github.com/bcgov/zeva2/issues/609)) ([3536a60](https://github.com/bcgov/zeva2/commit/3536a608daa7c75ac56cbd95f5279cd8b0d80caa)) |
 | [1.51.0](https://github.com/bcgov/zeva2/compare/v1.50.1...v1.51.0) | 2026-08-13 | ✨ Feature | Credit Application Recommendation Summary Information Block [#549](https://github.com/bcgov/zeva2/issues/549) ([#606](https://github.com/bcgov/zeva2/issues/606)) ([dce0bab](https://github.com/bcgov/zeva2/commit/dce0bab8b54896d9d08d3e9b642978406cbd7ee2)) |
