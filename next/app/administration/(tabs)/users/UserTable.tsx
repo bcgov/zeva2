@@ -72,11 +72,11 @@ export const UserTable = ({ users, canAddUser }: UserTableProps) => {
       enableSorting
       initialPageSize={10}
       customStyles={{
-        container: "overflow-hidden rounded border border-dividerMedium bg-white",
+        container:
+          "overflow-hidden rounded border border-dividerMedium bg-white",
         theadTh: "px-4 py-3 text-left text-sm font-semibold text-primaryText",
         tbody: "divide-y divide-dividerMedium bg-white",
-        tbodyTr:
-          "cursor-pointer bg-white transition-colors hover:bg-blue-50",
+        tbodyTr: "cursor-pointer bg-white transition-colors hover:bg-blue-50",
         tbodyTd: "px-4 py-5 text-sm text-primaryText",
         pagination:
           "flex items-center justify-between border-t border-dividerMedium bg-white px-4 py-3",

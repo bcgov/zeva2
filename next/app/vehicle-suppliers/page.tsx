@@ -5,10 +5,7 @@ import { OrganizationList } from "./lib/components/OrganizationList";
 import { Role } from "@/prisma/generated/enums";
 
 const Page = async () => {
-  const { userIsGov, userRoles } = await getUserInfo();
-  if (!userIsGov) {
-    return null;
-  }
+  const { userRoles } = await getUserInfo();
   const canCreateNewOrg = userRoles.includes(Role.ADMINISTRATOR);
   return (
     <Suspense fallback={<LoadingSkeleton />}>
