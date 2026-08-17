@@ -101,56 +101,74 @@ const OrganizationEditForm = (props: {
   ]);
 
   return (
-    <>
-      <h2 className="text-xl font-semibold text-primaryBlue pb-4">
-        {props.formHeading}
-      </h2>
-
-      <div className="space-y-4">
+    <div className="flex w-full flex-col items-start gap-4">
+      <div className="flex w-full items-center justify-between rounded-t-[4px] bg-[#E7E7E7] p-5">
+        <div className="flex-1 text-black font-['BC_Sans'] text-[20px] font-bold leading-7">
+          {props.formHeading}
+        </div>
+      </div>
+      <div className="flex flex-col items-start gap-6 self-stretch">
         {errorMsg && <p className="text-red-600">{errorMsg}</p>}
-        <TextInput
-          label="Legal Organization Name"
-          value={organizationName}
-          onChange={setOrganizationName}
-          disabled={isPending}
-        />
-
-        <TextInput
-          label="Common Name"
-          value={shortName}
-          onChange={setShortName}
-          disabled={isPending}
-        />
-        <div className={mainFieldClass + " items-center p-1"}>
-          <span className="font-medium text-primaryText">Status</span>
-          <div className="flex flex-row gap-3">
-            <SelectionCard
-              variant="radio"
-              name="status"
-              title="Active"
-              checked={isActive}
-              onChange={() => setIsActive(true)}
-              accentColor="accent-success"
-              titleColor="text-success"
-              hoverBorderColor="hover:border-primaryBlue"
-              className="flex-1 max-w-[200px]"
+        <div className="flex items-stretch gap-6 self-stretch">
+          <div className="flex flex-1 flex-col items-start gap-4 rounded-[4px] border border-[#EDEBE9] bg-white p-4">
+            <div className="flex items-start gap-4 self-stretch">
+              <div className="text-center font-['BC_Sans'] text-[20px] font-bold leading-7 text-[#2D2D2D]">
+                Supplier Information
+              </div>
+            </div>
+            <TextInput
+              label="Legal Organization Name"
+              value={organizationName}
+              onChange={setOrganizationName}
               disabled={isPending}
+              className="w-full"
             />
-            <SelectionCard
-              variant="radio"
-              name="status"
-              title="Inactive"
-              checked={!isActive}
-              onChange={() => setIsActive(false)}
-              accentColor="accent-danger"
-              titleColor="text-danger"
-              hoverBorderColor="hover:border-primaryBlue"
-              className="flex-1 max-w-[200px]"
+            <TextInput
+              label="Common Name"
+              value={shortName}
+              onChange={setShortName}
               disabled={isPending}
+              className="w-full"
             />
           </div>
+          <div className="flex flex-1 flex-col items-start gap-4">
+            <div className="flex flex-1 flex-col items-start justify-center gap-4 self-stretch rounded-[4px] border border-[#EDEBE9] bg-white p-4">
+              <div className="flex flex-col items-start gap-4">
+                <div className="text-center font-['BC_Sans'] text-[20px] font-bold leading-7 text-[#2D2D2D]">
+                  Status
+                </div>
+              </div>
+              <div className="flex flex-col items-start gap-3 self-stretch">
+                <SelectionCard
+                  variant="radio"
+                  name="status"
+                  title="Active"
+                  description="Supplier can access the system and perform actions based on their assigned role."
+                  checked={isActive}
+                  onChange={() => setIsActive(true)}
+                  accentColor="accent-success"
+                  titleColor="text-success"
+                  hoverBorderColor="hover:border-primaryBlue"
+                  className="self-stretch"
+                  disabled={isPending}
+                />
+                <SelectionCard
+                  variant="radio"
+                  name="status"
+                  title="Inactive"
+                  description="This will deactivate the supplier's account."
+                  checked={!isActive}
+                  onChange={() => setIsActive(false)}
+                  accentColor="accent-danger"
+                  titleColor="text-danger"
+                  hoverBorderColor="hover:border-primaryBlue"
+                  className="self-stretch"
+                  disabled={isPending}
+                />
+              </div>
+            </div>
+          </div>
         </div>
-
         <div className="flex flex-row gap-4">
           <div className={addressFrameClass}>
             <h3 className={addressHeadingClass}>Service Address</h3>
@@ -176,7 +194,7 @@ const OrganizationEditForm = (props: {
           </Button>
         </div>
       </div>
-    </>
+    </div>
   );
 };
 
