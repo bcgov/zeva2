@@ -11,7 +11,7 @@ const Layout = async (props: { children: React.ReactNode }) => {
     { label: "Credit Agreements", route: Routes.CreditAgreements },
     { label: "Penalty Credits", route: Routes.PenaltyCredits },
     ...(!userIsGov
-      ? [{ label: "ZEV Unit Transactions", route: Routes.ZevUnitTransactions }]
+      ? [{ label: "Credit Transactions", route: Routes.ZevUnitTransactions }]
       : []),
   ];
   const navbar = <SecondaryNavbar items={items} />;
