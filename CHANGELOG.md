@@ -4,6 +4,7 @@ All notable changes to this project are documented in this file.
 
 | Version | Date | Type | Change |
 | --- | --- | --- | --- |
+| [1.53.2](https://github.com/bcgov/zeva2/compare/v1.53.1...v1.53.2) | 2026-08-20 | 🐛 Fix | small tab title change ([#622](https://github.com/bcgov/zeva2/issues/622)) ([6639f28](https://github.com/bcgov/zeva2/commit/6639f28558e248dd98f24c45feeb0130129db3a6)) |
 | [1.53.1](https://github.com/bcgov/zeva2/compare/v1.53.0...v1.53.1) | 2026-08-14 | 🐛 Fix | misc updates ([#616](https://github.com/bcgov/zeva2/issues/616)) ([76ea5b4](https://github.com/bcgov/zeva2/commit/76ea5b4839de4f3666034c709299e207618b7bf2)) |
 | [1.53.0](https://github.com/bcgov/zeva2/compare/v1.52.0...v1.53.0) | 2026-08-14 | ✨ Feature | BCEID User Admin Page Design [#586](https://github.com/bcgov/zeva2/issues/586) ([#614](https://github.com/bcgov/zeva2/issues/614)) ([84665e3](https://github.com/bcgov/zeva2/commit/84665e3c0262ff9742d60b099538e320d9580216)) |
 | [1.52.0](https://github.com/bcgov/zeva2/compare/v1.51.0...v1.52.0) | 2026-08-13 | ✨ Feature | administration refactoring ([#612](https://github.com/bcgov/zeva2/issues/612)) ([aea951b](https://github.com/bcgov/zeva2/commit/aea951bd49fdad478787526143503215836fea15)) |
