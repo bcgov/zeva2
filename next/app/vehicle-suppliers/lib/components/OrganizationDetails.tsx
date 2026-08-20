@@ -90,7 +90,7 @@ export const OrganizationDetails = (props: {
     return (
       <OrganizationEditForm
         orgId={props.orgId}
-        formHeading="Edit Vehicle Supplier"
+        formHeading="Edit Supplier Information"
         submitButtonText="Save"
         organizationName={props.organizationName}
         shortName={props.shortName}

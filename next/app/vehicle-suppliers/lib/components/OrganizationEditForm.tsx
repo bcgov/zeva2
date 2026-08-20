@@ -1,6 +1,8 @@
 "use client";
 
 import { useCallback, useState, useTransition } from "react";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faArrowLeft, faFloppyDisk } from "@fortawesome/free-solid-svg-icons";
 import { Button } from "@/app/lib/components";
 import { SelectionCard, TextInput } from "@/app/lib/components/inputs";
 import {
@@ -14,10 +16,6 @@ import { cleanupAddressData } from "../utils";
 import { cleanupStringData } from "@/lib/utils/dataCleanup";
 import { useRouter } from "next/navigation";
 import { Routes } from "@/app/lib/constants";
-
-const mainFieldClass = "grid grid-cols-[220px_1fr]";
-const addressFrameClass = "w-1/2 border border-borderGrey p-2";
-const addressHeadingClass = "text-lg font-semibold text-primaryBlue pb-4";
 
 const OrganizationEditForm = (props: {
   orgId?: number;
@@ -101,82 +99,113 @@ const OrganizationEditForm = (props: {
   ]);
 
   return (
-    <>
-      <h2 className="text-xl font-semibold text-primaryBlue pb-4">
-        {props.formHeading}
-      </h2>
-
-      <div className="space-y-4">
+    <div className="flex w-full flex-col items-start gap-4">
+      <div className="flex w-full items-center justify-between rounded-t-[4px] bg-disabledBG p-5">
+        <div className="flex-1 text-[20px] font-bold leading-7">
+          {props.formHeading}
+        </div>
+      </div>
+      <div className="flex flex-col items-start gap-6 self-stretch">
         {errorMsg && <p className="text-red-600">{errorMsg}</p>}
-        <TextInput
-          label="Legal Organization Name"
-          value={organizationName}
-          onChange={setOrganizationName}
-          disabled={isPending}
-        />
-
-        <TextInput
-          label="Common Name"
-          value={shortName}
-          onChange={setShortName}
-          disabled={isPending}
-        />
-        <div className={mainFieldClass + " items-center p-1"}>
-          <span className="font-medium text-primaryText">Status</span>
-          <div className="flex flex-row gap-3">
-            <SelectionCard
-              variant="radio"
-              name="status"
-              title="Active"
-              checked={isActive}
-              onChange={() => setIsActive(true)}
-              accentColor="accent-success"
-              titleColor="text-success"
-              hoverBorderColor="hover:border-primaryBlue"
-              className="flex-1 max-w-[200px]"
+        <div className="flex items-stretch gap-6 self-stretch">
+          <div className="flex flex-1 flex-col items-start gap-4 rounded-[4px] border border-disabledBG bg-white p-4">
+            <div className="flex items-start gap-4 self-stretch">
+              <div className="text-[20px] font-bold leading-7">
+                Supplier Information
+              </div>
+            </div>
+            <TextInput
+              label="Legal Organization Name"
+              value={organizationName}
+              onChange={setOrganizationName}
               disabled={isPending}
+              className="w-full"
             />
-            <SelectionCard
-              variant="radio"
-              name="status"
-              title="Inactive"
-              checked={!isActive}
-              onChange={() => setIsActive(false)}
-              accentColor="accent-danger"
-              titleColor="text-danger"
-              hoverBorderColor="hover:border-primaryBlue"
-              className="flex-1 max-w-[200px]"
+            <TextInput
+              label="Common Name"
+              value={shortName}
+              onChange={setShortName}
               disabled={isPending}
+              className="w-full"
             />
+          </div>
+          <div className="flex flex-1 flex-col items-start justify-center gap-4 rounded-[4px] border border-disabledBG bg-white p-4">
+            <div className="flex flex-col items-start gap-4">
+              <div className="text-[20px] font-bold leading-7">
+                Status
+              </div>
+            </div>
+            <div className="flex flex-col items-start gap-3 self-stretch">
+              <SelectionCard
+                variant="radio"
+                name="status"
+                title="Active"
+                description="Supplier can access the system and perform actions based on their assigned role."
+                checked={isActive}
+                onChange={() => setIsActive(true)}
+                accentColor="accent-success"
+                titleColor="text-success"
+                hoverBorderColor="hover:border-primaryBlue"
+                className="self-stretch"
+                disabled={isPending}
+              />
+              <SelectionCard
+                variant="radio"
+                name="status"
+                title="Inactive"
+                description="This will deactivate the supplier's account."
+                checked={!isActive}
+                onChange={() => setIsActive(false)}
+                accentColor="accent-danger"
+                titleColor="text-error"
+                hoverBorderColor="hover:border-primaryBlue"
+                className="self-stretch"
+                disabled={isPending}
+              />
+            </div>
           </div>
         </div>
 
-        <div className="flex flex-row gap-4">
-          <div className={addressFrameClass}>
-            <h3 className={addressHeadingClass}>Service Address</h3>
+        <div className="flex items-center gap-6 self-stretch">
+          <div className="flex flex-1 flex-col items-start gap-4 rounded-[4px] border border-disabledBG bg-white p-4">
+            <div className="flex items-start gap-4 self-stretch">
+              <div className="text-[20px] font-bold leading-7">
+                Service Address
+              </div>
+            </div>
             <AddressEditForm addressState={serviceAddressState} />
           </div>
-          <div className={addressFrameClass}>
-            <h3 className={addressHeadingClass}>Records Address</h3>
+          <div className="flex flex-1 flex-col items-start gap-4 rounded-[4px] border border-disabledBG bg-white p-4">
+            <div className="flex items-start gap-4 self-stretch">
+              <div className="text-[20px] font-bold leading-7">
+                Records Address
+              </div>
+            </div>
             <AddressEditForm addressState={recordsAddressState} />
           </div>
         </div>
 
-        <div className="flex flex-row gap-12 my-2">
-          <Button variant="primary" onClick={handleSubmit} disabled={isPending}>
-            {props.submitButtonText}
-          </Button>
+        <div className="flex w-full items-center justify-between">
           <Button
             variant="secondary"
-            type="button"
+            icon={<FontAwesomeIcon icon={faArrowLeft} />}
             onClick={props.handleCancel}
             disabled={isPending}
           >
-            Cancel
+            Back
+          </Button>
+          <Button
+            variant="primary"
+            icon={<FontAwesomeIcon icon={faFloppyDisk} />}
+            iconPosition="right"
+            onClick={handleSubmit}
+            disabled={isPending}
+          >
+            {props.submitButtonText}
           </Button>
         </div>
       </div>
-    </>
+    </div>
   );
 };
 

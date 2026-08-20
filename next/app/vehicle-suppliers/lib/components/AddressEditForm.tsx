@@ -1,8 +1,6 @@
 "use client";
-import { TextInput, Textarea } from "@/app/lib/components/inputs";
+import { TextInput } from "@/app/lib/components/inputs";
 import { OrganizationAddressSparse } from "../data";
-
-const fieldMainClass = "grid grid-cols-[120px_1fr]";
 
 type AddressState = [
   OrganizationAddressSparse,
@@ -10,62 +8,56 @@ type AddressState = [
 ];
 
 const AddressField = (props: {
+  label: string;
   addressState: AddressState;
   fieldName: keyof OrganizationAddressSparse;
-  multiline?: boolean;
 }) => {
   const [address, setAddress] = props.addressState;
   const value = address[props.fieldName] ?? "";
   const handleChange = (value: string) =>
-    setAddress({
-      ...address,
-      [props.fieldName]: value,
-    });
+    setAddress({ ...address, [props.fieldName]: value });
 
-  return props.multiline ? (
-    <Textarea rows={3} value={value} onChange={handleChange} />
-  ) : (
-    <TextInput value={value} onChange={handleChange} />
+  return (
+    <div className="flex flex-col gap-1">
+      <span className="text-sm">{props.label}</span>
+      <TextInput value={value} onChange={handleChange} className="w-full" />
+    </div>
   );
 };
 
 const AddressEditForm = (props: { addressState: AddressState }) => {
   return (
-    <div className="space-y-2">
-      <div className={fieldMainClass}>
-        <span className="mb-1">Representative</span>
-        <AddressField
-          addressState={props.addressState}
-          fieldName="representative"
-        />
-      </div>
-      <div className={fieldMainClass}>
-        <span className="mb-1">Street Address</span>
-        <AddressField
-          addressState={props.addressState}
-          fieldName="addressLines"
-          multiline={true}
-        />
-      </div>
-      <div className={fieldMainClass}>
-        <span className="mb-1">City</span>
-        <AddressField addressState={props.addressState} fieldName="city" />
-      </div>
-      <div className={fieldMainClass}>
-        <span className="mb-1">Province/State</span>
-        <AddressField addressState={props.addressState} fieldName="state" />
-      </div>
-      <div className={fieldMainClass}>
-        <span className="mb-1">Postal Code</span>
-        <AddressField
-          addressState={props.addressState}
-          fieldName="postalCode"
-        />
-      </div>
-      <div className={fieldMainClass}>
-        <span className="mb-1">Country</span>
-        <AddressField addressState={props.addressState} fieldName="country" />
-      </div>
+    <div className="flex w-full flex-col gap-4">
+      <AddressField
+        label="Representative"
+        addressState={props.addressState}
+        fieldName="representative"
+      />
+      <AddressField
+        label="Street Address"
+        addressState={props.addressState}
+        fieldName="addressLines"
+      />
+      <AddressField
+        label="City"
+        addressState={props.addressState}
+        fieldName="city"
+      />
+      <AddressField
+        label="Province"
+        addressState={props.addressState}
+        fieldName="state"
+      />
+      <AddressField
+        label="Postal Code"
+        addressState={props.addressState}
+        fieldName="postalCode"
+      />
+      <AddressField
+        label="Country"
+        addressState={props.addressState}
+        fieldName="country"
+      />
     </div>
   );
 };
