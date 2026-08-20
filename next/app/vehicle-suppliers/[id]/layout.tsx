@@ -26,7 +26,7 @@ const Layout = async (props: {
       route: `${Routes.VehicleSuppliers}/${id}/supplier-info`,
     },
     {
-      label: "ZEV Unit Transactions",
+      label: "Credit Transactions",
       route: `${Routes.VehicleSuppliers}/${id}/zev-unit-transactions`,
     },
   ];
