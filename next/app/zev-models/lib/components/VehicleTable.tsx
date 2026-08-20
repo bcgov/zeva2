@@ -3,15 +3,14 @@
 import { ReactNode, useMemo } from "react";
 import { ColumnDef, createColumnHelper } from "@tanstack/react-table";
 import { Table } from "@/app/lib/components";
-import { VehicleSparseSerialized } from "./VehicleList";
+import { VehicleSparseSerialized, ZevModelTab } from "../constants";
 import {
   getModelYearEnumsToStringsMap,
   getVehicleStatusEnumsToStringsMap,
 } from "@/app/lib/utils/enumMaps";
-import { ZevModelTab } from "../routes";
 
 export const VehicleTable = (props: {
-  type: ZevModelTab;
+  type: ZevModelTab | "supplierSpecific";
   vehicles: VehicleSparseSerialized[];
   totalNumbeOfVehicles: number;
   navigationAction: (id: number) => Promise<void>;
@@ -29,8 +28,12 @@ export const VehicleTable = (props: {
     const result: ColumnDef<VehicleSparseSerialized, any>[] = [
       columnHelper.accessor((row) => statusMap[row.status], {
         id: "status",
-        enableSorting: !props.userIsGov && props.type === "submitted",
-        enableColumnFilter: !props.userIsGov && props.type === "submitted",
+        enableSorting:
+          (!props.userIsGov && props.type === "submitted") ||
+          (props.userIsGov && props.type === "supplierSpecific"),
+        enableColumnFilter:
+          (!props.userIsGov && props.type === "submitted") ||
+          (props.userIsGov && props.type === "supplierSpecific"),
         header: () => <span>Status</span>,
       }),
       columnHelper.accessor((row) => row.numberOfUnits, {
@@ -88,7 +91,7 @@ export const VehicleTable = (props: {
         header: () => <span>Issued Count</span>,
       }),
     ];
-    if (props.userIsGov) {
+    if (props.userIsGov && props.type !== "supplierSpecific") {
       result.unshift(
         columnHelper.accessor((row) => row.organization?.name, {
           id: "organization",

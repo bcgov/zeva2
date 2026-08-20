@@ -1,30 +1,31 @@
-import { getVehicles } from "../data";
+import { getVehicles } from "@/app/zev-models/lib/data";
 import { redirect } from "next/navigation";
-import { VehicleTable } from "./VehicleTable";
-import { getUserInfo } from "@/auth";
-import { ReactNode } from "react";
+import { VehicleTable } from "@/app/zev-models/lib/components/VehicleTable";
 import { getZevModelTabRoute } from "@/app/zev-models/lib/routes";
-import { ZevModelTab, VehicleSparseSerialized } from "../constants";
+import { VehicleSparseSerialized } from "@/app/zev-models/lib/constants";
+import { getTabType } from "@/app/zev-models/lib/services";
 
 export const VehicleList = async (props: {
-  type: ZevModelTab;
+  orgId: number;
   page: number;
   pageSize: number;
   filters: Record<string, string>;
   sorts: Record<string, string>;
-  headerContent?: ReactNode;
 }) => {
-  const { userIsGov } = await getUserInfo();
   const navigationAction = async (id: number) => {
     "use server";
-    redirect(`${getZevModelTabRoute(props.type)}/${id}`);
+    const tab = await getTabType(id);
+    if (tab) {
+      redirect(`${getZevModelTabRoute(tab)}/${id}`);
+    }
   };
   const [vehicles, totalNumberOfVehicles] = await getVehicles(
     props.page,
     props.pageSize,
     props.filters,
     props.sorts,
-    props.type,
+    undefined,
+    props.orgId,
   );
   // serialize/transform certain fields
   const serializedVehicles: VehicleSparseSerialized[] = vehicles.map(
@@ -37,12 +38,11 @@ export const VehicleList = async (props: {
   );
   return (
     <VehicleTable
-      type={props.type}
+      type="supplierSpecific"
       vehicles={serializedVehicles}
       totalNumbeOfVehicles={totalNumberOfVehicles}
       navigationAction={navigationAction}
-      userIsGov={userIsGov}
-      headerContent={props.headerContent}
+      userIsGov={true}
     />
   );
 };

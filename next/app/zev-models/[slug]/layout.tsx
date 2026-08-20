@@ -1,6 +1,6 @@
 import { LowerNavbarWrapper } from "@/app/lib/components/LowerNavbarWrapper";
 import { SecondaryNavbar } from "@/app/lib/components/SecondaryNavbar";
-import { zevModelTabs } from "../lib/routes";
+import { zevModelTabs } from "../lib/constants";
 
 const Layout = (props: { children: React.ReactNode }) => {
   const items = zevModelTabs.map(({ label, route }) => ({ label, route }));

@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { TransactionClient } from "@/types/prisma";
 import { ModelYear, VehicleStatus } from "@/prisma/generated/enums";
 import { Attachment } from "@/app/lib/constants/attachment";
+import { ZevModelTab } from "./constants";
 
 export const createHistory = async (
   vehicleId: number,
@@ -73,4 +74,29 @@ export const deleteAttachments = async (
       vehicleId,
     },
   });
+};
+
+export const getTabType = async (
+  vehicleId: number,
+): Promise<ZevModelTab | null> => {
+  const vehicle = await prisma.vehicle.findUnique({
+    where: {
+      id: vehicleId,
+    },
+    select: {
+      status: true,
+      isActive: true,
+    },
+  });
+  if (!vehicle) {
+    return null;
+  }
+  const status = vehicle.status;
+  if (status === VehicleStatus.VALIDATED) {
+    if (vehicle.isActive) {
+      return "validated";
+    }
+    return "inactive";
+  }
+  return "submitted";
 };

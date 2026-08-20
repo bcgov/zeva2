@@ -2,7 +2,7 @@ import { getUserInfo } from "@/auth";
 import { getOrderByClause, getWhereClause } from "./utilsServer";
 import { prisma } from "@/lib/prisma";
 import { VehicleStatus } from "@/prisma/generated/enums";
-import { ZevModelTab } from "./routes";
+import { ZevModelTab, VehicleSparse } from "./constants";
 import {
   OrganizationModel,
   VehicleModel,
@@ -11,21 +11,20 @@ import {
   VehicleHistoryWhereInput,
 } from "@/prisma/generated/models";
 
-export type VehicleSparse = Omit<
-  VehicleModel,
-  "vehicleClassCode" | "weight" | "organizationId" | "us06RangeGte16"
-> & { organization?: { name: string } };
-
 // page is 1-based
 // currently, this function is not used with SSR, so it is important to select only the data you need!
 export const getVehicles = async (
-  type: ZevModelTab,
   page: number,
   pageSize: number,
   filters: { [key: string]: string },
   sorts: { [key: string]: string },
+  type?: ZevModelTab,
+  orgId?: number,
 ): Promise<[VehicleSparse[], number]> => {
   const { userIsGov, userOrgId } = await getUserInfo();
+  if ((!type && !orgId) || (type && orgId) || (orgId && !userIsGov)) {
+    throw new Error("Invalid function call!");
+  }
   const skip = (page - 1) * pageSize;
   const take = pageSize;
   let select: VehicleSelect = {
@@ -50,26 +49,30 @@ export const getVehicles = async (
   } else {
     where.organizationId = userOrgId;
   }
-  switch (type) {
-    case "validated":
-      where.status = VehicleStatus.VALIDATED;
-      where.isActive = true;
-      break;
-    case "submitted":
-      if (userIsGov) {
-        where.status = VehicleStatus.SUBMITTED;
-      } else {
-        where.OR = [
-          { status: VehicleStatus.DRAFT },
-          { status: VehicleStatus.RETURNED_TO_SUPPLIER },
-          { status: VehicleStatus.SUBMITTED },
-        ];
-      }
-      break;
-    case "inactive":
-      where.status = VehicleStatus.VALIDATED;
-      where.isActive = false;
-      break;
+  if (type) {
+    switch (type) {
+      case "validated":
+        where.status = VehicleStatus.VALIDATED;
+        where.isActive = true;
+        break;
+      case "submitted":
+        if (userIsGov) {
+          where.status = VehicleStatus.SUBMITTED;
+        } else {
+          where.OR = [
+            { status: VehicleStatus.DRAFT },
+            { status: VehicleStatus.RETURNED_TO_SUPPLIER },
+            { status: VehicleStatus.SUBMITTED },
+          ];
+        }
+        break;
+      case "inactive":
+        where.status = VehicleStatus.VALIDATED;
+        where.isActive = false;
+        break;
+    }
+  } else if (orgId) {
+    where.organizationId = orgId;
   }
   return await prisma.$transaction([
     prisma.vehicle.findMany({
