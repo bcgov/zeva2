@@ -22,12 +22,24 @@ const Layout = async (props: {
 
   const items = [
     {
-      label: "Supplier Info",
+      label: "Supplier Information",
       route: `${Routes.VehicleSuppliers}/${id}/supplier-info`,
+    },
+    {
+      label: "Users",
+      route: `${Routes.VehicleSuppliers}/${id}/users`,
+    },
+    {
+      label: "ZEV Models",
+      route: `${Routes.VehicleSuppliers}/${id}/zev-models`,
     },
     {
       label: "Credit Transactions",
       route: `${Routes.VehicleSuppliers}/${id}/zev-unit-transactions`,
+    },
+    {
+      label: "Model Year Reports",
+      route: `${Routes.VehicleSuppliers}/${id}/model-year-reports`,
     },
   ];
   return (
@@ -39,6 +51,12 @@ const Layout = async (props: {
         ]}
       />
       <SecondaryNavbar items={items} />
+      <div className="flex flex-col gap-4 my-4">
+        <div className="p-5 rounded-t bg-whisperGray font-bold text-2xl">
+          {organization.name}
+        </div>
+        <hr className="border-dividerMedium"></hr>
+      </div>
       {props.children}
     </>
   );

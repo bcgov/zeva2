@@ -4,7 +4,7 @@ import { Breadcrumbs } from "@/app/lib/components";
 import { SecondaryNavbar } from "@/app/lib/components/SecondaryNavbar";
 import { usePathname } from "next/navigation";
 import { useMemo } from "react";
-import { zevModelTabs } from "../routes";
+import { zevModelTabs } from "../constants";
 
 export const IndividualNavbar = (props: {
   slug: string;

@@ -240,7 +240,7 @@ export const CreditApplicationForm = (props: {
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex items-center justify-between p-5 rounded-t bg-[#E7E7E7]">
+      <div className="flex items-center justify-between p-5 rounded-t bg-whisperGray">
         <div className="text-black text-[26px] leading-7 font-bold">
           {props.creditApplication?.id
             ? `Credit Application ID ${props.creditApplication.id}`

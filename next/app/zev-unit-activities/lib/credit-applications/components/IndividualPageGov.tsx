@@ -214,7 +214,7 @@ export const IndividualPageGov = async (props: { id: string }) => {
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex flex-row items-center justify-between p-5 rounded-t bg-[#E7E7E7]">
+      <div className="flex flex-row items-center justify-between p-5 rounded-t bg-whisperGray">
         <div className="text-[26px] font-bold">
           Credit Application ID {id}, {creditApplication.organization.name}
         </div>

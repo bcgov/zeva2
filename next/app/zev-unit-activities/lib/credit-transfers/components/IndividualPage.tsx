@@ -204,7 +204,7 @@ export const IndividualPage = async (props: { id: string }) => {
     <div className="flex self-stretch flex-col items-start gap-4">
       <div className="flex flex-col items-start gap-6 self-stretch">
         <div className="flex flex-col items-start self-stretch">
-          <div className="flex self-stretch h-20 p-5 justify-between items-center rounded-t border border-dividerMedium bg-[#E7E7E7]">
+          <div className="flex self-stretch h-20 p-5 justify-between items-center rounded-t border border-dividerMedium bg-whisperGray">
             <div className="text-black text-2xl font-bold leading-[34px]">
               Credit Transfer ID {id}
             </div>
