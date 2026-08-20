@@ -2,7 +2,7 @@ import { getUserInfo } from "@/auth";
 import { getOrderByClause, getWhereClause } from "./utilsServer";
 import { prisma } from "@/lib/prisma";
 import { VehicleStatus } from "@/prisma/generated/enums";
-import { ZevModelTab } from "./constants";
+import { ZevModelTab, VehicleSparse } from "./constants";
 import {
   OrganizationModel,
   VehicleModel,
@@ -10,7 +10,6 @@ import {
   VehicleWhereUniqueInput,
   VehicleHistoryWhereInput,
 } from "@/prisma/generated/models";
-import { VehicleSparse } from "./constants";
 
 // page is 1-based
 // currently, this function is not used with SSR, so it is important to select only the data you need!

@@ -3,12 +3,11 @@
 import { ReactNode, useMemo } from "react";
 import { ColumnDef, createColumnHelper } from "@tanstack/react-table";
 import { Table } from "@/app/lib/components";
-import { VehicleSparseSerialized } from "../constants";
+import { VehicleSparseSerialized, ZevModelTab } from "../constants";
 import {
   getModelYearEnumsToStringsMap,
   getVehicleStatusEnumsToStringsMap,
 } from "@/app/lib/utils/enumMaps";
-import { ZevModelTab } from "../constants";
 
 export const VehicleTable = (props: {
   type: ZevModelTab | "supplierSpecific";

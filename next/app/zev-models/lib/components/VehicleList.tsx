@@ -4,8 +4,7 @@ import { VehicleTable } from "./VehicleTable";
 import { getUserInfo } from "@/auth";
 import { ReactNode } from "react";
 import { getZevModelTabRoute } from "@/app/zev-models/lib/routes";
-import { ZevModelTab } from "../constants";
-import { VehicleSparseSerialized } from "../constants";
+import { ZevModelTab, VehicleSparseSerialized } from "../constants";
 
 export const VehicleList = async (props: {
   type: ZevModelTab;
