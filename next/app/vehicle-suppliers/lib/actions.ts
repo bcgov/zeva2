@@ -2,11 +2,7 @@
 
 import { getUserInfo } from "@/auth";
 import { prisma } from "@/lib/prisma";
-import {
-  AddressType,
-  Idp,
-  Role,
-} from "@/prisma/generated/enums";
+import { AddressType, Idp, Role } from "@/prisma/generated/enums";
 import {
   OrganizationModel,
   OrganizationAddressModel,
@@ -19,9 +15,7 @@ import {
   getDataActionResponse,
   getErrorActionResponse,
 } from "@/app/lib/utils/actionResponse";
-import {
-  getZevModelDetailsRoute,
-} from "@/app/zev-models/lib/routes";
+import { getZevModelDetailsRoute } from "@/app/zev-models/lib/routes";
 
 export type OrganizationPayload = Omit<
   OrganizationModel,
