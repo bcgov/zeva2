@@ -4,6 +4,7 @@ All notable changes to this project are documented in this file.
 
 | Version | Date | Type | Change |
 | --- | --- | --- | --- |
+| [1.56.0](https://github.com/bcgov/zeva2/compare/v1.55.0...v1.56.0) | 2026-08-25 | ✨ Feature | add new transaction table and restyle transaction pages ([#631](https://github.com/bcgov/zeva2/issues/631)) ([56814ff](https://github.com/bcgov/zeva2/commit/56814ff04b0384826589920c1ad50ef140ea7250)) |
 | [1.55.0](https://github.com/bcgov/zeva2/compare/v1.54.0...v1.55.0) | 2026-08-24 | ✨ Feature | zeva styling 587 ([#618](https://github.com/bcgov/zeva2/issues/618)) ([e653582](https://github.com/bcgov/zeva2/commit/e653582d69e9201fb278ce3fa96d46d38340ca53)) |
 | [1.54.0](https://github.com/bcgov/zeva2/compare/v1.53.2...v1.54.0) | 2026-08-20 | ✨ Feature | vehicle supplier's page - zev models tab ([#623](https://github.com/bcgov/zeva2/issues/623)) ([48a10c2](https://github.com/bcgov/zeva2/commit/48a10c2f9f49461b6ac6d493a5829f48b4e8ea8b)) |
 | [1.53.2](https://github.com/bcgov/zeva2/compare/v1.53.1...v1.53.2) | 2026-08-20 | 🐛 Fix | small tab title change ([#622](https://github.com/bcgov/zeva2/issues/622)) ([6639f28](https://github.com/bcgov/zeva2/commit/6639f28558e248dd98f24c45feeb0130129db3a6)) |
