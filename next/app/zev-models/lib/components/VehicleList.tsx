@@ -1,9 +1,7 @@
 import { getVehicles } from "../data";
-import { redirect } from "next/navigation";
 import { VehicleTable } from "./VehicleTable";
 import { getUserInfo } from "@/auth";
 import { ReactNode } from "react";
-import { getZevModelTabRoute } from "@/app/zev-models/lib/routes";
 import { ZevModelTab, VehicleSparseSerialized } from "../constants";
 
 export const VehicleList = async (props: {
@@ -15,10 +13,6 @@ export const VehicleList = async (props: {
   headerContent?: ReactNode;
 }) => {
   const { userIsGov } = await getUserInfo();
-  const navigationAction = async (id: number) => {
-    "use server";
-    redirect(`${getZevModelTabRoute(props.type)}/${id}`);
-  };
   const [vehicles, totalNumberOfVehicles] = await getVehicles(
     props.page,
     props.pageSize,
@@ -40,7 +34,6 @@ export const VehicleList = async (props: {
       type={props.type}
       vehicles={serializedVehicles}
       totalNumbeOfVehicles={totalNumberOfVehicles}
-      navigationAction={navigationAction}
       userIsGov={userIsGov}
       headerContent={props.headerContent}
     />

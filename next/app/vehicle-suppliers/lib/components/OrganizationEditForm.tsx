@@ -131,9 +131,7 @@ const OrganizationEditForm = (props: {
           </div>
           <div className="flex flex-1 flex-col items-start justify-center gap-4 rounded-[4px] border border-disabledBG bg-white p-4">
             <div className="flex flex-col items-start gap-4">
-              <div className="text-[20px] font-bold leading-7">
-                Status
-              </div>
+              <div className="text-[20px] font-bold leading-7">Status</div>
             </div>
             <div className="flex flex-col items-start gap-3 self-stretch">
               <SelectionCard

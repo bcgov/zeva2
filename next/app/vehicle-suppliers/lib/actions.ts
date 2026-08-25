@@ -2,13 +2,26 @@
 
 import { getUserInfo } from "@/auth";
 import { prisma } from "@/lib/prisma";
-import { AddressType, Role } from "@/prisma/generated/enums";
+import {
+  AddressType,
+  Idp,
+  Role,
+} from "@/prisma/generated/enums";
 import {
   OrganizationModel,
   OrganizationAddressModel,
 } from "@/prisma/generated/models";
 import { isEmptyAddress } from "./utils";
 import { OrganizationAddressSparse } from "./data";
+import { Routes } from "@/app/lib/constants";
+import {
+  DataOrErrorActionResponse,
+  getDataActionResponse,
+  getErrorActionResponse,
+} from "@/app/lib/utils/actionResponse";
+import {
+  getZevModelDetailsRoute,
+} from "@/app/zev-models/lib/routes";
 
 export type OrganizationPayload = Omit<
   OrganizationModel,
@@ -146,4 +159,61 @@ export const saveOrganization = async (
     console.error("Error saving organization:", (error as Error).message);
     return false; // Return false if there was an error
   }
+};
+
+export const getVehicleRoute = async (
+  vehicleId: number,
+): Promise<DataOrErrorActionResponse<string>> => {
+  const { userIsGov } = await getUserInfo();
+  if (!userIsGov) {
+    return getErrorActionResponse("Unauthorized!");
+  }
+  const vehicle = await prisma.vehicle.findUnique({
+    where: {
+      id: vehicleId,
+    },
+    select: {
+      status: true,
+      isActive: true,
+    },
+  });
+  if (!vehicle) {
+    return getErrorActionResponse("Vehicle not found!");
+  }
+  return getDataActionResponse(
+    getZevModelDetailsRoute({
+      id: vehicleId,
+      status: vehicle.status,
+      isActive: vehicle.isActive,
+    }),
+  );
+};
+
+export const getSupplierUserRoute = async (
+  supplierUserId: number,
+): Promise<DataOrErrorActionResponse<string>> => {
+  const { userIsGov } = await getUserInfo();
+  if (!userIsGov) {
+    return getErrorActionResponse("Unauthorized!");
+  }
+  const user = await prisma.user.findUnique({
+    where: {
+      id: supplierUserId,
+      idp: Idp.BCEID_BUSINESS,
+    },
+    select: {
+      isActive: true,
+    },
+  });
+  if (!user) {
+    return getErrorActionResponse("User does not exist!");
+  }
+  if (!user.isActive) {
+    return getDataActionResponse(
+      `${Routes.GovAdministration}/inactive/${supplierUserId}`,
+    );
+  }
+  return getDataActionResponse(
+    `${Routes.GovAdministration}/bceid/${supplierUserId}`,
+  );
 };
