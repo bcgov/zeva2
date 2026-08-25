@@ -10,18 +10,26 @@ import { Routes } from "@/app/lib/constants";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faCopy, faPlus } from "@fortawesome/free-solid-svg-icons";
 import { Idp } from "@/prisma/generated/enums";
+import { getSupplierUserRoute } from "@/app/vehicle-suppliers/lib/actions";
 
 export interface UserTableProps {
   users: UserWithOrgName[];
-  category: "bceid" | "idir" | "inactive";
-  isAdmin?: boolean;
+  category: "bceid" | "idir" | "inactive" | "supplierSpecific";
+  isAdmin: boolean;
 }
 
 export const UserTable = ({ users, category, isAdmin }: UserTableProps) => {
   const router = useRouter();
   const navigationAction = useCallback(
-    (id: number) => {
-      router.push(`${Routes.GovAdministration}/${category}/${id}`);
+    async (id: number) => {
+      if (category === "supplierSpecific") {
+        const response = await getSupplierUserRoute(id);
+        if (response.responseType === "data") {
+          router.push(response.data);
+        }
+      } else {
+        router.push(`${Routes.GovAdministration}/${category}/${id}`);
+      }
     },
     [category],
   );
@@ -112,6 +120,16 @@ export const UserTable = ({ users, category, isAdmin }: UserTableProps) => {
         columnHelper.accessor((row) => row.organization.name, {
           id: "organization",
           header: () => <span>Organization</span>,
+          enableSorting: true,
+          enableColumnFilter: true,
+        }),
+      );
+    }
+    if (category === "supplierSpecific") {
+      base.unshift(
+        columnHelper.accessor((row) => (row.isActive ? "Active" : "Inactive"), {
+          id: "status",
+          header: () => <span>Status</span>,
           enableSorting: true,
           enableColumnFilter: true,
         }),

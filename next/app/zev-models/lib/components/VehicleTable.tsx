@@ -1,6 +1,6 @@
 "use client";
 
-import { ReactNode, useMemo } from "react";
+import { ReactNode, useCallback, useMemo } from "react";
 import { ColumnDef, createColumnHelper } from "@tanstack/react-table";
 import { Table } from "@/app/lib/components";
 import { VehicleSparseSerialized, ZevModelTab } from "../constants";
@@ -8,15 +8,31 @@ import {
   getModelYearEnumsToStringsMap,
   getVehicleStatusEnumsToStringsMap,
 } from "@/app/lib/utils/enumMaps";
+import { useRouter } from "next/navigation";
+import { getZevModelTabRoute } from "../routes";
+import { getVehicleRoute } from "@/app/vehicle-suppliers/lib/actions";
 
 export const VehicleTable = (props: {
   type: ZevModelTab | "supplierSpecific";
   vehicles: VehicleSparseSerialized[];
   totalNumbeOfVehicles: number;
-  navigationAction: (id: number) => Promise<void>;
   userIsGov: boolean;
   headerContent?: ReactNode;
 }) => {
+  const router = useRouter();
+  const navigationAction = useCallback(
+    async (id: number) => {
+      if (props.type === "supplierSpecific") {
+        const response = await getVehicleRoute(id);
+        if (response.responseType === "data") {
+          router.push(response.data);
+        }
+      } else {
+        router.push(`${getZevModelTabRoute(props.type)}/${id}`);
+      }
+    },
+    [props.type],
+  );
   const columnHelper = createColumnHelper<VehicleSparseSerialized>();
   const modelYearEnumMap = useMemo(() => {
     return getModelYearEnumsToStringsMap();
@@ -124,7 +140,7 @@ export const VehicleTable = (props: {
       data={props.vehicles}
       totalNumberOfRecords={props.totalNumbeOfVehicles}
       defaultPageSize={10}
-      navigationAction={props.navigationAction}
+      navigationAction={navigationAction}
       headerContent={props.headerContent}
     />
   );
