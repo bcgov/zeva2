@@ -26,27 +26,34 @@ export const BalanceTable = ({
   const modelYearsMap = getModelYearEnumsToStringsMap();
 
   return (
-    <table style={{ borderCollapse: "collapse", minWidth: "20rem" }}>
-      <thead>
-        <tr>
-          <th style={{ textAlign: "left", padding: "4px" }}>Year</th>
-          <th style={{ textAlign: "right", padding: "4px" }}>A credits</th>
-          <th style={{ textAlign: "right", padding: "4px" }}>B credits</th>
-        </tr>
-      </thead>
-      <tbody>
-        {sortedYears.map((y) => (
-          <tr key={y}>
-            <td style={{ padding: "4px" }}>{modelYearsMap[y as ModelYear]}</td>
-            <td style={{ textAlign: "right", padding: "4px" }}>
-              {aRecords?.[y as ModelYear]?.toString() ?? "—"}
-            </td>
-            <td style={{ textAlign: "right", padding: "4px" }}>
-              {bRecords?.[y as ModelYear]?.toString() ?? "—"}
-            </td>
+    <section className="max-w-3xl overflow-hidden rounded-md border border-dividerMedium bg-white">
+      <h1 className="border-b border-dividerMedium bg-disabledSurface px-5 py-4 text-xl font-semibold">
+        Current Balance
+      </h1>
+      <table className="w-full border-collapse text-sm">
+        <thead>
+          <tr className="border-b border-dividerMedium">
+            <th className="px-5 py-4 text-left font-semibold">
+              Compliance Year
+            </th>
+            <th className="px-5 py-4 text-left font-semibold">A Credits</th>
+            <th className="px-5 py-4 text-left font-semibold">B Credits</th>
           </tr>
-        ))}
-      </tbody>
-    </table>
+        </thead>
+        <tbody className="divide-y divide-gray-100">
+          {sortedYears.map((y) => (
+            <tr key={y} className="odd:bg-white even:bg-gray-50">
+              <td className="px-5 py-4">{modelYearsMap[y as ModelYear]}</td>
+              <td className="px-5 py-4">
+                {aRecords?.[y as ModelYear]?.toString() ?? "—"}
+              </td>
+              <td className="px-5 py-4">
+                {bRecords?.[y as ModelYear]?.toString() ?? "—"}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </section>
   );
 };
