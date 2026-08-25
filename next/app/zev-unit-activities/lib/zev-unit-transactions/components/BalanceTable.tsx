@@ -59,10 +59,10 @@ export const BalanceTable = ({
             <tr key={y} className="odd:bg-white even:bg-gray-50">
               <td className="px-5 py-4">{modelYearsMap[y as ModelYear]}</td>
               <td className="px-5 py-4">
-                {aRecords?.[y as ModelYear]?.toString() ?? "\u2014"}
+                {aRecords?.[y as ModelYear]?.toString() ?? "—"}
               </td>
               <td className="px-5 py-4">
-                {bRecords?.[y as ModelYear]?.toString() ?? "\u2014"}
+                {bRecords?.[y as ModelYear]?.toString() ?? "—"}
               </td>
             </tr>
           ))}
