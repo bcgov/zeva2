@@ -8,25 +8,33 @@ export type UserWithOrgName = Omit<UserModel, "idpSub"> & {
 };
 
 export const fetchUsers = async (
-  category: "bceid" | "idir" | "inactive",
+  category?: "bceid" | "idir" | "inactive",
+  orgId?: number,
 ): Promise<UserWithOrgName[]> => {
   const { userIsGov } = await getUserInfo();
   if (!userIsGov) {
     return [];
   }
+  if ((!category && !orgId) || (category && orgId)) {
+    throw new Error("Invalid function call!");
+  }
   const whereClause: UserWhereInput = {};
-  switch (category) {
-    case "bceid":
-      whereClause.idp = Idp.BCEID_BUSINESS;
-      whereClause.isActive = true;
-      break;
-    case "idir":
-      whereClause.idp = Idp.AZURE_IDIR;
-      whereClause.isActive = true;
-      break;
-    case "inactive":
-      whereClause.isActive = false;
-      break;
+  if (category) {
+    switch (category) {
+      case "bceid":
+        whereClause.idp = Idp.BCEID_BUSINESS;
+        whereClause.isActive = true;
+        break;
+      case "idir":
+        whereClause.idp = Idp.AZURE_IDIR;
+        whereClause.isActive = true;
+        break;
+      case "inactive":
+        whereClause.isActive = false;
+        break;
+    }
+  } else if (orgId) {
+    whereClause.organizationId = orgId;
   }
   return await prisma.user.findMany({
     where: whereClause,
