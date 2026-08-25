@@ -1,7 +1,7 @@
 import { getUserInfo } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { OrganizationAddressModel } from "@/prisma/generated/models";
-import { getCurrentBalance, sumBalance } from "@/lib/utils/zevUnit";
+import { getCurrentBalance, sumBalance, UnexpectedDebit } from "@/lib/utils/zevUnit";
 import { getSupplierClassEnumsToStringsMap } from "@/app/lib/utils/enumMaps";
 
 export type OrganizationSparse = {
@@ -45,10 +45,19 @@ export const getSuppliers = async (): Promise<OrganizationSparse[]> => {
     if (org.supplierClass) {
       supplierClass = supplierClassesMap[org.supplierClass] ?? "N/A";
     }
-    const balance = getCurrentBalance(
-      org.zevUnitEndingBalances,
-      org.zevUnitTransactions,
-    );
+    let balance: ReturnType<typeof getCurrentBalance>;
+    try {
+      balance = getCurrentBalance(
+        org.zevUnitEndingBalances,
+        org.zevUnitTransactions,
+      );
+    } catch (e) {
+      if (e instanceof UnexpectedDebit) {
+        balance = "deficit";
+      } else {
+        throw e;
+      }
+    }
     return {
       id: org.id,
       name: org.name,

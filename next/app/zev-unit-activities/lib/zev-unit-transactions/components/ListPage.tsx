@@ -19,13 +19,7 @@ export const ListPage = async (props: { orgId?: string }) => {
     const complianceYears = await getComplianceYears(orgIdToUse);
     return (
       <main>
-        <h1>Current Balance</h1>
-
-        {balance === "deficit" ? (
-          <p style={{ color: "red" }}>Deficit</p>
-        ) : (
-          <BalanceTable balance={balance} />
-        )}
+        <BalanceTable balance={balance} />
         <TransactionAccordion
           orgId={orgIdToUse}
           complianceYears={complianceYears}
