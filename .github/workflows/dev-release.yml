@@ -173,6 +173,9 @@ jobs:
     name: Tag Zeva2 images to Dev
     needs: [release, build-dev]
     runs-on: ubuntu-latest
+    outputs:
+      next_image_digest: ${{ steps.image_digests.outputs.next_image_digest }}
+      bullmq_image_digest: ${{ steps.image_digests.outputs.bullmq_image_digest }}
     steps:
       - name: Restore oc command from Cache
         uses: actions/cache@v5.0.4
@@ -190,6 +193,19 @@ jobs:
           oc tag ${{ env.TOOLS_NAMESPACE }}/zeva2-next:${{ needs.release.outputs.release_version}} ${{ env.DEV_NAMESPACE}}/zeva2-next:${{ needs.release.outputs.release_version}} --reference-policy=local
           oc tag ${{ env.TOOLS_NAMESPACE }}/zeva2-bullmq:${{ needs.release.outputs.release_version}} ${{ env.DEV_NAMESPACE }}/zeva2-bullmq:${{ needs.release.outputs.release_version}} --reference-policy=local
 
+      - name: Resolve image digests
+        id: image_digests
+        shell: bash
+        run: |
+          set -euo pipefail
+          next_image_digest=$(oc -n "${{ env.DEV_NAMESPACE }}" get istag "zeva2-next:${{ needs.release.outputs.release_version }}" -o jsonpath='{.image.metadata.name}')
+          bullmq_image_digest=$(oc -n "${{ env.DEV_NAMESPACE }}" get istag "zeva2-bullmq:${{ needs.release.outputs.release_version }}" -o jsonpath='{.image.metadata.name}')
+          for digest in "$next_image_digest" "$bullmq_image_digest"; do
+            [[ "$digest" == sha256:* ]] || { echo "Invalid image digest: $digest"; exit 1; }
+          done
+          echo "next_image_digest=$next_image_digest" >> "$GITHUB_OUTPUT"
+          echo "bullmq_image_digest=$bullmq_image_digest" >> "$GITHUB_OUTPUT"
+
   deploy-dev:
     name: Deploy Zeva2 on Dev
     needs: [release, tag-images-dev]
@@ -197,6 +213,8 @@ jobs:
     with:
       git_ref: ${{ github.ref_name }}
       version: ${{ needs.release.outputs.release_version }}
+      next_image_digest: ${{ needs.tag-images-dev.outputs.next_image_digest }}
+      bullmq_image_digest: ${{ needs.tag-images-dev.outputs.bullmq_image_digest }}
       values_file: values-dev.yaml
     secrets:
       manifest-repo-deploy-key: ${{ secrets.MANIFEST_REPO_DEPLOY_KEY }}

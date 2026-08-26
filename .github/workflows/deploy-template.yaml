@@ -14,6 +14,12 @@ on:
       version:
         required: true
         type: string
+      next_image_digest:
+        required: true
+        type: string
+      bullmq_image_digest:
+        required: true
+        type: string
       # The name of the values file to use for the deployment
       values_file:
         required: true
@@ -46,12 +52,14 @@ jobs:
           ref: main
           ssh-key: ${{ secrets.manifest-repo-deploy-key }}
 
-      - name: Update tags
+      - name: Update image references
         uses: mikefarah/yq@v4.40.5
         with:
           cmd: |
             yq -i '.image.tag = "${{ inputs.version}}"' zeva2/zeva2-next/${{ inputs.values_file }}
+            yq -i '.image.digest = "${{ inputs.next_image_digest }}"' zeva2/zeva2-next/${{ inputs.values_file }}
             yq -i '.image.tag = "${{ inputs.version}}"' zeva2/zeva2-bullmq/${{ inputs.values_file }}
+            yq -i '.image.digest = "${{ inputs.bullmq_image_digest }}"' zeva2/zeva2-bullmq/${{ inputs.values_file }}
 
       # push the changes to the CD repo
       - name: GitHub Commit & Push
