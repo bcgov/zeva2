@@ -57,9 +57,9 @@ jobs:
         with:
           cmd: |
             yq -i '.image.tag = "${{ inputs.version}}"' zeva2/zeva2-next/${{ inputs.values_file }}
-            yq -i '.image.digest = "${{ inputs.next_image_digest }}"' zeva2/zeva2-next/${{ inputs.values_file }}
+            # yq -i '.image.digest = "${{ inputs.next_image_digest }}"' zeva2/zeva2-next/${{ inputs.values_file }}
             yq -i '.image.tag = "${{ inputs.version}}"' zeva2/zeva2-bullmq/${{ inputs.values_file }}
-            yq -i '.image.digest = "${{ inputs.bullmq_image_digest }}"' zeva2/zeva2-bullmq/${{ inputs.values_file }}
+            # yq -i '.image.digest = "${{ inputs.bullmq_image_digest }}"' zeva2/zeva2-bullmq/${{ inputs.values_file }}
 
       # push the changes to the CD repo
       - name: GitHub Commit & Push
