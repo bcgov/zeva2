@@ -15,7 +15,7 @@
     "bullmq": "NODE_ENV=production tsx bullmq/index.ts",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint",
+    "lint": "eslint .",
     "test": "jest"
   },
   "dependencies": {
@@ -50,6 +50,10 @@
     "@types/react": "19.2.14",
     "@types/react-dom": "19.2.3",
     "@types/validator": "13.15.2",
+    "eslint": "^9.39.5",
+    "eslint-config-next": "^16.2.3",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-prettier": "^5.5.6",
     "jest": "30.3.0",
     "jest-environment-jsdom": "30.3.0",
     "postcss": "8.5.9",
