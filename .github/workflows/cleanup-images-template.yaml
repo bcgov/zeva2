@@ -38,7 +38,7 @@ jobs:
 
       - name: Log in to OpenShift
         run: |
-          oc login --server="${{ secrets.OPENSHIFT_SERVER }}" --token="${{ secrets.OPENSHIFT_TOKEN }}" --insecure-skip-tls-verify=true
+          oc login --server="${{ secrets.OPENSHIFT_SERVER }}" --token="${{ secrets.OPENSHIFT_TOKEN }}"
           oc project "${{ secrets.OPENSHIFT_NAMESPACE_PLATE }}-${{ inputs.environment }}"
 
       - name: Collect image tags to keep

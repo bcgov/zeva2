@@ -129,7 +129,7 @@ jobs:
 
       - name: Log in to Openshift
         run: |
-          oc login --server="${{ secrets.OPENSHIFT_SERVER }}" --token="${{ secrets.OPENSHIFT_TOKEN }}" --insecure-skip-tls-verify=true
+          oc login --server="${{ secrets.OPENSHIFT_SERVER }}" --token="${{ secrets.OPENSHIFT_TOKEN }}"
           oc project "${{ env.TOOLS_NAMESPACE }}"
 
       - name: Tag images to target namespace
@@ -199,7 +199,7 @@ jobs:
 
       - name: Log in to Openshift
         run: |
-          oc login --server="${{ secrets.OPENSHIFT_SERVER }}" --token="${{ secrets.OPENSHIFT_TOKEN }}" --insecure-skip-tls-verify=true
+          oc login --server="${{ secrets.OPENSHIFT_SERVER }}" --token="${{ secrets.OPENSHIFT_TOKEN }}"
           oc project "${{ env.DEV_NAMESPACE }}"
 
       - name: Deploy zeva2 apps
