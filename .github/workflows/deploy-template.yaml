@@ -24,9 +24,16 @@ on:
       values_file:
         required: true
         type: string
+      target_namespace:
+        required: true
+        type: string
     secrets:
       # the key used to checkout CD repository
       manifest-repo-deploy-key:
+        required: true
+      openshift-server:
+        required: true
+      openshift-token:
         required: true
 
 permissions:
@@ -69,5 +76,33 @@ jobs:
           git config --global user.name "GitHub Actions"
           git add zeva2/zeva2-next/${{ inputs.values_file}}
           git add zeva2/zeva2-bullmq/${{ inputs.values_file}}
-          git commit -m "Update the zeva2 image tags to ${{ inputs.version}} on ${{ secrets.target-namespace }}"
+          git commit -m "Update the zeva2 image tags to ${{ inputs.version}} on ${{ inputs.target_namespace }}"
           git push
+
+      - name: Verify ArgoCD rollout after GitOps update
+        shell: bash
+        run: |
+          set -euo pipefail
+          oc login --server="${{ secrets.openshift-server }}" --token="${{ secrets.openshift-token }}" --insecure-skip-tls-verify=true
+          oc project "${{ inputs.target_namespace }}"
+
+          case "${{ inputs.values_file }}" in
+            values-dev.yaml) env_name="dev" ;;
+            values-test.yaml) env_name="test" ;;
+            values-prod.yaml) env_name="prod" ;;
+            *) echo "Unsupported values file: ${{ inputs.values_file }}"; exit 1 ;;
+          esac
+
+          for app in "zeva2-next-${env_name}" "zeva2-bullmq-${env_name}"; do
+            echo "Waiting for ArgoCD app ${app} to sync and become healthy..."
+            app_ns=$(oc get applications.argoproj.io -A --no-headers -o custom-columns=NAME:.metadata.name,NAMESPACE:.metadata.namespace | awk -v app="$app" '$1 == app {print $2; exit}')
+            if [ -z "${app_ns}" ]; then
+              echo "ArgoCD app ${app} not found in any namespace"
+              exit 1
+            fi
+
+            oc wait --for=jsonpath='{.status.sync.status}'=Synced "applications.argoproj.io/${app}" -n "${app_ns}" --timeout=600s
+            oc wait --for=jsonpath='{.status.health.status}'=Healthy "applications.argoproj.io/${app}" -n "${app_ns}" --timeout=600s
+            oc rollout status "deployment/${app}" -n "${{ inputs.target_namespace }}" --timeout=600s
+            echo "${app} is synced, healthy, and rolled out."
+          done

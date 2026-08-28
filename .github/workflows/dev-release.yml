@@ -216,5 +216,8 @@ jobs:
       next_image_digest: ${{ needs.tag-images-dev.outputs.next_image_digest }}
       bullmq_image_digest: ${{ needs.tag-images-dev.outputs.bullmq_image_digest }}
       values_file: values-dev.yaml
+      target_namespace: ${{ vars.OPENSHIFT_NAMESPACE_PLATE }}-dev
     secrets:
       manifest-repo-deploy-key: ${{ secrets.MANIFEST_REPO_DEPLOY_KEY }}
+      openshift-server: ${{ secrets.OPENSHIFT_SERVER }}
+      openshift-token: ${{ secrets.OPENSHIFT_TOKEN }}
