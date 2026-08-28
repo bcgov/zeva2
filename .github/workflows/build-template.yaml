@@ -46,7 +46,7 @@ jobs:
 
       - name: Log in to Openshift
         run: |
-          oc login --server="${{ secrets.openshift-server }}" --token="${{ secrets.openshift-token }}" --insecure-skip-tls-verify=true
+          oc login --server="${{ secrets.openshift-server }}" --token="${{ secrets.openshift-token }}"
           oc project "${{ secrets.tools-namespace }}"
 
       - name: Build Next

@@ -49,7 +49,7 @@ jobs:
 
       - name: Log in to Openshift
         run: |
-          oc login --server="${{ secrets.OPENSHIFT_SERVER }}" --token="${{ secrets.OPENSHIFT_TOKEN }}" --insecure-skip-tls-verify=true
+          oc login --server="${{ secrets.OPENSHIFT_SERVER }}" --token="${{ secrets.OPENSHIFT_TOKEN }}"
           oc project "${{ env.DEV_NAMESPACE }}"
 
       - name: Teardown the pull request

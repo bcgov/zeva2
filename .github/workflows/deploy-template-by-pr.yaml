@@ -159,7 +159,7 @@ jobs:
         run: |
           set -euo pipefail
           echo "The CD repo PR has been created. Waiting for it to be merged so ArgoCD can reconcile the change."
-          oc login --server="${{ secrets.openshift-server }}" --token="${{ secrets.openshift-token }}" --insecure-skip-tls-verify=true
+          oc login --server="${{ secrets.openshift-server }}" --token="${{ secrets.openshift-token }}"
           oc project "${NAMESPACE}"
 
           case "${{ inputs.values_file }}" in
