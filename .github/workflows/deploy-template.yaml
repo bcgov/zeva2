@@ -24,9 +24,16 @@ on:
       values_file:
         required: true
         type: string
+      target_namespace:
+        required: true
+        type: string
     secrets:
       # the key used to checkout CD repository
       manifest-repo-deploy-key:
+        required: true
+      openshift-server:
+        required: true
+      openshift-token:
         required: true
 
 permissions:
@@ -69,5 +76,62 @@ jobs:
           git config --global user.name "GitHub Actions"
           git add zeva2/zeva2-next/${{ inputs.values_file}}
           git add zeva2/zeva2-bullmq/${{ inputs.values_file}}
-          git commit -m "Update the zeva2 image tags to ${{ inputs.version}} on ${{ secrets.target-namespace }}"
+          git commit -m "Update the zeva2 image tags to ${{ inputs.version}} on ${{ inputs.target_namespace }}"
           git push
+
+      - name: Verify ArgoCD rollout after GitOps update
+        shell: bash
+        env:
+          EXPECTED_TAG: ${{ inputs.version }}
+          NAMESPACE: ${{ inputs.target_namespace }}
+        run: |
+          set -euo pipefail
+          oc login --server="${{ secrets.openshift-server }}" --token="${{ secrets.openshift-token }}" --insecure-skip-tls-verify=true
+          oc project "${NAMESPACE}"
+
+          case "${{ inputs.values_file }}" in
+            values-dev.yaml) env_name="dev" ;;
+            values-test.yaml) env_name="test" ;;
+            values-prod.yaml) env_name="prod" ;;
+            *) echo "Unsupported values file: ${{ inputs.values_file }}"; exit 1 ;;
+          esac
+
+          # ArgoCD needs a short moment to notice the new commit before it starts syncing.
+          # Until the Deployment's image tag matches the released version, the sync has not
+          # been applied yet, so we poll the Deployment spec before checking the rollout.
+          wait_for_image_tag() {
+            local deployment="$1"
+            local timeout=600
+            local elapsed=0
+            local interval=10
+            while true; do
+              local image running_tag
+              image=$(oc get "deployment/${deployment}" -n "${NAMESPACE}" \
+                -o jsonpath='{.spec.template.spec.containers[0].image}' 2>/dev/null || true)
+              running_tag="${image##*:}"
+              if [ "${running_tag}" = "${EXPECTED_TAG}" ]; then
+                echo "${deployment}: Deployment now targets tag ${EXPECTED_TAG} (ArgoCD sync applied)."
+                return 0
+              fi
+              if [ "${elapsed}" -ge "${timeout}" ]; then
+                echo "${deployment}: timed out waiting for tag ${EXPECTED_TAG}; current image is '${image:-<none>}'"
+                return 1
+              fi
+              echo "${deployment}: current tag '${running_tag:-<none>}' != expected '${EXPECTED_TAG}'; waiting for ArgoCD to sync..."
+              sleep "${interval}"
+              elapsed=$((elapsed + interval))
+            done
+          }
+
+          for app in "zeva2-next-${env_name}" "zeva2-bullmq-${env_name}"; do
+            echo "Verifying ${app}..."
+            wait_for_image_tag "${app}"
+            oc rollout status "deployment/${app}" -n "${NAMESPACE}" --timeout=600s
+
+            app_ns=$(oc get applications.argoproj.io -A --no-headers -o custom-columns=NAME:.metadata.name,NAMESPACE:.metadata.namespace | awk -v app="$app" '$1 == app {print $2; exit}')
+            if [ -n "${app_ns}" ]; then
+              oc wait --for=jsonpath='{.status.sync.status}'=Synced "applications.argoproj.io/${app}" -n "${app_ns}" --timeout=600s
+              oc wait --for=jsonpath='{.status.health.status}'=Healthy "applications.argoproj.io/${app}" -n "${app_ns}" --timeout=600s
+            fi
+            echo "${app} is synced, healthy, and rolled out to ${EXPECTED_TAG}."
+          done
