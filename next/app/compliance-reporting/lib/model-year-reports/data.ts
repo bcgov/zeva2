@@ -215,12 +215,20 @@ export const getModelYearReportDetails = async (id: number) => {
   };
 };
 
-export const getModelYearReports = async (): Promise<MyrRecord[]> => {
+export const getModelYearReports = async (
+  orgId?: number,
+): Promise<MyrRecord[]> => {
   const { userIsGov, userOrgId, userRoles } = await getUserInfo();
+  if (orgId && !userIsGov) {
+    throw new Error("Invalid function call!");
+  }
   const whereClause: ModelYearReportWhereInput = {};
   const reassessmentWhereClause: ReassessmentWhereInput = {};
   const suppWhereClause: SupplementaryReportWhereInput = {};
   if (userIsGov) {
+    if (orgId) {
+      whereClause.organizationId = orgId;
+    }
     if (userRoles.includes(Role.DIRECTOR)) {
       whereClause.NOT = {
         status: {

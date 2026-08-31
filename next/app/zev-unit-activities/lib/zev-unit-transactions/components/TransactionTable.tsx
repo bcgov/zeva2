@@ -16,6 +16,7 @@ import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   getBeginningBalance,
+  getComplianceBounds,
   getEndingBalance,
   getTransactionsByComplianceYear,
 } from "../actions";
@@ -48,6 +49,7 @@ export const TransactionTable = ({
 }) => {
   const router = useRouter();
   const [selectedYear, setSelectedYear] = useState<ModelYear>();
+  const [complianceBounds, setComplianceBounds] = useState<[string, string]>();
   const [rows, setRows] = useState<TransactionRow[]>([]);
   const [error, setError] = useState("");
 
@@ -140,20 +142,23 @@ export const TransactionTable = ({
     async (year: ModelYear) => {
       setSelectedYear(year);
       setError("");
-      const [beginning, transactions, ending] = await Promise.all([
+      const [beginning, transactions, ending, bounds] = await Promise.all([
         getBeginningBalance(orgId, year),
         getTransactionsByComplianceYear(orgId, year, "asc"),
         getEndingBalance(orgId, year),
+        getComplianceBounds(year),
       ]);
       if (
         beginning.responseType !== "data" ||
         transactions.responseType !== "data" ||
-        ending.responseType !== "data"
+        ending.responseType !== "data" ||
+        bounds.responseType !== "data"
       ) {
         setRows([]);
         setError("Transactions could not be loaded.");
         return;
       }
+      setComplianceBounds(bounds.data);
       const rowsToSet: TransactionRow[] = [];
       let counter = 0;
       for (const record of beginning.data) {
@@ -210,12 +215,12 @@ export const TransactionTable = ({
     <div className="rounded-md border border-dividerMedium bg-white">
       <div className="flex flex-row items-center justify-between gap-4 bg-disabledSurface px-5 py-4">
         <div>
-          <h2 className="text-xl font-semibold">
-            Credit Transactions by Compliance Year
-          </h2>
-          <p className="mt-1 text-sm">
-            Each compliance year runs from October 1.
-          </p>
+          {selectedYear && complianceBounds && (
+            <h2 className="text-xl font-semibold">
+              Credit Transactions for the {modelYears[selectedYear]} Compliance
+              Period ({complianceBounds[0]} to {complianceBounds[1]})
+            </h2>
+          )}
         </div>
         <div className="flex flex-wrap gap-3">
           {complianceYears.slice(0, 5).map((year) => (
