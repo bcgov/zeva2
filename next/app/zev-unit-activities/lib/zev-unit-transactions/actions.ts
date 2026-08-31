@@ -1,12 +1,14 @@
 "use server";
 
 import {
+  DataActionResponse,
   DataOrErrorActionResponse,
   getDataActionResponse,
   getErrorActionResponse,
 } from "@/app/lib/utils/actionResponse";
 import {
   getAdjacentYear,
+  getComplianceDate,
   getCompliancePeriod,
 } from "@/app/lib/utils/complianceYear";
 import { getIsoYmdString } from "@/app/lib/utils/date";
@@ -99,4 +101,15 @@ export const getEndingBalance = async (
 export const getReportableBalanceABForSupplierUser = async () => {
   const { userOrgId } = await getUserInfo();
   return await getReportableBalanceAB(userOrgId);
+};
+
+export const getComplianceBounds = async (
+  modelYear: ModelYear,
+): Promise<DataActionResponse<[string, string]>> => {
+  const { closedLowerBound: startDate } = getCompliancePeriod(modelYear);
+  const endDate = getComplianceDate(modelYear);
+  return getDataActionResponse([
+    getIsoYmdString(startDate),
+    getIsoYmdString(endDate),
+  ]);
 };
