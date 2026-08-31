@@ -45,7 +45,7 @@ export const getSuppliers = async (): Promise<OrganizationSparse[]> => {
     if (org.supplierClass) {
       supplierClass = supplierClassesMap[org.supplierClass] ?? "N/A";
     }
-    let balance: ReturnType<typeof getCurrentBalance>;
+    let balance: ReturnType<typeof getCurrentBalance> | "deficit" | "ERROR";
     try {
       balance = getCurrentBalance(
         org.zevUnitEndingBalances,
@@ -55,7 +55,7 @@ export const getSuppliers = async (): Promise<OrganizationSparse[]> => {
       if (e instanceof UnexpectedDebit) {
         balance = "deficit";
       } else {
-        throw e;
+        balance = "ERROR";
       }
     }
     return {
@@ -65,11 +65,15 @@ export const getSuppliers = async (): Promise<OrganizationSparse[]> => {
       zevUnitBalanceA:
         balance === "deficit"
           ? "DEFICIT"
-          : sumBalance(balance, "CREDIT", "REPORTABLE", "A").toFixed(2),
+          : balance === "ERROR"
+            ? "ERROR"
+            : sumBalance(balance, "CREDIT", "REPORTABLE", "A").toFixed(2),
       zevUnitBalanceB:
         balance === "deficit"
           ? "DEFICIT"
-          : sumBalance(balance, "CREDIT", "REPORTABLE", "B").toFixed(2),
+          : balance === "ERROR"
+            ? "ERROR"
+            : sumBalance(balance, "CREDIT", "REPORTABLE", "B").toFixed(2),
     };
   });
   return result;

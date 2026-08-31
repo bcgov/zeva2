@@ -1,7 +1,7 @@
 import { getUserInfo } from "@/auth";
 import { getComplianceYears, getNestedReportableBalanceAB } from "../data";
 import { BalanceTable } from "./BalanceTable";
-import { TransactionAccordion } from "./TransactionAccordion";
+import { TransactionTable } from "./TransactionTable";
 
 export const ListPage = async (props: { orgId?: string }) => {
   const { userIsGov, userOrgId } = await getUserInfo();
@@ -18,9 +18,13 @@ export const ListPage = async (props: { orgId?: string }) => {
   if (balance) {
     const complianceYears = await getComplianceYears(orgIdToUse);
     return (
-      <main>
-        <BalanceTable balance={balance} />
-        <TransactionAccordion
+      <main className="space-y-6">
+        {balance === "deficit" ? (
+          <p style={{ color: "red" }}>Deficit</p>
+        ) : (
+          <BalanceTable balance={balance} />
+        )}
+        <TransactionTable
           orgId={orgIdToUse}
           complianceYears={complianceYears}
         />
