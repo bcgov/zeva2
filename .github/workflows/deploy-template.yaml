@@ -14,10 +14,8 @@ on:
       version:
         required: true
         type: string
-      next_image_digest:
-        required: true
-        type: string
-      bullmq_image_digest:
+      # The OpenShift Tools namespace that holds the built images to tag from.
+      tools_namespace:
         required: true
         type: string
       # The name of the values file to use for the deployment
@@ -25,6 +23,11 @@ on:
         required: true
         type: string
       target_namespace:
+        required: true
+        type: string
+      # The GitHub environment (dev, test or prod) whose secrets and
+      # protection rules apply to this deployment.
+      environment:
         required: true
         type: string
     secrets:
@@ -43,6 +46,7 @@ jobs:
   deploy:
     name: Deploy Zeva2
     runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
     timeout-minutes: 60
 
     steps:
@@ -51,6 +55,29 @@ jobs:
         with:
           path: /usr/local/bin/oc
           key: oc-cli-${{ runner.os }}
+
+      - name: Log in to Openshift
+        run: |
+          oc login --server="${{ secrets.openshift-server }}" --token="${{ secrets.openshift-token }}"
+          oc project "${{ inputs.target_namespace }}"
+
+      - name: Tag images to target namespace
+        run: |
+          oc tag ${{ inputs.tools_namespace }}/zeva2-next:${{ inputs.version }} ${{ inputs.target_namespace }}/zeva2-next:${{ inputs.version }} --reference-policy=local
+          oc tag ${{ inputs.tools_namespace }}/zeva2-bullmq:${{ inputs.version }} ${{ inputs.target_namespace }}/zeva2-bullmq:${{ inputs.version }} --reference-policy=local
+
+      - name: Resolve image digests
+        id: image_digests
+        shell: bash
+        run: |
+          set -euo pipefail
+          next_image_digest=$(oc -n "${{ inputs.target_namespace }}" get istag "zeva2-next:${{ inputs.version }}" -o jsonpath='{.image.metadata.name}')
+          bullmq_image_digest=$(oc -n "${{ inputs.target_namespace }}" get istag "zeva2-bullmq:${{ inputs.version }}" -o jsonpath='{.image.metadata.name}')
+          for digest in "$next_image_digest" "$bullmq_image_digest"; do
+            [[ "$digest" == sha256:* ]] || { echo "Invalid image digest: $digest"; exit 1; }
+          done
+          echo "next_image_digest=$next_image_digest" >> "$GITHUB_OUTPUT"
+          echo "bullmq_image_digest=$bullmq_image_digest" >> "$GITHUB_OUTPUT"
 
       - name: Checkout CD repository
         uses: actions/checkout@v6.0.2
@@ -63,10 +90,10 @@ jobs:
         uses: mikefarah/yq@v4.40.5
         with:
           cmd: |
-            yq -i '.image.tag = "${{ inputs.version}}"' zeva2/zeva2-next/${{ inputs.values_file }}
-            # yq -i '.image.digest = "${{ inputs.next_image_digest }}"' zeva2/zeva2-next/${{ inputs.values_file }}
-            yq -i '.image.tag = "${{ inputs.version}}"' zeva2/zeva2-bullmq/${{ inputs.values_file }}
-            # yq -i '.image.digest = "${{ inputs.bullmq_image_digest }}"' zeva2/zeva2-bullmq/${{ inputs.values_file }}
+            yq -i '.image.tag = "${{ inputs.version }}"' zeva2/zeva2-next/${{ inputs.values_file }}
+            # yq -i '.image.digest = "${{ steps.image_digests.outputs.next_image_digest }}"' zeva2/zeva2-next/${{ inputs.values_file }}
+            yq -i '.image.tag = "${{ inputs.version }}"' zeva2/zeva2-bullmq/${{ inputs.values_file }}
+            # yq -i '.image.digest = "${{ steps.image_digests.outputs.bullmq_image_digest }}"' zeva2/zeva2-bullmq/${{ inputs.values_file }}
 
       # push the changes to the CD repo
       - name: GitHub Commit & Push
@@ -86,8 +113,7 @@ jobs:
           NAMESPACE: ${{ inputs.target_namespace }}
         run: |
           set -euo pipefail
-          oc login --server="${{ secrets.openshift-server }}" --token="${{ secrets.openshift-token }}"
-          oc project "${NAMESPACE}"
+          # Already authenticated in the "Log in to Openshift" step; kubeconfig persists across steps.
 
           case "${{ inputs.values_file }}" in
             values-dev.yaml) env_name="dev" ;;
