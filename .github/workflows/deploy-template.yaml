@@ -91,9 +91,9 @@ jobs:
         with:
           cmd: |
             yq -i '.image.tag = "${{ inputs.version }}"' zeva2/zeva2-next/${{ inputs.values_file }}
-            # yq -i '.image.digest = "${{ steps.image_digests.outputs.next_image_digest }}"' zeva2/zeva2-next/${{ inputs.values_file }}
+            yq -i '.image.digest = "${{ steps.image_digests.outputs.next_image_digest }}"' zeva2/zeva2-next/${{ inputs.values_file }}
             yq -i '.image.tag = "${{ inputs.version }}"' zeva2/zeva2-bullmq/${{ inputs.values_file }}
-            # yq -i '.image.digest = "${{ steps.image_digests.outputs.bullmq_image_digest }}"' zeva2/zeva2-bullmq/${{ inputs.values_file }}
+            yq -i '.image.digest = "${{ steps.image_digests.outputs.bullmq_image_digest }}"' zeva2/zeva2-bullmq/${{ inputs.values_file }}
 
       # push the changes to the CD repo
       - name: GitHub Commit & Push
@@ -109,7 +109,8 @@ jobs:
       - name: Verify ArgoCD rollout after GitOps update
         shell: bash
         env:
-          EXPECTED_TAG: ${{ inputs.version }}
+          NEXT_IMAGE_DIGEST: ${{ steps.image_digests.outputs.next_image_digest }}
+          BULLMQ_IMAGE_DIGEST: ${{ steps.image_digests.outputs.bullmq_image_digest }}
           NAMESPACE: ${{ inputs.target_namespace }}
         run: |
           set -euo pipefail
@@ -123,27 +124,27 @@ jobs:
           esac
 
           # ArgoCD needs a short moment to notice the new commit before it starts syncing.
-          # Until the Deployment's image tag matches the released version, the sync has not
-          # been applied yet, so we poll the Deployment spec before checking the rollout.
-          wait_for_image_tag() {
+          # Until the Deployment's image digest matches the promoted artifact, the sync has
+          # not been applied yet, so poll the Deployment spec before checking the rollout.
+          wait_for_image_digest() {
             local deployment="$1"
+            local expected_digest="$2"
             local timeout=600
             local elapsed=0
             local interval=10
             while true; do
-              local image running_tag
+              local image
               image=$(oc get "deployment/${deployment}" -n "${NAMESPACE}" \
                 -o jsonpath='{.spec.template.spec.containers[0].image}' 2>/dev/null || true)
-              running_tag="${image##*:}"
-              if [ "${running_tag}" = "${EXPECTED_TAG}" ]; then
-                echo "${deployment}: Deployment now targets tag ${EXPECTED_TAG} (ArgoCD sync applied)."
+              if [[ "${image}" == *"@${expected_digest}" ]]; then
+                echo "${deployment}: Deployment now targets digest ${expected_digest} (ArgoCD sync applied)."
                 return 0
               fi
               if [ "${elapsed}" -ge "${timeout}" ]; then
-                echo "${deployment}: timed out waiting for tag ${EXPECTED_TAG}; current image is '${image:-<none>}'"
+                echo "${deployment}: timed out waiting for digest ${expected_digest}; current image is '${image:-<none>}'"
                 return 1
               fi
-              echo "${deployment}: current tag '${running_tag:-<none>}' != expected '${EXPECTED_TAG}'; waiting for ArgoCD to sync..."
+              echo "${deployment}: current image '${image:-<none>}' does not use digest '${expected_digest}'; waiting for ArgoCD to sync..."
               sleep "${interval}"
               elapsed=$((elapsed + interval))
             done
@@ -151,7 +152,11 @@ jobs:
 
           for app in "zeva2-next-${env_name}" "zeva2-bullmq-${env_name}"; do
             echo "Verifying ${app}..."
-            wait_for_image_tag "${app}"
+            case "${app}" in
+              zeva2-next-*) expected_digest="${NEXT_IMAGE_DIGEST}" ;;
+              zeva2-bullmq-*) expected_digest="${BULLMQ_IMAGE_DIGEST}" ;;
+            esac
+            wait_for_image_digest "${app}" "${expected_digest}"
             oc rollout status "deployment/${app}" -n "${NAMESPACE}" --timeout=600s
 
             # The ArgoCD Application status check is best-effort: the CI service account
@@ -169,5 +174,5 @@ jobs:
             else
               echo "${app}: ArgoCD Application not accessible in ${NAMESPACE}; skipping ArgoCD status check."
             fi
-            echo "${app} is rolled out to ${EXPECTED_TAG}."
+            echo "${app} is rolled out to ${expected_digest}."
           done
