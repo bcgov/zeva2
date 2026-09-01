@@ -16,69 +16,21 @@ permissions:
   contents: read
   issues: write
 
-env:
-  TOOLS_NAMESPACE: ${{ secrets.OPENSHIFT_NAMESPACE_PLATE }}-tools
-  TEST_NAMESPACE: ${{ secrets.OPENSHIFT_NAMESPACE_PLATE }}-test
-
 jobs:
   install-oc:
     uses: ./.github/workflows/install-oc-template.yaml
 
-  tag-images-test:
-    name: Tag Zeva2 images to Test
-    needs: install-oc
-    runs-on: ubuntu-latest
-    outputs:
-      next_image_digest: ${{ steps.image_digests.outputs.next_image_digest }}
-      bullmq_image_digest: ${{ steps.image_digests.outputs.bullmq_image_digest }}
-    steps:
-      - name: Restore oc command from Cache
-        uses: actions/cache@v5.0.4
-        with:
-          path: /usr/local/bin/oc
-          key: oc-cli-${{ runner.os }}
-
-      - name: Log in to Openshift
-        run: |
-          oc login --server="${{ secrets.OPENSHIFT_SERVER }}" --token="${{ secrets.OPENSHIFT_TOKEN }}"
-          oc project "${{ env.TOOLS_NAMESPACE }}"
-
-      - name: Tag images to Test namespace
-        run: |
-          set -euo pipefail
-          for image in zeva2-next zeva2-bullmq; do
-            if ! oc -n ${{ env.TOOLS_NAMESPACE }} get istag ${image}:${{ inputs.version }} >/dev/null 2>&1; then
-              echo "Image tag not found: ${{ env.TOOLS_NAMESPACE }}/${image}:${{ inputs.version }}"
-              exit 1
-            fi
-          done
-          oc tag ${{ env.TOOLS_NAMESPACE }}/zeva2-next:${{ inputs.version }} ${{ env.TEST_NAMESPACE}}/zeva2-next:${{ inputs.version }} --reference-policy=local
-          oc tag ${{ env.TOOLS_NAMESPACE }}/zeva2-bullmq:${{ inputs.version }} ${{ env.TEST_NAMESPACE }}/zeva2-bullmq:${{ inputs.version }} --reference-policy=local
-
-      - name: Resolve image digests
-        id: image_digests
-        shell: bash
-        run: |
-          set -euo pipefail
-          next_image_digest=$(oc -n "${{ env.TEST_NAMESPACE }}" get istag "zeva2-next:${{ inputs.version }}" -o jsonpath='{.image.metadata.name}')
-          bullmq_image_digest=$(oc -n "${{ env.TEST_NAMESPACE }}" get istag "zeva2-bullmq:${{ inputs.version }}" -o jsonpath='{.image.metadata.name}')
-          for digest in "$next_image_digest" "$bullmq_image_digest"; do
-            [[ "$digest" == sha256:* ]] || { echo "Invalid image digest: $digest"; exit 1; }
-          done
-          echo "next_image_digest=$next_image_digest" >> "$GITHUB_OUTPUT"
-          echo "bullmq_image_digest=$bullmq_image_digest" >> "$GITHUB_OUTPUT"
-
   deploy-test:
     name: Deploy Zeva2 to Test
-    needs: tag-images-test
+    needs: install-oc
     uses: ./.github/workflows/deploy-template-by-pr.yaml
     with:
       git_ref: ${{ github.ref_name }}
       version: ${{ inputs.version }}
-      next_image_digest: ${{ needs.tag-images-test.outputs.next_image_digest }}
-      bullmq_image_digest: ${{ needs.tag-images-test.outputs.bullmq_image_digest }}
+      tools_namespace: ${{ vars.OPENSHIFT_NAMESPACE_PLATE }}-tools
       values_file: values-test.yaml
       target_namespace: ${{ vars.OPENSHIFT_NAMESPACE_PLATE }}-test
+      environment: test
     secrets:
       manifest-repo-deploy-key: ${{ secrets.MANIFEST_REPO_DEPLOY_KEY }}
       manifest-repo-token: ${{ secrets.MANIFEST_REPO_TOKEN }}
