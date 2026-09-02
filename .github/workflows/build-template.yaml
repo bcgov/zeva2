@@ -166,6 +166,8 @@ jobs:
 
       - name: Sign built image digests
         shell: bash
+        env:
+          COSIGN_DOCKER_MEDIA_TYPES: "1"
         run: |
           set -euo pipefail
           cosign sign --yes "${{ steps.image_refs.outputs.next_image_ref }}"
@@ -173,6 +175,8 @@ jobs:
 
       - name: Verify image signatures
         shell: bash
+        env:
+          COSIGN_DOCKER_MEDIA_TYPES: "1"
         run: |
           set -euo pipefail
           certificate_identity_regexp="^https://github.com/${{ github.repository }}/.github/workflows/.+@refs/.+$"
