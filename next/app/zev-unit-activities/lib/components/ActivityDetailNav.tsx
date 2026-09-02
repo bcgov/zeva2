@@ -65,6 +65,19 @@ export const ActivityDetailNav = (props: {
       ];
     }
 
+    if (props.slug === "credit-agreements") {
+      return [
+        {
+          label: `Credit Agreement ID ${props.id}`,
+          route: `${Routes.CreditAgreements}/${props.id}/details`,
+        },
+        {
+          label: "Audit History",
+          route: `${Routes.CreditAgreements}/${props.id}/audit-history`,
+        },
+      ];
+    }
+
     if (props.slug === "credit-transfers") {
       return [
         {

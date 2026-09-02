@@ -16,7 +16,6 @@ import {
 } from "@/app/lib/utils/typeGuards";
 import { AgreementContentRecord } from "../constants";
 
-const fieldLabelClass = "py-1 font-semibold text-primaryBlue";
 const fieldContentClass = "p-1 border border-gray-300 rounded";
 
 export const AgreementContent = (props: {
@@ -78,98 +77,108 @@ export const AgreementContent = (props: {
   );
 
   return (
-    <div className="p-2 border border-gray-300 rounded">
-      <p className={fieldLabelClass}>ZEV Units</p>
-      {props.content.map((record, index) => (
-        <div key={index} className="p-4 border-b border-gray-300 space-y-3">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            <div className="flex flex-col space-y-1">
-              <label className="text-sm font-medium text-primaryText">
-                Vehicle Class
-              </label>
-              <Dropdown
-                options={Object.entries(vehicleClassesMaps).map(
-                  ([key, value]) => ({
-                    value: value as string,
-                    label: key,
-                  }),
-                )}
-                value={record.vehicleClass}
-                onChange={(value) =>
-                  handleRecordChange(index, "vehicleClass", value)
-                }
-                disabled={props.disabled}
-              />
+    <section className="overflow-hidden rounded border border-dividerMedium bg-white">
+      <h2 className="bg-disabledSurface px-5 py-4 text-xl font-bold">
+        ZEV Units
+      </h2>
+      <div className="p-5">
+        {props.content.map((record, index) => (
+          <div key={index} className="p-4 border-b border-gray-300 space-y-3">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="flex flex-col space-y-1">
+                <label className="text-sm font-medium text-primaryText">
+                  Vehicle Class
+                </label>
+                <Dropdown
+                  options={Object.entries(vehicleClassesMaps).map(
+                    ([key, value]) => ({
+                      value: value as string,
+                      label: key,
+                    }),
+                  )}
+                  value={record.vehicleClass}
+                  onChange={(value) =>
+                    handleRecordChange(index, "vehicleClass", value)
+                  }
+                  disabled={props.disabled}
+                />
+              </div>
+              <div className="flex flex-col space-y-1">
+                <label className="text-sm font-medium text-primaryText">
+                  ZEV Class
+                </label>
+                <Dropdown
+                  options={Object.entries(zevClassesMaps).map(
+                    ([key, value]) => ({
+                      value: value as string,
+                      label: key,
+                    }),
+                  )}
+                  value={record.zevClass}
+                  onChange={(value) =>
+                    handleRecordChange(index, "zevClass", value)
+                  }
+                  disabled={props.disabled}
+                />
+              </div>
+              <div className="flex flex-col space-y-1">
+                <label className="text-sm font-medium text-primaryText">
+                  Model Year
+                </label>
+                <Dropdown
+                  options={Object.entries(modelYearsMaps)
+                    .filter(
+                      ([_key, value]) =>
+                        value &&
+                        value >= ModelYear.MY_2019 &&
+                        value <= ModelYear.MY_2035,
+                    )
+                    .map(([key, value]) => ({
+                      value: value as string,
+                      label: key,
+                    }))}
+                  value={record.modelYear}
+                  onChange={(value) =>
+                    handleRecordChange(index, "modelYear", value)
+                  }
+                  disabled={props.disabled}
+                />
+              </div>
+              <div className="flex flex-col space-y-1">
+                <label className="text-sm font-medium text-primaryText">
+                  Number of Units
+                </label>
+                <input
+                  className={fieldContentClass + " text-right"}
+                  type="text"
+                  value={record.numberOfUnits}
+                  onChange={(e) =>
+                    handleRecordChange(index, "numberOfUnits", e.target.value)
+                  }
+                  disabled={props.disabled}
+                />
+              </div>
             </div>
-            <div className="flex flex-col space-y-1">
-              <label className="text-sm font-medium text-primaryText">
-                ZEV Class
-              </label>
-              <Dropdown
-                options={Object.entries(zevClassesMaps).map(([key, value]) => ({
-                  value: value as string,
-                  label: key,
-                }))}
-                value={record.zevClass}
-                onChange={(value) =>
-                  handleRecordChange(index, "zevClass", value)
-                }
+            <div>
+              <Button
+                variant="danger"
+                size="small"
+                onClick={() => removeRecord(index)}
                 disabled={props.disabled}
-              />
-            </div>
-            <div className="flex flex-col space-y-1">
-              <label className="text-sm font-medium text-primaryText">
-                Model Year
-              </label>
-              <Dropdown
-                options={Object.entries(modelYearsMaps)
-                  .filter(
-                    ([_key, value]) =>
-                      value &&
-                      value >= ModelYear.MY_2019 &&
-                      value <= ModelYear.MY_2035,
-                  )
-                  .map(([key, value]) => ({
-                    value: value as string,
-                    label: key,
-                  }))}
-                value={record.modelYear}
-                onChange={(value) =>
-                  handleRecordChange(index, "modelYear", value)
-                }
-                disabled={props.disabled}
-              />
-            </div>
-            <div className="flex flex-col space-y-1">
-              <label className="text-sm font-medium text-primaryText">
-                Number of Units
-              </label>
-              <input
-                className={fieldContentClass + " text-right"}
-                type="text"
-                value={record.numberOfUnits}
-                onChange={(e) =>
-                  handleRecordChange(index, "numberOfUnits", e.target.value)
-                }
-                disabled={props.disabled}
-              />
+              >
+                Remove
+              </Button>
             </div>
           </div>
-          <div>
-            <Button
-              variant="danger"
-              size="small"
-              onClick={() => removeRecord(index)}
-              disabled={props.disabled}
-            >
-              Remove
-            </Button>
-          </div>
-        </div>
-      ))}
-      <Button onClick={addRecord} disabled={props.disabled}>
-        + Add Additional Line
-      </Button>
-    </div>
+        ))}
+        <Button
+          variant="secondary"
+          onClick={addRecord}
+          disabled={props.disabled}
+        >
+          + Add Additional Line
+        </Button>
+      </div>
+    </section>
   );
 };
