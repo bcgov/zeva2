@@ -4,6 +4,7 @@ All notable changes to this project are documented in this file.
 
 | Version | Date | Type | Change |
 | --- | --- | --- | --- |
+| [1.60.0](https://github.com/bcgov/zeva2/compare/v1.59.1...v1.60.0) | 2026-09-02 | ✨ Feature | can now create bceid users from user tab in vehicle supplier ([#655](https://github.com/bcgov/zeva2/issues/655)) ([e19cc14](https://github.com/bcgov/zeva2/commit/e19cc14f9cf27c6e5ad7116219b38938d2b4afda)) |
 | [1.59.1](https://github.com/bcgov/zeva2/compare/v1.59.0...v1.59.1) | 2026-08-31 | 🐛 Fix | misc fixes ([#650](https://github.com/bcgov/zeva2/issues/650)) ([2fa781b](https://github.com/bcgov/zeva2/commit/2fa781bf041c43c504557ab4773235846f671fb2)) |
 | [1.59.0](https://github.com/bcgov/zeva2/compare/v1.58.0...v1.59.0) | 2026-08-31 | ✨ Feature | total zev balance ([#649](https://github.com/bcgov/zeva2/issues/649)) ([9bae840](https://github.com/bcgov/zeva2/commit/9bae840c6dd70b62d97edb5b7342bbe91311a7e5)) |
 | [1.58.0](https://github.com/bcgov/zeva2/compare/v1.57.0...v1.58.0) | 2026-08-31 | ✨ Feature | vehicle suppliers - MYR list ([#647](https://github.com/bcgov/zeva2/issues/647)) ([5f33521](https://github.com/bcgov/zeva2/commit/5f33521dab6fe575dc68acc28ea7231fe1f4202f)) |
