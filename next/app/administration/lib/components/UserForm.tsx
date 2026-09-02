@@ -26,12 +26,14 @@ export const UserForm = ({
   orgsMap,
   userOrgId,
   govOrgId,
+  initialOrganizationId,
   isAdmin,
 }: {
   user?: UserModel;
   orgsMap?: Record<number, string>;
   userOrgId: string;
   govOrgId: string;
+  initialOrganizationId?: string;
   isAdmin: boolean;
 }) => {
   const router = useRouter();
@@ -86,12 +88,12 @@ export const UserForm = ({
     } else {
       const initialFormData = {
         isActive: "true",
-        organizationId: userOrgId,
+        organizationId: initialOrganizationId ?? userOrgId,
       };
       setForm(initialFormData);
       setInitialForm(initialFormData);
     }
-  }, [user, userOrgId]);
+  }, [user, userOrgId, initialOrganizationId]);
 
   useEffect(() => {
     if (user && !user.isActive) {

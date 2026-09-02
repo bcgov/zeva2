@@ -16,9 +16,15 @@ export interface UserTableProps {
   users: UserWithOrgName[];
   category: "bceid" | "idir" | "inactive" | "supplierSpecific";
   isAdmin: boolean;
+  createUserRoute?: string;
 }
 
-export const UserTable = ({ users, category, isAdmin }: UserTableProps) => {
+export const UserTable = ({
+  users,
+  category,
+  isAdmin,
+  createUserRoute,
+}: UserTableProps) => {
   const router = useRouter();
   const navigationAction = useCallback(
     async (id: number) => {
@@ -153,7 +159,9 @@ export const UserTable = ({ users, category, isAdmin }: UserTableProps) => {
             <Button
               variant="primary"
               size="regular"
-              onClick={() => router.push(`${Routes.GovAdministration}/new`)}
+              onClick={() =>
+                router.push(createUserRoute ?? `${Routes.GovAdministration}/new`)
+              }
             >
               <FontAwesomeIcon icon={faPlus} className="mr-2" />
               Create new user
