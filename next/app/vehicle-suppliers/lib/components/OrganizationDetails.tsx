@@ -31,35 +31,45 @@ const VolumeTable = (props: { title: string; volumes: Volume[] }) => {
   const modelYearsMap = getModelYearEnumsToStringsMap();
 
   return (
-    <div className="w-[455px] flex flex-col border border-disabledIcon rounded">
-      <div className="px-5 py-4 bg-disabledSurface font-bold">
-        {props.title}
-      </div>
+    <section className="min-w-0 overflow-hidden rounded border border-dividerMedium bg-white">
+      <h2 className="bg-disabledSurface px-5 py-4 font-bold">{props.title}</h2>
       <div className="overflow-x-auto">
-        <table className="w-full text-sm">
+        <table className="w-full min-w-[420px] border-collapse text-sm">
           <thead>
             <tr>
-              <th className="h-[60px] px-4 py-3 text-left font-bold border-b border-disabledIcon whitespace-nowrap">
+              <th
+                scope="col"
+                className="h-[60px] w-1/3 whitespace-nowrap border-b border-dividerMedium px-4 py-3 text-left font-bold"
+              >
                 Model Year
               </th>
-              <th className="h-[60px] px-4 py-3 text-left font-bold border-b border-disabledIcon whitespace-nowrap">
+              <th
+                scope="col"
+                className="h-[60px] w-1/3 whitespace-nowrap border-b border-dividerMedium px-4 py-3 text-left font-bold"
+              >
                 Vehicle Class
               </th>
-              <th className="h-[60px] px-4 py-3 text-left font-bold border-b border-disabledIcon whitespace-nowrap">
+              <th
+                scope="col"
+                className="h-[60px] w-1/3 whitespace-nowrap border-b border-dividerMedium px-4 py-3 text-left font-bold"
+              >
                 Volume
               </th>
             </tr>
           </thead>
           <tbody>
             {props.volumes.map((volume, index) => (
-              <tr key={index} className="odd:bg-lightGrey even:bg-white">
-                <td className="px-4 py-3 border-b border-disabledIcon whitespace-nowrap">
+              <tr
+                key={index}
+                className="odd:bg-lightGrey even:bg-white [&:last-child_td]:border-b-0"
+              >
+                <td className="h-[60px] whitespace-nowrap border-b border-dividerMedium px-4 py-3">
                   {modelYearsMap[volume.modelYear]}
                 </td>
-                <td className="px-4 py-3 border-b border-disabledIcon whitespace-nowrap">
+                <td className="h-[60px] whitespace-nowrap border-b border-dividerMedium px-4 py-3">
                   {vehicleClassMap[volume.vehicleClass]}
                 </td>
-                <td className="px-4 py-3 border-b border-disabledIcon whitespace-nowrap">
+                <td className="h-[60px] whitespace-nowrap border-b border-dividerMedium px-4 py-3">
                   {volume.volume}
                 </td>
               </tr>
@@ -67,7 +77,7 @@ const VolumeTable = (props: { title: string; volumes: Volume[] }) => {
           </tbody>
         </table>
       </div>
-    </div>
+    </section>
   );
 };
 
@@ -104,37 +114,39 @@ export const OrganizationDetails = (props: {
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex flex-col gap-6 self-start">
-        <div className="flex flex-col border border-dividerMedium rounded">
-          <div className="px-5 py-4 text-xl font-bold bg-disabledBG flex justify-between items-center">
-            Supplier Information
-            {props.canEdit && (
-              <Button
-                variant="secondary"
-                size="small"
-                onClick={() => setMode("edit")}
-              >
-                Edit
-              </Button>
-            )}
+      <section className="w-full max-w-3xl overflow-hidden rounded border border-dividerMedium bg-white">
+        <h2 className="flex min-h-[60px] items-center justify-between gap-4 bg-disabledSurface px-5 py-4 text-xl font-bold">
+          Supplier Information
+          {props.canEdit && (
+            <Button
+              variant="secondary"
+              size="small"
+              onClick={() => setMode("edit")}
+            >
+              Edit
+            </Button>
+          )}
+        </h2>
+        <div className="grid grid-cols-1 items-center gap-y-3 p-5 sm:grid-cols-[230px_minmax(0,1fr)]">
+          <div className="font-bold">Common Name:</div>
+          <div>{props.shortName ?? "N/A"}</div>
+          <hr className="col-span-full w-full border-disabledBG" />
+          <div className="font-bold">Records Address:</div>
+          <div className="min-w-0">
+            {formattedAddress(props.recordsAddress)}
           </div>
-          <div className="p-5 grid grid-cols-2 items-center gap-y-3">
-            <div className="font-bold">Common Name:</div>
-            <div>{props.shortName ?? "N/A"}</div>
-            <hr className="col-span-2 border-disabledBG" />
-            <div className="font-bold">Records Address:</div>
-            <div>{formattedAddress(props.recordsAddress)}</div>
-            <hr className="col-span-2 border-disabledBG" />
-            <div className="font-bold">Service Address:</div>
-            <div>{formattedAddress(props.serviceAddress)}</div>
-            <hr className="col-span-2 border-disabledBG" />
-            <div className="font-bold">Class:</div>
-            <div>{props.supplierClass}</div>
+          <hr className="col-span-full w-full border-disabledBG" />
+          <div className="font-bold">Service Address:</div>
+          <div className="min-w-0">
+            {formattedAddress(props.serviceAddress)}
           </div>
+          <hr className="col-span-full w-full border-disabledBG" />
+          <div className="font-bold">Class:</div>
+          <div>{props.supplierClass}</div>
         </div>
-      </div>
+      </section>
 
-      <div className="flex gap-6">
+      <div className="grid w-full max-w-6xl grid-cols-1 gap-6 lg:grid-cols-2">
         <VolumeTable title="Legacy Sales Volumes" volumes={props.saleVolumes} />
         <VolumeTable title="Supply Volumes" volumes={props.supplyVolumes} />
       </div>
