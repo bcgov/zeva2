@@ -3,6 +3,7 @@
 # - run semantic-release versioning
 # - if a new release is created, build images in the OpenShift Tools namespace
 # - deploy the released version to the OpenShift Dev environment
+# - optionally redeploy the latest existing release after a pipeline-only fix
 
 name: Dev Release
 
@@ -11,6 +12,12 @@ on:
     branches:
       - main
   workflow_dispatch:
+    inputs:
+      deploy_latest_release:
+        description: "Rebuild and deploy the latest existing release tag without creating a new release"
+        required: false
+        type: boolean
+        default: false
 
 permissions:
   contents: write
@@ -99,6 +106,7 @@ jobs:
           echo "tag=$(git describe --tags --abbrev=0 2>/dev/null || true)" >> "$GITHUB_OUTPUT"
 
       - name: Setup release config
+        if: ${{ !(github.event_name == 'workflow_dispatch' && inputs.deploy_latest_release) }}
         run: cp .releaserc.dev.cjs .releaserc.cjs
 
       # this step create a new tag or not, depending on semantic‑release formatting rules
@@ -107,6 +115,7 @@ jobs:
       #   fix: → patch
       #   BREAKING CHANGE (or type!:) → major
       - name: Run semantic-release for dev
+        if: ${{ !(github.event_name == 'workflow_dispatch' && inputs.deploy_latest_release) }}
         env:
           GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN }}
           GIT_AUTHOR_NAME: Zelda Team
@@ -147,6 +156,9 @@ jobs:
           if [ "${{ needs.release.outputs.release_is_new }}" = "true" ]; then
             echo "Release tag source: new (created by semantic-release)"
             echo "A new image build job is going to start shortly for the newly created release"
+          elif [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ "${{ inputs.deploy_latest_release }}" = "true" ]; then
+            echo "Release tag source: previous"
+            echo "Manual redeploy requested, so the latest existing release will be rebuilt and deployed to Dev."
           else
             echo "Release tag source: previous"
             echo "There is no new release created so no new image build is needed."
@@ -155,7 +167,7 @@ jobs:
   build-dev:
     name: Build Zeva2 for Dev
     needs: [install-oc, release, report-version]
-    if: needs.release.outputs.release_is_new == 'true'
+    if: ${{ needs.release.outputs.release_is_new == 'true' || (github.event_name == 'workflow_dispatch' && inputs.deploy_latest_release) }}
     permissions:
       contents: read
       id-token: write
