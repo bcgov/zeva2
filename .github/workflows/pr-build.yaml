@@ -89,6 +89,9 @@ jobs:
     name: Build Zeva2 PR Images
     needs: [gate, verify-pr-author, install-oc]
     if: needs.gate.outputs.should_run == 'true'
+    permissions:
+      contents: read
+      id-token: write
     uses: ./.github/workflows/build-template.yaml
     with:
       git_ref: ${{ needs.gate.outputs.pr_ref }}

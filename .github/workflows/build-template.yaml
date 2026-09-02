@@ -25,12 +25,15 @@ on:
 
 permissions:
   contents: read
+  id-token: write
 
 jobs:
   build:
     name: Build Zeva2
     runs-on: ubuntu-latest
     timeout-minutes: 60
+    env:
+      TOOLS_NAMESPACE: ${{ secrets.tools-namespace }}
 
     steps:
       - name: Check out repository
@@ -54,23 +57,197 @@ jobs:
           echo "VERSION=${{ inputs.version }}"
           oc projects
           cd openshift/templates
-          oc process -f ./next-bc.yaml VERSION=${{ inputs.version }} GIT_REF=${{ inputs.git_ref }} | oc apply --wait=true -f - -n ${{ secrets.tools-namespace }}
+          oc process -f ./next-bc.yaml VERSION=${{ inputs.version }} GIT_REF=${{ inputs.git_ref }} | oc apply --wait=true -f - -n "${TOOLS_NAMESPACE}"
           # cancel existing builds if there are any
-          for build in $(oc -n ${{ secrets.tools-namespace }} get builds -l buildconfig=zeva2-next-${{ inputs.version }} -o jsonpath='{.items[?(@.status.phase=="Running")].metadata.name}'); do
+          for build in $(oc -n "${TOOLS_NAMESPACE}" get builds -l buildconfig=zeva2-next-${{ inputs.version }} -o jsonpath='{.items[?(@.status.phase=="Running")].metadata.name}'); do
             echo "canceling $build"
-            oc -n ${{ secrets.tools-namespace }} cancel-build $build
+            oc -n "${TOOLS_NAMESPACE}" cancel-build $build
           done          
-          oc -n ${{ secrets.tools-namespace }} start-build zeva2-next-${{ inputs.version }} --wait=true
+          oc -n "${TOOLS_NAMESPACE}" start-build zeva2-next-${{ inputs.version }} --wait=true
 
       - name: Build Bullmq
         run: |
           echo "VERSION=${{ inputs.version }}"
           oc projects
           cd openshift/templates
-          oc process -f ./bullmq-bc.yaml VERSION=${{ inputs.version }} GIT_REF=${{ inputs.git_ref }} | oc apply --wait=true -f - -n ${{ secrets.tools-namespace }}
+          oc process -f ./bullmq-bc.yaml VERSION=${{ inputs.version }} GIT_REF=${{ inputs.git_ref }} | oc apply --wait=true -f - -n "${TOOLS_NAMESPACE}"
           # cancel existing builds if there are any
-          for build in $(oc -n ${{ secrets.tools-namespace }} get builds -l buildconfig=zeva2-bullmq-${{ inputs.version }} -o jsonpath='{.items[?(@.status.phase=="Running")].metadata.name}'); do
+          for build in $(oc -n "${TOOLS_NAMESPACE}" get builds -l buildconfig=zeva2-bullmq-${{ inputs.version }} -o jsonpath='{.items[?(@.status.phase=="Running")].metadata.name}'); do
             echo "canceling $build"
-            oc -n ${{ secrets.tools-namespace }} cancel-build $build
+            oc -n "${TOOLS_NAMESPACE}" cancel-build $build
           done               
-          oc -n ${{ secrets.tools-namespace }} start-build zeva2-bullmq-${{ inputs.version }} --wait=true
+          oc -n "${TOOLS_NAMESPACE}" start-build zeva2-bullmq-${{ inputs.version }} --wait=true
+
+      - name: Resolve built image references
+        id: image_refs
+        shell: bash
+        run: |
+          set -euo pipefail
+          registry=$(oc registry info --public 2>/dev/null || true)
+          if [ -z "${registry}" ]; then
+            registry=$(oc registry info)
+          fi
+          next_image_digest=$(oc -n "${TOOLS_NAMESPACE}" get istag "zeva2-next:${{ inputs.version }}" -o jsonpath='{.image.metadata.name}')
+          bullmq_image_digest=$(oc -n "${TOOLS_NAMESPACE}" get istag "zeva2-bullmq:${{ inputs.version }}" -o jsonpath='{.image.metadata.name}')
+          for digest in "$next_image_digest" "$bullmq_image_digest"; do
+            [[ "$digest" == sha256:* ]] || { echo "Invalid image digest: $digest"; exit 1; }
+          done
+          echo "registry=${registry}" >> "$GITHUB_OUTPUT"
+          echo "next_image_digest=${next_image_digest}" >> "$GITHUB_OUTPUT"
+          echo "bullmq_image_digest=${bullmq_image_digest}" >> "$GITHUB_OUTPUT"
+          echo "next_image_ref=${registry}/${TOOLS_NAMESPACE}/zeva2-next@${next_image_digest}" >> "$GITHUB_OUTPUT"
+          echo "bullmq_image_ref=${registry}/${TOOLS_NAMESPACE}/zeva2-bullmq@${bullmq_image_digest}" >> "$GITHUB_OUTPUT"
+
+      - name: Write release artifact metadata
+        shell: bash
+        run: |
+          set -euo pipefail
+          source_commit=$(git rev-parse HEAD)
+          jq -n \
+            --arg version "${{ inputs.version }}" \
+            --arg git_ref "${{ inputs.git_ref }}" \
+            --arg source_repository "${{ github.repository }}" \
+            --arg source_commit "${source_commit}" \
+            --arg workflow "${{ github.workflow }}" \
+            --arg run_id "${{ github.run_id }}" \
+            --arg run_attempt "${{ github.run_attempt }}" \
+            --arg registry "${{ steps.image_refs.outputs.registry }}" \
+            --arg tools_namespace "${TOOLS_NAMESPACE}" \
+            --arg next_image_name "zeva2-next" \
+            --arg next_image_digest "${{ steps.image_refs.outputs.next_image_digest }}" \
+            --arg next_image_ref "${{ steps.image_refs.outputs.next_image_ref }}" \
+            --arg bullmq_image_name "zeva2-bullmq" \
+            --arg bullmq_image_digest "${{ steps.image_refs.outputs.bullmq_image_digest }}" \
+            --arg bullmq_image_ref "${{ steps.image_refs.outputs.bullmq_image_ref }}" \
+            '{
+              version: $version,
+              gitRef: $git_ref,
+              source: {
+                repository: $source_repository,
+                commit: $source_commit
+              },
+              workflow: {
+                name: $workflow,
+                runId: $run_id,
+                runAttempt: $run_attempt
+              },
+              registry: $registry,
+              namespace: $tools_namespace,
+              images: [
+                {
+                  name: $next_image_name,
+                  digest: $next_image_digest,
+                  ref: $next_image_ref
+                },
+                {
+                  name: $bullmq_image_name,
+                  digest: $bullmq_image_digest,
+                  ref: $bullmq_image_ref
+                }
+              ]
+            }' > "release-artifacts-${{ inputs.version }}.json"
+
+      - name: Upload release artifact metadata
+        uses: actions/upload-artifact@v7.0.0
+        with:
+          name: release-artifacts-${{ inputs.version }}
+          path: release-artifacts-${{ inputs.version }}.json
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Log in to OpenShift image registry
+        shell: bash
+        run: |
+          set -euo pipefail
+          oc whoami -t | docker login "$(oc registry info --public 2>/dev/null || oc registry info)" --username openshift --password-stdin
+
+      - name: Install Cosign
+        uses: sigstore/cosign-installer@v4.1.2
+
+      - name: Sign built image digests
+        shell: bash
+        run: |
+          set -euo pipefail
+          cosign sign --yes "${{ steps.image_refs.outputs.next_image_ref }}"
+          cosign sign --yes "${{ steps.image_refs.outputs.bullmq_image_ref }}"
+
+      - name: Verify image signatures
+        shell: bash
+        run: |
+          set -euo pipefail
+          certificate_identity_regexp="^https://github.com/${{ github.repository }}/.github/workflows/.+@refs/.+$"
+          cosign verify \
+            --certificate-identity-regexp "${certificate_identity_regexp}" \
+            --certificate-oidc-issuer "https://token.actions.githubusercontent.com" \
+            "${{ steps.image_refs.outputs.next_image_ref }}"
+          cosign verify \
+            --certificate-identity-regexp "${certificate_identity_regexp}" \
+            --certificate-oidc-issuer "https://token.actions.githubusercontent.com" \
+            "${{ steps.image_refs.outputs.bullmq_image_ref }}"
+
+      - name: Generate Next image SBOM
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          scan-type: image
+          image-ref: ${{ steps.image_refs.outputs.next_image_ref }}
+          format: cyclonedx
+          output: zeva2-next-${{ inputs.version }}-sbom.cdx.json
+
+      - name: Generate Bullmq image SBOM
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          scan-type: image
+          image-ref: ${{ steps.image_refs.outputs.bullmq_image_ref }}
+          format: cyclonedx
+          output: zeva2-bullmq-${{ inputs.version }}-sbom.cdx.json
+
+      - name: Scan Next image vulnerabilities
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          scan-type: image
+          image-ref: ${{ steps.image_refs.outputs.next_image_ref }}
+          format: json
+          output: zeva2-next-${{ inputs.version }}-vulnerability-report.json
+          severity: UNKNOWN,LOW,MEDIUM,HIGH,CRITICAL
+          exit-code: 0
+
+      - name: Scan Bullmq image vulnerabilities
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          scan-type: image
+          image-ref: ${{ steps.image_refs.outputs.bullmq_image_ref }}
+          format: json
+          output: zeva2-bullmq-${{ inputs.version }}-vulnerability-report.json
+          severity: UNKNOWN,LOW,MEDIUM,HIGH,CRITICAL
+          exit-code: 0
+
+      - name: Gate Next image on critical vulnerabilities
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          scan-type: image
+          image-ref: ${{ steps.image_refs.outputs.next_image_ref }}
+          format: table
+          severity: CRITICAL
+          exit-code: 1
+
+      - name: Gate Bullmq image on critical vulnerabilities
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          scan-type: image
+          image-ref: ${{ steps.image_refs.outputs.bullmq_image_ref }}
+          format: table
+          severity: CRITICAL
+          exit-code: 1
+
+      - name: Upload image security reports
+        if: always()
+        uses: actions/upload-artifact@v7.0.0
+        with:
+          name: image-security-reports-${{ inputs.version }}
+          path: |
+            zeva2-next-${{ inputs.version }}-sbom.cdx.json
+            zeva2-bullmq-${{ inputs.version }}-sbom.cdx.json
+            zeva2-next-${{ inputs.version }}-vulnerability-report.json
+            zeva2-bullmq-${{ inputs.version }}-vulnerability-report.json
+          if-no-files-found: error
+          retention-days: 30
