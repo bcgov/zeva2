@@ -164,30 +164,24 @@ jobs:
       - name: Install Cosign
         uses: sigstore/cosign-installer@v4.1.2
 
-      - name: Sign built image digests
+      - name: Sign release metadata containing image digests
         shell: bash
-        env:
-          COSIGN_DOCKER_MEDIA_TYPES: "1"
         run: |
           set -euo pipefail
-          cosign sign --yes "${{ steps.image_refs.outputs.next_image_ref }}"
-          cosign sign --yes "${{ steps.image_refs.outputs.bullmq_image_ref }}"
+          cosign sign-blob --yes \
+            --bundle "release-artifacts-${{ inputs.version }}.sigstore.json" \
+            "release-artifacts-${{ inputs.version }}.json"
 
-      - name: Verify image signatures
+      - name: Verify signed release metadata
         shell: bash
-        env:
-          COSIGN_DOCKER_MEDIA_TYPES: "1"
         run: |
           set -euo pipefail
           certificate_identity_regexp="^https://github.com/${{ github.repository }}/.github/workflows/.+@refs/.+$"
-          cosign verify \
+          cosign verify-blob \
+            --bundle "release-artifacts-${{ inputs.version }}.sigstore.json" \
             --certificate-identity-regexp "${certificate_identity_regexp}" \
             --certificate-oidc-issuer "https://token.actions.githubusercontent.com" \
-            "${{ steps.image_refs.outputs.next_image_ref }}"
-          cosign verify \
-            --certificate-identity-regexp "${certificate_identity_regexp}" \
-            --certificate-oidc-issuer "https://token.actions.githubusercontent.com" \
-            "${{ steps.image_refs.outputs.bullmq_image_ref }}"
+            "release-artifacts-${{ inputs.version }}.json"
 
       - name: Generate Next image SBOM
         uses: aquasecurity/trivy-action@v0.36.0
@@ -253,5 +247,6 @@ jobs:
             zeva2-bullmq-${{ inputs.version }}-sbom.cdx.json
             zeva2-next-${{ inputs.version }}-vulnerability-report.json
             zeva2-bullmq-${{ inputs.version }}-vulnerability-report.json
+            release-artifacts-${{ inputs.version }}.sigstore.json
           if-no-files-found: error
           retention-days: 30
