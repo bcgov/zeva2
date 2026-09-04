@@ -15,6 +15,11 @@ on:
       version:
         required: true
         type: string
+      # Whether Critical vulnerabilities with available fixes should fail the build.
+      enforce_vulnerability_gate:
+        required: false
+        type: boolean
+        default: false
     secrets:
       tools-namespace:
         required: true
@@ -265,6 +270,7 @@ jobs:
 
       - name: Gate Next image on critical vulnerabilities
         uses: aquasecurity/trivy-action@v0.36.0
+        continue-on-error: ${{ !inputs.enforce_vulnerability_gate }}
         with:
           scan-type: image
           image-ref: ${{ steps.image_refs.outputs.next_image_ref }}
@@ -275,6 +281,7 @@ jobs:
 
       - name: Gate Bullmq image on critical vulnerabilities
         uses: aquasecurity/trivy-action@v0.36.0
+        continue-on-error: ${{ !inputs.enforce_vulnerability_gate }}
         with:
           scan-type: image
           image-ref: ${{ steps.image_refs.outputs.bullmq_image_ref }}
