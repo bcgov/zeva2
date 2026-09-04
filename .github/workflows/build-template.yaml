@@ -219,6 +219,50 @@ jobs:
           severity: UNKNOWN,LOW,MEDIUM,HIGH,CRITICAL
           exit-code: 0
 
+      - name: Create grouped Critical vulnerability report
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          create_report() {
+            local image_name="$1"
+            local report_file="$2"
+            local output_file="$3"
+
+            {
+              echo "# Critical vulnerabilities: ${image_name}"
+              echo
+              echo "Generated from the Trivy report for the immutable image digest."
+              echo
+              echo "| CVE | Package | Installed | Fixed version | Status |"
+              echo "| --- | --- | --- | --- | --- |"
+              jq -r '
+                [.Results[]?.Vulnerabilities[]?
+                  | select(.Severity == "CRITICAL")
+                  | {
+                      id: .VulnerabilityID,
+                      package: .PkgName,
+                      installed: .InstalledVersion,
+                      fixed: (.FixedVersion // ""),
+                      status: (.Status // "unknown")
+                    }
+                ]
+                | sort_by([.id, .package, .installed, .fixed])
+                | .[]
+                | "| \(.id) | \(.package) | \(.installed) | \(if .fixed == "" then "No fix available" else .fixed end) | \(.status) |"
+              ' "$report_file"
+            } > "$output_file"
+          }
+
+          create_report \
+            "zeva2-next" \
+            "zeva2-next-${{ inputs.version }}-vulnerability-report.json" \
+            "zeva2-next-${{ inputs.version }}-critical-summary.md"
+          create_report \
+            "zeva2-bullmq" \
+            "zeva2-bullmq-${{ inputs.version }}-vulnerability-report.json" \
+            "zeva2-bullmq-${{ inputs.version }}-critical-summary.md"
+
       - name: Gate Next image on critical vulnerabilities
         uses: aquasecurity/trivy-action@v0.36.0
         with:
@@ -249,6 +293,8 @@ jobs:
             zeva2-bullmq-${{ inputs.version }}-sbom.cdx.json
             zeva2-next-${{ inputs.version }}-vulnerability-report.json
             zeva2-bullmq-${{ inputs.version }}-vulnerability-report.json
+            zeva2-next-${{ inputs.version }}-critical-summary.md
+            zeva2-bullmq-${{ inputs.version }}-critical-summary.md
             release-artifacts-${{ inputs.version }}.sigstore.json
           if-no-files-found: error
           retention-days: 30
