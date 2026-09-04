@@ -1,80 +1,84 @@
-import { AgreementStatus, AgreementType } from "@/prisma/generated/enums";
+import { AgreementType } from "@/prisma/generated/enums";
 import { ZevUnitRecord } from "@/lib/utils/zevUnit";
 import {
-  getAgreementStatusEnumsToStringsMap,
   getAgreementTypeEnumsToStringsMap,
   getModelYearEnumsToStringsMap,
   getVehicleClassEnumsToStringsMap,
   getZevClassEnumsToStringsMap,
 } from "@/app/lib/utils/enumMaps";
 
-const mainDivClass = "grid grid-cols-[220px_1fr]";
-const fieldLabelClass = "py-1 font-semibold text-primaryBlue";
+const Section = ({
+  title,
+  children,
+}: {
+  title: string;
+  children: React.ReactNode;
+}) => (
+  <section className="overflow-hidden rounded border border-dividerMedium bg-white">
+    <h2 className="bg-disabledSurface px-5 py-4 text-xl font-bold text-black">
+      {title}
+    </h2>
+    <div className="p-5">{children}</div>
+  </section>
+);
 
 export const AgreementDetails = (props: {
-  id: number;
   supplier: string;
   type: AgreementType;
-  status: AgreementStatus;
   date: string;
   content: Omit<ZevUnitRecord, "type">[];
 }) => {
-  const statusMap = getAgreementStatusEnumsToStringsMap();
   const typesMap = getAgreementTypeEnumsToStringsMap();
   const vehicleClassMap = getVehicleClassEnumsToStringsMap();
   const zevClassesMap = getZevClassEnumsToStringsMap();
   const modelYearsMap = getModelYearEnumsToStringsMap();
   return (
-    <>
-      <h2 className="text-xl font-semibold text-primaryBlue pb-4">
-        {typesMap[props.type]} Agreement
-      </h2>
-      <div>
-        <div className={mainDivClass}>
-          <span className={fieldLabelClass}>ID:</span> {props.id}
-        </div>
-        <div className={mainDivClass}>
-          <span className={fieldLabelClass}>Supplier:</span> {props.supplier}
-        </div>
-        <div className={mainDivClass}>
-          <span className={fieldLabelClass}>Status:</span>{" "}
-          {statusMap[props.status]}
-        </div>
-        <div className={mainDivClass}>
-          <span className={fieldLabelClass}>Date:</span> {props.date}
-        </div>
-        <div className="mt-4">
-          <p className={fieldLabelClass}>ZEV Units</p>
-          <table>
+    <div className="flex flex-col gap-4">
+      <Section title="Transfer Details">
+        <dl className="flex flex-wrap items-center gap-x-5 gap-y-2 text-lg">
+          <div className="flex gap-2 border-r border-dividerMedium pr-5">
+            <dt className="font-bold text-secondaryText">Supplier:</dt>
+            <dd>{props.supplier}</dd>
+          </div>
+          <div className="flex gap-2 border-r border-dividerMedium pr-5">
+            <dt className="font-bold text-secondaryText">Agreement Type:</dt>
+            <dd>{typesMap[props.type]}</dd>
+          </div>
+          <div className="flex gap-2">
+            <dt className="font-bold text-secondaryText">Date:</dt>
+            <dd>{props.date}</dd>
+          </div>
+        </dl>
+      </Section>
+      <Section title="ZEV Units">
+        <div className="overflow-x-auto rounded border border-dividerMedium">
+          <table className="w-full border-collapse text-left">
             <thead>
-              <tr>
-                <th className="border border-gray-300">Vehicle Class</th>
-                <th className="border border-gray-300">ZEV Class</th>
-                <th className="border border-gray-300">Model Year</th>
-                <th className="border border-gray-300">Number of Units</th>
+              <tr className="h-[60px] border-b border-dividerMedium">
+                <th className="px-4">Vehicle Class</th>
+                <th className="px-4">ZEV Class</th>
+                <th className="px-4">Model Year</th>
+                <th className="px-4">Number of Units</th>
               </tr>
             </thead>
             <tbody>
               {props.content.map((record, index) => (
-                <tr key={index}>
-                  <td className="border border-gray-300">
+                <tr
+                  key={index}
+                  className="h-[60px] border-b border-dividerMedium last:border-b-0"
+                >
+                  <td className="px-4">
                     {vehicleClassMap[record.vehicleClass]}
                   </td>
-                  <td className="border border-gray-300">
-                    {zevClassesMap[record.zevClass]}
-                  </td>
-                  <td className="border border-gray-300">
-                    {modelYearsMap[record.modelYear]}
-                  </td>
-                  <td className="border border-gray-300">
-                    {record.numberOfUnits.toFixed(2)}
-                  </td>
+                  <td className="px-4">{zevClassesMap[record.zevClass]}</td>
+                  <td className="px-4">{modelYearsMap[record.modelYear]}</td>
+                  <td className="px-4">{record.numberOfUnits.toString()}</td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
-      </div>
-    </>
+      </Section>
+    </div>
   );
 };

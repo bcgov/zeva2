@@ -12,12 +12,10 @@ export const NewPage = async () => {
 
   return (
     <div className="p-6">
-      <h2 className="text-xl font-semibold text-primaryBlue pb-4">
-        Create an Agreement
-      </h2>
-      <div className="bg-white rounded-lg shadow-level-1 p-6">
-        <AgreementForm type="new" orgsMap={orgsMap} />
-      </div>
+      <h1 className="mb-4 rounded-t bg-primaryBlue px-5 py-4 text-2xl font-bold text-white">
+        New Credit Agreement
+      </h1>
+      <AgreementForm type="new" orgsMap={orgsMap} />
     </div>
   );
 };
