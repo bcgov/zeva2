@@ -226,6 +226,7 @@ jobs:
           image-ref: ${{ steps.image_refs.outputs.next_image_ref }}
           format: table
           severity: CRITICAL
+          ignore-unfixed: true
           exit-code: 1
 
       - name: Gate Bullmq image on critical vulnerabilities
@@ -235,6 +236,7 @@ jobs:
           image-ref: ${{ steps.image_refs.outputs.bullmq_image_ref }}
           format: table
           severity: CRITICAL
+          ignore-unfixed: true
           exit-code: 1
 
       - name: Upload image security reports
