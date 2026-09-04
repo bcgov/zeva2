@@ -164,27 +164,31 @@ jobs:
       - name: Install Cosign
         uses: sigstore/cosign-installer@v4.1.2
 
-      - name: Sign built image digests
+      - name: Sign built image digests into Sigstore bundles
         shell: bash
-        env:
-          COSIGN_DOCKER_MEDIA_TYPES: "1"
         run: |
           set -euo pipefail
-          cosign sign --yes "${{ steps.image_refs.outputs.next_image_ref }}"
-          cosign sign --yes "${{ steps.image_refs.outputs.bullmq_image_ref }}"
+          cosign sign --yes \
+            --bundle "zeva2-next-${{ inputs.version }}.sigstore.json" \
+            --upload=false \
+            "${{ steps.image_refs.outputs.next_image_ref }}"
+          cosign sign --yes \
+            --bundle "zeva2-bullmq-${{ inputs.version }}.sigstore.json" \
+            --upload=false \
+            "${{ steps.image_refs.outputs.bullmq_image_ref }}"
 
       - name: Verify image signatures
         shell: bash
-        env:
-          COSIGN_DOCKER_MEDIA_TYPES: "1"
         run: |
           set -euo pipefail
           certificate_identity_regexp="^https://github.com/${{ github.repository }}/.github/workflows/.+@refs/.+$"
           cosign verify \
+            --bundle "zeva2-next-${{ inputs.version }}.sigstore.json" \
             --certificate-identity-regexp "${certificate_identity_regexp}" \
             --certificate-oidc-issuer "https://token.actions.githubusercontent.com" \
             "${{ steps.image_refs.outputs.next_image_ref }}"
           cosign verify \
+            --bundle "zeva2-bullmq-${{ inputs.version }}.sigstore.json" \
             --certificate-identity-regexp "${certificate_identity_regexp}" \
             --certificate-oidc-issuer "https://token.actions.githubusercontent.com" \
             "${{ steps.image_refs.outputs.bullmq_image_ref }}"
@@ -253,5 +257,7 @@ jobs:
             zeva2-bullmq-${{ inputs.version }}-sbom.cdx.json
             zeva2-next-${{ inputs.version }}-vulnerability-report.json
             zeva2-bullmq-${{ inputs.version }}-vulnerability-report.json
+            zeva2-next-${{ inputs.version }}.sigstore.json
+            zeva2-bullmq-${{ inputs.version }}.sigstore.json
           if-no-files-found: error
           retention-days: 30
