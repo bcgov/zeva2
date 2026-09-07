@@ -33,9 +33,10 @@ import { validateDate } from "@/app/lib/utils/date";
 import { contentIsValid } from "../utilsClient";
 import { isAgreementType } from "@/app/lib/utils/typeGuards";
 import { AgreementContentRecord } from "../constants";
+import { BackButton } from "@/app/lib/components/BackButton";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faFloppyDisk } from "@fortawesome/free-solid-svg-icons";
 
-const mainDivClass = "grid grid-cols-[220px_1fr]";
-const fieldLabelClass = "py-1 font-semibold text-primaryBlue";
 const fieldContentClass = "p-1 border border-gray-300 rounded";
 
 type NewProps = {
@@ -205,67 +206,85 @@ export const AgreementForm = (props: NewProps | SavedProps) => {
   }, [props.type, files, agreementId, orgId, agreementType, date, content]);
 
   return (
-    <div className="space-y-4 mb-10">
-      {orgsMap && (
-        <div className={mainDivClass}>
-          <span className={fieldLabelClass}>Supplier</span>
-          <div className="w-60">
-            <Dropdown
-              placeholder="Select an Option"
-              options={Object.entries(orgsMap).map(([id, name]) => ({
-                value: id,
-                label: name ?? "",
-              }))}
-              value={orgId?.toString() ?? ""}
-              onChange={handleOrgSelect}
-              disabled={props.type === "saved" || isPending}
+    <div className="mb-10 flex flex-col gap-4">
+      <section className="overflow-hidden rounded border border-dividerMedium bg-white">
+        <h2 className="bg-disabledSurface px-5 py-4 text-xl font-bold">
+          Transfer Details
+        </h2>
+        <div className="grid grid-cols-1 gap-5 p-5 lg:grid-cols-3">
+          {orgsMap && (
+            <div>
+              <span className="mb-1 block">Supplier</span>
+              <div>
+                <Dropdown
+                  placeholder="Select an Option"
+                  options={Object.entries(orgsMap).map(([id, name]) => ({
+                    value: id,
+                    label: name ?? "",
+                  }))}
+                  value={orgId?.toString() ?? ""}
+                  onChange={handleOrgSelect}
+                  disabled={props.type === "saved" || isPending}
+                />
+              </div>
+            </div>
+          )}
+          <div>
+            <span className="mb-1 block">Agreement Type</span>
+            <div>
+              <Dropdown
+                placeholder="Select an Option"
+                options={typeOptions}
+                value={agreementType ?? ""}
+                onChange={(value) => handleChange("agreementType", value)}
+                disabled={props.type === "saved" || isPending}
+              />
+            </div>
+          </div>
+          <div>
+            <span className="mb-1 block">Date</span>
+            <input
+              className={fieldContentClass + " h-10 w-full"}
+              type="date"
+              value={date ?? ""}
+              placeholder="YYYY-MM-DD"
+              onChange={(e) => handleChange("date", e.target.value)}
+              disabled={isPending}
             />
           </div>
         </div>
-      )}
-      <div className={mainDivClass}>
-        <span className={fieldLabelClass}>Agreement Type</span>
-        <div className="w-60">
-          <Dropdown
-            placeholder="Select an Option"
-            options={typeOptions}
-            value={agreementType ?? ""}
-            onChange={(value) => handleChange("agreementType", value)}
-            disabled={props.type === "saved" || isPending}
-          />
-        </div>
-      </div>
-      <div className={mainDivClass}>
-        <span className={fieldLabelClass}>Date</span>
-        <input
-          className={fieldContentClass + " w-60"}
-          type="date"
-          value={date ?? ""}
-          placeholder="YYYY-MM-DD"
-          onChange={(e) => handleChange("date", e.target.value)}
-          disabled={isPending}
-        />
-      </div>
+      </section>
       <AgreementContent
         content={content}
         setContent={setContent}
         disabled={isPending}
       />
-      <div>
-        <p className={fieldLabelClass}>Supporting Documents</p>
-        <Dropzone
-          files={files}
-          setFiles={setFiles}
-          disabled={isPending}
-          maxNumberOfFiles={10}
-        />
-      </div>
+      <section className="overflow-hidden rounded border border-dividerMedium bg-white">
+        <h2 className="bg-disabledSurface px-5 py-4 text-xl font-bold">
+          Supporting Documents (optional)
+        </h2>
+        <div className="p-5">
+          <Dropzone
+            files={files}
+            setFiles={setFiles}
+            disabled={isPending}
+            maxNumberOfFiles={10}
+          />
+        </div>
+      </section>
       {error && <p className="text-red-600">{error}</p>}
-      <div>
-        <Button variant="primary" disabled={isPending} onClick={handleSubmit}>
-          Save
+      <footer className="flex min-h-20 items-center justify-between bg-gray-50 px-5">
+        <BackButton />
+        <Button
+          variant="primary"
+          disabled={isPending}
+          onClick={handleSubmit}
+          icon={<FontAwesomeIcon icon={faFloppyDisk} />}
+          iconPosition="right"
+        >
+          Save &amp; Continue
         </Button>
-      </div>
+      </footer>
     </div>
   );
 };

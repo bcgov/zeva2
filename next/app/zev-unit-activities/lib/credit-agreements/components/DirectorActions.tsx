@@ -9,6 +9,7 @@ import { getNormalizedComment } from "@/app/lib/utils/comment";
 import { Textarea } from "@/app/lib/components/inputs/Textarea";
 import { Routes } from "@/app/lib/constants";
 import { Modal, ModalType } from "@/app/lib/components/Modal";
+import { BackButton } from "@/app/lib/components/BackButton";
 
 export const DirectorActions = (props: {
   agreementId: number;
@@ -88,19 +89,26 @@ export const DirectorActions = (props: {
 
   return (
     <>
-      <div className="mt-4">
-        <p className="py-1 font-semibold text-primaryBlue">Optional Comment</p>
-        <Textarea value={comment} onChange={setComment} />
-      </div>
-      <div className="flex flex-row gap-12 my-4">
-        {error && <p className="text-red-600">{error}</p>}
-        <Button variant="secondary" onClick={() => showModal("return")}>
-          Return to Analyst
-        </Button>
-        <Button variant="primary" onClick={() => showModal("issue")}>
-          Issue
-        </Button>
-      </div>
+      <section className="overflow-hidden rounded border border-dividerMedium bg-white">
+        <h2 className="bg-disabledSurface px-5 py-4 text-xl font-bold">
+          Comment (optional)
+        </h2>
+        <div className="max-w-3xl p-5">
+          <Textarea value={comment} onChange={setComment} />
+        </div>
+      </section>
+      {error && <p className="text-red-600">{error}</p>}
+      <footer className="flex min-h-20 items-center justify-between gap-4 bg-gray-50 px-5">
+        <BackButton />
+        <div className="flex gap-4">
+          <Button variant="secondary" onClick={() => showModal("return")}>
+            Return to Analyst
+          </Button>
+          <Button variant="primary" onClick={() => showModal("issue")}>
+            Issue
+          </Button>
+        </div>
+      </footer>
       {modal}
     </>
   );

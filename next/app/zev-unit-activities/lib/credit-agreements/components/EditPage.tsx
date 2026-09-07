@@ -32,10 +32,10 @@ export const EditPage = async (props: { id: string }) => {
   const orgsMap = await getOrgsMap(null, true);
   return (
     <div className="p-6">
-      <h2 className="text-xl font-semibold text-primaryBlue pb-4">
-        Edit an Agreement
-      </h2>
-      <div className="bg-white rounded-lg shadow-level-1 p-6">
+      <h1 className="mb-4 rounded-t bg-primaryBlue px-5 py-4 text-2xl font-bold text-white">
+        Edit Credit Agreement
+      </h1>
+      <div>
         <AgreementForm
           type="saved"
           orgsMap={orgsMap}
