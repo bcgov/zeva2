@@ -31,17 +31,26 @@ export const analystCreate = async (
   data: PenaltyCreditPayload,
 ): Promise<DataOrErrorActionResponse<number>> => {
   let result = NaN;
-  const { userIsGov, userRoles } = await getUserInfo();
+  const { userIsGov, userId, userRoles } = await getUserInfo();
   if (!(userIsGov && userRoles.includes(Role.ZEVA_IDIR_USER))) {
     return getErrorActionResponse("Unauthorized!");
   }
-  const { id: penaltyCreditId } = await prisma.penaltyCredit.create({
-    data: {
-      ...data,
-      status: PenaltyCreditStatus.DRAFT,
-    },
+  result = await prisma.$transaction(async (tx) => {
+    const { id: penaltyCreditId } = await tx.penaltyCredit.create({
+      data: {
+        ...data,
+        status: PenaltyCreditStatus.DRAFT,
+      },
+    });
+    await createHistory(
+      penaltyCreditId,
+      userId,
+      PenaltyCreditStatus.DRAFT,
+      undefined,
+      tx,
+    );
+    return penaltyCreditId;
   });
-  result = penaltyCreditId;
   return getDataActionResponse<number>(result);
 };
 
