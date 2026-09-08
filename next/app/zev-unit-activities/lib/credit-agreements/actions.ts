@@ -84,7 +84,7 @@ export const createAgreement = async (
   attachments: Attachment[],
 ): Promise<DataOrErrorActionResponse<number>> => {
   let agreementId = NaN;
-  const { userIsGov, userRoles } = await getUserInfo();
+  const { userIsGov, userId, userRoles } = await getUserInfo();
   if (!userIsGov || !userRoles.includes(Role.ZEVA_IDIR_USER)) {
     return getErrorActionResponse("Unauthorized!");
   }
@@ -109,6 +109,13 @@ export const createAgreement = async (
         return { agreementId, ...record };
       }),
     });
+    await createHistory(
+      agreementId,
+      userId,
+      AgreementStatus.DRAFT,
+      undefined,
+      tx,
+    );
     await createAttachments(agreementId, attachments, tx);
   });
   return getDataActionResponse(agreementId);
@@ -120,7 +127,7 @@ export const saveAgreement = async (
   content: AgreementContentPayload[],
   attachments: Attachment[],
 ): Promise<DataOrErrorActionResponse<number>> => {
-  const { userIsGov, userRoles } = await getUserInfo();
+  const { userIsGov, userId, userRoles } = await getUserInfo();
   if (!userIsGov || !userRoles.includes(Role.ZEVA_IDIR_USER)) {
     return getErrorActionResponse("Unauthorized!");
   }
@@ -159,6 +166,13 @@ export const saveAgreement = async (
         bCredits,
       },
     });
+    await createHistory(
+      agreementId,
+      userId,
+      AgreementStatus.DRAFT,
+      undefined,
+      tx,
+    );
   });
   return getDataActionResponse(agreementId);
 };

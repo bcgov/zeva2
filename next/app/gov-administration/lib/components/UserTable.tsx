@@ -160,7 +160,9 @@ export const UserTable = ({
               variant="primary"
               size="regular"
               onClick={() =>
-                router.push(createUserRoute ?? `${Routes.GovAdministration}/new`)
+                router.push(
+                  createUserRoute ?? `${Routes.GovAdministration}/new`,
+                )
               }
             >
               <FontAwesomeIcon icon={faPlus} className="mr-2" />

@@ -63,10 +63,10 @@ export const IndividualPage = async (props: { id: string }) => {
     return getAgreementAttachmentDownloadUrls(agreementId);
   };
   const presentation = statusPresentation[status];
-  const latestHistory = histories
-    .slice()
-    .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime())
-    .find((history) => history.userAction === status);
+  // assumes histories are in ascending order
+  const latestHistory = histories.findLast(
+    (history) => history.userAction === status,
+  );
   const statusText = latestHistory
     ? `${presentation.verb} ${getIsoYmdString(latestHistory.timestamp)} by ${latestHistory.user.firstName} ${latestHistory.user.lastName}.`
     : `${presentation.verb}.`;
