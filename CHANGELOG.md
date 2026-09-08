@@ -4,6 +4,7 @@ All notable changes to this project are documented in this file.
 
 | Version | Date | Type | Change |
 | --- | --- | --- | --- |
+| [1.62.1](https://github.com/bcgov/zeva2/compare/v1.62.0...v1.62.1) | 2026-09-08 | 🐛 Fix | misc fixes ([#674](https://github.com/bcgov/zeva2/issues/674)) ([44f5a49](https://github.com/bcgov/zeva2/commit/44f5a49dc3781920b847c582a3c89dc437e7f583)) |
 | [1.62.0](https://github.com/bcgov/zeva2/compare/v1.61.0...v1.62.0) | 2026-09-07 | ✨ Feature | updated credit agreement pages and statuses for idir and bceid [#627](https://github.com/bcgov/zeva2/issues/627) ([#669](https://github.com/bcgov/zeva2/issues/669)) ([ee78682](https://github.com/bcgov/zeva2/commit/ee78682cddad107f034286d9d79027c733891c76)) |
 | [1.61.0](https://github.com/bcgov/zeva2/compare/v1.60.0...v1.61.0) | 2026-09-07 | ✨ Feature | penalty credit status boards ([#664](https://github.com/bcgov/zeva2/issues/664)) ([8dafb47](https://github.com/bcgov/zeva2/commit/8dafb472f08e392a433670bd6ce59a01eebb950f)) |
 | [1.60.0](https://github.com/bcgov/zeva2/compare/v1.59.1...v1.60.0) | 2026-09-02 | ✨ Feature | can now create bceid users from user tab in vehicle supplier ([#655](https://github.com/bcgov/zeva2/issues/655)) ([e19cc14](https://github.com/bcgov/zeva2/commit/e19cc14f9cf27c6e5ad7116219b38938d2b4afda)) |
