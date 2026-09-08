@@ -16,8 +16,6 @@ import {
 } from "@/app/lib/utils/typeGuards";
 import { AgreementContentRecord } from "../constants";
 
-const fieldContentClass = "p-1 border border-gray-300 rounded";
-
 export const AgreementContent = (props: {
   content: AgreementContentRecord[];
   setContent: Dispatch<SetStateAction<AgreementContentRecord[]>>;
@@ -149,7 +147,7 @@ export const AgreementContent = (props: {
                   Number of Units
                 </label>
                 <input
-                  className={fieldContentClass + " text-right"}
+                  className={`px-4 py-2.5 rounded border border-dividerMedium text-sm ${props.disabled ? "bg-disabledSurface" : ""}`}
                   type="text"
                   value={record.numberOfUnits}
                   onChange={(e) =>
