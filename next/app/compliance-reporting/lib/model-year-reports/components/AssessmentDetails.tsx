@@ -34,9 +34,16 @@ export const AssessmentDetails = async (props: {
   if (!objectName) {
     return null;
   }
-  const assmntBuf = await getObjectAsBuffer(objectName);
-  const assmntWorkbook = new Excel.Workbook();
-  await assmntWorkbook.xlsx.load(assmntBuf);
-  const parsedAssessment = parseAssessment(assmntWorkbook);
-  return <ParsedAssessment assessment={parsedAssessment} />;
+  try {
+    const assmntBuf = await getObjectAsBuffer(objectName);
+    const assmntWorkbook = new Excel.Workbook();
+    await assmntWorkbook.xlsx.load(assmntBuf);
+    const parsedAssessment = parseAssessment(assmntWorkbook);
+    return <ParsedAssessment assessment={parsedAssessment} />;
+  } catch (e) {
+    if (e instanceof Error) {
+      console.error(e.stack);
+    }
+    throw e;
+  }
 };
