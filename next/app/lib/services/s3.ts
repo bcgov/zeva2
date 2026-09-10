@@ -66,7 +66,7 @@ export const getObjectAsBuffer = async (objectName: string) => {
   }
   return buf.slice(
     byteArray.byteOffset,
-    byteArray.byteOffset + byteArray.byteLength
+    byteArray.byteOffset + byteArray.byteLength,
   );
 };
 
