@@ -60,8 +60,14 @@ export const getObjectAsBuffer = async (objectName: string) => {
     return new ArrayBuffer(0);
   }
   const byteArray = await body.transformToByteArray();
-  const buffer = Buffer.from(byteArray).buffer;
-  return buffer;
+  const buf = byteArray.buffer;
+  if (!(buf instanceof ArrayBuffer)) {
+    throw new Error("Expected an instance of ArrayBuffer");
+  }
+  return buf.slice(
+    byteArray.byteOffset,
+    byteArray.byteOffset + byteArray.byteLength
+  );
 };
 
 export const getPresignedGetObjectUrl = async (objectName: string) => {
