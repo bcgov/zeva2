@@ -12,6 +12,8 @@ import {
   CreditApplicationSupplierStatus,
   CreditTransferStatus,
   Idp,
+  InAppNotificationStatus,
+  InAppNotificationType,
   ModelYear,
   ModelYearReportStatus,
   Notification,
@@ -338,4 +340,32 @@ export const getAgreementTypeEnumsToStringsMap = () => {
 
 export const getStringsToAgreementTypeEnumsMap = () => {
   return getStringsToEnumsMap<AgreementType>(AgreementType, statusTransformer);
+};
+
+export const getNotificationStatusEnumsToStringsMap = () => {
+  return getEnumsToStringsMap<InAppNotificationStatus>(
+    InAppNotificationStatus,
+    statusTransformer,
+  );
+};
+
+export const getStringsToNotificationStatusEnumsMap = () => {
+  return getStringsToEnumsMap<InAppNotificationStatus>(
+    InAppNotificationStatus,
+    statusTransformer,
+  );
+};
+
+export const getNotificationTypeEnumsToStringsMap = () => {
+  return getEnumsToStringsMap<InAppNotificationType>(
+    InAppNotificationType,
+    statusTransformer,
+  );
+};
+
+export const getStringsToNotificationTypeEnumsMap = () => {
+  return getStringsToEnumsMap<InAppNotificationType>(
+    InAppNotificationType,
+    statusTransformer,
+  );
 };

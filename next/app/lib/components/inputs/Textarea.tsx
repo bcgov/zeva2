@@ -1,6 +1,13 @@
 "use client";
 
-import { FC, TextareaHTMLAttributes, useRef, useEffect, useState } from "react";
+import {
+  FC,
+  TextareaHTMLAttributes,
+  useRef,
+  useEffect,
+  useState,
+  useMemo,
+} from "react";
 
 export interface ITextareaProps extends Omit<
   TextareaHTMLAttributes<HTMLTextAreaElement>,
@@ -22,6 +29,7 @@ export interface ITextareaProps extends Omit<
   className?: string;
   minHeight?: number;
   maxHeight?: number;
+  noMaxWidth?: boolean;
 }
 
 export const Textarea: FC<ITextareaProps> = ({
@@ -42,6 +50,7 @@ export const Textarea: FC<ITextareaProps> = ({
   minHeight = 80,
   maxHeight = 200,
   rows = 3,
+  noMaxWidth = false,
   ...rest
 }) => {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -99,11 +108,16 @@ export const Textarea: FC<ITextareaProps> = ({
     return "bg-white border-dividerMedium text-primaryText hover:bg-lightGrey hover:border-dividerDark";
   };
 
+  const inlineStyles = useMemo(() => {
+    const result: Record<string, string> = { minWidth: "280px" };
+    if (!noMaxWidth) {
+      result["maxWidth"] = "700px";
+    }
+    return result;
+  }, [noMaxWidth]);
+
   return (
-    <div
-      className={`relative ${className}`}
-      style={{ minWidth: "280px", maxWidth: "700px" }}
-    >
+    <div className={`relative ${className}`} style={inlineStyles}>
       {label && (
         <label htmlFor={id} className="form-label block mb-1.5">
           {label}

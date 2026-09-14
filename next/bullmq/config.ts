@@ -1,10 +1,11 @@
 import { handleEmailJob } from "./handlers/email";
 import { ConnectionOptions } from "bullmq";
 import { QueueNames } from "@/app/lib/constants/queue";
+import { toggleNotificationsStatus } from "./handlers/notification";
 
 const connection: ConnectionOptions = {
   host: process.env.REDIS_HOST ?? "redis",
-  port: parseInt(process.env.REDIS_PORT ?? "6379", 10),
+  port: Number.parseInt(process.env.REDIS_PORT ?? "6379", 10),
   password: process.env.REDIS_PASSWORD ?? undefined,
   tls:
     process.env.REDIS_TLS_ENABLED === "true"
@@ -30,6 +31,11 @@ export const bullmqConfig = {
       queueName: QueueNames.Email,
       numberOfWorkers: 1,
       handler: handleEmailJob,
+    },
+    {
+      queueName: QueueNames.NotificationStatusToggler,
+      numberOfWorkers: 1,
+      handler: toggleNotificationsStatus,
     },
   ],
   queueDefaultJobOptions: {

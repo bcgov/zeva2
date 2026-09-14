@@ -6,9 +6,11 @@ import { QueueNames } from "../constants/queue";
 const queues: {
   [QueueNames.Email]: Readonly<Queue<EmailJobData>> | null;
   [QueueNames.Icbc]: Readonly<Queue<number>> | null;
+  [QueueNames.NotificationStatusToggler]: Readonly<Queue> | null;
 } = {
   [QueueNames.Email]: null,
   [QueueNames.Icbc]: null,
+  [QueueNames.NotificationStatusToggler]: null,
 };
 
 const getEmailQueue = () => {
@@ -48,4 +50,17 @@ export const addJobToIcbcQueue = async (
 ) => {
   const queue = getIcbcQueue();
   await queue.add("processIcbcFileJob", icbcFileId, opts);
+};
+
+export const getNotificationStatusTogglerQueue = () => {
+  if (!queues[QueueNames.NotificationStatusToggler]) {
+    queues[QueueNames.NotificationStatusToggler] = new Queue(
+      QueueNames.NotificationStatusToggler,
+      {
+        connection: bullmqConfig.queueConnection,
+        defaultJobOptions: bullmqConfig.queueDefaultJobOptions,
+      },
+    );
+  }
+  return queues[QueueNames.NotificationStatusToggler];
 };

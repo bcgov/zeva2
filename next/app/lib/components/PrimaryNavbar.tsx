@@ -21,6 +21,9 @@ export const PrimaryNavbar = (props: {
         label: "Home",
         route: Routes.Home,
       },
+      ...(props.userIsGov
+        ? [{ label: "Notifications", route: Routes.Notifications }]
+        : []),
       {
         label: "Compliance Reporting",
         route: Routes.ModelYearReports,

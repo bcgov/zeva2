@@ -47,28 +47,29 @@ enum SupplierClass {
 }
 
 model Organization {
-  id                            Int                             @id @default(autoincrement())
-  name                          String
-  isGovernment                  Boolean                         @default(false) @map("is_government")
-  isActive                      Boolean                         @default(true) @map("is_active")
-  shortName                     String                          @map("short_name")
-  supplierClass                 SupplierClass?                  @map("supplier_class")
-  users                         User[]
-  zevUnitTransactions           ZevUnitTransaction[]
-  zevUnitEndingBalances         ZevUnitEndingBalance[]
-  creditTransferTo              CreditTransfer[]                @relation("creditTransferTo")
-  creditTransferFrom            CreditTransfer[]                @relation("creditTransferFrom")
-  Vehicle                       Vehicle[]
-  organizationAddress           OrganizationAddress[]
-  CreditApplication             CreditApplication[]
-  PenaltyCredit                 PenaltyCredit[]
-  agreements                    Agreement[]
-  LegacySalesVolume             LegacySalesVolume[]
-  SupplyVolume                  SupplyVolume[]
-  ModelYearReport               ModelYearReport[]
-  Reassessment                  Reassessment[]
-  SupplementaryReport           SupplementaryReport[]
-  LegacyAssessedModelYearReport LegacyAssessedModelYearReport[]
+  id                             Int                             @id @default(autoincrement())
+  name                           String
+  isGovernment                   Boolean                         @default(false) @map("is_government")
+  isActive                       Boolean                         @default(true) @map("is_active")
+  shortName                      String                          @map("short_name")
+  supplierClass                  SupplierClass?                  @map("supplier_class")
+  users                          User[]
+  zevUnitTransactions            ZevUnitTransaction[]
+  zevUnitEndingBalances          ZevUnitEndingBalance[]
+  creditTransferTo               CreditTransfer[]                @relation("creditTransferTo")
+  creditTransferFrom             CreditTransfer[]                @relation("creditTransferFrom")
+  Vehicle                        Vehicle[]
+  organizationAddress            OrganizationAddress[]
+  CreditApplication              CreditApplication[]
+  PenaltyCredit                  PenaltyCredit[]
+  agreements                     Agreement[]
+  LegacySalesVolume              LegacySalesVolume[]
+  SupplyVolume                   SupplyVolume[]
+  ModelYearReport                ModelYearReport[]
+  Reassessment                   Reassessment[]
+  SupplementaryReport            SupplementaryReport[]
+  LegacyAssessedModelYearReport  LegacyAssessedModelYearReport[]
+  inAppNotificationOrganizations InAppNotificationOrganization[]
 
   @@map("organization")
 }
@@ -143,6 +144,7 @@ model User {
   icbcFiles                        IcbcFile[]
   creditApplicationAnalystComments CreditApplicationAnalystComment[]
   creditApplications               CreditApplication[]
+  inAppNotifications               InAppNotification[]
 
   @@unique([idp, idpUsername])
   @@map("user")
@@ -778,4 +780,45 @@ model ReassessmentHistory {
   comment        String?
 
   @@map("reassessment_history")
+}
+
+enum InAppNotificationStatus {
+  ACTIVE
+  DRAFT
+  EXPIRED
+  SCHEDULED
+}
+
+enum InAppNotificationType {
+  ACTION_REQUIRED
+  INFORMATION
+  REMINDER
+  SYSTEM_MAINTENANCE
+  WARNING
+}
+
+model InAppNotification {
+  id                             Int                             @id @default(autoincrement())
+  userId                         Int                             @map("user_id")
+  user                           User                            @relation(fields: [userId], references: [id])
+  status                         InAppNotificationStatus
+  type                           InAppNotificationType
+  title                          String
+  message                        String
+  startTimestamp                 DateTime                        @map("start_timestamp") @db.Timestamptz(6)
+  endTimestamp                   DateTime                        @map("end_timestamp") @db.Timestamptz(6)
+  allSuppliers                   Boolean                         @map("all_suppliers")
+  inAppNotificationOrganizations InAppNotificationOrganization[]
+
+  @@map("in_app_notification")
+}
+
+model InAppNotificationOrganization {
+  inAppNotification   InAppNotification @relation(fields: [inAppNotificationId], references: [id])
+  inAppNotificationId Int               @map("in_app_notification_id")
+  organization        Organization      @relation(fields: [organizationId], references: [id])
+  organizationId      Int               @map("organization_id")
+
+  @@id([inAppNotificationId, organizationId])
+  @@map("in_app_notification_organization")
 }

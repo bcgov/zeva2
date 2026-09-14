@@ -1,3 +1,4 @@
+import { getNotificationStatusTogglerQueue } from "@/app/lib/services/queue";
 import { bullmqConfig } from "./config";
 import { Worker } from "bullmq";
 
@@ -30,3 +31,13 @@ if (bullmqConfig.startWorkers) {
     }
   }
 }
+
+const notificationStatusTogglerQueue = getNotificationStatusTogglerQueue();
+notificationStatusTogglerQueue
+  .upsertJobScheduler("notification-status-toggler", { pattern: "0 0 * * *" })
+  .then(() => {
+    console.log(
+      "At %s, a job scheduler for toggling notification statuses was upserted!",
+      new Date().toString(),
+    );
+  });
