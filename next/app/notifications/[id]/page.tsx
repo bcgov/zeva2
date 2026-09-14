@@ -38,7 +38,7 @@ const Page = async (props: { params: Promise<{ id: string }> }) => {
         recipientCount={recipientCount}
       />
       <div className="p-5 bg-primaryBlueHover rounded-t text-[26px] font-bold text-textOnPrimary">
-        Notification ID {notification?.id}
+        Notification ID {notification.id}
       </div>
       <hr className="border-dividerMedium"></hr>
       <NotificationDetails
