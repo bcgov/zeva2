@@ -3,6 +3,7 @@ import { LoadingSkeleton } from "@/app/lib/components/skeletons";
 import { AuditHistoryContent } from "@/app/zev-unit-activities/lib/credit-applications/components/AuditHistoryContent";
 import { CreditTransferAuditHistoryContent } from "@/app/zev-unit-activities/lib/credit-transfers/components/CreditTransferAuditHistoryContent";
 import { AgreementAuditHistoryContent } from "@/app/zev-unit-activities/lib/credit-agreements/components/AgreementAuditHistoryContent";
+import { PenaltyCreditAuditHistoryContent } from "@/app/zev-unit-activities/lib/penalty-credits/components/PenaltyCreditAuditHistoryContent";
 
 const Page = async (props: {
   params: Promise<{ slug: string; id: string }>;
@@ -30,6 +31,14 @@ const Page = async (props: {
     return (
       <Suspense fallback={<LoadingSkeleton />}>
         <AgreementAuditHistoryContent id={numericId} />
+      </Suspense>
+    );
+  }
+
+  if (slug === "penalty-credits") {
+    return (
+      <Suspense fallback={<LoadingSkeleton />}>
+        <PenaltyCreditAuditHistoryContent id={numericId} />
       </Suspense>
     );
   }

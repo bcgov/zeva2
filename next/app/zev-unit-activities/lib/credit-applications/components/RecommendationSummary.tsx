@@ -16,7 +16,7 @@ export const RecommendationSummary = (props: { stats: GovCaStatRecord[] }) => {
     <StatusBanner
       variant="info"
       title=""
-      primaryText={`Recommend issuance of ${eligibleCredits.toFixed(2)} ZEV credits based on ${eligibleZevs} supplied and registered.`}
+      primaryText={`Recommend issuance of ${eligibleCredits.toFixed(2)} ZEV credits based on ${eligibleZevs} Eligible ZEVs supplied and registered.`}
     />
   );
 };

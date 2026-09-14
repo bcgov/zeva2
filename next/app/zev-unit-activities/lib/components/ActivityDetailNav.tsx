@@ -91,6 +91,19 @@ export const ActivityDetailNav = (props: {
       ];
     }
 
+    if (props.slug === "penalty-credits") {
+      return [
+        {
+          label: `Penalty Credit ID ${props.id}`,
+          route: `${Routes.PenaltyCredits}/${props.id}/details`,
+        },
+        {
+          label: "Audit History",
+          route: `${Routes.PenaltyCredits}/${props.id}/audit-history`,
+        },
+      ];
+    }
+
     return [];
   }, [props.slug, props.id]);
 
