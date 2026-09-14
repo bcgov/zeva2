@@ -233,7 +233,7 @@ export const NotificationForm = (props: {
               <span className="font-bold text-xl">Audience</span>
               <span>
                 Select All Vehicle Suppliers or choose one or more suppliers
-                from from the dropdown list.
+                from the dropdown list.
               </span>
             </div>
             <div className="flex flex-col gap-4 p-4">
