@@ -16,7 +16,6 @@ import { NotificationPayload } from "./constants";
 export const createNotification = async (
   payload: NotificationPayload,
 ): Promise<DataOrErrorActionResponse<number>> => {
-  payload.type;
   const { userIsGov, userId, userRoles } = await getUserInfo();
   if (!userIsGov || !userRoles.includes(Role.ZEVA_IDIR_USER)) {
     return getErrorActionResponse("Unauthorized!");
@@ -26,7 +25,7 @@ export const createNotification = async (
   if (!startDateIsValid || !endDateIsValid) {
     return getErrorActionResponse("Invalid Date!");
   }
-  let notificationId = NaN;
+  let notificationId = Number.NaN;
   await prisma.$transaction(async (tx) => {
     const { id: createdNotificationId } = await tx.inAppNotification.create({
       data: {
