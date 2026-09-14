@@ -117,7 +117,7 @@ export const StatusBanner = ({
 
   return (
     <div
-      className={`flex flex-row items-center gap-3 px-4 py-3 rounded-sm border ${styles.container} ${className}`}
+      className={`flex flex-row gap-3 px-4 py-3 rounded-sm border ${styles.container} ${className} ${secondaryText ? undefined : "items-center"}`}
     >
       <span className="text-xl">{styles.icon}</span>
       <div className="flex flex-col gap-3">

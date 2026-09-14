@@ -20,6 +20,7 @@ export type NotificationObject = InAppNotificationModel & {
 export type SerializedNotificationSparse = {
   id: number;
   owner: string;
+  ownerId: number;
   status: InAppNotificationStatus;
   type: InAppNotificationType;
   audience: string[];
@@ -32,4 +33,13 @@ export type SerializedNotificationFull = SerializedNotificationSparse & {
   title: string;
   message: string;
   audienceIds: number[];
+};
+
+export type NotificationPayload = Omit<
+  SerializedNotificationFull,
+  "id" | "owner" | "ownerId" | "status" | "audience"
+>;
+
+export type NotificationFormData = Partial<NotificationPayload> & {
+  audience?: string[];
 };

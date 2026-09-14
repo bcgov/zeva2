@@ -1,15 +1,16 @@
 import { Breadcrumbs } from "@/app/lib/components";
 import { getUserInfo } from "@/auth";
 import { Role } from "@/prisma/generated/enums";
-import { AnalystActions } from "../lib/components/AnalystActions";
 import { NotificationForm } from "../lib/components/NotificationForm";
 import { Routes } from "@/app/lib/constants";
+import { getOrgsMap } from "@/app/lib/data/orgs";
 
 const Page = async () => {
   const { userRoles } = await getUserInfo();
   if (!userRoles.includes(Role.ZEVA_IDIR_USER)) {
     return null;
   }
+  const orgsMap = await getOrgsMap(null, true);
   return (
     <div className="flex flex-col gap-4">
       <Breadcrumbs
@@ -28,8 +29,7 @@ const Page = async () => {
       </div>
       <hr className="border-dividerMedium"></hr>
       <div className="flex flex-col gap-6">
-        <NotificationForm />
-        <AnalystActions />
+        <NotificationForm orgsMap={orgsMap} />
       </div>
     </div>
   );

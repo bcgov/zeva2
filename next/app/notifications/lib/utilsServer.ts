@@ -11,6 +11,7 @@ export const serializeNotificationSparse = (
   return {
     id: notification.id,
     owner: `${notification.user.firstName} ${notification.user.lastName}`,
+    ownerId: notification.userId,
     status: notification.status,
     type: notification.type,
     audience: notification.inAppNotificationOrganizations.map((item) => {

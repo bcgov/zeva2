@@ -10,7 +10,7 @@ import {
 import { InAppNotificationStatus } from "@/prisma/generated/enums";
 
 // expect at most 25 notifications per year; over 20 years, that's 500;
-// therefore, no need for pagination
+// therefore, no need for pagination;
 // intended for gov users
 export const getNotifications = async (): Promise<
   SerializedNotificationSparse[]
@@ -33,6 +33,9 @@ export const getNotifications = async (): Promise<
           },
         },
       },
+    },
+    orderBy: {
+      id: "desc",
     },
   });
   return notifications.map((n) => {
@@ -73,21 +76,63 @@ export const getNotification = async (
   return serializeNotificationFull(notification);
 };
 
+// intended for gov users
+export const getRecipientCount = async (
+  type: "all" | "subset",
+  orgIds?: number[],
+) => {
+  let result: number = 0;
+  if (type === "all") {
+    const users = await prisma.user.findMany({
+      where: {
+        organization: {
+          isGovernment: false,
+        },
+      },
+      select: {
+        id: true,
+      },
+    });
+    result = users.length;
+  } else if (type === "subset" && orgIds) {
+    const users = await prisma.user.findMany({
+      where: {
+        organizationId: {
+          in: orgIds,
+        },
+      },
+      select: {
+        id: true,
+      },
+    });
+    result = users.length;
+  }
+  return result;
+};
+
 // intended for supplier users
 export const getActiveNotifications = async (orgId: number) => {
   const notifications = await prisma.inAppNotification.findMany({
     where: {
       status: InAppNotificationStatus.ACTIVE,
-      inAppNotificationOrganizations: {
-        some: {
-          organizationId: orgId,
+      OR: [
+        { allSuppliers: true },
+        {
+          inAppNotificationOrganizations: {
+            some: {
+              organizationId: orgId,
+            },
+          },
         },
-      },
+      ],
     },
     select: {
       type: true,
       title: true,
       message: true,
+    },
+    orderBy: {
+      startTimestamp: "desc",
     },
   });
   return notifications;

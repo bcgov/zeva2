@@ -10,27 +10,19 @@ import {
 import { validateDate } from "@/app/lib/utils/date";
 import { getUserInfo } from "@/auth";
 import { prisma } from "@/lib/prisma";
-import {
-  InAppNotificationStatus,
-  InAppNotificationType,
-  Role,
-} from "@/prisma/generated/enums";
+import { InAppNotificationStatus, Role } from "@/prisma/generated/enums";
+import { NotificationPayload } from "./constants";
 
 export const createNotification = async (
-  type: InAppNotificationType,
-  title: string,
-  message: string,
-  startDate: string,
-  endDate: string,
-  supplierIds: number[],
-  allSuppliers: boolean,
+  payload: NotificationPayload,
 ): Promise<DataOrErrorActionResponse<number>> => {
+  payload.type;
   const { userIsGov, userId, userRoles } = await getUserInfo();
   if (!userIsGov || !userRoles.includes(Role.ZEVA_IDIR_USER)) {
     return getErrorActionResponse("Unauthorized!");
   }
-  const [startDateIsValid, startTimestamp] = validateDate(startDate);
-  const [endDateIsValid, endTimestamp] = validateDate(endDate);
+  const [startDateIsValid, startTimestamp] = validateDate(payload.startDate);
+  const [endDateIsValid, endTimestamp] = validateDate(payload.endDate);
   if (!startDateIsValid || !endDateIsValid) {
     return getErrorActionResponse("Invalid Date!");
   }
@@ -40,36 +32,32 @@ export const createNotification = async (
       data: {
         userId,
         status: InAppNotificationStatus.DRAFT,
-        type,
-        title,
-        message,
+        type: payload.type,
+        title: payload.title,
+        message: payload.message,
         startTimestamp,
         endTimestamp,
-        allSuppliers,
+        allSuppliers: payload.allSuppliers,
       },
     });
     notificationId = createdNotificationId;
-    await tx.inAppNotificationOrganization.createMany({
-      data: supplierIds.map((supplierId) => {
-        return {
-          inAppNotificationId: notificationId,
-          organizationId: supplierId,
-        };
-      }),
-    });
+    if (!payload.allSuppliers) {
+      await tx.inAppNotificationOrganization.createMany({
+        data: payload.audienceIds.map((supplierId) => {
+          return {
+            inAppNotificationId: notificationId,
+            organizationId: supplierId,
+          };
+        }),
+      });
+    }
   });
   return getDataActionResponse(notificationId);
 };
 
 export const updateNotification = async (
   notificationId: number,
-  type: InAppNotificationType,
-  title: string,
-  message: string,
-  startDate: string,
-  endDate: string,
-  supplierIds: number[],
-  allSuppliers: boolean,
+  payload: NotificationPayload,
 ): Promise<ErrorOrSuccessActionResponse> => {
   const { userId } = await getUserInfo();
   const notification = await prisma.inAppNotification.findUnique({
@@ -84,8 +72,8 @@ export const updateNotification = async (
       "Error! A reminder that only the notification owner may modify/delete/publish their notification!",
     );
   }
-  const [startDateIsValid, startTimestamp] = validateDate(startDate);
-  const [endDateIsValid, endTimestamp] = validateDate(endDate);
+  const [startDateIsValid, startTimestamp] = validateDate(payload.startDate);
+  const [endDateIsValid, endTimestamp] = validateDate(payload.endDate);
   if (!startDateIsValid || !endDateIsValid) {
     return getErrorActionResponse("Invalid Date!");
   }
@@ -95,12 +83,12 @@ export const updateNotification = async (
         id: notificationId,
       },
       data: {
-        type,
-        title,
-        message,
+        type: payload.type,
+        title: payload.title,
+        message: payload.message,
         startTimestamp,
         endTimestamp,
-        allSuppliers,
+        allSuppliers: payload.allSuppliers,
       },
     });
     await tx.inAppNotificationOrganization.deleteMany({
@@ -108,14 +96,16 @@ export const updateNotification = async (
         inAppNotificationId: notificationId,
       },
     });
-    await tx.inAppNotificationOrganization.createMany({
-      data: supplierIds.map((supplierId) => {
-        return {
-          inAppNotificationId: notificationId,
-          organizationId: supplierId,
-        };
-      }),
-    });
+    if (!payload.allSuppliers) {
+      await tx.inAppNotificationOrganization.createMany({
+        data: payload.audienceIds.map((supplierId) => {
+          return {
+            inAppNotificationId: notificationId,
+            organizationId: supplierId,
+          };
+        }),
+      });
+    }
   });
   return getSuccessActionResponse();
 };
