@@ -19,6 +19,9 @@ import { getPenaltyCreditPayload } from "../utilsClient";
 import { ModelYear, VehicleClass, ZevClass } from "@/prisma/generated/enums";
 import { useRouter } from "next/navigation";
 import { Routes } from "@/app/lib/constants";
+import { BackButton } from "@/app/lib/components/BackButton";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faFloppyDisk } from "@fortawesome/free-solid-svg-icons";
 
 type NewProps = {
   type: "new";
@@ -152,65 +155,73 @@ export const PenaltyCreditForm = (props: NewProps | SavedProps) => {
   }, [props.type, data, penaltyCreditId]);
 
   return (
-    <div>
+    <div className="flex flex-col gap-4">
       {error && <p className="text-red-600">{error}</p>}
+      <section className="overflow-hidden rounded border border-dividerMedium bg-white">
+        <h2 className="bg-disabledSurface px-5 py-4 text-xl font-bold">
+          Penalty Credit Details
+        </h2>
+        <div className="grid grid-cols-1 gap-5 p-5 md:grid-cols-2 lg:grid-cols-3">
+          <Dropdown
+            label="Supplier"
+            options={orgOptions}
+            value={data.organizationId ?? ""}
+            onChange={(value) => handleChange("organizationId", value)}
+            disabled={props.type === "saved"}
+          />
 
-      <Dropdown
-        label="Supplier"
-        options={orgOptions}
-        value={data.organizationId ?? ""}
-        onChange={(value) => handleChange("organizationId", value)}
-        disabled={props.type === "saved"}
-        className="mb-2"
-      />
+          <Dropdown
+            label="Compliance Year"
+            options={yearOptions}
+            value={data.complianceYear ?? ""}
+            onChange={(value) => handleChange("complianceYear", value)}
+            disabled={props.type === "saved"}
+          />
 
-      <Dropdown
-        label="Compliance Year"
-        options={yearOptions}
-        value={data.complianceYear ?? ""}
-        onChange={(value) => handleChange("complianceYear", value)}
-        disabled={props.type === "saved"}
-        className="mb-2"
-      />
+          <Dropdown
+            label="Vehicle Class"
+            options={vehicleClassOptions}
+            value={data.vehicleClass ?? ""}
+            onChange={(value) => handleChange("vehicleClass", value)}
+          />
 
-      <Dropdown
-        label="Vehicle Class"
-        options={vehicleClassOptions}
-        value={data.vehicleClass ?? ""}
-        onChange={(value) => handleChange("vehicleClass", value)}
-        className="mb-2"
-      />
+          <Dropdown
+            label="ZEV Class"
+            options={zevClassOptions}
+            value={data.zevClass ?? ""}
+            onChange={(value) => handleChange("zevClass", value)}
+          />
 
-      <Dropdown
-        label="ZEV Class"
-        options={zevClassOptions}
-        value={data.zevClass ?? ""}
-        onChange={(value) => handleChange("zevClass", value)}
-        className="mb-2"
-      />
-
-      <Dropdown
-        label="Model Year"
-        options={yearOptions}
-        value={data.modelYear ?? ""}
-        onChange={(value) => handleChange("modelYear", value)}
-        className="mb-2"
-      />
-
-      <input
-        type="text"
-        placeholder="Number of Units"
-        value={data.numberOfUnits ?? ""}
-        name={"numberOfUnits"}
-        className="border p-2 w-full"
-        onChange={(e) => {
-          handleChange(e.target.name, e.target.value);
-        }}
-      />
-
-      <Button variant="primary" disabled={isPending} onClick={handleSave}>
-        {isPending ? "..." : "Save"}
-      </Button>
+          <Dropdown
+            label="Model Year"
+            options={yearOptions}
+            value={data.modelYear ?? ""}
+            onChange={(value) => handleChange("modelYear", value)}
+          />
+          <label className="flex flex-col gap-1">
+            Number of Units
+            <input
+              type="text"
+              value={data.numberOfUnits ?? ""}
+              name="numberOfUnits"
+              className="h-10 rounded border border-dividerMedium px-3"
+              onChange={(e) => handleChange(e.target.name, e.target.value)}
+            />
+          </label>
+        </div>
+      </section>
+      <footer className="flex min-h-20 items-center justify-between bg-gray-50 px-5">
+        <BackButton />
+        <Button
+          variant="primary"
+          disabled={isPending}
+          onClick={handleSave}
+          icon={<FontAwesomeIcon icon={faFloppyDisk} />}
+          iconPosition="right"
+        >
+          {isPending ? "..." : "Save & Continue"}
+        </Button>
+      </footer>
     </div>
   );
 };

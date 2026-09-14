@@ -1,113 +1,119 @@
 "use client";
 
 import { Button } from "@/app/lib/components";
+import { BackButton } from "@/app/lib/components/BackButton";
+import { Modal, ModalType } from "@/app/lib/components/Modal";
+import { Textarea } from "@/app/lib/components/inputs/Textarea";
 import { Routes } from "@/app/lib/constants";
+import { getNormalizedComment } from "@/app/lib/utils/comment";
 import { PenaltyCreditStatus } from "@/prisma/generated/enums";
+import {
+  faEdit,
+  faPaperPlane,
+  faTrash,
+} from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { useRouter } from "next/navigation";
 import { JSX, useCallback, useState } from "react";
-import { getNormalizedComment } from "@/app/lib/utils/comment";
-import { Textarea } from "@/app/lib/components/inputs/Textarea";
-import { Modal, ModalType } from "@/app/lib/components/Modal";
 import { analystDelete, analystSubmit } from "../actions";
 
-export const AnalystActions = (props: {
+export const AnalystActions = ({
+  penaltyCreditId,
+  status,
+}: {
   penaltyCreditId: number;
   status: PenaltyCreditStatus;
 }) => {
   const router = useRouter();
-  const [comment, setComment] = useState<string>("");
-  const [error, setError] = useState<string>("");
+  const [comment, setComment] = useState("");
+  const [error, setError] = useState("");
   const [modal, setModal] = useState<JSX.Element | null>(null);
 
-  const handleSubmitToDirector = useCallback(async () => {
+  const submit = useCallback(async () => {
     setError("");
     try {
       const response = await analystSubmit(
-        props.penaltyCreditId,
+        penaltyCreditId,
         getNormalizedComment(comment),
       );
-      if (response.responseType === "error") {
-        throw new Error(response.message);
-      }
+      if (response.responseType === "error") throw new Error(response.message);
       router.refresh();
     } catch (e) {
-      if (e instanceof Error) {
-        setError(e.message);
-      }
+      if (e instanceof Error) setError(e.message);
     }
     setModal(null);
-  }, [props.penaltyCreditId, comment]);
+  }, [comment, penaltyCreditId, router]);
 
-  const handleDelete = useCallback(async () => {
+  const remove = useCallback(async () => {
     setError("");
     try {
-      const response = await analystDelete(props.penaltyCreditId);
-      if (response.responseType === "error") {
-        throw new Error(response.message);
-      }
+      const response = await analystDelete(penaltyCreditId);
+      if (response.responseType === "error") throw new Error(response.message);
       router.push(Routes.PenaltyCredits);
     } catch (e) {
-      if (e instanceof Error) {
-        setError(e.message);
-      }
+      if (e instanceof Error) setError(e.message);
     }
     setModal(null);
-  }, [props.penaltyCreditId]);
+  }, [penaltyCreditId, router]);
 
-  const handleGoToEditPenaltyCredit = useCallback(() => {
-    router.push(`${Routes.PenaltyCredits}/${props.penaltyCreditId}/edit`);
-  }, [props.penaltyCreditId]);
-
-  const showModal = useCallback(
-    (type: "submit" | "delete") => {
-      let modalType: ModalType | undefined;
-      let action: (() => Promise<void>) | undefined;
-      if (type === "submit") {
-        modalType = "confirmation";
-        action = handleSubmitToDirector;
-      } else if (type === "delete") {
-        modalType = "error";
-        action = handleDelete;
-      }
-      if (modalType && action) {
-        setModal(
-          <Modal
-            showModal={true}
-            modalType={modalType}
-            handleSubmit={action}
-            handleCancel={() => setModal(null)}
-          />,
-        );
-      }
-    },
-    [handleSubmitToDirector, handleDelete],
-  );
-
-  if (
-    props.status !== PenaltyCreditStatus.DRAFT &&
-    props.status !== PenaltyCreditStatus.RETURNED_TO_ANALYST
-  ) {
-    return null;
-  }
+  const showModal = (type: "submit" | "delete") => {
+    const action = type === "submit" ? submit : remove;
+    const modalType: ModalType = type === "submit" ? "confirmation" : "error";
+    setModal(
+      <Modal
+        showModal
+        modalType={modalType}
+        handleSubmit={action}
+        handleCancel={() => setModal(null)}
+      />,
+    );
+  };
 
   return (
     <>
-      <div className="mt-4">
-        <p className="py-1 font-semibold text-primaryBlue">Optional Comment</p>
-        <Textarea value={comment} onChange={setComment} />
-      </div>
-      <div className="flex flex-row gap-12 my-4">
-        {error && <p className="text-red-600">{error}</p>}
-        <Button variant="secondary" onClick={handleGoToEditPenaltyCredit}>
-          Edit
-        </Button>
-        <Button variant="primary" onClick={() => showModal("submit")}>
-          Submit to Director
-        </Button>
-        <Button variant="danger" onClick={() => showModal("delete")}>
-          Delete
-        </Button>
-      </div>
+      <section className="overflow-hidden rounded border border-dividerMedium bg-white">
+        <h2 className="bg-disabledSurface px-5 py-4 text-xl font-bold">
+          Comment (optional)
+        </h2>
+        <div className="max-w-3xl p-5">
+          <Textarea value={comment} onChange={setComment} />
+        </div>
+      </section>
+      {error && <p className="text-red-600">{error}</p>}
+      <footer className="flex min-h-20 flex-wrap items-center justify-between gap-4 bg-gray-50 px-5">
+        <div className="flex gap-5">
+          <BackButton />
+          <Button
+            variant="danger"
+            icon={<FontAwesomeIcon icon={faTrash} />}
+            iconPosition="right"
+            onClick={() => showModal("delete")}
+          >
+            Delete
+          </Button>
+        </div>
+        <div className="flex gap-4">
+          <Button
+            variant="secondary"
+            icon={<FontAwesomeIcon icon={faEdit} />}
+            onClick={() =>
+              router.push(`${Routes.PenaltyCredits}/${penaltyCreditId}/edit`)
+            }
+          >
+            Edit
+          </Button>
+          <Button
+            variant="primary"
+            icon={<FontAwesomeIcon icon={faPaperPlane} />}
+            iconPosition="right"
+            onClick={() => showModal("submit")}
+          >
+            {status === PenaltyCreditStatus.RETURNED_TO_ANALYST
+              ? "Resubmit to Director"
+              : "Submit to Director"}
+          </Button>
+        </div>
+      </footer>
       {modal}
     </>
   );

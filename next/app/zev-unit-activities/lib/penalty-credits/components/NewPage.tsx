@@ -10,11 +10,11 @@ export const NewPage = async () => {
   }
   const orgsMap = await getOrgsMap(null, true);
   return (
-    <div className="p-4">
-      <h1 className="text-xl font-bold mb-4">Create Penalty Credits</h1>
-      <div className="bg-white rounded-lg shadow-level-1 p-6">
-        <PenaltyCreditForm type="new" orgsMap={orgsMap} />
-      </div>
+    <div className="p-6">
+      <h1 className="mb-4 rounded-t bg-primaryBlue px-5 py-4 text-2xl font-bold text-white">
+        New Penalty Credit
+      </h1>
+      <PenaltyCreditForm type="new" orgsMap={orgsMap} />
     </div>
   );
 };
