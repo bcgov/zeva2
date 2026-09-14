@@ -4,6 +4,7 @@ All notable changes to this project are documented in this file.
 
 | Version | Date | Type | Change |
 | --- | --- | --- | --- |
+| [1.63.0](https://github.com/bcgov/zeva2/compare/v1.62.4...v1.63.0) | 2026-09-14 | ✨ Feature | 635 - in-app notifications ([#678](https://github.com/bcgov/zeva2/issues/678)) ([01c77d4](https://github.com/bcgov/zeva2/commit/01c77d42345707a85c5b0330995fdc6926cfef17)) |
 | [1.62.4](https://github.com/bcgov/zeva2/compare/v1.62.3...v1.62.4) | 2026-09-10 | 🐛 Fix | remove temp logging ([#677](https://github.com/bcgov/zeva2/issues/677)) ([261797f](https://github.com/bcgov/zeva2/commit/261797fb35cf7dc4f4fc276fec7cb488cdb5c40d)) |
 | [1.62.3](https://github.com/bcgov/zeva2/compare/v1.62.2...v1.62.3) | 2026-09-10 | 🐛 Fix | fix for possible buffer pooling ([#676](https://github.com/bcgov/zeva2/issues/676)) ([36d1a57](https://github.com/bcgov/zeva2/commit/36d1a57b755ed55876daa19588e613f7ff98126d)) |
 | [1.62.2](https://github.com/bcgov/zeva2/compare/v1.62.1...v1.62.2) | 2026-09-09 | 🐛 Fix | add temp logging ([#675](https://github.com/bcgov/zeva2/issues/675)) ([5524319](https://github.com/bcgov/zeva2/commit/552431932e7d1378ff4124cc64689448ad2a8372)) |
