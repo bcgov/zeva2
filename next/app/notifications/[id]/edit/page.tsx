@@ -28,6 +28,10 @@ const Page = async (props: { params: Promise<{ id: string }> }) => {
           },
           {
             label: `Notification ID ${notification.id}`,
+            href: `${Routes.Notifications}/${notification.id}`,
+          },
+          {
+            label: "Edit",
           },
         ]}
       />

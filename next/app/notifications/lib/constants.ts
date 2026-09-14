@@ -43,3 +43,9 @@ export type NotificationPayload = Omit<
 export type NotificationFormData = Partial<NotificationPayload> & {
   audience?: string[];
 };
+
+export type ActiveNotificationForSupplier = {
+  type: InAppNotificationType;
+  title: string;
+  message: string;
+};

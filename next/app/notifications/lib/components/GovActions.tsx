@@ -103,7 +103,7 @@ export const GovActions = (props: {
                 iconPosition="right"
                 onClick={() => showModal("delete")}
               >
-                Delete and Start Over
+                Delete
               </Button>
             )}
           {isOwner &&

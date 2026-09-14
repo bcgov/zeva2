@@ -27,7 +27,7 @@ export const toggleNotificationsStatus = async () => {
       toExpire.push(id);
     } else if (
       status === InAppNotificationStatus.SCHEDULED &&
-      now <= startTs &&
+      startTs <= now &&
       startTs < endTs
     ) {
       toActivate.push(id);

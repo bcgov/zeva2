@@ -124,7 +124,9 @@ export const StatusBanner = ({
         <span>
           <span className="font-bold">{title}</span> {primaryText}
         </span>
-        {secondaryText && <span className="text-sm">{secondaryText}</span>}
+        {secondaryText && (
+          <span className="text-sm whitespace-pre-line">{secondaryText}</span>
+        )}
       </div>
     </div>
   );

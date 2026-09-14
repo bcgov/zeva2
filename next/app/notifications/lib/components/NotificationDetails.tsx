@@ -33,8 +33,8 @@ export const NotificationDetails = (props: {
         </div>
         <hr className="col-span-2 border-disabledSurface"></hr>
         <span className="col-span-2 font-bold text-lg">
-          This is how your notification appears or will appear to the Vehicle
-          Supplier(s):
+          This is how your notification appears/appeared/will appear to the
+          Audience:
         </span>
         <div className="col-span-2">{props.messageBanner}</div>
       </div>

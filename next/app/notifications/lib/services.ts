@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import {
+  ActiveNotificationForSupplier,
   SerializedNotificationFull,
   SerializedNotificationSparse,
 } from "./constants";
@@ -111,7 +112,9 @@ export const getRecipientCount = async (
 };
 
 // intended for supplier users
-export const getActiveNotifications = async (orgId: number) => {
+export const getActiveNotifications = async (
+  orgId: number,
+): Promise<ActiveNotificationForSupplier[]> => {
   const notifications = await prisma.inAppNotification.findMany({
     where: {
       status: InAppNotificationStatus.ACTIVE,

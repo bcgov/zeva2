@@ -214,6 +214,7 @@ export const NotificationForm = (props: {
               placeholder="Enter Title"
               value={formData.title}
               onChange={(value) => handleChange("title", value)}
+              noMaxWidth={true}
               disabled={isPending}
             />
             <Textarea
@@ -221,6 +222,7 @@ export const NotificationForm = (props: {
               placeholder="Enter Message"
               value={formData.message}
               onChange={(value) => handleChange("message", value)}
+              noMaxWidth={true}
               disabled={isPending}
             />
           </div>
