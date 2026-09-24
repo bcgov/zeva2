@@ -10,18 +10,42 @@ import {
 import { validateDate } from "@/app/lib/utils/date";
 import { getUserInfo } from "@/auth";
 import { prisma } from "@/lib/prisma";
-import { InAppNotificationStatus, Role } from "@/prisma/generated/enums";
+import { InAppNotificationStatus } from "@/prisma/generated/enums";
 import { NotificationPayload } from "./constants";
+import { getNotificationPayload } from "./utilsClient";
+import { canAuthorNotifications } from "./permissions";
+
+type PayloadValidation =
+  | { success: true; payload: NotificationPayload }
+  | { success: false; error: string };
+
+const validatePayload = (payload: NotificationPayload): PayloadValidation => {
+  try {
+    return { success: true, payload: getNotificationPayload(payload) };
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Invalid notification!",
+    };
+  }
+};
 
 export const createNotification = async (
   payload: NotificationPayload,
 ): Promise<DataOrErrorActionResponse<number>> => {
   const { userIsGov, userId, userRoles } = await getUserInfo();
-  if (!userIsGov || !userRoles.includes(Role.ZEVA_IDIR_USER)) {
+  if (!canAuthorNotifications(userIsGov, userRoles)) {
     return getErrorActionResponse("Unauthorized!");
   }
-  const [startDateIsValid, startTimestamp] = validateDate(payload.startDate);
-  const [endDateIsValid, endTimestamp] = validateDate(payload.endDate);
+  const validation = validatePayload(payload);
+  if (!validation.success) {
+    return getErrorActionResponse(validation.error);
+  }
+  const validatedPayload = validation.payload;
+  const [startDateIsValid, startTimestamp] = validateDate(
+    validatedPayload.startDate,
+  );
+  const [endDateIsValid, endTimestamp] = validateDate(validatedPayload.endDate);
   if (!startDateIsValid || !endDateIsValid) {
     return getErrorActionResponse("Invalid Date!");
   }
@@ -31,18 +55,18 @@ export const createNotification = async (
       data: {
         userId,
         status: InAppNotificationStatus.DRAFT,
-        type: payload.type,
-        title: payload.title,
-        message: payload.message,
+        type: validatedPayload.type,
+        title: validatedPayload.title,
+        message: validatedPayload.message,
         startTimestamp,
         endTimestamp,
-        allSuppliers: payload.allSuppliers,
+        allSuppliers: validatedPayload.allSuppliers,
       },
     });
     notificationId = createdNotificationId;
-    if (!payload.allSuppliers) {
+    if (!validatedPayload.allSuppliers) {
       await tx.inAppNotificationOrganization.createMany({
-        data: payload.audienceIds.map((supplierId) => {
+        data: validatedPayload.audienceIds.map((supplierId) => {
           return {
             inAppNotificationId: notificationId,
             organizationId: supplierId,
@@ -58,7 +82,15 @@ export const updateNotification = async (
   notificationId: number,
   payload: NotificationPayload,
 ): Promise<ErrorOrSuccessActionResponse> => {
-  const { userId } = await getUserInfo();
+  const { userIsGov, userId, userRoles } = await getUserInfo();
+  if (!canAuthorNotifications(userIsGov, userRoles)) {
+    return getErrorActionResponse("Unauthorized!");
+  }
+  const validation = validatePayload(payload);
+  if (!validation.success) {
+    return getErrorActionResponse(validation.error);
+  }
+  const validatedPayload = validation.payload;
   const notification = await prisma.inAppNotification.findUnique({
     where: {
       id: notificationId,
@@ -71,8 +103,10 @@ export const updateNotification = async (
       "Error! A reminder that only the notification owner may modify/delete/publish their notification!",
     );
   }
-  const [startDateIsValid, startTimestamp] = validateDate(payload.startDate);
-  const [endDateIsValid, endTimestamp] = validateDate(payload.endDate);
+  const [startDateIsValid, startTimestamp] = validateDate(
+    validatedPayload.startDate,
+  );
+  const [endDateIsValid, endTimestamp] = validateDate(validatedPayload.endDate);
   if (!startDateIsValid || !endDateIsValid) {
     return getErrorActionResponse("Invalid Date!");
   }
@@ -82,12 +116,12 @@ export const updateNotification = async (
         id: notificationId,
       },
       data: {
-        type: payload.type,
-        title: payload.title,
-        message: payload.message,
+        type: validatedPayload.type,
+        title: validatedPayload.title,
+        message: validatedPayload.message,
         startTimestamp,
         endTimestamp,
-        allSuppliers: payload.allSuppliers,
+        allSuppliers: validatedPayload.allSuppliers,
       },
     });
     await tx.inAppNotificationOrganization.deleteMany({
@@ -95,9 +129,9 @@ export const updateNotification = async (
         inAppNotificationId: notificationId,
       },
     });
-    if (!payload.allSuppliers) {
+    if (!validatedPayload.allSuppliers) {
       await tx.inAppNotificationOrganization.createMany({
-        data: payload.audienceIds.map((supplierId) => {
+        data: validatedPayload.audienceIds.map((supplierId) => {
           return {
             inAppNotificationId: notificationId,
             organizationId: supplierId,

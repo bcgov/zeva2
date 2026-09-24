@@ -18,9 +18,15 @@ export const NotificationsTable = (props: {
   canCreateNotification: boolean;
 }) => {
   const router = useRouter();
-  const navigationAction = useCallback(async (id: number) => {
-    router.push(`${Routes.Notifications}/${id}`);
-  }, []);
+  const navigationAction = useCallback(
+    async (id: number) => {
+      router.push(`${Routes.Notifications}/${id}`);
+    },
+    [router],
+  );
+  const handleCreateNotification = useCallback(() => {
+    router.push(`${Routes.Notifications}/new`);
+  }, [router]);
   const columnHelper = createColumnHelper<SerializedNotificationSparse>();
   const statusMap = useMemo(() => {
     return getNotificationStatusEnumsToStringsMap();
@@ -92,12 +98,12 @@ export const NotificationsTable = (props: {
         props.canCreateNotification ? (
           <Button
             variant="primary"
-            onClick={() => router.push(`${Routes.Notifications}/new`)}
+            type="button"
+            size="large"
+            onClick={handleCreateNotification}
+            icon={<FontAwesomeIcon icon={faPlus} />}
           >
-            <div className="flex flex-row items-center gap-2">
-              <FontAwesomeIcon icon={faPlus} />
-              <span>Create Notification</span>
-            </div>
+            Create Notification
           </Button>
         ) : undefined
       }
