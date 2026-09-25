@@ -8,7 +8,6 @@ import {
 } from "@/prisma/generated/models";
 import {
   getMatchingTerms,
-  getModelYearEnumsToStringsMap,
   getStringsToCreditApplicationStatusEnumsMap,
   getStringsToCreditApplicationSupplierStatusEnumsMap,
   getStringsToModelYearsEnumsMap,
@@ -23,11 +22,6 @@ import {
 import { IcbcRecordsMap } from "./services";
 import { CreditApplicationCredit } from "./data";
 import { getIsoYmdString, validateDate } from "@/app/lib/utils/date";
-import {
-  getAdjacentYear,
-  getComplianceDate,
-  getCurrentComplianceYear,
-} from "@/app/lib/utils/complianceYear";
 import { ValidationError } from "@/app/lib/utils/actionResponse";
 
 export const getWhereClause = (
@@ -103,7 +97,6 @@ export const getWhereClause = (
 
 export const getOrderByClause = (
   sorts: Record<string, string>,
-  defaultSortById: boolean,
   userIsGov: boolean,
 ): CreditApplicationOrderByWithRelationInput[] => {
   const result: CreditApplicationOrderByWithRelationInput[] = [];
@@ -135,9 +128,6 @@ export const getOrderByClause = (
     if (Object.keys(orderBy).length > 0) {
       result.push(orderBy);
     }
-  }
-  if (defaultSortById && result.length === 0) {
-    result.push({ id: "desc" });
   }
   return result;
 };
@@ -222,7 +212,6 @@ export const getRecordsWhereClause = (
 
 export const getRecordsOrderByClause = (
   sorts: Record<string, string>,
-  defaultSortById: boolean,
 ): CreditApplicationRecordOrderByWithRelationInput[] => {
   const result: CreditApplicationRecordOrderByWithRelationInput[] = [];
   Object.entries(sorts).forEach(([key, value]) => {
@@ -251,9 +240,6 @@ export const getRecordsOrderByClause = (
       result.push(orderBy);
     }
   });
-  if (defaultSortById && result.length === 0) {
-    result.push({ id: "desc" });
-  }
   return result;
 };
 
