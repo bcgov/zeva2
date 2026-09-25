@@ -1,6 +1,4 @@
-FROM node:24
-
-# FROM artifacts.developer.gov.bc.ca/docker-remote/node:24
+FROM artifacts.developer.gov.bc.ca/docker-remote/node:24
 
 WORKDIR /next
 
