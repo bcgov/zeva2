@@ -56,7 +56,5 @@ objects:
       strategy:
         dockerStrategy:
           dockerfilePath: ./Dockerfile-Bullmq-Openshift
-          pullSecret:
-            name: artifacts-pull-zeva2-artifactory-service-account-zbazfi
         type: Docker
       triggers: []
