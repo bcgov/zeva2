@@ -15,7 +15,7 @@ import {
 import { createNotification, updateNotification } from "../actions";
 import { useRouter } from "next/navigation";
 import { Routes } from "@/app/lib/constants";
-import { getNotificationPayload } from "../utilsClient";
+import { getNotificationPayload } from "../utils";
 import { Button, Dropdown, Textarea } from "@/app/lib/components";
 import { InAppNotificationType } from "@/prisma/generated/enums";
 import { getNotificationTypeEnumsToStringsMap } from "@/app/lib/utils/enumMaps";
