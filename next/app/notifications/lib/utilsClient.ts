@@ -1,5 +1,6 @@
 import { validateDate } from "@/app/lib/utils/date";
 import { NotificationFormData, NotificationPayload } from "./constants";
+import { InAppNotificationType } from "@/prisma/generated/enums";
 
 export const getNotificationPayload = (
   data: NotificationFormData,
@@ -13,6 +14,7 @@ export const getNotificationPayload = (
   const audienceIds = data.audienceIds;
   if (
     !type ||
+    !Object.values(InAppNotificationType).includes(type) ||
     !startDate ||
     !endDate ||
     allSuppliers === undefined ||
@@ -38,8 +40,8 @@ export const getNotificationPayload = (
     startDate,
     endDate,
     allSuppliers,
-    title,
-    message,
-    audienceIds,
+    title: title.trim(),
+    message: message.trim(),
+    audienceIds: allSuppliers ? [] : [...new Set(audienceIds)],
   };
 };

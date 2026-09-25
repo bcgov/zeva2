@@ -1,13 +1,13 @@
 import { Breadcrumbs } from "@/app/lib/components";
 import { getUserInfo } from "@/auth";
-import { Role } from "@/prisma/generated/enums";
 import { NotificationForm } from "../lib/components/NotificationForm";
 import { Routes } from "@/app/lib/constants";
 import { getOrgsMap } from "@/app/lib/data/orgs";
+import { canAuthorNotifications } from "../lib/permissions";
 
 const Page = async () => {
-  const { userRoles } = await getUserInfo();
-  if (!userRoles.includes(Role.ZEVA_IDIR_USER)) {
+  const { userIsGov, userRoles } = await getUserInfo();
+  if (!canAuthorNotifications(userIsGov, userRoles)) {
     return null;
   }
   const orgsMap = await getOrgsMap(null, true);

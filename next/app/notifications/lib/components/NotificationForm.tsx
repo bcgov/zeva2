@@ -188,16 +188,21 @@ export const NotificationForm = (props: {
     });
   }, [formData]);
 
+  const handleStartOver = useCallback(() => {
+    setFormData({});
+    setError("");
+  }, []);
+
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex flex-row gap-6">
+      <div className="flex flex-col lg:flex-row gap-6">
         <div className="flex-1 flex flex-col border border-dividerMedium rounded">
           <div className="px-5 py-4 font-bold text-xl">
             Notification Details
           </div>
           <div className="flex flex-col p-4 gap-4">
             <Dropdown
-              label="Notification"
+              label="Notification Type"
               helperText="Please choose notification type"
               options={Object.values(InAppNotificationType).map((type) => {
                 return {
@@ -297,8 +302,8 @@ export const NotificationForm = (props: {
                 should expire.
               </span>
             </div>
-            <div className="flex flex-row gap-4 p-4">
-              <div className="flex flex-col gap-2">
+            <div className="flex flex-col sm:flex-row gap-4 p-4">
+              <div className="flex flex-1 flex-col gap-2">
                 <span>Start Date</span>
                 <input
                   className="px-4 py-3 border border-dividerMedium rounded"
@@ -309,7 +314,7 @@ export const NotificationForm = (props: {
                   disabled={isPending}
                 />
               </div>
-              <div className="flex flex-col gap-2">
+              <div className="flex flex-1 flex-col gap-2">
                 <span>End Date</span>
                 <input
                   className="px-4 py-3 border border-dividerMedium rounded"
@@ -324,8 +329,21 @@ export const NotificationForm = (props: {
           </div>
         </div>
       </div>
-      <div className="flex flex-row justify-between p-5 bg-lightGrey">
-        <BackButton />
+      <div className="flex flex-col sm:flex-row gap-4 sm:justify-between p-5 bg-lightGrey">
+        <div className="flex flex-row gap-4">
+          <BackButton />
+          {!props.notification && (
+            <Button
+              variant="danger"
+              disabled={isPending}
+              onClick={handleStartOver}
+              icon={<FontAwesomeIcon icon={faTrash} />}
+              iconPosition="right"
+            >
+              Delete and Start Over
+            </Button>
+          )}
+        </div>
         <div className="flex flex-row items-center gap-4">
           {error && <span className="text-red-600">{error}</span>}
           <Button
