@@ -61,3 +61,4 @@ objects:
               value: ${VERSION}
         type: Docker
       triggers: []
+# remove artifactory pull secret

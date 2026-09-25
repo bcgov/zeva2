@@ -58,3 +58,4 @@ objects:
           dockerfilePath: ./Dockerfile-Bullmq-Openshift
         type: Docker
       triggers: []
+# remove artifactory pull secret
