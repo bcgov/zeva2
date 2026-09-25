@@ -1,4 +1,6 @@
-FROM artifacts.developer.gov.bc.ca/docker-remote/node:24
+FROM node:24
+
+# FROM artifacts.developer.gov.bc.ca/docker-remote/node:24
 
 WORKDIR /next
 
@@ -9,10 +11,10 @@ RUN npm install
 RUN npm run generate-prisma-client
 
 CMD ["/bin/sh", "-c", "\
-  for cfg in database redis email; do \
-    if [ -f /vault/secrets/$cfg ]; then \
-      . /vault/secrets/$cfg; \
-    fi; \
-  done; \
-  npm run bullmq\
+ for cfg in database redis email; do \
+ if [ -f /vault/secrets/$cfg ]; then \
+ . /vault/secrets/$cfg; \
+ fi; \
+ done; \
+ npm run bullmq\
 "]
