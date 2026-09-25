@@ -4,6 +4,7 @@ All notable changes to this project are documented in this file.
 
 | Version | Date | Type | Change |
 | --- | --- | --- | --- |
+| [1.66.1](https://github.com/bcgov/zeva2/compare/v1.66.0...v1.66.1) | 2026-09-25 | 🐛 Fix | small change ([#693](https://github.com/bcgov/zeva2/issues/693)) ([f44f5c5](https://github.com/bcgov/zeva2/commit/f44f5c5b488d996cecee5211a4f189a4cb32fd80)) |
 | [1.66.0](https://github.com/bcgov/zeva2/compare/v1.65.0...v1.66.0) | 2026-09-25 | ✨ Feature | updating create notification page, added permissions, added create button ([#691](https://github.com/bcgov/zeva2/issues/691)) ([6aa9d37](https://github.com/bcgov/zeva2/commit/6aa9d377a41cfe75974e50fc0e81a9c1b964582c)) |
 | [1.65.0](https://github.com/bcgov/zeva2/compare/v1.64.0...v1.65.0) | 2026-09-25 | ✨ Feature | all records table [#692](https://github.com/bcgov/zeva2/issues/692) ([#692](https://github.com/bcgov/zeva2/issues/692)) ([bff14a8](https://github.com/bcgov/zeva2/commit/bff14a8197e4dbd0616c534663b49b05792a5468)) |
 | [1.64.0](https://github.com/bcgov/zeva2/compare/v1.63.1...v1.64.0) | 2026-09-14 | ✨ Feature | penalty credits styling and audit history added ([#680](https://github.com/bcgov/zeva2/issues/680)) ([d7cf8d6](https://github.com/bcgov/zeva2/commit/d7cf8d6c8e2da8659683168eeb8bf89db5d8ec33)) |
