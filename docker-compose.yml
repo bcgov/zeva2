@@ -27,7 +27,7 @@ services:
       timeout: 5s
       retries: 5
   minio:
-    image: minio/minio:RELEASE.2025-04-22T22-12-26Z
+    image: ghcr.io/coollabsio/minio:latest
     volumes:
       - ./minio:/minio_files
     command: 'minio server /minio_files --console-address ":9001"'
@@ -35,7 +35,7 @@ services:
       - 9000:9000
       - 9001:9001
     healthcheck:
-      test: "curl -I --fail --max-time 10 http://localhost:9000/minio/health/live"
+      test: "mc ready local"
       start_period: 5s
       interval: 5s
       timeout: 5s
