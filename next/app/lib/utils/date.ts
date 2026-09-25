@@ -30,7 +30,7 @@ const isValidIsoYmdString = (s: string): boolean => {
 };
 
 // can be used client-side if used only to validate the date;
-// if using the resulting date, should be called server-side
+// if using the resulting date, should be called server-side, where the server's TZ = America/Vancouver
 export const validateDate = (s: string): [boolean, Date] => {
   const date = new Date(`${s}T00:00:00`);
   if (isValidIsoYmdString(s)) {
