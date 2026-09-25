@@ -12,7 +12,7 @@ import { getUserInfo } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { InAppNotificationStatus } from "@/prisma/generated/enums";
 import { NotificationPayload } from "./constants";
-import { getNotificationPayload } from "./utilsClient";
+import { getNotificationPayload } from "./utils";
 import { canAuthorNotifications } from "./permissions";
 
 type PayloadValidation =

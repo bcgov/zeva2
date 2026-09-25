@@ -6,9 +6,6 @@ export const padZeros = (s: string, n: number): string => {
   return s;
 };
 
-// the functions below are intended to be called server-side, where the server's TZ = America/Vancouver
-// IsoYmd refers to the YYYY-MM-DD format
-
 const isValidIsoYmdString = (s: string): boolean => {
   const components = s.split("-");
   if (components.length !== 3) {
@@ -32,6 +29,8 @@ const isValidIsoYmdString = (s: string): boolean => {
   return true;
 };
 
+// can be used client-side if used only to validate the date;
+// if using the resulting date, should be called server-side, where the server's TZ = America/Vancouver
 export const validateDate = (s: string): [boolean, Date] => {
   const date = new Date(`${s}T00:00:00`);
   if (isValidIsoYmdString(s)) {
@@ -40,11 +39,13 @@ export const validateDate = (s: string): [boolean, Date] => {
   return [false, date];
 };
 
+// intended to be called server-side, where the server's TZ = America/Vancouver
 export const getIsoYmdString = (d: Date): string => {
   // return "0NaN-NaN-NaN" if invalid date
   return `${padZeros(d.getFullYear().toString(), 4)}-${padZeros((d.getMonth() + 1).toString(), 2)}-${padZeros(d.getDate().toString(), 2)}`;
 };
 
+// intended to be called server-side, where the server's TZ = America/Vancouver
 export const getTimeWithTz = (d: Date): string => {
   // returns "NaN:NaN NaN" if date is invalid
   let tz = "NaN";
