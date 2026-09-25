@@ -112,7 +112,8 @@ export const getValidatedRecords = async (
   const take = pageSize;
   const where = getRecordsWhereClause(filters);
   where.creditApplicationId = creditApplicationId;
-  const orderBy = getRecordsOrderByClause(sorts, true);
+  const orderBy = getRecordsOrderByClause(sorts);
+  orderBy.push({ id: "asc" });
   return await prisma.$transaction([
     prisma.creditApplicationRecord.findMany({
       omit: {
@@ -206,7 +207,8 @@ export const getCreditApplications = async (
   const skip = (page - 1) * pageSize;
   const take = pageSize;
   const where: CreditApplicationWhereInput = getWhereClause(filters, userIsGov);
-  const orderBy = getOrderByClause(sorts, true, userIsGov);
+  const orderBy = getOrderByClause(sorts, userIsGov);
+  orderBy.push({ id: "asc" });
   if (userIsGov) {
     where.NOT = [
       {

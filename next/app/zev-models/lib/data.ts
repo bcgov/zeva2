@@ -43,7 +43,8 @@ export const getVehicles = async (
     issuedCount: true,
   };
   const where = getWhereClause(filters);
-  const orderBy = getOrderByClause(sorts, true);
+  const orderBy = getOrderByClause(sorts);
+  orderBy.push({ id: "asc" });
   if (userIsGov) {
     select = { ...select, organization: { select: { name: true } } };
   } else {

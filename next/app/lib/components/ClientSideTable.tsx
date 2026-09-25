@@ -25,7 +25,7 @@ import {
 interface IClientSideTableProps<T> {
   columns: ColumnDef<T, any>[];
   data: T[];
-  navigationAction?: (id: number) => void;
+  navigationAction?: (id: number, baseRoute?: string) => void;
   explicitSizing?: boolean;
   stackHeaderContents?: boolean;
   enableFiltering?: boolean;
@@ -49,10 +49,12 @@ interface IClientSideTableProps<T> {
   hideResetButton?: boolean;
   title?: string;
   headerContent?: React.ReactNode;
+  headerFilters?: React.ReactNode;
 }
 
 interface ZevaObject {
   id: number;
+  baseRoute?: string;
 }
 
 export const ClientSideTable = <T extends ZevaObject>({
@@ -69,6 +71,7 @@ export const ClientSideTable = <T extends ZevaObject>({
   hideResetButton = false,
   title,
   headerContent,
+  headerFilters,
 }: IClientSideTableProps<T>) => {
   const [sorting, setSorting] = React.useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
@@ -99,9 +102,9 @@ export const ClientSideTable = <T extends ZevaObject>({
     getPaginationRowModel: getPaginationRowModel(),
   });
 
-  const handleNavigation = (id: number) => {
+  const handleNavigation = (id: number, baseRoute?: string) => {
     if (navigationAction) {
-      navigationAction(id);
+      navigationAction(id, baseRoute);
     }
   };
 
@@ -136,6 +139,7 @@ export const ClientSideTable = <T extends ZevaObject>({
                 />
               </div>
             )}
+            {headerFilters}
           </div>
           {!hideResetButton && (
             <Button variant="secondary" size="small" onClick={handleReset}>
@@ -214,7 +218,9 @@ export const ClientSideTable = <T extends ZevaObject>({
                   <tr
                     key={row.id}
                     className={rowClassName}
-                    onClick={() => handleNavigation(row.original.id)}
+                    onClick={() =>
+                      handleNavigation(row.original.id, row.original.baseRoute)
+                    }
                   >
                     {row.getVisibleCells().map((cell) => {
                       return (

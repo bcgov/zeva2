@@ -64,10 +64,9 @@ export const getWhereClause = (filters: {
   return result;
 };
 
-export const getOrderByClause = (
-  sorts: { [key: string]: string },
-  defaultSortById: boolean,
-): VehicleOrderByWithRelationInput[] => {
+export const getOrderByClause = (sorts: {
+  [key: string]: string;
+}): VehicleOrderByWithRelationInput[] => {
   const result: VehicleOrderByWithRelationInput[] = [];
   for (const [key, value] of Object.entries(sorts)) {
     const orderBy: VehicleOrderByWithRelationInput = {};
@@ -97,9 +96,6 @@ export const getOrderByClause = (
     if (Object.keys(orderBy).length > 0) {
       result.push(orderBy);
     }
-  }
-  if (defaultSortById && result.length === 0) {
-    result.push({ id: "desc" });
   }
   return result;
 };
