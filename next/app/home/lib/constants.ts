@@ -37,6 +37,32 @@ export type SerializedAllRecordsRecord = {
   baseRoute: string;
 };
 
+export type ActivityFeedRecord = {
+  recordId: number;
+  recordType: RecordType;
+  activityType: string;
+  supplier: string;
+  route: string;
+  timestamp: Date;
+  user: {
+    roles: Role[];
+    firstName: string;
+    lastName: string;
+  };
+};
+
+export type SerializedActivityFeedRecord = {
+  id: number;
+  activityType: string;
+  recordType: string;
+  supplier: string;
+  performedBy: string;
+  date: string;
+  dateTime: string;
+  sortKey: string;
+  baseRoute: string;
+};
+
 export const recordTypes = [
   "Credit Application",
   "ZEV Model",

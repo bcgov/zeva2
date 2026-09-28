@@ -1,7 +1,9 @@
 import { getIsoYmdString, validateDate } from "@/app/lib/utils/date";
 import {
+  ActivityFeedRecord,
   AllRecordsRecord,
   RecordType,
+  SerializedActivityFeedRecord,
   SerializedAllRecordsRecord,
 } from "./constants";
 import { getRoleEnumsToStringsMap } from "@/app/lib/utils/enumMaps";
@@ -9,6 +11,35 @@ import Decimal from "decimal.js";
 
 export const getThirtyDaysAgo = () => {
   return new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+};
+
+// e.g. "Sep 28, 2026, 10:22 AM"
+export const getActivityDateTimeString = (d: Date): string => {
+  return d.toLocaleString("en-US", {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  });
+};
+
+export const getSerializedActivityFeedRecord = (
+  record: ActivityFeedRecord,
+): SerializedActivityFeedRecord => {
+  const rolesMap = getRoleEnumsToStringsMap();
+  const user = record.user;
+  return {
+    id: record.recordId,
+    activityType: record.activityType,
+    recordType: record.recordType,
+    supplier: record.supplier,
+    performedBy: `${user.firstName} ${user.lastName} - ${user.roles.map((role) => rolesMap[role]).join(", ")}`,
+    date: getIsoYmdString(record.timestamp),
+    dateTime: getActivityDateTimeString(record.timestamp),
+    sortKey: record.timestamp.toISOString(),
+    baseRoute: record.route,
+  };
 };
 
 export const getSerializedAllRecordsRecord = (
@@ -34,7 +65,7 @@ export const getSerializedAllRecordsRecord = (
 };
 
 export const getDateRangeOptions = (
-  records: SerializedAllRecordsRecord[],
+  records: { date: string }[],
   intervals: number,
 ): [string, string][] => {
   const dates = new Set<string>();

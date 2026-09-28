@@ -8,9 +8,11 @@ import {
   VehicleStatus,
 } from "@/prisma/generated/enums";
 import {
+  ActivityFeedRecord,
   AllRecordsRecord,
   Item,
   itemsToTake,
+  SerializedActivityFeedRecord,
   SerializedAllRecordsRecord,
 } from "./constants";
 import { prisma } from "@/lib/prisma";
@@ -28,7 +30,11 @@ import { mapOfStatusToSupplierStatus as myrMap } from "@/app/compliance-reportin
 import { mapOfStatusToSupplierStatus as caMap } from "@/app/zev-unit-activities/lib/credit-applications/constants";
 import { mapOfStatusToSupplierStatus as ctMap } from "@/app/zev-unit-activities/lib/credit-transfers/constants";
 import { getZevModelDetailsRoute } from "@/app/zev-models/lib/routes";
-import { getSerializedAllRecordsRecord, getThirtyDaysAgo } from "./utilsServer";
+import {
+  getSerializedActivityFeedRecord,
+  getSerializedAllRecordsRecord,
+  getThirtyDaysAgo,
+} from "./utilsServer";
 import {
   AgreementWhereInput,
   CreditApplicationWhereInput,
@@ -1406,5 +1412,198 @@ export const getAllMyrRecords = async (
       record,
       Routes.ModelYearReports,
     );
+  });
+};
+
+// Activity Feed: unlike All Records (which shows only the most recent status per record),
+// each history entry within the last 30 days is surfaced as its own activity.
+export const getActivityFeedCaRecords = async (): Promise<
+  SerializedActivityFeedRecord[]
+> => {
+  const thirtyDaysAgo = getThirtyDaysAgo();
+  const statusesMap = getCreditApplicationStatusEnumsToStringsMap();
+  const history = await prisma.creditApplicationHistory.findMany({
+    where: { timestamp: { gte: thirtyDaysAgo } },
+    select: {
+      timestamp: true,
+      userAction: true,
+      user: { select: { firstName: true, lastName: true, roles: true } },
+      creditApplication: {
+        select: { id: true, organization: { select: { name: true } } },
+      },
+    },
+    orderBy: { timestamp: "desc" },
+  });
+  return history.map((entry) => {
+    const record: ActivityFeedRecord = {
+      recordId: entry.creditApplication.id,
+      recordType: "Credit Application",
+      activityType: statusesMap[entry.userAction] ?? entry.userAction,
+      supplier: entry.creditApplication.organization.name,
+      route: `${Routes.CreditApplications}/${entry.creditApplication.id}`,
+      timestamp: entry.timestamp,
+      user: entry.user,
+    };
+    return getSerializedActivityFeedRecord(record);
+  });
+};
+
+export const getActivityFeedZevModelRecords = async (): Promise<
+  SerializedActivityFeedRecord[]
+> => {
+  const thirtyDaysAgo = getThirtyDaysAgo();
+  const statusesMap = getVehicleStatusEnumsToStringsMap();
+  const history = await prisma.vehicleHistory.findMany({
+    where: { timestamp: { gte: thirtyDaysAgo } },
+    select: {
+      timestamp: true,
+      userAction: true,
+      user: { select: { firstName: true, lastName: true, roles: true } },
+      vehicle: {
+        select: {
+          id: true,
+          status: true,
+          isActive: true,
+          organization: { select: { name: true } },
+        },
+      },
+    },
+    orderBy: { timestamp: "desc" },
+  });
+  return history.map((entry) => {
+    const record: ActivityFeedRecord = {
+      recordId: entry.vehicle.id,
+      recordType: "ZEV Model",
+      activityType: statusesMap[entry.userAction] ?? entry.userAction,
+      supplier: entry.vehicle.organization.name,
+      route: getZevModelDetailsRoute(entry.vehicle),
+      timestamp: entry.timestamp,
+      user: entry.user,
+    };
+    return getSerializedActivityFeedRecord(record);
+  });
+};
+
+export const getActivityFeedCreditTransferRecords = async (): Promise<
+  SerializedActivityFeedRecord[]
+> => {
+  const thirtyDaysAgo = getThirtyDaysAgo();
+  const statusesMap = getCreditTransferStatusEnumsToStringsMap();
+  const history = await prisma.creditTransferHistory.findMany({
+    where: { timestamp: { gte: thirtyDaysAgo } },
+    select: {
+      timestamp: true,
+      userAction: true,
+      user: { select: { firstName: true, lastName: true, roles: true } },
+      creditTransfer: {
+        select: { id: true, transferFrom: { select: { name: true } } },
+      },
+    },
+    orderBy: { timestamp: "desc" },
+  });
+  return history.map((entry) => {
+    const record: ActivityFeedRecord = {
+      recordId: entry.creditTransfer.id,
+      recordType: "Credit Transfer",
+      activityType: statusesMap[entry.userAction] ?? entry.userAction,
+      supplier: entry.creditTransfer.transferFrom.name,
+      route: `${Routes.CreditTransfers}/${entry.creditTransfer.id}`,
+      timestamp: entry.timestamp,
+      user: entry.user,
+    };
+    return getSerializedActivityFeedRecord(record);
+  });
+};
+
+export const getActivityFeedCreditAgreementRecords = async (): Promise<
+  SerializedActivityFeedRecord[]
+> => {
+  const thirtyDaysAgo = getThirtyDaysAgo();
+  const statusesMap = getAgreementStatusEnumsToStringsMap();
+  const history = await prisma.agreementHistory.findMany({
+    where: { timestamp: { gte: thirtyDaysAgo } },
+    select: {
+      timestamp: true,
+      userAction: true,
+      user: { select: { firstName: true, lastName: true, roles: true } },
+      agreement: {
+        select: { id: true, organization: { select: { name: true } } },
+      },
+    },
+    orderBy: { timestamp: "desc" },
+  });
+  return history.map((entry) => {
+    const record: ActivityFeedRecord = {
+      recordId: entry.agreement.id,
+      recordType: "Credit Agreement",
+      activityType: statusesMap[entry.userAction] ?? entry.userAction,
+      supplier: entry.agreement.organization.name,
+      route: `${Routes.CreditAgreements}/${entry.agreement.id}`,
+      timestamp: entry.timestamp,
+      user: entry.user,
+    };
+    return getSerializedActivityFeedRecord(record);
+  });
+};
+
+export const getActivityFeedPenaltyCreditRecords = async (): Promise<
+  SerializedActivityFeedRecord[]
+> => {
+  const thirtyDaysAgo = getThirtyDaysAgo();
+  const statusesMap = getPenaltyCreditStatusEnumsToStringsMap();
+  const history = await prisma.penaltyCreditHistory.findMany({
+    where: { timestamp: { gte: thirtyDaysAgo } },
+    select: {
+      timestamp: true,
+      userAction: true,
+      user: { select: { firstName: true, lastName: true, roles: true } },
+      penaltyCredit: {
+        select: { id: true, organization: { select: { name: true } } },
+      },
+    },
+    orderBy: { timestamp: "desc" },
+  });
+  return history.map((entry) => {
+    const record: ActivityFeedRecord = {
+      recordId: entry.penaltyCredit.id,
+      recordType: "Penalty Credits",
+      activityType: statusesMap[entry.userAction] ?? entry.userAction,
+      supplier: entry.penaltyCredit.organization.name,
+      route: `${Routes.PenaltyCredits}/${entry.penaltyCredit.id}`,
+      timestamp: entry.timestamp,
+      user: entry.user,
+    };
+    return getSerializedActivityFeedRecord(record);
+  });
+};
+
+export const getActivityFeedMyrRecords = async (): Promise<
+  SerializedActivityFeedRecord[]
+> => {
+  const thirtyDaysAgo = getThirtyDaysAgo();
+  const statusesMap = getMyrStatusEnumsToStringsMap();
+  const history = await prisma.modelYearReportHistory.findMany({
+    where: { timestamp: { gte: thirtyDaysAgo } },
+    select: {
+      timestamp: true,
+      userAction: true,
+      user: { select: { firstName: true, lastName: true, roles: true } },
+      modelYearReport: {
+        select: { id: true, organization: { select: { name: true } } },
+      },
+    },
+    orderBy: { timestamp: "desc" },
+  });
+  return history.map((entry) => {
+    const record: ActivityFeedRecord = {
+      recordId: entry.modelYearReport.id,
+      recordType: "Model Year Report",
+      activityType: statusesMap[entry.userAction] ?? entry.userAction,
+      supplier: entry.modelYearReport.organization.name,
+      route: `${Routes.ModelYearReports}/${entry.modelYearReport.id}`,
+      timestamp: entry.timestamp,
+      user: entry.user,
+    };
+    return getSerializedActivityFeedRecord(record);
   });
 };
