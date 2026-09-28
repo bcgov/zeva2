@@ -1415,8 +1415,6 @@ export const getAllMyrRecords = async (
   });
 };
 
-// Activity Feed: unlike All Records (which shows only the most recent status per record),
-// each history entry within the last 30 days is surfaced as its own activity.
 export const getActivityFeedCaRecords = async (): Promise<
   SerializedActivityFeedRecord[]
 > => {

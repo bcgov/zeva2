@@ -13,7 +13,6 @@ export const getThirtyDaysAgo = () => {
   return new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
 };
 
-// e.g. "Sep 28, 2026, 10:22 AM"
 export const getActivityDateTimeString = (d: Date): string => {
   return d.toLocaleString("en-US", {
     year: "numeric",
