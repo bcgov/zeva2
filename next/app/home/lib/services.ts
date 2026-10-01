@@ -37,8 +37,11 @@ import {
 } from "./utilsServer";
 import {
   AgreementWhereInput,
+  CreditApplicationHistoryWhereInput,
   CreditApplicationWhereInput,
+  CreditTransferHistoryWhereInput,
   CreditTransferWhereInput,
+  ModelYearReportHistoryWhereInput,
   ModelYearReportWhereInput,
   PenaltyCreditWhereInput,
   VehicleWhereInput,
@@ -958,6 +961,7 @@ export const getAllCaRecords = async (
       },
     },
   };
+  const historyWhereClause: CreditApplicationHistoryWhereInput = {};
   if (userIsGov) {
     if (userRoles.includes(Role.DIRECTOR)) {
       whereClause.status = {
@@ -980,11 +984,18 @@ export const getAllCaRecords = async (
     }
   } else if (userOrgId) {
     whereClause.organizationId = userOrgId;
+    historyWhereClause.userAction = {
+      notIn: [
+        CreditApplicationStatus.RECOMMEND_APPROVAL,
+        CreditApplicationStatus.RETURNED_TO_ANALYST,
+      ],
+    };
   }
   const creditApplications = await prisma.creditApplication.findMany({
     where: whereClause,
     select: {
       CreditApplicationHistory: {
+        where: historyWhereClause,
         select: {
           timestamp: true,
           user: {
@@ -1123,6 +1134,7 @@ export const getAllCreditTransferRecords = async (
       },
     },
   };
+  const historyWhereClause: CreditTransferHistoryWhereInput = {};
   if (userIsGov) {
     if (userRoles.includes(Role.DIRECTOR)) {
       whereClause.status = {
@@ -1148,11 +1160,19 @@ export const getAllCreditTransferRecords = async (
       { transferFromId: userOrgId },
       { transferToId: userOrgId, status: { not: CreditTransferStatus.DRAFT } },
     ];
+    historyWhereClause.userAction = {
+      notIn: [
+        CreditTransferStatus.RECOMMEND_APPROVAL_GOV,
+        CreditTransferStatus.RECOMMEND_REJECTION_GOV,
+        CreditTransferStatus.RETURNED_TO_ANALYST,
+      ],
+    };
   }
   const transfers = await prisma.creditTransfer.findMany({
     where: whereClause,
     select: {
       creditTransferHistory: {
+        where: historyWhereClause,
         select: {
           timestamp: true,
           user: {
@@ -1353,6 +1373,7 @@ export const getAllMyrRecords = async (
       },
     },
   };
+  const historyWhereClause: ModelYearReportHistoryWhereInput = {};
   if (userIsGov) {
     if (userRoles.includes(Role.DIRECTOR)) {
       whereClause.status = {
@@ -1371,11 +1392,18 @@ export const getAllMyrRecords = async (
     }
   } else if (userOrgId) {
     whereClause.organizationId = userOrgId;
+    historyWhereClause.userAction = {
+      notIn: [
+        ModelYearReportStatus.RETURNED_TO_ANALYST,
+        ModelYearReportStatus.SUBMITTED_TO_DIRECTOR,
+      ],
+    };
   }
   const myrs = await prisma.modelYearReport.findMany({
     where: whereClause,
     select: {
       modelYearReportHistory: {
+        where: historyWhereClause,
         select: {
           timestamp: true,
           user: {
@@ -1415,13 +1443,17 @@ export const getAllMyrRecords = async (
   });
 };
 
+// intended for gov users
 export const getActivityFeedCaRecords = async (): Promise<
   SerializedActivityFeedRecord[]
 > => {
   const thirtyDaysAgo = getThirtyDaysAgo();
   const statusesMap = getCreditApplicationStatusEnumsToStringsMap();
   const history = await prisma.creditApplicationHistory.findMany({
-    where: { timestamp: { gte: thirtyDaysAgo } },
+    where: {
+      timestamp: { gte: thirtyDaysAgo },
+      userAction: { not: CreditApplicationStatus.DRAFT },
+    },
     select: {
       timestamp: true,
       userAction: true,
@@ -1446,13 +1478,19 @@ export const getActivityFeedCaRecords = async (): Promise<
   });
 };
 
+// intended for gov users
 export const getActivityFeedZevModelRecords = async (): Promise<
   SerializedActivityFeedRecord[]
 > => {
   const thirtyDaysAgo = getThirtyDaysAgo();
   const statusesMap = getVehicleStatusEnumsToStringsMap();
   const history = await prisma.vehicleHistory.findMany({
-    where: { timestamp: { gte: thirtyDaysAgo } },
+    where: {
+      timestamp: { gte: thirtyDaysAgo },
+      userAction: {
+        notIn: [VehicleStatus.DRAFT, VehicleStatus.RETURNED_TO_SUPPLIER],
+      },
+    },
     select: {
       timestamp: true,
       userAction: true,
@@ -1482,13 +1520,24 @@ export const getActivityFeedZevModelRecords = async (): Promise<
   });
 };
 
+// intended for gov users
 export const getActivityFeedCreditTransferRecords = async (): Promise<
   SerializedActivityFeedRecord[]
 > => {
   const thirtyDaysAgo = getThirtyDaysAgo();
   const statusesMap = getCreditTransferStatusEnumsToStringsMap();
   const history = await prisma.creditTransferHistory.findMany({
-    where: { timestamp: { gte: thirtyDaysAgo } },
+    where: {
+      timestamp: { gte: thirtyDaysAgo },
+      userAction: {
+        notIn: [
+          CreditTransferStatus.DRAFT,
+          CreditTransferStatus.SUBMITTED_TO_TRANSFER_TO,
+          CreditTransferStatus.REJECTED_BY_TRANSFER_TO,
+          CreditTransferStatus.RESCINDED_BY_TRANSFER_FROM,
+        ],
+      },
+    },
     select: {
       timestamp: true,
       userAction: true,
@@ -1513,6 +1562,7 @@ export const getActivityFeedCreditTransferRecords = async (): Promise<
   });
 };
 
+// intended for gov users
 export const getActivityFeedCreditAgreementRecords = async (): Promise<
   SerializedActivityFeedRecord[]
 > => {
@@ -1544,6 +1594,7 @@ export const getActivityFeedCreditAgreementRecords = async (): Promise<
   });
 };
 
+// intended for gov users
 export const getActivityFeedPenaltyCreditRecords = async (): Promise<
   SerializedActivityFeedRecord[]
 > => {
@@ -1575,13 +1626,22 @@ export const getActivityFeedPenaltyCreditRecords = async (): Promise<
   });
 };
 
+// intended for gov users
 export const getActivityFeedMyrRecords = async (): Promise<
   SerializedActivityFeedRecord[]
 > => {
   const thirtyDaysAgo = getThirtyDaysAgo();
   const statusesMap = getMyrStatusEnumsToStringsMap();
   const history = await prisma.modelYearReportHistory.findMany({
-    where: { timestamp: { gte: thirtyDaysAgo } },
+    where: {
+      timestamp: { gte: thirtyDaysAgo },
+      userAction: {
+        notIn: [
+          ModelYearReportStatus.DRAFT,
+          ModelYearReportStatus.RETURNED_TO_SUPPLIER,
+        ],
+      },
+    },
     select: {
       timestamp: true,
       userAction: true,

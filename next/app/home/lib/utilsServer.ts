@@ -1,4 +1,8 @@
-import { getIsoYmdString, validateDate } from "@/app/lib/utils/date";
+import {
+  getIsoYmdString,
+  getTimeWithTz,
+  validateDate,
+} from "@/app/lib/utils/date";
 import {
   ActivityFeedRecord,
   AllRecordsRecord,
@@ -13,16 +17,6 @@ export const getThirtyDaysAgo = () => {
   return new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
 };
 
-export const getActivityDateTimeString = (d: Date): string => {
-  return d.toLocaleString("en-US", {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-  });
-};
-
 export const getSerializedActivityFeedRecord = (
   record: ActivityFeedRecord,
 ): SerializedActivityFeedRecord => {
@@ -35,7 +29,7 @@ export const getSerializedActivityFeedRecord = (
     supplier: record.supplier,
     performedBy: `${user.firstName} ${user.lastName} - ${user.roles.map((role) => rolesMap[role]).join(", ")}`,
     date: getIsoYmdString(record.timestamp),
-    dateTime: getActivityDateTimeString(record.timestamp),
+    dateTime: `${getIsoYmdString(record.timestamp)} ${getTimeWithTz(record.timestamp)}`,
     sortKey: record.timestamp.toISOString(),
     baseRoute: record.route,
   };
