@@ -53,7 +53,11 @@ export const getTimeWithTz = (d: Date): string => {
   if (tzOffset === 480) {
     tz = "PST";
   } else if (tzOffset === 420) {
-    tz = "PDT";
+    if (d >= new Date("2026-03-09T00:00:00")) {
+      tz = "PCT";
+    } else {
+      tz = "PDT";
+    }
   }
   return `${padZeros(d.getHours().toString(), 2)}:${padZeros(d.getMinutes().toString(), 2)} ${tz}`;
 };

@@ -952,12 +952,19 @@ export const getAllCaRecords = async (
   }
   const thirtyDaysAgo = getThirtyDaysAgo();
   const statusesMap = getCreditApplicationStatusEnumsToStringsMap();
+  const supplierStatusesToExclude = [
+    CreditApplicationStatus.RECOMMEND_APPROVAL,
+    CreditApplicationStatus.RETURNED_TO_ANALYST,
+  ];
   const whereClause: CreditApplicationWhereInput = {
     CreditApplicationHistory: {
       some: {
         timestamp: {
           gte: thirtyDaysAgo,
         },
+        ...(userIsGov
+          ? {}
+          : { userAction: { notIn: supplierStatusesToExclude } }),
       },
     },
   };
@@ -985,10 +992,7 @@ export const getAllCaRecords = async (
   } else if (userOrgId) {
     whereClause.organizationId = userOrgId;
     historyWhereClause.userAction = {
-      notIn: [
-        CreditApplicationStatus.RECOMMEND_APPROVAL,
-        CreditApplicationStatus.RETURNED_TO_ANALYST,
-      ],
+      notIn: supplierStatusesToExclude,
     };
   }
   const creditApplications = await prisma.creditApplication.findMany({
@@ -1125,12 +1129,20 @@ export const getAllCreditTransferRecords = async (
   }
   const thirtyDaysAgo = getThirtyDaysAgo();
   const statusesMap = getCreditTransferStatusEnumsToStringsMap();
+  const supplierStatusesToExclude = [
+    CreditTransferStatus.RECOMMEND_APPROVAL_GOV,
+    CreditTransferStatus.RECOMMEND_REJECTION_GOV,
+    CreditTransferStatus.RETURNED_TO_ANALYST,
+  ];
   const whereClause: CreditTransferWhereInput = {
     creditTransferHistory: {
       some: {
         timestamp: {
           gte: thirtyDaysAgo,
         },
+        ...(userIsGov
+          ? {}
+          : { userAction: { notIn: supplierStatusesToExclude } }),
       },
     },
   };
@@ -1161,11 +1173,7 @@ export const getAllCreditTransferRecords = async (
       { transferToId: userOrgId, status: { not: CreditTransferStatus.DRAFT } },
     ];
     historyWhereClause.userAction = {
-      notIn: [
-        CreditTransferStatus.RECOMMEND_APPROVAL_GOV,
-        CreditTransferStatus.RECOMMEND_REJECTION_GOV,
-        CreditTransferStatus.RETURNED_TO_ANALYST,
-      ],
+      notIn: supplierStatusesToExclude,
     };
   }
   const transfers = await prisma.creditTransfer.findMany({
@@ -1364,12 +1372,19 @@ export const getAllMyrRecords = async (
   }
   const thirtyDaysAgo = getThirtyDaysAgo();
   const statusesMap = getMyrStatusEnumsToStringsMap();
+  const supplierStatusesToExclude = [
+    ModelYearReportStatus.RETURNED_TO_ANALYST,
+    ModelYearReportStatus.SUBMITTED_TO_DIRECTOR,
+  ];
   const whereClause: ModelYearReportWhereInput = {
     modelYearReportHistory: {
       some: {
         timestamp: {
           gte: thirtyDaysAgo,
         },
+        ...(userIsGov
+          ? {}
+          : { userAction: { notIn: supplierStatusesToExclude } }),
       },
     },
   };
@@ -1393,10 +1408,7 @@ export const getAllMyrRecords = async (
   } else if (userOrgId) {
     whereClause.organizationId = userOrgId;
     historyWhereClause.userAction = {
-      notIn: [
-        ModelYearReportStatus.RETURNED_TO_ANALYST,
-        ModelYearReportStatus.SUBMITTED_TO_DIRECTOR,
-      ],
+      notIn: supplierStatusesToExclude,
     };
   }
   const myrs = await prisma.modelYearReport.findMany({
