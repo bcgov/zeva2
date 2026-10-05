@@ -27,7 +27,7 @@ services:
       timeout: 5s
       retries: 5
   minio:
-    image: ghcr.io/coollabsio/minio:latest
+    image: ghcr.io/coollabsio/minio:2025-10-15T17-29-55Z
     volumes:
       - ./minio:/minio_files
     command: 'minio server /minio_files --console-address ":9001"'

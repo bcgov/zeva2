@@ -1,4 +1,4 @@
-FROM node:24.14.1
+FROM node:26.10.0
 
 WORKDIR /next
 
