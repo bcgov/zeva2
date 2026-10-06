@@ -20,6 +20,7 @@ export const serializeNotificationSparse = (
     startDate: getIsoYmdString(notification.startTimestamp),
     endDate: getIsoYmdString(notification.endTimestamp),
     allSuppliers: notification.allSuppliers,
+    hasBeenPublished: notification.hasBeenPublished,
   };
 };
 

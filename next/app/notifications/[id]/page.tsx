@@ -56,6 +56,13 @@ const Page = async (props: { params: Promise<{ id: string }> }) => {
         notificationStatus={notification.status}
         notificationOwnerId={notification.ownerId}
         userId={userId}
+        audience={
+          notification.allSuppliers
+            ? "All Suppliers"
+            : notification.audience.join(", ")
+        }
+        endDate={notification.endDate}
+        hasBeenPublished={notification.hasBeenPublished}
       />
     </div>
   );
