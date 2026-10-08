@@ -2,6 +2,7 @@ import { Row } from "./layout";
 import { getReportableBalanceAB } from "@/app/zev-unit-activities/lib/zev-unit-transactions/data";
 import { getUserInfo } from "@/auth";
 import { PrimaryNavbar } from "./PrimaryNavbar";
+import { getRoleEnumsToStringsMap } from "../utils/enumMaps";
 
 /** Basic Header component containing the BCGOV logo and title of the application. */
 export const Header = async () => {
@@ -12,6 +13,8 @@ export const Header = async () => {
   if (!userIsGov) {
     balance = await getReportableBalanceAB(userOrgId);
   }
+  const rolesMap = getRoleEnumsToStringsMap();
+  const roles = userRoles.map((role) => rolesMap[role]).join(", ");
 
   return (
     <div className="w-full flex flex-col">
@@ -24,7 +27,10 @@ export const Header = async () => {
         <span className="text-xl">Zero-Emission Vehicles Reporting System</span>
         {balance ? (
           <div className="ml-auto flex items-center gap-4 text-sm sm:text-base">
-            <span className="font-semibold">{userOrgName}</span>
+            <div className="flex flex-col items-end leading-tight gap-1">
+              <span className="font-semibold">{userOrgName}</span>
+              <span className="text-xs sm:text-sm">Role: {roles}</span>
+            </div>
             <span className="h-8 border-l border-white/70" />
             {balance === "deficit" ? (
               <span className="font-semibold">Deficit</span>
