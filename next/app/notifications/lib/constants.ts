@@ -49,3 +49,7 @@ export type ActiveNotificationForSupplier = {
   title: string;
   message: string;
 };
+
+export type PayloadValidation =
+  | { success: true; payload: NotificationPayload }
+  | { success: false; error: string };

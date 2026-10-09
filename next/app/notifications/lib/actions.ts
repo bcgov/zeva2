@@ -12,23 +12,8 @@ import { getUserInfo } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { InAppNotificationStatus } from "@/prisma/generated/enums";
 import { NotificationPayload } from "./constants";
-import { getNotificationPayload } from "./utils";
 import { canAuthorNotifications } from "./permissions";
-
-type PayloadValidation =
-  | { success: true; payload: NotificationPayload }
-  | { success: false; error: string };
-
-const validatePayload = (payload: NotificationPayload): PayloadValidation => {
-  try {
-    return { success: true, payload: getNotificationPayload(payload) };
-  } catch (error) {
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : "Invalid notification!",
-    };
-  }
-};
+import { validatePayload } from "./utilsServer";
 
 export const createNotification = async (
   payload: NotificationPayload,
@@ -94,7 +79,9 @@ export const updateNotification = async (
   const notification = await prisma.inAppNotification.findUnique({
     where: {
       id: notificationId,
-      status: InAppNotificationStatus.DRAFT,
+      status: {
+        in: [InAppNotificationStatus.CANCELLED, InAppNotificationStatus.DRAFT],
+      },
       userId,
     },
   });
@@ -146,7 +133,10 @@ export const updateNotification = async (
 export const deleteNotification = async (
   notificationId: number,
 ): Promise<ErrorOrSuccessActionResponse> => {
-  const { userId } = await getUserInfo();
+  const { userIsGov, userId, userRoles } = await getUserInfo();
+  if (!canAuthorNotifications(userIsGov, userRoles)) {
+    return getErrorActionResponse("Unauthorized!");
+  }
   const notification = await prisma.inAppNotification.findUnique({
     where: {
       id: notificationId,
@@ -177,11 +167,16 @@ export const deleteNotification = async (
 export const publishNotification = async (
   notificationId: number,
 ): Promise<ErrorOrSuccessActionResponse> => {
-  const { userId } = await getUserInfo();
+  const { userIsGov, userId, userRoles } = await getUserInfo();
+  if (!canAuthorNotifications(userIsGov, userRoles)) {
+    return getErrorActionResponse("Unauthorized!");
+  }
   const notification = await prisma.inAppNotification.findUnique({
     where: {
       id: notificationId,
-      status: InAppNotificationStatus.DRAFT,
+      status: {
+        in: [InAppNotificationStatus.CANCELLED, InAppNotificationStatus.DRAFT],
+      },
       userId,
     },
   });
@@ -206,6 +201,34 @@ export const publishNotification = async (
     data: {
       status,
     },
+  });
+  return getSuccessActionResponse();
+};
+
+export const cancelNotification = async (
+  notificationId: number,
+): Promise<ErrorOrSuccessActionResponse> => {
+  const { userIsGov, userId, userRoles } = await getUserInfo();
+  if (!canAuthorNotifications(userIsGov, userRoles)) {
+    return getErrorActionResponse("Unauthorized!");
+  }
+  const notification = await prisma.inAppNotification.findUnique({
+    where: {
+      id: notificationId,
+      userId,
+      status: {
+        in: [InAppNotificationStatus.ACTIVE, InAppNotificationStatus.SCHEDULED],
+      },
+    },
+  });
+  if (!notification) {
+    return getErrorActionResponse(
+      "Only the notification owner may cancel an active or scheduled notification.",
+    );
+  }
+  await prisma.inAppNotification.update({
+    where: { id: notificationId },
+    data: { status: InAppNotificationStatus.CANCELLED },
   });
   return getSuccessActionResponse();
 };

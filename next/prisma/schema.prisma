@@ -784,6 +784,7 @@ model ReassessmentHistory {
 
 enum InAppNotificationStatus {
   ACTIVE
+  CANCELLED
   DRAFT
   EXPIRED
   SCHEDULED

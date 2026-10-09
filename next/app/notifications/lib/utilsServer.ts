@@ -1,9 +1,12 @@
 import { getIsoYmdString } from "@/app/lib/utils/date";
 import {
   NotificationObject,
+  NotificationPayload,
+  PayloadValidation,
   SerializedNotificationFull,
   SerializedNotificationSparse,
 } from "./constants";
+import { getNotificationPayload } from "./utils";
 
 export const serializeNotificationSparse = (
   notification: NotificationObject,
@@ -36,4 +39,17 @@ export const serializeNotificationFull = (
       return item.organization.id;
     }),
   };
+};
+
+export const validatePayload = (
+  payload: NotificationPayload,
+): PayloadValidation => {
+  try {
+    return { success: true, payload: getNotificationPayload(payload) };
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Invalid notification!",
+    };
+  }
 };

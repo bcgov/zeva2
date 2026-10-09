@@ -24,6 +24,9 @@ export const NotificationStatusBanner = (props: {
     }
   } else if (props.status === InAppNotificationStatus.EXPIRED) {
     variant = "info";
+  } else if (props.status === InAppNotificationStatus.CANCELLED) {
+    variant = "info";
+    secondaryText = `Your system notification "${props.title}" has been cancelled and is no longer visible to suppliers.`;
   }
   if (!variant) {
     return null;
