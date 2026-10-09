@@ -5,6 +5,7 @@ import { Breadcrumbs } from "@/app/lib/components";
 import { Routes } from "@/app/lib/constants";
 import { NotificationForm } from "../../lib/components/NotificationForm";
 import { canAuthorNotifications } from "../../lib/permissions";
+import { InAppNotificationStatus } from "@/prisma/generated/enums";
 
 const Page = async (props: { params: Promise<{ id: string }> }) => {
   const { userId, userIsGov, userRoles } = await getUserInfo();
@@ -15,7 +16,8 @@ const Page = async (props: { params: Promise<{ id: string }> }) => {
     !notification ||
     notification.ownerId !== userId ||
     !canAuthorNotifications(userIsGov, userRoles) ||
-    !["DRAFT", "ACTIVE", "SCHEDULED"].includes(notification.status)
+    (notification.status !== InAppNotificationStatus.CANCELLED &&
+      notification.status !== InAppNotificationStatus.DRAFT)
   ) {
     return null;
   }

@@ -27,7 +27,6 @@ export type SerializedNotificationSparse = {
   startDate: string;
   endDate: string;
   allSuppliers: boolean;
-  hasBeenPublished: boolean;
 };
 
 export type SerializedNotificationFull = SerializedNotificationSparse & {
@@ -38,7 +37,7 @@ export type SerializedNotificationFull = SerializedNotificationSparse & {
 
 export type NotificationPayload = Omit<
   SerializedNotificationFull,
-  "id" | "owner" | "ownerId" | "status" | "audience" | "hasBeenPublished"
+  "id" | "owner" | "ownerId" | "status" | "audience"
 >;
 
 export type NotificationFormData = Partial<NotificationPayload> & {
@@ -50,3 +49,7 @@ export type ActiveNotificationForSupplier = {
   title: string;
   message: string;
 };
+
+export type PayloadValidation =
+  | { success: true; payload: NotificationPayload }
+  | { success: false; error: string };

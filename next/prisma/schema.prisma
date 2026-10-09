@@ -809,7 +809,6 @@ model InAppNotification {
   startTimestamp                 DateTime                        @map("start_timestamp") @db.Timestamptz(6)
   endTimestamp                   DateTime                        @map("end_timestamp") @db.Timestamptz(6)
   allSuppliers                   Boolean                         @map("all_suppliers")
-  hasBeenPublished               Boolean                         @default(false) @map("has_been_published")
   inAppNotificationOrganizations InAppNotificationOrganization[]
 
   @@map("in_app_notification")

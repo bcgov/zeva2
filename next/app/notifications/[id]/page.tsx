@@ -62,7 +62,6 @@ const Page = async (props: { params: Promise<{ id: string }> }) => {
             : notification.audience.join(", ")
         }
         endDate={notification.endDate}
-        hasBeenPublished={notification.hasBeenPublished}
       />
     </div>
   );

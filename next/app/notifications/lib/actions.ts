@@ -12,29 +12,8 @@ import { getUserInfo } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { InAppNotificationStatus } from "@/prisma/generated/enums";
 import { NotificationPayload } from "./constants";
-import { getNotificationPayload } from "./utils";
 import { canAuthorNotifications } from "./permissions";
-
-type PayloadValidation =
-  | { success: true; payload: NotificationPayload }
-  | { success: false; error: string };
-
-const validatePayload = (payload: NotificationPayload): PayloadValidation => {
-  try {
-    return { success: true, payload: getNotificationPayload(payload) };
-  } catch (error) {
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : "Invalid notification!",
-    };
-  }
-};
-
-const editableStatuses: InAppNotificationStatus[] = [
-  InAppNotificationStatus.DRAFT,
-  InAppNotificationStatus.ACTIVE,
-  InAppNotificationStatus.SCHEDULED,
-];
+import { validatePayload } from "./utilsServer";
 
 export const createNotification = async (
   payload: NotificationPayload,
@@ -100,7 +79,9 @@ export const updateNotification = async (
   const notification = await prisma.inAppNotification.findUnique({
     where: {
       id: notificationId,
-      status: { in: editableStatuses },
+      status: {
+        in: [InAppNotificationStatus.CANCELLED, InAppNotificationStatus.DRAFT],
+      },
       userId,
     },
   });
@@ -122,8 +103,6 @@ export const updateNotification = async (
         id: notificationId,
       },
       data: {
-        // Published notifications return to review before their changes go live.
-        status: InAppNotificationStatus.DRAFT,
         type: validatedPayload.type,
         title: validatedPayload.title,
         message: validatedPayload.message,
@@ -195,7 +174,9 @@ export const publishNotification = async (
   const notification = await prisma.inAppNotification.findUnique({
     where: {
       id: notificationId,
-      status: InAppNotificationStatus.DRAFT,
+      status: {
+        in: [InAppNotificationStatus.CANCELLED, InAppNotificationStatus.DRAFT],
+      },
       userId,
     },
   });
@@ -219,7 +200,6 @@ export const publishNotification = async (
     },
     data: {
       status,
-      hasBeenPublished: true,
     },
   });
   return getSuccessActionResponse();

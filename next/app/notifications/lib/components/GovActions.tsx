@@ -26,7 +26,6 @@ export const GovActions = (props: {
   userId: number;
   audience: string;
   endDate: string;
-  hasBeenPublished: boolean;
 }) => {
   const router = useRouter();
   const [error, setError] = useState<string>("");
@@ -34,6 +33,28 @@ export const GovActions = (props: {
   const isOwner = useMemo(() => {
     return props.notificationOwnerId === props.userId;
   }, [props.notificationOwnerId, props.userId]);
+
+  const canCancel = useMemo(() => {
+    if (
+      isOwner &&
+      (props.notificationStatus === InAppNotificationStatus.ACTIVE ||
+        props.notificationStatus === InAppNotificationStatus.SCHEDULED)
+    ) {
+      return true;
+    }
+    return false;
+  }, [isOwner, props.notificationStatus]);
+
+  const canEditAndPublish = useMemo(() => {
+    if (
+      isOwner &&
+      (props.notificationStatus === InAppNotificationStatus.CANCELLED ||
+        props.notificationStatus === InAppNotificationStatus.DRAFT)
+    ) {
+      return true;
+    }
+    return false;
+  }, [isOwner, props.notificationStatus]);
 
   const handleGoToEdit = useCallback(() => {
     router.push(`${Routes.Notifications}/${props.notificationId}/edit`);
@@ -103,7 +124,7 @@ export const GovActions = (props: {
             showModal={true}
             modalType="warning"
             title="Cancel Notification?"
-            content={`You are about to cancel a notification that is currently scheduled to be displayed to ${props.audience} until ${props.endDate}. Once cancelled, the notification will no longer be visible to users after the page is refreshed. Are you sure you want to cancel this notification?`}
+            content={`You are about to cancel a notification that is being displayed or scheduled to be displayed to ${props.audience} until ${props.endDate}. Once cancelled, the notification will no longer be visible to users after the page is refreshed. Are you sure you want to cancel this notification?`}
             confirmLabel="Confirm Cancellation"
             handleSubmit={handleCancelNotification}
             handleCancel={() => setModal(null)}
@@ -131,30 +152,26 @@ export const GovActions = (props: {
     ],
   );
 
-  const isPublished =
-    props.notificationStatus === InAppNotificationStatus.ACTIVE ||
-    props.notificationStatus === InAppNotificationStatus.SCHEDULED;
-  const isDraft = props.notificationStatus === InAppNotificationStatus.DRAFT;
-
   return (
     <div className="flex flex-col gap-4">
       {error && <span className="text-red-600">{error}</span>}
       <div className="flex flex-row justify-between p-5 bg-lightGrey">
         <div className="flex flex-row gap-4">
           <BackButton />
-          {isOwner && isDraft && !props.hasBeenPublished && (
-            <Button
-              variant="danger"
-              icon={<FontAwesomeIcon icon={faTrash} />}
-              iconPosition="right"
-              onClick={() => showModal("delete")}
-            >
-              Delete
-            </Button>
-          )}
+          {isOwner &&
+            props.notificationStatus === InAppNotificationStatus.DRAFT && (
+              <Button
+                variant="danger"
+                icon={<FontAwesomeIcon icon={faTrash} />}
+                iconPosition="right"
+                onClick={() => showModal("delete")}
+              >
+                Delete
+              </Button>
+            )}
         </div>
         <div className="flex flex-row gap-4">
-          {isOwner && (isDraft || isPublished) && (
+          {canEditAndPublish && (
             <Button
               variant="secondary"
               icon={<FontAwesomeIcon icon={faEdit} />}
@@ -164,7 +181,7 @@ export const GovActions = (props: {
               Edit Notification
             </Button>
           )}
-          {isOwner && isPublished && (
+          {canCancel && (
             <Button
               variant="danger"
               icon={<FontAwesomeIcon icon={faTrash} />}
@@ -174,14 +191,16 @@ export const GovActions = (props: {
               Cancel Notification
             </Button>
           )}
-          {isOwner && isDraft && (
+          {canEditAndPublish && (
             <Button
               variant="primary"
               icon={<FontAwesomeIcon icon={faPaperPlane} />}
               iconPosition="right"
               onClick={() => showModal("publish")}
             >
-              {props.hasBeenPublished ? "Republish" : "Publish Notification"}
+              {props.notificationStatus === InAppNotificationStatus.CANCELLED
+                ? "Republish"
+                : "Publish Notification"}
             </Button>
           )}
         </div>
