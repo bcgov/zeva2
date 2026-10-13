@@ -32,7 +32,7 @@ concurrency:
 jobs:
   run-jest-tests:
     name: Run Jest Tests
-    runs-on: ubuntu-26.04
+    runs-on: ubuntu-latest
     defaults:
       run:
         working-directory: ./next
@@ -71,7 +71,7 @@ jobs:
 
   release:
     needs: run-jest-tests
-    runs-on: ubuntu-26.04
+    runs-on: ubuntu-latest
     outputs:
       release_version: ${{ steps.release_version.outputs.version }}
       release_is_new: ${{ steps.release_version.outputs.is_new }}
@@ -148,7 +148,7 @@ jobs:
 
   report-version:
     needs: release
-    runs-on: ubuntu-26.04
+    runs-on: ubuntu-latest
     steps:
       - name: Show release version
         run: |
