@@ -4,6 +4,7 @@ All notable changes to this project are documented in this file.
 
 | Version | Date | Type | Change |
 | --- | --- | --- | --- |
+| [1.70.0](https://github.com/bcgov/zeva2/compare/v1.69.0...v1.70.0) | 2026-10-13 | ✨ Feature | comment indicators ([#707](https://github.com/bcgov/zeva2/issues/707)) ([971ffef](https://github.com/bcgov/zeva2/commit/971ffefec2b5d90c732ab8da817c16eba6dc128e)) |
 | [1.69.0](https://github.com/bcgov/zeva2/compare/v1.68.0...v1.69.0) | 2026-10-09 | ✨ Feature | adding roles into application header for bceid user ([#706](https://github.com/bcgov/zeva2/issues/706)) ([581c68f](https://github.com/bcgov/zeva2/commit/581c68f8d700770290970efdd2240c07e763d688)) |
 | [1.69.0](https://github.com/bcgov/zeva2/compare/v1.68.0...v1.69.0) | 2026-10-09 | ✨ Feature | Notifications Edit & Cancel Functionality [#681](https://github.com/bcgov/zeva2/issues/681) ([#705](https://github.com/bcgov/zeva2/issues/705)) ([296d56e](https://github.com/bcgov/zeva2/commit/296d56e38f5f187202f9967f169dce14fa0f7d74)) |
 | [1.68.0](https://github.com/bcgov/zeva2/compare/v1.67.1...v1.68.0) | 2026-10-05 | ✨ Feature | node and package updates ([#701](https://github.com/bcgov/zeva2/issues/701)) ([e7f9759](https://github.com/bcgov/zeva2/commit/e7f97595a6aa9d977c736333c025eb3d30a2608a)) |
