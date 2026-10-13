@@ -6,9 +6,9 @@ import { useRouter } from "next/navigation";
 import { JSX, useCallback, useState } from "react";
 import { issueReassessment, returnReassessment } from "../actions";
 import { getNormalizedComment } from "@/app/lib/utils/comment";
-import { Textarea } from "@/app/lib/components/inputs/Textarea";
 import { Routes } from "@/app/lib/constants";
 import { Modal, ModalType } from "@/app/lib/components/Modal";
+import { CommentBox } from "@/app/lib/components/CommentBox";
 
 export const ReassessmentDirectorActions = (props: {
   reassessmentId: number;
@@ -90,11 +90,21 @@ export const ReassessmentDirectorActions = (props: {
     return null;
   }
   return (
-    <div className="space-y-2">
-      <Textarea value={comment} onChange={setComment} />
+    <div className="flex flex-col gap-4">
+      <CommentBox
+        comment={comment}
+        setComment={setComment}
+        warningSubSentence="issue the reassessment"
+      />
       {error && <p className="text-red-600">{error}</p>}
-      <Button onClick={() => showModal("return")}>Return to Analyst</Button>
-      <Button onClick={() => showModal("issue")}>Issue Reassessment</Button>
+      <div className="flex flex-row items-center p-5 bg-lightGrey justify-between">
+        <Button onClick={() => showModal("return")} variant="secondary">
+          Return to Analyst
+        </Button>
+        <Button onClick={() => showModal("issue")} variant="primary">
+          Issue Reassessment
+        </Button>
+      </div>
       {modal}
     </div>
   );

@@ -71,7 +71,11 @@ export const DirectorActions = (props: {
   if (props.status === CreditApplicationStatus.RECOMMEND_APPROVAL) {
     return (
       <>
-        <CommentBox comment={comment} setComment={setComment} />
+        <CommentBox
+          comment={comment}
+          setComment={setComment}
+          warningSubSentence="approve the application"
+        />
         <div className="flex flex-row items-center justify-between p-5 bg-lightGrey">
           <Button variant="secondary" onClick={() => showModal("return")}>
             Return to Analyst

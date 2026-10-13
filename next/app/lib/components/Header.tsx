@@ -29,7 +29,7 @@ export const Header = async () => {
           <div className="ml-auto flex items-center gap-4 text-sm sm:text-base">
             <div className="flex flex-col items-end leading-tight gap-1">
               <span className="font-semibold">{userOrgName}</span>
-              <span className="text-xs sm:text-sm">Role: {roles}</span>
+              <span className="text-xs sm:text-sm">Role(s): {roles}</span>
             </div>
             <span className="h-8 border-l border-white/70" />
             {balance === "deficit" ? (

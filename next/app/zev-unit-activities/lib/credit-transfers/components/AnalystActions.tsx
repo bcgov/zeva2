@@ -1,13 +1,13 @@
 "use client";
 
 import { Button } from "@/app/lib/components";
-import { Textarea } from "@/app/lib/components/inputs/Textarea";
 import { CreditTransferStatus } from "@/prisma/generated/enums";
 import { useRouter } from "next/navigation";
 import { JSX, useCallback, useState } from "react";
 import { getNormalizedComment } from "@/app/lib/utils/comment";
 import { govRecommendTransfer } from "../actions";
 import { Modal, ModalType } from "@/app/lib/components/Modal";
+import { CommentBox } from "@/app/lib/components/CommentBox";
 
 export const AnalystActions = (props: {
   id: number;
@@ -77,7 +77,7 @@ export const AnalystActions = (props: {
   return (
     <div className="space-y-2">
       {error && <p className="text-red-600">{error}</p>}
-      <Textarea value={comment} onChange={setComment} />
+      <CommentBox comment={comment} setComment={setComment} />
       <Button variant="primary" onClick={() => showModal("recommendApprove")}>
         Recommend Approval
       </Button>

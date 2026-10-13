@@ -126,7 +126,11 @@ export const AnalystActions = (props: {
   ) {
     return (
       <>
-        <CommentBox comment={comment} setComment={setComment} />
+        <CommentBox
+          comment={comment}
+          setComment={setComment}
+          warningSubSentence="reject the application"
+        />
         <div className="flex flex-row justify-between items-center p-5 bg-lightGrey">
           <Button variant="danger" onClick={() => showModal("reject")}>
             Reject

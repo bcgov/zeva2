@@ -6,9 +6,9 @@ import { useRouter } from "next/navigation";
 import { JSX, useCallback, useState } from "react";
 import { assessModelYearReport, returnModelYearReport } from "../actions";
 import { getNormalizedComment } from "@/app/lib/utils/comment";
-import { Textarea } from "@/app/lib/components/inputs/Textarea";
 import { Routes } from "@/app/lib/constants";
 import { Modal, ModalType } from "@/app/lib/components/Modal";
+import { CommentBox } from "@/app/lib/components/CommentBox";
 
 export const DirectorActions = (props: {
   myrId: number;
@@ -88,28 +88,19 @@ export const DirectorActions = (props: {
   }
   return (
     <div className="flex flex-col gap-2">
-      <div className="flex flex-col border border-dividerMedium/40">
-        <div className="p-2 bg-gray-100">
-          <span className="font-semibold">Comments (optional)</span>
-        </div>
-        <div className="p-2">
-          <Textarea
-            value={comment}
-            onChange={setComment}
-            placeholder="Comment"
-          />
-        </div>
-      </div>
+      <CommentBox
+        comment={comment}
+        setComment={setComment}
+        warningSubSentence="issue the assessment"
+      />
+      {error && <span className="text-red-600">{error}</span>}
       <div className="flex flex-row p-2 bg-gray-50 justify-between">
         <Button onClick={() => showModal("return")} variant="secondary">
           Return to Analyst
         </Button>
-        <div className="flex flex-row gap-1 items-center">
-          {error && <span className="text-red-600">{error}</span>}
-          <Button onClick={() => showModal("issue")} variant="primary">
-            Issue Assessment
-          </Button>
-        </div>
+        <Button onClick={() => showModal("issue")} variant="primary">
+          Issue Assessment
+        </Button>
       </div>
       {modal}
     </div>
