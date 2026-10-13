@@ -45,7 +45,7 @@ permissions:
 jobs:
   deploy:
     name: Deploy Zeva2
-    runs-on: ubuntu-26.04
+    runs-on: ubuntu-latest
     environment: ${{ inputs.environment }}
     timeout-minutes: 60
 
