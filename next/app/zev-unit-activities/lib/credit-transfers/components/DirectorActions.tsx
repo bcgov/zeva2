@@ -1,7 +1,6 @@
 "use client";
 
 import { Button } from "@/app/lib/components";
-import { Textarea } from "@/app/lib/components/inputs/Textarea";
 import { CreditTransferStatus } from "@/prisma/generated/enums";
 import { useRouter } from "next/navigation";
 import { JSX, useCallback, useState } from "react";
@@ -12,6 +11,7 @@ import {
   directorReturnTransfer,
 } from "../actions";
 import { Modal, ModalType } from "@/app/lib/components/Modal";
+import { CommentBox } from "@/app/lib/components/CommentBox";
 
 export const DirectorActions = (props: {
   id: number;
@@ -88,7 +88,11 @@ export const DirectorActions = (props: {
   return (
     <div className="space-y-2">
       {error && <p className="text-red-600">{error}</p>}
-      <Textarea value={comment} onChange={setComment} />
+      <CommentBox
+        comment={comment}
+        setComment={setComment}
+        warningSubSentence="approve or reject the transfer"
+      />
       <Button variant="secondary" onClick={() => showModal("return")}>
         Return to Analyst
       </Button>

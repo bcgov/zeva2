@@ -6,9 +6,9 @@ import { ReassessmentStatus } from "@/prisma/generated/enums";
 import { useRouter } from "next/navigation";
 import { JSX, useCallback, useState } from "react";
 import { deleteReassessment, submitReassessment } from "../actions";
-import { Textarea } from "@/app/lib/components/inputs/Textarea";
 import { getNormalizedComment } from "@/app/lib/utils/comment";
 import { Modal, ModalType } from "@/app/lib/components/Modal";
+import { CommentBox } from "@/app/lib/components/CommentBox";
 
 export const ReassessmentAnalystActions = (props: {
   reassessmentId: number;
@@ -101,12 +101,22 @@ export const ReassessmentAnalystActions = (props: {
     return null;
   }
   return (
-    <div className="space-y-2">
+    <div className="flex flex-col gap-4">
+      <CommentBox comment={comment} setComment={setComment} />
       {error && <p className="text-red-600">{error}</p>}
-      <Textarea value={comment} onChange={setComment} />
-      <Button onClick={() => showModal("delete")}>Delete</Button>
-      <Button onClick={handleGoToEditReassessment}>Edit Reassessment</Button>
-      <Button onClick={() => showModal("submit")}>Submit Reassessment</Button>
+      <div className="flex flex-row items-center p-5 bg-lightGrey justify-between">
+        <div className="flex flex-row items-center gap-2">
+          <Button onClick={() => showModal("delete")} variant="danger">
+            Delete
+          </Button>
+          <Button onClick={handleGoToEditReassessment} variant="secondary">
+            Edit Reassessment
+          </Button>
+        </div>
+        <Button onClick={() => showModal("submit")} variant="primary">
+          Submit Reassessment
+        </Button>
+      </div>
       {modal}
     </div>
   );

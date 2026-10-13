@@ -4,7 +4,6 @@ import { Button } from "@/app/lib/components";
 import { useRouter } from "next/navigation";
 import { JSX, useCallback, useState } from "react";
 import { getNormalizedComment } from "@/app/lib/utils/comment";
-import { Textarea } from "@/app/lib/components/inputs/Textarea";
 import { ModelYearReportStatus } from "@/prisma/generated/enums";
 import { Routes } from "@/app/lib/constants";
 import {
@@ -12,6 +11,7 @@ import {
   submitSupplementaryToDirector,
 } from "../actions";
 import { Modal, ModalType } from "@/app/lib/components/Modal";
+import { CommentBox } from "@/app/lib/components/CommentBox";
 
 // if myrId is undefined, then we're dealing with a legacy supplementary;
 // otherwise, we're dealing with a non-legacy supplementary
@@ -120,28 +120,42 @@ export const SupplementaryAnalystActions = (props: {
     props.status === ModelYearReportStatus.RETURNED_TO_ANALYST
   ) {
     return (
-      <div>
+      <div className="flex flex-col gap-4">
+        <CommentBox
+          comment={comment}
+          setComment={setComment}
+          warningSubSentence="return the report"
+        />
         {error && <p className="text-red-600">{error}</p>}
-        <Textarea value={comment} onChange={setComment} />
-        <Button variant="secondary" onClick={() => showModal("return")}>
-          Return To Supplier
-        </Button>
         {props.suppReassessmentExists ? (
-          <>
-            <Button
-              variant="secondary"
-              onClick={handleGoToEditSuppReassessment}
-            >
-              Edit Associated Reassessment
-            </Button>
+          <div className="flex flex-row items-center p-5 bg-lightGrey justify-between">
+            <div className="flex flex-row items-center gap-2">
+              <Button onClick={() => showModal("return")} variant="danger">
+                Return to Supplier
+              </Button>
+              <Button
+                variant="secondary"
+                onClick={handleGoToEditSuppReassessment}
+              >
+                Edit Associated Reassessment
+              </Button>
+            </div>
             <Button variant="primary" onClick={() => showModal("submit")}>
               Submit to Director
             </Button>
-          </>
+          </div>
         ) : (
-          <Button variant="primary" onClick={handleGoToCreateSuppReassessment}>
-            Create Associated Reassessment
-          </Button>
+          <div className="flex flex-row items-center p-5 bg-lightGrey justify-between">
+            <Button onClick={() => showModal("return")} variant="danger">
+              Return to Supplier
+            </Button>
+            <Button
+              variant="primary"
+              onClick={handleGoToCreateSuppReassessment}
+            >
+              Create Associated Reassessment
+            </Button>
+          </div>
         )}
         {modal}
       </div>

@@ -67,9 +67,16 @@ export const IndividualPage = async (props: { id: string }) => {
   const latestHistory = histories.findLast(
     (history) => history.userAction === status,
   );
-  const statusText = latestHistory
+  let statusText = latestHistory
     ? `${presentation.verb} ${getIsoYmdString(latestHistory.timestamp)} by ${latestHistory.user.firstName} ${latestHistory.user.lastName}.`
     : `${presentation.verb}.`;
+  if (
+    !userIsGov &&
+    latestHistory &&
+    latestHistory.userAction === AgreementStatus.ISSUED
+  ) {
+    statusText = `Issued ${getIsoYmdString(latestHistory.timestamp)} by Government of BC.`;
+  }
   const typeLabel =
     getAgreementTypeEnumsToStringsMap()[agreement.agreementType];
   return (

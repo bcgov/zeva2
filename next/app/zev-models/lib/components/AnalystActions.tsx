@@ -87,7 +87,8 @@ export const AnalystActions = (props: {
         comment={comment}
         setComment={setComment}
         subtext="required when returning"
-      />
+        warningSubSentence="return or validate the ZEV model"
+      ></CommentBox>
       <div className="flex justify-between items-center pt-2">
         <Button
           variant="secondary"

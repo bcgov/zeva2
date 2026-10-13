@@ -6,10 +6,10 @@ import { useRouter } from "next/navigation";
 import { JSX, useCallback, useState } from "react";
 import { issueAgreement, returnToAnalyst } from "../actions";
 import { getNormalizedComment } from "@/app/lib/utils/comment";
-import { Textarea } from "@/app/lib/components/inputs/Textarea";
 import { Routes } from "@/app/lib/constants";
 import { Modal, ModalType } from "@/app/lib/components/Modal";
 import { BackButton } from "@/app/lib/components/BackButton";
+import { CommentBox } from "@/app/lib/components/CommentBox";
 
 export const DirectorActions = (props: {
   agreementId: number;
@@ -90,12 +90,11 @@ export const DirectorActions = (props: {
   return (
     <>
       <section className="overflow-hidden rounded border border-dividerMedium bg-white">
-        <h2 className="bg-disabledSurface px-5 py-4 text-xl font-bold">
-          Comment (optional)
-        </h2>
-        <div className="max-w-3xl p-5">
-          <Textarea value={comment} onChange={setComment} />
-        </div>
+        <CommentBox
+          comment={comment}
+          setComment={setComment}
+          warningSubSentence="issue the agreement"
+        />
       </section>
       {error && <p className="text-red-600">{error}</p>}
       <footer className="flex min-h-20 items-center justify-between gap-4 bg-gray-50 px-5">

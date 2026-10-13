@@ -79,13 +79,14 @@ export const AnalystMyrActions = (props: {
           comment={comment}
           setComment={setComment}
           subtext="required when returning"
+          warningSubSentence="return the report"
         />
+        {error && <span className="text-red-600">{error}</span>}
         <div className="flex flex-row p-5 bg-lightGrey justify-between">
           <Button onClick={() => showModal("return")} variant="danger">
             Return to Supplier
           </Button>
           <div className="flex flex-row gap-4 items-center">
-            {error && <span className="text-red-600">{error}</span>}
             {!props.assessmentExists && (
               <Button onClick={handleGoToCreateAssessment} variant="primary">
                 Conduct Assessment
