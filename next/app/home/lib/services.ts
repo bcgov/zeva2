@@ -10,6 +10,7 @@ import {
 import {
   ActivityFeedRecord,
   AllRecordsRecord,
+  GovDashboardCounts,
   Item,
   itemsToTake,
   SerializedActivityFeedRecord,
@@ -1676,4 +1677,237 @@ export const getActivityFeedMyrRecords = async (): Promise<
     };
     return getSerializedActivityFeedRecord(record);
   });
+};
+
+const getCaRecordsByStatus = async (
+  statuses: CreditApplicationStatus[],
+): Promise<SerializedAllRecordsRecord[]> => {
+  if (statuses.length === 0) {
+    return [];
+  }
+  const statusesMap = getCreditApplicationStatusEnumsToStringsMap();
+  const cas = await prisma.creditApplication.findMany({
+    where: { status: { in: statuses } },
+    select: {
+      id: true,
+      status: true,
+      organization: { select: { name: true } },
+      CreditApplicationHistory: {
+        orderBy: { timestamp: "desc" },
+        take: 1,
+        select: {
+          timestamp: true,
+          user: { select: { firstName: true, lastName: true, roles: true } },
+        },
+      },
+    },
+  });
+  return cas.map((ca) => {
+    const record: AllRecordsRecord = {
+      ...ca,
+      status: statusesMap[ca.status] ?? ca.status,
+      mostRecentHistoryEntry: ca.CreditApplicationHistory[0],
+    };
+    return getSerializedAllRecordsRecord(
+      "Credit Application",
+      record,
+      Routes.CreditApplications,
+    );
+  });
+};
+
+const getMyrRecordsByStatus = async (
+  statuses: ModelYearReportStatus[],
+): Promise<SerializedAllRecordsRecord[]> => {
+  if (statuses.length === 0) {
+    return [];
+  }
+  const statusesMap = getMyrStatusEnumsToStringsMap();
+  const myrs = await prisma.modelYearReport.findMany({
+    where: { status: { in: statuses } },
+    select: {
+      id: true,
+      status: true,
+      organization: { select: { name: true } },
+      modelYearReportHistory: {
+        orderBy: { timestamp: "desc" },
+        take: 1,
+        select: {
+          timestamp: true,
+          user: { select: { firstName: true, lastName: true, roles: true } },
+        },
+      },
+    },
+  });
+  return myrs.map((myr) => {
+    const record: AllRecordsRecord = {
+      ...myr,
+      status: statusesMap[myr.status] ?? myr.status,
+      mostRecentHistoryEntry: myr.modelYearReportHistory[0],
+    };
+    return getSerializedAllRecordsRecord(
+      "Model Year Report",
+      record,
+      Routes.ModelYearReports,
+    );
+  });
+};
+
+const getTransferRecordsByStatus = async (
+  statuses: CreditTransferStatus[],
+): Promise<SerializedAllRecordsRecord[]> => {
+  if (statuses.length === 0) {
+    return [];
+  }
+  const statusesMap = getCreditTransferStatusEnumsToStringsMap();
+  const transfers = await prisma.creditTransfer.findMany({
+    where: { status: { in: statuses } },
+    select: {
+      id: true,
+      status: true,
+      transferFrom: { select: { name: true } },
+      creditTransferHistory: {
+        orderBy: { timestamp: "desc" },
+        take: 1,
+        select: {
+          timestamp: true,
+          user: { select: { firstName: true, lastName: true, roles: true } },
+        },
+      },
+    },
+  });
+  return transfers.map((transfer) => {
+    const record: AllRecordsRecord = {
+      ...transfer,
+      organization: transfer.transferFrom,
+      status: statusesMap[transfer.status] ?? transfer.status,
+      mostRecentHistoryEntry: transfer.creditTransferHistory[0],
+    };
+    return getSerializedAllRecordsRecord(
+      "Credit Transfer",
+      record,
+      Routes.CreditTransfers,
+    );
+  });
+};
+
+export const getGovRequiresActionRecords = async (
+  userRoles: Role[],
+): Promise<SerializedAllRecordsRecord[]> => {
+  const isDirector = userRoles.includes(Role.DIRECTOR);
+  const [cas, myrs, transfers] = await Promise.all([
+    getCaRecordsByStatus([
+      isDirector
+        ? CreditApplicationStatus.RECOMMEND_APPROVAL
+        : CreditApplicationStatus.SUBMITTED,
+    ]),
+    getMyrRecordsByStatus(
+      isDirector
+        ? [ModelYearReportStatus.SUBMITTED_TO_DIRECTOR]
+        : [
+            ModelYearReportStatus.SUBMITTED_TO_GOVERNMENT,
+            ModelYearReportStatus.RETURNED_TO_ANALYST,
+          ],
+    ),
+    getTransferRecordsByStatus(
+      isDirector ? [] : [CreditTransferStatus.RETURNED_TO_ANALYST],
+    ),
+  ]);
+  return [...cas, ...myrs, ...transfers];
+};
+
+export const getGovInProgressRecords = async (
+  userRoles: Role[],
+): Promise<SerializedAllRecordsRecord[]> => {
+  const isDirector = userRoles.includes(Role.DIRECTOR);
+  const [cas, myrs, transfers] = await Promise.all([
+    getCaRecordsByStatus([
+      CreditApplicationStatus.DRAFT,
+      CreditApplicationStatus.RETURNED_TO_ANALYST,
+    ]),
+    getMyrRecordsByStatus([ModelYearReportStatus.DRAFT]),
+    getTransferRecordsByStatus(
+      isDirector
+        ? []
+        : [
+            CreditTransferStatus.DRAFT,
+            CreditTransferStatus.APPROVED_BY_TRANSFER_TO,
+            CreditTransferStatus.RESCINDED_BY_TRANSFER_FROM,
+            CreditTransferStatus.SUBMITTED_TO_TRANSFER_TO,
+          ],
+    ),
+  ]);
+  return [...cas, ...myrs, ...transfers];
+};
+
+export const getGovWithDirectorRecords = async (): Promise<
+  SerializedAllRecordsRecord[]
+> => {
+  const [cas, myrs] = await Promise.all([
+    getCaRecordsByStatus([CreditApplicationStatus.RECOMMEND_APPROVAL]),
+    getMyrRecordsByStatus([ModelYearReportStatus.SUBMITTED_TO_DIRECTOR]),
+  ]);
+  return [...cas, ...myrs];
+};
+
+export const getGovCompletedRecords = async (): Promise<
+  SerializedAllRecordsRecord[]
+> => {
+  const [cas, myrs, transfers] = await Promise.all([
+    getCaRecordsByStatus([
+      CreditApplicationStatus.APPROVED,
+      CreditApplicationStatus.REJECTED,
+    ]),
+    getMyrRecordsByStatus([ModelYearReportStatus.ASSESSED]),
+    getTransferRecordsByStatus([
+      CreditTransferStatus.APPROVED_BY_GOV,
+      CreditTransferStatus.REJECTED_BY_GOV,
+      CreditTransferStatus.REJECTED_BY_TRANSFER_TO,
+    ]),
+  ]);
+  return [...cas, ...myrs, ...transfers];
+};
+
+export const getGovDashboardSectionCounts = (
+  records: SerializedAllRecordsRecord[],
+): GovDashboardCounts => {
+  const counts: GovDashboardCounts = {
+    "Credit Applications": 0,
+    "Model Year Reports": 0,
+    "Credit Transfers": 0,
+  };
+  for (const record of records) {
+    if (record.type === "Credit Application") {
+      counts["Credit Applications"] += 1;
+    } else if (record.type === "Model Year Report") {
+      counts["Model Year Reports"] += 1;
+    } else if (record.type === "Credit Transfer") {
+      counts["Credit Transfers"] += 1;
+    }
+  }
+  return counts;
+};
+
+export const getRecentActivityFeedRecords = async (
+  limit: number,
+): Promise<SerializedActivityFeedRecord[]> => {
+  const collection = await Promise.all([
+    getActivityFeedCaRecords(),
+    getActivityFeedZevModelRecords(),
+    getActivityFeedCreditTransferRecords(),
+    getActivityFeedCreditAgreementRecords(),
+    getActivityFeedPenaltyCreditRecords(),
+    getActivityFeedMyrRecords(),
+  ]);
+  const records = collection.flat();
+  records.sort((a, b) => {
+    if (b.sortKey > a.sortKey) {
+      return 1;
+    }
+    if (b.sortKey < a.sortKey) {
+      return -1;
+    }
+    return 0;
+  });
+  return records.slice(0, limit);
 };

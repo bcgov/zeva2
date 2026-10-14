@@ -8,7 +8,7 @@ import {
   getActivityFeedZevModelRecords,
 } from "../lib/services";
 import { Breadcrumbs } from "@/app/lib/components";
-import { SecondaryNavbar } from "@/app/lib/components/SecondaryNavbar";
+import { AllRecordsTabs } from "../components/AllRecordsTabs";
 import { ActivityFeedTable } from "../components/ActivityFeedTable";
 import { getDateRangeOptions } from "../lib/utilsServer";
 import { Routes } from "@/app/lib/constants";
@@ -48,12 +48,7 @@ const Page = async () => {
           { label: "Activity Feed" },
         ]}
       />
-      <SecondaryNavbar
-        items={[
-          { label: "All Records", route: `${Routes.Home}/all-records` },
-          { label: "Activity Feed", route: `${Routes.Home}/activity-feed` },
-        ]}
-      />
+      <AllRecordsTabs />
       <div className="flex flex-col gap-5 border border-dividerMedium rounded">
         <div className="flex flex-col gap-2 bg-disabledSurface px-5 py-4">
           <span className="text-xl font-bold">Activity Feed</span>
