@@ -75,3 +75,54 @@ export const recordTypes = [
 export type RecordType = (typeof recordTypes)[number];
 
 export const dateOptionSplitter = " to ";
+
+export const allRecordsViewParam = "view";
+
+export const AllRecordsView = {
+  RequiresYourAction: "requires-your-action",
+  InProgress: "in-progress",
+  WithDirector: "with-director",
+  Completed: "completed",
+} as const;
+
+export type AllRecordsView =
+  (typeof AllRecordsView)[keyof typeof AllRecordsView];
+
+export const govDashboardSections = [
+  "Requires Your Action",
+  "In Progress",
+  "With Director",
+  "Completed",
+] as const;
+
+export type GovDashboardSection = (typeof govDashboardSections)[number];
+
+export type GovDashboardCounts = {
+  "Credit Applications": number;
+  "Model Year Reports": number;
+  "Credit Transfers": number;
+};
+
+export type DashboardTone = "error" | "warning" | "info" | "success";
+
+export const dashboardToneClasses: Record<
+  DashboardTone,
+  { border: string; bg: string; text: string }
+> = {
+  error: { border: "border-error", bg: "bg-errorBG", text: "text-error" },
+  warning: {
+    border: "border-warningBorder",
+    bg: "bg-warningBG",
+    text: "text-warning",
+  },
+  info: {
+    border: "border-linkIcon",
+    bg: "bg-infoBG",
+    text: "text-primaryBlue",
+  },
+  success: {
+    border: "border-success",
+    bg: "bg-successBG",
+    text: "text-success",
+  },
+};
