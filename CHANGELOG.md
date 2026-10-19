@@ -4,6 +4,7 @@ All notable changes to this project are documented in this file.
 
 | Version | Date | Type | Change |
 | --- | --- | --- | --- |
+| [1.72.0](https://github.com/bcgov/zeva2/compare/v1.71.0...v1.72.0) | 2026-10-19 | ✨ Feature | some fixes and changes ([#712](https://github.com/bcgov/zeva2/issues/712)) ([7626424](https://github.com/bcgov/zeva2/commit/76264244152590c21e0aa5a9badfee32864e9572)) |
 | [1.71.0](https://github.com/bcgov/zeva2/compare/v1.70.0...v1.71.0) | 2026-10-18 | ✨ Feature | idir dashboard ([#710](https://github.com/bcgov/zeva2/issues/710)) ([0369ca3](https://github.com/bcgov/zeva2/commit/0369ca38ad6b673cb1dde3a8f68b084494b64174)) |
 | [1.70.0](https://github.com/bcgov/zeva2/compare/v1.69.0...v1.70.0) | 2026-10-13 | ✨ Feature | comment indicators ([#707](https://github.com/bcgov/zeva2/issues/707)) ([971ffef](https://github.com/bcgov/zeva2/commit/971ffefec2b5d90c732ab8da817c16eba6dc128e)) |
 | [1.69.0](https://github.com/bcgov/zeva2/compare/v1.68.0...v1.69.0) | 2026-10-09 | ✨ Feature | adding roles into application header for bceid user ([#706](https://github.com/bcgov/zeva2/issues/706)) ([581c68f](https://github.com/bcgov/zeva2/commit/581c68f8d700770290970efdd2240c07e763d688)) |
