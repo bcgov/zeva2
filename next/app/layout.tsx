@@ -1,13 +1,9 @@
 import { getUserInfo } from "@/auth";
 import type { Metadata } from "next";
-import { config } from "@fortawesome/fontawesome-svg-core";
-import "@fortawesome/fontawesome-svg-core/styles.css";
 import "./globals.css";
 import { Header } from "./lib/components/Header";
 import { Footer } from "./lib/components/Footer";
 import { LegalDisclaimer } from "./lib/components/LegalDisclaimer";
-
-config.autoAddCss = false;
 
 export const metadata: Metadata = {
   title: "ZEVA",
