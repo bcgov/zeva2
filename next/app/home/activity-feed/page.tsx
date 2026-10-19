@@ -8,24 +8,25 @@ import {
   getActivityFeedZevModelRecords,
 } from "../lib/services";
 import { Breadcrumbs } from "@/app/lib/components";
-import { AllRecordsTabs } from "../components/AllRecordsTabs";
+import { AllRecordsTabsGov } from "../components/AllRecordsTabsGov";
 import { ActivityFeedTable } from "../components/ActivityFeedTable";
 import { getDateRangeOptions } from "../lib/utilsServer";
 import { Routes } from "@/app/lib/constants";
+import { Role } from "@/prisma/generated/enums";
 
 const Page = async () => {
-  const { userIsGov } = await getUserInfo();
+  const { userIsGov, userRoles } = await getUserInfo();
   // Activity Feed is only available to IDIR (government) users
   if (!userIsGov) {
     return null;
   }
   const collection = await Promise.all([
-    getActivityFeedCaRecords(),
-    getActivityFeedZevModelRecords(),
-    getActivityFeedCreditTransferRecords(),
-    getActivityFeedCreditAgreementRecords(),
-    getActivityFeedPenaltyCreditRecords(),
-    getActivityFeedMyrRecords(),
+    getActivityFeedCaRecords(userRoles),
+    getActivityFeedZevModelRecords(userRoles),
+    getActivityFeedCreditTransferRecords(userRoles),
+    getActivityFeedCreditAgreementRecords(userRoles),
+    getActivityFeedPenaltyCreditRecords(userRoles),
+    getActivityFeedMyrRecords(userRoles),
   ]);
 
   const records = collection.flat();
@@ -48,7 +49,7 @@ const Page = async () => {
           { label: "Activity Feed" },
         ]}
       />
-      <AllRecordsTabs />
+      <AllRecordsTabsGov isDirector={userRoles.includes(Role.DIRECTOR)} />
       <div className="flex flex-col gap-5 border border-dividerMedium rounded">
         <div className="flex flex-col gap-2 bg-disabledSurface px-5 py-4">
           <span className="text-xl font-bold">Activity Feed</span>

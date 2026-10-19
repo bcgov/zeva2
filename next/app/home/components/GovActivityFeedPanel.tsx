@@ -2,46 +2,16 @@ import Link from "next/link";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faArrowRight,
-  faCar,
   faFile,
-  faFileContract,
-  faList,
   faListOl,
-  faMoneyBillTransfer,
-  faTriangleExclamation,
 } from "@fortawesome/free-solid-svg-icons";
-import type { IconDefinition } from "@fortawesome/fontawesome-svg-core";
 import { Routes } from "@/app/lib/constants";
 import {
   DashboardTone,
   dashboardToneClasses,
+  recordTypeStyles,
   SerializedActivityFeedRecord,
 } from "../lib/constants";
-
-const recordTypeStyles: Record<
-  string,
-  { icon: IconDefinition; tone: DashboardTone }
-> = {
-  "Credit Application": { icon: faList, tone: "success" },
-  "ZEV Model": { icon: faCar, tone: "warning" },
-  "Credit Transfer": { icon: faMoneyBillTransfer, tone: "success" },
-  "Credit Agreement": { icon: faFileContract, tone: "success" },
-  "Penalty Credits": { icon: faTriangleExclamation, tone: "error" },
-  "Model Year Report": { icon: faFile, tone: "success" },
-};
-
-const formatDate = (ymd: string) => {
-  const date = new Date(`${ymd}T00:00:00Z`);
-  if (Number.isNaN(date.getTime())) {
-    return ymd;
-  }
-  return date.toLocaleDateString("en-US", {
-    timeZone: "UTC",
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  });
-};
 
 export const GovActivityFeedPanel = (props: {
   records: SerializedActivityFeedRecord[];
@@ -97,7 +67,7 @@ export const GovActivityFeedPanel = (props: {
                   </span>
                 </div>
                 <span className="whitespace-nowrap font-bold text-secondaryText">
-                  {formatDate(record.date)}
+                  {record.date}
                 </span>
               </Link>
             );

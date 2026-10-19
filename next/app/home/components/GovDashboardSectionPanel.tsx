@@ -7,19 +7,20 @@ import {
   faFile,
   faList,
   faMoneyBillTransfer,
+  faCar,
 } from "@fortawesome/free-solid-svg-icons";
 import type { IconDefinition } from "@fortawesome/fontawesome-svg-core";
 import {
   DashboardTone,
   dashboardToneClasses,
-  GovDashboardCounts,
-  SerializedAllRecordsRecord,
+  RecordType,
+  SerializedAllRecordsRecordGov,
 } from "../lib/constants";
-import { getGovDashboardSectionCounts } from "../lib/services";
+import { getGovDashboardSectionCounts } from "../lib/utils";
 
 const breakdownRows: {
-  label: keyof GovDashboardCounts;
-  recordType: string;
+  label: string;
+  recordType: RecordType;
   icon: IconDefinition;
 }[] = [
   {
@@ -37,12 +38,27 @@ const breakdownRows: {
     recordType: "Credit Transfer",
     icon: faMoneyBillTransfer,
   },
+  {
+    label: "ZEV Models",
+    recordType: "ZEV Model",
+    icon: faCar,
+  },
+  {
+    label: "Credit Agreements",
+    recordType: "Credit Agreement",
+    icon: faList,
+  },
+  {
+    label: "Penalty Credits",
+    recordType: "Penalty Credits",
+    icon: faList,
+  },
 ];
 
 export const GovDashboardSectionPanel = (props: {
   title: string;
   tone: DashboardTone;
-  records: SerializedAllRecordsRecord[];
+  records: SerializedAllRecordsRecordGov[];
   viewAllRoute: string;
 }) => {
   const tone = dashboardToneClasses[props.tone];
@@ -71,7 +87,7 @@ export const GovDashboardSectionPanel = (props: {
       </div>
       <div className="flex flex-col gap-4 p-4">
         {breakdownRows.map(({ label, recordType, icon }) => {
-          const count = counts[label];
+          const count = counts[recordType];
           if (count === 0) {
             return null;
           }

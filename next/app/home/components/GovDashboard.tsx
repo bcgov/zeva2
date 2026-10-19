@@ -10,26 +10,12 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 import { getUserInfo } from "@/auth";
 import { Routes } from "@/app/lib/constants";
-import {
-  getGovCompletedRecords,
-  getGovInProgressRecords,
-  getGovRequiresActionRecords,
-  getGovWithDirectorRecords,
-  getRecentActivityFeedRecords,
-} from "../lib/services";
-import {
-  AllRecordsView,
-  allRecordsViewParam,
-  DashboardTone,
-  dashboardToneClasses,
-} from "../lib/constants";
+import { getGovRecords, getRecentActivityFeedRecords } from "../lib/services";
+import { DashboardTone, dashboardToneClasses } from "../lib/constants";
 import { GovDashboardSectionPanel } from "./GovDashboardSectionPanel";
 import { GovActivityFeedPanel } from "./GovActivityFeedPanel";
-
-const activityFeedPreviewCount = 5;
-
-const getViewAllRoute = (view: AllRecordsView) =>
-  `${Routes.Home}/all-records?${allRecordsViewParam}=${view}`;
+import { getAllRecordsViewRouteGov } from "../lib/utils";
+import { Role } from "@/prisma/generated/enums";
 
 export const GovDashboard = async () => {
   const { userName, userRoles } = await getUserInfo();
@@ -40,12 +26,14 @@ export const GovDashboard = async () => {
     completedRecords,
     activityFeedRecords,
   ] = await Promise.all([
-    getGovRequiresActionRecords(userRoles),
-    getGovInProgressRecords(userRoles),
-    getGovWithDirectorRecords(),
-    getGovCompletedRecords(),
-    getRecentActivityFeedRecords(activityFeedPreviewCount),
+    getGovRecords(userRoles, "requires-your-action"),
+    getGovRecords(userRoles, "in-progress"),
+    getGovRecords(userRoles, "with-director"),
+    getGovRecords(userRoles, "completed"),
+    getRecentActivityFeedRecords(userRoles, 5),
   ]);
+
+  const isDirector = userRoles.includes(Role.DIRECTOR);
 
   const summaryCards = [
     {
@@ -53,28 +41,36 @@ export const GovDashboard = async () => {
       count: requiresActionRecords.length,
       icon: faCircleExclamation,
       tone: "error" as DashboardTone,
-      viewAllRoute: getViewAllRoute(AllRecordsView.RequiresYourAction),
+      viewAllRoute: getAllRecordsViewRouteGov("requires-your-action"),
     },
-    {
-      label: "In Progress",
-      count: inProgressRecords.length,
-      icon: faHourglassHalf,
-      tone: "warning" as DashboardTone,
-      viewAllRoute: getViewAllRoute(AllRecordsView.InProgress),
-    },
-    {
-      label: "With Director",
-      count: withDirectorRecords.length,
-      icon: faUser,
-      tone: "info" as DashboardTone,
-      viewAllRoute: getViewAllRoute(AllRecordsView.WithDirector),
-    },
+    ...(isDirector
+      ? []
+      : [
+          {
+            label: "In Progress",
+            count: inProgressRecords.length,
+            icon: faHourglassHalf,
+            tone: "warning" as DashboardTone,
+            viewAllRoute: getAllRecordsViewRouteGov("in-progress"),
+          },
+        ]),
+    ...(isDirector
+      ? []
+      : [
+          {
+            label: "With Director",
+            count: withDirectorRecords.length,
+            icon: faUser,
+            tone: "info" as DashboardTone,
+            viewAllRoute: getAllRecordsViewRouteGov("with-director"),
+          },
+        ]),
     {
       label: "Completed",
       count: completedRecords.length,
       icon: faCircleCheck,
       tone: "success" as DashboardTone,
-      viewAllRoute: getViewAllRoute(AllRecordsView.Completed),
+      viewAllRoute: getAllRecordsViewRouteGov("completed"),
     },
   ];
 
@@ -88,7 +84,7 @@ export const GovDashboard = async () => {
               Hello {userName}!
             </span>
             <Link
-              href={`${Routes.Home}/all-records`}
+              href={`${Routes.Home}/all-records-gov?view=all`}
               className="flex flex-row items-center gap-2 font-bold text-primaryBlue underline"
             >
               View all records
@@ -133,30 +129,40 @@ export const GovDashboard = async () => {
           title="Requires Your Action"
           tone="error"
           records={requiresActionRecords}
-          viewAllRoute={getViewAllRoute(AllRecordsView.RequiresYourAction)}
+          viewAllRoute={getAllRecordsViewRouteGov("requires-your-action")}
         />
         <GovActivityFeedPanel records={activityFeedRecords} />
       </div>
-      <div className="grid grid-cols-1 gap-3 lg:grid-cols-3">
-        <GovDashboardSectionPanel
-          title="In Progress"
-          tone="warning"
-          records={inProgressRecords}
-          viewAllRoute={getViewAllRoute(AllRecordsView.InProgress)}
-        />
-        <GovDashboardSectionPanel
-          title="With Director"
-          tone="info"
-          records={withDirectorRecords}
-          viewAllRoute={getViewAllRoute(AllRecordsView.WithDirector)}
-        />
+      {isDirector && (
         <GovDashboardSectionPanel
           title="Completed"
           tone="success"
           records={completedRecords}
-          viewAllRoute={getViewAllRoute(AllRecordsView.Completed)}
+          viewAllRoute={getAllRecordsViewRouteGov("completed")}
         />
-      </div>
+      )}
+      {!isDirector && (
+        <div className="grid grid-cols-1 gap-3 lg:grid-cols-3">
+          <GovDashboardSectionPanel
+            title="In Progress"
+            tone="warning"
+            records={inProgressRecords}
+            viewAllRoute={getAllRecordsViewRouteGov("in-progress")}
+          />
+          <GovDashboardSectionPanel
+            title="With Director"
+            tone="info"
+            records={withDirectorRecords}
+            viewAllRoute={getAllRecordsViewRouteGov("with-director")}
+          />
+          <GovDashboardSectionPanel
+            title="Completed"
+            tone="success"
+            records={completedRecords}
+            viewAllRoute={getAllRecordsViewRouteGov("completed")}
+          />
+        </div>
+      )}
     </div>
   );
 };

@@ -5,17 +5,13 @@ import {
   getSupplierInProgressCounts,
 } from "../lib/services";
 import { ItemsPanel } from "./ItemsPanel";
-import { GovDashboard } from "./GovDashboard";
 import { getActiveNotifications } from "@/app/notifications/lib/services";
 import { NotificationMessageBanner } from "@/app/notifications/lib/components/NotificationMessageBanner";
 import { Fragment } from "react/jsx-runtime";
 
+// for suppliers
 export const ActionCenter = async () => {
-  const { userIsGov, userOrgId } = await getUserInfo();
-  if (userIsGov) {
-    return <GovDashboard />;
-  }
-
+  const { userOrgId } = await getUserInfo();
   const [
     actionRequiredCounts,
     inProgressCounts,

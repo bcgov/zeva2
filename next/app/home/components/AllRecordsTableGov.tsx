@@ -6,16 +6,15 @@ import { ClientSideTable, Dropdown } from "@/app/lib/components";
 import { useRouter } from "next/navigation";
 import {
   dateOptionSplitter,
-  SerializedAllRecordsRecord,
+  SerializedAllRecordsRecordGov,
 } from "../lib/constants";
 
-export const AllRecordsTable = (props: {
-  records: SerializedAllRecordsRecord[];
+export const AllRecordsTableGov = (props: {
+  records: SerializedAllRecordsRecordGov[];
   dateRangeOptions: [string, string][];
-  userIsGov: boolean;
 }) => {
   const router = useRouter();
-  const [records, setRecords] = useState<SerializedAllRecordsRecord[]>(
+  const [records, setRecords] = useState<SerializedAllRecordsRecordGov[]>(
     props.records,
   );
   const [typeFilter, setTypeFilter] = useState<string>();
@@ -29,7 +28,7 @@ export const AllRecordsTable = (props: {
   }, []);
 
   useEffect(() => {
-    let filteredRecords: SerializedAllRecordsRecord[] = props.records;
+    let filteredRecords: SerializedAllRecordsRecordGov[] = props.records;
     if (typeFilter) {
       filteredRecords = filteredRecords.filter(
         (record) => record.type === typeFilter,
@@ -110,9 +109,9 @@ export const AllRecordsTable = (props: {
     dateRangeFilter,
   ]);
 
-  const columnHelper = createColumnHelper<SerializedAllRecordsRecord>();
+  const columnHelper = createColumnHelper<SerializedAllRecordsRecordGov>();
   const columns = useMemo(() => {
-    const result: ColumnDef<SerializedAllRecordsRecord, any>[] = [
+    const result: ColumnDef<SerializedAllRecordsRecordGov, any>[] = [
       columnHelper.accessor((row) => row.id.toString(), {
         id: "id",
         enableSorting: false,
@@ -125,16 +124,12 @@ export const AllRecordsTable = (props: {
         enableColumnFilter: false,
         header: () => <span>Record Type</span>,
       }),
-      ...(props.userIsGov
-        ? [
-            columnHelper.accessor((row) => row.supplier, {
-              id: "supplier",
-              enableSorting: false,
-              enableColumnFilter: false,
-              header: () => <span>Supplier</span>,
-            }),
-          ]
-        : []),
+      columnHelper.accessor((row) => row.supplier, {
+        id: "supplier",
+        enableSorting: false,
+        enableColumnFilter: false,
+        header: () => <span>Supplier</span>,
+      }),
       columnHelper.accessor((row) => row.status, {
         id: "status",
         enableSorting: false,
@@ -147,16 +142,12 @@ export const AllRecordsTable = (props: {
         enableColumnFilter: false,
         header: () => <span>Last Updated</span>,
       }),
-      ...(props.userIsGov
-        ? [
-            columnHelper.accessor((row) => row.lastUpdatedBy, {
-              id: "lastUpdatedBy",
-              enableSorting: false,
-              enableColumnFilter: false,
-              header: () => <span>Last Updated By</span>,
-            }),
-          ]
-        : []),
+      columnHelper.accessor((row) => row.lastUpdatedBy, {
+        id: "lastUpdatedBy",
+        enableSorting: false,
+        enableColumnFilter: false,
+        header: () => <span>Last Updated By</span>,
+      }),
       columnHelper.accessor((row) => row.date, {
         id: "date",
         enableSorting: false,
@@ -168,7 +159,7 @@ export const AllRecordsTable = (props: {
   }, [columnHelper]);
 
   return (
-    <ClientSideTable<SerializedAllRecordsRecord>
+    <ClientSideTable<SerializedAllRecordsRecordGov>
       columns={columns}
       data={records}
       navigationAction={navigationAction}

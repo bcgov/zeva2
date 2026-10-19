@@ -1,20 +1,21 @@
 import {
-  AgreementStatus,
   CreditApplicationStatus,
   CreditTransferStatus,
   ModelYearReportStatus,
-  PenaltyCreditStatus,
   Role,
   VehicleStatus,
 } from "@/prisma/generated/enums";
 import {
   ActivityFeedRecord,
-  AllRecordsRecord,
-  GovDashboardCounts,
+  AllRecordsRecordGov,
+  AllRecordsRecordSupplier,
+  AllRecordTypeGov,
+  AllRecordTypeSupplier,
   Item,
   itemsToTake,
   SerializedActivityFeedRecord,
-  SerializedAllRecordsRecord,
+  SerializedAllRecordsRecordGov,
+  SerializedAllRecordsRecordSupplier,
 } from "./constants";
 import { prisma } from "@/lib/prisma";
 import { getIsoYmdString } from "@/app/lib/utils/date";
@@ -32,21 +33,23 @@ import { mapOfStatusToSupplierStatus as caMap } from "@/app/zev-unit-activities/
 import { mapOfStatusToSupplierStatus as ctMap } from "@/app/zev-unit-activities/lib/credit-transfers/constants";
 import { getZevModelDetailsRoute } from "@/app/zev-models/lib/routes";
 import {
+  getActivityFeedCaRecordsWhereClause,
+  getActivityFeedCreditAgreementRecordsWhereClause,
+  getActivityFeedCreditTransferRecordsWhereClause,
+  getActivityFeedMyrRecordsWhereClause,
+  getActivityFeedPenaltyCreditRecordsWhereClause,
+  getActivityFeedZevModelRecordsWhereClause,
+  getAllCaRecordsGovWhereClause,
+  getAllCaRecordsSupplierWhereClause,
+  getAllCreditAgreementRecordsGovWhereClause,
+  getAllCreditTransferRecordsGovWhereClause,
+  getAllMyrRecordsGovWhereClause,
+  getAllPenaltyCreditRecordsGovWhereClause,
+  getAllZevModelRecordsGovWhereClause,
   getSerializedActivityFeedRecord,
-  getSerializedAllRecordsRecord,
-  getThirtyDaysAgo,
+  getSerializedAllRecordsRecordGov,
+  getSerializedAllRecordsRecordSupplier,
 } from "./utilsServer";
-import {
-  AgreementWhereInput,
-  CreditApplicationHistoryWhereInput,
-  CreditApplicationWhereInput,
-  CreditTransferHistoryWhereInput,
-  CreditTransferWhereInput,
-  ModelYearReportHistoryWhereInput,
-  ModelYearReportWhereInput,
-  PenaltyCreditWhereInput,
-  VehicleWhereInput,
-} from "@/prisma/generated/models";
 
 export const getSupplierActionRequiredCounts = async (userOrgId: number) => {
   const myrPromise = prisma.modelYearReport.count({
@@ -943,64 +946,20 @@ export const getSupplierCtForAwarenessItems = async (
   });
 };
 
-export const getAllCaRecords = async (
-  userIsGov: boolean,
+// intended for gov users
+export const getAllCaRecordsGov = async (
   userRoles: Role[],
-  userOrgId?: number,
-): Promise<SerializedAllRecordsRecord[]> => {
-  if (!userIsGov && !userOrgId) {
-    throw new Error("Incorrect arguments!");
-  }
-  const thirtyDaysAgo = getThirtyDaysAgo();
+  type: AllRecordTypeGov,
+): Promise<SerializedAllRecordsRecordGov[]> => {
   const statusesMap = getCreditApplicationStatusEnumsToStringsMap();
-  const supplierStatusesToExclude = [
-    CreditApplicationStatus.RECOMMEND_APPROVAL,
-    CreditApplicationStatus.RETURNED_TO_ANALYST,
-  ];
-  const whereClause: CreditApplicationWhereInput = {
-    CreditApplicationHistory: {
-      some: {
-        timestamp: {
-          gte: thirtyDaysAgo,
-        },
-        ...(userIsGov
-          ? {}
-          : { userAction: { notIn: supplierStatusesToExclude } }),
-      },
-    },
-  };
-  const historyWhereClause: CreditApplicationHistoryWhereInput = {};
-  if (userIsGov) {
-    if (userRoles.includes(Role.DIRECTOR)) {
-      whereClause.status = {
-        in: [
-          CreditApplicationStatus.APPROVED,
-          CreditApplicationStatus.RECOMMEND_APPROVAL,
-          CreditApplicationStatus.REJECTED,
-        ],
-      };
-    } else {
-      whereClause.status = {
-        in: [
-          CreditApplicationStatus.APPROVED,
-          CreditApplicationStatus.RECOMMEND_APPROVAL,
-          CreditApplicationStatus.REJECTED,
-          CreditApplicationStatus.RETURNED_TO_ANALYST,
-          CreditApplicationStatus.SUBMITTED,
-        ],
-      };
-    }
-  } else if (userOrgId) {
-    whereClause.organizationId = userOrgId;
-    historyWhereClause.userAction = {
-      notIn: supplierStatusesToExclude,
-    };
+  const whereClause = getAllCaRecordsGovWhereClause(userRoles, type);
+  if (!whereClause) {
+    return [];
   }
   const creditApplications = await prisma.creditApplication.findMany({
     where: whereClause,
     select: {
       CreditApplicationHistory: {
-        where: historyWhereClause,
         select: {
           timestamp: true,
           user: {
@@ -1018,7 +977,6 @@ export const getAllCaRecords = async (
       },
       id: true,
       status: true,
-      supplierStatus: true,
       organization: {
         select: {
           name: true,
@@ -1027,15 +985,12 @@ export const getAllCaRecords = async (
     },
   });
   return creditApplications.map((application) => {
-    const statusToUse = userIsGov
-      ? application.status
-      : application.supplierStatus;
-    const record: AllRecordsRecord = {
+    const record: AllRecordsRecordGov = {
       ...application,
-      status: statusesMap[statusToUse] ?? statusToUse,
+      status: statusesMap[application.status] ?? application.status,
       mostRecentHistoryEntry: application.CreditApplicationHistory[0],
     };
-    return getSerializedAllRecordsRecord(
+    return getSerializedAllRecordsRecordGov(
       "Credit Application",
       record,
       Routes.CreditApplications,
@@ -1043,37 +998,64 @@ export const getAllCaRecords = async (
   });
 };
 
-export const getAllZevModelRecords = async (
-  userIsGov: boolean,
-  userRoles: Role[],
-  userOrgId?: number,
-): Promise<SerializedAllRecordsRecord[]> => {
-  if (!userIsGov && !userOrgId) {
-    throw new Error("Incorrect arguments!");
+// intended for supplier users
+export const getAllCaRecordsSupplier = async (
+  userOrgId: number,
+  type: AllRecordTypeSupplier,
+): Promise<SerializedAllRecordsRecordSupplier[]> => {
+  const statusesMap = getCreditApplicationStatusEnumsToStringsMap();
+  const whereClause = getAllCaRecordsSupplierWhereClause(userOrgId, type);
+  if (!whereClause) {
+    return [];
   }
-  const thirtyDaysAgo = getThirtyDaysAgo();
-  const statusesMap = getVehicleStatusEnumsToStringsMap();
-  const whereClause: VehicleWhereInput = {
-    VehicleHistory: {
-      some: {
-        timestamp: {
-          gte: thirtyDaysAgo,
+  const creditApplications = await prisma.creditApplication.findMany({
+    where: whereClause,
+    select: {
+      CreditApplicationHistory: {
+        where: {
+          userAction: {
+            notIn: [
+              CreditApplicationStatus.RECOMMEND_APPROVAL,
+              CreditApplicationStatus.RETURNED_TO_ANALYST,
+            ],
+          },
+        },
+        select: {
+          timestamp: true,
+        },
+        take: 1,
+        orderBy: {
+          timestamp: "desc",
         },
       },
+      id: true,
+      supplierStatus: true,
     },
-  };
-  if (userIsGov) {
-    if (userRoles.includes(Role.DIRECTOR)) {
-      whereClause.status = {
-        in: [VehicleStatus.VALIDATED],
-      };
-    } else {
-      whereClause.status = {
-        in: [VehicleStatus.SUBMITTED, VehicleStatus.VALIDATED],
-      };
-    }
-  } else if (userOrgId) {
-    whereClause.organizationId = userOrgId;
+  });
+  return creditApplications.map((application) => {
+    const record: AllRecordsRecordSupplier = {
+      ...application,
+      status:
+        statusesMap[application.supplierStatus] ?? application.supplierStatus,
+      mostRecentHistoryEntry: application.CreditApplicationHistory[0],
+    };
+    return getSerializedAllRecordsRecordSupplier(
+      "Credit Application",
+      record,
+      Routes.CreditApplications,
+    );
+  });
+};
+
+// intended for gov users
+export const getAllZevModelRecordsGov = async (
+  userRoles: Role[],
+  type: AllRecordTypeGov,
+): Promise<SerializedAllRecordsRecordGov[]> => {
+  const statusesMap = getVehicleStatusEnumsToStringsMap();
+  const whereClause = getAllZevModelRecordsGovWhereClause(userRoles, type);
+  if (!whereClause) {
+    return [];
   }
   const vehicles = await prisma.vehicle.findMany({
     where: whereClause,
@@ -1105,7 +1087,7 @@ export const getAllZevModelRecords = async (
     },
   });
   return vehicles.map((vehicle) => {
-    const record: AllRecordsRecord = {
+    const record: AllRecordsRecordGov = {
       ...vehicle,
       status: statusesMap[vehicle.status] ?? vehicle.status,
       mostRecentHistoryEntry: vehicle.VehicleHistory[0],
@@ -1116,72 +1098,27 @@ export const getAllZevModelRecords = async (
     } else {
       baseRoute = Routes.InactiveZevModels;
     }
-    return getSerializedAllRecordsRecord("ZEV Model", record, baseRoute);
+    return getSerializedAllRecordsRecordGov("ZEV Model", record, baseRoute);
   });
 };
 
-export const getAllCreditTransferRecords = async (
-  userIsGov: boolean,
+// intended for gov users
+export const getAllCreditTransferRecordsGov = async (
   userRoles: Role[],
-  userOrgId?: number,
-): Promise<SerializedAllRecordsRecord[]> => {
-  if (!userIsGov && !userOrgId) {
-    throw new Error("Incorrect arguments!");
-  }
-  const thirtyDaysAgo = getThirtyDaysAgo();
+  type: AllRecordTypeGov,
+): Promise<SerializedAllRecordsRecordGov[]> => {
   const statusesMap = getCreditTransferStatusEnumsToStringsMap();
-  const supplierStatusesToExclude = [
-    CreditTransferStatus.RECOMMEND_APPROVAL_GOV,
-    CreditTransferStatus.RECOMMEND_REJECTION_GOV,
-    CreditTransferStatus.RETURNED_TO_ANALYST,
-  ];
-  const whereClause: CreditTransferWhereInput = {
-    creditTransferHistory: {
-      some: {
-        timestamp: {
-          gte: thirtyDaysAgo,
-        },
-        ...(userIsGov
-          ? {}
-          : { userAction: { notIn: supplierStatusesToExclude } }),
-      },
-    },
-  };
-  const historyWhereClause: CreditTransferHistoryWhereInput = {};
-  if (userIsGov) {
-    if (userRoles.includes(Role.DIRECTOR)) {
-      whereClause.status = {
-        in: [
-          CreditTransferStatus.APPROVED_BY_GOV,
-          CreditTransferStatus.RECOMMEND_APPROVAL_GOV,
-          CreditTransferStatus.RECOMMEND_REJECTION_GOV,
-          CreditTransferStatus.REJECTED_BY_GOV,
-        ],
-      };
-    } else {
-      whereClause.status = {
-        notIn: [
-          CreditTransferStatus.DRAFT,
-          CreditTransferStatus.REJECTED_BY_TRANSFER_TO,
-          CreditTransferStatus.RESCINDED_BY_TRANSFER_FROM,
-          CreditTransferStatus.SUBMITTED_TO_TRANSFER_TO,
-        ],
-      };
-    }
-  } else if (userOrgId) {
-    whereClause.OR = [
-      { transferFromId: userOrgId },
-      { transferToId: userOrgId, status: { not: CreditTransferStatus.DRAFT } },
-    ];
-    historyWhereClause.userAction = {
-      notIn: supplierStatusesToExclude,
-    };
+  const whereClause = getAllCreditTransferRecordsGovWhereClause(
+    userRoles,
+    type,
+  );
+  if (!whereClause) {
+    return [];
   }
   const transfers = await prisma.creditTransfer.findMany({
     where: whereClause,
     select: {
       creditTransferHistory: {
-        where: historyWhereClause,
         select: {
           timestamp: true,
           user: {
@@ -1207,14 +1144,13 @@ export const getAllCreditTransferRecords = async (
     },
   });
   return transfers.map((transfer) => {
-    const statusToUse = userIsGov ? transfer.status : ctMap[transfer.status];
-    const record: AllRecordsRecord = {
+    const record: AllRecordsRecordGov = {
       ...transfer,
       organization: transfer.transferFrom,
-      status: statusesMap[statusToUse] ?? statusToUse,
+      status: statusesMap[transfer.status] ?? transfer.status,
       mostRecentHistoryEntry: transfer.creditTransferHistory[0],
     };
-    return getSerializedAllRecordsRecord(
+    return getSerializedAllRecordsRecordGov(
       "Credit Transfer",
       record,
       Routes.CreditTransfers,
@@ -1222,32 +1158,18 @@ export const getAllCreditTransferRecords = async (
   });
 };
 
-export const getAllCreditAgreementRecords = async (
-  userIsGov: boolean,
+// intended for gov users
+export const getAllCreditAgreementRecordsGov = async (
   userRoles: Role[],
-  userOrgId?: number,
-): Promise<SerializedAllRecordsRecord[]> => {
-  if (!userIsGov && !userOrgId) {
-    throw new Error("Incorrect arguments!");
-  }
-  const thirtyDaysAgo = getThirtyDaysAgo();
+  type: AllRecordTypeGov,
+): Promise<SerializedAllRecordsRecordGov[]> => {
   const statusesMap = getAgreementStatusEnumsToStringsMap();
-  const whereClause: AgreementWhereInput = {
-    agreementHistory: {
-      some: {
-        timestamp: {
-          gte: thirtyDaysAgo,
-        },
-      },
-    },
-  };
-  if (userIsGov && userRoles.includes(Role.DIRECTOR)) {
-    whereClause.status = {
-      in: [AgreementStatus.ISSUED, AgreementStatus.RECOMMEND_APPROVAL],
-    };
-  } else if (userOrgId) {
-    whereClause.organizationId = userOrgId;
-    whereClause.status = AgreementStatus.ISSUED;
+  const whereClause = getAllCreditAgreementRecordsGovWhereClause(
+    userRoles,
+    type,
+  );
+  if (!whereClause) {
+    return [];
   }
   const agreements = await prisma.agreement.findMany({
     where: whereClause,
@@ -1278,12 +1200,12 @@ export const getAllCreditAgreementRecords = async (
     },
   });
   return agreements.map((agreement) => {
-    const record: AllRecordsRecord = {
+    const record: AllRecordsRecordGov = {
       ...agreement,
       status: statusesMap[agreement.status] ?? agreement.status,
       mostRecentHistoryEntry: agreement.agreementHistory[0],
     };
-    return getSerializedAllRecordsRecord(
+    return getSerializedAllRecordsRecordGov(
       "Credit Agreement",
       record,
       Routes.CreditAgreements,
@@ -1291,35 +1213,15 @@ export const getAllCreditAgreementRecords = async (
   });
 };
 
-export const getAllPenaltyCreditRecords = async (
-  userIsGov: boolean,
+// intended for gov users
+export const getAllPenaltyCreditRecordsGov = async (
   userRoles: Role[],
-  userOrgId?: number,
-): Promise<SerializedAllRecordsRecord[]> => {
-  if (!userIsGov && !userOrgId) {
-    throw new Error("Incorrect arguments!");
-  }
-  const thirtyDaysAgo = getThirtyDaysAgo();
+  type: AllRecordTypeGov,
+): Promise<SerializedAllRecordsRecordGov[]> => {
   const statusesMap = getPenaltyCreditStatusEnumsToStringsMap();
-  const whereClause: PenaltyCreditWhereInput = {
-    PenaltyCreditHistory: {
-      some: {
-        timestamp: {
-          gte: thirtyDaysAgo,
-        },
-      },
-    },
-  };
-  if (userIsGov && userRoles.includes(Role.DIRECTOR)) {
-    whereClause.status = {
-      in: [
-        PenaltyCreditStatus.APPROVED,
-        PenaltyCreditStatus.SUBMITTED_TO_DIRECTOR,
-      ],
-    };
-  } else if (userOrgId) {
-    whereClause.organizationId = userOrgId;
-    whereClause.status = PenaltyCreditStatus.APPROVED;
+  const whereClause = getAllPenaltyCreditRecordsGovWhereClause(userRoles, type);
+  if (!whereClause) {
+    return [];
   }
   const penaltyCredits = await prisma.penaltyCredit.findMany({
     where: whereClause,
@@ -1350,12 +1252,12 @@ export const getAllPenaltyCreditRecords = async (
     },
   });
   return penaltyCredits.map((pc) => {
-    const record: AllRecordsRecord = {
+    const record: AllRecordsRecordGov = {
       ...pc,
       status: statusesMap[pc.status] ?? pc.status,
       mostRecentHistoryEntry: pc.PenaltyCreditHistory[0],
     };
-    return getSerializedAllRecordsRecord(
+    return getSerializedAllRecordsRecordGov(
       "Penalty Credits",
       record,
       Routes.PenaltyCredits,
@@ -1363,60 +1265,20 @@ export const getAllPenaltyCreditRecords = async (
   });
 };
 
-export const getAllMyrRecords = async (
-  userIsGov: boolean,
+// intended for gov users
+export const getAllMyrRecordsGov = async (
   userRoles: Role[],
-  userOrgId?: number,
-): Promise<SerializedAllRecordsRecord[]> => {
-  if (!userIsGov && !userOrgId) {
-    throw new Error("Incorrect arguments!");
-  }
-  const thirtyDaysAgo = getThirtyDaysAgo();
+  type: AllRecordTypeGov,
+): Promise<SerializedAllRecordsRecordGov[]> => {
   const statusesMap = getMyrStatusEnumsToStringsMap();
-  const supplierStatusesToExclude = [
-    ModelYearReportStatus.RETURNED_TO_ANALYST,
-    ModelYearReportStatus.SUBMITTED_TO_DIRECTOR,
-  ];
-  const whereClause: ModelYearReportWhereInput = {
-    modelYearReportHistory: {
-      some: {
-        timestamp: {
-          gte: thirtyDaysAgo,
-        },
-        ...(userIsGov
-          ? {}
-          : { userAction: { notIn: supplierStatusesToExclude } }),
-      },
-    },
-  };
-  const historyWhereClause: ModelYearReportHistoryWhereInput = {};
-  if (userIsGov) {
-    if (userRoles.includes(Role.DIRECTOR)) {
-      whereClause.status = {
-        in: [
-          ModelYearReportStatus.ASSESSED,
-          ModelYearReportStatus.SUBMITTED_TO_DIRECTOR,
-        ],
-      };
-    } else {
-      whereClause.status = {
-        notIn: [
-          ModelYearReportStatus.DRAFT,
-          ModelYearReportStatus.RETURNED_TO_SUPPLIER,
-        ],
-      };
-    }
-  } else if (userOrgId) {
-    whereClause.organizationId = userOrgId;
-    historyWhereClause.userAction = {
-      notIn: supplierStatusesToExclude,
-    };
+  const whereClause = getAllMyrRecordsGovWhereClause(userRoles, type);
+  if (!whereClause) {
+    return [];
   }
   const myrs = await prisma.modelYearReport.findMany({
     where: whereClause,
     select: {
       modelYearReportHistory: {
-        where: historyWhereClause,
         select: {
           timestamp: true,
           user: {
@@ -1442,13 +1304,12 @@ export const getAllMyrRecords = async (
     },
   });
   return myrs.map((myr) => {
-    const statusToUse = userIsGov ? myr.status : myrMap[myr.status];
-    const record: AllRecordsRecord = {
+    const record: AllRecordsRecordGov = {
       ...myr,
-      status: statusesMap[statusToUse] ?? myr.status,
+      status: statusesMap[myr.status] ?? myr.status,
       mostRecentHistoryEntry: myr.modelYearReportHistory[0],
     };
-    return getSerializedAllRecordsRecord(
+    return getSerializedAllRecordsRecordGov(
       "Model Year Report",
       record,
       Routes.ModelYearReports,
@@ -1457,16 +1318,13 @@ export const getAllMyrRecords = async (
 };
 
 // intended for gov users
-export const getActivityFeedCaRecords = async (): Promise<
-  SerializedActivityFeedRecord[]
-> => {
-  const thirtyDaysAgo = getThirtyDaysAgo();
+export const getActivityFeedCaRecords = async (
+  userRoles: Role[],
+): Promise<SerializedActivityFeedRecord[]> => {
   const statusesMap = getCreditApplicationStatusEnumsToStringsMap();
+  const whereClause = getActivityFeedCaRecordsWhereClause(userRoles);
   const history = await prisma.creditApplicationHistory.findMany({
-    where: {
-      timestamp: { gte: thirtyDaysAgo },
-      userAction: { not: CreditApplicationStatus.DRAFT },
-    },
+    where: whereClause,
     select: {
       timestamp: true,
       userAction: true,
@@ -1492,18 +1350,13 @@ export const getActivityFeedCaRecords = async (): Promise<
 };
 
 // intended for gov users
-export const getActivityFeedZevModelRecords = async (): Promise<
-  SerializedActivityFeedRecord[]
-> => {
-  const thirtyDaysAgo = getThirtyDaysAgo();
+export const getActivityFeedZevModelRecords = async (
+  userRoles: Role[],
+): Promise<SerializedActivityFeedRecord[]> => {
   const statusesMap = getVehicleStatusEnumsToStringsMap();
+  const whereClause = getActivityFeedZevModelRecordsWhereClause(userRoles);
   const history = await prisma.vehicleHistory.findMany({
-    where: {
-      timestamp: { gte: thirtyDaysAgo },
-      userAction: {
-        notIn: [VehicleStatus.DRAFT, VehicleStatus.RETURNED_TO_SUPPLIER],
-      },
-    },
+    where: whereClause,
     select: {
       timestamp: true,
       userAction: true,
@@ -1534,23 +1387,14 @@ export const getActivityFeedZevModelRecords = async (): Promise<
 };
 
 // intended for gov users
-export const getActivityFeedCreditTransferRecords = async (): Promise<
-  SerializedActivityFeedRecord[]
-> => {
-  const thirtyDaysAgo = getThirtyDaysAgo();
+export const getActivityFeedCreditTransferRecords = async (
+  userRoles: Role[],
+): Promise<SerializedActivityFeedRecord[]> => {
   const statusesMap = getCreditTransferStatusEnumsToStringsMap();
+  const whereClause =
+    getActivityFeedCreditTransferRecordsWhereClause(userRoles);
   const history = await prisma.creditTransferHistory.findMany({
-    where: {
-      timestamp: { gte: thirtyDaysAgo },
-      userAction: {
-        notIn: [
-          CreditTransferStatus.DRAFT,
-          CreditTransferStatus.SUBMITTED_TO_TRANSFER_TO,
-          CreditTransferStatus.REJECTED_BY_TRANSFER_TO,
-          CreditTransferStatus.RESCINDED_BY_TRANSFER_FROM,
-        ],
-      },
-    },
+    where: whereClause,
     select: {
       timestamp: true,
       userAction: true,
@@ -1576,13 +1420,14 @@ export const getActivityFeedCreditTransferRecords = async (): Promise<
 };
 
 // intended for gov users
-export const getActivityFeedCreditAgreementRecords = async (): Promise<
-  SerializedActivityFeedRecord[]
-> => {
-  const thirtyDaysAgo = getThirtyDaysAgo();
+export const getActivityFeedCreditAgreementRecords = async (
+  userRoles: Role[],
+): Promise<SerializedActivityFeedRecord[]> => {
   const statusesMap = getAgreementStatusEnumsToStringsMap();
+  const whereClause =
+    getActivityFeedCreditAgreementRecordsWhereClause(userRoles);
   const history = await prisma.agreementHistory.findMany({
-    where: { timestamp: { gte: thirtyDaysAgo } },
+    where: whereClause,
     select: {
       timestamp: true,
       userAction: true,
@@ -1608,13 +1453,13 @@ export const getActivityFeedCreditAgreementRecords = async (): Promise<
 };
 
 // intended for gov users
-export const getActivityFeedPenaltyCreditRecords = async (): Promise<
-  SerializedActivityFeedRecord[]
-> => {
-  const thirtyDaysAgo = getThirtyDaysAgo();
+export const getActivityFeedPenaltyCreditRecords = async (
+  userRoles: Role[],
+): Promise<SerializedActivityFeedRecord[]> => {
   const statusesMap = getPenaltyCreditStatusEnumsToStringsMap();
+  const whereClause = getActivityFeedPenaltyCreditRecordsWhereClause(userRoles);
   const history = await prisma.penaltyCreditHistory.findMany({
-    where: { timestamp: { gte: thirtyDaysAgo } },
+    where: whereClause,
     select: {
       timestamp: true,
       userAction: true,
@@ -1640,21 +1485,13 @@ export const getActivityFeedPenaltyCreditRecords = async (): Promise<
 };
 
 // intended for gov users
-export const getActivityFeedMyrRecords = async (): Promise<
-  SerializedActivityFeedRecord[]
-> => {
-  const thirtyDaysAgo = getThirtyDaysAgo();
+export const getActivityFeedMyrRecords = async (
+  userRoles: Role[],
+): Promise<SerializedActivityFeedRecord[]> => {
   const statusesMap = getMyrStatusEnumsToStringsMap();
+  const whereClause = getActivityFeedMyrRecordsWhereClause(userRoles);
   const history = await prisma.modelYearReportHistory.findMany({
-    where: {
-      timestamp: { gte: thirtyDaysAgo },
-      userAction: {
-        notIn: [
-          ModelYearReportStatus.DRAFT,
-          ModelYearReportStatus.RETURNED_TO_SUPPLIER,
-        ],
-      },
-    },
+    where: whereClause,
     select: {
       timestamp: true,
       userAction: true,
@@ -1679,225 +1516,17 @@ export const getActivityFeedMyrRecords = async (): Promise<
   });
 };
 
-const getCaRecordsByStatus = async (
-  statuses: CreditApplicationStatus[],
-): Promise<SerializedAllRecordsRecord[]> => {
-  if (statuses.length === 0) {
-    return [];
-  }
-  const statusesMap = getCreditApplicationStatusEnumsToStringsMap();
-  const cas = await prisma.creditApplication.findMany({
-    where: { status: { in: statuses } },
-    select: {
-      id: true,
-      status: true,
-      organization: { select: { name: true } },
-      CreditApplicationHistory: {
-        orderBy: { timestamp: "desc" },
-        take: 1,
-        select: {
-          timestamp: true,
-          user: { select: { firstName: true, lastName: true, roles: true } },
-        },
-      },
-    },
-  });
-  return cas.map((ca) => {
-    const record: AllRecordsRecord = {
-      ...ca,
-      status: statusesMap[ca.status] ?? ca.status,
-      mostRecentHistoryEntry: ca.CreditApplicationHistory[0],
-    };
-    return getSerializedAllRecordsRecord(
-      "Credit Application",
-      record,
-      Routes.CreditApplications,
-    );
-  });
-};
-
-const getMyrRecordsByStatus = async (
-  statuses: ModelYearReportStatus[],
-): Promise<SerializedAllRecordsRecord[]> => {
-  if (statuses.length === 0) {
-    return [];
-  }
-  const statusesMap = getMyrStatusEnumsToStringsMap();
-  const myrs = await prisma.modelYearReport.findMany({
-    where: { status: { in: statuses } },
-    select: {
-      id: true,
-      status: true,
-      organization: { select: { name: true } },
-      modelYearReportHistory: {
-        orderBy: { timestamp: "desc" },
-        take: 1,
-        select: {
-          timestamp: true,
-          user: { select: { firstName: true, lastName: true, roles: true } },
-        },
-      },
-    },
-  });
-  return myrs.map((myr) => {
-    const record: AllRecordsRecord = {
-      ...myr,
-      status: statusesMap[myr.status] ?? myr.status,
-      mostRecentHistoryEntry: myr.modelYearReportHistory[0],
-    };
-    return getSerializedAllRecordsRecord(
-      "Model Year Report",
-      record,
-      Routes.ModelYearReports,
-    );
-  });
-};
-
-const getTransferRecordsByStatus = async (
-  statuses: CreditTransferStatus[],
-): Promise<SerializedAllRecordsRecord[]> => {
-  if (statuses.length === 0) {
-    return [];
-  }
-  const statusesMap = getCreditTransferStatusEnumsToStringsMap();
-  const transfers = await prisma.creditTransfer.findMany({
-    where: { status: { in: statuses } },
-    select: {
-      id: true,
-      status: true,
-      transferFrom: { select: { name: true } },
-      creditTransferHistory: {
-        orderBy: { timestamp: "desc" },
-        take: 1,
-        select: {
-          timestamp: true,
-          user: { select: { firstName: true, lastName: true, roles: true } },
-        },
-      },
-    },
-  });
-  return transfers.map((transfer) => {
-    const record: AllRecordsRecord = {
-      ...transfer,
-      organization: transfer.transferFrom,
-      status: statusesMap[transfer.status] ?? transfer.status,
-      mostRecentHistoryEntry: transfer.creditTransferHistory[0],
-    };
-    return getSerializedAllRecordsRecord(
-      "Credit Transfer",
-      record,
-      Routes.CreditTransfers,
-    );
-  });
-};
-
-export const getGovRequiresActionRecords = async (
-  userRoles: Role[],
-): Promise<SerializedAllRecordsRecord[]> => {
-  const isDirector = userRoles.includes(Role.DIRECTOR);
-  const [cas, myrs, transfers] = await Promise.all([
-    getCaRecordsByStatus([
-      isDirector
-        ? CreditApplicationStatus.RECOMMEND_APPROVAL
-        : CreditApplicationStatus.SUBMITTED,
-    ]),
-    getMyrRecordsByStatus(
-      isDirector
-        ? [ModelYearReportStatus.SUBMITTED_TO_DIRECTOR]
-        : [
-            ModelYearReportStatus.SUBMITTED_TO_GOVERNMENT,
-            ModelYearReportStatus.RETURNED_TO_ANALYST,
-          ],
-    ),
-    getTransferRecordsByStatus(
-      isDirector ? [] : [CreditTransferStatus.RETURNED_TO_ANALYST],
-    ),
-  ]);
-  return [...cas, ...myrs, ...transfers];
-};
-
-export const getGovInProgressRecords = async (
-  userRoles: Role[],
-): Promise<SerializedAllRecordsRecord[]> => {
-  const isDirector = userRoles.includes(Role.DIRECTOR);
-  const [cas, myrs, transfers] = await Promise.all([
-    getCaRecordsByStatus([
-      CreditApplicationStatus.DRAFT,
-      CreditApplicationStatus.RETURNED_TO_ANALYST,
-    ]),
-    getMyrRecordsByStatus([ModelYearReportStatus.DRAFT]),
-    getTransferRecordsByStatus(
-      isDirector
-        ? []
-        : [
-            CreditTransferStatus.DRAFT,
-            CreditTransferStatus.APPROVED_BY_TRANSFER_TO,
-            CreditTransferStatus.RESCINDED_BY_TRANSFER_FROM,
-            CreditTransferStatus.SUBMITTED_TO_TRANSFER_TO,
-          ],
-    ),
-  ]);
-  return [...cas, ...myrs, ...transfers];
-};
-
-export const getGovWithDirectorRecords = async (): Promise<
-  SerializedAllRecordsRecord[]
-> => {
-  const [cas, myrs] = await Promise.all([
-    getCaRecordsByStatus([CreditApplicationStatus.RECOMMEND_APPROVAL]),
-    getMyrRecordsByStatus([ModelYearReportStatus.SUBMITTED_TO_DIRECTOR]),
-  ]);
-  return [...cas, ...myrs];
-};
-
-export const getGovCompletedRecords = async (): Promise<
-  SerializedAllRecordsRecord[]
-> => {
-  const [cas, myrs, transfers] = await Promise.all([
-    getCaRecordsByStatus([
-      CreditApplicationStatus.APPROVED,
-      CreditApplicationStatus.REJECTED,
-    ]),
-    getMyrRecordsByStatus([ModelYearReportStatus.ASSESSED]),
-    getTransferRecordsByStatus([
-      CreditTransferStatus.APPROVED_BY_GOV,
-      CreditTransferStatus.REJECTED_BY_GOV,
-      CreditTransferStatus.REJECTED_BY_TRANSFER_TO,
-    ]),
-  ]);
-  return [...cas, ...myrs, ...transfers];
-};
-
-export const getGovDashboardSectionCounts = (
-  records: SerializedAllRecordsRecord[],
-): GovDashboardCounts => {
-  const counts: GovDashboardCounts = {
-    "Credit Applications": 0,
-    "Model Year Reports": 0,
-    "Credit Transfers": 0,
-  };
-  for (const record of records) {
-    if (record.type === "Credit Application") {
-      counts["Credit Applications"] += 1;
-    } else if (record.type === "Model Year Report") {
-      counts["Model Year Reports"] += 1;
-    } else if (record.type === "Credit Transfer") {
-      counts["Credit Transfers"] += 1;
-    }
-  }
-  return counts;
-};
-
 export const getRecentActivityFeedRecords = async (
+  userRoles: Role[],
   limit: number,
 ): Promise<SerializedActivityFeedRecord[]> => {
   const collection = await Promise.all([
-    getActivityFeedCaRecords(),
-    getActivityFeedZevModelRecords(),
-    getActivityFeedCreditTransferRecords(),
-    getActivityFeedCreditAgreementRecords(),
-    getActivityFeedPenaltyCreditRecords(),
-    getActivityFeedMyrRecords(),
+    getActivityFeedCaRecords(userRoles),
+    getActivityFeedZevModelRecords(userRoles),
+    getActivityFeedCreditTransferRecords(userRoles),
+    getActivityFeedCreditAgreementRecords(userRoles),
+    getActivityFeedPenaltyCreditRecords(userRoles),
+    getActivityFeedMyrRecords(userRoles),
   ]);
   const records = collection.flat();
   records.sort((a, b) => {
@@ -1910,4 +1539,19 @@ export const getRecentActivityFeedRecords = async (
     return 0;
   });
   return records.slice(0, limit);
+};
+
+export const getGovRecords = async (
+  userRoles: Role[],
+  type: AllRecordTypeGov,
+): Promise<SerializedAllRecordsRecordGov[]> => {
+  const [cas, zevModels, cts, agreements, pcs, myrs] = await Promise.all([
+    getAllCaRecordsGov(userRoles, type),
+    getAllZevModelRecordsGov(userRoles, type),
+    getAllCreditTransferRecordsGov(userRoles, type),
+    getAllCreditAgreementRecordsGov(userRoles, type),
+    getAllPenaltyCreditRecordsGov(userRoles, type),
+    getAllMyrRecordsGov(userRoles, type),
+  ]);
+  return [...cas, ...zevModels, ...cts, ...agreements, ...pcs, ...myrs];
 };
