@@ -619,9 +619,23 @@ export const getActivityFeedCaRecordsWhereClause = (
         CreditApplicationStatus.REJECTED,
       ],
     };
+    whereClause.creditApplication = {
+      status: {
+        in: [
+          CreditApplicationStatus.APPROVED,
+          CreditApplicationStatus.RECOMMEND_APPROVAL,
+          CreditApplicationStatus.REJECTED,
+        ],
+      },
+    };
   } else {
     whereClause.userAction = {
       not: CreditApplicationStatus.DRAFT,
+    };
+    whereClause.creditApplication = {
+      status: {
+        not: CreditApplicationStatus.DRAFT,
+      },
     };
   }
   return whereClause;
@@ -636,9 +650,17 @@ export const getActivityFeedZevModelRecordsWhereClause = (
   };
   if (userRoles.includes(Role.DIRECTOR)) {
     whereClause.userAction = VehicleStatus.VALIDATED;
+    whereClause.vehicle = {
+      status: VehicleStatus.VALIDATED,
+    };
   } else {
     whereClause.userAction = {
       notIn: [VehicleStatus.DRAFT, VehicleStatus.RETURNED_TO_SUPPLIER],
+    };
+    whereClause.vehicle = {
+      status: {
+        notIn: [VehicleStatus.DRAFT, VehicleStatus.RETURNED_TO_SUPPLIER],
+      },
     };
   }
   return whereClause;
@@ -660,13 +682,34 @@ export const getActivityFeedCreditTransferRecordsWhereClause = (
         CreditTransferStatus.REJECTED_BY_GOV,
       ],
     };
+    whereClause.creditTransfer = {
+      status: {
+        in: [
+          CreditTransferStatus.APPROVED_BY_GOV,
+          CreditTransferStatus.RECOMMEND_APPROVAL_GOV,
+          CreditTransferStatus.RECOMMEND_REJECTION_GOV,
+          CreditTransferStatus.REJECTED_BY_GOV,
+        ],
+      },
+    };
   } else {
     whereClause.userAction = {
       notIn: [
         CreditTransferStatus.DRAFT,
         CreditTransferStatus.SUBMITTED_TO_TRANSFER_TO,
         CreditTransferStatus.RESCINDED_BY_TRANSFER_FROM,
+        CreditTransferStatus.REJECTED_BY_TRANSFER_TO,
       ],
+    };
+    whereClause.creditTransfer = {
+      status: {
+        notIn: [
+          CreditTransferStatus.DRAFT,
+          CreditTransferStatus.SUBMITTED_TO_TRANSFER_TO,
+          CreditTransferStatus.RESCINDED_BY_TRANSFER_FROM,
+          CreditTransferStatus.REJECTED_BY_TRANSFER_TO,
+        ],
+      },
     };
   }
   return whereClause;
@@ -682,6 +725,11 @@ export const getActivityFeedCreditAgreementRecordsWhereClause = (
   if (userRoles.includes(Role.DIRECTOR)) {
     whereClause.userAction = {
       notIn: [AgreementStatus.DRAFT, AgreementStatus.RETURNED_TO_ANALYST],
+    };
+    whereClause.agreement = {
+      status: {
+        notIn: [AgreementStatus.DRAFT, AgreementStatus.RETURNED_TO_ANALYST],
+      },
     };
   }
   return whereClause;
@@ -701,6 +749,14 @@ export const getActivityFeedPenaltyCreditRecordsWhereClause = (
         PenaltyCreditStatus.RETURNED_TO_ANALYST,
       ],
     };
+    whereClause.penaltyCredit = {
+      status: {
+        notIn: [
+          PenaltyCreditStatus.DRAFT,
+          PenaltyCreditStatus.RETURNED_TO_ANALYST,
+        ],
+      },
+    };
   }
   return whereClause;
 };
@@ -719,12 +775,28 @@ export const getActivityFeedMyrRecordsWhereClause = (
         ModelYearReportStatus.SUBMITTED_TO_DIRECTOR,
       ],
     };
+    whereClause.modelYearReport = {
+      status: {
+        in: [
+          ModelYearReportStatus.ASSESSED,
+          ModelYearReportStatus.SUBMITTED_TO_DIRECTOR,
+        ],
+      },
+    };
   } else {
     whereClause.userAction = {
       notIn: [
         ModelYearReportStatus.DRAFT,
         ModelYearReportStatus.RETURNED_TO_SUPPLIER,
       ],
+    };
+    whereClause.modelYearReport = {
+      status: {
+        notIn: [
+          ModelYearReportStatus.DRAFT,
+          ModelYearReportStatus.RETURNED_TO_SUPPLIER,
+        ],
+      },
     };
   }
   return whereClause;
