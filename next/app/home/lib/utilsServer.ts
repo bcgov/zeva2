@@ -89,15 +89,15 @@ export const getSerializedAllRecordsRecordSupplier = (
   record: AllRecordsRecordSupplier,
   baseRoute: string,
 ): SerializedAllRecordsRecordSupplier => {
-  const now = new Date();
-  const ts = record.mostRecentHistoryEntry.timestamp;
-  const id = record.id;
+  const ts = record.mostRecentHistoryEntry?.timestamp;
   return {
-    id,
+    id: record.id,
     type,
     status: record.status,
-    lastUpdated: `${new Decimal(now.getTime() - ts.getTime()).div(1000 * 60 * 60 * 24).toFixed(0)} days ago`,
-    date: getIsoYmdString(ts),
+    lastUpdated: ts
+      ? `${new Decimal(Date.now() - ts.getTime()).div(1000 * 60 * 60 * 24).toFixed(0)} days ago`
+      : "",
+    date: ts ? getIsoYmdString(ts) : "",
     baseRoute,
   };
 };
@@ -203,52 +203,185 @@ export const getAllCaRecordsGovWhereClause = (
   return whereClause;
 };
 
+type SupplierCategoryClauses<T> = Record<
+  Exclude<AllRecordTypeSupplier, "all">,
+  T
+>;
+
+const getSupplierWhereClause = <T>(
+  clauses: SupplierCategoryClauses<T>,
+  type: AllRecordTypeSupplier,
+): { OR: T[] } | T | null => {
+  if (type === "all") {
+    return {
+      OR: [
+        clauses["requires-your-action"],
+        clauses["in-progress"],
+        clauses["for-awareness"],
+      ],
+    };
+  }
+  return clauses[type] ?? null;
+};
+
 export const getAllCaRecordsSupplierWhereClause = (
   userOrgId: number,
   type: AllRecordTypeSupplier,
 ): CreditApplicationWhereInput | null => {
   const nDaysAgo = getNDaysAgo(30);
-  const requiresActionWhereClause: CreditApplicationWhereInput = {
-    status: CreditApplicationStatus.DRAFT,
-  };
-  const inProgressWhereClause: CreditApplicationWhereInput = {
-    status: {
-      in: [
-        CreditApplicationStatus.RECOMMEND_APPROVAL,
-        CreditApplicationStatus.RETURNED_TO_ANALYST,
-        CreditApplicationStatus.SUBMITTED,
-      ],
+  const whereClause = getSupplierWhereClause<CreditApplicationWhereInput>(
+    {
+      "requires-your-action": { status: CreditApplicationStatus.DRAFT },
+      "in-progress": {
+        status: {
+          in: [
+            CreditApplicationStatus.RECOMMEND_APPROVAL,
+            CreditApplicationStatus.RETURNED_TO_ANALYST,
+            CreditApplicationStatus.SUBMITTED,
+          ],
+        },
+      },
+      "for-awareness": {
+        status: {
+          in: [
+            CreditApplicationStatus.APPROVED,
+            CreditApplicationStatus.REJECTED,
+          ],
+        },
+        CreditApplicationHistory: { some: { timestamp: { gte: nDaysAgo } } },
+      },
     },
-  };
-  const forAwarenessWhereClause: CreditApplicationWhereInput = {
-    status: {
-      in: [CreditApplicationStatus.APPROVED, CreditApplicationStatus.REJECTED],
+    type,
+  );
+  return whereClause
+    ? { AND: [whereClause, { organizationId: userOrgId }] }
+    : null;
+};
+
+export const getAllMyrRecordsSupplierWhereClause = (
+  userOrgId: number,
+  type: AllRecordTypeSupplier,
+): ModelYearReportWhereInput | null => {
+  const nDaysAgo = getNDaysAgo(30);
+  const whereClause = getSupplierWhereClause<ModelYearReportWhereInput>(
+    {
+      "requires-your-action": {
+        status: {
+          in: [
+            ModelYearReportStatus.DRAFT,
+            ModelYearReportStatus.RETURNED_TO_SUPPLIER,
+          ],
+        },
+      },
+      "in-progress": {
+        status: {
+          in: [
+            ModelYearReportStatus.RETURNED_TO_ANALYST,
+            ModelYearReportStatus.SUBMITTED_TO_DIRECTOR,
+            ModelYearReportStatus.SUBMITTED_TO_GOVERNMENT,
+          ],
+        },
+      },
+      "for-awareness": {
+        status: ModelYearReportStatus.ASSESSED,
+        modelYearReportHistory: { some: { timestamp: { gte: nDaysAgo } } },
+      },
     },
-    CreditApplicationHistory: { some: { timestamp: { gte: nDaysAgo } } },
-  };
-  let whereClause: CreditApplicationWhereInput | null = null;
-  if (type === "all") {
-    whereClause = {
-      OR: [
-        requiresActionWhereClause,
-        inProgressWhereClause,
-        forAwarenessWhereClause,
-      ],
-    };
-  } else if (type === "requires-your-action") {
-    whereClause = requiresActionWhereClause;
-  } else if (type === "in-progress") {
-    whereClause = inProgressWhereClause;
-  } else if (type === "for-awareness") {
-    whereClause = forAwarenessWhereClause;
-  }
-  if (whereClause) {
-    return {
-      ...whereClause,
-      organizationId: userOrgId,
-    };
-  }
-  return null;
+    type,
+  );
+  return whereClause
+    ? { AND: [whereClause, { organizationId: userOrgId }] }
+    : null;
+};
+
+export const getAllZevModelRecordsSupplierWhereClause = (
+  userOrgId: number,
+  type: AllRecordTypeSupplier,
+): VehicleWhereInput | null => {
+  const nDaysAgo = getNDaysAgo(30);
+  const whereClause = getSupplierWhereClause<VehicleWhereInput>(
+    {
+      "requires-your-action": {
+        status: {
+          in: [VehicleStatus.DRAFT, VehicleStatus.RETURNED_TO_SUPPLIER],
+        },
+      },
+      "in-progress": { status: VehicleStatus.SUBMITTED },
+      "for-awareness": {
+        status: VehicleStatus.VALIDATED,
+        VehicleHistory: { some: { timestamp: { gte: nDaysAgo } } },
+      },
+    },
+    type,
+  );
+  return whereClause
+    ? { AND: [whereClause, { organizationId: userOrgId }] }
+    : null;
+};
+
+export const getAllCreditTransferRecordsSupplierWhereClause = (
+  userOrgId: number,
+  type: AllRecordTypeSupplier,
+): CreditTransferWhereInput | null => {
+  const nDaysAgo = getNDaysAgo(30);
+  const awarenessStatuses = [
+    CreditTransferStatus.APPROVED_BY_GOV,
+    CreditTransferStatus.REJECTED_BY_GOV,
+    CreditTransferStatus.REJECTED_BY_TRANSFER_TO,
+    CreditTransferStatus.RESCINDED_BY_TRANSFER_FROM,
+  ];
+  const sharedInProgressStatuses = [
+    CreditTransferStatus.APPROVED_BY_TRANSFER_TO,
+    CreditTransferStatus.RECOMMEND_APPROVAL_GOV,
+    CreditTransferStatus.RECOMMEND_REJECTION_GOV,
+    CreditTransferStatus.RETURNED_TO_ANALYST,
+  ];
+  const whereClause = getSupplierWhereClause<CreditTransferWhereInput>(
+    {
+      "requires-your-action": {
+        OR: [
+          {
+            transferFromId: userOrgId,
+            status: CreditTransferStatus.DRAFT,
+          },
+          {
+            transferToId: userOrgId,
+            status: CreditTransferStatus.SUBMITTED_TO_TRANSFER_TO,
+          },
+        ],
+      },
+      "in-progress": {
+        OR: [
+          {
+            transferFromId: userOrgId,
+            status: {
+              in: [
+                ...sharedInProgressStatuses,
+                CreditTransferStatus.SUBMITTED_TO_TRANSFER_TO,
+              ],
+            },
+          },
+          {
+            transferToId: userOrgId,
+            status: { in: sharedInProgressStatuses },
+          },
+        ],
+      },
+      "for-awareness": {
+        AND: [
+          {
+            OR: [
+              { transferFromId: userOrgId, status: { in: awarenessStatuses } },
+              { transferToId: userOrgId, status: { in: awarenessStatuses } },
+            ],
+          },
+          { creditTransferHistory: { some: { timestamp: { gte: nDaysAgo } } } },
+        ],
+      },
+    },
+    type,
+  );
+  return whereClause;
 };
 
 export const getAllZevModelRecordsGovWhereClause = (

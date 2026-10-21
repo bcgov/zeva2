@@ -41,6 +41,9 @@ import {
   getActivityFeedZevModelRecordsWhereClause,
   getAllCaRecordsGovWhereClause,
   getAllCaRecordsSupplierWhereClause,
+  getAllCreditTransferRecordsSupplierWhereClause,
+  getAllMyrRecordsSupplierWhereClause,
+  getAllZevModelRecordsSupplierWhereClause,
   getAllCreditAgreementRecordsGovWhereClause,
   getAllCreditTransferRecordsGovWhereClause,
   getAllMyrRecordsGovWhereClause,
@@ -184,66 +187,23 @@ export const getSupplierInProgressCounts = async (userOrgId: number) => {
 };
 
 export const getSupplierAwarenessCounts = async (userOrgId: number) => {
-  const myrPromise = prisma.modelYearReport.count({
-    where: {
-      organizationId: userOrgId,
-      status: {
-        in: [ModelYearReportStatus.ASSESSED],
-      },
-    },
-  });
-  const caPromise = prisma.creditApplication.count({
-    where: {
-      organizationId: userOrgId,
-      status: {
-        in: [
-          CreditApplicationStatus.APPROVED,
-          CreditApplicationStatus.REJECTED,
-        ],
-      },
-    },
-  });
-  const zevModelPromise = prisma.vehicle.count({
-    where: {
-      organizationId: userOrgId,
-      status: {
-        in: [VehicleStatus.VALIDATED],
-      },
-    },
-  });
-  const transferPromise = prisma.creditTransfer.count({
-    where: {
-      OR: [
-        {
-          transferFromId: userOrgId,
-          status: {
-            in: [
-              CreditTransferStatus.APPROVED_BY_GOV,
-              CreditTransferStatus.REJECTED_BY_GOV,
-              CreditTransferStatus.REJECTED_BY_TRANSFER_TO,
-              CreditTransferStatus.RESCINDED_BY_TRANSFER_FROM,
-            ],
-          },
-        },
-        {
-          transferToId: userOrgId,
-          status: {
-            in: [
-              CreditTransferStatus.APPROVED_BY_GOV,
-              CreditTransferStatus.REJECTED_BY_GOV,
-              CreditTransferStatus.REJECTED_BY_TRANSFER_TO,
-              CreditTransferStatus.RESCINDED_BY_TRANSFER_FROM,
-            ],
-          },
-        },
-      ],
-    },
-  });
+  const type = "for-awareness";
   const [myrCount, caCount, zevModelCount, transferCount] = await Promise.all([
-    myrPromise,
-    caPromise,
-    zevModelPromise,
-    transferPromise,
+    prisma.modelYearReport.count({
+      where: getAllMyrRecordsSupplierWhereClause(userOrgId, type) ?? undefined,
+    }),
+    prisma.creditApplication.count({
+      where: getAllCaRecordsSupplierWhereClause(userOrgId, type) ?? undefined,
+    }),
+    prisma.vehicle.count({
+      where:
+        getAllZevModelRecordsSupplierWhereClause(userOrgId, type) ?? undefined,
+    }),
+    prisma.creditTransfer.count({
+      where:
+        getAllCreditTransferRecordsSupplierWhereClause(userOrgId, type) ??
+        undefined,
+    }),
   ]);
   return {
     "Model Year Reports": myrCount,
@@ -716,13 +676,10 @@ export const getSupplierMyrForAwarenessItems = async (
 ): Promise<Item[]> => {
   const myrs = await prisma.modelYearReport.findMany({
     where: {
-      organizationId: userOrgId,
-      status: {
-        in: [ModelYearReportStatus.ASSESSED],
-      },
-      id: {
-        notIn: idsToExclude,
-      },
+      AND: [
+        getAllMyrRecordsSupplierWhereClause(userOrgId, "for-awareness") ?? {},
+        { id: { notIn: idsToExclude } },
+      ],
     },
     select: {
       id: true,
@@ -767,16 +724,10 @@ export const getSupplierCaForAwarenessItems = async (
 ): Promise<Item[]> => {
   const cas = await prisma.creditApplication.findMany({
     where: {
-      organizationId: userOrgId,
-      status: {
-        in: [
-          CreditApplicationStatus.APPROVED,
-          CreditApplicationStatus.REJECTED,
-        ],
-      },
-      id: {
-        notIn: idsToExclude,
-      },
+      AND: [
+        getAllCaRecordsSupplierWhereClause(userOrgId, "for-awareness") ?? {},
+        { id: { notIn: idsToExclude } },
+      ],
     },
     select: {
       id: true,
@@ -824,13 +775,11 @@ export const getSupplierZevModelForAwarenessItems = async (
 ): Promise<Item[]> => {
   const vehicles = await prisma.vehicle.findMany({
     where: {
-      organizationId: userOrgId,
-      status: {
-        in: [VehicleStatus.VALIDATED],
-      },
-      id: {
-        notIn: idsToExclude,
-      },
+      AND: [
+        getAllZevModelRecordsSupplierWhereClause(userOrgId, "for-awareness") ??
+          {},
+        { id: { notIn: idsToExclude } },
+      ],
     },
     select: {
       id: true,
@@ -876,33 +825,13 @@ export const getSupplierCtForAwarenessItems = async (
 ): Promise<Item[]> => {
   const cts = await prisma.creditTransfer.findMany({
     where: {
-      OR: [
-        {
-          transferFromId: userOrgId,
-          status: {
-            in: [
-              CreditTransferStatus.APPROVED_BY_GOV,
-              CreditTransferStatus.REJECTED_BY_GOV,
-              CreditTransferStatus.REJECTED_BY_TRANSFER_TO,
-              CreditTransferStatus.RESCINDED_BY_TRANSFER_FROM,
-            ],
-          },
-        },
-        {
-          transferToId: userOrgId,
-          status: {
-            in: [
-              CreditTransferStatus.APPROVED_BY_GOV,
-              CreditTransferStatus.REJECTED_BY_GOV,
-              CreditTransferStatus.REJECTED_BY_TRANSFER_TO,
-              CreditTransferStatus.RESCINDED_BY_TRANSFER_FROM,
-            ],
-          },
-        },
+      AND: [
+        getAllCreditTransferRecordsSupplierWhereClause(
+          userOrgId,
+          "for-awareness",
+        ) ?? {},
+        { id: { notIn: idsToExclude } },
       ],
-      id: {
-        notIn: idsToExclude,
-      },
     },
     select: {
       id: true,
@@ -1029,14 +958,13 @@ export const getAllCaRecordsSupplier = async (
         },
       },
       id: true,
-      supplierStatus: true,
+      status: true,
     },
   });
   return creditApplications.map((application) => {
     const record: AllRecordsRecordSupplier = {
-      ...application,
-      status:
-        statusesMap[application.supplierStatus] ?? application.supplierStatus,
+      id: application.id,
+      status: statusesMap[caMap[application.status]] ?? "",
       mostRecentHistoryEntry: application.CreditApplicationHistory[0],
     };
     return getSerializedAllRecordsRecordSupplier(
@@ -1045,6 +973,130 @@ export const getAllCaRecordsSupplier = async (
       Routes.CreditApplications,
     );
   });
+};
+
+// intended for supplier users
+export const getAllMyrRecordsSupplier = async (
+  userOrgId: number,
+  type: AllRecordTypeSupplier,
+): Promise<SerializedAllRecordsRecordSupplier[]> => {
+  const statusesMap = getMyrStatusEnumsToStringsMap();
+  const whereClause = getAllMyrRecordsSupplierWhereClause(userOrgId, type);
+  if (!whereClause) {
+    return [];
+  }
+  const myrs = await prisma.modelYearReport.findMany({
+    where: whereClause,
+    select: {
+      modelYearReportHistory: {
+        select: { timestamp: true },
+        take: 1,
+        orderBy: { timestamp: "desc" },
+      },
+      id: true,
+      status: true,
+    },
+  });
+  return myrs.map((myr) =>
+    getSerializedAllRecordsRecordSupplier(
+      "Model Year Report",
+      {
+        id: myr.id,
+        status: statusesMap[myrMap[myr.status]] ?? "",
+        mostRecentHistoryEntry: myr.modelYearReportHistory[0],
+      },
+      Routes.ModelYearReports,
+    ),
+  );
+};
+
+// intended for supplier users
+export const getAllZevModelRecordsSupplier = async (
+  userOrgId: number,
+  type: AllRecordTypeSupplier,
+): Promise<SerializedAllRecordsRecordSupplier[]> => {
+  const statusesMap = getVehicleStatusEnumsToStringsMap();
+  const whereClause = getAllZevModelRecordsSupplierWhereClause(userOrgId, type);
+  if (!whereClause) {
+    return [];
+  }
+  const vehicles = await prisma.vehicle.findMany({
+    where: whereClause,
+    select: {
+      VehicleHistory: {
+        select: { timestamp: true },
+        take: 1,
+        orderBy: { timestamp: "desc" },
+      },
+      id: true,
+      status: true,
+      isActive: true,
+    },
+  });
+  return vehicles.map((vehicle) => {
+    const detailsRoute = getZevModelDetailsRoute(vehicle);
+    return getSerializedAllRecordsRecordSupplier(
+      "ZEV Model",
+      {
+        id: vehicle.id,
+        status: statusesMap[vehicle.status] ?? "",
+        mostRecentHistoryEntry: vehicle.VehicleHistory[0],
+      },
+      detailsRoute.slice(0, detailsRoute.lastIndexOf("/")),
+    );
+  });
+};
+
+// intended for supplier users
+export const getAllCreditTransferRecordsSupplier = async (
+  userOrgId: number,
+  type: AllRecordTypeSupplier,
+): Promise<SerializedAllRecordsRecordSupplier[]> => {
+  const statusesMap = getCreditTransferStatusEnumsToStringsMap();
+  const whereClause = getAllCreditTransferRecordsSupplierWhereClause(
+    userOrgId,
+    type,
+  );
+  if (!whereClause) {
+    return [];
+  }
+  const transfers = await prisma.creditTransfer.findMany({
+    where: whereClause,
+    select: {
+      creditTransferHistory: {
+        select: { timestamp: true },
+        take: 1,
+        orderBy: { timestamp: "desc" },
+      },
+      id: true,
+      status: true,
+    },
+  });
+  return transfers.map((transfer) =>
+    getSerializedAllRecordsRecordSupplier(
+      "Credit Transfer",
+      {
+        id: transfer.id,
+        status: statusesMap[ctMap[transfer.status]] ?? "",
+        mostRecentHistoryEntry: transfer.creditTransferHistory[0],
+      },
+      Routes.CreditTransfers,
+    ),
+  );
+};
+
+// intended for supplier users
+export const getAllRecordsSupplier = async (
+  userOrgId: number,
+  type: AllRecordTypeSupplier,
+): Promise<SerializedAllRecordsRecordSupplier[]> => {
+  const [myrs, cas, zevModels, cts] = await Promise.all([
+    getAllMyrRecordsSupplier(userOrgId, type),
+    getAllCaRecordsSupplier(userOrgId, type),
+    getAllZevModelRecordsSupplier(userOrgId, type),
+    getAllCreditTransferRecordsSupplier(userOrgId, type),
+  ]);
+  return [...myrs, ...cas, ...zevModels, ...cts];
 };
 
 // intended for gov users

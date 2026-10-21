@@ -1,8 +1,10 @@
 import { Routes } from "@/app/lib/constants";
 import {
   allRecordsTypesGov,
+  allRecordsTypesSupplier,
   allRecordsViewParam,
   AllRecordTypeGov,
+  AllRecordTypeSupplier,
   GovDashboardCounts,
   recordTypes,
   SerializedAllRecordsRecordGov,
@@ -17,8 +19,16 @@ export const isAllRecordTypeGov = (s: string): s is AllRecordTypeGov => {
   return false;
 };
 
+export const isAllRecordTypeSupplier = (
+  s: string,
+): s is AllRecordTypeSupplier =>
+  allRecordsTypesSupplier.some((type) => type === s);
+
 export const getAllRecordsViewRouteGov = (view: AllRecordTypeGov) =>
   `${Routes.Home}/all-records-gov?${allRecordsViewParam}=${view}`;
+
+export const getAllRecordsViewRouteSupplier = (view: AllRecordTypeSupplier) =>
+  `${Routes.Home}/all-records-supplier?${allRecordsViewParam}=${view}`;
 
 export const getGovDashboardSectionCounts = (
   records: SerializedAllRecordsRecordGov[],
