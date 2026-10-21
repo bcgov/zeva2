@@ -14,10 +14,10 @@ const Layout = async (props: { children: React.ReactNode }) => {
   ];
 
   return (
-    <>
+    <div className="flex flex-col gap-6">
       <SecondaryNavbar items={items} />
-      <div className="p-6">{props.children}</div>
-    </>
+      {props.children}
+    </div>
   );
 };
 

@@ -22,7 +22,7 @@ export default async function RootLayout({
       <html lang="en">
         <body className="antialiased min-h-screen flex flex-col">
           <Header />
-          <main className="flex-1 overflow-auto px-6 pb-6 pt-2">
+          <main className="flex-1 overflow-auto p-6">
             {children}
           </main>
           {!userIsGov && <LegalDisclaimer />}

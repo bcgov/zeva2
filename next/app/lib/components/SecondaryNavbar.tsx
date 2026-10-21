@@ -23,7 +23,7 @@ export const SecondaryNavbar = (props: {
   }, [props.items, pathname]);
 
   return (
-    <Row className="m-2 gap-2 border-b border-gray-400">
+    <Row className="w-full gap-2 border-b border-gray-400">
       {props.items.map((item, index) => {
         let isActive = activeLabel === item.label;
         if (props.activeIndex !== undefined) {

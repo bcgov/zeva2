@@ -8,10 +8,10 @@ const Layout = async (props: { children: React.ReactNode }) => {
     { label: "Inactive", route: `${Routes.GovAdministration}/inactive` },
   ];
   return (
-    <>
+    <div className="flex flex-col gap-6">
       <SecondaryNavbar items={items} />
       {props.children}
-    </>
+    </div>
   );
 };
 

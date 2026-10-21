@@ -7,10 +7,10 @@ const Layout = (props: { children: React.ReactNode }) => {
   const navbar = <SecondaryNavbar items={items} />;
 
   return (
-    <>
+    <div className="flex flex-col gap-6">
       <LowerNavbarWrapper type="zevModel" navbar={navbar} />
       {props.children}
-    </>
+    </div>
   );
 };
 
