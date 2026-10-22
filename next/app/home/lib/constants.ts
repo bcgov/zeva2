@@ -38,7 +38,7 @@ export type AllRecordsRecordGov = {
 export type AllRecordsRecordSupplier = {
   id: number;
   status: string;
-  mostRecentHistoryEntry: {
+  mostRecentHistoryEntry?: {
     timestamp: Date;
   };
 };
@@ -122,6 +122,28 @@ export const allRecordsTypesSupplier = [
 ] as const;
 
 export type AllRecordTypeSupplier = (typeof allRecordsTypesSupplier)[number];
+
+export const supplierViewsData: Record<
+  AllRecordTypeSupplier,
+  { title: string; description: string }
+> = {
+  all: {
+    title: "All Records",
+    description: "Browse and search all of your organization's records.",
+  },
+  "requires-your-action": {
+    title: "Requires Your Action",
+    description: "Records awaiting action from you.",
+  },
+  "in-progress": {
+    title: "In Progress",
+    description: "Records currently in progress.",
+  },
+  "for-awareness": {
+    title: "For Awareness",
+    description: "Records that have been completed or updated.",
+  },
+} as const;
 
 export const govDashboardSections = [
   "Requires Your Action",
