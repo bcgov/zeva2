@@ -43,7 +43,7 @@ const Layout = async (props: {
     },
   ];
   return (
-    <>
+    <div className="flex flex-col gap-6">
       <Breadcrumbs
         items={[
           { label: "Vehicle Suppliers", href: Routes.VehicleSuppliers },
@@ -51,14 +51,14 @@ const Layout = async (props: {
         ]}
       />
       <SecondaryNavbar items={items} />
-      <div className="flex flex-col gap-4 my-4">
+      <div className="flex flex-col gap-4">
         <div className="p-5 rounded-t bg-whisperGray font-bold text-2xl">
           {organization.name}
         </div>
         <hr className="border-dividerMedium"></hr>
       </div>
       {props.children}
-    </>
+    </div>
   );
 };
 

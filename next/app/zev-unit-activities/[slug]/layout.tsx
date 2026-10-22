@@ -16,10 +16,10 @@ const Layout = async (props: { children: React.ReactNode }) => {
   ];
   const navbar = <SecondaryNavbar items={items} />;
   return (
-    <>
+    <div className="flex flex-col gap-6">
       <LowerNavbarWrapper type="zevUnitActivities" navbar={navbar} />
       {props.children}
-    </>
+    </div>
   );
 };
 

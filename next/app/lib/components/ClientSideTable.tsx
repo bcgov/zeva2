@@ -121,7 +121,7 @@ export const ClientSideTable = <T extends ZevaObject>({
   return (
     <div>
       {(title || headerContent || enableGlobalSearch || !hideResetButton) && (
-        <div className="mb-4 flex items-center justify-between gap-4">
+        <div className="mb-6 flex items-center justify-between gap-4">
           <div className="flex items-center gap-4">
             {headerContent && <div>{headerContent}</div>}
             {enableGlobalSearch && (
