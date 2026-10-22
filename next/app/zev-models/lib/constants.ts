@@ -13,16 +13,18 @@ export type VehicleSparseSerialized = Omit<
   numberOfUnits: string | undefined;
 };
 
-export type ZevModelTab = "validated" | "submitted" | "inactive";
+export type ZevModelTab =
+  | "validated"
+  | "submitted"
+  | "in-progress"
+  | "inactive";
 
-export const zevModelTabs: Readonly<
-  {
-    label: string;
-    slug: ZevModelTab;
-    route: Routes;
-  }[]
-> = [
-  { label: "Validated", slug: "validated", route: Routes.ValidatedZevModels },
-  { label: "Submitted", slug: "submitted", route: Routes.SubmittedZevModels },
-  { label: "Inactive", slug: "inactive", route: Routes.InactiveZevModels },
-];
+export const zevModelTabs: Record<
+  ZevModelTab,
+  { label: string; route: Routes }
+> = {
+  validated: { label: "Validated", route: Routes.ValidatedZevModels },
+  submitted: { label: "Submitted", route: Routes.SubmittedZevModels },
+  "in-progress": { label: "In Progress", route: Routes.InProgressZevModels },
+  inactive: { label: "Inactive", route: Routes.InactiveZevModels },
+} as const;

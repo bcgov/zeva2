@@ -6,76 +6,69 @@ import {
   faCoins,
   faHourglassHalf,
   faListCheck,
+  IconDefinition,
 } from "@fortawesome/free-solid-svg-icons";
 import { getUserInfo } from "@/auth";
 import { Routes } from "@/app/lib/constants";
 import { getReportableBalanceAB } from "@/app/zev-unit-activities/lib/zev-unit-transactions/data";
-import {
-  getSupplierActionRequiredCounts,
-  getSupplierAwarenessCounts,
-  getSupplierInProgressCounts,
-} from "../lib/services";
 import { DashboardTone, dashboardToneClasses } from "../lib/constants";
 import { getAllRecordsViewRouteSupplier } from "../lib/utils";
-import { ItemsPanel } from "./ItemsPanel";
 import { getActiveNotifications } from "@/app/notifications/lib/services";
 import { NotificationMessageBanner } from "@/app/notifications/lib/components/NotificationMessageBanner";
 import { Fragment } from "react/jsx-runtime";
-
-const sumCounts = (counts: Record<string, number>) =>
-  Object.values(counts).reduce((sum, count) => sum + count, 0);
+import { getSupplierRecords } from "../lib/services";
+import { DashboardSectionPanel } from "./DashboardSectionPanel";
 
 // for suppliers
-export const ActionCenter = async () => {
+export const SupplierDashboard = async () => {
   const { userOrgId } = await getUserInfo();
   const [
-    actionRequiredCounts,
-    inProgressCounts,
-    awarenessCounts,
     activeNotifications,
     balance,
+    requiresActionRecords,
+    inProgressRecords,
+    awarenessRecords,
   ] = await Promise.all([
-    getSupplierActionRequiredCounts(userOrgId),
-    getSupplierInProgressCounts(userOrgId),
-    getSupplierAwarenessCounts(userOrgId),
     getActiveNotifications(userOrgId),
     getReportableBalanceAB(userOrgId),
+    getSupplierRecords(userOrgId, "requires-your-action"),
+    getSupplierRecords(userOrgId, "in-progress"),
+    getSupplierRecords(userOrgId, "for-awareness"),
   ]);
-
-  const actionRequiredTotal = sumCounts(actionRequiredCounts);
-  const inProgressTotal = sumCounts(inProgressCounts);
-  const awarenessTotal = sumCounts(awarenessCounts);
 
   const summaryCards: {
     label: string;
     count: number;
-    icon: typeof faListCheck;
+    icon: IconDefinition;
     tone?: DashboardTone;
     viewAllRoute: string;
   }[] = [
     {
       label: "All Items",
-      count: actionRequiredTotal + inProgressTotal + awarenessTotal,
+      count:
+        requiresActionRecords.length +
+        inProgressRecords.length +
+        awarenessRecords.length,
       icon: faListCheck,
       viewAllRoute: getAllRecordsViewRouteSupplier("all"),
     },
     {
       label: "Action Required",
-      count: actionRequiredTotal,
+      count: requiresActionRecords.length,
       icon: faCircleExclamation,
       tone: "error",
       viewAllRoute: getAllRecordsViewRouteSupplier("requires-your-action"),
     },
     {
       label: "In Progress",
-      count: inProgressTotal,
+      count: inProgressRecords.length,
       icon: faHourglassHalf,
       tone: "warning",
       viewAllRoute: getAllRecordsViewRouteSupplier("in-progress"),
     },
     {
       label: "For Awareness",
-      count: awarenessTotal,
+      count: awarenessRecords.length,
       icon: faCircleCheck,
       tone: "success",
       viewAllRoute: getAllRecordsViewRouteSupplier("for-awareness"),
@@ -83,11 +76,12 @@ export const ActionCenter = async () => {
   ];
 
   return (
-    <div className="flex flex-col gap-3">
-      <h1 className="text-xl font-bold">Dashboard</h1>
+    <div className="flex flex-col gap-6">
       {activeNotifications.length > 0 && (
         <div className="flex flex-col gap-4 rounded border border-dividerMedium/40 p-4">
-          <h2 className="text-lg font-bold">Notifications</h2>
+          <h2 className="text-lg font-bold">
+            Notifications ({activeNotifications.length})
+          </h2>
           {activeNotifications.map((notification, index) => {
             return (
               <Fragment key={index}>
@@ -101,7 +95,9 @@ export const ActionCenter = async () => {
           })}
         </div>
       )}
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-5">
+      <hr className="border-dividerMedium"></hr>
+      <h1 className="text-xl font-bold">Dashboard</h1>
+      <div className="grid grid-cols-5 gap-4">
         {summaryCards.map((card) => {
           const tone = card.tone ? dashboardToneClasses[card.tone] : undefined;
           return (
@@ -163,23 +159,27 @@ export const ActionCenter = async () => {
           </div>
         </div>
       </div>
-      <ItemsPanel
+      <DashboardSectionPanel
         title="Requires Your Action"
-        countsMap={actionRequiredCounts}
+        tone="error"
+        records={requiresActionRecords}
         viewAllRoute={getAllRecordsViewRouteSupplier("requires-your-action")}
       />
-      <div className="grid grid-cols-1 items-start gap-3 lg:grid-cols-2">
-        <ItemsPanel
+      <div className="grid grid-cols-2 gap-6">
+        <DashboardSectionPanel
           title="In Progress"
-          countsMap={inProgressCounts}
+          tone="warning"
+          records={inProgressRecords}
           viewAllRoute={getAllRecordsViewRouteSupplier("in-progress")}
         />
-        <ItemsPanel
+        <DashboardSectionPanel
           title="For Awareness"
-          countsMap={awarenessCounts}
+          tone="success"
+          records={awarenessRecords}
           viewAllRoute={getAllRecordsViewRouteSupplier("for-awareness")}
         />
       </div>
+      <hr className="border-dividerMedium"></hr>
     </div>
   );
 };

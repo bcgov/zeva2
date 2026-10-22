@@ -14,6 +14,7 @@ import {
 } from "@/app/lib/utils/actionResponse";
 import { orgIsGovernment } from "./services";
 import { validateRoles } from "./utils";
+import { revalidatePath } from "next/cache";
 
 export type UserPayload = Omit<
   UserModel,
@@ -148,5 +149,6 @@ export const updateRoles = async (
       roles: newRoles,
     },
   });
+  revalidatePath("/", "layout");
   return getDataActionResponse(updatedUser.roles);
 };

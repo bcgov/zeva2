@@ -34,7 +34,11 @@ export const PrimaryNavbar = (props: {
       },
       {
         label: "ZEV Models",
-        route: Routes.ValidatedZevModels,
+        route: props.userIsGov
+          ? props.userRoles.includes(Role.DIRECTOR)
+            ? Routes.ValidatedZevModels
+            : Routes.SubmittedZevModels
+          : Routes.InProgressZevModels,
       },
       ...(props.userIsGov
         ? [{ label: "Vehicle Suppliers", route: Routes.VehicleSuppliers }]

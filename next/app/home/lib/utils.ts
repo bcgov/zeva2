@@ -5,9 +5,9 @@ import {
   allRecordsViewParam,
   AllRecordTypeGov,
   AllRecordTypeSupplier,
-  GovDashboardCounts,
+  DashboardCounts,
+  RecordType,
   recordTypes,
-  SerializedAllRecordsRecordGov,
 } from "./constants";
 
 export const isAllRecordTypeGov = (s: string): s is AllRecordTypeGov => {
@@ -30,10 +30,10 @@ export const getAllRecordsViewRouteGov = (view: AllRecordTypeGov) =>
 export const getAllRecordsViewRouteSupplier = (view: AllRecordTypeSupplier) =>
   `${Routes.Home}/all-records-supplier?${allRecordsViewParam}=${view}`;
 
-export const getGovDashboardSectionCounts = (
-  records: SerializedAllRecordsRecordGov[],
-): GovDashboardCounts => {
-  const counts: GovDashboardCounts = {
+export const getDashboardSectionCounts = (
+  records: { type: RecordType }[],
+): DashboardCounts => {
+  const counts: DashboardCounts = {
     "Credit Application": 0,
     "Model Year Report": 0,
     "Credit Transfer": 0,

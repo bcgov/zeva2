@@ -13,7 +13,10 @@ export const IndividualNavbar = (props: {
 }) => {
   const pathname = usePathname();
   const tab = useMemo(() => {
-    return zevModelTabs.find((item) => item.slug === props.slug);
+    const foundTab = Object.entries(zevModelTabs).find(
+      ([key]) => key === props.slug,
+    );
+    return foundTab?.[1];
   }, [props.slug]);
   const listHref = tab?.route ?? `/zev-models/${props.slug}`;
   const tabLabel = tab?.label ?? props.slug;

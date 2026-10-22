@@ -22,21 +22,22 @@ export const getCreditTransfers = async (): Promise<
   const { userIsGov, userOrgId, userRoles } = await getUserInfo();
   const whereClause: CreditTransferWhereInput = {};
   if (userIsGov && userRoles.includes(Role.DIRECTOR)) {
-    whereClause.creditTransferHistory = {
-      some: {
-        userAction: {
-          in: [
-            CreditTransferStatus.RECOMMEND_APPROVAL_GOV,
-            CreditTransferStatus.RECOMMEND_REJECTION_GOV,
-          ],
-        },
-      },
+    whereClause.status = {
+      in: [
+        CreditTransferStatus.APPROVED_BY_GOV,
+        CreditTransferStatus.RECOMMEND_APPROVAL_GOV,
+        CreditTransferStatus.RECOMMEND_REJECTION_GOV,
+        CreditTransferStatus.REJECTED_BY_GOV,
+      ],
     };
   } else if (userIsGov && userRoles.includes(Role.ZEVA_IDIR_USER)) {
-    whereClause.creditTransferHistory = {
-      some: {
-        userAction: CreditTransferStatus.APPROVED_BY_TRANSFER_TO,
-      },
+    whereClause.status = {
+      notIn: [
+        CreditTransferStatus.DRAFT,
+        CreditTransferStatus.SUBMITTED_TO_TRANSFER_TO,
+        CreditTransferStatus.RESCINDED_BY_TRANSFER_FROM,
+        CreditTransferStatus.REJECTED_BY_TRANSFER_TO,
+      ],
     };
   } else if (!userIsGov) {
     whereClause.OR = [
@@ -77,14 +78,28 @@ export const getCreditTransfers = async (): Promise<
 };
 
 export const getCreditTransfer = async (id: number) => {
-  const { userIsGov, userOrgId } = await getUserInfo();
+  const { userIsGov, userOrgId, userRoles } = await getUserInfo();
   const whereClause: CreditTransferWhereUniqueInput = { id };
   if (userIsGov) {
-    whereClause.creditTransferHistory = {
-      some: {
-        userAction: CreditTransferStatus.APPROVED_BY_TRANSFER_TO,
-      },
-    };
+    if (userRoles.includes(Role.DIRECTOR)) {
+      whereClause.status = {
+        in: [
+          CreditTransferStatus.APPROVED_BY_GOV,
+          CreditTransferStatus.RECOMMEND_APPROVAL_GOV,
+          CreditTransferStatus.RECOMMEND_REJECTION_GOV,
+          CreditTransferStatus.REJECTED_BY_GOV,
+        ],
+      };
+    } else {
+      whereClause.status = {
+        notIn: [
+          CreditTransferStatus.DRAFT,
+          CreditTransferStatus.SUBMITTED_TO_TRANSFER_TO,
+          CreditTransferStatus.RESCINDED_BY_TRANSFER_FROM,
+          CreditTransferStatus.REJECTED_BY_TRANSFER_TO,
+        ],
+      };
+    }
   } else {
     whereClause.OR = [
       { transferFromId: userOrgId },
@@ -107,12 +122,13 @@ export const getCreditTransferHistories = async (transferId: number) => {
     creditTransferId: transferId,
   };
   if (userIsGov) {
-    whereClause.creditTransfer = {
-      creditTransferHistory: {
-        some: {
-          userAction: CreditTransferStatus.APPROVED_BY_TRANSFER_TO,
-        },
-      },
+    whereClause.userAction = {
+      notIn: [
+        CreditTransferStatus.DRAFT,
+        CreditTransferStatus.SUBMITTED_TO_TRANSFER_TO,
+        CreditTransferStatus.RESCINDED_BY_TRANSFER_FROM,
+        CreditTransferStatus.REJECTED_BY_TRANSFER_TO,
+      ],
     };
   } else {
     whereClause.OR = [

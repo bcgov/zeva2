@@ -29,7 +29,5 @@ export const AllRecordsTabsSupplier = () => {
     [tabs],
   );
 
-  const activeIndex = tabs.findIndex((tab) => tab.view === currentView);
-
-  return <SecondaryNavbar items={items} activeIndex={activeIndex} />;
+  return <SecondaryNavbar items={items} />;
 };

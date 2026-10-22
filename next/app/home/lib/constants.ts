@@ -9,16 +9,6 @@ import {
   faTriangleExclamation,
 } from "@fortawesome/free-solid-svg-icons";
 
-export type Item = {
-  id: number;
-  timestamp?: string;
-  status: string;
-  route: string;
-  cta: string;
-};
-
-export const itemsToTake = 5;
-
 export type AllRecordsRecordGov = {
   id: number;
   status: string;
@@ -38,7 +28,7 @@ export type AllRecordsRecordGov = {
 export type AllRecordsRecordSupplier = {
   id: number;
   status: string;
-  mostRecentHistoryEntry?: {
+  mostRecentHistoryEntry: {
     timestamp: Date;
   };
 };
@@ -154,7 +144,7 @@ export const govDashboardSections = [
 
 export type GovDashboardSection = (typeof govDashboardSections)[number];
 
-export type GovDashboardCounts = Record<RecordType, number>;
+export type DashboardCounts = Record<RecordType, number>;
 
 export type DashboardTone = "error" | "warning" | "info" | "success";
 
@@ -218,3 +208,44 @@ export const recordTypeStyles: Record<
   "Penalty Credits": { icon: faTriangleExclamation, tone: "error" },
   "Model Year Report": { icon: faFile, tone: "success" },
 } as const;
+
+export const breakdownRows: {
+  label: string;
+  recordType: RecordType;
+  icon: IconDefinition;
+}[] = [
+  {
+    label: "Model Year Reports",
+    recordType: "Model Year Report",
+    icon: faFile,
+  },
+  {
+    label: "Credit Applications",
+    recordType: "Credit Application",
+    icon: faList,
+  },
+  {
+    label: "Credit Transfers",
+    recordType: "Credit Transfer",
+    icon: faMoneyBillTransfer,
+  },
+  {
+    label: "ZEV Models",
+    recordType: "ZEV Model",
+    icon: faCar,
+  },
+  {
+    label: "Credit Agreements",
+    recordType: "Credit Agreement",
+    icon: faList,
+  },
+  {
+    label: "Penalty Credits",
+    recordType: "Penalty Credits",
+    icon: faList,
+  },
+] as const;
+
+export type SupplierCategoryClauses<T> = Partial<
+  Record<Exclude<AllRecordTypeSupplier, "all">, T>
+>;

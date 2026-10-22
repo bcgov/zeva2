@@ -13,6 +13,7 @@ import {
   SerializedActivityFeedRecord,
   SerializedAllRecordsRecordGov,
   SerializedAllRecordsRecordSupplier,
+  SupplierCategoryClauses,
 } from "./constants";
 import { getRoleEnumsToStringsMap } from "@/app/lib/utils/enumMaps";
 import Decimal from "decimal.js";
@@ -89,15 +90,13 @@ export const getSerializedAllRecordsRecordSupplier = (
   record: AllRecordsRecordSupplier,
   baseRoute: string,
 ): SerializedAllRecordsRecordSupplier => {
-  const ts = record.mostRecentHistoryEntry?.timestamp;
+  const ts = record.mostRecentHistoryEntry.timestamp;
   return {
     id: record.id,
     type,
     status: record.status,
-    lastUpdated: ts
-      ? `${new Decimal(Date.now() - ts.getTime()).div(1000 * 60 * 60 * 24).toFixed(0)} days ago`
-      : "",
-    date: ts ? getIsoYmdString(ts) : "",
+    lastUpdated: `${new Decimal(Date.now() - ts.getTime()).div(1000 * 60 * 60 * 24).toFixed(0)} days ago`,
+    date: getIsoYmdString(ts),
     baseRoute,
   };
 };
@@ -203,23 +202,30 @@ export const getAllCaRecordsGovWhereClause = (
   return whereClause;
 };
 
-type SupplierCategoryClauses<T> = Record<
-  Exclude<AllRecordTypeSupplier, "all">,
-  T
->;
-
 const getSupplierWhereClause = <T>(
   clauses: SupplierCategoryClauses<T>,
   type: AllRecordTypeSupplier,
 ): { OR: T[] } | T | null => {
   if (type === "all") {
-    return {
-      OR: [
-        clauses["requires-your-action"],
-        clauses["in-progress"],
-        clauses["for-awareness"],
-      ],
-    };
+    let orClause: T[] = [];
+    const requiresActionClauses = clauses["requires-your-action"];
+    const inProgressClauses = clauses["in-progress"];
+    const awarenessClauses = clauses["for-awareness"];
+    if (requiresActionClauses) {
+      orClause.push(requiresActionClauses);
+    }
+    if (inProgressClauses) {
+      orClause.push(inProgressClauses);
+    }
+    if (awarenessClauses) {
+      orClause.push(awarenessClauses);
+    }
+    if (orClause.length > 0) {
+      return {
+        OR: orClause,
+      };
+    }
+    return null;
   }
   return clauses[type] ?? null;
 };
@@ -451,58 +457,16 @@ export const getAllCreditTransferRecordsGovWhereClause = (
       ],
     },
   };
-  const analystCompletedWhereClause: CreditTransferWhereInput = {
-    AND: [
-      {
-        creditTransferHistory: {
-          some: {
-            timestamp: { gte: nDaysAgo },
-          },
-        },
-      },
-      {
-        creditTransferHistory: {
-          some: {
-            userAction: CreditTransferStatus.APPROVED_BY_TRANSFER_TO,
-          },
-        },
-      },
-    ],
-    status: {
-      in: [
-        CreditTransferStatus.APPROVED_BY_GOV,
-        CreditTransferStatus.REJECTED_BY_GOV,
-        CreditTransferStatus.RESCINDED_BY_TRANSFER_FROM,
-      ],
-    },
-  };
-  const directorCompletedWhereClause: CreditTransferWhereInput = {
+  const completedWhereClause: CreditTransferWhereInput = {
     creditTransferHistory: {
       some: {
         timestamp: { gte: nDaysAgo },
       },
     },
-    OR: [
-      {
-        creditTransferHistory: {
-          some: {
-            userAction: CreditTransferStatus.RECOMMEND_APPROVAL_GOV,
-          },
-        },
-      },
-      {
-        creditTransferHistory: {
-          some: {
-            userAction: CreditTransferStatus.RECOMMEND_REJECTION_GOV,
-          },
-        },
-      },
-    ],
     status: {
       in: [
         CreditTransferStatus.APPROVED_BY_GOV,
         CreditTransferStatus.REJECTED_BY_GOV,
-        CreditTransferStatus.RESCINDED_BY_TRANSFER_FROM,
       ],
     },
   };
@@ -510,14 +474,14 @@ export const getAllCreditTransferRecordsGovWhereClause = (
   if (type === "all") {
     if (userRoles.includes(Role.DIRECTOR)) {
       whereClause = {
-        OR: [directorRequiresActionWhereClause, directorCompletedWhereClause],
+        OR: [directorRequiresActionWhereClause, completedWhereClause],
       };
     } else {
       whereClause = {
         OR: [
           analystRequiresActionWhereClause,
           analystWithDirectorWhereClause,
-          analystCompletedWhereClause,
+          completedWhereClause,
         ],
       };
     }
@@ -533,11 +497,7 @@ export const getAllCreditTransferRecordsGovWhereClause = (
   ) {
     whereClause = analystWithDirectorWhereClause;
   } else if (type === "completed") {
-    if (userRoles.includes(Role.DIRECTOR)) {
-      whereClause = directorCompletedWhereClause;
-    } else {
-      whereClause = analystCompletedWhereClause;
-    }
+    whereClause = completedWhereClause;
   }
   return whereClause;
 };
@@ -610,6 +570,25 @@ export const getAllCreditAgreementRecordsGovWhereClause = (
   return whereClause;
 };
 
+export const getAllCreditAgreementRecordsSupplierWhereClause = (
+  userOrgId: number,
+  type: AllRecordTypeSupplier,
+): AgreementWhereInput | null => {
+  const nDaysAgo = getNDaysAgo(30);
+  const whereClause = getSupplierWhereClause<AgreementWhereInput>(
+    {
+      "for-awareness": {
+        status: AgreementStatus.ISSUED,
+        agreementHistory: { some: { timestamp: { gte: nDaysAgo } } },
+      },
+    },
+    type,
+  );
+  return whereClause
+    ? { AND: [whereClause, { organizationId: userOrgId }] }
+    : null;
+};
+
 export const getAllPenaltyCreditRecordsGovWhereClause = (
   userRoles: Role[],
   type: AllRecordTypeGov,
@@ -678,6 +657,25 @@ export const getAllPenaltyCreditRecordsGovWhereClause = (
   return whereClause;
 };
 
+export const getAllPenaltyCreditRecordsSupplierWhereClause = (
+  userOrgId: number,
+  type: AllRecordTypeSupplier,
+): PenaltyCreditWhereInput | null => {
+  const nDaysAgo = getNDaysAgo(30);
+  const whereClause = getSupplierWhereClause<PenaltyCreditWhereInput>(
+    {
+      "for-awareness": {
+        status: PenaltyCreditStatus.APPROVED,
+        PenaltyCreditHistory: { some: { timestamp: { gte: nDaysAgo } } },
+      },
+    },
+    type,
+  );
+  return whereClause
+    ? { AND: [whereClause, { organizationId: userOrgId }] }
+    : null;
+};
+
 export const getAllMyrRecordsGovWhereClause = (
   userRoles: Role[],
   type: AllRecordTypeGov,
@@ -743,15 +741,11 @@ export const getActivityFeedCaRecordsWhereClause = (
   const nDaysAgo = getNDaysAgo(30);
   let whereClause: CreditApplicationHistoryWhereInput = {
     timestamp: { gte: nDaysAgo },
+    userAction: {
+      not: CreditApplicationStatus.DRAFT,
+    },
   };
   if (userRoles.includes(Role.DIRECTOR)) {
-    whereClause.userAction = {
-      in: [
-        CreditApplicationStatus.APPROVED,
-        CreditApplicationStatus.RECOMMEND_APPROVAL,
-        CreditApplicationStatus.REJECTED,
-      ],
-    };
     whereClause.creditApplication = {
       status: {
         in: [
@@ -762,9 +756,6 @@ export const getActivityFeedCaRecordsWhereClause = (
       },
     };
   } else {
-    whereClause.userAction = {
-      not: CreditApplicationStatus.DRAFT,
-    };
     whereClause.creditApplication = {
       status: {
         not: CreditApplicationStatus.DRAFT,
@@ -780,16 +771,15 @@ export const getActivityFeedZevModelRecordsWhereClause = (
   const nDaysAgo = getNDaysAgo(30);
   let whereClause: VehicleHistoryWhereInput = {
     timestamp: { gte: nDaysAgo },
+    userAction: {
+      not: VehicleStatus.DRAFT,
+    },
   };
   if (userRoles.includes(Role.DIRECTOR)) {
-    whereClause.userAction = VehicleStatus.VALIDATED;
     whereClause.vehicle = {
       status: VehicleStatus.VALIDATED,
     };
   } else {
-    whereClause.userAction = {
-      notIn: [VehicleStatus.DRAFT, VehicleStatus.RETURNED_TO_SUPPLIER],
-    };
     whereClause.vehicle = {
       status: {
         notIn: [VehicleStatus.DRAFT, VehicleStatus.RETURNED_TO_SUPPLIER],
@@ -805,16 +795,16 @@ export const getActivityFeedCreditTransferRecordsWhereClause = (
   const nDaysAgo = getNDaysAgo(30);
   let whereClause: CreditTransferHistoryWhereInput = {
     timestamp: { gte: nDaysAgo },
+    userAction: {
+      notIn: [
+        CreditTransferStatus.DRAFT,
+        CreditTransferStatus.SUBMITTED_TO_TRANSFER_TO,
+        CreditTransferStatus.RESCINDED_BY_TRANSFER_FROM,
+        CreditTransferStatus.REJECTED_BY_TRANSFER_TO,
+      ],
+    },
   };
   if (userRoles.includes(Role.DIRECTOR)) {
-    whereClause.userAction = {
-      in: [
-        CreditTransferStatus.APPROVED_BY_GOV,
-        CreditTransferStatus.RECOMMEND_APPROVAL_GOV,
-        CreditTransferStatus.RECOMMEND_REJECTION_GOV,
-        CreditTransferStatus.REJECTED_BY_GOV,
-      ],
-    };
     whereClause.creditTransfer = {
       status: {
         in: [
@@ -826,14 +816,6 @@ export const getActivityFeedCreditTransferRecordsWhereClause = (
       },
     };
   } else {
-    whereClause.userAction = {
-      notIn: [
-        CreditTransferStatus.DRAFT,
-        CreditTransferStatus.SUBMITTED_TO_TRANSFER_TO,
-        CreditTransferStatus.RESCINDED_BY_TRANSFER_FROM,
-        CreditTransferStatus.REJECTED_BY_TRANSFER_TO,
-      ],
-    };
     whereClause.creditTransfer = {
       status: {
         notIn: [
@@ -856,9 +838,6 @@ export const getActivityFeedCreditAgreementRecordsWhereClause = (
     timestamp: { gte: nDaysAgo },
   };
   if (userRoles.includes(Role.DIRECTOR)) {
-    whereClause.userAction = {
-      notIn: [AgreementStatus.DRAFT, AgreementStatus.RETURNED_TO_ANALYST],
-    };
     whereClause.agreement = {
       status: {
         notIn: [AgreementStatus.DRAFT, AgreementStatus.RETURNED_TO_ANALYST],
@@ -876,12 +855,6 @@ export const getActivityFeedPenaltyCreditRecordsWhereClause = (
     timestamp: { gte: nDaysAgo },
   };
   if (userRoles.includes(Role.DIRECTOR)) {
-    whereClause.userAction = {
-      notIn: [
-        PenaltyCreditStatus.DRAFT,
-        PenaltyCreditStatus.RETURNED_TO_ANALYST,
-      ],
-    };
     whereClause.penaltyCredit = {
       status: {
         notIn: [
@@ -900,14 +873,15 @@ export const getActivityFeedMyrRecordsWhereClause = (
   const nDaysAgo = getNDaysAgo(30);
   let whereClause: ModelYearReportHistoryWhereInput = {
     timestamp: { gte: nDaysAgo },
-  };
-  if (userRoles.includes(Role.DIRECTOR)) {
-    whereClause.userAction = {
+    userAction: {
       in: [
         ModelYearReportStatus.ASSESSED,
-        ModelYearReportStatus.SUBMITTED_TO_DIRECTOR,
+        ModelYearReportStatus.RETURNED_TO_SUPPLIER,
+        ModelYearReportStatus.SUBMITTED_TO_GOVERNMENT,
       ],
-    };
+    },
+  };
+  if (userRoles.includes(Role.DIRECTOR)) {
     whereClause.modelYearReport = {
       status: {
         in: [
@@ -917,12 +891,6 @@ export const getActivityFeedMyrRecordsWhereClause = (
       },
     };
   } else {
-    whereClause.userAction = {
-      notIn: [
-        ModelYearReportStatus.DRAFT,
-        ModelYearReportStatus.RETURNED_TO_SUPPLIER,
-      ],
-    };
     whereClause.modelYearReport = {
       status: {
         notIn: [

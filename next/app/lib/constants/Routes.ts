@@ -18,6 +18,7 @@ export enum Routes {
   // zev models
   ValidatedZevModels = "/zev-models/validated",
   SubmittedZevModels = "/zev-models/submitted",
+  InProgressZevModels = "/zev-models/in-progress",
   InactiveZevModels = "/zev-models/inactive",
   NewZevModels = "/zev-models/new",
 

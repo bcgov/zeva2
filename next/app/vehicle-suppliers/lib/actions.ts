@@ -175,11 +175,14 @@ export const getVehicleRoute = async (
     return getErrorActionResponse("Vehicle not found!");
   }
   return getDataActionResponse(
-    getZevModelDetailsRoute({
-      id: vehicleId,
-      status: vehicle.status,
-      isActive: vehicle.isActive,
-    }),
+    getZevModelDetailsRoute(
+      {
+        id: vehicleId,
+        status: vehicle.status,
+        isActive: vehicle.isActive,
+      },
+      userIsGov,
+    ),
   );
 };
 

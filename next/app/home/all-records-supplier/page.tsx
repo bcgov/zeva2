@@ -5,7 +5,7 @@ import { AllRecordsTabsSupplier } from "../components/AllRecordsTabsSupplier";
 import { AllRecordsTableSupplier } from "../components/AllRecordsTableSupplier";
 import { getDateRangeOptions } from "../lib/utilsServer";
 import { isAllRecordTypeSupplier } from "../lib/utils";
-import { getAllRecordsSupplier } from "../lib/services";
+import { getSupplierRecords } from "../lib/services";
 import { allRecordsViewParam, supplierViewsData } from "../lib/constants";
 
 const Page = async (props: {
@@ -21,7 +21,7 @@ const Page = async (props: {
   }
 
   const viewData = supplierViewsData[view];
-  const records = await getAllRecordsSupplier(userOrgId, view);
+  const records = await getSupplierRecords(userOrgId, view);
   records.sort((a, b) => {
     if (b.date > a.date) {
       return 1;
