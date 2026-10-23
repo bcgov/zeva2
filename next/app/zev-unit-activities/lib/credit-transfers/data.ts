@@ -131,22 +131,38 @@ export const getCreditTransferHistories = async (transferId: number) => {
       ],
     };
   } else {
-    whereClause.OR = [
-      { creditTransfer: { transferFromId: userOrgId } },
-      {
-        creditTransfer: {
-          transferToId: userOrgId,
-          status: { not: CreditTransferStatus.DRAFT },
-        },
+    const ct = await prisma.creditTransfer.findUnique({
+      where: {
+        id: transferId,
+        OR: [
+          { transferFromId: userOrgId },
+          {
+            transferToId: userOrgId,
+            status: { not: CreditTransferStatus.DRAFT },
+          },
+        ],
       },
+      select: {
+        transferFromId: true,
+      },
+    });
+    if (!ct) {
+      return [];
+    }
+    const statusesToNotInclude = [
+      CreditTransferStatus.RECOMMEND_APPROVAL_GOV,
+      CreditTransferStatus.RECOMMEND_REJECTION_GOV,
+      CreditTransferStatus.RETURNED_TO_ANALYST,
     ];
-    whereClause.userAction = {
-      notIn: [
-        CreditTransferStatus.RECOMMEND_APPROVAL_GOV,
-        CreditTransferStatus.RECOMMEND_REJECTION_GOV,
-        CreditTransferStatus.RETURNED_TO_ANALYST,
-      ],
-    };
+    if (ct.transferFromId === userOrgId) {
+      whereClause.userAction = {
+        notIn: statusesToNotInclude,
+      };
+    } else {
+      whereClause.userAction = {
+        notIn: [...statusesToNotInclude, CreditTransferStatus.DRAFT],
+      };
+    }
   }
   return await prisma.creditTransferHistory.findMany({
     where: whereClause,

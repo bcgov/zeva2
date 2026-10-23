@@ -19,9 +19,11 @@ export const getZevModelDetailsRoute = (
   userIsGov: boolean,
 ) => {
   if (vehicle.status === VehicleStatus.VALIDATED) {
-    return `${
-      vehicle.isActive ? Routes.ValidatedZevModels : Routes.InactiveZevModels
-    }/${vehicle.id}`;
+    if (vehicle.isActive) {
+      return `${Routes.ValidatedZevModels}/${vehicle.id}`;
+    } else {
+      return `${Routes.InactiveZevModels}/${vehicle.id}`;
+    }
   }
   if (userIsGov) {
     return `${Routes.SubmittedZevModels}/${vehicle.id}`;

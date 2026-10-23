@@ -3,6 +3,7 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faCircleCheck,
   faCircleExclamation,
+  faCircleInfo,
   faCoins,
   faHourglassHalf,
   faListCheck,
@@ -14,10 +15,9 @@ import { getReportableBalanceAB } from "@/app/zev-unit-activities/lib/zev-unit-t
 import { DashboardTone, dashboardToneClasses } from "../lib/constants";
 import { getAllRecordsViewRouteSupplier } from "../lib/utils";
 import { getActiveNotifications } from "@/app/notifications/lib/services";
-import { NotificationMessageBanner } from "@/app/notifications/lib/components/NotificationMessageBanner";
-import { Fragment } from "react/jsx-runtime";
 import { getSupplierRecords } from "../lib/services";
 import { DashboardSectionPanel } from "./DashboardSectionPanel";
+import { ActiveNotificationsDisplay } from "./ActiveNotificationsDisplay";
 
 // for suppliers
 export const SupplierDashboard = async () => {
@@ -78,32 +78,19 @@ export const SupplierDashboard = async () => {
   return (
     <div className="flex flex-col gap-6">
       {activeNotifications.length > 0 && (
-        <div className="flex flex-col gap-4 rounded border border-dividerMedium/40 p-4">
-          <h2 className="text-lg font-bold">
-            Notifications ({activeNotifications.length})
-          </h2>
-          {activeNotifications.map((notification, index) => {
-            return (
-              <Fragment key={index}>
-                <NotificationMessageBanner
-                  type={notification.type}
-                  title={notification.title}
-                  message={notification.message}
-                />
-              </Fragment>
-            );
-          })}
+        <div className="flex flex-col gap-6">
+          <ActiveNotificationsDisplay notifications={activeNotifications} />
+          <hr className="border-dashboardDivider"></hr>
         </div>
       )}
-      <hr className="border-dividerMedium"></hr>
-      <h1 className="text-xl font-bold">Dashboard</h1>
+      <h2 className="text-xl font-bold">Dashboard</h2>
       <div className="grid grid-cols-5 gap-4">
         {summaryCards.map((card) => {
           const tone = card.tone ? dashboardToneClasses[card.tone] : undefined;
           return (
             <div
               key={card.label}
-              className={`flex flex-row items-center gap-4 rounded border px-5 py-4 ${
+              className={`flex flex-row items-center gap-6 rounded border pl-4 pr-6 py-4 ${
                 tone
                   ? `${tone.border} ${tone.bg}`
                   : "border-dividerDark/60 bg-lightGrey"
@@ -111,10 +98,10 @@ export const SupplierDashboard = async () => {
             >
               <FontAwesomeIcon
                 icon={card.icon}
-                className={`h-8 w-8 ${tone ? tone.text : "text-primaryIcon"}`}
+                className={`text-[40px] ${tone ? tone.text : "text-primaryIcon"}`}
               />
-              <div className="flex flex-col gap-0.5">
-                <span className={`text-lg font-bold ${tone ? tone.text : ""}`}>
+              <div className="flex flex-col gap-1">
+                <span className={`text-xl font-bold ${tone ? tone.text : ""}`}>
                   {card.count} Items
                 </span>
                 <span className="text-sm font-bold text-secondaryText">
@@ -130,12 +117,12 @@ export const SupplierDashboard = async () => {
             </div>
           );
         })}
-        <div className="flex flex-row items-center gap-4 rounded border border-dividerDark/60 bg-lightGrey px-5 py-4">
+        <div className="flex flex-row items-center gap-6 rounded border border-dividerDark/60 bg-lightGrey px-6 py-4">
           <FontAwesomeIcon
             icon={faCoins}
-            className="h-8 w-8 text-primaryIcon"
+            className="text-[40px] text-primaryIcon"
           />
-          <div className="flex flex-col gap-2">
+          <div className="flex flex-col gap-4">
             <Link
               href={Routes.ZevUnitTransactions}
               className="font-bold text-link"
@@ -147,11 +134,11 @@ export const SupplierDashboard = async () => {
             ) : (
               <div className="flex flex-row gap-4">
                 <span>
-                  <span className="font-bold">A </span>
+                  <span className="font-bold">A: </span>
                   <span className="font-bold">{balance.A}</span>
                 </span>
                 <span>
-                  <span className="font-bold">B </span>
+                  <span className="font-bold">B: </span>
                   <span className="font-bold">{balance.B}</span>
                 </span>
               </div>
@@ -179,7 +166,42 @@ export const SupplierDashboard = async () => {
           viewAllRoute={getAllRecordsViewRouteSupplier("for-awareness")}
         />
       </div>
-      <hr className="border-dividerMedium"></hr>
+      <hr className="border-dashboardDivider"></hr>
+      <div className="flex flex-row items-center gap-6 bg-infoBG px-6 py-4">
+        <FontAwesomeIcon
+          icon={faCircleInfo}
+          className="text-[40px] text-primaryBlueHover"
+        />
+        <div className="flex flex-row gap-6">
+          <div className="flex flex-col gap-2">
+            <span className="font-bold">
+              Need assistance? We're here to help.
+            </span>
+            <span>Contact the ZEVA team or learn more about the program.</span>
+          </div>
+          <div className="border border-dividerMedium"></div>
+          <div className="flex flex-col gap-2">
+            <span>
+              Email:{" "}
+              <a
+                href="mailto:ZEVRegulation@gov.bc.ca"
+                className="text-link underline cursor-pointer"
+              >
+                ZEVRegulation@gov.bc.ca
+              </a>
+            </span>
+            <span>
+              Learn more:{" "}
+              <a
+                href="https://www.bclaws.gov.bc.ca/civix/content/complete/statreg/28270709/904186779/?xsl=/templates/browse.xsl"
+                className="text-link underline cursor-pointer"
+              >
+                Zero-Emission Vehicles Act
+              </a>
+            </span>
+          </div>
+        </div>
+      </div>
     </div>
   );
 };

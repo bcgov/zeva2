@@ -44,7 +44,7 @@ export const saveTransfer = async (
   payload: CreditTransferPayload,
   creditTransferId?: number,
 ): Promise<DataOrErrorActionResponse<number>> => {
-  const { userIsGov, userOrgId } = await getUserInfo();
+  const { userIsGov, userId, userOrgId } = await getUserInfo();
   if (userIsGov) {
     return getErrorActionResponse("Unauthorized!");
   }
@@ -95,6 +95,14 @@ export const saveTransfer = async (
     await tx.creditTransferContent.createMany({
       data: contentToCreate,
     });
+    await createTransferHistory(
+      {
+        creditTransferId: transferId,
+        userId,
+        userAction: CreditTransferStatus.DRAFT,
+      },
+      tx,
+    );
   });
   return getDataActionResponse(transferId);
 };

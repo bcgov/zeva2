@@ -45,10 +45,10 @@ export const VehicleTable = (props: {
       columnHelper.accessor((row) => statusMap[row.status], {
         id: "status",
         enableSorting:
-          (!props.userIsGov && props.type === "submitted") ||
+          (!props.userIsGov && props.type === "in-progress") ||
           (props.userIsGov && props.type === "supplierSpecific"),
         enableColumnFilter:
-          (!props.userIsGov && props.type === "submitted") ||
+          (!props.userIsGov && props.type === "in-progress") ||
           (props.userIsGov && props.type === "supplierSpecific"),
         header: () => <span>Status</span>,
       }),

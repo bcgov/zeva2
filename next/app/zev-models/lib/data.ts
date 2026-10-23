@@ -73,6 +73,7 @@ export const getVehicles = async (
             { status: VehicleStatus.SUBMITTED },
           ];
         }
+        break;
       case "inactive":
         where.status = VehicleStatus.VALIDATED;
         where.isActive = false;
@@ -143,11 +144,6 @@ export const getVehicleHistories = async (vehicleId: number) => {
   } else {
     whereClause.userAction = {
       not: VehicleStatus.DRAFT,
-    };
-    whereClause.vehicle = {
-      status: {
-        notIn: [VehicleStatus.DRAFT, VehicleStatus.RETURNED_TO_SUPPLIER],
-      },
     };
   }
   return await prisma.vehicleHistory.findMany({

@@ -67,7 +67,7 @@ export const PrimaryNavbar = (props: {
   }, [items, pathname]);
 
   return (
-    <Row className="w-full items-center bg-primaryBlueHover border-t-2 border-primaryGold mr-[16rem] px-4 py-0.5 mb-3 text-white">
+    <Row className="w-full items-center bg-primaryBlueHover border-t-2 border-primaryGold mr-[16rem] px-4 py-0.5 text-white">
       <div className="flex items-center gap-6">
         {items.map((item) => (
           <Link

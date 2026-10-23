@@ -38,13 +38,13 @@ export const SupplierActions = (props: {
     if (response.responseType === "error") {
       setError(response.message);
     } else {
-      router.push(Routes.SubmittedZevModels);
+      router.push(Routes.InProgressZevModels);
     }
     setModal(null);
   }, [props.vehicleId]);
 
   const handleGoToEdit = useCallback(() => {
-    router.push(`${Routes.SubmittedZevModels}/${props.vehicleId}/edit`);
+    router.push(`${Routes.InProgressZevModels}/${props.vehicleId}/edit`);
   }, [props.vehicleId]);
 
   const handleSubmit = useCallback(async () => {

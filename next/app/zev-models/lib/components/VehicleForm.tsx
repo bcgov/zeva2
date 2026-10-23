@@ -158,7 +158,7 @@ export const VehicleForm = (props: {
           throw new Error(response.message);
         }
         const vehicleId = response.data;
-        router.push(`${Routes.SubmittedZevModels}/${vehicleId}`);
+        router.push(`${Routes.InProgressZevModels}/${vehicleId}`);
       } catch (e) {
         if (e instanceof Error) {
           setError(e.message);

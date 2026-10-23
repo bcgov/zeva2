@@ -7,7 +7,7 @@ import { allRecordsViewParam, supplierViewsData } from "../lib/constants";
 import { getAllRecordsViewRouteSupplier } from "../lib/utils";
 
 export const AllRecordsTabsSupplier = () => {
-  const currentView = useSearchParams().get(allRecordsViewParam);
+  const searchParams = useSearchParams();
 
   const tabs = useMemo(
     () =>
@@ -29,5 +29,10 @@ export const AllRecordsTabsSupplier = () => {
     [tabs],
   );
 
-  return <SecondaryNavbar items={items} />;
+  const activeIndex = useMemo(() => {
+    const currentView = searchParams.get(allRecordsViewParam);
+    return tabs.findIndex((tab) => tab.view === currentView);
+  }, [searchParams, tabs]);
+
+  return <SecondaryNavbar items={items} activeIndex={activeIndex} />;
 };
