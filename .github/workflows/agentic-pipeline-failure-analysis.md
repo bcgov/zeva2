@@ -2,13 +2,10 @@
 on:
   workflow_run:
     workflows:
-      - "Agentic Maintenance"
-      - "AI Failure Investigation"
       - "Build Template"
       - "Cleanup Images Template"
       - "Cleanup Unused/Expired Images and Build Configs"
       - "Cleanup Workflow Runs"
-      - "Daily Repo Status Report"
       - "Deploy Template By Pull Request"
       - "Deploy Template"
       - "Dev Release"
@@ -20,7 +17,6 @@ on:
       - "PR Test"
       - "PR Title Lint"
       - "Promote to Test (RC Release)"
-      - "Quarterly PAT Regeneration Reminder"
       - "Release to Prod (Stable Release)"
     types: [completed]
     branches: ["**"]
