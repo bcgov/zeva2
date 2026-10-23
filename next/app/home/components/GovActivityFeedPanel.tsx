@@ -49,7 +49,7 @@ export const GovActivityFeedPanel = (props: {
             const toneText = dashboardToneClasses[style.tone].text;
             return (
               <Link
-                key={`${record.recordType}-${record.id}-${record.dateTime}`}
+                key={crypto.randomUUID()}
                 href={record.baseRoute}
                 className="flex flex-row items-center justify-between gap-2 px-1 py-3.5 hover:bg-disabledSurface/50"
               >

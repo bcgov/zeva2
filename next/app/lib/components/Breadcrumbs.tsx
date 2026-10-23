@@ -15,7 +15,7 @@ export const Breadcrumbs = (props: { items: BreadcrumbItem[] }) => {
   }
 
   return (
-    <nav aria-label="Breadcrumb" className="m-2">
+    <nav aria-label="Breadcrumb">
       <ol className="flex flex-wrap items-center gap-2 text-base font-medium">
         {props.items.map((item, index) => {
           const isCurrent = index === props.items.length - 1;

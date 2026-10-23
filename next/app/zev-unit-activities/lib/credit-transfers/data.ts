@@ -22,21 +22,22 @@ export const getCreditTransfers = async (): Promise<
   const { userIsGov, userOrgId, userRoles } = await getUserInfo();
   const whereClause: CreditTransferWhereInput = {};
   if (userIsGov && userRoles.includes(Role.DIRECTOR)) {
-    whereClause.creditTransferHistory = {
-      some: {
-        userAction: {
-          in: [
-            CreditTransferStatus.RECOMMEND_APPROVAL_GOV,
-            CreditTransferStatus.RECOMMEND_REJECTION_GOV,
-          ],
-        },
-      },
+    whereClause.status = {
+      in: [
+        CreditTransferStatus.APPROVED_BY_GOV,
+        CreditTransferStatus.RECOMMEND_APPROVAL_GOV,
+        CreditTransferStatus.RECOMMEND_REJECTION_GOV,
+        CreditTransferStatus.REJECTED_BY_GOV,
+      ],
     };
   } else if (userIsGov && userRoles.includes(Role.ZEVA_IDIR_USER)) {
-    whereClause.creditTransferHistory = {
-      some: {
-        userAction: CreditTransferStatus.APPROVED_BY_TRANSFER_TO,
-      },
+    whereClause.status = {
+      notIn: [
+        CreditTransferStatus.DRAFT,
+        CreditTransferStatus.SUBMITTED_TO_TRANSFER_TO,
+        CreditTransferStatus.RESCINDED_BY_TRANSFER_FROM,
+        CreditTransferStatus.REJECTED_BY_TRANSFER_TO,
+      ],
     };
   } else if (!userIsGov) {
     whereClause.OR = [
@@ -77,14 +78,28 @@ export const getCreditTransfers = async (): Promise<
 };
 
 export const getCreditTransfer = async (id: number) => {
-  const { userIsGov, userOrgId } = await getUserInfo();
+  const { userIsGov, userOrgId, userRoles } = await getUserInfo();
   const whereClause: CreditTransferWhereUniqueInput = { id };
   if (userIsGov) {
-    whereClause.creditTransferHistory = {
-      some: {
-        userAction: CreditTransferStatus.APPROVED_BY_TRANSFER_TO,
-      },
-    };
+    if (userRoles.includes(Role.DIRECTOR)) {
+      whereClause.status = {
+        in: [
+          CreditTransferStatus.APPROVED_BY_GOV,
+          CreditTransferStatus.RECOMMEND_APPROVAL_GOV,
+          CreditTransferStatus.RECOMMEND_REJECTION_GOV,
+          CreditTransferStatus.REJECTED_BY_GOV,
+        ],
+      };
+    } else {
+      whereClause.status = {
+        notIn: [
+          CreditTransferStatus.DRAFT,
+          CreditTransferStatus.SUBMITTED_TO_TRANSFER_TO,
+          CreditTransferStatus.RESCINDED_BY_TRANSFER_FROM,
+          CreditTransferStatus.REJECTED_BY_TRANSFER_TO,
+        ],
+      };
+    }
   } else {
     whereClause.OR = [
       { transferFromId: userOrgId },
@@ -107,30 +122,47 @@ export const getCreditTransferHistories = async (transferId: number) => {
     creditTransferId: transferId,
   };
   if (userIsGov) {
-    whereClause.creditTransfer = {
-      creditTransferHistory: {
-        some: {
-          userAction: CreditTransferStatus.APPROVED_BY_TRANSFER_TO,
-        },
-      },
-    };
-  } else {
-    whereClause.OR = [
-      { creditTransfer: { transferFromId: userOrgId } },
-      {
-        creditTransfer: {
-          transferToId: userOrgId,
-          status: { not: CreditTransferStatus.DRAFT },
-        },
-      },
-    ];
     whereClause.userAction = {
       notIn: [
-        CreditTransferStatus.RECOMMEND_APPROVAL_GOV,
-        CreditTransferStatus.RECOMMEND_REJECTION_GOV,
-        CreditTransferStatus.RETURNED_TO_ANALYST,
+        CreditTransferStatus.DRAFT,
+        CreditTransferStatus.SUBMITTED_TO_TRANSFER_TO,
+        CreditTransferStatus.RESCINDED_BY_TRANSFER_FROM,
+        CreditTransferStatus.REJECTED_BY_TRANSFER_TO,
       ],
     };
+  } else {
+    const ct = await prisma.creditTransfer.findUnique({
+      where: {
+        id: transferId,
+        OR: [
+          { transferFromId: userOrgId },
+          {
+            transferToId: userOrgId,
+            status: { not: CreditTransferStatus.DRAFT },
+          },
+        ],
+      },
+      select: {
+        transferFromId: true,
+      },
+    });
+    if (!ct) {
+      return [];
+    }
+    const statusesToNotInclude = [
+      CreditTransferStatus.RECOMMEND_APPROVAL_GOV,
+      CreditTransferStatus.RECOMMEND_REJECTION_GOV,
+      CreditTransferStatus.RETURNED_TO_ANALYST,
+    ];
+    if (ct.transferFromId === userOrgId) {
+      whereClause.userAction = {
+        notIn: statusesToNotInclude,
+      };
+    } else {
+      whereClause.userAction = {
+        notIn: [...statusesToNotInclude, CreditTransferStatus.DRAFT],
+      };
+    }
   }
   return await prisma.creditTransferHistory.findMany({
     where: whereClause,

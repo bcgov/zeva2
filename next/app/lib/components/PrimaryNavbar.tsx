@@ -34,7 +34,11 @@ export const PrimaryNavbar = (props: {
       },
       {
         label: "ZEV Models",
-        route: Routes.ValidatedZevModels,
+        route: props.userIsGov
+          ? props.userRoles.includes(Role.DIRECTOR)
+            ? Routes.ValidatedZevModels
+            : Routes.SubmittedZevModels
+          : Routes.InProgressZevModels,
       },
       ...(props.userIsGov
         ? [{ label: "Vehicle Suppliers", route: Routes.VehicleSuppliers }]
@@ -63,7 +67,7 @@ export const PrimaryNavbar = (props: {
   }, [items, pathname]);
 
   return (
-    <Row className="w-full items-center bg-primaryBlueHover border-t-2 border-primaryGold mr-[16rem] px-4 py-0.5 mb-3 text-white">
+    <Row className="w-full items-center bg-primaryBlueHover border-t-2 border-primaryGold mr-[16rem] px-4 py-0.5 text-white">
       <div className="flex items-center gap-6">
         {items.map((item) => (
           <Link

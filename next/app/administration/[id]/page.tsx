@@ -30,7 +30,7 @@ const Page = async (props: { params: Promise<{ id: string }> }) => {
   }
   const govOrgId = await getGovOrgId();
   return (
-    <div className="w-full">
+    <div className="flex flex-col gap-6">
       <Breadcrumbs
         items={[
           {

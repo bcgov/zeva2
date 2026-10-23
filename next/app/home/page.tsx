@@ -1,6 +1,6 @@
 import { Suspense } from "react";
 import { LoadingSkeleton } from "../lib/components/skeletons";
-import { ActionCenter } from "./components/ActionCenter";
+import { SupplierDashboard } from "./components/SupplierDashboard";
 import { getUserInfo } from "@/auth";
 import { GovDashboard } from "./components/GovDashboard";
 
@@ -18,7 +18,7 @@ const Page = async () => {
   return (
     <div className="w-full">
       <Suspense fallback={<LoadingSkeleton />}>
-        <ActionCenter />
+        <SupplierDashboard />
       </Suspense>
     </div>
   );

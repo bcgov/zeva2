@@ -52,7 +52,7 @@ const Page = async (props: {
   const dateRangeOptions = getDateRangeOptions(records, 3);
 
   return (
-    <div className="flex flex-col">
+    <div className="flex flex-col gap-6">
       <Breadcrumbs
         items={[
           { label: "Home", href: Routes.Home },

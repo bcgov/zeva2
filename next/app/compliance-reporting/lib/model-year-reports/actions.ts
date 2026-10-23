@@ -185,7 +185,7 @@ export const saveReports = async (
   attachments: Attachment[],
 ): Promise<DataOrErrorActionResponse<number>> => {
   let idOfReport = NaN;
-  const { userIsGov, userOrgId } = await getUserInfo();
+  const { userIsGov, userId, userOrgId } = await getUserInfo();
   if (userIsGov) {
     return getErrorActionResponse("Unauthorized!");
   }
@@ -240,6 +240,13 @@ export const saveReports = async (
       });
       idOfReport = newId;
     }
+    await createHistory(
+      idOfReport,
+      userId,
+      ModelYearReportStatus.DRAFT,
+      undefined,
+      tx,
+    );
     await tx.modelYearReportAttachment.createMany({
       data: attachments.map((attachment) => {
         return {

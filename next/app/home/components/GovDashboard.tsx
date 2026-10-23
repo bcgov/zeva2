@@ -12,7 +12,7 @@ import { getUserInfo } from "@/auth";
 import { Routes } from "@/app/lib/constants";
 import { getGovRecords, getRecentActivityFeedRecords } from "../lib/services";
 import { DashboardTone, dashboardToneClasses } from "../lib/constants";
-import { GovDashboardSectionPanel } from "./GovDashboardSectionPanel";
+import { DashboardSectionPanel } from "./DashboardSectionPanel";
 import { GovActivityFeedPanel } from "./GovActivityFeedPanel";
 import { getAllRecordsViewRouteGov } from "../lib/utils";
 import { Role } from "@/prisma/generated/enums";
@@ -125,7 +125,7 @@ export const GovDashboard = async () => {
         })}
       </div>
       <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
-        <GovDashboardSectionPanel
+        <DashboardSectionPanel
           title="Requires Your Action"
           tone="error"
           records={requiresActionRecords}
@@ -134,7 +134,7 @@ export const GovDashboard = async () => {
         <GovActivityFeedPanel records={activityFeedRecords} />
       </div>
       {isDirector && (
-        <GovDashboardSectionPanel
+        <DashboardSectionPanel
           title="Completed"
           tone="success"
           records={completedRecords}
@@ -143,19 +143,19 @@ export const GovDashboard = async () => {
       )}
       {!isDirector && (
         <div className="grid grid-cols-1 gap-3 lg:grid-cols-3">
-          <GovDashboardSectionPanel
+          <DashboardSectionPanel
             title="In Progress"
             tone="warning"
             records={inProgressRecords}
             viewAllRoute={getAllRecordsViewRouteGov("in-progress")}
           />
-          <GovDashboardSectionPanel
+          <DashboardSectionPanel
             title="With Director"
             tone="info"
             records={withDirectorRecords}
             viewAllRoute={getAllRecordsViewRouteGov("with-director")}
           />
-          <GovDashboardSectionPanel
+          <DashboardSectionPanel
             title="Completed"
             tone="success"
             records={completedRecords}

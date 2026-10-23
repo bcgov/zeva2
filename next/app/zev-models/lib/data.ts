@@ -1,7 +1,7 @@
 import { getUserInfo } from "@/auth";
 import { getOrderByClause, getWhereClause } from "./utilsServer";
 import { prisma } from "@/lib/prisma";
-import { VehicleStatus } from "@/prisma/generated/enums";
+import { Role, VehicleStatus } from "@/prisma/generated/enums";
 import { ZevModelTab, VehicleSparse } from "./constants";
 import {
   OrganizationModel,
@@ -21,7 +21,7 @@ export const getVehicles = async (
   type?: ZevModelTab,
   orgId?: number,
 ): Promise<[VehicleSparse[], number]> => {
-  const { userIsGov, userOrgId } = await getUserInfo();
+  const { userIsGov, userOrgId, userRoles } = await getUserInfo();
   if ((!type && !orgId) || (type && orgId) || (orgId && !userIsGov)) {
     throw new Error("Invalid function call!");
   }
@@ -57,8 +57,15 @@ export const getVehicles = async (
         where.isActive = true;
         break;
       case "submitted":
-        if (userIsGov) {
+        if (userIsGov && userRoles.includes(Role.ZEVA_IDIR_USER)) {
           where.status = VehicleStatus.SUBMITTED;
+        } else {
+          where.id = -1;
+        }
+        break;
+      case "in-progress":
+        if (userIsGov) {
+          where.id = -1;
         } else {
           where.OR = [
             { status: VehicleStatus.DRAFT },
@@ -97,18 +104,20 @@ export type VehicleWithOrg = VehicleModel & {
 export const getVehicle = async (
   vehicleId: number,
 ): Promise<VehicleWithOrg | null> => {
-  const { userIsGov, userOrgId } = await getUserInfo();
+  const { userIsGov, userOrgId, userRoles } = await getUserInfo();
   let whereClause: VehicleWhereUniqueInput = {
     id: vehicleId,
   };
   if (!userIsGov) {
     whereClause.organizationId = userOrgId;
   } else {
-    whereClause.NOT = {
-      status: {
-        in: [VehicleStatus.DRAFT, VehicleStatus.RETURNED_TO_SUPPLIER],
-      },
-    };
+    if (userRoles.includes(Role.DIRECTOR)) {
+      whereClause.status = VehicleStatus.VALIDATED;
+    } else {
+      whereClause.status = {
+        notIn: [VehicleStatus.DRAFT, VehicleStatus.RETURNED_TO_SUPPLIER],
+      };
+    }
   }
   return await prisma.vehicle.findUnique({
     where: whereClause,
@@ -133,12 +142,8 @@ export const getVehicleHistories = async (vehicleId: number) => {
       organizationId: userOrgId,
     };
   } else {
-    whereClause.NOT = {
-      vehicle: {
-        status: {
-          in: [VehicleStatus.DRAFT],
-        },
-      },
+    whereClause.userAction = {
+      not: VehicleStatus.DRAFT,
     };
   }
   return await prisma.vehicleHistory.findMany({

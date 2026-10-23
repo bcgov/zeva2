@@ -15,7 +15,8 @@ export const LowerNavbarWrapper = (props: {
       if (
         pathname === Routes.ValidatedZevModels ||
         pathname === Routes.SubmittedZevModels ||
-        pathname === Routes.InactiveZevModels
+        pathname === Routes.InactiveZevModels ||
+        pathname === Routes.InProgressZevModels
       ) {
         return props.navbar;
       }

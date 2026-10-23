@@ -133,11 +133,14 @@ export const getMyrHistory = async (myrId: number) => {
       organizationId: userOrgId,
     };
     whereClause.userAction = {
-      in: [
-        ModelYearReportStatus.ASSESSED,
-        ModelYearReportStatus.RETURNED_TO_SUPPLIER,
-        ModelYearReportStatus.SUBMITTED_TO_GOVERNMENT,
+      notIn: [
+        ModelYearReportStatus.RETURNED_TO_ANALYST,
+        ModelYearReportStatus.SUBMITTED_TO_DIRECTOR,
       ],
+    };
+  } else {
+    whereClause.userAction = {
+      not: ModelYearReportStatus.DRAFT,
     };
   }
   return await prisma.modelYearReportHistory.findMany({

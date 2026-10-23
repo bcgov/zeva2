@@ -61,7 +61,7 @@ export const supplierSave = async (
   attachments: Attachment[],
   vehicleId?: number,
 ): Promise<DataOrErrorActionResponse<number>> => {
-  const { userIsGov, userOrgId } = await getUserInfo();
+  const { userIsGov, userId, userOrgId } = await getUserInfo();
   if (userIsGov) {
     return getErrorActionResponse("Unauthorized!");
   }
@@ -130,6 +130,13 @@ export const supplierSave = async (
         });
         zevModelId = newVehicle.id;
       }
+      await createHistory(
+        zevModelId,
+        userId,
+        VehicleStatus.DRAFT,
+        undefined,
+        tx,
+      );
       await deleteAttachments(zevModelId, tx);
       await createAttachments(zevModelId, attachments, tx);
     });

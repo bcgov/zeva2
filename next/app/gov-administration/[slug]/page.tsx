@@ -1,8 +1,8 @@
-import { Suspense } from "react";
 import { fetchUsers } from "@/app/administration/lib/data";
-import { LoadingSkeleton } from "@/app/lib/components/skeletons";
 import { UserTable } from "../lib/components/UserTable";
 import { userIsAdmin } from "@/app/administration/lib/utilsServer";
+import { SecondaryNavbar } from "@/app/lib/components/SecondaryNavbar";
+import { Routes } from "@/app/lib/constants";
 
 const Page = async (props: { params: Promise<{ slug: string }> }) => {
   const args = await props.params;
@@ -10,10 +10,16 @@ const Page = async (props: { params: Promise<{ slug: string }> }) => {
   const isAdmin = await userIsAdmin();
   if (slug === "idir" || slug === "bceid" || slug === "inactive") {
     const users = await fetchUsers(slug);
+    const items = [
+      { label: "IDIR", route: `${Routes.GovAdministration}/idir` },
+      { label: "BCeID", route: `${Routes.GovAdministration}/bceid` },
+      { label: "Inactive", route: `${Routes.GovAdministration}/inactive` },
+    ];
     return (
-      <Suspense fallback={<LoadingSkeleton />}>
+      <div className="flex flex-col gap-6">
+        <SecondaryNavbar items={items} />
         <UserTable users={users} category={slug} isAdmin={isAdmin} />
-      </Suspense>
+      </div>
     );
   }
   return null;

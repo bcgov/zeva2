@@ -4,65 +4,23 @@ import {
   faArrowRight,
   faChevronRight,
   faCircle,
-  faFile,
-  faList,
-  faMoneyBillTransfer,
-  faCar,
 } from "@fortawesome/free-solid-svg-icons";
-import type { IconDefinition } from "@fortawesome/fontawesome-svg-core";
 import {
+  breakdownRows,
   DashboardTone,
   dashboardToneClasses,
   RecordType,
-  SerializedAllRecordsRecordGov,
 } from "../lib/constants";
-import { getGovDashboardSectionCounts } from "../lib/utils";
+import { getDashboardSectionCounts } from "../lib/utils";
 
-const breakdownRows: {
-  label: string;
-  recordType: RecordType;
-  icon: IconDefinition;
-}[] = [
-  {
-    label: "Model Year Reports",
-    recordType: "Model Year Report",
-    icon: faFile,
-  },
-  {
-    label: "Credit Applications",
-    recordType: "Credit Application",
-    icon: faList,
-  },
-  {
-    label: "Credit Transfers",
-    recordType: "Credit Transfer",
-    icon: faMoneyBillTransfer,
-  },
-  {
-    label: "ZEV Models",
-    recordType: "ZEV Model",
-    icon: faCar,
-  },
-  {
-    label: "Credit Agreements",
-    recordType: "Credit Agreement",
-    icon: faList,
-  },
-  {
-    label: "Penalty Credits",
-    recordType: "Penalty Credits",
-    icon: faList,
-  },
-];
-
-export const GovDashboardSectionPanel = (props: {
+export const DashboardSectionPanel = (props: {
   title: string;
   tone: DashboardTone;
-  records: SerializedAllRecordsRecordGov[];
+  records: { id: number; type: RecordType; baseRoute: string }[];
   viewAllRoute: string;
 }) => {
   const tone = dashboardToneClasses[props.tone];
-  const counts = getGovDashboardSectionCounts(props.records);
+  const counts = getDashboardSectionCounts(props.records);
   const total = Object.values(counts).reduce((sum, count) => sum + count, 0);
   return (
     <div
