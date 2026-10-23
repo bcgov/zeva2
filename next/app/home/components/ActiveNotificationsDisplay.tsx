@@ -46,20 +46,20 @@ export const ActiveNotificationsDisplay = (props: {
           Notifications ({props.notifications.length})
         </h2>
         {toExpandOrToCollapse === "toCollapse" && (
-          <span
+          <button
             onClick={handleCollapse}
-            className="text-link underline cursor-pointer"
+            className="bg-transparent border-0 p-0 text-link underline cursor-pointer"
           >
-            Collapse All Notifications
-          </span>
+            Collapse Notifications
+          </button>
         )}
         {toExpandOrToCollapse === "toExpand" && (
-          <span
+          <button
             onClick={handleExpand}
-            className="text-link underline cursor-pointer"
+            className="bg-transparent border-0 p-0 text-link underline cursor-pointer"
           >
             View All Notifications
-          </span>
+          </button>
         )}
       </div>
       {displayedNotifications.map((notification, index) => {
