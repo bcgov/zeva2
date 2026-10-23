@@ -1,0 +1,274 @@
+name: AI Failure Investigation
+
+on:
+  workflow_run:
+    workflows: ["*"]
+    types:
+      - completed
+
+permissions:
+  actions: read
+  contents: read
+  pull-requests: write
+  issues: write
+
+jobs:
+  triage:
+    name: Agent 1 - Triage
+    if: github.event.workflow_run.conclusion == 'failure'
+    runs-on: ubuntu-latest
+
+    outputs:
+      summary: ${{ steps.triage.outputs.summary }}
+
+    steps:
+
+      - name: Install GH CLI
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gh jq
+
+      - name: Download Workflow Logs
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          mkdir analysis
+
+          gh run view \
+            ${{ github.event.workflow_run.id }} \
+            --log > analysis/run.log
+
+      - name: Triage Agent
+        id: triage
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+
+          PROMPT=$(cat <<EOF
+          You are a senior DevOps triage engineer.
+
+          Analyze this GitHub Actions log.
+
+          Produce:
+          - workflow name
+          - failed job
+          - failed step
+          - concise summary
+          - suspected root cause
+
+          Return markdown only.
+
+          $(cat analysis/run.log)
+          EOF
+          )
+
+          jq -n \
+             --arg prompt "$PROMPT" \
+             '{
+                 messages:[
+                   {
+                     role:"user",
+                     content:$prompt
+                   }
+                 ],
+                 model:"gpt-4o"
+             }' > body.json
+
+          gh api \
+            /ai/models/chat/completions \
+            --method POST \
+            --input body.json \
+            > response.json
+
+          jq -r \
+            '.choices[0].message.content' \
+            response.json > triage.md
+
+          echo "summary<<EOF" >> $GITHUB_OUTPUT
+          cat triage.md >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: triage-report
+          path: triage.md
+
+  classify:
+    name: Agent 2 - Classification
+    needs: triage
+    runs-on: ubuntu-latest
+
+    outputs:
+      category: ${{ steps.classify.outputs.category }}
+
+    steps:
+
+      - name: Classification Agent
+        id: classify
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+
+          cat > prompt.txt <<EOF
+          Categorize the failure.
+
+          Possible categories:
+
+          - Build
+          - Unit Test
+          - Integration Test
+          - Dependency
+          - Security Scan
+          - GitHub Actions
+          - OpenShift Deployment
+          - Kubernetes
+          - Container Registry
+          - Infrastructure
+          - Network
+          - Unknown
+
+          Investigation:
+
+          ${{ needs.triage.outputs.summary }}
+
+          Respond only with category name.
+          EOF
+
+          jq -n \
+            --rawfile prompt prompt.txt \
+            '{
+              messages:[
+                {
+                  role:"user",
+                  content:$prompt
+                }
+              ],
+              model:"gpt-4o"
+            }' > body.json
+
+          gh api \
+            /ai/models/chat/completions \
+            --method POST \
+            --input body.json \
+            > result.json
+
+          CATEGORY=$(jq -r '.choices[0].message.content' result.json)
+
+          echo "category=$CATEGORY" >> $GITHUB_OUTPUT
+
+          echo "$CATEGORY" > category.txt
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: failure-category
+          path: category.txt
+
+  remediation:
+    name: Agent 3 - Remediation
+    needs: [triage, classify]
+    runs-on: ubuntu-latest
+
+    outputs:
+      recommendations: ${{ steps.fix.outputs.report }}
+
+    steps:
+
+      - name: Fix Recommendation Agent
+        id: fix
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+
+          cat > fix_prompt.txt <<EOF
+          You are an experienced DevOps architect.
+
+          Investigation Summary:
+
+          ${{ needs.triage.outputs.summary }}
+
+          Failure Category:
+
+          ${{ needs.classify.outputs.category }}
+
+          Produce:
+
+          1. Root Cause
+          2. Confidence Score
+          3. Recommended Fixes
+          4. Preventive Controls
+          5. Example YAML Changes
+          6. Runbook Actions
+
+          Return markdown.
+          EOF
+
+          jq -n \
+            --rawfile prompt fix_prompt.txt \
+            '{
+               messages:[
+                 {
+                   role:"user",
+                   content:$prompt
+                 }
+               ],
+               model:"gpt-4o"
+             }' > body.json
+
+          gh api \
+             /ai/models/chat/completions \
+             --method POST \
+             --input body.json \
+             > response.json
+
+          jq -r \
+            '.choices[0].message.content' \
+            response.json > remediation.md
+
+          echo "report<<EOF" >> $GITHUB_OUTPUT
+          cat remediation.md >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: remediation-report
+          path: remediation.md
+
+  reporting:
+    name: Agent 4 - Reporting
+    needs: [triage, classify, remediation]
+    runs-on: ubuntu-latest
+
+    steps:
+
+      - name: Create Full Investigation Report
+        run: |
+
+          {
+            echo "# AI Incident Investigation"
+            echo
+            echo "## Triage"
+            echo
+            echo '${{ needs.triage.outputs.summary }}'
+            echo
+            echo "## Classification"
+            echo
+            echo '${{ needs.classify.outputs.category }}'
+            echo
+            echo "## Remediation"
+            echo
+            echo '${{ needs.remediation.outputs.recommendations }}'
+          } > report.md
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ai-investigation-report
+          path: report.md
+
+      - name: Create Issue
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+
+          gh issue create \
+            --title "AI Investigation - Failed Run #${{ github.event.workflow_run.id }}" \
+            --body-file report.md
