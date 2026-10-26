@@ -122,8 +122,9 @@ export const ClientSideTable = <T extends ZevaObject>({
     <div>
       {(title || headerContent || enableGlobalSearch || !hideResetButton) && (
         <div className="mb-6 flex items-center justify-between gap-4">
-          <div className="flex items-center gap-4">
+          <div className="flex items-end gap-4">
             {headerContent && <div>{headerContent}</div>}
+            {headerFilters}
             {enableGlobalSearch && (
               <div className="relative w-80">
                 <FontAwesomeIcon
@@ -139,7 +140,6 @@ export const ClientSideTable = <T extends ZevaObject>({
                 />
               </div>
             )}
-            {headerFilters}
           </div>
           {!hideResetButton && (
             <Button variant="secondary" size="small" onClick={handleReset}>
