@@ -5,30 +5,7 @@ import { ColumnDef, createColumnHelper } from "@tanstack/react-table";
 import { Table } from "@/app/lib/components";
 import { ReactNode, useMemo } from "react";
 import { getModelYearEnumsToStringsMap } from "@/app/lib/utils/enumMaps";
-import {
-  CreditApplicationStatus,
-  CreditApplicationSupplierStatus,
-} from "@/prisma/generated/enums";
-
-const governmentStatusLabels: Readonly<
-  Record<CreditApplicationStatus, string>
-> = {
-  [CreditApplicationStatus.DRAFT]: "Draft",
-  [CreditApplicationStatus.SUBMITTED]: "Submitted",
-  [CreditApplicationStatus.RETURNED_TO_ANALYST]: "Returned to Analyst",
-  [CreditApplicationStatus.RECOMMEND_APPROVAL]: "Recommended",
-  [CreditApplicationStatus.APPROVED]: "Issued",
-  [CreditApplicationStatus.REJECTED]: "Rejected",
-};
-
-const supplierStatusLabels: Readonly<
-  Record<CreditApplicationSupplierStatus, string>
-> = {
-  [CreditApplicationSupplierStatus.DRAFT]: "Draft",
-  [CreditApplicationSupplierStatus.SUBMITTED]: "Submitted",
-  [CreditApplicationSupplierStatus.APPROVED]: "Issued",
-  [CreditApplicationSupplierStatus.REJECTED]: "Rejected",
-};
+import { getCreditApplicationStatusLabel } from "../status";
 
 export const ApplicationsTable = (props: {
   applications: CreditApplicationSparseSerialized[];
@@ -56,20 +33,12 @@ export const ApplicationsTable = (props: {
         header: () => <span>Submission Date</span>,
       }),
       columnHelper.accessor(
-        (row) => {
-          if (!props.userIsGov) {
-            return supplierStatusLabels[
-              row.status as CreditApplicationSupplierStatus
-            ];
-          }
-          if (
-            row.status === CreditApplicationStatus.SUBMITTED &&
-            row.validated
-          ) {
-            return "Validated";
-          }
-          return governmentStatusLabels[row.status];
-        },
+        (row) =>
+          getCreditApplicationStatusLabel(
+            row.status,
+            props.userIsGov,
+            row.validated,
+          ),
         {
           id: "status",
           enableSorting: true,
@@ -130,7 +99,7 @@ export const ApplicationsTable = (props: {
       result.splice(1, 0, supplierColumn);
     }
     return result;
-  }, [columnHelper, props.applications, props.userIsGov]);
+  }, [columnHelper, props.applications, props.userIsGov, modelYearsMap]);
   return (
     <Table<CreditApplicationSparseSerialized>
       columns={columns}
