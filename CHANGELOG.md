@@ -4,6 +4,7 @@ All notable changes to this project are documented in this file.
 
 | Version | Date | Type | Change |
 | --- | --- | --- | --- |
+| [1.75.2](https://github.com/bcgov/zeva2/compare/v1.75.1...v1.75.2) | 2026-10-29 | 🐛 Fix | initial commit ([#734](https://github.com/bcgov/zeva2/issues/734)) ([b13c3d3](https://github.com/bcgov/zeva2/commit/b13c3d3cdffcd796375931c96f2bdce89058375e)) |
 | [1.75.1](https://github.com/bcgov/zeva2/compare/v1.75.0...v1.75.1) | 2026-10-26 | 🐛 Fix | search filter alignment ([#717](https://github.com/bcgov/zeva2/issues/717)) ([8c9cc05](https://github.com/bcgov/zeva2/commit/8c9cc05b5b6fc786f70dcf652628c41ca0d3bcb9)) |
 | [1.75.0](https://github.com/bcgov/zeva2/compare/v1.74.0...v1.75.0) | 2026-10-23 | ✨ Feature | 683 - supplier dashboard ([#716](https://github.com/bcgov/zeva2/issues/716)) ([2023876](https://github.com/bcgov/zeva2/commit/20238767b0d975ee4ca394d1fbad036d110bee97)) |
 | [1.74.0](https://github.com/bcgov/zeva2/compare/v1.73.0...v1.74.0) | 2026-10-22 | ✨ Feature | bceid dashboard and all records ([#715](https://github.com/bcgov/zeva2/issues/715)) ([7e9256a](https://github.com/bcgov/zeva2/commit/7e9256aeeb41bb126e53e2835e07aabdb861ec33)) |
