@@ -16,21 +16,25 @@ const Page = async (props: { params: Promise<{ id: string }> }) => {
     return null;
   }
   const { userIsGov, userRoles } = await getUserInfo();
-  let canCreateSupp = false;
-  let canCreateReassessment = false;
+  let actionComponent: JSX.Element | null = null;
   if (!userIsGov) {
-    canCreateSupp = true;
-  } else if (userIsGov && userRoles.includes(Role.ZEVA_IDIR_USER)) {
+    actionComponent = (
+      <SupplierAnalystCreateSuppReassessmentActions
+        type={"supp"}
+        myrId={myrId}
+      />
+    );
+  } else if (userRoles.includes(Role.ZEVA_IDIR_USER)) {
     try {
       await getDataForReassessment(myr.organizationId, myr.modelYear);
-      canCreateReassessment = true;
+      // if the above did not throw, means creating a reassessment is allowed:
+      actionComponent = (
+        <SupplierAnalystCreateSuppReassessmentActions
+          type={"reassessment"}
+          myrId={myrId}
+        />
+      );
     } catch {}
-  }
-  if (
-    (canCreateSupp && canCreateReassessment) ||
-    (!canCreateSupp && !canCreateReassessment)
-  ) {
-    return null;
   }
 
   let banner: JSX.Element | null = null;
@@ -97,10 +101,7 @@ const Page = async (props: { params: Promise<{ id: string }> }) => {
     <div className="flex-flex-col gap-4">
       {banner}
       <ReassessmentsAndSupplementaryReports myrId={myrId} />
-      <SupplierAnalystCreateSuppReassessmentActions
-        type={canCreateSupp ? "supp" : "reassessment"}
-        myrId={myrId}
-      />
+      {actionComponent}
     </div>
   );
 };
