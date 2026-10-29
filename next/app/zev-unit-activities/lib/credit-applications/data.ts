@@ -239,6 +239,7 @@ export const getCreditApplications = async (
         submissionTimestamp: true,
         transactionTimestamp: true,
         supplierStatus: true,
+        lastValidatedTimestamp: true,
         organization: {
           select: {
             name: true,

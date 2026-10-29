@@ -269,6 +269,7 @@ export const getSerializedApplications = (
       id: record.id,
       organization: record.organization.name,
       status: userIsGov ? record.status : record.supplierStatus,
+      validated: record.lastValidatedTimestamp !== null,
       submissionTimestamp: record.submissionTimestamp
         ? getIsoYmdString(record.submissionTimestamp)
         : undefined,

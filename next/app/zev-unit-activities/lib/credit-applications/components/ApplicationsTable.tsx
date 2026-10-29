@@ -4,10 +4,31 @@ import { CreditApplicationSparseSerialized } from "../constants";
 import { ColumnDef, createColumnHelper } from "@tanstack/react-table";
 import { Table } from "@/app/lib/components";
 import { ReactNode, useMemo } from "react";
+import { getModelYearEnumsToStringsMap } from "@/app/lib/utils/enumMaps";
 import {
-  getCreditApplicationStatusEnumsToStringsMap,
-  getModelYearEnumsToStringsMap,
-} from "@/app/lib/utils/enumMaps";
+  CreditApplicationStatus,
+  CreditApplicationSupplierStatus,
+} from "@/prisma/generated/enums";
+
+const governmentStatusLabels: Readonly<
+  Record<CreditApplicationStatus, string>
+> = {
+  [CreditApplicationStatus.DRAFT]: "Draft",
+  [CreditApplicationStatus.SUBMITTED]: "Submitted",
+  [CreditApplicationStatus.RETURNED_TO_ANALYST]: "Returned to Analyst",
+  [CreditApplicationStatus.RECOMMEND_APPROVAL]: "Recommended",
+  [CreditApplicationStatus.APPROVED]: "Issued",
+  [CreditApplicationStatus.REJECTED]: "Rejected",
+};
+
+const supplierStatusLabels: Readonly<
+  Record<CreditApplicationSupplierStatus, string>
+> = {
+  [CreditApplicationSupplierStatus.DRAFT]: "Draft",
+  [CreditApplicationSupplierStatus.SUBMITTED]: "Submitted",
+  [CreditApplicationSupplierStatus.APPROVED]: "Issued",
+  [CreditApplicationSupplierStatus.REJECTED]: "Rejected",
+};
 
 export const ApplicationsTable = (props: {
   applications: CreditApplicationSparseSerialized[];
@@ -16,9 +37,6 @@ export const ApplicationsTable = (props: {
   userIsGov: boolean;
   headerContent?: ReactNode;
 }) => {
-  const statusMap = useMemo(() => {
-    return getCreditApplicationStatusEnumsToStringsMap();
-  }, []);
   const modelYearsMap = useMemo(() => {
     return getModelYearEnumsToStringsMap();
   }, []);
@@ -37,12 +55,28 @@ export const ApplicationsTable = (props: {
         enableColumnFilter: true,
         header: () => <span>Submission Date</span>,
       }),
-      columnHelper.accessor((row) => statusMap[row.status], {
-        id: "status",
-        enableSorting: true,
-        enableColumnFilter: true,
-        header: () => <span>Status</span>,
-      }),
+      columnHelper.accessor(
+        (row) => {
+          if (!props.userIsGov) {
+            return supplierStatusLabels[
+              row.status as CreditApplicationSupplierStatus
+            ];
+          }
+          if (
+            row.status === CreditApplicationStatus.SUBMITTED &&
+            row.validated
+          ) {
+            return "Validated";
+          }
+          return governmentStatusLabels[row.status];
+        },
+        {
+          id: "status",
+          enableSorting: true,
+          enableColumnFilter: true,
+          header: () => <span>Status</span>,
+        },
+      ),
       columnHelper.accessor((row) => row.transactionTimestamp ?? "--", {
         id: "transactionTimestamp",
         enableSorting: true,
