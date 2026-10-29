@@ -1,5 +1,9 @@
 import Excel from "exceljs";
-import { ModelYear } from "@/prisma/generated/enums";
+import {
+  CreditApplicationStatus,
+  CreditApplicationSupplierStatus,
+  ModelYear,
+} from "@/prisma/generated/enums";
 import {
   CreditApplicationWhereInput,
   CreditApplicationOrderByWithRelationInput,
@@ -8,8 +12,6 @@ import {
 } from "@/prisma/generated/models";
 import {
   getMatchingTerms,
-  getStringsToCreditApplicationStatusEnumsMap,
-  getStringsToCreditApplicationSupplierStatusEnumsMap,
   getStringsToModelYearsEnumsMap,
 } from "@/app/lib/utils/enumMaps";
 import {
@@ -23,30 +25,52 @@ import { IcbcRecordsMap } from "./services";
 import { CreditApplicationCredit } from "./data";
 import { getIsoYmdString, validateDate } from "@/app/lib/utils/date";
 import { ValidationError } from "@/app/lib/utils/actionResponse";
+import { getCreditApplicationStatusLabel } from "./status";
+
+const getStatusFilterMap = (userIsGov: boolean) => {
+  const result: Record<string, CreditApplicationWhereInput> = {};
+  if (!userIsGov) {
+    for (const supplierStatus of Object.values(
+      CreditApplicationSupplierStatus,
+    )) {
+      const label = getCreditApplicationStatusLabel(
+        supplierStatus,
+        false,
+        false,
+      );
+      result[label] = { supplierStatus };
+    }
+    return result;
+  }
+  for (const status of Object.values(CreditApplicationStatus)) {
+    const label = getCreditApplicationStatusLabel(status, userIsGov, false);
+    if (status === CreditApplicationStatus.SUBMITTED) {
+      // Submitted and Validated share an enum but are distinct displayed states.
+      result[label] = { status, lastValidatedTimestamp: null };
+      result[getCreditApplicationStatusLabel(status, userIsGov, true)] = {
+        status,
+        lastValidatedTimestamp: { not: null },
+      };
+    } else {
+      result[label] = { status };
+    }
+  }
+  return result;
+};
 
 export const getWhereClause = (
   filters: Record<string, string>,
   userIsGov: boolean,
 ): Omit<CreditApplicationWhereInput, "NOT"> => {
   const result: Omit<CreditApplicationWhereInput, "NOT"> = {};
-  const statusMap = getStringsToCreditApplicationStatusEnumsMap();
-  const supplierStatusMap =
-    getStringsToCreditApplicationSupplierStatusEnumsMap();
+  const statusMap = getStatusFilterMap(userIsGov);
   const modelYearsMap = getStringsToModelYearsEnumsMap();
   Object.entries(filters).forEach(([key, rawValue]) => {
     const value = rawValue.trim();
     if (key === "id") {
       result[key] = parseInt(value, 10);
     } else if (key === "status") {
-      if (userIsGov) {
-        result[key] = {
-          in: getMatchingTerms(statusMap, value),
-        };
-      } else {
-        result["supplierStatus"] = {
-          in: getMatchingTerms(supplierStatusMap, value),
-        };
-      }
+      result.OR = getMatchingTerms(statusMap, value);
     } else if (
       key === "submissionTimestamp" ||
       key === "transactionTimestamp"
@@ -269,6 +293,7 @@ export const getSerializedApplications = (
       id: record.id,
       organization: record.organization.name,
       status: userIsGov ? record.status : record.supplierStatus,
+      validated: record.lastValidatedTimestamp !== null,
       submissionTimestamp: record.submissionTimestamp
         ? getIsoYmdString(record.submissionTimestamp)
         : undefined,

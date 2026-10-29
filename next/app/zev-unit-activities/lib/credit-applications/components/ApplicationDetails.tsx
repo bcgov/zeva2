@@ -1,9 +1,7 @@
 import { getIsoYmdString } from "@/app/lib/utils/date";
 import { CreditApplicationWithOrgAndAttachmentNamesAndInvalidatedRecordsCount } from "../data";
-import {
-  getCreditApplicationStatusEnumsToStringsMap,
-  getModelYearEnumsToStringsMap,
-} from "@/app/lib/utils/enumMaps";
+import { getModelYearEnumsToStringsMap } from "@/app/lib/utils/enumMaps";
+import { getCreditApplicationStatusLabel } from "../status";
 
 export const ApplicationDetails = async (props: {
   application: CreditApplicationWithOrgAndAttachmentNamesAndInvalidatedRecordsCount;
@@ -14,14 +12,18 @@ export const ApplicationDetails = async (props: {
     status = props.application.supplierStatus;
   }
   const modelYearsMap = getModelYearEnumsToStringsMap();
-  const statusMap = getCreditApplicationStatusEnumsToStringsMap();
+  const statusLabel = getCreditApplicationStatusLabel(
+    status,
+    props.userIsGov,
+    props.application.lastValidatedTimestamp !== null,
+  );
   return (
     <ul className="space-y-3">
       <li>Supplier: {props.application.organization.name}</li>
       <li>Makes: {props.application.makes}</li>
       <li>Service Address: {props.application.serviceAddress}</li>
       <li>Records Address: {props.application.recordsAddress}</li>
-      <li>Status: {statusMap[status]}</li>
+      <li>Status: {statusLabel}</li>
       {props.userIsGov && props.application.complianceYear && (
         <li>
           Compliance Year: {modelYearsMap[props.application.complianceYear]}

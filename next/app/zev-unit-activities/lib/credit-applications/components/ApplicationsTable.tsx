@@ -4,10 +4,8 @@ import { CreditApplicationSparseSerialized } from "../constants";
 import { ColumnDef, createColumnHelper } from "@tanstack/react-table";
 import { Table } from "@/app/lib/components";
 import { ReactNode, useMemo } from "react";
-import {
-  getCreditApplicationStatusEnumsToStringsMap,
-  getModelYearEnumsToStringsMap,
-} from "@/app/lib/utils/enumMaps";
+import { getModelYearEnumsToStringsMap } from "@/app/lib/utils/enumMaps";
+import { getCreditApplicationStatusLabel } from "../status";
 
 export const ApplicationsTable = (props: {
   applications: CreditApplicationSparseSerialized[];
@@ -16,9 +14,6 @@ export const ApplicationsTable = (props: {
   userIsGov: boolean;
   headerContent?: ReactNode;
 }) => {
-  const statusMap = useMemo(() => {
-    return getCreditApplicationStatusEnumsToStringsMap();
-  }, []);
   const modelYearsMap = useMemo(() => {
     return getModelYearEnumsToStringsMap();
   }, []);
@@ -37,12 +32,20 @@ export const ApplicationsTable = (props: {
         enableColumnFilter: true,
         header: () => <span>Submission Date</span>,
       }),
-      columnHelper.accessor((row) => statusMap[row.status], {
-        id: "status",
-        enableSorting: true,
-        enableColumnFilter: true,
-        header: () => <span>Status</span>,
-      }),
+      columnHelper.accessor(
+        (row) =>
+          getCreditApplicationStatusLabel(
+            row.status,
+            props.userIsGov,
+            row.validated,
+          ),
+        {
+          id: "status",
+          enableSorting: true,
+          enableColumnFilter: true,
+          header: () => <span>Status</span>,
+        },
+      ),
       columnHelper.accessor((row) => row.transactionTimestamp ?? "--", {
         id: "transactionTimestamp",
         enableSorting: true,
@@ -96,7 +99,7 @@ export const ApplicationsTable = (props: {
       result.splice(1, 0, supplierColumn);
     }
     return result;
-  }, [columnHelper, props.applications, props.userIsGov]);
+  }, [columnHelper, props.applications, props.userIsGov, modelYearsMap]);
   return (
     <Table<CreditApplicationSparseSerialized>
       columns={columns}

@@ -47,6 +47,7 @@ export type CreditApplicationSparse = Pick<
   | "modelYears"
   | "eligibleVinsCount"
   | "ineligibleVinsCount"
+  | "lastValidatedTimestamp"
   | "aCredits"
   | "bCredits"
 > & { organization: { name: string } };
@@ -55,6 +56,7 @@ export type CreditApplicationSparseSerialized = Omit<
   CreditApplicationSparse,
   | "submissionTimestamp"
   | "supplierStatus"
+  | "lastValidatedTimestamp"
   | "organization"
   | "transactionTimestamp"
   | "aCredits"
@@ -65,6 +67,7 @@ export type CreditApplicationSparseSerialized = Omit<
   transactionTimestamp?: string;
   aCredits?: string;
   bCredits?: string;
+  validated: boolean;
 };
 
 export type CreditApplicationRecordSparse = Omit<
