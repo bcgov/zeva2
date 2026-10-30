@@ -24,12 +24,12 @@ export const CalculatorPage = async () => {
     ]);
 
   return (
-    <div className="p-6">
-      <div className="mb-6">
-        <h2 className="text-2xl font-semibold text-primaryText mb-4">
+    <div className="m-6 p-6 border border-calculatorStroke rounded">
+      <div className="mb-4 pb-4 border-b border-calculatorStroke">
+        <h2 className="text-xl font-bold text-primaryText mb-3">
           Compliance Calculator
         </h2>
-        <div className="text-primaryText space-y-1">
+        <div className="text-sm text-primaryText">
           <p>
             The compliance calculator is to assist in estimating your compliance
             obligation. Enter your estimated total vehicle sales for a model

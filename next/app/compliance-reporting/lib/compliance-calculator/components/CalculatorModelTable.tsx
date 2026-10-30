@@ -119,7 +119,7 @@ export const CalculatorModelTable = ({
           const modelId = info.row.original.id;
           return (
             <input
-              className="w-32 px-3 py-2 border border-dividerMedium rounded text-left text-primaryText bg-white focus:outline-none focus:ring-2 focus:ring-primaryBlue focus:border-primaryBlue"
+              className="w-44 px-3 py-2 text-sm border border-calculatorStroke rounded-md text-left text-primaryText bg-white placeholder:text-placeholder focus:outline-none focus:ring-2 focus:ring-primaryBlue focus:border-primaryBlue"
               id={`input-sales-${modelId}`}
               name="input-sales"
               step="1"
@@ -167,7 +167,7 @@ export const CalculatorModelTable = ({
   return (
     <div className="mt-6">
       {!selectedModelYear ? (
-        <div className="bg-white border border-dividerMedium rounded shadow-level-1 p-8">
+        <div className="bg-lightGrey border border-calculatorStroke rounded p-8">
           <div className="text-center text-secondaryText">
             Please select a model year to view available models.
           </div>
@@ -181,26 +181,23 @@ export const CalculatorModelTable = ({
           initialPageSize={10}
           hideResetButton={true}
           headerContent={
-            <div className="p-4 border-b border-dividerMedium">
-              <h3 className="text-base font-semibold text-primaryText mb-3">
-                Estimated annual ZEVs supplied
-              </h3>
-            </div>
+            <h3 className="text-base font-bold text-primaryText">
+              Estimated annual ZEVs supplied
+            </h3>
           }
           customStyles={{
-            container:
-              "bg-white border border-dividerMedium rounded shadow-level-1",
+            container: "bg-white border border-calculatorStroke rounded",
             tableWrapper: "overflow-x-auto",
             table: "w-full border-collapse",
-            thead: "bg-lightGrey border-b border-dividerMedium",
-            theadTr: "bg-lightGrey border-b border-dividerMedium",
+            thead: "bg-white border-b border-calculatorStroke",
+            theadTr: "bg-white",
             theadTh:
-              "px-4 py-3 text-sm font-semibold text-primaryText align-top",
+              "px-4 py-4 text-left text-sm font-bold text-primaryText align-middle",
             tbody: "bg-white",
-            tbodyTr: "border-b border-dividerMedium hover:bg-lightGrey",
+            tbodyTr: "odd:bg-lightGrey border-b border-calculatorStroke",
             tbodyTd: "px-4 py-3",
             pagination:
-              "flex items-center justify-center bg-lightGrey w-full rounded p-2 border-t border-dividerMedium",
+              "flex items-center justify-center bg-lightGrey w-full rounded-b p-2",
           }}
         />
       )}
