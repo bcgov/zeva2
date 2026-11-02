@@ -137,7 +137,7 @@ export const CalculatorForm = ({
 
   return (
     <div className="space-y-6">
-      <div className="grid grid-cols-1 lg:grid-cols-10 gap-4">
+      <div className="grid grid-cols-1 lg:grid-cols-10 gap-4 items-stretch">
         <CalculatorInputs
           modelYearList={modelYearList}
           selectedYearOption={selectedYearOption}

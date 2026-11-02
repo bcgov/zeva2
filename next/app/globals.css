@@ -53,6 +53,7 @@
   --color-dividerDark: #353433;
   --color-overlayModal: #000000;
   --color-dashboardDivider: #d0d0d0;
+  --color-calculatorStroke: #929292;
 
   /* Design system shadow levels */
   --shadow-level-1: 0 1px 2px 0 rgba(0, 0, 0, 0.05);

@@ -41,14 +41,12 @@ export const CalculatorTotals = ({
   const hasEstimates = complianceNumbers.total !== "";
 
   return (
-    <div className="col-span-1 lg:col-span-4 bg-white border border-dividerMedium rounded shadow-level-1 p-6">
+    <div className="col-span-1 lg:col-span-4 bg-lightGrey border border-calculatorStroke rounded p-4">
       <div className="space-y-4">
         <div>
-          <h3 className="text-base font-semibold text-primaryText mb-2">
-            Estimated Compliance Ratio Reduction:
-          </h3>
-          <div className="text-right text-primaryText">
-            {hasEstimates ? complianceNumbers.total : "..."}
+          <div className="flex justify-between text-base font-bold text-primaryText">
+            <h3>Estimated Compliance Ratio Reduction:</h3>
+            <span>{hasEstimates ? complianceNumbers.total : "..."}</span>
           </div>
           {supplierSize === "large" && hasEstimates && (
             <div className="mt-2 space-y-1 text-sm text-secondaryText">
@@ -66,19 +64,19 @@ export const CalculatorTotals = ({
           )}
         </div>
 
-        <div className="border-t border-dividerMedium pt-4">
-          <h3 className="text-base font-semibold text-primaryText mb-2">
+        <div className="border-t border-calculatorStroke pt-4">
+          <h3 className="text-sm text-primaryText mb-3">
             Current credit balance:
           </h3>
-          <div className="space-y-1 text-sm text-primaryText">
+          <div className="space-y-3 text-sm text-primaryText">
             <div className="flex justify-between">
-              <span>Class A Credit Total:</span>
+              <span className="font-bold">Class A Credit Total:</span>
               <span className="text-right">
                 {formatNumeric(creditBalance.A)}
               </span>
             </div>
             <div className="flex justify-between">
-              <span>Class B Credit Total:</span>
+              <span className="font-bold">Class B Credit Total:</span>
               <span className="text-right">
                 {formatNumeric(creditBalance.B)}
               </span>
@@ -86,19 +84,19 @@ export const CalculatorTotals = ({
           </div>
         </div>
 
-        <div className="border-t border-dividerMedium pt-4">
-          <h3 className="text-base font-semibold text-primaryText mb-2">
+        <div className="border-t border-calculatorStroke pt-4">
+          <h3 className="text-sm text-primaryText mb-3">
             Estimated Annual ZEVs Supplied (from below):
           </h3>
-          <div className="space-y-1 text-sm text-primaryText">
+          <div className="space-y-3 text-sm text-primaryText">
             <div className="flex justify-between">
-              <span>Estimated Class A Credit Total:</span>
+              <span className="font-bold">Estimated Class A Credit Total:</span>
               <span className="text-right">
                 {formatNumeric(estimatedClassATotal)}
               </span>
             </div>
             <div className="flex justify-between">
-              <span>Estimated Class B Credit Total:</span>
+              <span className="font-bold">Estimated Class B Credit Total:</span>
               <span className="text-right">
                 {formatNumeric(estimatedClassBTotal)}
               </span>
