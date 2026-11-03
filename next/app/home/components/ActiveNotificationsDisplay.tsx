@@ -2,6 +2,8 @@
 
 import { NotificationMessageBanner } from "@/app/notifications/lib/components/NotificationMessageBanner";
 import { ActiveNotificationForSupplier } from "@/app/notifications/lib/constants";
+import { faChevronDown, faChevronUp } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { Fragment, useCallback, useEffect, useMemo, useState } from "react";
 
 export const ActiveNotificationsDisplay = (props: {
@@ -48,17 +50,19 @@ export const ActiveNotificationsDisplay = (props: {
         {toExpandOrToCollapse === "toCollapse" && (
           <button
             onClick={handleCollapse}
-            className="bg-transparent border-0 p-0 text-link underline cursor-pointer"
+            className="bg-transparent flex flex-row items-center gap-2 text-link cursor-pointer"
           >
-            Collapse Notifications
+            <span className="underline">Collapse Notifications</span>
+            <FontAwesomeIcon icon={faChevronUp} />
           </button>
         )}
         {toExpandOrToCollapse === "toExpand" && (
           <button
             onClick={handleExpand}
-            className="bg-transparent border-0 p-0 text-link underline cursor-pointer"
+            className="bg-transparent flex flex-row items-center gap-2 text-link cursor-pointer"
           >
-            View All Notifications
+            <span className="underline">View All Notifications</span>
+            <FontAwesomeIcon icon={faChevronDown} />
           </button>
         )}
       </div>

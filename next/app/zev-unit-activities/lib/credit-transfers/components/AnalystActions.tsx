@@ -75,15 +75,17 @@ export const AnalystActions = (props: {
     return null;
   }
   return (
-    <div className="space-y-2">
-      {error && <p className="text-red-600">{error}</p>}
+    <div className="flex flex-col gap-4">
       <CommentBox comment={comment} setComment={setComment} />
-      <Button variant="primary" onClick={() => showModal("recommendApprove")}>
-        Recommend Approval
-      </Button>
-      <Button variant="secondary" onClick={() => showModal("recommendReject")}>
-        Recommend Rejection
-      </Button>
+      {error && <p className="text-red-600">{error}</p>}
+      <div className="flex flex-row gap-4 justify-end items-center p-5 bg-lightGrey">
+        <Button variant="danger" onClick={() => showModal("recommendReject")}>
+          Recommend Rejection
+        </Button>
+        <Button variant="primary" onClick={() => showModal("recommendApprove")}>
+          Recommend Approval
+        </Button>
+      </div>
       {modal}
     </div>
   );

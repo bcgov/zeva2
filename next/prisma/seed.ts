@@ -1,8 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { prismaOld } from "@/lib/prismaOld";
-import { ModelYear, ZevClass, Notification } from "./generated/enums";
+import { ModelYear, ZevClass } from "./generated/enums";
 import { getStringsToModelYearsEnumsMap } from "@/app/lib/utils/enumMaps";
-import { isNotification } from "@/app/lib/utils/typeGuards";
 import { seedOrganizations } from "./seedProcesses/seedOrganizations";
 import { seedTransactions } from "./seedProcesses/seedTransactions";
 import { seedUsers } from "./seedProcesses/seedUsers";
@@ -10,7 +9,8 @@ import { seedVolumes } from "./seedProcesses/seedVolumes";
 import { seedVehicles } from "./seedProcesses/seedVehicles";
 import { seedLegacyAssessedMyrs } from "./seedProcesses/seedLegacyAssessedMyrs";
 import { seedEndingBalances } from "./seedProcesses/seedEndingBalances";
-import { seedLegacyVins } from "./seedProcesses/seedLegacyVins";
+import { seedReservedVins } from "./seedProcesses/seedReservedVins";
+import { seedLegacyVinRecords } from "./seedProcesses/seedLegacyVinRecords";
 
 // prismaOld to interact with old zeva db; prisma to interact with new zeva db
 const main = () => {
@@ -40,49 +40,7 @@ const main = () => {
       const mapOfOldOrgIdsToNewOrgIds = await seedOrganizations(tx);
 
       // seed user tables
-      const mapOfOldUserIdsToNewUserIds = await seedUsers(
-        tx,
-        mapOfOldOrgIdsToNewOrgIds,
-      );
-
-      // add notifications from old subscription table
-      const notificationsOld = await prismaOld.notification.findMany({
-        select: { id: true, notification_code: true },
-      });
-
-      const notifCodeById = notificationsOld.reduce<Record<number, string>>(
-        (acc, n) => {
-          acc[n.id] = n.notification_code;
-          return acc;
-        },
-        {},
-      );
-
-      const subsOld = await prismaOld.notification_subscription.findMany({
-        select: { user_profile_id: true, notification_id: true },
-      });
-
-      const grouped = subsOld.reduce<Record<number, string[]>>((acc, sub) => {
-        const code = notifCodeById[sub.notification_id];
-        if (!code) return acc;
-        acc[sub.user_profile_id] ??= [];
-        acc[sub.user_profile_id].push(code);
-        return acc;
-      }, {});
-
-      for (const [oldUserId, codes] of Object.entries(grouped)) {
-        const newUserId = mapOfOldUserIdsToNewUserIds[Number(oldUserId)];
-        if (!newUserId) continue;
-
-        const validNotifications = codes
-          .map((code) => code as Notification)
-          .filter((n) => isNotification(n));
-
-        await tx.user.update({
-          where: { id: newUserId },
-          data: { notifications: { set: validNotifications } },
-        });
-      }
+      await seedUsers(tx, mapOfOldOrgIdsToNewOrgIds);
 
       await seedTransactions(
         tx,
@@ -104,7 +62,7 @@ const main = () => {
         mapOfOldCreditClassIdsToZevClasses,
       );
 
-      await seedLegacyVins(tx);
+      await seedReservedVins(tx);
 
       await seedVolumes(
         tx,
@@ -113,6 +71,12 @@ const main = () => {
       );
 
       await seedLegacyAssessedMyrs(
+        tx,
+        mapOfModelYearIdsToModelYearEnum,
+        mapOfOldOrgIdsToNewOrgIds,
+      );
+
+      await seedLegacyVinRecords(
         tx,
         mapOfModelYearIdsToModelYearEnum,
         mapOfOldOrgIdsToNewOrgIds,

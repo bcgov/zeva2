@@ -82,42 +82,6 @@ export const getSupplierDetails = async (organizationId: number) => {
   };
 };
 
-export type VehicleStatistic = {
-  vehicleClass: VehicleClass;
-  zevClass: ZevClass;
-  make: string;
-  modelName: string;
-  modelYear: ModelYear;
-  zevType: ZevType;
-  range: number;
-  submittedCount: number;
-  issuedCount: number;
-};
-
-export const getVehicleStatistics = async (
-  organizationId: number,
-  modelYear: ModelYear,
-): Promise<VehicleStatistic[]> => {
-  return await prisma.vehicle.findMany({
-    where: {
-      organizationId,
-      modelYear,
-      status: VehicleStatus.VALIDATED,
-    },
-    select: {
-      vehicleClass: true,
-      zevClass: true,
-      make: true,
-      modelName: true,
-      modelYear: true,
-      zevType: true,
-      range: true,
-      submittedCount: true,
-      issuedCount: true,
-    },
-  });
-};
-
 export const getSupplierClassAndVolumes = async (
   organizationId: number,
   modelYear: ModelYear,

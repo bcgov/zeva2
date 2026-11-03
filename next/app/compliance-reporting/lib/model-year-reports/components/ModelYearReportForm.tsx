@@ -15,7 +15,7 @@ import {
   getMyrTemplateUrl,
   getSuppAttachmentsPutData,
   getSuppPutData,
-  retrieveVehicleStatistics,
+  getVinListPutData,
   saveReports,
   saveSupplementary,
 } from "../actions";
@@ -25,25 +25,26 @@ import {
   getNvValuesFromZevAndIceCounts,
   getWorkbook,
   validateForecastReport,
+  validateVinList,
 } from "../utilsClient";
 import { getFiles } from "@/app/lib/utils/download";
 import { Dropzone } from "@/app/lib/components/Dropzone";
-import { legacyModelYearsMap, ZevAndIceCounts } from "../constants";
+import {
+  legacyModelYearsMap,
+  VinListError,
+  ZevAndIceCounts,
+} from "../constants";
 import { Routes } from "@/app/lib/constants";
 import { Workbook } from "exceljs";
 import {
-  getVehicleStatsAsStrings,
   getZevAndIceCounts,
   getZevClassOrder,
   ParsedMyr,
   parseMyr,
-  VehicleStatString,
 } from "../utils";
 import { Attachment, AttachmentDownload } from "@/app/lib/constants/attachment";
-import { VehicleStatistic } from "../services";
 import { Adjustment, Adjustments } from "./Adjustments";
 import { isModelYear } from "@/app/lib/utils/typeGuards";
-import { VehicleStatsInput } from "./VehicleStatsInputs";
 import { SupplierData } from "../data";
 import { Makes } from "./Makes";
 import { ForecastReportSubmission } from "./ForecastReportSubmission";
@@ -53,13 +54,13 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faFileArrowUp } from "@fortawesome/free-solid-svg-icons";
 import { SupplierInformation } from "./SupplierInformation";
 import { PreviousVolumes } from "./PreviousVolumes";
+import { VinFileUpload } from "./VinFileUpload";
 
 type NewMyrProps = {
   type: "newMyr";
   modelYear: ModelYear;
   supplierData: SupplierData;
   prevVolumes: { modelYear: string; volume: string }[];
-  vehicleStatistics: VehicleStatistic[];
 };
 
 type SavedMyrProps = {
@@ -68,6 +69,7 @@ type SavedMyrProps = {
   myrId: number;
   modelYear: ModelYear;
   forecast: AttachmentDownload;
+  vinList: AttachmentDownload;
   myrUrl: string;
   attachments: AttachmentDownload[];
 };
@@ -77,7 +79,6 @@ type NonLegacyNewSuppProps = {
   myrId: number;
   modelYear: ModelYear;
   supplierData: SupplierData;
-  vehicleStatistics: VehicleStatistic[];
 };
 
 type NonLegacySavedSuppProps = {
@@ -86,6 +87,7 @@ type NonLegacySavedSuppProps = {
   supplementaryId: number;
   modelYear: ModelYear;
   url: string;
+  vinList: AttachmentDownload;
   attachments: AttachmentDownload[];
 };
 
@@ -99,6 +101,7 @@ type LegacySavedSuppProps = {
   supplementaryId: number;
   modelYear: ModelYear;
   url: string;
+  vinList: AttachmentDownload;
   attachments: AttachmentDownload[];
 };
 
@@ -125,7 +128,6 @@ export const ModelYearReportForm = (
     { modelYear: string; volume: string }[]
   >([]);
   const [makes, setMakes] = useState<string[]>([]);
-  const [vehicleStats, setVehicleStats] = useState<VehicleStatString[]>([]);
   const [zevAndIceCounts, setZevAndIceCounts] = useState<ZevAndIceCounts>({});
   const [zevClassOrder, setZevClassOrder] = useState<ZevClass[]>([
     ZevClass.UNSPECIFIED,
@@ -137,7 +139,9 @@ export const ModelYearReportForm = (
     Adjustment[]
   >([]);
   const [forecasts, setForecasts] = useState<File[]>([]);
+  const [vinLists, setVinLists] = useState<File[]>([]);
   const [error, setError] = useState<string>("");
+  const [vinListError, setVinListError] = useState<VinListError | null>(null);
   const [attachments, setAttachments] = useState<File[]>([]);
 
   useEffect(() => {
@@ -152,7 +156,6 @@ export const ModelYearReportForm = (
           props.supplierData.mostRecentSupplierClass ?? "",
         );
         setPrevVolumes(props.prevVolumes);
-        setVehicleStats(getVehicleStatsAsStrings(props.vehicleStatistics));
         break;
       case "savedMyr":
         setMyrId(props.myrId);
@@ -166,7 +169,6 @@ export const ModelYearReportForm = (
         setMakes(props.supplierData.makes);
         setRecordsAddress(props.supplierData.recordsAddress);
         setServiceAddress(props.supplierData.serviceAddress);
-        setVehicleStats(getVehicleStatsAsStrings(props.vehicleStatistics));
         break;
       case "nonLegacySavedSupp":
         setMyrId(props.myrId);
@@ -198,35 +200,42 @@ export const ModelYearReportForm = (
           const files = await getFiles([
             { fileName: "_", url: props.myrUrl },
             props.forecast,
+            props.vinList,
           ]);
-          if (files.length === 2) {
+          if (files.length === 3) {
             const myr = files[0];
             const forecast = files[1];
+            const vinList = files[2];
             const myrWorkbook = await getWorkbook(myr.data);
             const parsedMyr = parseMyr(myrWorkbook);
             const forecastFile = new File([forecast.data], forecast.fileName);
+            const vinListFile = new File([vinList.data], vinList.fileName);
             report = parsedMyr;
             setForecasts([forecastFile]);
+            setVinLists([vinListFile]);
           }
         } else {
-          const files = await getFiles([{ fileName: "_", url: props.url }]);
-          if (files.length === 1) {
+          const files = await getFiles([
+            { fileName: "_", url: props.url },
+            props.vinList,
+          ]);
+          if (files.length === 2) {
             const supp = files[0];
+            const vinList = files[1];
             const suppWorkbook = await getWorkbook(supp.data);
             const parsedSupp = parseMyr(suppWorkbook);
+            const vinListFile = new File([vinList.data], vinList.fileName);
             report = parsedSupp;
+            setVinLists([vinListFile]);
           }
         }
         if (report) {
           const savedDetails = report.supplierDetails;
-          const savedPrevVolumes = report.previousVolumes;
-          const savedVehicleStats = report.vehicleStatistics;
           setLegalName(savedDetails.legalName);
           setMakes(savedDetails.makes);
           setRecordsAddress(savedDetails.recordsAddress);
           setServiceAddress(savedDetails.serviceAddress);
-          setPrevVolumes(savedPrevVolumes);
-          setVehicleStats(savedVehicleStats);
+          setPrevVolumes(report.previousVolumes);
           setSuggestedAdjustments(report.suggestedAdjustments);
           setZevAndIceCounts(getZevAndIceCounts(report.zevAndIceCounts));
           setZevClassOrder(getZevClassOrder(savedDetails.zevClassOrdering));
@@ -246,20 +255,6 @@ export const ModelYearReportForm = (
       loadAttachments();
     }
   }, []);
-
-  useEffect(() => {
-    if (props.type === "legacyNewSupp") {
-      if (modelYear) {
-        startTransition(async () => {
-          const response = await retrieveVehicleStatistics(modelYear);
-          const vehicleStats = getVehicleStatsAsStrings(response.data);
-          setVehicleStats(vehicleStats);
-        });
-      } else {
-        setVehicleStats([]);
-      }
-    }
-  }, [props.type, modelYear]);
 
   const handleZevAndIceCountsChange = useCallback(
     (vc: VehicleClass, type: "zev" | "ice", value: string) => {
@@ -318,7 +313,6 @@ export const ModelYearReportForm = (
       makes,
       recordsAddress,
       serviceAddress,
-      vehicleStats,
       adjustmentsPayload,
     );
     return workbook;
@@ -328,7 +322,6 @@ export const ModelYearReportForm = (
     makes,
     recordsAddress,
     serviceAddress,
-    vehicleStats,
     zevAndIceCounts,
     zevClassOrder,
     suggestedAdjustments,
@@ -339,6 +332,16 @@ export const ModelYearReportForm = (
       if (!modelYear) {
         throw new Error("You must select a Model Year!");
       }
+      if (vinLists.length !== 1) {
+        throw new Error("Exactly 1 VIN List expected!");
+      }
+      const vinListBuf = await vinLists[0].arrayBuffer();
+      const vinListWorkbook = await getWorkbook(vinListBuf);
+      validateVinList(vinListWorkbook);
+      const vinListPutData = await getVinListPutData();
+      await axios.put(vinListPutData.url, vinListBuf, {
+        headers: { "if-none-match": "*" },
+      });
       const attachmentsToSave: Attachment[] = [];
       const numberOfAttachments = attachments.length;
       if (numberOfAttachments > 0) {
@@ -396,6 +399,8 @@ export const ModelYearReportForm = (
             putData[0].objectName,
             putData[1].objectName,
             forecasts[0].name,
+            vinListPutData.objectName,
+            vinLists[0].name,
             attachmentsToSave,
           );
           break;
@@ -408,6 +413,8 @@ export const ModelYearReportForm = (
           response = await createSupplementary(
             modelYear,
             objectName,
+            vinListPutData.objectName,
+            vinLists[0].name,
             attachmentsToSave,
           );
           break;
@@ -421,6 +428,8 @@ export const ModelYearReportForm = (
             response = await saveSupplementary(
               supplementaryId,
               objectName,
+              vinListPutData.objectName,
+              vinLists[0].name,
               attachmentsToSave,
             );
           }
@@ -466,17 +475,29 @@ export const ModelYearReportForm = (
         }
       }
     },
-    [props.type, myrId, supplementaryId, modelYear, forecasts, attachments],
+    [
+      props.type,
+      myrId,
+      supplementaryId,
+      modelYear,
+      forecasts,
+      vinLists,
+      attachments,
+    ],
   );
 
   const handleGenerateAndSaveReport = useCallback(() => {
     setError("");
+    setVinListError(null);
     startTransition(async () => {
       try {
         const report = await generateReport();
         await saveReport(report);
       } catch (e) {
-        if (e instanceof Error) {
+        if (e instanceof VinListError) {
+          setVinListError(e);
+          setError("VIN List Error! Please see the VIN list section above.");
+        } else if (e instanceof Error) {
           setError(e.message);
         }
       }
@@ -500,7 +521,7 @@ export const ModelYearReportForm = (
         />
       )}
       {props.type !== "newMyr" && props.type !== "savedMyr" && (
-        <div className="flex flex-col gap-2">
+        <div className="flex flex-col gap-4">
           <TextInput
             label="Legal Name"
             value={legalName ?? ""}
@@ -519,26 +540,6 @@ export const ModelYearReportForm = (
             onChange={setServiceAddress}
             disabled={isPending}
           />
-          <VehicleStatsInput
-            stats={vehicleStats}
-            setStats={setVehicleStats}
-            disabled={isPending}
-          />
-          <Adjustments
-            type="myr"
-            adjustments={suggestedAdjustments}
-            setAdjustments={setSuggestedAdjustments}
-            disabled={isPending}
-          />
-          <div className="flex flex-col gap-2">
-            <span>Upload supporting documents here (optional; max 10):</span>
-            <Dropzone
-              files={attachments}
-              setFiles={setAttachments}
-              disabled={isPending}
-              maxNumberOfFiles={10}
-            />
-          </div>
         </div>
       )}
       {(props.type === "newMyr" || props.type === "savedMyr") && modelYear && (
@@ -562,6 +563,16 @@ export const ModelYearReportForm = (
         disabled={isPending}
         supplierName={legalName}
       />
+      {modelYear && (
+        <VinFileUpload
+          modelYear={modelYear}
+          vinLists={vinLists}
+          setVinLists={setVinLists}
+          disabled={isPending}
+          vinListError={vinListError}
+          setVinListError={setVinListError}
+        />
+      )}
       {(props.type === "newMyr" || props.type === "savedMyr") && modelYear && (
         <ForecastReportSubmission
           modelYear={modelYear}
@@ -586,6 +597,25 @@ export const ModelYearReportForm = (
           disabled={isPending}
           showBalance={props.type === "newMyr" || props.type === "savedMyr"}
         />
+      )}
+      {props.type !== "newMyr" && props.type !== "savedMyr" && (
+        <div className="flex flex-col gap-4">
+          <Adjustments
+            type="myr"
+            adjustments={suggestedAdjustments}
+            setAdjustments={setSuggestedAdjustments}
+            disabled={isPending}
+          />
+          <div className="flex flex-col gap-2">
+            <span>Upload supporting documents here (optional; max 10):</span>
+            <Dropzone
+              files={attachments}
+              setFiles={setAttachments}
+              disabled={isPending}
+              maxNumberOfFiles={10}
+            />
+          </div>
+        </div>
       )}
       <div className="flex flex-row p-5 bg-lightGrey justify-between">
         <span></span>

@@ -7,11 +7,9 @@ import {
   getActivityFeedPenaltyCreditRecords,
   getActivityFeedZevModelRecords,
 } from "../lib/services";
-import { Breadcrumbs } from "@/app/lib/components";
 import { AllRecordsTabsGov } from "../components/AllRecordsTabsGov";
 import { ActivityFeedTable } from "../components/ActivityFeedTable";
 import { getDateRangeOptions } from "../lib/utilsServer";
-import { Routes } from "@/app/lib/constants";
 import { Role } from "@/prisma/generated/enums";
 
 const Page = async () => {
@@ -43,12 +41,6 @@ const Page = async () => {
 
   return (
     <div className="flex flex-col gap-6">
-      <Breadcrumbs
-        items={[
-          { label: "Home", href: Routes.Home },
-          { label: "Activity Feed" },
-        ]}
-      />
       <AllRecordsTabsGov isDirector={userRoles.includes(Role.DIRECTOR)} />
       <div className="flex flex-col gap-5 border border-dividerMedium rounded">
         <div className="flex flex-col gap-2 bg-disabledSurface px-5 py-4">

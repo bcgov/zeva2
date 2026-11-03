@@ -77,6 +77,10 @@ export const EditPage = async (props: { id: string }) => {
           fileName: myr.forecastReportFileName,
           url: await getPresignedGetObjectUrl(myr.forecastReportObjectName),
         }}
+        vinList={{
+          fileName: myr.vinListFileName,
+          url: await getPresignedGetObjectUrl(myr.vinListObjectName),
+        }}
         attachments={attachments}
       />
     </div>

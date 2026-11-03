@@ -22,6 +22,9 @@ import {
   divisors,
   interiorVolumes,
   IsCompliant,
+  VinListError,
+  VinListRecord,
+  VinListTemplate,
   ZevAndIceCounts,
 } from "./constants";
 import { Adjustment } from "./components/Adjustments";
@@ -33,7 +36,6 @@ import {
   getMyrSheets,
   getNextThreeModelYears,
   MyrHelpingMaps,
-  VehicleStatString,
 } from "./utils";
 import { ZevUnitRecord } from "@/lib/utils/zevUnit";
 import {
@@ -41,8 +43,14 @@ import {
   getStringsToModelYearsEnumsMap,
   getStringsToVehicleClassEnumsMap,
   getStringsToZevClassEnumsMap,
+  getVehicleClassEnumsToStringsMap,
+  getZevClassEnumsToStringsMap,
 } from "@/app/lib/utils/enumMaps";
-import { isVehicleClass } from "@/app/lib/utils/typeGuards";
+import {
+  isVehicleClass,
+  isZevClass,
+  isZevType,
+} from "@/app/lib/utils/typeGuards";
 
 export const getNvValuesFromZevAndIceCounts = (
   zevAndIceCounts: ZevAndIceCounts,
@@ -108,7 +116,6 @@ export const generateMyr = async (
   makes: string[],
   recordsAddress: string,
   serviceAddress: string,
-  vehicleStatistics: VehicleStatString[],
   suggestedAdjustments: AdjustmentPayload[],
 ) => {
   const workbook = new Excel.Workbook();
@@ -130,7 +137,6 @@ export const generateMyr = async (
     myrData.volumes,
     helpingMaps,
   );
-  writeVehicleStatistics(sheets.vehicleStatisticsSheet, vehicleStatistics);
   writeComplianceReductions(
     sheets.complianceReductionsSheet,
     myrData.complianceReductions,
@@ -223,25 +229,6 @@ const writePreviousVolumes = (
       helpingMaps.modelYearsMap[volume[0]],
       helpingMaps.vehicleClassesMap[volume[1]],
       volume[2],
-    ]);
-  }
-};
-
-const writeVehicleStatistics = (
-  sheet: Excel.Worksheet,
-  vehicleStatistics: VehicleStatString[],
-) => {
-  for (const vehicle of vehicleStatistics) {
-    sheet.addRow([
-      vehicle.vehicleClass,
-      vehicle.zevClass,
-      vehicle.make,
-      vehicle.modelName,
-      vehicle.modelYear,
-      vehicle.zevType,
-      vehicle.range,
-      vehicle.submittedCount,
-      vehicle.issuedCount,
     ]);
   }
 };
@@ -611,6 +598,138 @@ export const validateForecastReport = (
     if (!value || Number.isNaN(Number.parseInt(value, 10))) {
       throw new Error(
         `Missing or invalid value detected in the Non-ZEV Forecast sheet!`,
+      );
+    }
+  }
+};
+
+export const populateVinListTemplate = async (
+  template: Excel.Buffer,
+  records: VinListRecord[],
+) => {
+  const workbook = await getWorkbook(template);
+  const recordsSheet = workbook.getWorksheet(
+    VinListTemplate.VinRecordsSheetName,
+  );
+  if (recordsSheet) {
+    const encounteredVins = new Set<string>();
+    const vehicleClassMap = getVehicleClassEnumsToStringsMap();
+    const zevClassMap = getZevClassEnumsToStringsMap();
+    for (const record of records) {
+      const vin = record.vin.trim().toUpperCase();
+      if (!encounteredVins.has(vin)) {
+        recordsSheet.addRow([
+          vin,
+          vehicleClassMap[record.vehicleClass],
+          zevClassMap[record.zevClass],
+          record.make,
+          record.modelName,
+          record.zevType,
+          record.range,
+        ]);
+        encounteredVins.add(vin);
+      }
+    }
+  }
+  return workbook;
+};
+
+export const validateVinList = (workbook: Workbook) => {
+  const sheet = workbook.getWorksheet(VinListTemplate.VinRecordsSheetName);
+  if (!sheet) {
+    throw new VinListError("", "general", null, 0, 0);
+  }
+  const vehicleClassMap = getStringsToVehicleClassEnumsMap();
+  const zevClassMap = getStringsToZevClassEnumsMap();
+  const encounteredVins = new Set<string>();
+  let errorsEncountered = false;
+  let numberOfRecords = 0;
+  let numberOfValidRecords = 0;
+  let rowIndex = 2;
+  while (true) {
+    const row = sheet.getRow(rowIndex);
+    const vin = row.getCell(1).toString().trim();
+    const vehicleClass = row.getCell(2).toString().trim();
+    const zevClass = row.getCell(3).toString().trim();
+    const make = row.getCell(4).toString().trim();
+    const modelName = row.getCell(5).toString().trim();
+    const zevType = row.getCell(6).toString().trim();
+    const range = row.getCell(7).toString().trim();
+    if (
+      !vin &&
+      !vehicleClass &&
+      !zevClass &&
+      !make &&
+      !modelName &&
+      !zevType &&
+      !range
+    ) {
+      break;
+    }
+    numberOfRecords = numberOfRecords + 1;
+    let errors: string[] = [];
+    if (
+      !vin ||
+      !vehicleClass ||
+      !zevClass ||
+      !make ||
+      !modelName ||
+      !zevType ||
+      !range
+    ) {
+      errors.push("Missing value");
+    }
+    if (vin && vin.length !== 17) {
+      errors.push("VIN should be exactly 17 characters");
+    }
+    if (vin && encounteredVins.has(vin)) {
+      errors.push("VIN encountered above");
+    }
+    if (!vehicleClassMap[vehicleClass]) {
+      errors.push("Invalid Vehicle Class");
+    }
+    if (!zevClassMap[zevClass]) {
+      errors.push("Invalid ZEV Class");
+    }
+    if (!isZevType(zevType)) {
+      errors.push("Invalid ZEV Type");
+    }
+    try {
+      const rangeDec = new Decimal(range);
+      if (!rangeDec.isInteger()) {
+        errors.push("Range must be an integer");
+      }
+    } catch (e) {
+      errors.push("Range must be an integer");
+    }
+    if (errors.length === 0) {
+      numberOfValidRecords = numberOfValidRecords + 1;
+      row.getCell(8).value = "";
+    } else {
+      errorsEncountered = true;
+      row.getCell(8).value = errors.join("; ");
+    }
+    if (vin) {
+      encounteredVins.add(vin);
+    }
+    rowIndex = rowIndex + 1;
+  }
+  if (errorsEncountered) {
+    if (numberOfValidRecords === 0) {
+      throw new VinListError(
+        "",
+        "no-valid-records",
+        workbook,
+        numberOfRecords,
+        numberOfValidRecords,
+      );
+    } else {
+      throw new VinListError(
+        "",
+        "partial",
+        workbook,
+        numberOfRecords,
+        numberOfValidRecords,
       );
     }
   }

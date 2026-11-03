@@ -21,6 +21,7 @@ export enum Directory {
   SupplementaryReassessment = "supplementaryReassessment",
   Templates = "templates",
   VehicleAttachments = "vehicleAttachments",
+  VinLists = "vinLists",
 }
 
 export const getClient = () => {

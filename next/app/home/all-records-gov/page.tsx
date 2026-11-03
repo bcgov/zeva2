@@ -1,9 +1,7 @@
 import { getUserInfo } from "@/auth";
-import { Breadcrumbs } from "@/app/lib/components";
 import { AllRecordsTabsGov } from "../components/AllRecordsTabsGov";
 import { AllRecordsTableGov } from "../components/AllRecordsTableGov";
 import { getDateRangeOptions } from "../lib/utilsServer";
-import { Routes } from "@/app/lib/constants";
 import { isAllRecordTypeGov } from "../lib/utils";
 import {
   getAllCaRecordsGov,
@@ -53,12 +51,6 @@ const Page = async (props: {
 
   return (
     <div className="flex flex-col gap-6">
-      <Breadcrumbs
-        items={[
-          { label: "Home", href: Routes.Home },
-          { label: viewData.title },
-        ]}
-      />
       <AllRecordsTabsGov isDirector={userRoles.includes(Role.DIRECTOR)} />
       <div className="flex flex-col gap-5 border border-dividerMedium rounded">
         <div className="flex flex-col gap-2 bg-disabledSurface px-5 py-4">

@@ -12,6 +12,7 @@ import {
 } from "../actions";
 import { Modal, ModalType } from "@/app/lib/components/Modal";
 import { CommentBox } from "@/app/lib/components/CommentBox";
+import { Routes } from "@/app/lib/constants";
 
 export const DirectorActions = (props: {
   id: number;
@@ -39,7 +40,11 @@ export const DirectorActions = (props: {
           if (response.responseType === "error") {
             throw new Error(response.message);
           }
-          router.refresh();
+          if (status === CreditTransferStatus.RETURNED_TO_ANALYST) {
+            router.push(Routes.CreditTransfers);
+          } else {
+            router.refresh();
+          }
         }
       } catch (e) {
         if (e instanceof Error) {
@@ -86,26 +91,28 @@ export const DirectorActions = (props: {
     return null;
   }
   return (
-    <div className="space-y-2">
-      {error && <p className="text-red-600">{error}</p>}
+    <div className="flex flex-col gap-4">
       <CommentBox
         comment={comment}
         setComment={setComment}
         warningSubSentence="approve or reject the transfer"
       />
-      <Button variant="secondary" onClick={() => showModal("return")}>
-        Return to Analyst
-      </Button>
-      {props.status === CreditTransferStatus.RECOMMEND_APPROVAL_GOV && (
-        <Button variant="primary" onClick={() => showModal("approve")}>
-          Approve
+      {error && <p className="text-red-600">{error}</p>}
+      <div className="flex flex-row justify-between items-center p-5 bg-lightGrey">
+        <Button variant="secondary" onClick={() => showModal("return")}>
+          Return to Analyst
         </Button>
-      )}
-      {props.status === CreditTransferStatus.RECOMMEND_REJECTION_GOV && (
-        <Button variant="danger" onClick={() => showModal("reject")}>
-          Reject
-        </Button>
-      )}
+        {props.status === CreditTransferStatus.RECOMMEND_APPROVAL_GOV && (
+          <Button variant="primary" onClick={() => showModal("approve")}>
+            Approve
+          </Button>
+        )}
+        {props.status === CreditTransferStatus.RECOMMEND_REJECTION_GOV && (
+          <Button variant="danger" onClick={() => showModal("reject")}>
+            Reject
+          </Button>
+        )}
+      </div>
       {modal}
     </div>
   );

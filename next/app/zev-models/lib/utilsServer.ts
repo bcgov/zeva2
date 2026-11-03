@@ -57,8 +57,6 @@ export const getWhereClause = (filters: {
       result[key] = {
         in: getMatchingTerms(ZevType, value),
       };
-    } else if (key === "submittedCount" || key === "issuedCount") {
-      result[key] = Number.parseInt(value, 10);
     }
   }
   return result;
@@ -82,9 +80,7 @@ export const getOrderByClause = (sorts: {
         key === "range" ||
         key === "zevClass" ||
         key === "modelYear" ||
-        key === "zevType" ||
-        key === "submittedCount" ||
-        key === "issuedCount"
+        key === "zevType"
       ) {
         orderBy[key] = value;
       } else if (key === "organization") {

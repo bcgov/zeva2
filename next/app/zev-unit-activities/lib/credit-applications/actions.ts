@@ -439,7 +439,6 @@ export const supplierSubmit = async (
       return getDataActionResponse(allErrors);
     }
 
-    const vehicleCounts = await getVehicleCounts(creditApplicationId, "all");
     await prisma.$transaction(async (tx) => {
       await tx.creditApplication.update({
         where: {
@@ -463,18 +462,6 @@ export const supplierSubmit = async (
         comment,
         tx,
       );
-      for (const [vehicleId, count] of vehicleCounts) {
-        await tx.vehicle.update({
-          where: {
-            id: vehicleId,
-          },
-          data: {
-            submittedCount: {
-              increment: count,
-            },
-          },
-        });
-      }
       await addJobToEmailQueue({
         historyId,
         notificationType: Notification.CREDIT_APPLICATION,
@@ -870,15 +857,6 @@ export const analystReject = async (
     },
     [],
   );
-  let counts;
-  try {
-    counts = await getVehicleCounts(creditApplicationId, "all");
-  } catch (e) {
-    if (e instanceof Error) {
-      return getErrorActionResponse(e.message);
-    }
-    throw e;
-  }
   await prisma.$transaction(async (tx) => {
     await updateStatus(
       creditApplicationId,
@@ -914,18 +892,6 @@ export const analystReject = async (
       comment,
       tx,
     );
-    for (const [vehicleId, count] of counts) {
-      await tx.vehicle.update({
-        where: {
-          id: vehicleId,
-        },
-        data: {
-          submittedCount: {
-            decrement: count,
-          },
-        },
-      });
-    }
     await addJobToEmailQueue({
       historyId,
       notificationType: Notification.CREDIT_APPLICATION,
@@ -1033,17 +999,6 @@ export const directorApprove = async (
       numberOfUnits: record.numberOfUnits,
     });
   }
-  let allCounts;
-  let validatedCounts;
-  try {
-    allCounts = await getVehicleCounts(creditApplicationId, "all");
-    validatedCounts = await getVehicleCounts(creditApplicationId, "validated");
-  } catch (e) {
-    if (e instanceof Error) {
-      return getErrorActionResponse(e.message);
-    }
-    throw e;
-  }
   await prisma.$transaction(async (tx) => {
     await tx.creditApplication.update({
       where: {
@@ -1056,30 +1011,6 @@ export const directorApprove = async (
       },
     });
     await unreserveVins(invalidVins, tx);
-    for (const [vehicleId, count] of allCounts) {
-      await tx.vehicle.update({
-        where: {
-          id: vehicleId,
-        },
-        data: {
-          submittedCount: {
-            decrement: count,
-          },
-        },
-      });
-    }
-    for (const [vehicleId, count] of validatedCounts) {
-      await tx.vehicle.update({
-        where: {
-          id: vehicleId,
-        },
-        data: {
-          issuedCount: {
-            increment: count,
-          },
-        },
-      });
-    }
     await tx.zevUnitTransaction.createMany({
       data: transactionsToCreate,
     });
