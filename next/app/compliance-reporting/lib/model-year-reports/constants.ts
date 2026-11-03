@@ -217,3 +217,15 @@ export class VinListError extends Error {
     this.numberOfValidRecords = numberOfValidRecords;
   }
 }
+
+export type ParsedVinListRecord = {
+  vin: string;
+  vehicleClass: string;
+  zevClass: string;
+  make: string;
+  modelName: string;
+  zevType: string;
+  range: string;
+};
+
+export type ParsedVinListRecordWithId = ParsedVinListRecord & { id: number };

@@ -1636,3 +1636,79 @@ export const assessSupplementary = async (
   });
   return getSuccessActionResponse();
 };
+
+export const getVinListUrl = async (
+  type: "myr" | "supp",
+  id: number,
+): Promise<DataOrErrorActionResponse<string>> => {
+  const { userIsGov, userOrgId } = await getUserInfo();
+  let objectName: string | null = null;
+  if (type === "myr" && userIsGov) {
+    const myr = await prisma.modelYearReport.findUnique({
+      where: {
+        id,
+        status: {
+          notIn: [
+            ModelYearReportStatus.DRAFT,
+            ModelYearReportStatus.RETURNED_TO_SUPPLIER,
+          ],
+        },
+      },
+      select: {
+        vinListObjectName: true,
+      },
+    });
+    if (myr) {
+      objectName = myr.vinListObjectName;
+    }
+  } else if (type === "myr" && !userIsGov) {
+    const myr = await prisma.modelYearReport.findUnique({
+      where: {
+        id,
+        organizationId: userOrgId,
+      },
+      select: {
+        vinListObjectName: true,
+      },
+    });
+    if (myr) {
+      objectName = myr.vinListObjectName;
+    }
+  } else if (type === "supp" && userIsGov) {
+    const supp = await prisma.supplementaryReport.findUnique({
+      where: {
+        id,
+        status: {
+          notIn: [
+            ModelYearReportStatus.DRAFT,
+            ModelYearReportStatus.RETURNED_TO_SUPPLIER,
+          ],
+        },
+      },
+      select: {
+        vinListObjectName: true,
+      },
+    });
+    if (supp) {
+      objectName = supp.vinListObjectName;
+    }
+  } else if (type === "supp" && !userIsGov) {
+    const supp = await prisma.supplementaryReport.findUnique({
+      where: {
+        id,
+        organizationId: userOrgId,
+      },
+      select: {
+        vinListObjectName: true,
+      },
+    });
+    if (supp) {
+      objectName = supp.vinListObjectName;
+    }
+  }
+  if (!objectName) {
+    return getErrorActionResponse("VIN List not found!");
+  }
+  const url = await getPresignedGetObjectUrl(objectName);
+  return getDataActionResponse(url);
+};

@@ -268,7 +268,7 @@ export const ClientSideTable = <T extends ZevaObject>({
             Previous Page
           </button>
 
-          <div className="flex items-center gap-2">
+          <div className="min-w-0 overflow-x-auto flex items-center gap-2">
             {Array.from({ length: table.getPageCount() }, (_, i) => i + 1).map(
               (page) => {
                 const isCurrentPage =

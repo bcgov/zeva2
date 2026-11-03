@@ -22,6 +22,7 @@ import {
   divisors,
   interiorVolumes,
   IsCompliant,
+  ParsedVinListRecord,
   VinListError,
   VinListRecord,
   VinListTemplate,
@@ -733,4 +734,47 @@ export const validateVinList = (workbook: Workbook) => {
       );
     }
   }
+};
+
+export const parseVinList = async (vinList: Excel.Buffer) => {
+  const result: ParsedVinListRecord[] = [];
+  const workbook = new Excel.Workbook();
+  await workbook.xlsx.load(vinList);
+  const sheet = workbook.getWorksheet(VinListTemplate.VinRecordsSheetName);
+  if (!sheet) {
+    return result;
+  }
+  let rowIndex = 2;
+  while (true) {
+    const row = sheet.getRow(rowIndex);
+    const vin = row.getCell(1).toString().trim();
+    const vehicleClass = row.getCell(2).toString().trim();
+    const zevClass = row.getCell(3).toString().trim();
+    const make = row.getCell(4).toString().trim();
+    const modelName = row.getCell(5).toString().trim();
+    const zevType = row.getCell(6).toString().trim();
+    const range = row.getCell(7).toString().trim();
+    if (
+      !vin &&
+      !vehicleClass &&
+      !zevClass &&
+      !make &&
+      !modelName &&
+      !zevType &&
+      !range
+    ) {
+      break;
+    }
+    result.push({
+      vin,
+      vehicleClass,
+      zevClass,
+      make,
+      modelName,
+      zevType,
+      range,
+    });
+    rowIndex = rowIndex + 1;
+  }
+  return result;
 };

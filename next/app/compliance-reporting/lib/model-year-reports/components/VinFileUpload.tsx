@@ -243,7 +243,7 @@ export const VinFileUpload = (props: {
                       The uploaded file does not match the required VIN
                       reporting template. To continue:
                     </span>
-                    <ol>
+                    <ol className="list-decimal list-inside">
                       <li>Download the VIN Records template.</li>
                       <li>Review the file structure and required fields.</li>
                       <li>Upload a valid VIN reporting spreadsheet.</li>
