@@ -4,6 +4,7 @@ All notable changes to this project are documented in this file.
 
 | Version | Date | Type | Change |
 | --- | --- | --- | --- |
+| [1.76.0](https://github.com/bcgov/zeva2/compare/v1.75.3...v1.76.0) | 2026-11-03 | ✨ Feature | 728 - VIN list ([#740](https://github.com/bcgov/zeva2/issues/740)) ([f543a86](https://github.com/bcgov/zeva2/commit/f543a869b4d0c925ffa19cadb5445a466b163e78)) |
 | [1.75.3](https://github.com/bcgov/zeva2/compare/v1.75.2...v1.75.3) | 2026-11-02 | 🐛 Fix | compliance calculator styling fix ([#736](https://github.com/bcgov/zeva2/issues/736)) ([b874a37](https://github.com/bcgov/zeva2/commit/b874a37ea34041c426b1275cc77d0d48e343ecaa)) |
 | [1.75.2](https://github.com/bcgov/zeva2/compare/v1.75.1...v1.75.2) | 2026-10-29 | 🐛 Fix | initial commit ([#734](https://github.com/bcgov/zeva2/issues/734)) ([b13c3d3](https://github.com/bcgov/zeva2/commit/b13c3d3cdffcd796375931c96f2bdce89058375e)) |
 | [1.75.1](https://github.com/bcgov/zeva2/compare/v1.75.0...v1.75.1) | 2026-10-26 | 🐛 Fix | search filter alignment ([#717](https://github.com/bcgov/zeva2/issues/717)) ([8c9cc05](https://github.com/bcgov/zeva2/commit/8c9cc05b5b6fc786f70dcf652628c41ca0d3bcb9)) |
