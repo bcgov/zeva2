@@ -52,8 +52,6 @@ export type VehiclePayload = Omit<
   | "vehicleClass"
   | "zevClass"
   | "numberOfUnits"
-  | "issuedCount"
-  | "submittedCount"
 >;
 
 export const supplierSave = async (

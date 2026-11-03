@@ -1,6 +1,6 @@
 import { JSX, Suspense } from "react";
 import { LoadingSkeleton } from "@/app/lib/components/skeletons";
-import { ContentCard, StatusBanner } from "@/app/lib/components";
+import { StatusBanner } from "@/app/lib/components";
 import { getUserInfo } from "@/auth";
 import { TransferToActions } from "./TransferToActions";
 import { CreditTransferStatus, Role } from "@/prisma/generated/enums";
@@ -201,255 +201,202 @@ export const IndividualPage = async (props: { id: string }) => {
   const modelYearsMap = getModelYearEnumsToStringsMap();
 
   return (
-    <div className="flex self-stretch flex-col items-start gap-4">
-      <div className="flex flex-col items-start gap-6 self-stretch">
-        <div className="flex flex-col items-start self-stretch">
-          <div className="flex self-stretch h-20 p-5 justify-between items-center rounded-t border border-dividerMedium bg-whisperGray">
-            <div className="text-black text-2xl font-bold leading-[34px]">
-              Credit Transfer ID {id}
-            </div>
-            <div className="flex h-10 items-center justify-center gap-2 py-[5px]">
-              <PrintDownloadPageButton />
-            </div>
+    <div className="flex flex-col gap-6">
+      <div className="flex flex-col gap-4">
+        <div className="flex p-5 justify-between items-center rounded-t border border-dividerMedium bg-whisperGray">
+          <h1 className="text-2xl font-bold">Credit Transfer ID {id}</h1>
+          <div className="flex items-center justify-center gap-2 py-[5px]">
+            <PrintDownloadPageButton />
           </div>
-          <div className="flex items-start self-stretch gap-3 py-3 bg-white">
-            <StatusBanner
-              title={`STATUS - ${statusLabel}.`}
-              primaryText={statusPrimaryText}
-              className="w-full"
-            />
+        </div>
+        <StatusBanner
+          title={`STATUS - ${statusLabel}.`}
+          primaryText={statusPrimaryText}
+          className="w-full"
+        />
+      </div>
+      <div className="flex flex-col rounded border border-dividerMedium">
+        <h2 className="px-5 py-4 bg-disabledSurface text-black text-xl font-bold">
+          Transfer Details
+        </h2>
+        <div className="flex flex-row items-center gap-6 p-5 text-lg">
+          <div className="flex flex-row items-center gap-2">
+            <span>Transfer From:</span>
+            <span className="font-bold">{transfer.transferFrom.name}</span>
           </div>
-          <div className="flex flex-col items-start self-stretch rounded border border-dividerMedium shadow-[0_4px_20px_0_rgba(177,177,177,0.10)]">
-            <div className="flex flex-col items-start self-stretch rounded-t px-5 py-4 gap-1 bg-disabledSurface">
+          <div className="flex flex-row items-center gap-2">
+            <span>Transfer To:</span>
+            <span className="font-bold">{transfer.transferTo.name}</span>
+          </div>
+          <div className="flex flex-row items-center gap-2">
+            <span>ID:</span>
+            <span className="font-bold">{id}</span>
+          </div>
+        </div>
+        <hr className="border-dividerMedium"></hr>
+        <div className="px-5 py-6">
+          <div className="border border-dividerMedium rounded text-sm text-left">
+            <table className="w-full">
+              <thead className="font-bold">
+                <tr className="border-b border-dividerMedium">
+                  <th className="px-4 py-3">Vehicle Class</th>
+                  <th className="px-4 py-3">ZEV Class</th>
+                  <th className="px-4 py-3">Model Year</th>
+                  <th className="px-4 py-3">Number of Units</th>
+                  <th className="px-4 py-3">Dollar per Value Unit</th>
+                </tr>
+              </thead>
+              <tbody>
+                {transfer.creditTransferContent.map((content) => (
+                  <tr
+                    key={crypto.randomUUID()}
+                    className="border-b border-dividerMedium last:border-b-0 odd:bg-lightGrey"
+                  >
+                    <td className="px-4 py-3">
+                      {vehicleClassMap[content.vehicleClass]}
+                    </td>
+                    <td className="px-4 py-3">
+                      {zevClassMap[content.zevClass]}
+                    </td>
+                    <td className="px-4 py-3">
+                      {modelYearsMap[content.modelYear]}
+                    </td>
+                    <td className="px-4 py-3">
+                      {content.numberOfUnits.toString()}
+                    </td>
+                    <td className="px-4 py-3">
+                      {content.dollarValuePerUnit.toString()}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <hr className="border-dividerMedium"></hr>
+        <div className="flex flex-row gap-2 p-5 text-lg">
+          <span>Total CAD:</span>
+          <span className="font-bold">${totalCAD.toString()}</span>
+        </div>
+      </div>
+
+      {projectedBalance && (
+        <div className="flex w-[452px] flex-col items-start gap-5 pb-5 rounded border border-dividerMedium shadow-[0_4px_20px_0_rgba(177,177,177,0.10)]">
+          <div className="flex flex-col items-start gap-3 self-stretch">
+            <div className="flex flex-col items-start gap-2 self-stretch p-5 rounded-t bg-disabledSurface">
               <div className="self-stretch text-black text-xl font-bold leading-7">
-                Transfer Details
+                Credit Balance After Transfer
               </div>
             </div>
-            <div className="flex flex-col items-start self-stretch gap-5 p-5 rounded shadow-[0_4px_20px_0_rgba(177,177,177,0.10)]">
-              <div className="flex flex-col items-start gap-3 self-stretch">
-                <div className="flex w-[1091px] items-center gap-6">
-                  <div className="flex items-center gap-2">
-                    <div className="text-secondaryText text-lg font-normal leading-6">
-                      Transfer From:
-                    </div>
-                    <div className="text-black text-lg font-bold leading-6">
-                      {transfer.transferFrom.name}
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <div className="text-secondaryText text-lg font-normal leading-6">
-                      Transfer To:
-                    </div>
-                    <div className="text-black text-lg font-bold leading-6">
-                      {transfer.transferTo.name}
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <div className="text-secondaryText text-lg font-normal leading-6">
-                      ID:
-                    </div>
-                    <div className="text-black text-lg font-bold leading-6">
-                      {id}
-                    </div>
-                  </div>
+            <div className="flex flex-col items-start gap-3 self-stretch px-5">
+              <div className="flex items-center gap-4 self-stretch">
+                <div className="text-secondaryText font-bold leading-6">
+                  Category A:
+                </div>
+                <div className="self-stretch text-black text-lg font-bold leading-[27px]">
+                  {projectedBalance.A}
                 </div>
               </div>
-            </div>
-            <div className="self-stretch h-px bg-dividerMedium"></div>
-            <div className="flex self-stretch flex-col gap-5 px-5 py-6">
-              <div className="w-full overflow-hidden rounded border border-dividerMedium">
-                <table className="w-full border-collapse">
-                  <thead>
-                    <tr className="h-[60px] border-b border-dividerMedium bg-white">
-                      <th className="px-4 text-left font-bold leading-6 text-primaryText">
-                        Vehicle Class
-                      </th>
-                      <th className="px-4 text-left font-bold leading-6 text-primaryText">
-                        ZEV Class
-                      </th>
-                      <th className="px-4 text-left font-bold leading-6 text-primaryText">
-                        Model Year
-                      </th>
-                      <th className="px-4 text-left font-bold leading-6 text-primaryText">
-                        Number of Units
-                      </th>
-                      <th className="px-4 text-left font-bold leading-6 text-primaryText">
-                        Dollar per Value Unit
-                      </th>
-                    </tr>
-                  </thead>
-
-                  <tbody>
-                    {transfer.creditTransferContent.map((content) => (
-                      <tr
-                        key={crypto.randomUUID()}
-                        className="h-[60px] border-b border-dividerMedium last:border-b-0 even:bg-white odd:bg-lightGrey"
-                      >
-                        <td className="px-4 text-left font-normal leading-6 text-primaryText">
-                          {vehicleClassMap[content.vehicleClass]}
-                        </td>
-                        <td className="px-4 text-left font-normal leading-6 text-primaryText">
-                          {zevClassMap[content.zevClass]}
-                        </td>
-                        <td className="px-4 text-left font-normal leading-6 text-primaryText">
-                          {modelYearsMap[content.modelYear]}
-                        </td>
-                        <td className="px-4 text-left font-normal leading-6 text-primaryText">
-                          {content.numberOfUnits.toString()}
-                        </td>
-                        <td className="px-4 text-left font-normal leading-6 text-primaryText">
-                          {content.dollarValuePerUnit.toString()}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-            <div className="flex flex-col items-start self-stretch gap-5 p-5 rounded-b border-t border-dividerMedium shadow-[0_4px_20px_0_rgba(177,177,177,0.10)]">
-              <div className="flex flex-col items-start gap-3 self-stretch">
-                <div className="flex self-stretch items-center gap-6">
-                  <div className="flex items-center gap-2">
-                    <div className="text-secondaryText text-lg font-normal leading-6">
-                      Total CAD:{" "}
-                    </div>
-                    <div className="text-black text-lg font-bold leading-6">
-                      {new Intl.NumberFormat("en-CA", {
-                        minimumFractionDigits: 2,
-                        maximumFractionDigits: 2,
-                      }).format(totalCAD.toNumber())}
-                    </div>
-                  </div>
+              <div className="self-stretch h-px bg-disabledSurface"></div>
+              <div className="flex items-center gap-4 self-stretch">
+                <div className="text-secondaryText font-bold leading-6">
+                  Category B:
+                </div>
+                <div className="self-stretch text-black text-lg font-bold leading-[27px]">
+                  {projectedBalance.B}
                 </div>
               </div>
             </div>
           </div>
         </div>
+      )}
 
-        {projectedBalance && (
-          <div className="flex w-[452px] flex-col items-start gap-5 pb-5 rounded border border-dividerMedium shadow-[0_4px_20px_0_rgba(177,177,177,0.10)]">
-            <div className="flex flex-col items-start gap-3 self-stretch">
-              <div className="flex flex-col items-start gap-2 self-stretch p-5 rounded-t bg-disabledSurface">
-                <div className="self-stretch text-black text-xl font-bold leading-7">
-                  Credit Balance After Transfer
-                </div>
-              </div>
-              <div className="flex flex-col items-start gap-3 self-stretch px-5">
-                <div className="flex items-center gap-4 self-stretch">
-                  <div className="text-secondaryText font-bold leading-6">
-                    Category A:
-                  </div>
-                  <div className="self-stretch text-black text-lg font-bold leading-[27px]">
-                    {projectedBalance.A}
-                  </div>
-                </div>
-                <div className="self-stretch h-px bg-disabledSurface"></div>
-                <div className="flex items-center gap-4 self-stretch">
-                  <div className="text-secondaryText font-bold leading-6">
-                    Category B:
-                  </div>
-                  <div className="self-stretch text-black text-lg font-bold leading-[27px]">
-                    {projectedBalance.B}
-                  </div>
-                </div>
-              </div>
+      {isDraft && (
+        <Suspense fallback={<LoadingSkeleton />}>
+          <DraftTransferReview
+            id={id}
+            transferFromSupplierName={transfer.transferFrom.name}
+          />
+        </Suspense>
+      )}
+
+      {!isDraft && visibleSigningSections.length > 0 && (
+        <div className="flex self-stretch flex-col items-start rounded border border-dividerMedium">
+          <div className="flex p-5 flex-col items-start gap-2 self-stretch rounded-t border-b border-dividerMedium bg-disabledSurface">
+            <div className="self-stretch text-primaryText text-xl font-bold leading-7">
+              Review &amp; Confirm
             </div>
           </div>
-        )}
+          <div className="flex p-5 flex-col items-start gap-5 rounded shadow-[0_4px_20px_0_rgba(177,177,177,0.10)] self-stretch">
+            <div className="flex self-stretch flex-col items-start gap-6">
+              {visibleSigningSections.map((section) => (
+                <div
+                  key={section.title}
+                  className="flex self-stretch flex-col items-start gap-4"
+                >
+                  <div className="self-stretch text-secondaryText font-bold leading-6">
+                    {section.title}
+                  </div>
+                  <div className="flex self-stretch flex-col items-start gap-4">
+                    {section.statements.map((statement) => (
+                      <div
+                        key={`${section.title}-${statement}`}
+                        className="self-stretch text-black font-normal leading-6"
+                      >
+                        {statement}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
 
-        {isDraft && (
+      {!isDraft && signingInfo.length > 0 && (
+        <div className="flex self-stretch flex-col items-start rounded border border-dividerMedium">
+          <div className="flex p-5 flex-col items-start gap-2 self-stretch rounded-t border-b border-dividerMedium bg-disabledSurface">
+            <div className="self-stretch text-primaryText text-xl font-bold leading-7">
+              Signing Information
+            </div>
+          </div>
+          <div className="flex p-5 flex-col items-start gap-3 rounded shadow-[0_4px_20px_0_rgba(177,177,177,0.10)] self-stretch">
+            {signingInfo.map((info) => (
+              <div
+                key={info.label}
+                className="self-stretch text-black font-normal leading-6"
+              >
+                {info.label} {getIsoYmdString(info.timestamp)}{" "}
+                {getTimeWithTz(info.timestamp)}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {isTransferToAction && (
+        <Suspense fallback={<LoadingSkeleton />}>
+          <TransferToActions
+            id={id}
+            transferToSupplierName={transfer.transferTo.name}
+          />
+        </Suspense>
+      )}
+
+      {!isDraft && actionComponent && <>{actionComponent}</>}
+
+      {!userIsGov &&
+        userOrgId === transfer.transferFromId &&
+        !isDraft &&
+        transferFromSupplierRescindableStatuses.includes(transfer.status) && (
           <Suspense fallback={<LoadingSkeleton />}>
-            <DraftTransferReview
+            <RescindableActions
               id={id}
               transferFromSupplierName={transfer.transferFrom.name}
             />
           </Suspense>
         )}
-
-        {!isDraft && visibleSigningSections.length > 0 && (
-          <div className="flex self-stretch flex-col items-start rounded border border-dividerMedium">
-            <div className="flex p-5 flex-col items-start gap-2 self-stretch rounded-t border-b border-dividerMedium bg-disabledSurface">
-              <div className="self-stretch text-primaryText text-xl font-bold leading-7">
-                Review &amp; Confirm
-              </div>
-            </div>
-            <div className="flex p-5 flex-col items-start gap-5 rounded shadow-[0_4px_20px_0_rgba(177,177,177,0.10)] self-stretch">
-              <div className="flex self-stretch flex-col items-start gap-6">
-                {visibleSigningSections.map((section) => (
-                  <div
-                    key={section.title}
-                    className="flex self-stretch flex-col items-start gap-4"
-                  >
-                    <div className="self-stretch text-secondaryText font-bold leading-6">
-                      {section.title}
-                    </div>
-                    <div className="flex self-stretch flex-col items-start gap-4">
-                      {section.statements.map((statement) => (
-                        <div
-                          key={`${section.title}-${statement}`}
-                          className="self-stretch text-black font-normal leading-6"
-                        >
-                          {statement}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        )}
-
-        {!isDraft && signingInfo.length > 0 && (
-          <div className="flex self-stretch flex-col items-start rounded border border-dividerMedium">
-            <div className="flex p-5 flex-col items-start gap-2 self-stretch rounded-t border-b border-dividerMedium bg-disabledSurface">
-              <div className="self-stretch text-primaryText text-xl font-bold leading-7">
-                Signing Information
-              </div>
-            </div>
-            <div className="flex p-5 flex-col items-start gap-3 rounded shadow-[0_4px_20px_0_rgba(177,177,177,0.10)] self-stretch">
-              {signingInfo.map((info) => (
-                <div
-                  key={info.label}
-                  className="self-stretch text-black font-normal leading-6"
-                >
-                  {info.label} {getIsoYmdString(info.timestamp)}{" "}
-                  {getTimeWithTz(info.timestamp)}
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {isTransferToAction && (
-          <Suspense fallback={<LoadingSkeleton />}>
-            <TransferToActions
-              id={id}
-              transferToSupplierName={transfer.transferTo.name}
-            />
-          </Suspense>
-        )}
-
-        {!isDraft && actionComponent && (
-          <ContentCard title="Actions">
-            <Suspense fallback={<LoadingSkeleton />}>
-              {actionComponent}
-            </Suspense>
-          </ContentCard>
-        )}
-
-        {!userIsGov &&
-          userOrgId === transfer.transferFromId &&
-          !isDraft &&
-          transferFromSupplierRescindableStatuses.includes(transfer.status) && (
-            <Suspense fallback={<LoadingSkeleton />}>
-              <RescindableActions
-                id={id}
-                transferFromSupplierName={transfer.transferFrom.name}
-              />
-            </Suspense>
-          )}
-      </div>
     </div>
   );
 };

@@ -1,7 +1,7 @@
 import { prismaOld } from "@/lib/prismaOld";
 import { TransactionClient } from "@/types/prisma";
 
-export const seedLegacyVins = async (tx: TransactionClient) => {
+export const seedReservedVins = async (tx: TransactionClient) => {
   const issuedVinRecords = await prismaOld.record_of_sale.findMany({
     where: {
       sales_submission: {

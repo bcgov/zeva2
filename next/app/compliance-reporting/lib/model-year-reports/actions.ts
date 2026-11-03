@@ -2,7 +2,13 @@
 
 import { Directory, getAttachmentPutData } from "@/app/lib/services/s3";
 import { getPresignedGetObjectUrl } from "@/app/lib/services/s3";
-import { AssessmentTemplate, ForecastTemplate, MyrTemplate } from "./constants";
+import {
+  AssessmentTemplate,
+  ForecastTemplate,
+  MyrTemplate,
+  VinListRecord,
+  VinListTemplate,
+} from "./constants";
 import { getUserInfo } from "@/auth";
 import {
   ModelYear,
@@ -13,6 +19,7 @@ import {
   SupplierClass,
   VehicleClass,
   ZevClass,
+  ZevType,
 } from "@/prisma/generated/enums";
 import {
   ModelYearReportAttachmentWhereInput,
@@ -30,7 +37,6 @@ import {
   MyrZevUnitTransaction,
   areTransfersCovered,
   getSupplierClassAndVolumes,
-  getVehicleStatistics,
   updateOrgSupplierClass,
   assessReassessment,
 } from "./services";
@@ -51,7 +57,10 @@ import {
   UnitsAsString,
 } from "./utilsServer";
 import { prisma } from "@/lib/prisma";
-import { getComplianceDate } from "@/app/lib/utils/complianceYear";
+import {
+  getComplianceDate,
+  getCompliancePeriod,
+} from "@/app/lib/utils/complianceYear";
 import { addJobToEmailQueue } from "@/app/lib/services/queue";
 import { Attachment, AttachmentDownload } from "@/app/lib/constants/attachment";
 
@@ -78,12 +87,6 @@ export type MyrData = {
   currentTransactions: MyrCurrentTransactions;
   pendingSupplyCredits: UnitsAsString<ZevUnitRecord>[];
   prelimEndingBalance: MyrEndingBalance;
-};
-
-export const retrieveVehicleStatistics = async (modelYear: ModelYear) => {
-  const { userOrgId } = await getUserInfo();
-  const vehicleStatistics = await getVehicleStatistics(userOrgId, modelYear);
-  return getDataActionResponse(vehicleStatistics);
 };
 
 export const getMyrTemplateUrl = async () => {
@@ -162,12 +165,73 @@ export const getForecastTemplateUrl = async () => {
   );
 };
 
+export const getVinListTemplateUrl = async () => {
+  return await getPresignedGetObjectUrl(
+    `${Directory.Templates}/${VinListTemplate.Name}`,
+  );
+};
+
+export const getVinListData = async (
+  modelYear: ModelYear,
+): Promise<DataOrErrorActionResponse<VinListRecord[]>> => {
+  const { userIsGov, userOrgId } = await getUserInfo();
+  if (userIsGov) {
+    return getErrorActionResponse("Unauthorized!");
+  }
+  const tsUpperBound = getCompliancePeriod(modelYear).openUpperBound;
+  const selectFields = {
+    vin: true,
+    vehicleClass: true,
+    zevClass: true,
+    make: true,
+    modelName: true,
+    zevType: true,
+    range: true,
+  };
+  const [legacyVinRecords, vinRecords] = await Promise.all([
+    prisma.legacyVinRecords.findMany({
+      where: {
+        organizationId: userOrgId,
+        modelYear,
+        timestamp: {
+          lt: tsUpperBound,
+        },
+      },
+      select: selectFields,
+      distinct: ["vin"],
+      orderBy: {
+        vin: "asc",
+      },
+    }),
+    prisma.creditApplicationRecord.findMany({
+      where: {
+        creditApplication: {
+          organizationId: userOrgId,
+        },
+        modelYear,
+        timestamp: {
+          lt: tsUpperBound,
+        },
+      },
+      select: selectFields,
+      orderBy: {
+        vin: "asc",
+      },
+    }),
+  ]);
+  return getDataActionResponse([...vinRecords, ...legacyVinRecords]);
+};
+
 export const getMyrPutData = async () => {
   return (await getAttachmentPutData(Directory.ModelYearReport, 1))[0];
 };
 
 export const getForecastPutData = async () => {
   return (await getAttachmentPutData(Directory.Forecast, 1))[0];
+};
+
+export const getVinListPutData = async () => {
+  return (await getAttachmentPutData(Directory.VinLists, 1))[0];
 };
 
 export const getMyrAttachmentsPutData = async (numberOfFiles: number) => {
@@ -182,6 +246,8 @@ export const saveReports = async (
   myrObjectName: string,
   forecastObjectName: string,
   forecastReportFileName: string,
+  vinListObjectName: string,
+  vinListFileName: string,
   attachments: Attachment[],
 ): Promise<DataOrErrorActionResponse<number>> => {
   let idOfReport = NaN;
@@ -233,6 +299,8 @@ export const saveReports = async (
           objectName: myrObjectName,
           forecastReportObjectName: forecastObjectName,
           forecastReportFileName,
+          vinListObjectName,
+          vinListFileName,
           status: ModelYearReportStatus.DRAFT,
           organizationId: userOrgId,
           modelYear,
@@ -1083,6 +1151,8 @@ export const getSuppAttachmentsPutData = async (numberOfFiles: number) => {
 export const createSupplementary = async (
   modelYear: ModelYear,
   suppObjectName: string,
+  vinListObjectName: string,
+  vinListFileName: string,
   attachments: Attachment[],
 ): Promise<DataOrErrorActionResponse<number>> => {
   let supplementaryId = NaN;
@@ -1102,6 +1172,8 @@ export const createSupplementary = async (
         organizationId: userOrgId,
         modelYear,
         objectName: suppObjectName,
+        vinListObjectName,
+        vinListFileName,
         status: ModelYearReportStatus.DRAFT,
         modelYearReportId: myrId,
       },
@@ -1166,6 +1238,8 @@ export const getSuppAttachmentDownloadUrls = async (
 export const saveSupplementary = async (
   supplementaryId: number,
   suppObjectName: string,
+  vinListObjectName: string,
+  vinListFileName: string,
   attachments: Attachment[],
 ): Promise<ErrorOrSuccessActionResponse> => {
   const { userIsGov, userOrgId } = await getUserInfo();
@@ -1192,6 +1266,8 @@ export const saveSupplementary = async (
       },
       data: {
         objectName: suppObjectName,
+        vinListObjectName,
+        vinListFileName,
       },
     });
     await tx.supplementaryReportAttachment.deleteMany({
@@ -1559,4 +1635,80 @@ export const assessSupplementary = async (
     );
   });
   return getSuccessActionResponse();
+};
+
+export const getVinListUrl = async (
+  type: "myr" | "supp",
+  id: number,
+): Promise<DataOrErrorActionResponse<string>> => {
+  const { userIsGov, userOrgId } = await getUserInfo();
+  let objectName: string | null = null;
+  if (type === "myr" && userIsGov) {
+    const myr = await prisma.modelYearReport.findUnique({
+      where: {
+        id,
+        status: {
+          notIn: [
+            ModelYearReportStatus.DRAFT,
+            ModelYearReportStatus.RETURNED_TO_SUPPLIER,
+          ],
+        },
+      },
+      select: {
+        vinListObjectName: true,
+      },
+    });
+    if (myr) {
+      objectName = myr.vinListObjectName;
+    }
+  } else if (type === "myr" && !userIsGov) {
+    const myr = await prisma.modelYearReport.findUnique({
+      where: {
+        id,
+        organizationId: userOrgId,
+      },
+      select: {
+        vinListObjectName: true,
+      },
+    });
+    if (myr) {
+      objectName = myr.vinListObjectName;
+    }
+  } else if (type === "supp" && userIsGov) {
+    const supp = await prisma.supplementaryReport.findUnique({
+      where: {
+        id,
+        status: {
+          notIn: [
+            ModelYearReportStatus.DRAFT,
+            ModelYearReportStatus.RETURNED_TO_SUPPLIER,
+          ],
+        },
+      },
+      select: {
+        vinListObjectName: true,
+      },
+    });
+    if (supp) {
+      objectName = supp.vinListObjectName;
+    }
+  } else if (type === "supp" && !userIsGov) {
+    const supp = await prisma.supplementaryReport.findUnique({
+      where: {
+        id,
+        organizationId: userOrgId,
+      },
+      select: {
+        vinListObjectName: true,
+      },
+    });
+    if (supp) {
+      objectName = supp.vinListObjectName;
+    }
+  }
+  if (!objectName) {
+    return getErrorActionResponse("VIN List not found!");
+  }
+  const url = await getPresignedGetObjectUrl(objectName);
+  return getDataActionResponse(url);
 };

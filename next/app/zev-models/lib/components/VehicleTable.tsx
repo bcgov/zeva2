@@ -94,18 +94,6 @@ export const VehicleTable = (props: {
         enableColumnFilter: true,
         header: () => <span>ZEV Type</span>,
       }),
-      columnHelper.accessor((row) => row.submittedCount, {
-        id: "submittedCount",
-        enableSorting: true,
-        enableColumnFilter: true,
-        header: () => <span>Submitted Count</span>,
-      }),
-      columnHelper.accessor((row) => row.issuedCount, {
-        id: "issuedCount",
-        enableSorting: true,
-        enableColumnFilter: true,
-        header: () => <span>Issued Count</span>,
-      }),
     ];
     if (props.userIsGov && props.type !== "supplierSpecific") {
       result.unshift(

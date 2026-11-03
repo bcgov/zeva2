@@ -1,9 +1,5 @@
 import { getUserInfo } from "@/auth";
-import {
-  getMyrModelYear,
-  getSupplierOwnData,
-  getSupplierOwnVehicleStats,
-} from "../data";
+import { getMyrModelYear, getSupplierOwnData } from "../data";
 import { ModelYearReportForm } from "./ModelYearReportForm";
 import { MyrSuppBanner } from "./MyrSuppBanner";
 import { getSupplierClassAndVolumes } from "../services";
@@ -32,7 +28,6 @@ export const NewPage = async () => {
     "0",
   );
   const serializedVolumes = getSerializedVolumes(volumes);
-  const vehicleStats = await getSupplierOwnVehicleStats(modelYear);
   return (
     <div className="flex flex-col gap-4 p-2">
       <Breadcrumbs
@@ -77,7 +72,6 @@ export const NewPage = async () => {
         modelYear={modelYear}
         supplierData={supplierData}
         prevVolumes={serializedVolumes}
-        vehicleStatistics={vehicleStats}
       />
     </div>
   );

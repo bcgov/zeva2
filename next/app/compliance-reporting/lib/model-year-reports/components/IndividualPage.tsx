@@ -13,6 +13,7 @@ import { Routes } from "@/app/lib/constants";
 import { SecondaryNavbar } from "@/app/lib/components/SecondaryNavbar";
 import { getModelYearEnumsToStringsMap } from "@/app/lib/utils/enumMaps";
 import { ReadonlyCommentBox } from "@/app/lib/components/ReadonlyCommentBox";
+import { VinListTable } from "./VinListTable";
 
 export const IndividualPage = async (props: { id: string }) => {
   const myrId = Number.parseInt(props.id, 10);
@@ -261,6 +262,14 @@ export const IndividualPage = async (props: { id: string }) => {
       {banner}
       <Suspense fallback={<LoadingSkeleton />}>
         <ModelYearReportDetails id={myrId} />
+      </Suspense>
+      <Suspense fallback={<LoadingSkeleton />}>
+        <VinListTable
+          type="myr"
+          id={myrId}
+          modelYear={myr.modelYear}
+          userIsGov={userIsGov}
+        />
       </Suspense>
       <Suspense fallback={<LoadingSkeleton />}>
         <ForecastReportDetails myrId={myrId} />

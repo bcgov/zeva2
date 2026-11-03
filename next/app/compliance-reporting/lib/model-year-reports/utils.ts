@@ -24,7 +24,6 @@ import {
   getVehicleClassEnumsToStringsMap,
   getZevClassEnumsToStringsMap,
 } from "@/app/lib/utils/enumMaps";
-import { VehicleStatistic } from "./services";
 import { OrganizationAddressModel } from "@/prisma/generated/models";
 
 export const getMyrSheets = (workbook: Workbook) => {
@@ -33,9 +32,6 @@ export const getMyrSheets = (workbook: Workbook) => {
   );
   const previousVolumesSheet = workbook.getWorksheet(
     MyrTemplate.PreviousVolumesSheetName,
-  );
-  const vehicleStatisticsSheet = workbook.getWorksheet(
-    MyrTemplate.VehicleStatisticsSheetName,
   );
   const complianceReductionsSheet = workbook.getWorksheet(
     MyrTemplate.ComplianceReductionsSheetName,
@@ -68,7 +64,6 @@ export const getMyrSheets = (workbook: Workbook) => {
   if (
     !supplierDetailsSheet ||
     !previousVolumesSheet ||
-    !vehicleStatisticsSheet ||
     !complianceReductionsSheet ||
     !zevAndIceCountsSheet ||
     !prevEndOfCdBalanceSheet ||
@@ -85,7 +80,6 @@ export const getMyrSheets = (workbook: Workbook) => {
   return {
     supplierDetailsSheet,
     previousVolumesSheet,
-    vehicleStatisticsSheet,
     complianceReductionsSheet,
     zevAndIceCountsSheet,
     prevEndOfCdBalanceSheet,
@@ -131,7 +125,6 @@ export type FileZevAndIceCountRecord = {
 export type ParsedMyr = {
   supplierDetails: FileMyrSupplierDetails;
   previousVolumes: FileMyrPreviousVolumes[];
-  vehicleStatistics: FileVehicleStatistic[];
   complianceReductions: FileReductionRecord[];
   zevAndIceCounts: FileZevAndIceCountRecord[];
   prevEndOfCdBalance: FileZevUnitRecord[];
@@ -149,7 +142,6 @@ export const parseMyr = (workbook: Workbook): ParsedMyr => {
   return {
     supplierDetails: parseSupplierDetails(sheets.supplierDetailsSheet),
     previousVolumes: parsePreviousVolumes(sheets.previousVolumesSheet),
-    vehicleStatistics: parseVehicleStatistics(sheets.vehicleStatisticsSheet),
     complianceReductions: parseComplianceReductions(
       sheets.complianceReductionsSheet,
     ),
@@ -214,40 +206,6 @@ const parsePreviousVolumes = (sheet: Excel.Worksheet) => {
         modelYear: row.getCell(1).toString(),
         vehicleClass: row.getCell(2).toString(),
         volume: row.getCell(3).toString(),
-      });
-    }
-  });
-  return result;
-};
-
-type FileVehicleStatistic = {
-  vehicleClass: string;
-  zevClass: string;
-  make: string;
-  modelName: string;
-  modelYear: string;
-  zevType: string;
-  range: string;
-  submittedCount: string;
-  issuedCount: string;
-};
-
-const parseVehicleStatistics = (
-  sheet: Excel.Worksheet,
-): FileVehicleStatistic[] => {
-  const result: FileVehicleStatistic[] = [];
-  sheet.eachRow((row, rowNumber) => {
-    if (rowNumber > 1) {
-      result.push({
-        vehicleClass: row.getCell(1).toString(),
-        zevClass: row.getCell(2).toString(),
-        make: row.getCell(3).toString(),
-        modelName: row.getCell(4).toString(),
-        modelYear: row.getCell(5).toString(),
-        zevType: row.getCell(6).toString(),
-        range: row.getCell(7).toString(),
-        submittedCount: row.getCell(8).toString(),
-        issuedCount: row.getCell(9).toString(),
       });
     }
   });
@@ -632,29 +590,6 @@ export const getHelpingMaps = (): MyrHelpingMaps => {
     modelYearsMap: getModelYearEnumsToStringsMap(),
     supplierClassesMap: getSupplierClassEnumsToStringsMap(),
   };
-};
-
-export type VehicleStatString = Partial<Record<keyof VehicleStatistic, string>>;
-
-export const getVehicleStatsAsStrings = (
-  vehicleStats: VehicleStatistic[],
-): VehicleStatString[] => {
-  const result: VehicleStatString[] = [];
-  const helpingMaps = getHelpingMaps();
-  for (const vehicle of vehicleStats) {
-    result.push({
-      vehicleClass: helpingMaps.vehicleClassesMap[vehicle.vehicleClass],
-      zevClass: helpingMaps.zevClassesMap[vehicle.zevClass],
-      make: vehicle.make,
-      modelName: vehicle.modelName,
-      modelYear: helpingMaps.modelYearsMap[vehicle.modelYear],
-      zevType: vehicle.zevType,
-      range: vehicle.range.toString(),
-      submittedCount: vehicle.submittedCount.toString(),
-      issuedCount: vehicle.issuedCount.toString(),
-    });
-  }
-  return result;
 };
 
 export const getAddressAsString = (address: OrganizationAddressModel) => {

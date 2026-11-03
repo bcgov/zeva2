@@ -12,7 +12,6 @@ import { SupplierInformation } from "./SupplierInformation";
 import { PreviousVolumes } from "./PreviousVolumes";
 import { Makes } from "./Makes";
 import { ZevClassOrder } from "./ZevClassOrder";
-import { ZevStatistics } from "./ZevStatistics";
 import { StatusBanner } from "@/app/lib/components";
 
 export const ParsedModelYearReport = (props: {
@@ -111,10 +110,6 @@ export const ParsedModelYearReport = (props: {
         <ParsedZevUnitRecords
           caption="Preliminary Ending Balance"
           records={props.myr.prelimEndingBalance}
-        />
-        <ZevStatistics
-          modelYear={props.modelYear}
-          records={props.myr.vehicleStatistics}
         />
       </div>
     </div>

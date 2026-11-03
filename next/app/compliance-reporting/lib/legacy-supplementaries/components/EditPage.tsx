@@ -33,6 +33,10 @@ export const EditPage = async (props: { id: string }) => {
         modelYear={report.modelYear}
         supplementaryId={suppId}
         url={await getPresignedGetObjectUrl(report.objectName)}
+        vinList={{
+          fileName: report.vinListFileName,
+          url: await getPresignedGetObjectUrl(report.vinListObjectName),
+        }}
         attachments={attachments}
       />
     </div>

@@ -2,7 +2,6 @@ import { getUserInfo } from "@/auth";
 import {
   getModelYearReport,
   getSupplierOwnData,
-  getSupplierOwnVehicleStats,
 } from "@/app/compliance-reporting/lib/model-year-reports/data";
 import { ModelYearReportForm } from "@/app/compliance-reporting/lib/model-year-reports/components/ModelYearReportForm";
 import { ModelYearReportStatus } from "@/prisma/generated/enums";
@@ -19,7 +18,6 @@ const Page = async (props: { params: Promise<{ id: string }> }) => {
     return null;
   }
   const supplierData = await getSupplierOwnData();
-  const vehicleStats = await getSupplierOwnVehicleStats(report.modelYear);
   return (
     <div className="p-4">
       <h1 className="text-xl font-bold mb-4">Create a Supplementary Report</h1>
@@ -28,7 +26,6 @@ const Page = async (props: { params: Promise<{ id: string }> }) => {
         myrId={myrId}
         modelYear={report.modelYear}
         supplierData={supplierData}
-        vehicleStatistics={vehicleStats}
       />
     </div>
   );

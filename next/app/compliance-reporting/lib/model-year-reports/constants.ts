@@ -5,13 +5,14 @@ import {
   SupplierClass,
   VehicleClass,
   ZevClass,
+  ZevType,
 } from "@/prisma/generated/enums";
+import { Workbook } from "exceljs";
 
 export enum MyrTemplate {
   Name = "model_year_report_template.xlsx",
   SupplierDetailsSheetName = "Supplier Details",
   PreviousVolumesSheetName = "Previous Volumes",
-  VehicleStatisticsSheetName = "Vehicle Statistics",
   ComplianceReductionsSheetName = "Compliance Ratio Reductions",
   ZevAndIceCounts = "ZEV and ICE Counts",
   PrevEndOfCdBalanceSheetName = "Balance at end of prev CD",
@@ -28,6 +29,11 @@ export enum ForecastTemplate {
   Name = "forecast_report_template.xlsx",
   ZevForecastSheetName = "ZEV Forecast",
   NonZevForecastSheetName = "Non-ZEV Forecast",
+}
+
+export enum VinListTemplate {
+  Name = "vin_list_template.xlsx",
+  VinRecordsSheetName = "VIN Records",
 }
 
 export enum AssessmentTemplate {
@@ -181,3 +187,45 @@ export const zevClassChoiceMap: Readonly<
 export type ZevAndIceCounts = Partial<
   Record<VehicleClass, { zev: string; ice: string }>
 >;
+
+export type VinListRecord = {
+  vin: string;
+  vehicleClass: VehicleClass;
+  zevClass: ZevClass;
+  make: string;
+  modelName: string;
+  zevType: ZevType;
+  range: number;
+};
+
+export class VinListError extends Error {
+  public type: "general" | "partial" | "no-valid-records";
+  public workbook: Workbook | null;
+  public numberOfRecords: number;
+  public numberOfValidRecords: number;
+  constructor(
+    message: string,
+    type: "general" | "partial" | "no-valid-records",
+    workbook: Workbook | null,
+    numberOfRecords: number,
+    numberOfValidRecords: number,
+  ) {
+    super(message);
+    this.type = type;
+    this.workbook = workbook;
+    this.numberOfRecords = numberOfRecords;
+    this.numberOfValidRecords = numberOfValidRecords;
+  }
+}
+
+export type ParsedVinListRecord = {
+  vin: string;
+  vehicleClass: string;
+  zevClass: string;
+  make: string;
+  modelName: string;
+  zevType: string;
+  range: string;
+};
+
+export type ParsedVinListRecordWithId = ParsedVinListRecord & { id: number };

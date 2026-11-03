@@ -5,7 +5,6 @@ import {
   ModelYearReportStatus,
   ReassessmentStatus,
   Role,
-  SupplierClass,
 } from "@/prisma/generated/enums";
 import {
   ModelYearReportWhereUniqueInput,
@@ -19,7 +18,7 @@ import {
   SupplementaryReportWhereInput,
 } from "@/prisma/generated/models";
 import { getObjectAsBuffer } from "@/app/lib/services/s3";
-import { getSupplierDetails, getVehicleStatistics } from "./services";
+import { getSupplierDetails } from "./services";
 import { getAddressAsString } from "./utils";
 import { MyrRecord } from "./constants";
 import {
@@ -605,9 +604,4 @@ export const getSupplierOwnData = async (): Promise<SupplierData> => {
       ? (supplierClassMap[supplierClass] ?? null)
       : null,
   };
-};
-
-export const getSupplierOwnVehicleStats = async (modelYear: ModelYear) => {
-  const { userOrgId } = await getUserInfo();
-  return await getVehicleStatistics(userOrgId, modelYear);
 };

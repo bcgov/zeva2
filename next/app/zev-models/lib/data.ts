@@ -39,8 +39,6 @@ export const getVehicles = async (
     range: true,
     zevType: true,
     isActive: true,
-    submittedCount: true,
-    issuedCount: true,
   };
   const where = getWhereClause(filters);
   const orderBy = getOrderByClause(sorts);

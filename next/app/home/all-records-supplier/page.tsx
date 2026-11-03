@@ -1,6 +1,4 @@
 import { getUserInfo } from "@/auth";
-import { Breadcrumbs } from "@/app/lib/components";
-import { Routes } from "@/app/lib/constants";
 import { AllRecordsTabsSupplier } from "../components/AllRecordsTabsSupplier";
 import { AllRecordsTableSupplier } from "../components/AllRecordsTableSupplier";
 import { getDateRangeOptions } from "../lib/utilsServer";
@@ -38,12 +36,6 @@ const Page = async (props: {
 
   return (
     <div className="flex flex-col gap-6">
-      <Breadcrumbs
-        items={[
-          { label: "Home", href: Routes.Home },
-          { label: viewData.title },
-        ]}
-      />
       <AllRecordsTabsSupplier />
       <div className="flex flex-col gap-5 border border-dividerMedium rounded">
         <div className="flex flex-col gap-2 bg-disabledSurface px-5 py-4">

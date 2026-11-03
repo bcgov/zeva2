@@ -70,6 +70,7 @@ model Organization {
   SupplementaryReport            SupplementaryReport[]
   LegacyAssessedModelYearReport  LegacyAssessedModelYearReport[]
   inAppNotificationOrganizations InAppNotificationOrganization[]
+  legacyVinRecords               legacyVinRecords[]
 
   @@map("organization")
 }
@@ -319,8 +320,6 @@ model Vehicle {
   weight            Int
   us06RangeGte16    Boolean             @map("us06_range_gte_16")
   isActive          Boolean             @map("is_active")
-  issuedCount       Int                 @default(0) @map("issued_count")
-  submittedCount    Int                 @default(0) @map("submitted_count")
   VehicleHistory    VehicleHistory[]
   VehicleAttachment VehicleAttachment[]
 
@@ -471,6 +470,8 @@ model CreditApplicationRecord {
   reason                    String?
   warnings                  String[]
 
+  @@index([vin])
+  @@index([modelYear, timestamp])
   @@map("credit_application_record")
 }
 
@@ -650,6 +651,8 @@ model ModelYearReport {
   objectName                 String                      @unique @map("object_name")
   forecastReportObjectName   String                      @unique @map("forecast_report_object_name")
   forecastReportFileName     String                      @map("forecast_report_file_name")
+  vinListObjectName          String                      @unique @map("vin_list_object_name")
+  vinListFileName            String                      @map("vin_list_file_name")
   compliant                  Boolean?
   reportableNvValue          Int?                        @map("reportable_nv_value")
   supplierClass              SupplierClass?              @map("supplier_class")
@@ -716,6 +719,8 @@ model SupplementaryReport {
   modelYearReportId               Int?                             @map("model_year_report_id")
   modelYearReport                 ModelYearReport?                 @relation(fields: [modelYearReportId], references: [id])
   objectName                      String                           @unique @map("object_name")
+  vinListObjectName               String                           @unique @map("vin_list_object_name")
+  vinListFileName                 String                           @map("vin_list_file_name")
   SupplementaryReportHistory      SupplementaryReportHistory[]
   supplementaryReportAttachments  SupplementaryReportAttachment[]
   supplementaryReportReassessment SupplementaryReportReassessment?
@@ -822,4 +827,22 @@ model InAppNotificationOrganization {
 
   @@id([inAppNotificationId, organizationId])
   @@map("in_app_notification_organization")
+}
+
+model legacyVinRecords {
+  id             Int          @id @default(autoincrement())
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  organizationId Int          @map("organization_id")
+  vin            String       @unique @db.VarChar(17)
+  timestamp      DateTime     @db.Timestamptz(6)
+  vehicleClass   VehicleClass @map("vehicle_class")
+  zevClass       ZevClass     @map("zev_class")
+  modelYear      ModelYear    @map("model_year")
+  make           String
+  modelName      String       @map("model_name")
+  zevType        ZevType      @map("zev_type")
+  range          Int
+
+  @@index([modelYear, timestamp])
+  @@map("legacy_vin_records")
 }
