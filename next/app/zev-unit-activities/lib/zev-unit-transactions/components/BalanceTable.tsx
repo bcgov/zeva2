@@ -2,6 +2,17 @@ import { getModelYearEnumsToStringsMap } from "@/app/lib/utils/enumMaps";
 import { ModelYear } from "@/prisma/generated/enums";
 import Decimal from "decimal.js";
 
+const Amount = ({ value }: { value?: Decimal }) => {
+  if (!value) {
+    return <>—</>;
+  }
+  return (
+    <span className={value.isNegative() ? "text-primaryRed" : undefined}>
+      {value.toString()}
+    </span>
+  );
+};
+
 export const BalanceTable = ({
   balance,
 }: {
@@ -52,17 +63,21 @@ export const BalanceTable = ({
         <tbody className="divide-y divide-gray-100">
           <tr className="border-b border-dividerMedium bg-infoBG">
             <td className="px-5 py-4 font-bold">Total Current ZEV Credits:</td>
-            <td className="px-5 py-4">{totalA.toString()}</td>
-            <td className="px-5 py-4">{totalB.toString()}</td>
+            <td className="px-5 py-4">
+              <Amount value={totalA} />
+            </td>
+            <td className="px-5 py-4">
+              <Amount value={totalB} />
+            </td>
           </tr>
           {sortedYears.map((y) => (
             <tr key={y} className="odd:bg-white even:bg-gray-50">
               <td className="px-5 py-4">{modelYearsMap[y as ModelYear]}</td>
               <td className="px-5 py-4">
-                {aRecords?.[y as ModelYear]?.toString() ?? "—"}
+                <Amount value={aRecords?.[y as ModelYear]} />
               </td>
               <td className="px-5 py-4">
-                {bRecords?.[y as ModelYear]?.toString() ?? "—"}
+                <Amount value={bRecords?.[y as ModelYear]} />
               </td>
             </tr>
           ))}

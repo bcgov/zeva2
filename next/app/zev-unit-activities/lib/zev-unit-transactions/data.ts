@@ -8,7 +8,7 @@ import {
 import { OrganizationModel } from "@/prisma/generated/models";
 import { getUserInfo } from "@/auth";
 import { getStringsToModelYearsEnumsMap } from "@/app/lib/utils/enumMaps";
-import { getOrgBalance } from "@/app/lib/services/balance";
+import { getOrgBalance, getOrgSignedBalance } from "@/app/lib/services/balance";
 import { sumBalance } from "@/lib/utils/zevUnit";
 import { getAdjacentYear } from "@/app/lib/utils/complianceYear";
 
@@ -92,10 +92,9 @@ export const getNestedReportableBalanceAB = async (orgId: number) => {
   if (!userIsGov && userOrgId !== orgId) {
     throw new Error("Unexpected Error!");
   }
-  const balance = await getOrgBalance(orgId);
-  if (balance === "deficit") {
-    return "deficit";
-  }
+  const orgBalance = await getOrgBalance(orgId);
+  const balance =
+    orgBalance === "deficit" ? await getOrgSignedBalance(orgId) : orgBalance;
   return {
     A: balance.CREDIT?.REPORTABLE?.A,
     B: balance.CREDIT?.REPORTABLE?.B,
