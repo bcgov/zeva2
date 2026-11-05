@@ -122,6 +122,7 @@ export const AnalystActions = (props: {
 
   if (
     props.status === CreditApplicationStatus.SUBMITTED ||
+    props.status === CreditApplicationStatus.VALIDATED ||
     props.status === CreditApplicationStatus.RETURNED_TO_ANALYST
   ) {
     return (
@@ -153,7 +154,11 @@ export const AnalystActions = (props: {
               }}
               value={complianceYear}
             />
-            <Button variant="primary" onClick={() => showModal("recommend")}>
+            <Button
+              variant="primary"
+              disabled={props.status === CreditApplicationStatus.SUBMITTED}
+              onClick={() => showModal("recommend")}
+            >
               Recommend Approval
             </Button>
           </div>

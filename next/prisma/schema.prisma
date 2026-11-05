@@ -143,7 +143,6 @@ model User {
   SupplementaryReportHistory       SupplementaryReportHistory[]
   icbcFiles                        IcbcFile[]
   creditApplicationAnalystComments CreditApplicationAnalystComment[]
-  creditApplications               CreditApplication[]
   inAppNotifications               InAppNotification[]
 
   @@unique([idp, idpUsername])
@@ -393,6 +392,7 @@ enum CreditApplicationStatus {
   REJECTED
   RETURNED_TO_ANALYST
   SUBMITTED
+  VALIDATED
 }
 
 enum CreditApplicationSupplierStatus {
@@ -421,9 +421,6 @@ model CreditApplication {
   ineligibleVinsCount              Int?                              @map("ineligible_vins_count")
   aCredits                         Decimal?                          @map("a_credits") @db.Decimal(65, 2)
   bCredits                         Decimal?                          @map("b_credits") @db.Decimal(65, 2)
-  lastValidatedTimestamp           DateTime?                         @map("last_validated_timestamp") @db.Timestamptz(6)
-  validatedById                    Int?                              @map("validated_by_id")
-  validatedBy                      User?                             @relation(fields: [validatedById], references: [id])
   complianceYear                   ModelYear?                        @map("compliance_year")
   CreditApplicationHistory         CreditApplicationHistory[]
   CreditApplicationRecord          CreditApplicationRecord[]

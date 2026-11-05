@@ -12,11 +12,7 @@ export const ApplicationDetails = async (props: {
     status = props.application.supplierStatus;
   }
   const modelYearsMap = getModelYearEnumsToStringsMap();
-  const statusLabel = getCreditApplicationStatusLabel(
-    status,
-    props.userIsGov,
-    props.application.lastValidatedTimestamp !== null,
-  );
+  const statusLabel = getCreditApplicationStatusLabel(status);
   return (
     <ul className="space-y-3">
       <li>Supplier: {props.application.organization.name}</li>
@@ -29,10 +25,10 @@ export const ApplicationDetails = async (props: {
           Compliance Year: {modelYearsMap[props.application.complianceYear]}
         </li>
       )}
-      {props.userIsGov && props.application.lastValidatedTimestamp && (
+      {props.userIsGov && props.application.latestValidation && (
         <li>
           Last Validated On:{" "}
-          {getIsoYmdString(props.application.lastValidatedTimestamp)}
+          {getIsoYmdString(props.application.latestValidation.timestamp)}
         </li>
       )}
     </ul>

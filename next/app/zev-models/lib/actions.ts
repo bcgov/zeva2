@@ -298,6 +298,7 @@ export const supplierDeactivate = async (
             in: [
               CreditApplicationStatus.DRAFT,
               CreditApplicationStatus.SUBMITTED,
+              CreditApplicationStatus.VALIDATED,
               CreditApplicationStatus.RECOMMEND_APPROVAL,
               CreditApplicationStatus.RETURNED_TO_ANALYST,
             ],

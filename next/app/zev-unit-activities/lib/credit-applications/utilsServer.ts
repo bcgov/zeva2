@@ -33,27 +33,14 @@ const getStatusFilterMap = (userIsGov: boolean) => {
     for (const supplierStatus of Object.values(
       CreditApplicationSupplierStatus,
     )) {
-      const label = getCreditApplicationStatusLabel(
-        supplierStatus,
-        false,
-        false,
-      );
+      const label = getCreditApplicationStatusLabel(supplierStatus);
       result[label] = { supplierStatus };
     }
     return result;
   }
   for (const status of Object.values(CreditApplicationStatus)) {
-    const label = getCreditApplicationStatusLabel(status, userIsGov, false);
-    if (status === CreditApplicationStatus.SUBMITTED) {
-      // Submitted and Validated share an enum but are distinct displayed states.
-      result[label] = { status, lastValidatedTimestamp: null };
-      result[getCreditApplicationStatusLabel(status, userIsGov, true)] = {
-        status,
-        lastValidatedTimestamp: { not: null },
-      };
-    } else {
-      result[label] = { status };
-    }
+    const label = getCreditApplicationStatusLabel(status);
+    result[label] = { status };
   }
   return result;
 };
@@ -293,7 +280,6 @@ export const getSerializedApplications = (
       id: record.id,
       organization: record.organization.name,
       status: userIsGov ? record.status : record.supplierStatus,
-      validated: record.lastValidatedTimestamp !== null,
       submissionTimestamp: record.submissionTimestamp
         ? getIsoYmdString(record.submissionTimestamp)
         : undefined,

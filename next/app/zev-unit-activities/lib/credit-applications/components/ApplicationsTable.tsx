@@ -33,12 +33,7 @@ export const ApplicationsTable = (props: {
         header: () => <span>Submission Date</span>,
       }),
       columnHelper.accessor(
-        (row) =>
-          getCreditApplicationStatusLabel(
-            row.status,
-            props.userIsGov,
-            row.validated,
-          ),
+        (row) => getCreditApplicationStatusLabel(row.status),
         {
           id: "status",
           enableSorting: true,
