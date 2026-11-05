@@ -158,9 +158,7 @@ export const seedLegacyVinRecords = async (
     const key = getKey(record.id, oldOrgId, make, model, my);
     const vehicle = vehiclesMap[key];
     if (!vehicle) {
-      throw new Error(
-        `old vin record with id ${record.id} cannot be associated with a vehicle!`,
-      );
+      continue;
     }
     // xls dates are decimals; the integer part is the number of days past Jan.1st, 1900 GMT.
     // all our dates are such that the fractional part should be zero.
