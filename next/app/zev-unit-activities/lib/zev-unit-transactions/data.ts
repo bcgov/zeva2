@@ -100,3 +100,25 @@ export const getNestedReportableBalanceAB = async (orgId: number) => {
     B: balance.CREDIT?.REPORTABLE?.B,
   };
 };
+
+export const getDeficitReportableBalanceAB = async (orgId: number) => {
+  const { userIsGov, userOrgId } = await getUserInfo();
+  if (!userIsGov && userOrgId !== orgId) {
+    throw new Error("Unexpected Error!");
+  }
+  const balance = await getOrgSignedBalance(orgId);
+  return {
+    A: sumBalance(
+      balance,
+      TransactionType.CREDIT,
+      VehicleClass.REPORTABLE,
+      ZevClass.A,
+    ),
+    B: sumBalance(
+      balance,
+      TransactionType.CREDIT,
+      VehicleClass.REPORTABLE,
+      ZevClass.B,
+    ),
+  };
+};
