@@ -108,6 +108,31 @@ export const getBalance = (
   return getSummedZevUnitRecordsObj(recordsAfterTransfersAway);
 };
 
+// for use when the supplier is in deficit; unlike getBalance(), debits are not an error
+// and are subtracted from credits (of the same vehicle class, zev class and model year)
+// returns a ZevUnitRecordsObj containing only CREDIT entries, whose values may be negative
+export const getSignedBalance = (
+  endingBalances: ZevUnitEndingBalanceModel[],
+  transactions: ZevUnitTransactionModel[],
+): ZevUnitRecordsObj => {
+  const zevUnitRecords = getZevUnitRecords(endingBalances).concat(transactions);
+  const signedRecords = applyTransfersAway(zevUnitRecords)
+    .filter(
+      (record) =>
+        record.type === TransactionType.CREDIT ||
+        record.type === TransactionType.DEBIT,
+    )
+    .map((record) => ({
+      ...record,
+      type: TransactionType.CREDIT,
+      numberOfUnits:
+        record.type === TransactionType.DEBIT
+          ? record.numberOfUnits.negated()
+          : record.numberOfUnits,
+    }));
+  return getSummedZevUnitRecordsObj(signedRecords);
+};
+
 /**
  * This funcion calls getBalance()
  * with the ending balances filtered to only containig records of the final compliance year, and

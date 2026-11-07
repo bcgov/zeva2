@@ -11,13 +11,33 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 import { getUserInfo } from "@/auth";
 import { Routes } from "@/app/lib/constants";
-import { getReportableBalanceAB } from "@/app/zev-unit-activities/lib/zev-unit-transactions/data";
+import {
+  getDeficitReportableBalanceAB,
+  getReportableBalanceAB,
+} from "@/app/zev-unit-activities/lib/zev-unit-transactions/data";
 import { DashboardTone, dashboardToneClasses } from "../lib/constants";
 import { getAllRecordsViewRouteSupplier } from "../lib/utils";
 import { getActiveNotifications } from "@/app/notifications/lib/services";
 import { getSupplierRecords } from "../lib/services";
 import { DashboardSectionPanel } from "./DashboardSectionPanel";
 import { ActiveNotificationsDisplay } from "./ActiveNotificationsDisplay";
+
+const getDisplayBalance = async (
+  balance: Awaited<ReturnType<typeof getReportableBalanceAB>>,
+  orgId: number,
+) => {
+  if (balance === "deficit") {
+    const { A, B } = await getDeficitReportableBalanceAB(orgId);
+    return [
+      { zevClass: "A", amount: A.toFixed(2), isNegative: A.isNegative() },
+      { zevClass: "B", amount: B.toFixed(2), isNegative: B.isNegative() },
+    ];
+  }
+  return [
+    { zevClass: "A", amount: balance.A, isNegative: false },
+    { zevClass: "B", amount: balance.B, isNegative: false },
+  ];
+};
 
 // for suppliers
 export const SupplierDashboard = async () => {
@@ -35,6 +55,8 @@ export const SupplierDashboard = async () => {
     getSupplierRecords(userOrgId, "in-progress"),
     getSupplierRecords(userOrgId, "for-awareness"),
   ]);
+
+  const displayBalance = await getDisplayBalance(balance, userOrgId);
 
   const summaryCards: {
     label: string;
@@ -129,20 +151,18 @@ export const SupplierDashboard = async () => {
             >
               Your <span className="underline">Credit Balance</span>
             </Link>
-            {balance === "deficit" ? (
-              <span className="font-bold">Deficit</span>
-            ) : (
-              <div className="flex flex-row gap-4">
-                <span>
-                  <span className="font-bold">A: </span>
-                  <span className="font-bold">{balance.A}</span>
+            <div className="flex flex-row gap-4">
+              {displayBalance.map(({ zevClass, amount, isNegative }) => (
+                <span key={zevClass}>
+                  <span className="font-bold">{zevClass}: </span>
+                  <span
+                    className={`font-bold ${isNegative ? "text-primaryRed" : ""}`}
+                  >
+                    {amount}
+                  </span>
                 </span>
-                <span>
-                  <span className="font-bold">B: </span>
-                  <span className="font-bold">{balance.B}</span>
-                </span>
-              </div>
-            )}
+              ))}
+            </div>
           </div>
         </div>
       </div>
