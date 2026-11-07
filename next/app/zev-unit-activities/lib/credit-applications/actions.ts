@@ -487,6 +487,7 @@ export const validateCreditApplication = async (
       id: creditApplicationId,
       OR: [
         { status: CreditApplicationStatus.SUBMITTED },
+        { status: CreditApplicationStatus.VALIDATED },
         { status: CreditApplicationStatus.RETURNED_TO_ANALYST },
       ],
     },
@@ -554,16 +555,31 @@ export const validateCreditApplication = async (
     await tx.creditApplication.update({
       where: {
         id: creditApplicationId,
+        // Validation may take time; do not overwrite a later workflow state.
+        status: {
+          in: [
+            CreditApplicationStatus.SUBMITTED,
+            CreditApplicationStatus.VALIDATED,
+            CreditApplicationStatus.RETURNED_TO_ANALYST,
+          ],
+        },
       },
       data: {
-        lastValidatedTimestamp: new Date(),
-        validatedById: userId,
+        status: CreditApplicationStatus.VALIDATED,
+        supplierStatus: CreditApplicationStatus.SUBMITTED,
         eligibleVinsCount,
         ineligibleVinsCount,
         aCredits,
         bCredits,
       },
     });
+    await createHistory(
+      userId,
+      creditApplicationId,
+      CreditApplicationStatus.VALIDATED,
+      undefined,
+      tx,
+    );
   });
   revalidatePath(`${Routes.CreditApplications}/[id]`, "layout");
   return getSuccessActionResponse();
@@ -595,7 +611,7 @@ export const updateValidatedRecords = async (
   });
   if (
     !creditApplication ||
-    (creditApplication.status !== CreditApplicationStatus.SUBMITTED &&
+    (creditApplication.status !== CreditApplicationStatus.VALIDATED &&
       creditApplication.status !== CreditApplicationStatus.RETURNED_TO_ANALYST)
   ) {
     return getErrorActionResponse("Invalid Action!");
@@ -692,7 +708,7 @@ export const invalidateRecords = async (
       id: creditApplicationId,
       status: {
         in: [
-          CreditApplicationStatus.SUBMITTED,
+          CreditApplicationStatus.VALIDATED,
           CreditApplicationStatus.RETURNED_TO_ANALYST,
         ],
       },
@@ -785,16 +801,18 @@ export const analystRecommend = async (
   const creditApplication = await prisma.creditApplication.findUnique({
     where: {
       id: creditApplicationId,
-      lastValidatedTimestamp: {
-        not: null,
+      status: {
+        in: [
+          CreditApplicationStatus.VALIDATED,
+          CreditApplicationStatus.RETURNED_TO_ANALYST,
+        ],
+      },
+      CreditApplicationHistory: {
+        some: { userAction: CreditApplicationStatus.VALIDATED },
       },
     },
   });
-  if (
-    !creditApplication ||
-    (creditApplication.status !== CreditApplicationStatus.SUBMITTED &&
-      creditApplication.status !== CreditApplicationStatus.RETURNED_TO_ANALYST)
-  ) {
+  if (!creditApplication) {
     return getErrorActionResponse("Invalid Action!");
   }
   await prisma.$transaction(async (tx) => {
@@ -836,6 +854,7 @@ export const analystReject = async (
       status: {
         in: [
           CreditApplicationStatus.SUBMITTED,
+          CreditApplicationStatus.VALIDATED,
           CreditApplicationStatus.RETURNED_TO_ANALYST,
         ],
       },
@@ -1108,6 +1127,7 @@ export const analystAddComment = async (
       status: {
         in: [
           CreditApplicationStatus.SUBMITTED,
+          CreditApplicationStatus.VALIDATED,
           CreditApplicationStatus.RETURNED_TO_ANALYST,
         ],
       },
@@ -1147,6 +1167,7 @@ export const analystEditOrDeleteComment = async (
           status: {
             in: [
               CreditApplicationStatus.SUBMITTED,
+              CreditApplicationStatus.VALIDATED,
               CreditApplicationStatus.RETURNED_TO_ANALYST,
             ],
           },

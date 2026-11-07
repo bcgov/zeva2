@@ -18,7 +18,7 @@ const Layout = async (props: {
         <CreditApplicationTabs
           creditApplicationId={id}
           creditApplicationStatus={creditApplication.status}
-          validatedBefore={!!creditApplication.lastValidatedTimestamp}
+          validatedBefore={!!creditApplication.latestValidation}
           userRoles={userRoles}
         />
       );

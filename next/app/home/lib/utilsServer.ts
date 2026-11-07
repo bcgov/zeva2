@@ -151,6 +151,7 @@ export const getAllCaRecordsGovWhereClause = (
       in: [
         CreditApplicationStatus.RETURNED_TO_ANALYST,
         CreditApplicationStatus.SUBMITTED,
+        CreditApplicationStatus.VALIDATED,
       ],
     },
   };
@@ -244,6 +245,7 @@ export const getAllCaRecordsSupplierWhereClause = (
             CreditApplicationStatus.RECOMMEND_APPROVAL,
             CreditApplicationStatus.RETURNED_TO_ANALYST,
             CreditApplicationStatus.SUBMITTED,
+            CreditApplicationStatus.VALIDATED,
           ],
         },
       },

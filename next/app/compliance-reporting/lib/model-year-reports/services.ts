@@ -324,6 +324,7 @@ export const getPendingSupplyCredits = async (
         status: {
           in: [
             CreditApplicationStatus.SUBMITTED,
+            CreditApplicationStatus.VALIDATED,
             CreditApplicationStatus.RECOMMEND_APPROVAL,
             CreditApplicationStatus.RETURNED_TO_ANALYST,
           ],

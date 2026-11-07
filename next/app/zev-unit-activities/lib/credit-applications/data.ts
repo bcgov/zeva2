@@ -22,6 +22,7 @@ import { getCreditStats, getRecordStats, getStats } from "./services";
 import {
   CreditApplicationRecordSparse,
   CreditApplicationSparse,
+  supplierVisibleHistoryActions,
 } from "./constants";
 
 export type CreditApplicationWithOrgAndAttachmentNamesAndInvalidatedRecordsCount =
@@ -33,9 +34,9 @@ export type CreditApplicationWithOrgAndAttachmentNamesAndInvalidatedRecordsCount
     _count: {
       CreditApplicationRecord: number;
     };
-    validatedBy: {
-      firstName: string;
-      lastName: string;
+    latestValidation: {
+      timestamp: Date;
+      user: Pick<UserModel, "firstName" | "lastName">;
     } | null;
   };
 
@@ -58,6 +59,7 @@ export const getCreditApplication = async (
           in: [
             CreditApplicationStatus.RETURNED_TO_ANALYST,
             CreditApplicationStatus.SUBMITTED,
+            CreditApplicationStatus.VALIDATED,
           ],
         },
       });
@@ -69,16 +71,10 @@ export const getCreditApplication = async (
       organizationId: userOrgId,
     };
   }
-  return await prisma.creditApplication.findUnique({
+  const application = await prisma.creditApplication.findUnique({
     where: whereClause,
     include: {
       organization: true,
-      validatedBy: {
-        select: {
-          firstName: true,
-          lastName: true,
-        },
-      },
       CreditApplicationAttachment: {
         select: {
           fileName: true,
@@ -95,6 +91,25 @@ export const getCreditApplication = async (
       },
     },
   });
+  if (!application) {
+    return null;
+  }
+  return {
+    ...application,
+    latestValidation: userIsGov
+      ? await prisma.creditApplicationHistory.findFirst({
+          where: {
+            creditApplicationId,
+            userAction: CreditApplicationStatus.VALIDATED,
+          },
+          select: {
+            timestamp: true,
+            user: { select: { firstName: true, lastName: true } },
+          },
+          orderBy: [{ timestamp: "desc" }, { id: "desc" }],
+        })
+      : null,
+  };
 };
 
 export const getValidatedRecords = async (
@@ -221,6 +236,7 @@ export const getCreditApplications = async (
           in: [
             CreditApplicationStatus.RETURNED_TO_ANALYST,
             CreditApplicationStatus.SUBMITTED,
+            CreditApplicationStatus.VALIDATED,
           ],
         },
       });
@@ -277,12 +293,7 @@ export const getApplicationHistories = async (
       organizationId: userOrgId,
     };
     where.userAction = {
-      in: [
-        CreditApplicationStatus.APPROVED,
-        CreditApplicationStatus.DRAFT,
-        CreditApplicationStatus.REJECTED,
-        CreditApplicationStatus.SUBMITTED,
-      ],
+      in: supplierVisibleHistoryActions,
     };
   } else {
     where.userAction = {
@@ -304,9 +315,7 @@ export const getApplicationHistories = async (
         },
       },
     },
-    orderBy: {
-      timestamp: "asc",
-    },
+    orderBy: [{ timestamp: "asc" }, { id: "asc" }],
   });
 };
 

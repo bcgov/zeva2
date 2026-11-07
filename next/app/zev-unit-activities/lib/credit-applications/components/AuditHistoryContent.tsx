@@ -3,6 +3,7 @@ import { ApplicationAuditHistory } from "../components/ApplicationAuditHistory";
 import { getUserInfo } from "@/auth";
 import { getCreditApplicationStatusEnumsToStringsMap } from "@/app/lib/utils/enumMaps";
 import { processAuditHistories } from "@/app/lib/utils/auditHistory";
+import { CreditApplicationStatus } from "@/prisma/generated/enums";
 
 export const AuditHistoryContent = async ({ id }: { id: number }) => {
   const application = await getCreditApplication(id);
@@ -26,7 +27,11 @@ export const AuditHistoryContent = async ({ id }: { id: number }) => {
     <ApplicationAuditHistory
       applicationId={id}
       applicationNumber={String(id)}
-      summary={summary}
+      summary={
+        summary?.status === statusMap[CreditApplicationStatus.APPROVED]
+          ? summary
+          : undefined
+      }
       entries={entries}
       statusOptions={statusOptions}
       roleOptions={roleOptions}

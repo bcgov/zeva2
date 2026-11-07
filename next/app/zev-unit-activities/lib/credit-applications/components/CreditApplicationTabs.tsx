@@ -41,7 +41,7 @@ export const CreditApplicationTabs = (props: {
         key: itemKeys[0],
       },
       ...(props.validatedBefore &&
-      (props.creditApplicationStatus === CreditApplicationStatus.SUBMITTED ||
+      (props.creditApplicationStatus === CreditApplicationStatus.VALIDATED ||
         props.creditApplicationStatus ===
           CreditApplicationStatus.RETURNED_TO_ANALYST) &&
       !props.userRoles.includes(Role.DIRECTOR)

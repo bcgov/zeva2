@@ -46,8 +46,8 @@ export const IndividualPageGov = async (props: { id: string }) => {
     return null;
   }
   const applicationStatus = creditApplication.status;
-  const validationTs = creditApplication.lastValidatedTimestamp;
-  const validatedBy = creditApplication.validatedBy;
+  const validationTs = creditApplication.latestValidation?.timestamp;
+  const validatedBy = creditApplication.latestValidation?.user;
   const downloadAttachments = async () => {
     "use server";
     return getCreditApplicationAttachmentDownloadUrls(id);
@@ -61,27 +61,18 @@ export const IndividualPageGov = async (props: { id: string }) => {
 
   let statusBanner: JSX.Element | null = null;
   if (
-    applicationStatus === CreditApplicationStatus.SUBMITTED &&
+    applicationStatus === CreditApplicationStatus.VALIDATED &&
     validationTs &&
     validatedBy
   ) {
-    const history = histories.find(
-      (h) => h.userAction === CreditApplicationStatus.SUBMITTED,
+    statusBanner = (
+      <StatusBanner
+        variant="validated"
+        title="STATUS: Validated."
+        primaryText={`CA-${id} checked against ICBC registration data ${getIsoYmdString(validationTs)} by ${validatedBy.firstName} ${validatedBy.lastName}.`}
+      />
     );
-    if (history) {
-      statusBanner = (
-        <StatusBanner
-          variant="validated"
-          title="STATUS: Validated."
-          primaryText={`CA-${id} checked against ICBC registration data ${getIsoYmdString(validationTs)} by ${validatedBy.firstName} ${validatedBy.lastName}.`}
-        />
-      );
-    }
-  } else if (
-    applicationStatus === CreditApplicationStatus.SUBMITTED &&
-    !validationTs &&
-    !validatedBy
-  ) {
+  } else if (applicationStatus === CreditApplicationStatus.SUBMITTED) {
     const history = histories.find(
       (h) => h.userAction === CreditApplicationStatus.SUBMITTED,
     );
@@ -172,7 +163,7 @@ export const IndividualPageGov = async (props: { id: string }) => {
       {stats && (
         <ApplicationStatisticsGov
           stats={stats}
-          validated={!!creditApplication.lastValidatedTimestamp}
+          validated={!!creditApplication.latestValidation}
         />
       )}
       <div className="flex flex-col rounded border border-dividerMedium">
@@ -230,6 +221,7 @@ export const IndividualPageGov = async (props: { id: string }) => {
         editable={
           userRoles.includes(Role.ZEVA_IDIR_USER) &&
           (applicationStatus === CreditApplicationStatus.SUBMITTED ||
+            applicationStatus === CreditApplicationStatus.VALIDATED ||
             applicationStatus === CreditApplicationStatus.RETURNED_TO_ANALYST)
         }
         userId={userId}

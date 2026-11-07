@@ -35,7 +35,13 @@ export const mapOfStatusToSupplierStatus: Readonly<
   [CreditApplicationStatus.REJECTED]: CreditApplicationSupplierStatus.REJECTED,
   [CreditApplicationStatus.SUBMITTED]:
     CreditApplicationSupplierStatus.SUBMITTED,
+  [CreditApplicationStatus.VALIDATED]:
+    CreditApplicationSupplierStatus.SUBMITTED,
 };
+
+export const supplierVisibleHistoryActions = Object.values(
+  CreditApplicationSupplierStatus,
+);
 
 export type CreditApplicationSparse = Pick<
   CreditApplicationModel,
