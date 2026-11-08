@@ -4,8 +4,10 @@ import { CreditApplicationSparseSerialized } from "../constants";
 import { ColumnDef, createColumnHelper } from "@tanstack/react-table";
 import { Table } from "@/app/lib/components";
 import { ReactNode, useMemo } from "react";
-import { getModelYearEnumsToStringsMap } from "@/app/lib/utils/enumMaps";
-import { getCreditApplicationStatusLabel } from "../status";
+import {
+  getCreditApplicationStatusEnumsToStringsMap,
+  getModelYearEnumsToStringsMap,
+} from "@/app/lib/utils/enumMaps";
 
 export const ApplicationsTable = (props: {
   applications: CreditApplicationSparseSerialized[];
@@ -14,6 +16,9 @@ export const ApplicationsTable = (props: {
   userIsGov: boolean;
   headerContent?: ReactNode;
 }) => {
+  const statusMap = useMemo(() => {
+    return getCreditApplicationStatusEnumsToStringsMap();
+  }, []);
   const modelYearsMap = useMemo(() => {
     return getModelYearEnumsToStringsMap();
   }, []);
@@ -32,15 +37,12 @@ export const ApplicationsTable = (props: {
         enableColumnFilter: true,
         header: () => <span>Submission Date</span>,
       }),
-      columnHelper.accessor(
-        (row) => getCreditApplicationStatusLabel(row.status),
-        {
-          id: "status",
-          enableSorting: true,
-          enableColumnFilter: true,
-          header: () => <span>Status</span>,
-        },
-      ),
+      columnHelper.accessor((row) => statusMap[row.status], {
+        id: "status",
+        enableSorting: true,
+        enableColumnFilter: true,
+        header: () => <span>Status</span>,
+      }),
       columnHelper.accessor((row) => row.transactionTimestamp ?? "--", {
         id: "transactionTimestamp",
         enableSorting: true,
@@ -94,7 +96,13 @@ export const ApplicationsTable = (props: {
       result.splice(1, 0, supplierColumn);
     }
     return result;
-  }, [columnHelper, props.applications, props.userIsGov, modelYearsMap]);
+  }, [
+    columnHelper,
+    props.applications,
+    props.userIsGov,
+    statusMap,
+    modelYearsMap,
+  ]);
   return (
     <Table<CreditApplicationSparseSerialized>
       columns={columns}

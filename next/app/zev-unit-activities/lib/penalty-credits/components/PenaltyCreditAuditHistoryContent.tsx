@@ -17,7 +17,7 @@ export const PenaltyCreditAuditHistoryContent = async ({
   if (!penaltyCredit) return <div>Penalty Credit not found</div>;
 
   const { entries, summary, statusOptions, roleOptions } =
-    processAuditHistories({
+    processAuditHistories("penaltyCredits", {
       histories,
       userIsGov,
       statusMap: getPenaltyCreditStatusEnumsToStringsMap(),

@@ -3,9 +3,12 @@ import { CreditApplicationForm } from "./CreditApplicationForm";
 import { getCreditApplicationAttachmentDownloadUrls } from "../actions";
 import { AttachmentDownload } from "@/app/lib/constants/attachment";
 import { getOrgInfo } from "../services";
-import { getCreditApplication } from "../data";
+import { getCreditApplicationSupplier } from "../services";
 import { getPresignedGetObjectUrl } from "@/app/lib/services/s3";
-import { CreditApplicationSupplierStatus } from "@/prisma/generated/enums";
+import {
+  CreditApplicationStatus,
+  CreditApplicationSupplierStatus,
+} from "@/prisma/generated/enums";
 
 export const ApplicationCreateOrEdit = async (props: {
   creditApplicationId?: number;
@@ -24,10 +27,10 @@ export const ApplicationCreateOrEdit = async (props: {
 
   if (props.creditApplicationId) {
     const [application, attachmentsResp] = await Promise.all([
-      getCreditApplication(props.creditApplicationId),
+      getCreditApplicationSupplier(props.creditApplicationId, userOrgId),
       getCreditApplicationAttachmentDownloadUrls(props.creditApplicationId),
     ]);
-    if (!application) {
+    if (!application || application.status !== CreditApplicationStatus.DRAFT) {
       return null;
     }
     applicationFile = {

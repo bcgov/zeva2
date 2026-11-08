@@ -120,7 +120,7 @@ export const sendCreditApplicationEmails = async (historyId: number) => {
   if (
     userAction === CreditApplicationStatus.SUBMITTED ||
     userAction === CreditApplicationStatus.REJECTED ||
-    userAction === CreditApplicationStatus.APPROVED
+    userAction === CreditApplicationStatus.ISSUED
   ) {
     supplierOrgIds.push(history.creditApplication.organizationId);
   }
@@ -129,7 +129,7 @@ export const sendCreditApplicationEmails = async (historyId: number) => {
     userAction === CreditApplicationStatus.RETURNED_TO_ANALYST
   ) {
     includeAnalysts = true;
-  } else if (userAction === CreditApplicationStatus.RECOMMEND_APPROVAL) {
+  } else if (userAction === CreditApplicationStatus.RECOMMENDED) {
     includeDirector = true;
   }
   await sendNotificationEmails(

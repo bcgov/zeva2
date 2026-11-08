@@ -29,7 +29,6 @@ import {
   mapOfStatusToSupplierStatus as caMapOfStatusToSupplierStatus,
   supplierVisibleHistoryActions,
 } from "@/app/zev-unit-activities/lib/credit-applications/constants";
-import { getCreditApplicationStatusLabel } from "@/app/zev-unit-activities/lib/credit-applications/status";
 import { mapOfStatusToSupplierStatus as ctMapOfStatusToSupplierStatus } from "@/app/zev-unit-activities/lib/credit-transfers/constants";
 import { getZevModelDetailsRoute } from "@/app/zev-models/lib/routes";
 import {
@@ -61,6 +60,7 @@ export const getAllCaRecordsGov = async (
   userRoles: Role[],
   type: AllRecordTypeGov,
 ): Promise<SerializedAllRecordsRecordGov[]> => {
+  const statusesMap = getCreditApplicationStatusEnumsToStringsMap();
   const whereClause = getAllCaRecordsGovWhereClause(userRoles, type);
   if (!whereClause) {
     return [];
@@ -96,7 +96,7 @@ export const getAllCaRecordsGov = async (
   return creditApplications.map((application) => {
     const record: AllRecordsRecordGov = {
       ...application,
-      status: getCreditApplicationStatusLabel(application.status),
+      status: statusesMap[application.status] ?? application.status,
       mostRecentHistoryEntry: application.CreditApplicationHistory[0],
     };
     return getSerializedAllRecordsRecordGov(
@@ -112,6 +112,7 @@ export const getAllCaRecordsSupplier = async (
   userOrgId: number,
   type: AllRecordTypeSupplier,
 ): Promise<SerializedAllRecordsRecordSupplier[]> => {
+  const statusesMap = getCreditApplicationStatusEnumsToStringsMap();
   const whereClause = getAllCaRecordsSupplierWhereClause(userOrgId, type);
   if (!whereClause) {
     return [];
@@ -140,9 +141,8 @@ export const getAllCaRecordsSupplier = async (
   return creditApplications.map((application) => {
     const record: AllRecordsRecordSupplier = {
       id: application.id,
-      status: getCreditApplicationStatusLabel(
-        caMapOfStatusToSupplierStatus[application.status],
-      ),
+      status:
+        statusesMap[caMapOfStatusToSupplierStatus[application.status]] ?? "",
       mostRecentHistoryEntry: application.CreditApplicationHistory[0],
     };
     return getSerializedAllRecordsRecordSupplier(

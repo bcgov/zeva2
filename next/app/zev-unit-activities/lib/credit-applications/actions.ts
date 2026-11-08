@@ -21,14 +21,13 @@ import {
   getEligibleVehiclesMap,
   getIcbcRecordsMap,
   getReservedVins,
-  getVehicleCounts,
   unreserveVins,
   updateStatus,
   createAttachments,
   getDecodedVinsMap,
   getAnalystComments,
 } from "./services";
-import { ErrorsTemplate, InvalidReason, SupplierTemplate } from "./constants";
+import { ErrorsTemplate, SupplierTemplate } from "./constants";
 import {
   Directory,
   getAttachmentPutData,
@@ -555,18 +554,9 @@ export const validateCreditApplication = async (
     await tx.creditApplication.update({
       where: {
         id: creditApplicationId,
-        // Validation may take time; do not overwrite a later workflow state.
-        status: {
-          in: [
-            CreditApplicationStatus.SUBMITTED,
-            CreditApplicationStatus.VALIDATED,
-            CreditApplicationStatus.RETURNED_TO_ANALYST,
-          ],
-        },
       },
       data: {
         status: CreditApplicationStatus.VALIDATED,
-        supplierStatus: CreditApplicationStatus.SUBMITTED,
         eligibleVinsCount,
         ineligibleVinsCount,
         aCredits,
@@ -600,6 +590,12 @@ export const updateValidatedRecords = async (
   const creditApplication = await prisma.creditApplication.findUnique({
     where: {
       id: creditApplicationId,
+      status: {
+        in: [
+          CreditApplicationStatus.VALIDATED,
+          CreditApplicationStatus.RETURNED_TO_ANALYST,
+        ],
+      },
     },
     select: {
       status: true,
@@ -609,11 +605,7 @@ export const updateValidatedRecords = async (
       bCredits: true,
     },
   });
-  if (
-    !creditApplication ||
-    (creditApplication.status !== CreditApplicationStatus.VALIDATED &&
-      creditApplication.status !== CreditApplicationStatus.RETURNED_TO_ANALYST)
-  ) {
+  if (!creditApplication) {
     return getErrorActionResponse("Invalid Action!");
   }
   let eligibleVinsCount = creditApplication.eligibleVinsCount;
@@ -695,97 +687,6 @@ export const updateValidatedRecords = async (
   return getSuccessActionResponse();
 };
 
-export const invalidateRecords = async (
-  creditApplicationId: number,
-  modelYear: ModelYear,
-): Promise<ErrorOrSuccessActionResponse> => {
-  const { userIsGov, userRoles } = await getUserInfo();
-  if (!userIsGov || !userRoles.some((role) => role === Role.ZEVA_IDIR_USER)) {
-    return getErrorActionResponse("Unauthorized!");
-  }
-  const creditApplication = await prisma.creditApplication.findUnique({
-    where: {
-      id: creditApplicationId,
-      status: {
-        in: [
-          CreditApplicationStatus.VALIDATED,
-          CreditApplicationStatus.RETURNED_TO_ANALYST,
-        ],
-      },
-    },
-    select: {
-      eligibleVinsCount: true,
-      ineligibleVinsCount: true,
-      aCredits: true,
-      bCredits: true,
-      CreditApplicationRecord: {
-        select: {
-          id: true,
-          zevClass: true,
-          numberOfUnits: true,
-        },
-        where: {
-          modelYear,
-          validated: true,
-        },
-      },
-    },
-  });
-  if (!creditApplication) {
-    return getErrorActionResponse("Invalid Action!");
-  }
-  let newEligibleVinsCount = creditApplication.eligibleVinsCount;
-  let newIneligibleVinsCount = creditApplication.ineligibleVinsCount;
-  let newACredits = creditApplication.aCredits;
-  let newBCredits = creditApplication.bCredits;
-  if (
-    newEligibleVinsCount === null ||
-    newIneligibleVinsCount === null ||
-    newACredits === null ||
-    newBCredits === null
-  ) {
-    return getErrorActionResponse("Invalid Action!");
-  }
-  for (const record of creditApplication.CreditApplicationRecord) {
-    const zevClass = record.zevClass;
-    const numberOfUnits = record.numberOfUnits;
-    newEligibleVinsCount = newEligibleVinsCount - 1;
-    newIneligibleVinsCount = newIneligibleVinsCount + 1;
-    if (zevClass === ZevClass.A) {
-      newACredits = newACredits.minus(numberOfUnits);
-    } else if (zevClass === ZevClass.B) {
-      newBCredits = newBCredits.minus(numberOfUnits);
-    }
-  }
-  await prisma.$transaction(async (tx) => {
-    await tx.creditApplicationRecord.updateMany({
-      where: {
-        id: {
-          in: creditApplication.CreditApplicationRecord.map(
-            (record) => record.id,
-          ),
-        },
-      },
-      data: {
-        validated: false,
-        reason: InvalidReason.ModelYear,
-      },
-    });
-    await tx.creditApplication.update({
-      where: {
-        id: creditApplicationId,
-      },
-      data: {
-        eligibleVinsCount: newEligibleVinsCount,
-        ineligibleVinsCount: newIneligibleVinsCount,
-        aCredits: newACredits,
-        bCredits: newBCredits,
-      },
-    });
-  });
-  return getSuccessActionResponse();
-};
-
 export const analystRecommend = async (
   creditApplicationId: number,
   complianceYear: ModelYear,
@@ -807,9 +708,6 @@ export const analystRecommend = async (
           CreditApplicationStatus.RETURNED_TO_ANALYST,
         ],
       },
-      CreditApplicationHistory: {
-        some: { userAction: CreditApplicationStatus.VALIDATED },
-      },
     },
   });
   if (!creditApplication) {
@@ -821,14 +719,14 @@ export const analystRecommend = async (
         id: creditApplicationId,
       },
       data: {
-        status: CreditApplicationStatus.RECOMMEND_APPROVAL,
+        status: CreditApplicationStatus.RECOMMENDED,
         complianceYear,
       },
     });
     const historyId = await createHistory(
       userId,
       creditApplicationId,
-      CreditApplicationStatus.RECOMMEND_APPROVAL,
+      CreditApplicationStatus.RECOMMENDED,
       comment,
       tx,
     );
@@ -930,7 +828,7 @@ export const directorReturnToAnalyst = async (
   const creditApplication = await prisma.creditApplication.findUnique({
     where: {
       id: creditApplicationId,
-      status: CreditApplicationStatus.RECOMMEND_APPROVAL,
+      status: CreditApplicationStatus.RECOMMENDED,
     },
   });
   if (!creditApplication) {
@@ -968,7 +866,7 @@ export const directorApprove = async (
   const creditApplication = await prisma.creditApplication.findUnique({
     where: {
       id: creditApplicationId,
-      status: CreditApplicationStatus.RECOMMEND_APPROVAL,
+      status: CreditApplicationStatus.RECOMMENDED,
     },
     select: {
       organizationId: true,
@@ -1025,8 +923,8 @@ export const directorApprove = async (
       },
       data: {
         transactionTimestamp,
-        status: CreditApplicationStatus.APPROVED,
-        supplierStatus: CreditApplicationStatus.APPROVED,
+        status: CreditApplicationStatus.ISSUED,
+        supplierStatus: CreditApplicationStatus.ISSUED,
       },
     });
     await unreserveVins(invalidVins, tx);
@@ -1036,7 +934,7 @@ export const directorApprove = async (
     const historyId = await createHistory(
       userId,
       creditApplicationId,
-      CreditApplicationStatus.APPROVED,
+      CreditApplicationStatus.ISSUED,
       comment,
       tx,
     );

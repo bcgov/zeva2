@@ -68,7 +68,7 @@ export const DirectorActions = (props: {
     [handleReturn, handleApprove],
   );
 
-  if (props.status === CreditApplicationStatus.RECOMMEND_APPROVAL) {
+  if (props.status === CreditApplicationStatus.RECOMMENDED) {
     return (
       <>
         <CommentBox

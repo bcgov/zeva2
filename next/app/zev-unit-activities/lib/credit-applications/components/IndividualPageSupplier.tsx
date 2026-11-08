@@ -3,7 +3,7 @@ import {
   CreditApplicationStatus,
   CreditApplicationSupplierStatus,
 } from "@/prisma/generated/enums";
-import { getCreditApplication, getApplicationHistories } from "../data";
+import { getApplicationHistories } from "../data";
 import { StatusBanner } from "@/app/lib/components";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faDownload } from "@fortawesome/free-solid-svg-icons";
@@ -18,14 +18,15 @@ import { SupplierActions } from "./SupplierActions";
 import { ApplicationStatisticsSupplier } from "./ApplicationStatisticsSupplier";
 import { PrintDownloadButton } from "@/app/lib/components/PrintDownloadButton";
 import { getIsoYmdString } from "@/app/lib/utils/date";
+import { getCreditApplicationSupplier } from "../services";
 
 export const IndividualPageSupplier = async (props: { id: string }) => {
   const id = Number.parseInt(props.id, 10);
-  const { userIsGov, userRoles } = await getUserInfo();
+  const { userIsGov, userOrgId, userRoles } = await getUserInfo();
   if (userIsGov) {
     return null;
   }
-  const creditApplication = await getCreditApplication(id);
+  const creditApplication = await getCreditApplicationSupplier(id, userOrgId);
   if (!creditApplication) {
     return null;
   }
@@ -91,10 +92,10 @@ export const IndividualPageSupplier = async (props: { id: string }) => {
       );
     }
   } else if (
-    applicationSupplierStatus === CreditApplicationSupplierStatus.APPROVED
+    applicationSupplierStatus === CreditApplicationSupplierStatus.ISSUED
   ) {
     const history = histories.find(
-      (h) => h.userAction === CreditApplicationStatus.APPROVED,
+      (h) => h.userAction === CreditApplicationStatus.ISSUED,
     );
     if (history) {
       statusBanner = (

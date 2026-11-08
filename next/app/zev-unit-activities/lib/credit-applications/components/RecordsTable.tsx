@@ -11,11 +11,7 @@ import {
 } from "react";
 import { createPortal } from "react-dom";
 import { Button, Table, Dropdown } from "@/app/lib/components";
-import {
-  invalidateRecords,
-  MapOfValidatedAndReasons,
-  updateValidatedRecords,
-} from "../actions";
+import { MapOfValidatedAndReasons, updateValidatedRecords } from "../actions";
 import { useRouter } from "next/navigation";
 import { getModelYearEnumsToStringsMap } from "@/app/lib/utils/enumMaps";
 import {
@@ -27,7 +23,6 @@ import {
   warningDescriptions,
 } from "../constants";
 import { ModelYear } from "@/prisma/generated/enums";
-import { isModelYear } from "@/app/lib/utils/typeGuards";
 
 const WarningCode = ({
   code,
@@ -95,7 +90,6 @@ export const RecordsTable = (props: {
 }) => {
   const [mapOfData, setMapOfData] = useState<MapOfValidatedAndReasons>({});
   const [isPending, startTransition] = useTransition();
-  const [modelYearSelection, setModelYearSelection] = useState<ModelYear>();
   const [error, setError] = useState<string>("");
   const router = useRouter();
 
@@ -176,26 +170,6 @@ export const RecordsTable = (props: {
       };
     });
   }, [props.modelYears, modelYearsMap]);
-
-  const handleSelectMy = useCallback((value: string) => {
-    if (isModelYear(value)) {
-      setModelYearSelection(value);
-    }
-  }, []);
-
-  const handleInvalidateByMy = useCallback(() => {
-    setError("");
-    if (modelYearSelection) {
-      startTransition(async () => {
-        const response = await invalidateRecords(props.id, modelYearSelection);
-        if (response.responseType === "error") {
-          setError(response.message);
-        } else {
-          router.refresh();
-        }
-      });
-    }
-  }, [props.id, modelYearSelection]);
 
   const getHighlighted = useCallback(
     (value: string | JSX.Element, warnings: string[]): string | JSX.Element => {
@@ -399,23 +373,6 @@ export const RecordsTable = (props: {
       />
       {!props.readOnly && (
         <div className="p-4 flex flex-row justify-between bg-gray-100 items-center">
-          <div className="flex flex-row gap-4">
-            <Dropdown
-              options={modelYearOptions}
-              value={modelYearSelection}
-              onChange={handleSelectMy}
-              disabled={isPending}
-            />
-            <Button
-              variant="secondary"
-              onClick={handleInvalidateByMy}
-              disabled={isPending}
-            >
-              {isPending
-                ? "..."
-                : "Invalidate validated records associated with the selected Model Year"}
-            </Button>
-          </div>
           <div className="flex flex-row gap-4">
             {error && <span className="text-red-600">{error}</span>}
             <Button variant="primary" onClick={handleSave} disabled={isPending}>

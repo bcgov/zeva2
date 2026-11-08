@@ -321,14 +321,7 @@ export const getPendingSupplyCredits = async (
     where: {
       creditApplication: {
         organizationId,
-        status: {
-          in: [
-            CreditApplicationStatus.SUBMITTED,
-            CreditApplicationStatus.VALIDATED,
-            CreditApplicationStatus.RECOMMEND_APPROVAL,
-            CreditApplicationStatus.RETURNED_TO_ANALYST,
-          ],
-        },
+        supplierStatus: CreditApplicationStatus.SUBMITTED,
       },
     },
     by: ["vehicleClass", "zevClass", "modelYear"],

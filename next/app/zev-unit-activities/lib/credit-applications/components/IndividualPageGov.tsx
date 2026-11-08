@@ -4,13 +4,8 @@ import {
   ModelYear,
   Role,
 } from "@/prisma/generated/enums";
-import {
-  getCreditApplication,
-  getApplicationStatisticsGov,
-  getApplicationHistories,
-} from "../data";
-import { ContentCard, StatusBanner } from "@/app/lib/components";
-import { ApplicationDetails } from "./ApplicationDetails";
+import { getApplicationStatisticsGov, getApplicationHistories } from "../data";
+import { StatusBanner } from "@/app/lib/components";
 import {
   analystAddComment,
   analystEditOrDeleteComment,
@@ -34,6 +29,8 @@ import { faDownload } from "@fortawesome/free-solid-svg-icons";
 import { JSX } from "react";
 import { getIsoYmdString } from "@/app/lib/utils/date";
 import { RecommendationSummary } from "./RecommendationSummary";
+import { getCreditApplicationGov } from "../services";
+import { getMostRecentValidationData } from "../utilsServer";
 
 export const IndividualPageGov = async (props: { id: string }) => {
   const id = Number.parseInt(props.id, 10);
@@ -41,13 +38,16 @@ export const IndividualPageGov = async (props: { id: string }) => {
   if (!userIsGov) {
     return null;
   }
-  const creditApplication = await getCreditApplication(id);
+  const creditApplication = await getCreditApplicationGov(id, userRoles);
   if (!creditApplication) {
     return null;
   }
   const applicationStatus = creditApplication.status;
-  const validationTs = creditApplication.latestValidation?.timestamp;
-  const validatedBy = creditApplication.latestValidation?.user;
+  const latestValidation = getMostRecentValidationData(
+    creditApplication.CreditApplicationHistory,
+  );
+  const validationTs = latestValidation?.timestamp;
+  const validatedBy = latestValidation?.user;
   const downloadAttachments = async () => {
     "use server";
     return getCreditApplicationAttachmentDownloadUrls(id);
@@ -110,9 +110,9 @@ export const IndividualPageGov = async (props: { id: string }) => {
         />
       );
     }
-  } else if (applicationStatus === CreditApplicationStatus.RECOMMEND_APPROVAL) {
+  } else if (applicationStatus === CreditApplicationStatus.RECOMMENDED) {
     const history = histories.findLast(
-      (h) => h.userAction === CreditApplicationStatus.RECOMMEND_APPROVAL,
+      (h) => h.userAction === CreditApplicationStatus.RECOMMENDED,
     );
     if (history) {
       statusBanner = (
@@ -123,9 +123,9 @@ export const IndividualPageGov = async (props: { id: string }) => {
         />
       );
     }
-  } else if (applicationStatus === CreditApplicationStatus.APPROVED) {
+  } else if (applicationStatus === CreditApplicationStatus.ISSUED) {
     const history = histories.find(
-      (h) => h.userAction === CreditApplicationStatus.APPROVED,
+      (h) => h.userAction === CreditApplicationStatus.ISSUED,
     );
     if (history) {
       statusBanner = (
@@ -154,16 +154,10 @@ export const IndividualPageGov = async (props: { id: string }) => {
     <>
       {statusBanner}
       {stats && <ApplicationSummaryCards stats={stats} />}
-      <ContentCard title="Application Details">
-        <ApplicationDetails
-          application={creditApplication}
-          userIsGov={userIsGov}
-        />
-      </ContentCard>
       {stats && (
         <ApplicationStatisticsGov
           stats={stats}
-          validated={!!creditApplication.latestValidation}
+          validated={!!latestValidation}
         />
       )}
       <div className="flex flex-col rounded border border-dividerMedium">

@@ -1,9 +1,5 @@
 import Excel from "exceljs";
-import {
-  CreditApplicationStatus,
-  CreditApplicationSupplierStatus,
-  ModelYear,
-} from "@/prisma/generated/enums";
+import { CreditApplicationStatus, ModelYear } from "@/prisma/generated/enums";
 import {
   CreditApplicationWhereInput,
   CreditApplicationOrderByWithRelationInput,
@@ -12,9 +8,12 @@ import {
 } from "@/prisma/generated/models";
 import {
   getMatchingTerms,
+  getStringsToCreditApplicationStatusEnumsMap,
+  getStringsToCreditApplicationSupplierStatusEnumsMap,
   getStringsToModelYearsEnumsMap,
 } from "@/app/lib/utils/enumMaps";
 import {
+  CaHistorySparse,
   CreditApplicationRecordSparse,
   CreditApplicationRecordSparseSerialized,
   CreditApplicationSparse,
@@ -25,39 +24,30 @@ import { IcbcRecordsMap } from "./services";
 import { CreditApplicationCredit } from "./data";
 import { getIsoYmdString, validateDate } from "@/app/lib/utils/date";
 import { ValidationError } from "@/app/lib/utils/actionResponse";
-import { getCreditApplicationStatusLabel } from "./status";
-
-const getStatusFilterMap = (userIsGov: boolean) => {
-  const result: Record<string, CreditApplicationWhereInput> = {};
-  if (!userIsGov) {
-    for (const supplierStatus of Object.values(
-      CreditApplicationSupplierStatus,
-    )) {
-      const label = getCreditApplicationStatusLabel(supplierStatus);
-      result[label] = { supplierStatus };
-    }
-    return result;
-  }
-  for (const status of Object.values(CreditApplicationStatus)) {
-    const label = getCreditApplicationStatusLabel(status);
-    result[label] = { status };
-  }
-  return result;
-};
 
 export const getWhereClause = (
   filters: Record<string, string>,
   userIsGov: boolean,
 ): Omit<CreditApplicationWhereInput, "NOT"> => {
   const result: Omit<CreditApplicationWhereInput, "NOT"> = {};
-  const statusMap = getStatusFilterMap(userIsGov);
+  const statusMap = getStringsToCreditApplicationStatusEnumsMap();
+  const supplierStatusMap =
+    getStringsToCreditApplicationSupplierStatusEnumsMap();
   const modelYearsMap = getStringsToModelYearsEnumsMap();
   Object.entries(filters).forEach(([key, rawValue]) => {
     const value = rawValue.trim();
     if (key === "id") {
       result[key] = parseInt(value, 10);
     } else if (key === "status") {
-      result.OR = getMatchingTerms(statusMap, value);
+      if (userIsGov) {
+        result[key] = {
+          in: getMatchingTerms(statusMap, value),
+        };
+      } else {
+        result["supplierStatus"] = {
+          in: getMatchingTerms(supplierStatusMap, value),
+        };
+      }
     } else if (
       key === "submissionTimestamp" ||
       key === "transactionTimestamp"
@@ -531,4 +521,17 @@ export const serializeCredits = (
   return credits.map((credit) => {
     return { ...credit, numberOfUnits: credit.numberOfUnits.toString() };
   });
+};
+
+export const getMostRecentValidationData = (histories: CaHistorySparse[]) => {
+  let latestValidation: CaHistorySparse | null = null;
+  for (const history of histories) {
+    if (
+      history.userAction === CreditApplicationStatus.VALIDATED &&
+      (!latestValidation || latestValidation.timestamp < history.timestamp)
+    ) {
+      latestValidation = history;
+    }
+  }
+  return latestValidation;
 };

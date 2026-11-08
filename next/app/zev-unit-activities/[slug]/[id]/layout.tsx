@@ -1,7 +1,8 @@
 import { ActivityDetailNav } from "@/app/zev-unit-activities/lib/components/ActivityDetailNav";
-import { getCreditApplication } from "@/app/zev-unit-activities/lib/credit-applications/data";
 import { getUserInfo } from "@/auth";
 import { CreditApplicationTabs } from "../../lib/credit-applications/components/CreditApplicationTabs";
+import { getCreditApplicationGov } from "../../lib/credit-applications/services";
+import { getMostRecentValidationData } from "../../lib/credit-applications/utilsServer";
 
 const Layout = async (props: {
   children: React.ReactNode;
@@ -12,13 +13,16 @@ const Layout = async (props: {
   const idInt = Number.parseInt(id, 10);
   let secondaryNavbar;
   if (slug === "credit-applications" && userIsGov) {
-    const creditApplication = await getCreditApplication(idInt);
+    const creditApplication = await getCreditApplicationGov(idInt, userRoles);
     if (creditApplication) {
+      const validationData = getMostRecentValidationData(
+        creditApplication.CreditApplicationHistory,
+      );
       secondaryNavbar = (
         <CreditApplicationTabs
           creditApplicationId={id}
           creditApplicationStatus={creditApplication.status}
-          validatedBefore={!!creditApplication.latestValidation}
+          validatedBefore={!!validationData}
           userRoles={userRoles}
         />
       );

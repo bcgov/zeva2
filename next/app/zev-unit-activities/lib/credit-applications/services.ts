@@ -9,8 +9,13 @@ import {
   VehicleStatus,
   ZevType,
   ZevClass,
+  Role,
 } from "@/prisma/generated/enums";
-import { CreditApplicationRecordWhereInput } from "@/prisma/generated/models";
+import {
+  CreditApplicationRecordWhereInput,
+  CreditApplicationWhereInput,
+  CreditApplicationWhereUniqueInput,
+} from "@/prisma/generated/models";
 import { GovCaStatRecord, mapOfStatusToSupplierStatus } from "./constants";
 import { Attachment } from "@/app/lib/constants/attachment";
 import { TransactionClient } from "@/types/prisma";
@@ -24,6 +29,93 @@ import {
 } from "@/app/lib/utils/date";
 import { CreditApplicationRecordScalarFieldEnum } from "@/prisma/generated/internal/prismaNamespace";
 import { ChatComment } from "@/app/lib/constants/chatComment";
+
+export const getCreditApplicationGov = async (
+  creditApplicationId: number,
+  userRoles: Role[],
+) => {
+  let whereClause: CreditApplicationWhereUniqueInput = {
+    id: creditApplicationId,
+  };
+  const notClause: CreditApplicationWhereInput[] = [
+    {
+      status: CreditApplicationStatus.DRAFT,
+    },
+  ];
+  if (userRoles.includes(Role.DIRECTOR)) {
+    notClause.push({
+      status: {
+        in: [
+          CreditApplicationStatus.RETURNED_TO_ANALYST,
+          CreditApplicationStatus.SUBMITTED,
+          CreditApplicationStatus.VALIDATED,
+        ],
+      },
+    });
+  }
+  whereClause = { ...whereClause, NOT: notClause };
+  return await prisma.creditApplication.findUnique({
+    where: whereClause,
+    include: {
+      organization: true,
+      CreditApplicationAttachment: {
+        select: {
+          fileName: true,
+        },
+      },
+      CreditApplicationHistory: {
+        where: {
+          userAction: {
+            not: CreditApplicationStatus.DRAFT,
+          },
+        },
+        select: {
+          userAction: true,
+          timestamp: true,
+          user: {
+            select: {
+              firstName: true,
+              lastName: true,
+            },
+          },
+        },
+        orderBy: {
+          timestamp: "asc",
+        },
+      },
+    },
+  });
+};
+
+export const getCreditApplicationSupplier = async (
+  creditApplicationId: number,
+  orgId: number,
+) => {
+  let whereClause: CreditApplicationWhereUniqueInput = {
+    id: creditApplicationId,
+    organizationId: orgId,
+  };
+  return await prisma.creditApplication.findUnique({
+    where: whereClause,
+    include: {
+      organization: true,
+      CreditApplicationAttachment: {
+        select: {
+          fileName: true,
+        },
+      },
+      _count: {
+        select: {
+          CreditApplicationRecord: {
+            where: {
+              validated: false,
+            },
+          },
+        },
+      },
+    },
+  });
+};
 
 export const getOrgInfo = async (orgId: number) => {
   const orgInfo = await prisma.organization.findUnique({
