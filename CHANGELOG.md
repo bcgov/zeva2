@@ -4,6 +4,7 @@ All notable changes to this project are documented in this file.
 
 | Version | Date | Type | Change |
 | --- | --- | --- | --- |
+| [1.77.1](https://github.com/bcgov/zeva2/compare/v1.77.0...v1.77.1) | 2026-11-09 | 🐛 Fix | misc updates ([#747](https://github.com/bcgov/zeva2/issues/747)) ([4867115](https://github.com/bcgov/zeva2/commit/4867115a1a25ebe5fc576c6c51c7197f1c85d311)) |
 | [1.77.0](https://github.com/bcgov/zeva2/compare/v1.76.1...v1.77.0) | 2026-11-07 | 🐛 Fix | display deficit ([#743](https://github.com/bcgov/zeva2/issues/743)) ([601b700](https://github.com/bcgov/zeva2/commit/601b700c42712858cf7f105facbcc6411f1b0766)) |
 | [1.77.0](https://github.com/bcgov/zeva2/compare/v1.76.1...v1.77.0) | 2026-11-07 | ✨ Feature | Credit Application Table Status Labels [#702](https://github.com/bcgov/zeva2/issues/702) ([#733](https://github.com/bcgov/zeva2/issues/733)) ([39f09a4](https://github.com/bcgov/zeva2/commit/39f09a45c0203a402fdeacf9b48d394489682599)) |
 | [1.76.1](https://github.com/bcgov/zeva2/compare/v1.76.0...v1.76.1) | 2026-11-05 | 🐛 Fix | seed script edit ([#744](https://github.com/bcgov/zeva2/issues/744)) ([95de600](https://github.com/bcgov/zeva2/commit/95de600c166af37a6985d215dd341f3b064f407f)) |
