@@ -25,93 +25,6 @@ import {
   supplierVisibleHistoryActions,
 } from "./constants";
 
-export type CreditApplicationWithOrgAndAttachmentNamesAndInvalidatedRecordsCount =
-  CreditApplicationModel & {
-    organization: OrganizationModel;
-    CreditApplicationAttachment: {
-      fileName: string;
-    }[];
-    _count: {
-      CreditApplicationRecord: number;
-    };
-    latestValidation: {
-      timestamp: Date;
-      user: Pick<UserModel, "firstName" | "lastName">;
-    } | null;
-  };
-
-export const getCreditApplication = async (
-  creditApplicationId: number,
-): Promise<CreditApplicationWithOrgAndAttachmentNamesAndInvalidatedRecordsCount | null> => {
-  const { userIsGov, userOrgId, userRoles } = await getUserInfo();
-  let whereClause: CreditApplicationWhereUniqueInput = {
-    id: creditApplicationId,
-  };
-  if (userIsGov) {
-    const notClause: CreditApplicationWhereInput[] = [
-      {
-        status: CreditApplicationStatus.DRAFT,
-      },
-    ];
-    if (userRoles.includes(Role.DIRECTOR)) {
-      notClause.push({
-        status: {
-          in: [
-            CreditApplicationStatus.RETURNED_TO_ANALYST,
-            CreditApplicationStatus.SUBMITTED,
-            CreditApplicationStatus.VALIDATED,
-          ],
-        },
-      });
-    }
-    whereClause = { ...whereClause, NOT: notClause };
-  } else {
-    whereClause = {
-      ...whereClause,
-      organizationId: userOrgId,
-    };
-  }
-  const application = await prisma.creditApplication.findUnique({
-    where: whereClause,
-    include: {
-      organization: true,
-      CreditApplicationAttachment: {
-        select: {
-          fileName: true,
-        },
-      },
-      _count: {
-        select: {
-          CreditApplicationRecord: {
-            where: {
-              validated: false,
-            },
-          },
-        },
-      },
-    },
-  });
-  if (!application) {
-    return null;
-  }
-  return {
-    ...application,
-    latestValidation: userIsGov
-      ? await prisma.creditApplicationHistory.findFirst({
-          where: {
-            creditApplicationId,
-            userAction: CreditApplicationStatus.VALIDATED,
-          },
-          select: {
-            timestamp: true,
-            user: { select: { firstName: true, lastName: true } },
-          },
-          orderBy: [{ timestamp: "desc" }, { id: "desc" }],
-        })
-      : null,
-  };
-};
-
 export const getValidatedRecords = async (
   creditApplicationId: number,
   page: number,
@@ -378,7 +291,7 @@ export const getApplicationStatisticsSupplier = async (
     return null;
   }
   const status = creditApplication.status;
-  const getValidatedStats = status === CreditApplicationStatus.APPROVED;
+  const getValidatedStats = status === CreditApplicationStatus.ISSUED;
   return {
     status,
     recordStats: await getRecordStats(creditApplicationId, "all"),

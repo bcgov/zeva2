@@ -43,7 +43,6 @@ export type ZevUnitRecordsObj = Partial<
 >;
 
 // custom errors:
-export class UnexpectedDebit extends Error {}
 export class UncoveredTransfer extends Error {}
 export class IncompleteOrdering extends Error {}
 
@@ -58,7 +57,6 @@ export class IncompleteOrdering extends Error {}
 export const calculateBalance = (
   zevUnitRecords: ZevUnitRecord[],
   zevClassesOrdered: ZevClass[],
-  modelYear: ModelYear,
 ): [ZevUnitRecord[], ZevUnitRecord[]] => {
   let refinedRecords = applyTransfersAway(zevUnitRecords);
   let creditsThatWereOffsetBySpecialDebits: ZevUnitRecord[] = [];
@@ -86,51 +84,15 @@ export const calculateBalance = (
 };
 
 // for use when not generating a MYR/Supplementary/Assessment/Reassessment
-// if there exists a debit amongst transactions, this is an error (it implies we got the wrong balance)
-// else if there exists debit amongst endingBalances, return "deficit"
-// else, collect ending balances and transactions into a list of ZevUnitRecords, apply transfers away, and return the result
+// applies transfers away and returns the balance;
+// no offsets are conducted
 export const getBalance = (
   endingBalances: ZevUnitEndingBalanceModel[],
   transactions: ZevUnitTransactionModel[],
 ) => {
-  for (const transaction of transactions) {
-    if (transaction.type === TransactionType.DEBIT) {
-      throw new UnexpectedDebit();
-    }
-  }
   const zevUnitRecords = getZevUnitRecords(endingBalances).concat(transactions);
   const recordsAfterTransfersAway = applyTransfersAway(zevUnitRecords);
-  for (const balance of endingBalances) {
-    if (balance.type === TransactionType.DEBIT) {
-      return "deficit";
-    }
-  }
   return getSummedZevUnitRecordsObj(recordsAfterTransfersAway);
-};
-
-// for use when the supplier is in deficit; unlike getBalance(), debits are not an error
-// and are subtracted from credits (of the same vehicle class, zev class and model year)
-// returns a ZevUnitRecordsObj containing only CREDIT entries, whose values may be negative
-export const getSignedBalance = (
-  endingBalances: ZevUnitEndingBalanceModel[],
-  transactions: ZevUnitTransactionModel[],
-): ZevUnitRecordsObj => {
-  const zevUnitRecords = getZevUnitRecords(endingBalances).concat(transactions);
-  const signedRecords = applyTransfersAway(zevUnitRecords)
-    .filter(
-      (record) =>
-        record.type === TransactionType.CREDIT ||
-        record.type === TransactionType.DEBIT,
-    )
-    .map((record) => ({
-      ...record,
-      type: TransactionType.CREDIT,
-      numberOfUnits:
-        record.type === TransactionType.DEBIT
-          ? record.numberOfUnits.negated()
-          : record.numberOfUnits,
-    }));
-  return getSummedZevUnitRecordsObj(signedRecords);
 };
 
 /**
@@ -329,6 +291,49 @@ export const applyTransfersAway = (zevUnitRecords: ZevUnitRecord[]) => {
   for (const record of result) {
     if (record.type === TransactionType.TRANSFER_AWAY) {
       throw new UncoveredTransfer();
+    }
+  }
+  return result;
+};
+
+export const applySingleTransferAway = (
+  credits: (ZevUnitRecord & { type: typeof TransactionType.CREDIT })[],
+  transferAway: ZevUnitRecord & {
+    id: number;
+    type: typeof TransactionType.TRANSFER_AWAY;
+  },
+) => {
+  const result: {
+    remainingCredits: (ZevUnitRecord & {
+      type: typeof TransactionType.CREDIT;
+    })[];
+    transferAwayThatShouldBecomeDebit: {
+      id: number;
+      numberOfUnits: Decimal;
+    } | null;
+  } = {
+    remainingCredits: [],
+    transferAwayThatShouldBecomeDebit: null,
+  };
+  const relevantCredits: ZevUnitRecord[] = [];
+  for (const record of credits) {
+    if (
+      record.vehicleClass === transferAway.vehicleClass &&
+      record.zevClass === transferAway.zevClass &&
+      record.modelYear === transferAway.modelYear
+    ) {
+      relevantCredits.push(record);
+    }
+  }
+  const [resultOfOffset] = offset(relevantCredits, [transferAway]);
+  for (const record of resultOfOffset) {
+    if (record.type === TransactionType.CREDIT) {
+      result.remainingCredits.push({ ...record, type: TransactionType.CREDIT });
+    } else if (record.type === TransactionType.TRANSFER_AWAY) {
+      result.transferAwayThatShouldBecomeDebit = {
+        id: transferAway.id,
+        numberOfUnits: record.numberOfUnits,
+      };
     }
   }
   return result;
@@ -658,4 +663,69 @@ export const getOtherZevClassPairs = (): [VehicleClass, ZevClass][] => {
     });
   });
   return result;
+};
+
+export const getSummedBalances = (balance: ZevUnitRecordsObj) => {
+  return {
+    debits: {
+      A: sumBalance(
+        balance,
+        TransactionType.DEBIT,
+        VehicleClass.REPORTABLE,
+        ZevClass.A,
+      ).toFixed(2),
+      B: sumBalance(
+        balance,
+        TransactionType.DEBIT,
+        VehicleClass.REPORTABLE,
+        ZevClass.B,
+      ).toFixed(2),
+      Unspecified: sumBalance(
+        balance,
+        TransactionType.DEBIT,
+        VehicleClass.REPORTABLE,
+        ZevClass.UNSPECIFIED,
+      ).toFixed(2),
+    },
+    credits: {
+      A: sumBalance(
+        balance,
+        TransactionType.CREDIT,
+        VehicleClass.REPORTABLE,
+        ZevClass.A,
+      ).toFixed(2),
+      B: sumBalance(
+        balance,
+        TransactionType.CREDIT,
+        VehicleClass.REPORTABLE,
+        ZevClass.B,
+      ).toFixed(2),
+      Unspecified: sumBalance(
+        balance,
+        TransactionType.CREDIT,
+        VehicleClass.REPORTABLE,
+        ZevClass.UNSPECIFIED,
+      ).toFixed(2),
+    },
+  };
+};
+
+export const balanceABUHasDeficit = (balance: {
+  debits: { A: string; B: string; Unspecified: string };
+}) => {
+  try {
+    const aDebit = new Decimal(balance.debits.A);
+    const bDebit = new Decimal(balance.debits.B);
+    const unspecifiedDebit = new Decimal(balance.debits.Unspecified);
+    if (
+      aDebit.greaterThan(0) ||
+      bDebit.greaterThan(0) ||
+      unspecifiedDebit.greaterThan(0)
+    ) {
+      return true;
+    }
+  } catch (e) {
+    return false;
+  }
+  return false;
 };

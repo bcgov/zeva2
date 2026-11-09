@@ -16,12 +16,7 @@ import {
   specialComplianceRatios,
   unspecifiedComplianceRatios,
 } from "@/app/lib/constants/complianceRatio";
-import {
-  applyTransfersAway,
-  getSpecialZevClassPairs,
-  UnexpectedDebit,
-  ZevUnitRecord,
-} from "@/lib/utils/zevUnit";
+import { getSpecialZevClassPairs, ZevUnitRecord } from "@/lib/utils/zevUnit";
 import {
   IsCompliant,
   mapOfStatusToSupplierStatus,
@@ -49,19 +44,6 @@ import {
   parseAssessment,
 } from "./utils";
 import { Directory } from "@/app/lib/services/s3";
-
-export const validatePrevBalanceTransactions = (
-  transactions: ZevUnitRecord[],
-) => {
-  transactions.forEach((transaction) => {
-    if (transaction.type === TransactionType.DEBIT) {
-      throw new UnexpectedDebit(
-        "Unexpected debit when collecting previous balance!",
-      );
-    }
-  });
-  return applyTransfersAway(transactions);
-};
 
 export type ComplianceReduction = ZevUnitRecord & {
   complianceRatio: string;

@@ -2,7 +2,7 @@ import { getCreditTransfer, getCreditTransferHistories } from "../data";
 import { getUserInfo } from "@/auth";
 import { getCreditTransferStatusEnumsToStringsMap } from "@/app/lib/utils/enumMaps";
 import { processAuditHistories } from "@/app/lib/utils/auditHistory";
-import { ApplicationAuditHistory } from "@/app/zev-unit-activities/lib/credit-applications/components/ApplicationAuditHistory";
+import { AuditHistory } from "@/app/lib/components/audit-history";
 
 export const CreditTransferAuditHistoryContent = async ({
   id,
@@ -20,20 +20,22 @@ export const CreditTransferAuditHistoryContent = async ({
   const statusMap = getCreditTransferStatusEnumsToStringsMap();
 
   const { entries, summary, statusOptions, roleOptions } =
-    processAuditHistories({
+    processAuditHistories("transfer", {
       histories,
       userIsGov,
       statusMap,
     });
 
   return (
-    <ApplicationAuditHistory
-      applicationId={id}
-      applicationNumber={String(id)}
-      summary={summary}
-      entries={entries}
-      statusOptions={statusOptions}
-      roleOptions={roleOptions}
-    />
+    <div className="p-6">
+      <AuditHistory
+        title={`Audit History for Credit Transfer ${id}`}
+        summary={summary}
+        entries={entries}
+        statusOptions={statusOptions}
+        roleOptions={roleOptions}
+        printable={true}
+      />
+    </div>
   );
 };

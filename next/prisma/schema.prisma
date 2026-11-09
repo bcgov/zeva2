@@ -385,9 +385,9 @@ model IcbcRecord {
 }
 
 enum CreditApplicationStatus {
-  APPROVED
   DRAFT
-  RECOMMEND_APPROVAL
+  ISSUED
+  RECOMMENDED
   REJECTED
   RETURNED_TO_ANALYST
   SUBMITTED
@@ -395,8 +395,8 @@ enum CreditApplicationStatus {
 }
 
 enum CreditApplicationSupplierStatus {
-  APPROVED
   DRAFT
+  ISSUED
   REJECTED
   SUBMITTED
 }

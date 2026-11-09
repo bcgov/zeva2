@@ -17,9 +17,9 @@ import {
   ReassessmentStatus,
   Role,
   SupplierClass,
+  TransactionType,
   VehicleClass,
   ZevClass,
-  ZevType,
 } from "@/prisma/generated/enums";
 import {
   ModelYearReportAttachmentWhereInput,
@@ -35,10 +35,10 @@ import {
   getDataForReassessment,
   getZevUnitData,
   MyrZevUnitTransaction,
-  areTransfersCovered,
   getSupplierClassAndVolumes,
   updateOrgSupplierClass,
   assessReassessment,
+  getTransfersAwayThatShouldBecomeDebits,
 } from "./services";
 import {
   DataOrErrorActionResponse,
@@ -816,16 +816,12 @@ export const assessModelYearReport = async (
     const endingBalance = assessmentData.endingBalance.map((record) => {
       return { ...record, numberOfUnits: record.finalNumberOfUnits };
     });
-    const transfersAreCovered = await areTransfersCovered(
-      organizationId,
-      modelYear,
-      endingBalance,
-    );
-    if (!transfersAreCovered) {
-      throw new Error(
-        "Issuing this assessment would cause a transfer to become uncovered!",
+    const transfersAwayThatShouldBecomeDebits =
+      await getTransfersAwayThatShouldBecomeDebits(
+        organizationId,
+        modelYear,
+        endingBalance,
       );
-    }
     const nvData: SupplyVolumeCreateManyInput[] = [];
     assessmentData.nvValues.forEach(([vehicleClass, volume]) => {
       nvData.push({
@@ -856,6 +852,17 @@ export const assessModelYearReport = async (
           };
         }),
       });
+      for (const record of transfersAwayThatShouldBecomeDebits) {
+        await tx.zevUnitTransaction.update({
+          where: {
+            id: record.id,
+          },
+          data: {
+            type: TransactionType.DEBIT,
+            numberOfUnits: record.numberOfUnits,
+          },
+        });
+      }
       await tx.zevUnitEndingBalance.createMany({
         data: assessmentData.endingBalance.map((record) => {
           return { ...record, organizationId, complianceYear: modelYear };

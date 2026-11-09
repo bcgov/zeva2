@@ -156,10 +156,10 @@ export const getAllCaRecordsGovWhereClause = (
     },
   };
   const directorRequiresActionWhereClause: CreditApplicationWhereInput = {
-    status: CreditApplicationStatus.RECOMMEND_APPROVAL,
+    status: CreditApplicationStatus.RECOMMENDED,
   };
   const analystWithDirectorWhereClause: CreditApplicationWhereInput = {
-    status: CreditApplicationStatus.RECOMMEND_APPROVAL,
+    status: CreditApplicationStatus.RECOMMENDED,
   };
   const completedWhereClause: CreditApplicationWhereInput = {
     CreditApplicationHistory: {
@@ -168,7 +168,7 @@ export const getAllCaRecordsGovWhereClause = (
       },
     },
     status: {
-      in: [CreditApplicationStatus.APPROVED, CreditApplicationStatus.REJECTED],
+      in: [CreditApplicationStatus.ISSUED, CreditApplicationStatus.REJECTED],
     },
   };
   let whereClause: CreditApplicationWhereInput | null = null;
@@ -242,7 +242,7 @@ export const getAllCaRecordsSupplierWhereClause = (
       "in-progress": {
         status: {
           in: [
-            CreditApplicationStatus.RECOMMEND_APPROVAL,
+            CreditApplicationStatus.RECOMMENDED,
             CreditApplicationStatus.RETURNED_TO_ANALYST,
             CreditApplicationStatus.SUBMITTED,
             CreditApplicationStatus.VALIDATED,
@@ -252,7 +252,7 @@ export const getAllCaRecordsSupplierWhereClause = (
       "for-awareness": {
         status: {
           in: [
-            CreditApplicationStatus.APPROVED,
+            CreditApplicationStatus.ISSUED,
             CreditApplicationStatus.REJECTED,
           ],
         },
@@ -751,8 +751,8 @@ export const getActivityFeedCaRecordsWhereClause = (
     whereClause.creditApplication = {
       status: {
         in: [
-          CreditApplicationStatus.APPROVED,
-          CreditApplicationStatus.RECOMMEND_APPROVAL,
+          CreditApplicationStatus.ISSUED,
+          CreditApplicationStatus.RECOMMENDED,
           CreditApplicationStatus.REJECTED,
         ],
       },
@@ -876,11 +876,7 @@ export const getActivityFeedMyrRecordsWhereClause = (
   let whereClause: ModelYearReportHistoryWhereInput = {
     timestamp: { gte: nDaysAgo },
     userAction: {
-      in: [
-        ModelYearReportStatus.ASSESSED,
-        ModelYearReportStatus.RETURNED_TO_SUPPLIER,
-        ModelYearReportStatus.SUBMITTED_TO_GOVERNMENT,
-      ],
+      not: ModelYearReportStatus.DRAFT,
     },
   };
   if (userRoles.includes(Role.DIRECTOR)) {

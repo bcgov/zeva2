@@ -187,7 +187,7 @@ export const SupplierActions = (props: {
   }
 
   if (
-    props.status === CreditApplicationSupplierStatus.APPROVED &&
+    props.status === CreditApplicationSupplierStatus.ISSUED &&
     props.hasInvalidatedRecords
   ) {
     return (
