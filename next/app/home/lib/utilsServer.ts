@@ -876,11 +876,7 @@ export const getActivityFeedMyrRecordsWhereClause = (
   let whereClause: ModelYearReportHistoryWhereInput = {
     timestamp: { gte: nDaysAgo },
     userAction: {
-      in: [
-        ModelYearReportStatus.ASSESSED,
-        ModelYearReportStatus.RETURNED_TO_SUPPLIER,
-        ModelYearReportStatus.SUBMITTED_TO_GOVERNMENT,
-      ],
+      not: ModelYearReportStatus.DRAFT,
     },
   };
   if (userRoles.includes(Role.DIRECTOR)) {

@@ -1,17 +1,18 @@
 import { Row } from "./layout";
-import { getReportableBalanceAB } from "@/app/zev-unit-activities/lib/zev-unit-transactions/data";
+import { getReportableBalanceABU } from "@/app/zev-unit-activities/lib/zev-unit-transactions/data";
 import { getUserInfo } from "@/auth";
 import { PrimaryNavbar } from "./PrimaryNavbar";
 import { getRoleEnumsToStringsMap } from "../utils/enumMaps";
+import { balanceABUHasDeficit } from "@/lib/utils/zevUnit";
 
 /** Basic Header component containing the BCGOV logo and title of the application. */
 export const Header = async () => {
   const { userName, userIsGov, userOrgName, userOrgId, userId, userRoles } =
     await getUserInfo();
 
-  let balance: Awaited<ReturnType<typeof getReportableBalanceAB>> | undefined;
+  let balance: Awaited<ReturnType<typeof getReportableBalanceABU>> | undefined;
   if (!userIsGov) {
-    balance = await getReportableBalanceAB(userOrgId);
+    balance = await getReportableBalanceABU(userOrgId);
   }
   const rolesMap = getRoleEnumsToStringsMap();
   const roles = userRoles.map((role) => rolesMap[role]).join(", ");
@@ -32,17 +33,21 @@ export const Header = async () => {
               <span className="text-xs sm:text-sm">Role(s): {roles}</span>
             </div>
             <span className="h-8 border-l border-white/70" />
-            {balance === "deficit" ? (
+            {balanceABUHasDeficit(balance) ? (
               <span className="font-semibold">Deficit</span>
             ) : (
               <div className="flex flex-col leading-tight text-right items-end font-semibold tabular-nums gap-1">
                 <div className="grid grid-cols-[3rem_minmax(0,6.5rem)] gap-x-1 items-center">
                   <span className="justify-self-end">A :</span>
-                  <span className="text-left tabular-nums">{balance.A}</span>
+                  <span className="text-left tabular-nums">
+                    {balance.credits.A}
+                  </span>
                 </div>
                 <div className="grid grid-cols-[3rem_minmax(0,6.5rem)] gap-x-1 items-center">
                   <span className="justify-self-end">B :</span>
-                  <span className="text-left tabular-nums">{balance.B}</span>
+                  <span className="text-left tabular-nums">
+                    {balance.credits.B}
+                  </span>
                 </div>
               </div>
             )}

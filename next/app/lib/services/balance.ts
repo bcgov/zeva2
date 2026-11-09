@@ -1,9 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import {
-  getBalance,
-  getSignedBalance,
-  UnexpectedDebit,
-} from "@/lib/utils/zevUnit";
+import { getBalance } from "@/lib/utils/zevUnit";
 import { ModelYear } from "@/prisma/generated/enums";
 import {
   ZevUnitEndingBalanceModel,
@@ -40,7 +36,7 @@ export const getEndingBalances = async (
   });
 };
 
-const getBalanceInputs = async (orgId: number) => {
+export const getOrgBalance = async (orgId: number) => {
   const mostRecentEndingBalance = await prisma.zevUnitEndingBalance.findFirst({
     where: {
       organizationId: orgId,
@@ -55,25 +51,8 @@ const getBalanceInputs = async (orgId: number) => {
     const { openUpperBound: gteDate } = getCompliancePeriod(complianceYear);
     const endingBalances = await getEndingBalances(orgId, complianceYear);
     const transactions = await getTransactions(orgId, gteDate);
-    return { endingBalances, transactions };
+    return getBalance(endingBalances, transactions);
   }
   const transactions = await getTransactions(orgId);
-  return { endingBalances: [], transactions };
-};
-
-export const getOrgBalance = async (orgId: number) => {
-  const { endingBalances, transactions } = await getBalanceInputs(orgId);
-  try {
-    return getBalance(endingBalances, transactions);
-  } catch (e) {
-    if (e instanceof UnexpectedDebit) {
-      return "deficit";
-    }
-    throw e;
-  }
-};
-
-export const getOrgSignedBalance = async (orgId: number) => {
-  const { endingBalances, transactions } = await getBalanceInputs(orgId);
-  return getSignedBalance(endingBalances, transactions);
+  return getBalance([], transactions);
 };

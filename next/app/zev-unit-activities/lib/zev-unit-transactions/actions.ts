@@ -19,7 +19,7 @@ import {
   SerializedZevUnitBalanceRecord,
   SerializedZevUnitTransaction,
 } from "./constants";
-import { getReportableBalanceAB } from "./data";
+import { getReportableBalanceABU } from "./data";
 
 export const getTransactionsByComplianceYear = async (
   organizationId: number,
@@ -98,9 +98,9 @@ export const getEndingBalance = async (
   return getDataActionResponse(recordsToReturn);
 };
 
-export const getReportableBalanceABForSupplierUser = async () => {
+export const getReportableBalanceABUForSupplierUser = async () => {
   const { userOrgId } = await getUserInfo();
-  return await getReportableBalanceAB(userOrgId);
+  return await getReportableBalanceABU(userOrgId);
 };
 
 export const getComplianceBounds = async (
