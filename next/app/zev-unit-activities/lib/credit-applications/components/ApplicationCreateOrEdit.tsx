@@ -2,8 +2,7 @@ import { getUserInfo } from "@/auth";
 import { CreditApplicationForm } from "./CreditApplicationForm";
 import { getCreditApplicationAttachmentDownloadUrls } from "../actions";
 import { AttachmentDownload } from "@/app/lib/constants/attachment";
-import { getOrgInfo } from "../services";
-import { getCreditApplicationSupplier } from "../services";
+import { getCreditApplicationSupplier, getOrgInfo } from "../services";
 import { getPresignedGetObjectUrl } from "@/app/lib/services/s3";
 import {
   CreditApplicationStatus,
