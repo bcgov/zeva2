@@ -75,7 +75,7 @@ jobs:
           oc_server: ${{ vars.OC_SERVER }}
           oc_token: ${{ secrets.OC_TOKEN }}
           overwrite: "false"
-          parameters: -p ZONE="pr-${{ github.event.number }}" -p NAME="zeva" -p DB_PASSWORD="$DB_PASSWORD"
+          parameters: -p ZONE="pr-${{ github.event.number }}" -p NAME="zeva2" -p DB_PASSWORD="$DB_PASSWORD"
           triggers: |
             next/
             openshift/
