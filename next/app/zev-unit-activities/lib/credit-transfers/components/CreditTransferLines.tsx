@@ -4,7 +4,6 @@ import { useMemo } from "react";
 import { Dropdown } from "@/app/lib/components/inputs";
 import {
   getStringsToModelYearsEnumsMap,
-  getStringsToVehicleClassEnumsMap,
   getStringsToZevClassEnumsMap,
 } from "@/app/lib/utils/enumMaps";
 import { ModelYear } from "@/prisma/generated/enums";
@@ -30,10 +29,6 @@ export const CreditTransferLines = (props: {
   ) => void;
   disabled: boolean;
 }) => {
-  const vehicleClassesMap = useMemo(() => {
-    return getStringsToVehicleClassEnumsMap();
-  }, []);
-
   const zevClassesMap = useMemo(() => {
     return getStringsToZevClassEnumsMap();
   }, []);
@@ -47,43 +42,13 @@ export const CreditTransferLines = (props: {
       <div className="flex flex-col items-start flex-1">
         <div className="flex h-[60px] items-center self-stretch gap-3 px-4 pt-3 pb-[13px] rounded-tl border-b border-dividerMedium bg-white">
           <span className="text-primaryText text-sm font-bold leading-[21px]">
-            Vehicle Class
-          </span>
-        </div>
-        {props.lines.map((line, index) => (
-          <div
-            key={index}
-            className="flex h-[60px] items-center self-stretch gap-[10px] px-4 py-3 rounded-bl bg-infoBG"
-          >
-            <Dropdown
-              id={`vehicleClass-${index}`}
-              className="flex-1"
-              options={Object.entries(vehicleClassesMap).map(
-                ([key, value]) => ({
-                  value: value as string,
-                  label: key,
-                }),
-              )}
-              value={line.vehicleClass}
-              onChange={(value) =>
-                props.handleLineChange(index, "vehicleClass", value)
-              }
-              disabled={props.disabled}
-            />
-          </div>
-        ))}
-      </div>
-
-      <div className="flex flex-col items-start flex-1">
-        <div className="flex h-[60px] items-center self-stretch gap-3 px-4 pt-3 pb-[13px] border-b border-dividerMedium bg-white">
-          <span className="text-primaryText text-sm font-bold leading-[21px]">
             ZEV Class
           </span>
         </div>
         {props.lines.map((line, index) => (
           <div
             key={index}
-            className="flex h-[60px] items-center self-stretch gap-[10px] px-4 py-3 bg-infoBG"
+            className="flex h-[60px] items-center self-stretch gap-[10px] px-4 py-3 rounded-bl bg-infoBG"
           >
             <Dropdown
               id={`zevClass-${index}`}

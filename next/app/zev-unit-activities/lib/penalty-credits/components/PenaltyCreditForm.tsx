@@ -10,7 +10,6 @@ import {
 import { analystCreate, analystSave } from "../actions";
 import {
   getModelYearEnumsToStringsMap,
-  getVehicleClassEnumsToStringsMap,
   getZevClassEnumsToStringsMap,
 } from "@/app/lib/utils/enumMaps";
 import { Button } from "@/app/lib/components";
@@ -44,7 +43,9 @@ export const PenaltyCreditForm = (props: NewProps | SavedProps) => {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string>("");
-  const [data, setData] = useState<Partial<Record<string, string>>>({});
+  const [data, setData] = useState<Partial<Record<string, string>>>({
+    vehicleClass: VehicleClass.REPORTABLE,
+  });
   const [orgsMap, setOrgsMap] = useState<Partial<Record<number, string>>>();
   const [penaltyCreditId, setPenaltyCreditId] = useState<number>();
 
@@ -87,16 +88,6 @@ export const PenaltyCreditForm = (props: NewProps | SavedProps) => {
           label: map[my] ?? "",
         };
       });
-  }, []);
-
-  const vehicleClassOptions = useMemo(() => {
-    const map = getVehicleClassEnumsToStringsMap();
-    return Object.values(VehicleClass).map((vc) => {
-      return {
-        value: vc,
-        label: map[vc] ?? "",
-      };
-    });
   }, []);
 
   const zevClassOptions = useMemo(() => {
@@ -176,13 +167,6 @@ export const PenaltyCreditForm = (props: NewProps | SavedProps) => {
             value={data.complianceYear ?? ""}
             onChange={(value) => handleChange("complianceYear", value)}
             disabled={props.type === "saved"}
-          />
-
-          <Dropdown
-            label="Vehicle Class"
-            options={vehicleClassOptions}
-            value={data.vehicleClass ?? ""}
-            onChange={(value) => handleChange("vehicleClass", value)}
           />
 
           <Dropdown

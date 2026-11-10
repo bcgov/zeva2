@@ -52,7 +52,6 @@ export const ParsedAssessment = (props: { assessment: ParsedAssmnt }) => {
         <thead>
           <tr>
             <th className="border border-gray-300">Type</th>
-            <th className="border border-gray-300">Vehicle Class</th>
             <th className="border border-gray-300">ZEV Class</th>
             <th className="border border-gray-300">Model Year</th>
             <th className="border border-gray-300">
@@ -70,9 +69,6 @@ export const ParsedAssessment = (props: { assessment: ParsedAssmnt }) => {
             <tr key={crypto.randomUUID()}>
               <td key="type" className="border border-gray-300">
                 {record.type}
-              </td>
-              <td key="vehicleClass" className="border border-gray-300">
-                {record.vehicleClass}
               </td>
               <td key="zevClass" className="border border-gray-300">
                 {record.zevClass}

@@ -5,6 +5,7 @@ import { Dropdown } from "@/app/lib/components/inputs";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState, useTransition } from "react";
 import { Routes } from "@/app/lib/constants";
+import { VehicleClass } from "@/prisma/generated/enums";
 import { CreditTransferLine, CreditTransferLines } from "./CreditTransferLines";
 import { saveTransfer } from "../actions";
 import { getCreditTransferPayload } from "../utilsClient";
@@ -12,7 +13,7 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faPlus, faSave, faArrowLeft } from "@fortawesome/free-solid-svg-icons";
 
 const defaultLine: CreditTransferLine = {
-  vehicleClass: "",
+  vehicleClass: VehicleClass.REPORTABLE,
   zevClass: "",
   modelYear: "",
   numberOfUnits: "",

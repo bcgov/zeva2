@@ -9,7 +9,6 @@ import { Attachments } from "@/app/lib/components/Attachments";
 import {
   getModelYearEnumsToStringsMap,
   getVehicleClassCodeEnumsToStringsMap,
-  getVehicleClassEnumsToStringsMap,
   getVehicleStatusEnumsToStringsMap,
   getZevClassEnumsToStringsMap,
 } from "@/app/lib/utils/enumMaps";
@@ -97,7 +96,6 @@ export const SupplierDetailsPage = async (props: {
   };
 
   const status = vehicle.status;
-  const vehicleClassesMap = getVehicleClassEnumsToStringsMap();
   const zevClassesMap = getZevClassEnumsToStringsMap();
   const modelYearsMap = getModelYearEnumsToStringsMap();
   const classCodesMap = getVehicleClassCodeEnumsToStringsMap();
@@ -176,10 +174,6 @@ export const SupplierDetailsPage = async (props: {
               rows={[
                 { label: "ZEV Type:", value: vehicle.zevType },
                 { label: "ZEV Class:", value: zevClassesMap[vehicle.zevClass] },
-                {
-                  label: "Vehicle class:",
-                  value: vehicleClassesMap[vehicle.vehicleClass],
-                },
                 {
                   label: "US06 Range >= 16 km:",
                   value: vehicle.us06RangeGte16 ? "Yes" : "NO or N/A",
