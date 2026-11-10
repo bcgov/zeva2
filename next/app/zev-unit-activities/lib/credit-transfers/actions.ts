@@ -174,6 +174,11 @@ export const deleteTransfer = async (
     return getErrorActionResponse("Invalid Action!");
   }
   await prisma.$transaction(async (tx) => {
+    await tx.creditTransferHistory.deleteMany({
+      where: {
+        creditTransferId: transferId,
+      },
+    });
     await tx.creditTransferContent.deleteMany({
       where: {
         creditTransferId: transferId,
