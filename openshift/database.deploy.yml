@@ -22,7 +22,7 @@ parameters:
     value: 256Mi
   - name: DB_PASSWORD
     description: Password for the PostgreSQL connection user.
-    from: "[a-zA-Z0-9]{16}"
+    from: "[a-zA-Z0-9]{8}"
     generate: expression
   - name: MEMORY_LIMIT
     description: Memory limit for the database container.

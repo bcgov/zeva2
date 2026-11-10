@@ -65,15 +65,16 @@ jobs:
       - name: Deploy database
         if: matrix.service == 'database'
         uses: bcgov/actions-openshift/deployer@46f2614322f7ba1a5ad88a7e4e1b98569c80dcf7 # v0.6.0
-        env:
-          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
         with:
           file: ${{ matrix.file }}
           oc_namespace: ${{ vars.OC_NAMESPACE }}
           oc_server: ${{ vars.OC_SERVER }}
           oc_token: ${{ secrets.OC_TOKEN }}
           overwrite: "false"
-          parameters: -p ZONE="pr-${{ github.event.number }}" -p NAME="zeva2" -p DB_PASSWORD="$DB_PASSWORD"
+          parameters: >-
+            -p ZONE="pr-${{ github.event.number }}"
+            -p NAME="zeva2"
+            -p DB_PASSWORD="${{ secrets.DB_PASSWORD }}"
           triggers: |
             next/
             openshift/
