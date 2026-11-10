@@ -3,8 +3,6 @@ name: PR
 
 on:
   pull_request:
-    branches:
-      - ci/adopt-quickstart
 
 concurrency:
   group: ${{ github.event.number }}
