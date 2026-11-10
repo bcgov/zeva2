@@ -34,7 +34,7 @@ jobs:
             context: next
             file: next/Dockerfile-Bullmq-Openshift
             triggers: |
-              next/bullmq
+              next/
               .github/workflows/pr-open.yml
     steps:
       - uses: bcgov/actions/builder@091f1da89c669d36bf4899830381e5b12d2c889a # v0.11.0
