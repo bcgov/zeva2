@@ -3,7 +3,7 @@ kind: Template
 parameters:
   - name: NAME
     description: Product name
-    value: cthub
+    value: zeva2
     required: true
   - name: COMPONENT
     description: Component name
@@ -107,11 +107,9 @@ objects:
               readinessProbe:
                 exec:
                   command:
-                    - pg_isready
-                    - -d
-                    - $(POSTGRES_DB)
-                    - -U
-                    - $(POSTGRES_USER)
+                    - /bin/sh
+                    - -c
+                    - exec pg_isready -d "$POSTGRES_DB" -U "$POSTGRES_USER"
                 successThreshold: 1
                 failureThreshold: 5
                 initialDelaySeconds: 15
@@ -120,11 +118,9 @@ objects:
               livenessProbe:
                 exec:
                   command:
-                    - pg_isready
-                    - -d
-                    - $(POSTGRES_DB)
-                    - -U
-                    - $(POSTGRES_USER)
+                    - /bin/sh
+                    - -c
+                    - exec pg_isready -d "$POSTGRES_DB" -U "$POSTGRES_USER"
                 successThreshold: 1
                 failureThreshold: 5
                 initialDelaySeconds: 30
