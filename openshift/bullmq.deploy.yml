@@ -35,9 +35,6 @@ parameters:
   - name: VAULT_SERVICE_ACCOUNT
     description: Existing service account used for Vault authentication
     required: true
-  - name: DATABASE_NAME
-    description: NAME used when deploying database.deploy.yml
-    value: zeva
   - name: DATABASE_COMPONENT
     description: Component name used when deploying database.deploy.yml
     value: database
@@ -158,27 +155,27 @@ objects:
                 - name: DB_HOST
                   valueFrom:
                     secretKeyRef:
-                      name: ${DATABASE_NAME}-${ZONE}-${DATABASE_COMPONENT}
+                      name: ${NAME}-${ZONE}-${DATABASE_COMPONENT}
                       key: database-host
                 - name: DB_PORT
                   valueFrom:
                     secretKeyRef:
-                      name: ${DATABASE_NAME}-${ZONE}-${DATABASE_COMPONENT}
+                      name: ${NAME}-${ZONE}-${DATABASE_COMPONENT}
                       key: database-port
                 - name: DB_NAME
                   valueFrom:
                     secretKeyRef:
-                      name: ${DATABASE_NAME}-${ZONE}-${DATABASE_COMPONENT}
+                      name: ${NAME}-${ZONE}-${DATABASE_COMPONENT}
                       key: database-name
                 - name: DB_USER
                   valueFrom:
                     secretKeyRef:
-                      name: ${DATABASE_NAME}-${ZONE}-${DATABASE_COMPONENT}
+                      name: ${NAME}-${ZONE}-${DATABASE_COMPONENT}
                       key: database-user
                 - name: DB_PASSWORD
                   valueFrom:
                     secretKeyRef:
-                      name: ${DATABASE_NAME}-${ZONE}-${DATABASE_COMPONENT}
+                      name: ${NAME}-${ZONE}-${DATABASE_COMPONENT}
                       key: database-password
                 - name: DATABASE_URL
                   value: "postgresql://$(DB_USER):$(DB_PASSWORD)@$(DB_HOST):$(DB_PORT)/$(DB_NAME)?schema=public"

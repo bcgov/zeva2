@@ -74,6 +74,7 @@ jobs:
           parameters: >-
             -p ZONE="pr-${{ github.event.number }}"
             -p NAME="zeva2"
+            -p DATABASE_NAME="zeva"
             -p DB_PASSWORD="${{ secrets.DB_PASSWORD }}"
           triggers: |
             next/

@@ -5,6 +5,9 @@ parameters:
     description: Product name
     value: zeva2
     required: true
+  - name: DATABASE_NAME
+    description: PostgreSQL database name
+    value: zeva
   - name: COMPONENT
     description: Component name
     value: database
@@ -36,7 +39,7 @@ objects:
       labels:
         app: ${NAME}-${ZONE}
     stringData:
-      database-name: ${NAME}
+      database-name: ${DATABASE_NAME}
       database-password: ${DB_PASSWORD}
       database-user: ${NAME}
       database-host: ${NAME}-${ZONE}-${COMPONENT}
