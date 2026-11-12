@@ -36,12 +36,14 @@ export const ParsedAssessment = (props: { assessment: ParsedAssmnt }) => {
         records={props.assessment.credits}
       />
       <ParsedZevUnitRecords
-        caption="Previous Adjustments"
-        records={props.assessment.previousAdjustments}
+        caption="Debits"
+        records={props.assessment.debits}
+        hideIfEmpty={true}
       />
       <ParsedZevUnitRecords
-        caption="Current Adjustments"
-        records={props.assessment.currentAdjustments}
+        caption="Adjustments"
+        records={props.assessment.adjustments}
+        hideIfEmpty={true}
       />
       <ParsedZevUnitRecords
         caption="Offsets and Transfers Away"

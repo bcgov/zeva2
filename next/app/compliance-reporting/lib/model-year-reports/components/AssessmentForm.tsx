@@ -241,7 +241,7 @@ export const AssessmentForm = (
           setZevClassOrder(
             getZevClassOrder(parsedAssmnt.details.zevClassOrdering),
           );
-          setAdjustments(parsedAssmnt.currentAdjustments);
+          setAdjustments(parsedAssmnt.adjustments);
         }
       };
       loadAssessment();

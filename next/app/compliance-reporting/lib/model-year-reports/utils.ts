@@ -49,12 +49,7 @@ export const getMyrSheets = (workbook: Workbook) => {
   const pendingSupplyCreditsSheet = workbook.getWorksheet(
     MyrTemplate.PendingSupplyCreditsSheetName,
   );
-  const adjustmentsSheet = workbook.getWorksheet(
-    MyrTemplate.AdjustmentsSheetName,
-  );
-  const suggestedAdjustmentsSheet = workbook.getWorksheet(
-    MyrTemplate.SuggestedAdjustmentsSheetName,
-  );
+  const debitsSheet = workbook.getWorksheet(AssessmentTemplate.DebitsSheetName);
   const offsetsAndTransfersAwaySheet = workbook.getWorksheet(
     MyrTemplate.OffsetsAndTransfersAwaySheetName,
   );
@@ -69,9 +64,8 @@ export const getMyrSheets = (workbook: Workbook) => {
     !prevEndOfCdBalanceSheet ||
     !prevAfterCdBalanceSheet ||
     !creditsSheet ||
+    !debitsSheet ||
     !pendingSupplyCreditsSheet ||
-    !adjustmentsSheet ||
-    !suggestedAdjustmentsSheet ||
     !offsetsAndTransfersAwaySheet ||
     !prelimEndingBalanceSheet
   ) {
@@ -85,9 +79,8 @@ export const getMyrSheets = (workbook: Workbook) => {
     prevEndOfCdBalanceSheet,
     prevAfterCdBalanceSheet,
     creditsSheet,
+    debitsSheet,
     pendingSupplyCreditsSheet,
-    adjustmentsSheet,
-    suggestedAdjustmentsSheet,
     offsetsAndTransfersAwaySheet,
     prelimEndingBalanceSheet,
   };
@@ -130,9 +123,8 @@ export type ParsedMyr = {
   prevEndOfCdBalance: FileZevUnitRecord[];
   prevAfterCdBalance: FileZevUnitRecord[];
   credits: FileZevUnitRecord[];
-  pendingSupplyCredits: FileMyrPendingSupplyCredit[];
-  adjustments: FileZevUnitRecord[];
-  suggestedAdjustments: FileZevUnitRecord[];
+  pendingSupplyCredits: FileZevUnitRecord[];
+  debits: FileZevUnitRecord[];
   offsetsAndTransfersAway: FileZevUnitRecord[];
   prelimEndingBalance: FileZevUnitRecord[];
 };
@@ -152,8 +144,7 @@ export const parseMyr = (workbook: Workbook): ParsedMyr => {
     pendingSupplyCredits: parsePendingSupplyCredits(
       sheets.pendingSupplyCreditsSheet,
     ),
-    adjustments: parseZevUnitRecords(sheets.adjustmentsSheet),
-    suggestedAdjustments: parseZevUnitRecords(sheets.suggestedAdjustmentsSheet),
+    debits: parseDebits(sheets.debitsSheet),
     offsetsAndTransfersAway: parseZevUnitRecords(
       sheets.offsetsAndTransfersAwaySheet,
     ),
@@ -262,18 +253,12 @@ export const getZevAndIceCounts = (records: FileZevAndIceCountRecord[]) => {
   return result;
 };
 
-type FileMyrPendingSupplyCredit = {
-  vehicleClass: string;
-  zevClass: string;
-  modelYear: string;
-  numberOfUnits: string;
-};
-
 const parsePendingSupplyCredits = (sheet: Excel.Worksheet) => {
-  const result: FileMyrPendingSupplyCredit[] = [];
+  const result: FileZevUnitRecord[] = [];
   sheet.eachRow((row, rowNumber) => {
     if (rowNumber > 1) {
       result.push({
+        type: "Credit",
         vehicleClass: row.getCell(1).toString(),
         zevClass: row.getCell(2).toString(),
         modelYear: row.getCell(3).toString(),
@@ -300,6 +285,22 @@ const parseZevUnitRecords = (sheet: Excel.Worksheet): FileZevUnitRecord[] => {
   return result;
 };
 
+const parseDebits = (sheet: Excel.Worksheet) => {
+  const result: FileZevUnitRecord[] = [];
+  sheet.eachRow((row, rowNumber) => {
+    if (rowNumber > 1) {
+      result.push({
+        type: "Debit",
+        vehicleClass: row.getCell(1).toString(),
+        zevClass: row.getCell(2).toString(),
+        modelYear: row.getCell(3).toString(),
+        numberOfUnits: row.getCell(4).toString(),
+      });
+    }
+  });
+  return result;
+};
+
 export const getAssessmentSheets = (workbook: Workbook) => {
   const detailsSheet = workbook.getWorksheet(
     AssessmentTemplate.DetailsSheetName,
@@ -316,11 +317,9 @@ export const getAssessmentSheets = (workbook: Workbook) => {
   const creditsSheet = workbook.getWorksheet(
     AssessmentTemplate.CreditsSheetName,
   );
-  const previousAdjustmentsSheet = workbook.getWorksheet(
-    AssessmentTemplate.PreviousAdjustmentsSheetName,
-  );
-  const currentAdjustmentsSheet = workbook.getWorksheet(
-    AssessmentTemplate.CurrentAdjustmentsSheetName,
+  const debitsSheet = workbook.getWorksheet(AssessmentTemplate.DebitsSheetName);
+  const adjustmentsSheet = workbook.getWorksheet(
+    AssessmentTemplate.AdjustmentsSheetName,
   );
   const offsetsAndTransfersAwaySheet = workbook.getWorksheet(
     AssessmentTemplate.OffsetsAndTransfersAwaySheetName,
@@ -337,8 +336,8 @@ export const getAssessmentSheets = (workbook: Workbook) => {
     !zevAndIceCountsSheet ||
     !beginningBalanceSheet ||
     !creditsSheet ||
-    !previousAdjustmentsSheet ||
-    !currentAdjustmentsSheet ||
+    !debitsSheet ||
+    !adjustmentsSheet ||
     !offsetsAndTransfersAwaySheet ||
     !finalEndingBalanceSheet ||
     !statementsSheet
@@ -351,8 +350,8 @@ export const getAssessmentSheets = (workbook: Workbook) => {
     zevAndIceCountsSheet,
     beginningBalanceSheet,
     creditsSheet,
-    previousAdjustmentsSheet,
-    currentAdjustmentsSheet,
+    debitsSheet,
+    adjustmentsSheet,
     offsetsAndTransfersAwaySheet,
     finalEndingBalanceSheet,
     statementsSheet,
@@ -365,8 +364,8 @@ export type ParsedAssmnt = {
   zevAndIceCounts: FileZevAndIceCountRecord[];
   beginningBalance: FileZevUnitRecord[];
   credits: FileZevUnitRecord[];
-  previousAdjustments: FileZevUnitRecord[];
-  currentAdjustments: FileZevUnitRecord[];
+  debits: FileZevUnitRecord[];
+  adjustments: FileZevUnitRecord[];
   offsetsAndTransfersAway: FileZevUnitRecord[];
   finalEndingBalance: FileFinalEndingBalanceRecord[];
   statements: string[];
@@ -388,8 +387,8 @@ export const parseAssessment = (workbook: Workbook): ParsedAssmnt => {
     zevAndIceCounts: parseZevAndIceCounts(sheets.zevAndIceCountsSheet),
     beginningBalance: parseZevUnitRecords(sheets.beginningBalanceSheet),
     credits: parseZevUnitRecords(sheets.creditsSheet),
-    previousAdjustments: parseZevUnitRecords(sheets.previousAdjustmentsSheet),
-    currentAdjustments: parseZevUnitRecords(sheets.currentAdjustmentsSheet),
+    adjustments: parseZevUnitRecords(sheets.adjustmentsSheet),
+    debits: parseDebits(sheets.debitsSheet),
     offsetsAndTransfersAway: parseZevUnitRecords(
       sheets.offsetsAndTransfersAwaySheet,
     ),

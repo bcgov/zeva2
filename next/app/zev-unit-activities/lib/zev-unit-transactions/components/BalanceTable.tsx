@@ -106,7 +106,7 @@ export const BalanceTable = ({
               <td className="px-5 py-4">
                 {aDebits[y as ModelYear] ? (
                   <span className="text-error">
-                    -{aDebits[y as ModelYear]?.toString()}
+                    -{aDebits[y as ModelYear]?.toFixed(2)}
                   </span>
                 ) : (
                   "—"
@@ -115,7 +115,7 @@ export const BalanceTable = ({
               <td className="px-5 py-4">
                 {bDebits[y as ModelYear] ? (
                   <span className="text-error">
-                    -{bDebits[y as ModelYear]?.toString()}
+                    -{bDebits[y as ModelYear]?.toFixed(2)}
                   </span>
                 ) : (
                   "—"
@@ -124,7 +124,7 @@ export const BalanceTable = ({
               <td className="px-5 py-4">
                 {unspecifiedDebits[y as ModelYear] ? (
                   <span className="text-error">
-                    -{unspecifiedDebits[y as ModelYear]?.toString()}
+                    -{unspecifiedDebits[y as ModelYear]?.toFixed(2)}
                   </span>
                 ) : (
                   "—"
@@ -144,13 +144,13 @@ export const BalanceTable = ({
             <tr key={y} className="odd:bg-white even:bg-gray-50">
               <td className="px-5 py-4">{modelYearsMap[y as ModelYear]}</td>
               <td className="px-5 py-4">
-                {aCredits[y as ModelYear]?.toString() ?? "—"}
+                {aCredits[y as ModelYear]?.toFixed(2) ?? "—"}
               </td>
               <td className="px-5 py-4">
-                {bCredits[y as ModelYear]?.toString() ?? "—"}
+                {bCredits[y as ModelYear]?.toFixed(2) ?? "—"}
               </td>
               <td className="px-5 py-4">
-                {unspecifiedCredits[y as ModelYear]?.toString() ?? "—"}
+                {unspecifiedCredits[y as ModelYear]?.toFixed(2) ?? "—"}
               </td>
             </tr>
           ))}

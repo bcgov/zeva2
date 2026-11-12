@@ -89,18 +89,12 @@ export const ParsedModelYearReport = (props: {
         />
         <ParsedZevUnitRecords
           caption="Pending Supply Credits"
-          records={props.myr.pendingSupplyCredits.map((credit) => {
-            return { type: "Credit", ...credit };
-          })}
-        />
-        <ParsedZevUnitRecords
-          caption="Adjustments"
-          records={props.myr.adjustments}
+          records={props.myr.pendingSupplyCredits}
           hideIfEmpty={true}
         />
         <ParsedZevUnitRecords
-          caption="Suggested Adjustments"
-          records={props.myr.suggestedAdjustments}
+          caption="Debits"
+          records={props.myr.debits}
           hideIfEmpty={true}
         />
         <ParsedZevUnitRecords
