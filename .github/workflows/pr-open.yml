@@ -74,8 +74,6 @@ jobs:
           parameters: >-
             -p ZONE="pr-${{ github.event.number }}"
             -p NAME="zeva2"
-            -p DATABASE_NAME="zeva"
-            -p DB_PASSWORD="${{ secrets.DB_PASSWORD }}"
           triggers: |
             next/
             openshift/
@@ -105,9 +103,9 @@ jobs:
         name: [next, bullmq]
         include:
           - name: next
-            file: openshift/next.deploy.yml
+            file: openshift/next.pr-deploy.yml
           - name: bullmq
-            file: openshift/bullmq.deploy.yml
+            file: openshift/bullmq.pr-deploy.yml
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Derive Vault settings from OpenShift namespace
@@ -134,7 +132,6 @@ jobs:
           parameters: >-
             -p ZONE="pr-${{ github.event.number }}"
             -p NAME="zeva2"
-            -p COMPONENT="${{ matrix.name }}"
             -p IMAGE_TAG="${{ github.event.pull_request.head.sha }}"
             -p VAULT_SECRET_PATH="${{ steps.vault_settings.outputs.vault_secret_path }}"
             -p VAULT_ROLE="${{ steps.vault_settings.outputs.vault_role }}"
