@@ -517,7 +517,7 @@ export const parseAssesmentForData = (
 } => {
   const parsedAssessment = parseAssessment(workbook);
   const reductions = parsedAssessment.complianceReductions;
-  const currentAdjustments = parsedAssessment.currentAdjustments;
+  const adjustments = parsedAssessment.adjustments;
   const finalEndingBalance = parsedAssessment.finalEndingBalance;
   const reductionsData = parseReductionsForData(reductions);
   const reductionTransactions = reductionsData.reductions.map((reduction) => {
@@ -526,7 +526,7 @@ export const parseAssesmentForData = (
       referenceType: ReferenceType.COMPLIANCE_RATIO_REDUCTION,
     };
   });
-  const adjustmentsData = parseAdjustmentForData(currentAdjustments);
+  const adjustmentsData = parseAdjustmentForData(adjustments);
   const adjustmentTransactions = adjustmentsData.map((adjustment) => {
     return {
       ...adjustment,

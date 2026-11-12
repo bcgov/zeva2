@@ -7,10 +7,10 @@ import {
 } from "@/app/lib/utils/complianceYear";
 import { prisma } from "@/lib/prisma";
 import {
-  applySingleTransferAway,
   applyTransfersAway,
   calculateBalance,
   flattenZevUnitRecords,
+  getTransferCoverageData,
   ZevUnitRecord,
 } from "@/lib/utils/zevUnit";
 import {
@@ -27,6 +27,7 @@ import {
 } from "@/prisma/generated/enums";
 import {
   SupplyVolumeModel,
+  ZevUnitTransactionModel,
   ZevUnitTransactionWhereInput,
 } from "@/prisma/generated/models";
 import { Decimal } from "decimal.js";
@@ -273,8 +274,11 @@ export const getTransactionsForModelYear = async (
       gte: closedLowerBound,
       lt: openUpperBound,
     },
-    NOT: {
-      referenceType: ReferenceType.COMPLIANCE_RATIO_REDUCTION,
+    referenceType: {
+      notIn: [
+        ReferenceType.ASSESSMENT_ADJUSTMENT,
+        ReferenceType.COMPLIANCE_RATIO_REDUCTION,
+      ],
     },
   };
   const transactions = await prisma.zevUnitTransaction.findMany({
@@ -573,12 +577,23 @@ export const getDataForSupplementary = async (
 // upon issuance of an assessment or reassessment,
 // transfers may become uncovered due to
 // a new ending balance being created
-export const getTransfersAwayThatShouldBecomeDebits = async (
+// returns transfers away that should become debits,
+// transfers away that should have their numberofUnits updated (decreased),
+// and new debits to add
+export const getUncoveredTransfersData = async (
   organizationId: number,
   complianceYear: ModelYear,
   newEndingBalance: ZevUnitRecord[],
 ) => {
-  const result: { id: number; numberOfUnits: Decimal }[] = [];
+  const result: {
+    idsOfTransfersAwayThatShouldBecomeDebits: number[];
+    transferAwayUpdateData: { id: number; numberOfUnits: Decimal }[];
+    newDebits: Omit<ZevUnitTransactionModel, "id">[];
+  } = {
+    idsOfTransfersAwayThatShouldBecomeDebits: [],
+    transferAwayUpdateData: [],
+    newDebits: [],
+  };
   const { openUpperBound: gteDate } = getCompliancePeriod(complianceYear);
   const transactions = await prisma.zevUnitTransaction.findMany({
     where: {
@@ -590,23 +605,12 @@ export const getTransfersAwayThatShouldBecomeDebits = async (
         in: [TransactionType.CREDIT, TransactionType.TRANSFER_AWAY],
       },
     },
-    select: {
-      id: true,
-      timestamp: true,
-      type: true,
-      numberOfUnits: true,
-      vehicleClass: true,
-      zevClass: true,
-      modelYear: true,
-    },
     orderBy: {
       timestamp: "asc",
     },
   });
-  const transfersAway: (ZevUnitRecord & {
-    id: number;
+  const transfersAway: (ZevUnitTransactionModel & {
     type: typeof TransactionType.TRANSFER_AWAY;
-    timestamp: Date;
   })[] = [];
   for (const record of transactions) {
     if (record.type === TransactionType.TRANSFER_AWAY) {
@@ -614,7 +618,7 @@ export const getTransfersAwayThatShouldBecomeDebits = async (
     }
   }
   if (transfersAway.length === 0) {
-    return [];
+    return result;
   }
   const endingCredits: (ZevUnitRecord & {
     type: typeof TransactionType.CREDIT;
@@ -624,9 +628,8 @@ export const getTransfersAwayThatShouldBecomeDebits = async (
       endingCredits.push({ ...record, type: TransactionType.CREDIT });
     }
   }
-  const credits: (ZevUnitRecord & {
+  const credits: (ZevUnitTransactionModel & {
     type: typeof TransactionType.CREDIT;
-    timestamp: Date;
   })[] = [];
   for (const record of transactions) {
     if (record.type === TransactionType.CREDIT) {
@@ -649,11 +652,22 @@ export const getTransfersAwayThatShouldBecomeDebits = async (
         ),
       );
     }
-    const { remainingCredits, transferAwayThatShouldBecomeDebit } =
-      applySingleTransferAway(creditsToCoverTransfers, transferAway);
+    const { remainingCredits, completelyUncovered, partiallyUncoveredData } =
+      getTransferCoverageData(creditsToCoverTransfers, transferAway);
     creditsToCoverTransfers = remainingCredits;
-    if (transferAwayThatShouldBecomeDebit) {
-      result.push(transferAwayThatShouldBecomeDebit);
+    if (completelyUncovered) {
+      result.idsOfTransfersAwayThatShouldBecomeDebits.push(transferAway.id);
+    } else if (partiallyUncoveredData) {
+      result.transferAwayUpdateData.push({
+        id: transferAway.id,
+        numberOfUnits: partiallyUncoveredData.coveredUnits,
+      });
+      const { id, ...rest } = transferAway;
+      result.newDebits.push({
+        ...rest,
+        type: TransactionType.DEBIT,
+        numberOfUnits: partiallyUncoveredData.uncoveredUnits,
+      });
     }
   }
   return result;
@@ -713,12 +727,11 @@ export const assessReassessment = async (
   const endingBalance = reassessmentData.endingBalance.map((record) => {
     return { ...record, numberOfUnits: record.finalNumberOfUnits };
   });
-  const transfersAwayThatShouldBecomeDebits =
-    await getTransfersAwayThatShouldBecomeDebits(
-      organizationId,
-      modelYear,
-      endingBalance,
-    );
+  const {
+    idsOfTransfersAwayThatShouldBecomeDebits,
+    transferAwayUpdateData,
+    newDebits,
+  } = await getUncoveredTransfersData(organizationId, modelYear, endingBalance);
   const volumeUpsertClauses = reassessmentData.nvValues.map(
     ([vehicleClass, volume]) => ({
       where: {
@@ -758,7 +771,12 @@ export const assessReassessment = async (
   await client.zevUnitTransaction.deleteMany({
     where: {
       organizationId,
-      referenceType: ReferenceType.COMPLIANCE_RATIO_REDUCTION,
+      referenceType: {
+        in: [
+          ReferenceType.ASSESSMENT_ADJUSTMENT,
+          ReferenceType.COMPLIANCE_RATIO_REDUCTION,
+        ],
+      },
       AND: [
         { timestamp: { gte: compliancePeriod.closedLowerBound } },
         { timestamp: { lt: compliancePeriod.openUpperBound } },
@@ -787,17 +805,29 @@ export const assessReassessment = async (
       return { ...record, organizationId, complianceYear: modelYear };
     }),
   });
-  for (const record of transfersAwayThatShouldBecomeDebits) {
+  await client.zevUnitTransaction.updateMany({
+    where: {
+      id: {
+        in: idsOfTransfersAwayThatShouldBecomeDebits,
+      },
+    },
+    data: {
+      type: TransactionType.DEBIT,
+    },
+  });
+  for (const record of transferAwayUpdateData) {
     await client.zevUnitTransaction.update({
       where: {
         id: record.id,
       },
       data: {
-        type: TransactionType.DEBIT,
         numberOfUnits: record.numberOfUnits,
       },
     });
   }
+  await client.zevUnitTransaction.createMany({
+    data: newDebits,
+  });
   if (modelYearReportId) {
     await client.modelYearReport.update({
       where: {
