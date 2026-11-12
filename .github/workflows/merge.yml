@@ -40,8 +40,10 @@ jobs:
         include:
           - name: next
             file: openshift/next.deploy.yml
+            memory_request: 400Mi
           - name: bullmq
             file: openshift/bullmq.deploy.yml
+            memory_request: 200Mi
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Derive Vault settings from OpenShift namespace
@@ -68,6 +70,7 @@ jobs:
           parameters: >-
             -p ZONE="test"
             -p NAME="zeva2"
+            -p MEMORY_REQUEST="${{ matrix.memory_request }}"
             -p IMAGE_TAG="${{ github.sha }}"
             -p VAULT_SECRET_PATH="${{ steps.vault_settings.outputs.vault_secret_path }}"
             -p VAULT_ROLE="${{ steps.vault_settings.outputs.vault_role }}"

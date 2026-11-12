@@ -35,7 +35,7 @@ parameters:
   - name: CPU_REQUEST
     value: 20m
   - name: MEMORY_REQUEST
-    value: 200Mi
+    value: 400Mi
 
 objects:
   - apiVersion: apps/v1
