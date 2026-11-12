@@ -47,11 +47,7 @@ import {
   getVehicleClassEnumsToStringsMap,
   getZevClassEnumsToStringsMap,
 } from "@/app/lib/utils/enumMaps";
-import {
-  isVehicleClass,
-  isZevClass,
-  isZevType,
-} from "@/app/lib/utils/typeGuards";
+import { isVehicleClass, isZevType } from "@/app/lib/utils/typeGuards";
 
 export const getNvValuesFromZevAndIceCounts = (
   zevAndIceCounts: ZevAndIceCounts,
@@ -117,7 +113,6 @@ export const generateMyr = async (
   makes: string[],
   recordsAddress: string,
   serviceAddress: string,
-  suggestedAdjustments: AdjustmentPayload[],
 ) => {
   const workbook = new Excel.Workbook();
   await workbook.xlsx.load(template);
@@ -158,27 +153,13 @@ export const generateMyr = async (
     myrData.prevAfterCdBalance,
     helpingMaps,
   );
-  writeCredits(
-    sheets.creditsSheet,
-    myrData.currentTransactions,
-    helpingMaps,
-    new Set(),
-  );
+  writeCredits(sheets.creditsSheet, myrData.currentTransactions, helpingMaps);
   writePendingSupplyCredits(
     sheets.pendingSupplyCreditsSheet,
     myrData.pendingSupplyCredits,
     helpingMaps,
   );
-  writePreviousAdjustments(
-    sheets.adjustmentsSheet,
-    myrData.currentTransactions,
-    helpingMaps,
-  );
-  writeAdjustments(
-    sheets.suggestedAdjustmentsSheet,
-    suggestedAdjustments,
-    helpingMaps,
-  );
+  writeDebits(sheets.debitsSheet, myrData.currentTransactions, helpingMaps);
   writeOffsetsAndTransfersAway(
     sheets.offsetsAndTransfersAwaySheet,
     myrData.offsets,
@@ -311,15 +292,28 @@ const writeCredits = (
   sheet: Excel.Worksheet,
   records: MyrCurrentTransactions,
   helpingMaps: MyrHelpingMaps,
-  referenceTypesToExclude: Set<ReferenceType>,
 ) => {
   records.forEach((record) => {
-    if (
-      record.type === TransactionType.CREDIT &&
-      !referenceTypesToExclude.has(record.referenceType)
-    ) {
+    if (record.type === TransactionType.CREDIT) {
       sheet.addRow([
         helpingMaps.referenceTypesMap[record.referenceType],
+        helpingMaps.vehicleClassesMap[record.vehicleClass],
+        helpingMaps.zevClassesMap[record.zevClass],
+        helpingMaps.modelYearsMap[record.modelYear],
+        record.numberOfUnits,
+      ]);
+    }
+  });
+};
+
+const writeDebits = (
+  sheet: Excel.Worksheet,
+  records: MyrCurrentTransactions,
+  helpingMaps: MyrHelpingMaps,
+) => {
+  records.forEach((record) => {
+    if (record.type === TransactionType.DEBIT) {
+      sheet.addRow([
         helpingMaps.vehicleClassesMap[record.vehicleClass],
         helpingMaps.zevClassesMap[record.zevClass],
         helpingMaps.modelYearsMap[record.modelYear],
@@ -382,14 +376,13 @@ export const generateAssessment = async (
     sheets.creditsSheet,
     assessmentData.currentTransactions,
     helpingMaps,
-    new Set([ReferenceType.ASSESSMENT_ADJUSTMENT]),
   );
-  writePreviousAdjustments(
-    sheets.previousAdjustmentsSheet,
+  (writeDebits(
+    sheets.debitsSheet,
     assessmentData.currentTransactions,
     helpingMaps,
-  );
-  writeAdjustments(sheets.currentAdjustmentsSheet, adjustments, helpingMaps);
+  ),
+    writeAdjustments(sheets.adjustmentsSheet, adjustments, helpingMaps));
   writeOffsetsAndTransfersAway(
     sheets.offsetsAndTransfersAwaySheet,
     assessmentData.offsets,

@@ -38,7 +38,7 @@ import {
   getSupplierClassAndVolumes,
   updateOrgSupplierClass,
   assessReassessment,
-  getTransfersAwayThatShouldBecomeDebits,
+  getUncoveredTransfersData,
 } from "./services";
 import {
   DataOrErrorActionResponse,
@@ -99,7 +99,6 @@ export const getMyrData = async (
   modelYear: ModelYear,
   nvValues: NvValues,
   zevClassOrdering: ZevClass[],
-  adjustments: AdjustmentPayload[],
 ): Promise<DataOrErrorActionResponse<MyrData>> => {
   const { userOrgId } = await getUserInfo();
   const reportableNvValue = nvValues[VehicleClass.REPORTABLE];
@@ -126,7 +125,7 @@ export const getMyrData = async (
       supplierClass,
       nvValues,
       zevClassOrdering,
-      adjustments,
+      [],
       true,
     );
     return getDataActionResponse<MyrData>({
@@ -816,12 +815,15 @@ export const assessModelYearReport = async (
     const endingBalance = assessmentData.endingBalance.map((record) => {
       return { ...record, numberOfUnits: record.finalNumberOfUnits };
     });
-    const transfersAwayThatShouldBecomeDebits =
-      await getTransfersAwayThatShouldBecomeDebits(
-        organizationId,
-        modelYear,
-        endingBalance,
-      );
+    const {
+      idsOfTransfersAwayThatShouldBecomeDebits,
+      transferAwayUpdateData,
+      newDebits,
+    } = await getUncoveredTransfersData(
+      organizationId,
+      modelYear,
+      endingBalance,
+    );
     const nvData: SupplyVolumeCreateManyInput[] = [];
     assessmentData.nvValues.forEach(([vehicleClass, volume]) => {
       nvData.push({
@@ -852,17 +854,29 @@ export const assessModelYearReport = async (
           };
         }),
       });
-      for (const record of transfersAwayThatShouldBecomeDebits) {
+      await tx.zevUnitTransaction.updateMany({
+        where: {
+          id: {
+            in: idsOfTransfersAwayThatShouldBecomeDebits,
+          },
+        },
+        data: {
+          type: TransactionType.DEBIT,
+        },
+      });
+      for (const record of transferAwayUpdateData) {
         await tx.zevUnitTransaction.update({
           where: {
             id: record.id,
           },
           data: {
-            type: TransactionType.DEBIT,
             numberOfUnits: record.numberOfUnits,
           },
         });
       }
+      await tx.zevUnitTransaction.createMany({
+        data: newDebits,
+      });
       await tx.zevUnitEndingBalance.createMany({
         data: assessmentData.endingBalance.map((record) => {
           return { ...record, organizationId, complianceYear: modelYear };
@@ -1644,12 +1658,13 @@ export const assessSupplementary = async (
   return getSuccessActionResponse();
 };
 
-export const getVinListUrl = async (
+export const getVinListDownloadInfo = async (
   type: "myr" | "supp",
   id: number,
-): Promise<DataOrErrorActionResponse<string>> => {
+): Promise<DataOrErrorActionResponse<AttachmentDownload>> => {
   const { userIsGov, userOrgId } = await getUserInfo();
   let objectName: string | null = null;
+  let fileName: string | null = null;
   if (type === "myr" && userIsGov) {
     const myr = await prisma.modelYearReport.findUnique({
       where: {
@@ -1663,10 +1678,12 @@ export const getVinListUrl = async (
       },
       select: {
         vinListObjectName: true,
+        vinListFileName: true,
       },
     });
     if (myr) {
       objectName = myr.vinListObjectName;
+      fileName = myr.vinListFileName;
     }
   } else if (type === "myr" && !userIsGov) {
     const myr = await prisma.modelYearReport.findUnique({
@@ -1676,10 +1693,12 @@ export const getVinListUrl = async (
       },
       select: {
         vinListObjectName: true,
+        vinListFileName: true,
       },
     });
     if (myr) {
       objectName = myr.vinListObjectName;
+      fileName = myr.vinListFileName;
     }
   } else if (type === "supp" && userIsGov) {
     const supp = await prisma.supplementaryReport.findUnique({
@@ -1694,10 +1713,12 @@ export const getVinListUrl = async (
       },
       select: {
         vinListObjectName: true,
+        vinListFileName: true,
       },
     });
     if (supp) {
       objectName = supp.vinListObjectName;
+      fileName = supp.vinListFileName;
     }
   } else if (type === "supp" && !userIsGov) {
     const supp = await prisma.supplementaryReport.findUnique({
@@ -1707,15 +1728,20 @@ export const getVinListUrl = async (
       },
       select: {
         vinListObjectName: true,
+        vinListFileName: true,
       },
     });
     if (supp) {
       objectName = supp.vinListObjectName;
+      fileName = supp.vinListFileName;
     }
   }
-  if (!objectName) {
+  if (!objectName || !fileName) {
     return getErrorActionResponse("VIN List not found!");
   }
   const url = await getPresignedGetObjectUrl(objectName);
-  return getDataActionResponse(url);
+  return getDataActionResponse({
+    url,
+    fileName,
+  });
 };

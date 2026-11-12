@@ -296,10 +296,15 @@ export const applyTransfersAway = (zevUnitRecords: ZevUnitRecord[]) => {
   return result;
 };
 
-export const applySingleTransferAway = (
+// used to get data about whether a transfer away is uncovered,
+// and if so, whether it's completely uncovered or partially uncovered;
+// in the latter case, data is returned regarding how much is covered and
+// how much is uncovered.
+// also return the credits that remain after applying the trnasfer away
+// to the fullest extent possible
+export const getTransferCoverageData = (
   credits: (ZevUnitRecord & { type: typeof TransactionType.CREDIT })[],
   transferAway: ZevUnitRecord & {
-    id: number;
     type: typeof TransactionType.TRANSFER_AWAY;
   },
 ) => {
@@ -307,13 +312,15 @@ export const applySingleTransferAway = (
     remainingCredits: (ZevUnitRecord & {
       type: typeof TransactionType.CREDIT;
     })[];
-    transferAwayThatShouldBecomeDebit: {
-      id: number;
-      numberOfUnits: Decimal;
+    completelyUncovered: boolean;
+    partiallyUncoveredData: {
+      coveredUnits: Decimal;
+      uncoveredUnits: Decimal;
     } | null;
   } = {
     remainingCredits: [],
-    transferAwayThatShouldBecomeDebit: null,
+    completelyUncovered: false,
+    partiallyUncoveredData: null,
   };
   const relevantCredits: ZevUnitRecord[] = [];
   for (const record of credits) {
@@ -330,10 +337,16 @@ export const applySingleTransferAway = (
     if (record.type === TransactionType.CREDIT) {
       result.remainingCredits.push({ ...record, type: TransactionType.CREDIT });
     } else if (record.type === TransactionType.TRANSFER_AWAY) {
-      result.transferAwayThatShouldBecomeDebit = {
-        id: transferAway.id,
-        numberOfUnits: record.numberOfUnits,
-      };
+      const originalUnits = transferAway.numberOfUnits;
+      const uncoveredUnits = record.numberOfUnits;
+      if (originalUnits.equals(uncoveredUnits)) {
+        result.completelyUncovered = true;
+      } else {
+        result.partiallyUncoveredData = {
+          coveredUnits: transferAway.numberOfUnits.minus(record.numberOfUnits),
+          uncoveredUnits: record.numberOfUnits,
+        };
+      }
     }
   }
   return result;
