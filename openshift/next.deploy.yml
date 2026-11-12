@@ -7,9 +7,6 @@ parameters:
     description: Application module name
     value: zeva2
     required: true
-  - name: COMPONENT
-    description: Component name
-    value: next
   - name: ZONE
     description: Deployment zone, e.g. pr-123, dev, test, or prod
     value: dev
@@ -35,30 +32,24 @@ parameters:
   - name: VAULT_SERVICE_ACCOUNT
     description: Existing service account used for Vault authentication
     required: true
-  - name: DATABASE_COMPONENT
-    description: Component name used when deploying database.deploy.yml
-    value: database
-  - name: REDIS_COMPONENT
-    description: Component name used when deploying redis.deploy.yml
-    value: redis
   - name: CPU_REQUEST
     value: 20m
   - name: MEMORY_REQUEST
-    value: 500Mi
+    value: 200Mi
 
 objects:
   - apiVersion: apps/v1
     kind: Deployment
     metadata:
-      name: ${NAME}-${ZONE}-${COMPONENT}
+      name: ${NAME}-${ZONE}-next
       labels:
         app: ${NAME}-${ZONE}
-        deployment: ${NAME}-${ZONE}-${COMPONENT}
+        deployment: ${NAME}-${ZONE}-next
     spec:
       replicas: 1
       selector:
         matchLabels:
-          deployment: ${NAME}-${ZONE}-${COMPONENT}
+          deployment: ${NAME}-${ZONE}-next
       strategy:
         type: RollingUpdate
         rollingUpdate:
@@ -112,12 +103,12 @@ objects:
             vault.hashicorp.com/role: ${VAULT_ROLE}
           labels:
             app: ${NAME}-${ZONE}
-            deployment: ${NAME}-${ZONE}-${COMPONENT}
+            deployment: ${NAME}-${ZONE}-next
         spec:
           serviceAccountName: ${VAULT_SERVICE_ACCOUNT}
           containers:
-            - name: ${COMPONENT}
-              image: ${REGISTRY}/${ORG_NAME}/${NAME}/${COMPONENT}:${IMAGE_TAG}
+            - name: next
+              image: ${REGISTRY}/${ORG_NAME}/${NAME}/next:${IMAGE_TAG}
               imagePullPolicy: Always
               ports:
                 - name: http
@@ -166,55 +157,13 @@ objects:
                 - name: REDIS_TLS_ENABLED
                   value: "true"
                 - name: REDIS_HOST
-                  valueFrom:
-                    secretKeyRef:
-                      name: ${NAME}-${ZONE}-${REDIS_COMPONENT}
-                      key: redis-host
+                  value: "zeva2-dandyredis-${ZONE}-redis-ha-haproxy"
                 - name: REDIS_PORT
-                  valueFrom:
-                    secretKeyRef:
-                      name: ${NAME}-${ZONE}-${REDIS_COMPONENT}
-                      key: redis-port
-                - name: REDIS_PASSWORD
-                  valueFrom:
-                    secretKeyRef:
-                      name: ${NAME}-${ZONE}-${REDIS_COMPONENT}
-                      key: redis-password
+                  value: "6379"
                 - name: BEGINNING_OF_COMPLIANCE_YEAR
                   value: "10-01T00:00:00.000"
                 - name: END_OF_COMPLIANCE_YEAR
                   value: "09-30T23:59:59.999"
-                - name: DB_HOST
-                  valueFrom:
-                    secretKeyRef:
-                      name: ${NAME}-${ZONE}-${DATABASE_COMPONENT}
-                      key: database-host
-                - name: DB_PORT
-                  valueFrom:
-                    secretKeyRef:
-                      name: ${NAME}-${ZONE}-${DATABASE_COMPONENT}
-                      key: database-port
-                - name: DB_NAME
-                  valueFrom:
-                    secretKeyRef:
-                      name: ${NAME}-${ZONE}-${DATABASE_COMPONENT}
-                      key: database-name
-                - name: DB_USER
-                  valueFrom:
-                    secretKeyRef:
-                      name: ${NAME}-${ZONE}-${DATABASE_COMPONENT}
-                      key: database-user
-                - name: DB_PASSWORD
-                  valueFrom:
-                    secretKeyRef:
-                      name: ${NAME}-${ZONE}-${DATABASE_COMPONENT}
-                      key: database-password
-                - name: DATABASE_URL_MIGRATION
-                  value: postgresql://$(DB_USER):$(DB_PASSWORD)@$(DB_HOST):$(DB_PORT)/$(DB_NAME)?schema=public
-                - name: DATABASE_URL
-                  value: postgresql://$(DB_USER):$(DB_PASSWORD)@$(DB_HOST):$(DB_PORT)/$(DB_NAME)?schema=public
-                - name: DATABASE_URL_FOR_MIGRATIONS
-                  value: postgresql://$(DB_USER):$(DB_PASSWORD)@$(DB_HOST):$(DB_PORT)/$(DB_NAME)?schema=public
           volumes:
             - name: next-cache
               emptyDir: {}
@@ -222,10 +171,10 @@ objects:
   - apiVersion: v1
     kind: Service
     metadata:
-      name: ${NAME}-${ZONE}-${COMPONENT}
+      name: ${NAME}-${ZONE}-next
       labels:
         app: ${NAME}-${ZONE}
-        deployment: ${NAME}-${ZONE}-${COMPONENT}
+        deployment: ${NAME}-${ZONE}-next
     spec:
       type: ClusterIP
       ports:
@@ -234,20 +183,20 @@ objects:
           protocol: TCP
           name: http
       selector:
-        deployment: ${NAME}-${ZONE}-${COMPONENT}
+        deployment: ${NAME}-${ZONE}-next
 
   - apiVersion: route.openshift.io/v1
     kind: Route
     metadata:
-      name: ${NAME}-${ZONE}-${COMPONENT}
+      name: ${NAME}-${ZONE}-next
       labels:
         app: ${NAME}-${ZONE}
-        deployment: ${NAME}-${ZONE}-${COMPONENT}
+        deployment: ${NAME}-${ZONE}-next
     spec:
-      host: ${NAME}-${ZONE}-${COMPONENT}.${DOMAIN}
+      host: ${NAME}-${ZONE}-next.${DOMAIN}
       to:
         kind: Service
-        name: ${NAME}-${ZONE}-${COMPONENT}
+        name: ${NAME}-${ZONE}-next
         weight: 100
       port:
         targetPort: http

@@ -2,7 +2,7 @@ name: Merge
 
 on:
   push:
-    branches: [ci/adopt-quickstart2]
+    branches: [main]
     paths-ignore:
       - "*.md"
       - ".github/**"
@@ -68,7 +68,6 @@ jobs:
           parameters: >-
             -p ZONE="test"
             -p NAME="zeva2"
-            -p COMPONENT="${{ matrix.name }}"
             -p IMAGE_TAG="${{ github.sha }}"
             -p VAULT_SECRET_PATH="${{ steps.vault_settings.outputs.vault_secret_path }}"
             -p VAULT_ROLE="${{ steps.vault_settings.outputs.vault_role }}"
