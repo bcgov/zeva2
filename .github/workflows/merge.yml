@@ -2,7 +2,7 @@ name: Merge
 
 on:
   push:
-    branches: [main]
+    branches: [ci/tbd-after-quickstart-adoption2]
     paths-ignore:
       - "*.md"
       - ".github/**"
