@@ -63,7 +63,7 @@ const MyrAuditHistoryContent = async (props: {
   const statusMap = getMyrStatusEnumsToStringsMap();
 
   const { entries, summary, statusOptions, roleOptions } =
-    processAuditHistories({
+    processAuditHistories("myr", {
       histories,
       userIsGov,
       statusMap,

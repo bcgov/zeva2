@@ -7,8 +7,7 @@ import {
   useState,
   useTransition,
 } from "react";
-import { getVinListUrl } from "../actions";
-import axios from "axios";
+import { getVinListDownloadInfo } from "../actions";
 import { parseVinList } from "../utilsClient";
 import { ParsedVinListRecordWithId } from "../constants";
 import { createColumnHelper } from "@tanstack/react-table";
@@ -17,7 +16,7 @@ import { ModelYear } from "@/prisma/generated/enums";
 import { getModelYearEnumsToStringsMap } from "@/app/lib/utils/enumMaps";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faDownload, faSquareCheck } from "@fortawesome/free-solid-svg-icons";
-import { downloadBuffer } from "@/app/lib/utils/download";
+import { downloadBuffer, getFiles } from "@/app/lib/utils/download";
 
 export const VinListTable = (props: {
   type: "myr" | "supp";
@@ -26,7 +25,8 @@ export const VinListTable = (props: {
   userIsGov: boolean;
 }) => {
   const [isPending, startTransition] = useTransition();
-  const [vinListBuf, setVinListBuf] = useState<ArrayBuffer>();
+  const [vinListBufferAndName, setVinListBufferAndName] =
+    useState<[ArrayBuffer, string]>();
   const [parsedVinList, setParsedVinList] = useState<
     ParsedVinListRecordWithId[]
   >([]);
@@ -36,33 +36,32 @@ export const VinListTable = (props: {
 
   useEffect(() => {
     const getVinList = async () => {
-      const response = await getVinListUrl(props.type, props.id);
+      const response = await getVinListDownloadInfo(props.type, props.id);
       if (response.responseType === "data") {
-        const url = response.data;
-        const listResponse = await axios.get(url, {
-          responseType: "arraybuffer",
-        });
-        const vinList = listResponse.data;
-        const vinListParsed = await parseVinList(vinList);
-        setVinListBuf(vinList);
-        setParsedVinList(
-          vinListParsed.map((record, index) => {
-            return { ...record, id: index };
-          }),
-        );
+        const files = await getFiles([response.data]);
+        if (files.length === 1) {
+          const vinListBuffer = files[0].data;
+          const vinListName = files[0].fileName;
+          const vinListParsed = await parseVinList(vinListBuffer);
+          setVinListBufferAndName([vinListBuffer, vinListName]);
+          setParsedVinList(
+            vinListParsed.map((record, index) => {
+              return { ...record, id: index };
+            }),
+          );
+        }
       }
     };
     getVinList();
   }, [props.type, props.id]);
 
   const handleDownloadVinRecords = useCallback(() => {
-    if (vinListBuf) {
+    if (vinListBufferAndName) {
       startTransition(async () => {
-        const fileName = `vin-list-${modelYearsMap[props.modelYear]}.xlsx`;
-        downloadBuffer(fileName, vinListBuf);
+        downloadBuffer(vinListBufferAndName[1], vinListBufferAndName[0]);
       });
     }
-  }, [vinListBuf]);
+  }, [vinListBufferAndName]);
 
   const columnHelper = createColumnHelper<ParsedVinListRecordWithId>();
 

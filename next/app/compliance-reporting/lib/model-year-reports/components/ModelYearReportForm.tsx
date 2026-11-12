@@ -21,7 +21,6 @@ import {
 } from "../actions";
 import {
   generateMyr,
-  getAdjustmentsPayload,
   getNvValuesFromZevAndIceCounts,
   getWorkbook,
   validateForecastReport,
@@ -43,7 +42,6 @@ import {
   parseMyr,
 } from "../utils";
 import { Attachment, AttachmentDownload } from "@/app/lib/constants/attachment";
-import { Adjustment, Adjustments } from "./Adjustments";
 import { isModelYear } from "@/app/lib/utils/typeGuards";
 import { SupplierData } from "../data";
 import { Makes } from "./Makes";
@@ -135,9 +133,6 @@ export const ModelYearReportForm = (
     ZevClass.A,
     ZevClass.C,
   ]);
-  const [suggestedAdjustments, setSuggestedAdjustments] = useState<
-    Adjustment[]
-  >([]);
   const [forecasts, setForecasts] = useState<File[]>([]);
   const [vinLists, setVinLists] = useState<File[]>([]);
   const [error, setError] = useState<string>("");
@@ -236,7 +231,6 @@ export const ModelYearReportForm = (
           setRecordsAddress(savedDetails.recordsAddress);
           setServiceAddress(savedDetails.serviceAddress);
           setPrevVolumes(report.previousVolumes);
-          setSuggestedAdjustments(report.suggestedAdjustments);
           setZevAndIceCounts(getZevAndIceCounts(report.zevAndIceCounts));
           setZevClassOrder(getZevClassOrder(savedDetails.zevClassOrdering));
         }
@@ -292,10 +286,9 @@ export const ModelYearReportForm = (
       }
     }
     const nvValues = getNvValuesFromZevAndIceCounts(zevAndIceCounts);
-    const adjustmentsPayload = getAdjustmentsPayload(suggestedAdjustments);
     const [templateUrl, myrDataResponse] = await Promise.all([
       getMyrTemplateUrl(),
-      getMyrData(modelYear, nvValues, zevClassOrder, adjustmentsPayload),
+      getMyrData(modelYear, nvValues, zevClassOrder),
     ]);
     if (myrDataResponse.responseType === "error") {
       throw new Error(myrDataResponse.message);
@@ -313,7 +306,6 @@ export const ModelYearReportForm = (
       makes,
       recordsAddress,
       serviceAddress,
-      adjustmentsPayload,
     );
     return workbook;
   }, [
@@ -324,7 +316,6 @@ export const ModelYearReportForm = (
     serviceAddress,
     zevAndIceCounts,
     zevClassOrder,
-    suggestedAdjustments,
   ]);
 
   const saveReport = useCallback(
@@ -599,22 +590,14 @@ export const ModelYearReportForm = (
         />
       )}
       {props.type !== "newMyr" && props.type !== "savedMyr" && (
-        <div className="flex flex-col gap-4">
-          <Adjustments
-            type="myr"
-            adjustments={suggestedAdjustments}
-            setAdjustments={setSuggestedAdjustments}
+        <div className="flex flex-col gap-2">
+          <span>Upload supporting documents here (optional; max 10):</span>
+          <Dropzone
+            files={attachments}
+            setFiles={setAttachments}
             disabled={isPending}
+            maxNumberOfFiles={10}
           />
-          <div className="flex flex-col gap-2">
-            <span>Upload supporting documents here (optional; max 10):</span>
-            <Dropzone
-              files={attachments}
-              setFiles={setAttachments}
-              disabled={isPending}
-              maxNumberOfFiles={10}
-            />
-          </div>
         </div>
       )}
       <div className="flex flex-row p-5 bg-lightGrey justify-between">

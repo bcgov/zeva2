@@ -1,5 +1,5 @@
 import { getUserInfo } from "@/auth";
-import { getComplianceYears, getNestedReportableBalanceAB } from "../data";
+import { getComplianceYears, getNestedReportableBalanceABU } from "../data";
 import { BalanceTable } from "./BalanceTable";
 import { TransactionTable } from "./TransactionTable";
 
@@ -14,16 +14,12 @@ export const ListPage = async (props: { orgId?: string }) => {
   if (!orgIdToUse) {
     return null;
   }
-  const balance = await getNestedReportableBalanceAB(orgIdToUse);
+  const balance = await getNestedReportableBalanceABU(orgIdToUse);
   if (balance) {
     const complianceYears = await getComplianceYears(orgIdToUse);
     return (
       <main className="space-y-6">
-        {balance === "deficit" ? (
-          <p style={{ color: "red" }}>Deficit</p>
-        ) : (
-          <BalanceTable balance={balance} />
-        )}
+        <BalanceTable balance={balance} />
         <TransactionTable
           orgId={orgIdToUse}
           complianceYears={complianceYears}

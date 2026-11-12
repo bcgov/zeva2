@@ -1,15 +1,10 @@
 import { prisma } from "@/lib/prisma";
-import {
-  ModelYear,
-  TransactionType,
-  VehicleClass,
-  ZevClass,
-} from "@/prisma/generated/enums";
+import { ModelYear } from "@/prisma/generated/enums";
 import { OrganizationModel } from "@/prisma/generated/models";
 import { getUserInfo } from "@/auth";
 import { getStringsToModelYearsEnumsMap } from "@/app/lib/utils/enumMaps";
 import { getOrgBalance } from "@/app/lib/services/balance";
-import { sumBalance } from "@/lib/utils/zevUnit";
+import { getSummedBalances } from "@/lib/utils/zevUnit";
 import { getAdjacentYear } from "@/app/lib/utils/complianceYear";
 
 export async function getOrg(
@@ -62,42 +57,31 @@ export async function getComplianceYears(orgId: number): Promise<ModelYear[]> {
   return [];
 }
 
-export const getReportableBalanceAB = async (orgId: number) => {
+export const getReportableBalanceABU = async (orgId: number) => {
   const { userIsGov, userOrgId } = await getUserInfo();
   if (!userIsGov && userOrgId !== orgId) {
     throw new Error("Unexpected Error!");
   }
   const balance = await getOrgBalance(orgId);
-  if (balance === "deficit") {
-    return "deficit";
-  }
-  return {
-    A: sumBalance(
-      balance,
-      TransactionType.CREDIT,
-      VehicleClass.REPORTABLE,
-      ZevClass.A,
-    ).toFixed(2),
-    B: sumBalance(
-      balance,
-      TransactionType.CREDIT,
-      VehicleClass.REPORTABLE,
-      ZevClass.B,
-    ).toFixed(2),
-  };
+  return getSummedBalances(balance);
 };
 
-export const getNestedReportableBalanceAB = async (orgId: number) => {
+export const getNestedReportableBalanceABU = async (orgId: number) => {
   const { userIsGov, userOrgId } = await getUserInfo();
   if (!userIsGov && userOrgId !== orgId) {
     throw new Error("Unexpected Error!");
   }
   const balance = await getOrgBalance(orgId);
-  if (balance === "deficit") {
-    return "deficit";
-  }
   return {
-    A: balance.CREDIT?.REPORTABLE?.A,
-    B: balance.CREDIT?.REPORTABLE?.B,
+    debits: {
+      A: balance.DEBIT?.REPORTABLE?.A ?? {},
+      B: balance.DEBIT?.REPORTABLE?.B ?? {},
+      Unspecified: balance.DEBIT?.REPORTABLE?.UNSPECIFIED ?? {},
+    },
+    credits: {
+      A: balance.CREDIT?.REPORTABLE?.A ?? {},
+      B: balance.CREDIT?.REPORTABLE?.B ?? {},
+      Unspecified: balance.CREDIT?.REPORTABLE?.UNSPECIFIED ?? {},
+    },
   };
 };

@@ -4,6 +4,12 @@ All notable changes to this project are documented in this file.
 
 | Version | Date | Type | Change |
 | --- | --- | --- | --- |
+| [1.77.3](https://github.com/bcgov/zeva2/compare/v1.77.2...v1.77.3) | 2026-11-12 | 🐛 Fix | misc updates ([#756](https://github.com/bcgov/zeva2/issues/756)) ([296e843](https://github.com/bcgov/zeva2/commit/296e8435e0170051493d55fc76cbae1c1edfb40a)) |
+| [1.77.2](https://github.com/bcgov/zeva2/compare/v1.77.1...v1.77.2) | 2026-11-10 | 🐛 Fix | small fix ([#751](https://github.com/bcgov/zeva2/issues/751)) ([9959757](https://github.com/bcgov/zeva2/commit/9959757300cc6113ab2472ddde6108af66d924d6)) |
+| [1.77.1](https://github.com/bcgov/zeva2/compare/v1.77.0...v1.77.1) | 2026-11-09 | 🐛 Fix | misc updates ([#747](https://github.com/bcgov/zeva2/issues/747)) ([4867115](https://github.com/bcgov/zeva2/commit/4867115a1a25ebe5fc576c6c51c7197f1c85d311)) |
+| [1.77.0](https://github.com/bcgov/zeva2/compare/v1.76.1...v1.77.0) | 2026-11-07 | 🐛 Fix | display deficit ([#743](https://github.com/bcgov/zeva2/issues/743)) ([601b700](https://github.com/bcgov/zeva2/commit/601b700c42712858cf7f105facbcc6411f1b0766)) |
+| [1.77.0](https://github.com/bcgov/zeva2/compare/v1.76.1...v1.77.0) | 2026-11-07 | ✨ Feature | Credit Application Table Status Labels [#702](https://github.com/bcgov/zeva2/issues/702) ([#733](https://github.com/bcgov/zeva2/issues/733)) ([39f09a4](https://github.com/bcgov/zeva2/commit/39f09a45c0203a402fdeacf9b48d394489682599)) |
+| [1.76.1](https://github.com/bcgov/zeva2/compare/v1.76.0...v1.76.1) | 2026-11-05 | 🐛 Fix | seed script edit ([#744](https://github.com/bcgov/zeva2/issues/744)) ([95de600](https://github.com/bcgov/zeva2/commit/95de600c166af37a6985d215dd341f3b064f407f)) |
 | [1.76.0](https://github.com/bcgov/zeva2/compare/v1.75.3...v1.76.0) | 2026-11-03 | ✨ Feature | 728 - VIN list ([#740](https://github.com/bcgov/zeva2/issues/740)) ([f543a86](https://github.com/bcgov/zeva2/commit/f543a869b4d0c925ffa19cadb5445a466b163e78)) |
 | [1.75.3](https://github.com/bcgov/zeva2/compare/v1.75.2...v1.75.3) | 2026-11-02 | 🐛 Fix | compliance calculator styling fix ([#736](https://github.com/bcgov/zeva2/issues/736)) ([b874a37](https://github.com/bcgov/zeva2/commit/b874a37ea34041c426b1275cc77d0d48e343ecaa)) |
 | [1.75.2](https://github.com/bcgov/zeva2/compare/v1.75.1...v1.75.2) | 2026-10-29 | 🐛 Fix | initial commit ([#734](https://github.com/bcgov/zeva2/issues/734)) ([b13c3d3](https://github.com/bcgov/zeva2/commit/b13c3d3cdffcd796375931c96f2bdce89058375e)) |

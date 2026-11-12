@@ -30,7 +30,7 @@ export const ApplicationStatisticsSupplier = async (props: {
         <div className="flex flex-col px-5 py-4 bg-disabledSurface font-bold">
           {type === "all"
             ? "VINs Claimed"
-            : status === CreditApplicationStatus.APPROVED
+            : status === CreditApplicationStatus.ISSUED
               ? "VINs Issued"
               : "VINs to be Issued"}
         </div>
@@ -115,7 +115,7 @@ export const ApplicationStatisticsSupplier = async (props: {
         <div className="flex flex-col px-5 py-4 bg-disabledSurface font-bold">
           {type === "all"
             ? "Credits Claimed"
-            : status === CreditApplicationStatus.APPROVED
+            : status === CreditApplicationStatus.ISSUED
               ? "Credits Issued"
               : "Credits to be Issued"}
         </div>

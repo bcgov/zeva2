@@ -10,7 +10,7 @@ import {
   applyTransfersAway,
   calculateBalance,
   flattenZevUnitRecords,
-  UncoveredTransfer,
+  getTransferCoverageData,
   ZevUnitRecord,
 } from "@/lib/utils/zevUnit";
 import {
@@ -23,17 +23,15 @@ import {
   SupplierClass,
   TransactionType,
   VehicleClass,
-  VehicleStatus,
   ZevClass,
-  ZevType,
 } from "@/prisma/generated/enums";
 import {
   SupplyVolumeModel,
+  ZevUnitTransactionModel,
   ZevUnitTransactionWhereInput,
 } from "@/prisma/generated/models";
 import { Decimal } from "decimal.js";
 import {
-  validatePrevBalanceTransactions,
   getZevUnitRecordsOrderByClause,
   getComplianceRatioReductions,
   getTransformedAdjustments,
@@ -201,8 +199,7 @@ export const getPrevBalance = async (
       },
       orderBy: getZevUnitRecordsOrderByClause(),
     });
-    const validatedTransactions = validatePrevBalanceTransactions(transactions);
-    const result = flattenZevUnitRecords(validatedTransactions);
+    const result = flattenZevUnitRecords(applyTransfersAway(transactions));
     if (result.length === 0) {
       return getEmptyBalance(prevComplianceYear);
     }
@@ -239,8 +236,7 @@ export const getPrevBalance = async (
     },
     orderBy: getZevUnitRecordsOrderByClause(),
   });
-  const validatedTransactions = validatePrevBalanceTransactions(transactions);
-  if (type === "endOfCd" && validatedTransactions.length === 0) {
+  if (type === "endOfCd" && transactions.length === 0) {
     const result = endingBalance.map((record) => {
       const { initialNumberOfUnits, finalNumberOfUnits, ...rest } = record;
       return { ...rest, numberOfUnits: initialNumberOfUnits };
@@ -255,7 +251,7 @@ export const getPrevBalance = async (
     const { initialNumberOfUnits, finalNumberOfUnits, ...rest } = record;
     result.push({ ...rest, numberOfUnits: finalNumberOfUnits });
   }
-  result.push(...flattenZevUnitRecords(validatedTransactions));
+  result.push(...flattenZevUnitRecords(applyTransfersAway(transactions)));
   if (result.length === 0) {
     return getEmptyBalance(prevComplianceYear);
   }
@@ -278,8 +274,11 @@ export const getTransactionsForModelYear = async (
       gte: closedLowerBound,
       lt: openUpperBound,
     },
-    NOT: {
-      referenceType: ReferenceType.COMPLIANCE_RATIO_REDUCTION,
+    referenceType: {
+      notIn: [
+        ReferenceType.ASSESSMENT_ADJUSTMENT,
+        ReferenceType.COMPLIANCE_RATIO_REDUCTION,
+      ],
     },
   };
   const transactions = await prisma.zevUnitTransaction.findMany({
@@ -321,13 +320,7 @@ export const getPendingSupplyCredits = async (
     where: {
       creditApplication: {
         organizationId,
-        status: {
-          in: [
-            CreditApplicationStatus.SUBMITTED,
-            CreditApplicationStatus.RECOMMEND_APPROVAL,
-            CreditApplicationStatus.RETURNED_TO_ANALYST,
-          ],
-        },
+        supplierStatus: CreditApplicationStatus.SUBMITTED,
       },
     },
     by: ["vehicleClass", "zevClass", "modelYear"],
@@ -385,7 +378,6 @@ export const getZevUnitData = async (
       ...transformedAdjustments,
     ],
     zevClassOrdering,
-    modelYear,
   );
   let endingBalanceToUse = endingBalance;
   if (endingBalanceToUse.length === 0) {
@@ -583,40 +575,102 @@ export const getDataForSupplementary = async (
 };
 
 // upon issuance of an assessment or reassessment,
-// transfers may become uncovered due to the backdating
-// of compliance ratio reductions or debit adjustments
-export const areTransfersCovered = async (
+// transfers may become uncovered due to
+// a new ending balance being created
+// returns transfers away that should become debits,
+// transfers away that should have their numberofUnits updated (decreased),
+// and new debits to add
+export const getUncoveredTransfersData = async (
   organizationId: number,
   complianceYear: ModelYear,
   newEndingBalance: ZevUnitRecord[],
 ) => {
+  const result: {
+    idsOfTransfersAwayThatShouldBecomeDebits: number[];
+    transferAwayUpdateData: { id: number; numberOfUnits: Decimal }[];
+    newDebits: Omit<ZevUnitTransactionModel, "id">[];
+  } = {
+    idsOfTransfersAwayThatShouldBecomeDebits: [],
+    transferAwayUpdateData: [],
+    newDebits: [],
+  };
   const { openUpperBound: gteDate } = getCompliancePeriod(complianceYear);
-  const currentTransactions = await prisma.zevUnitTransaction.findMany({
+  const transactions = await prisma.zevUnitTransaction.findMany({
     where: {
       timestamp: {
         gte: gteDate,
       },
       organizationId,
+      type: {
+        in: [TransactionType.CREDIT, TransactionType.TRANSFER_AWAY],
+      },
     },
-    select: {
-      type: true,
-      numberOfUnits: true,
-      vehicleClass: true,
-      zevClass: true,
-      modelYear: true,
+    orderBy: {
+      timestamp: "asc",
     },
   });
-  const transactions = newEndingBalance.concat(currentTransactions);
-  try {
-    applyTransfersAway(transactions);
-  } catch (e) {
-    if (e instanceof UncoveredTransfer) {
-      return false;
-    } else {
-      throw e;
+  const transfersAway: (ZevUnitTransactionModel & {
+    type: typeof TransactionType.TRANSFER_AWAY;
+  })[] = [];
+  for (const record of transactions) {
+    if (record.type === TransactionType.TRANSFER_AWAY) {
+      transfersAway.push({ ...record, type: TransactionType.TRANSFER_AWAY });
     }
   }
-  return true;
+  if (transfersAway.length === 0) {
+    return result;
+  }
+  const endingCredits: (ZevUnitRecord & {
+    type: typeof TransactionType.CREDIT;
+  })[] = [];
+  for (const record of newEndingBalance) {
+    if (record.type === TransactionType.CREDIT) {
+      endingCredits.push({ ...record, type: TransactionType.CREDIT });
+    }
+  }
+  const credits: (ZevUnitTransactionModel & {
+    type: typeof TransactionType.CREDIT;
+  })[] = [];
+  for (const record of transactions) {
+    if (record.type === TransactionType.CREDIT) {
+      credits.push({ ...record, type: TransactionType.CREDIT });
+    }
+  }
+  let creditsToCoverTransfers = endingCredits;
+  for (const [index, transferAway] of transfersAway.entries()) {
+    if (index === 0) {
+      creditsToCoverTransfers = creditsToCoverTransfers.concat(
+        credits.filter((record) => record.timestamp < transferAway.timestamp),
+      );
+    } else {
+      const prevTransfer = transfersAway[index - 1];
+      creditsToCoverTransfers = creditsToCoverTransfers.concat(
+        credits.filter(
+          (record) =>
+            prevTransfer.timestamp < record.timestamp &&
+            record.timestamp < transferAway.timestamp,
+        ),
+      );
+    }
+    const { remainingCredits, completelyUncovered, partiallyUncoveredData } =
+      getTransferCoverageData(creditsToCoverTransfers, transferAway);
+    creditsToCoverTransfers = remainingCredits;
+    if (completelyUncovered) {
+      result.idsOfTransfersAwayThatShouldBecomeDebits.push(transferAway.id);
+    } else if (partiallyUncoveredData) {
+      result.transferAwayUpdateData.push({
+        id: transferAway.id,
+        numberOfUnits: partiallyUncoveredData.coveredUnits,
+      });
+      const { id, ...rest } = transferAway;
+      result.newDebits.push({
+        ...rest,
+        type: TransactionType.DEBIT,
+        numberOfUnits: partiallyUncoveredData.uncoveredUnits,
+      });
+    }
+  }
+  return result;
 };
 
 export const updateOrgSupplierClass = async (
@@ -673,16 +727,11 @@ export const assessReassessment = async (
   const endingBalance = reassessmentData.endingBalance.map((record) => {
     return { ...record, numberOfUnits: record.finalNumberOfUnits };
   });
-  const transfersAreCovered = await areTransfersCovered(
-    organizationId,
-    modelYear,
-    endingBalance,
-  );
-  if (!transfersAreCovered) {
-    throw new Error(
-      "Issuing this reassessment would cause a transfer to become uncovered!",
-    );
-  }
+  const {
+    idsOfTransfersAwayThatShouldBecomeDebits,
+    transferAwayUpdateData,
+    newDebits,
+  } = await getUncoveredTransfersData(organizationId, modelYear, endingBalance);
   const volumeUpsertClauses = reassessmentData.nvValues.map(
     ([vehicleClass, volume]) => ({
       where: {
@@ -722,7 +771,12 @@ export const assessReassessment = async (
   await client.zevUnitTransaction.deleteMany({
     where: {
       organizationId,
-      referenceType: ReferenceType.COMPLIANCE_RATIO_REDUCTION,
+      referenceType: {
+        in: [
+          ReferenceType.ASSESSMENT_ADJUSTMENT,
+          ReferenceType.COMPLIANCE_RATIO_REDUCTION,
+        ],
+      },
       AND: [
         { timestamp: { gte: compliancePeriod.closedLowerBound } },
         { timestamp: { lt: compliancePeriod.openUpperBound } },
@@ -750,6 +804,29 @@ export const assessReassessment = async (
     data: reassessmentData.endingBalance.map((record) => {
       return { ...record, organizationId, complianceYear: modelYear };
     }),
+  });
+  await client.zevUnitTransaction.updateMany({
+    where: {
+      id: {
+        in: idsOfTransfersAwayThatShouldBecomeDebits,
+      },
+    },
+    data: {
+      type: TransactionType.DEBIT,
+    },
+  });
+  for (const record of transferAwayUpdateData) {
+    await client.zevUnitTransaction.update({
+      where: {
+        id: record.id,
+      },
+      data: {
+        numberOfUnits: record.numberOfUnits,
+      },
+    });
+  }
+  await client.zevUnitTransaction.createMany({
+    data: newDebits,
   });
   if (modelYearReportId) {
     await client.modelYearReport.update({

@@ -1,5 +1,5 @@
 import Excel from "exceljs";
-import { ModelYear } from "@/prisma/generated/enums";
+import { CreditApplicationStatus, ModelYear } from "@/prisma/generated/enums";
 import {
   CreditApplicationWhereInput,
   CreditApplicationOrderByWithRelationInput,
@@ -13,6 +13,7 @@ import {
   getStringsToModelYearsEnumsMap,
 } from "@/app/lib/utils/enumMaps";
 import {
+  CaHistorySparse,
   CreditApplicationRecordSparse,
   CreditApplicationRecordSparseSerialized,
   CreditApplicationSparse,
@@ -520,4 +521,17 @@ export const serializeCredits = (
   return credits.map((credit) => {
     return { ...credit, numberOfUnits: credit.numberOfUnits.toString() };
   });
+};
+
+export const getMostRecentValidationData = (histories: CaHistorySparse[]) => {
+  let latestValidation: CaHistorySparse | null = null;
+  for (const history of histories) {
+    if (
+      history.userAction === CreditApplicationStatus.VALIDATED &&
+      (!latestValidation || latestValidation.timestamp < history.timestamp)
+    ) {
+      latestValidation = history;
+    }
+  }
+  return latestValidation;
 };

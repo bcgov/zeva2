@@ -16,12 +16,7 @@ import {
   specialComplianceRatios,
   unspecifiedComplianceRatios,
 } from "@/app/lib/constants/complianceRatio";
-import {
-  applyTransfersAway,
-  getSpecialZevClassPairs,
-  UnexpectedDebit,
-  ZevUnitRecord,
-} from "@/lib/utils/zevUnit";
+import { getSpecialZevClassPairs, ZevUnitRecord } from "@/lib/utils/zevUnit";
 import {
   IsCompliant,
   mapOfStatusToSupplierStatus,
@@ -49,19 +44,6 @@ import {
   parseAssessment,
 } from "./utils";
 import { Directory } from "@/app/lib/services/s3";
-
-export const validatePrevBalanceTransactions = (
-  transactions: ZevUnitRecord[],
-) => {
-  transactions.forEach((transaction) => {
-    if (transaction.type === TransactionType.DEBIT) {
-      throw new UnexpectedDebit(
-        "Unexpected debit when collecting previous balance!",
-      );
-    }
-  });
-  return applyTransfersAway(transactions);
-};
 
 export type ComplianceReduction = ZevUnitRecord & {
   complianceRatio: string;
@@ -535,7 +517,7 @@ export const parseAssesmentForData = (
 } => {
   const parsedAssessment = parseAssessment(workbook);
   const reductions = parsedAssessment.complianceReductions;
-  const currentAdjustments = parsedAssessment.currentAdjustments;
+  const adjustments = parsedAssessment.adjustments;
   const finalEndingBalance = parsedAssessment.finalEndingBalance;
   const reductionsData = parseReductionsForData(reductions);
   const reductionTransactions = reductionsData.reductions.map((reduction) => {
@@ -544,7 +526,7 @@ export const parseAssesmentForData = (
       referenceType: ReferenceType.COMPLIANCE_RATIO_REDUCTION,
     };
   });
-  const adjustmentsData = parseAdjustmentForData(currentAdjustments);
+  const adjustmentsData = parseAdjustmentForData(adjustments);
   const adjustmentTransactions = adjustmentsData.map((adjustment) => {
     return {
       ...adjustment,

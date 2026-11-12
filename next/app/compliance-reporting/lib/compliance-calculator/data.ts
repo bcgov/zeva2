@@ -12,7 +12,7 @@ import {
   specialComplianceRatios,
 } from "@/app/lib/constants/complianceRatio";
 import { ComplianceRatio, VehicleModel, CreditBalance } from "./types";
-import { getReportableBalanceAB } from "@/app/zev-unit-activities/lib/zev-unit-transactions/data";
+import { getReportableBalanceABU } from "@/app/zev-unit-activities/lib/zev-unit-transactions/data";
 
 export const getModelYears = async (): Promise<ModelYear[]> => {
   const { userOrgId } = await getUserInfo();
@@ -93,14 +93,10 @@ export const getUserCreditBalance = async (): Promise<CreditBalance> => {
     return { A: 0, B: 0 };
   }
 
-  const balance = await getReportableBalanceAB(userOrgId);
-
-  if (balance === "deficit") {
-    return { A: 0, B: 0 };
-  }
+  const balance = await getReportableBalanceABU(userOrgId);
 
   return {
-    A: Number(balance.A),
-    B: Number(balance.B),
+    A: Number(balance.credits.A),
+    B: Number(balance.credits.A),
   };
 };

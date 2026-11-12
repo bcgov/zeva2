@@ -1,5 +1,4 @@
 import {
-  CreditApplicationStatus,
   CreditTransferStatus,
   ModelYearReportStatus,
   Role,
@@ -26,7 +25,10 @@ import {
 } from "@/app/lib/utils/enumMaps";
 import { Routes } from "@/app/lib/constants";
 import { mapOfStatusToSupplierStatus as myrMapOfStatusToSupplierStatus } from "@/app/compliance-reporting/lib/model-year-reports/constants";
-import { mapOfStatusToSupplierStatus as caMapOfStatusToSupplierStatus } from "@/app/zev-unit-activities/lib/credit-applications/constants";
+import {
+  mapOfStatusToSupplierStatus as caMapOfStatusToSupplierStatus,
+  supplierVisibleHistoryActions,
+} from "@/app/zev-unit-activities/lib/credit-applications/constants";
 import { mapOfStatusToSupplierStatus as ctMapOfStatusToSupplierStatus } from "@/app/zev-unit-activities/lib/credit-transfers/constants";
 import { getZevModelDetailsRoute } from "@/app/zev-models/lib/routes";
 import {
@@ -121,10 +123,7 @@ export const getAllCaRecordsSupplier = async (
       CreditApplicationHistory: {
         where: {
           userAction: {
-            notIn: [
-              CreditApplicationStatus.RECOMMEND_APPROVAL,
-              CreditApplicationStatus.RETURNED_TO_ANALYST,
-            ],
+            in: supplierVisibleHistoryActions,
           },
         },
         select: {

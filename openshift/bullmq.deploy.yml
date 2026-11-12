@@ -1,0 +1,160 @@
+apiVersion: template.openshift.io/v1
+kind: Template
+metadata:
+  name: zeva2-bullmq
+parameters:
+  - name: NAME
+    description: Application module name
+    value: zeva2
+    required: true
+  - name: ZONE
+    description: Deployment zone, e.g. pr-123, dev, test, or prod
+    value: dev
+    required: true
+  - name: IMAGE_TAG
+    description: GHCR image tag or digest
+    required: true
+  - name: REGISTRY
+    description: Container registry
+    value: ghcr.io
+  - name: ORG_NAME
+    description: Organization or owner name
+    value: bcgov
+  - name: DOMAIN
+    description: OpenShift application cluster domain
+    value: apps.silver.devops.gov.bc.ca
+  - name: VAULT_SECRET_PATH
+    description: Base Vault secret path for the selected environment
+    value: namespaceplate-nonprod/dev
+  - name: VAULT_ROLE
+    description: Vault Kubernetes auth role
+    value: namespaceplate-nonprod
+  - name: VAULT_SERVICE_ACCOUNT
+    description: Existing service account used for Vault authentication
+    required: true
+  - name: CPU_REQUEST
+    value: 20m
+  - name: MEMORY_REQUEST
+    value: 200Mi
+
+objects:
+  - apiVersion: apps/v1
+    kind: Deployment
+    metadata:
+      name: ${NAME}-${ZONE}-bullmq
+      labels:
+        app: ${NAME}-${ZONE}
+        deployment: ${NAME}-${ZONE}-bullmq
+    spec:
+      replicas: 1
+      selector:
+        matchLabels:
+          deployment: ${NAME}-${ZONE}-bullmq
+      strategy:
+        type: RollingUpdate
+        rollingUpdate:
+          maxUnavailable: 1
+          maxSurge: 1
+      template:
+        metadata:
+          annotations:
+            vault.hashicorp.com/agent-inject: "true"
+            vault.hashicorp.com/agent-inject-secret-email: "${VAULT_SECRET_PATH}/zeva2-email"
+            vault.hashicorp.com/agent-inject-secret-database: "${VAULT_SECRET_PATH}/zeva2-database"
+            vault.hashicorp.com/agent-inject-secret-redis: "${VAULT_SECRET_PATH}/zeva2-redis-connection"
+            vault.hashicorp.com/agent-inject-template-email: |
+              {{- with secret "${VAULT_SECRET_PATH}/zeva2-email" -}}
+                export CHES_AUTH_URL="{{ .Data.data.ches_auth_url }}"
+                export CHES_EMAIL_URL="{{ .Data.data.ches_email_url }}"
+                export EMAIL_SERVICE_CLIENT_ID="{{ .Data.data.email_service_client_id }}"
+                export EMAIL_SERVICE_CLIENT_SECRET="{{ .Data.data.email_service_client_secret }}"
+                export SENDER_EMAIL="{{ .Data.data.sender_email }}"
+                export SENDER_NAME="{{ .Data.data.sender_name }}"
+              {{- end }}
+            vault.hashicorp.com/agent-inject-template-database: |
+              {{- with secret "${VAULT_SECRET_PATH}/zeva2-database" -}}
+                export DATABASE_URL="{{ .Data.data.database_url }}"
+              {{- end }}        
+            vault.hashicorp.com/agent-inject-template-redis: |
+              {{- with secret "${VAULT_SECRET_PATH}/zeva2-redis-connection" -}}
+                export REDIS_PASSWORD="{{ .Data.data.redis_password }}"
+              {{- end }}
+            vault.hashicorp.com/agent-inject-token: "true"
+            vault.hashicorp.com/agent-pre-populate-only: "true"
+            vault.hashicorp.com/auth-path: auth/k8s-silver
+            vault.hashicorp.com/namespace: platform-services
+            vault.hashicorp.com/role: ${VAULT_ROLE}
+          labels:
+            app: ${NAME}-${ZONE}
+            deployment: ${NAME}-${ZONE}-bullmq
+        spec:
+          serviceAccountName: ${VAULT_SERVICE_ACCOUNT}
+          containers:
+            - name: bullmq
+              image: ${REGISTRY}/${ORG_NAME}/${NAME}/bullmq:${IMAGE_TAG}
+              imagePullPolicy: Always
+              ports:
+                - name: http
+                  containerPort: 8080
+                  protocol: TCP
+              startupProbe:
+                httpGet:
+                  path: /health/live
+                  port: http
+                  scheme: HTTP
+                failureThreshold: 30
+                periodSeconds: 10
+                timeoutSeconds: 3
+              livenessProbe:
+                httpGet:
+                  path: /health/live
+                  port: http
+                  scheme: HTTP
+                failureThreshold: 3
+                periodSeconds: 10
+                timeoutSeconds: 3
+              readinessProbe:
+                httpGet:
+                  path: /health/ready
+                  port: http
+                  scheme: HTTP
+                failureThreshold: 3
+                periodSeconds: 10
+                timeoutSeconds: 3
+              resources:
+                requests:
+                  cpu: ${CPU_REQUEST}
+                  memory: ${MEMORY_REQUEST}
+              env:
+                - name: CHECKPOINT_DISABLE
+                  value: "1"
+                - name: START_WORKERS
+                  value: "true"
+                - name: TZ
+                  value: America/Vancouver
+                - name: REDIS_TLS_ENABLED
+                  value: "true"
+                - name: REDIS_HOST
+                  value: "zeva2-dandyredis-${ZONE}-redis-ha-haproxy"
+                - name: REDIS_PORT
+                  value: "6379"
+                - name: SEND_NOTIFICATION_EMAILS
+                  value: "true"
+                - name: ZEVA_URL
+                  value: "https://${NAME}-${ZONE}-next.${DOMAIN}/"
+  - apiVersion: v1
+    kind: Service
+    metadata:
+      name: ${NAME}-${ZONE}-bullmq
+      labels:
+        app: ${NAME}-${ZONE}
+        deployment: ${NAME}-${ZONE}-bullmq
+    spec:
+      type: ClusterIP
+      ports:
+        - port: 80
+          targetPort: http
+          protocol: TCP
+          name: http
+      selector:
+        deployment: ${NAME}-${ZONE}-bullmq

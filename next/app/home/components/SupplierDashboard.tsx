@@ -11,13 +11,14 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 import { getUserInfo } from "@/auth";
 import { Routes } from "@/app/lib/constants";
-import { getReportableBalanceAB } from "@/app/zev-unit-activities/lib/zev-unit-transactions/data";
+import { getReportableBalanceABU } from "@/app/zev-unit-activities/lib/zev-unit-transactions/data";
 import { DashboardTone, dashboardToneClasses } from "../lib/constants";
 import { getAllRecordsViewRouteSupplier } from "../lib/utils";
 import { getActiveNotifications } from "@/app/notifications/lib/services";
 import { getSupplierRecords } from "../lib/services";
 import { DashboardSectionPanel } from "./DashboardSectionPanel";
 import { ActiveNotificationsDisplay } from "./ActiveNotificationsDisplay";
+import { balanceABUHasDeficit } from "@/lib/utils/zevUnit";
 
 // for suppliers
 export const SupplierDashboard = async () => {
@@ -30,7 +31,7 @@ export const SupplierDashboard = async () => {
     awarenessRecords,
   ] = await Promise.all([
     getActiveNotifications(userOrgId),
-    getReportableBalanceAB(userOrgId),
+    getReportableBalanceABU(userOrgId),
     getSupplierRecords(userOrgId, "requires-your-action"),
     getSupplierRecords(userOrgId, "in-progress"),
     getSupplierRecords(userOrgId, "for-awareness"),
@@ -74,6 +75,8 @@ export const SupplierDashboard = async () => {
       viewAllRoute: getAllRecordsViewRouteSupplier("for-awareness"),
     },
   ];
+
+  const deficitExists = balanceABUHasDeficit(balance);
 
   return (
     <div className="flex flex-col gap-6">
@@ -129,19 +132,18 @@ export const SupplierDashboard = async () => {
             >
               Your <span className="underline">Credit Balance</span>
             </Link>
-            {balance === "deficit" ? (
-              <span className="font-bold">Deficit</span>
-            ) : (
-              <div className="flex flex-row gap-4">
-                <span>
-                  <span className="font-bold">A: </span>
-                  <span className="font-bold">{balance.A}</span>
-                </span>
-                <span>
-                  <span className="font-bold">B: </span>
-                  <span className="font-bold">{balance.B}</span>
-                </span>
-              </div>
+            <div className="flex flex-row gap-4">
+              <span>
+                <span className="font-bold">A: </span>
+                <span className="font-bold">{balance.credits.A}</span>
+              </span>
+              <span>
+                <span className="font-bold">B: </span>
+                <span className="font-bold">{balance.credits.B}</span>
+              </span>
+            </div>
+            {deficitExists && (
+              <span className="text-error">Note: A Deficit Exists!</span>
             )}
           </div>
         </div>

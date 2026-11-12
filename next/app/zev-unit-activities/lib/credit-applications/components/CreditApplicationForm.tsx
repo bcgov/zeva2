@@ -7,7 +7,10 @@ import { Button, StatusBanner } from "@/app/lib/components";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState, useTransition } from "react";
 import { FileWithPath } from "react-dropzone";
-import { CreditApplicationSupplierStatus } from "@/prisma/generated/enums";
+import {
+  CreditApplicationStatus,
+  CreditApplicationSupplierStatus,
+} from "@/prisma/generated/enums";
 import {
   getCreditApplicationAttachmentPutData,
   getCreditApplicationPutData,
@@ -191,53 +194,6 @@ export const CreditApplicationForm = (props: {
     }
   }, [props.creditApplication]);
 
-  const fileSize = files[0] ? (files[0].size / 1024).toFixed(1) : "0";
-
-  const getStatusBanner = () => {
-    if (
-      !props.supplierStatus ||
-      props.supplierStatus === CreditApplicationSupplierStatus.DRAFT
-    ) {
-      return (
-        <StatusBanner
-          title="STATUS - Draft."
-          primaryText="Your credit application is saved as a draft and has not been submitted."
-        />
-      );
-    }
-
-    switch (props.supplierStatus) {
-      case CreditApplicationSupplierStatus.SUBMITTED:
-        return (
-          <StatusBanner
-            title="STATUS - Submitted."
-            primaryText="Your credit application has been submitted and is under review."
-          />
-        );
-      case CreditApplicationSupplierStatus.REJECTED:
-        return (
-          <StatusBanner
-            title="STATUS - Rejected."
-            primaryText="Your credit application has been rejected. Please review the comments and resubmit."
-          />
-        );
-      case CreditApplicationSupplierStatus.APPROVED:
-        return (
-          <StatusBanner
-            title="STATUS - Issued."
-            primaryText="Your credit application has been issued by Government of B.C."
-          />
-        );
-      default:
-        return (
-          <StatusBanner
-            title="STATUS - Draft."
-            primaryText="Your credit application is saved as a draft and has not been submitted."
-          />
-        );
-    }
-  };
-
   return (
     <div className="flex flex-col gap-4">
       <div className="flex items-center justify-between p-5 rounded-t bg-whisperGray">
@@ -253,7 +209,13 @@ export const CreditApplicationForm = (props: {
         </div>
       </div>
 
-      {getStatusBanner()}
+      {props.supplierStatus &&
+        props.supplierStatus === CreditApplicationStatus.DRAFT && (
+          <StatusBanner
+            title="STATUS - Draft."
+            primaryText="Your credit application is saved as a draft and has not been submitted."
+          />
+        )}
       <hr className="border-dividerMedium"></hr>
 
       <div className="flex flex-col gap-6">

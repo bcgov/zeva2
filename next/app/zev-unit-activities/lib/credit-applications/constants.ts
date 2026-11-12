@@ -26,16 +26,22 @@ export enum ErrorsTemplate {
 export const mapOfStatusToSupplierStatus: Readonly<
   Record<CreditApplicationStatus, CreditApplicationSupplierStatus>
 > = {
-  [CreditApplicationStatus.APPROVED]: CreditApplicationSupplierStatus.APPROVED,
   [CreditApplicationStatus.DRAFT]: CreditApplicationStatus.DRAFT,
-  [CreditApplicationStatus.RECOMMEND_APPROVAL]:
+  [CreditApplicationStatus.ISSUED]: CreditApplicationSupplierStatus.ISSUED,
+  [CreditApplicationStatus.RECOMMENDED]:
     CreditApplicationSupplierStatus.SUBMITTED,
   [CreditApplicationStatus.RETURNED_TO_ANALYST]:
     CreditApplicationSupplierStatus.SUBMITTED,
   [CreditApplicationStatus.REJECTED]: CreditApplicationSupplierStatus.REJECTED,
   [CreditApplicationStatus.SUBMITTED]:
     CreditApplicationSupplierStatus.SUBMITTED,
+  [CreditApplicationStatus.VALIDATED]:
+    CreditApplicationSupplierStatus.SUBMITTED,
 };
+
+export const supplierVisibleHistoryActions = Object.values(
+  CreditApplicationSupplierStatus,
+);
 
 export type CreditApplicationSparse = Pick<
   CreditApplicationModel,
@@ -121,4 +127,10 @@ export type GovCaStatRecord = {
   validVinsCount: number;
   creditsSum: string;
   validCreditsSum: string;
+};
+
+export type CaHistorySparse = {
+  userAction: CreditApplicationStatus;
+  timestamp: Date;
+  user: { firstName: string; lastName: string };
 };

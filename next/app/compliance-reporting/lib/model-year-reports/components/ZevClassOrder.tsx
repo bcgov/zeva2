@@ -11,7 +11,7 @@ import {
 import { ModelYear, VehicleClass, ZevClass } from "@/prisma/generated/enums";
 import { nvMap, zevClassChoiceMap } from "../constants";
 import { getZevClassEnumsToStringsMap } from "@/app/lib/utils/enumMaps";
-import { getReportableBalanceABForSupplierUser } from "@/app/zev-unit-activities/lib/zev-unit-transactions/actions";
+import { getReportableBalanceABUForSupplierUser } from "@/app/zev-unit-activities/lib/zev-unit-transactions/actions";
 
 export const ZevClassOrder = (props: {
   modelYear: ModelYear;
@@ -29,9 +29,7 @@ export const ZevClassOrder = (props: {
   }, []);
 
   const [choice, setChoice] = useState<ZevClass>();
-  const [balance, setBalance] = useState<
-    "deficit" | { A: string; B: string }
-  >();
+  const [balance, setBalance] = useState<{ A: string; B: string }>();
 
   useEffect(() => {
     if (zevClassChoices && zevClassChoices.length === 2) {
@@ -50,8 +48,8 @@ export const ZevClassOrder = (props: {
         props.showBalance &&
         nvMap[props.modelYear]?.includes(VehicleClass.REPORTABLE)
       ) {
-        const balance = await getReportableBalanceABForSupplierUser();
-        setBalance(balance);
+        const balance = await getReportableBalanceABUForSupplierUser();
+        setBalance(balance.credits);
       }
     };
     getAndSetBalance();
@@ -102,7 +100,7 @@ export const ZevClassOrder = (props: {
         )}
       </div>
       <div className="flex flex-col p-5 gap-5">
-        {balance && balance !== "deficit" && (
+        {balance && (
           <div className="w-1/6 flex flex-col border border-dividerMedium rounded">
             <div className="p-5 font-bold bg-disabledSurface">
               Your Credit Balance

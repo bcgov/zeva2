@@ -2,18 +2,31 @@ import { getIsoYmdString, getTimeWithTz } from "@/app/lib/utils/date";
 import { IAuditEntry, IAuditSummary } from "@/app/lib/components/audit-history";
 
 export const getStatusVariant = (
+  type:
+    | "agreement"
+    | "creditApplication"
+    | "myr"
+    | "penaltyCredits"
+    | "transfer"
+    | "zevModel",
   status: string,
 ): IAuditEntry["statusVariant"] => {
   const lowerStatus = status.toLowerCase();
-  if (lowerStatus.includes("approved") || lowerStatus.includes("validated"))
+  if (
+    lowerStatus === "approved" ||
+    (lowerStatus === "approved_by_gov" && type === "transfer") ||
+    (lowerStatus === "validated" && type === "zevModel") ||
+    lowerStatus === "issued" ||
+    lowerStatus === "assessed"
+  ) {
     return "approved";
-  if (lowerStatus.includes("escalated") || lowerStatus.includes("review"))
-    return "escalated";
-  if (lowerStatus.includes("reviewed")) return "reviewed";
-  if (lowerStatus.includes("updated") || lowerStatus.includes("submitted"))
+  }
+  if (lowerStatus.includes("submitted")) {
     return "submitted";
-  if (lowerStatus.includes("returned") || lowerStatus.includes("rejected"))
+  }
+  if (lowerStatus.includes("returned") || lowerStatus.includes("rejected")) {
     return "returned";
+  }
   return "default";
 };
 
@@ -45,6 +58,13 @@ interface ProcessedAuditData {
 }
 
 export const processAuditHistories = (
+  type:
+    | "agreement"
+    | "creditApplication"
+    | "myr"
+    | "penaltyCredits"
+    | "transfer"
+    | "zevModel",
   params: ProcessAuditHistoriesParams,
 ): ProcessedAuditData => {
   const { histories, userIsGov, statusMap } = params;
@@ -66,7 +86,7 @@ export const processAuditHistories = (
         actor: name,
         role: name,
         status: status,
-        statusVariant: getStatusVariant(status),
+        statusVariant: getStatusVariant(type, status),
         comment: history.comment || undefined,
       };
     });

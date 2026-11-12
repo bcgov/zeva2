@@ -22,80 +22,8 @@ import { getCreditStats, getRecordStats, getStats } from "./services";
 import {
   CreditApplicationRecordSparse,
   CreditApplicationSparse,
+  supplierVisibleHistoryActions,
 } from "./constants";
-
-export type CreditApplicationWithOrgAndAttachmentNamesAndInvalidatedRecordsCount =
-  CreditApplicationModel & {
-    organization: OrganizationModel;
-    CreditApplicationAttachment: {
-      fileName: string;
-    }[];
-    _count: {
-      CreditApplicationRecord: number;
-    };
-    validatedBy: {
-      firstName: string;
-      lastName: string;
-    } | null;
-  };
-
-export const getCreditApplication = async (
-  creditApplicationId: number,
-): Promise<CreditApplicationWithOrgAndAttachmentNamesAndInvalidatedRecordsCount | null> => {
-  const { userIsGov, userOrgId, userRoles } = await getUserInfo();
-  let whereClause: CreditApplicationWhereUniqueInput = {
-    id: creditApplicationId,
-  };
-  if (userIsGov) {
-    const notClause: CreditApplicationWhereInput[] = [
-      {
-        status: CreditApplicationStatus.DRAFT,
-      },
-    ];
-    if (userRoles.includes(Role.DIRECTOR)) {
-      notClause.push({
-        status: {
-          in: [
-            CreditApplicationStatus.RETURNED_TO_ANALYST,
-            CreditApplicationStatus.SUBMITTED,
-          ],
-        },
-      });
-    }
-    whereClause = { ...whereClause, NOT: notClause };
-  } else {
-    whereClause = {
-      ...whereClause,
-      organizationId: userOrgId,
-    };
-  }
-  return await prisma.creditApplication.findUnique({
-    where: whereClause,
-    include: {
-      organization: true,
-      validatedBy: {
-        select: {
-          firstName: true,
-          lastName: true,
-        },
-      },
-      CreditApplicationAttachment: {
-        select: {
-          fileName: true,
-        },
-      },
-      _count: {
-        select: {
-          CreditApplicationRecord: {
-            where: {
-              validated: false,
-            },
-          },
-        },
-      },
-    },
-  });
-};
 
 export const getValidatedRecords = async (
   creditApplicationId: number,
@@ -221,6 +149,7 @@ export const getCreditApplications = async (
           in: [
             CreditApplicationStatus.RETURNED_TO_ANALYST,
             CreditApplicationStatus.SUBMITTED,
+            CreditApplicationStatus.VALIDATED,
           ],
         },
       });
@@ -277,12 +206,7 @@ export const getApplicationHistories = async (
       organizationId: userOrgId,
     };
     where.userAction = {
-      in: [
-        CreditApplicationStatus.APPROVED,
-        CreditApplicationStatus.DRAFT,
-        CreditApplicationStatus.REJECTED,
-        CreditApplicationStatus.SUBMITTED,
-      ],
+      in: supplierVisibleHistoryActions,
     };
   } else {
     where.userAction = {
@@ -304,9 +228,7 @@ export const getApplicationHistories = async (
         },
       },
     },
-    orderBy: {
-      timestamp: "asc",
-    },
+    orderBy: [{ timestamp: "asc" }, { id: "asc" }],
   });
 };
 
@@ -369,7 +291,7 @@ export const getApplicationStatisticsSupplier = async (
     return null;
   }
   const status = creditApplication.status;
-  const getValidatedStats = status === CreditApplicationStatus.APPROVED;
+  const getValidatedStats = status === CreditApplicationStatus.ISSUED;
   return {
     status,
     recordStats: await getRecordStats(creditApplicationId, "all"),

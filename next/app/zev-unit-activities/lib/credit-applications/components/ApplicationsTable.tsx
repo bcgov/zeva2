@@ -96,7 +96,13 @@ export const ApplicationsTable = (props: {
       result.splice(1, 0, supplierColumn);
     }
     return result;
-  }, [columnHelper, props.applications, props.userIsGov]);
+  }, [
+    columnHelper,
+    props.applications,
+    props.userIsGov,
+    statusMap,
+    modelYearsMap,
+  ]);
   return (
     <Table<CreditApplicationSparseSerialized>
       columns={columns}

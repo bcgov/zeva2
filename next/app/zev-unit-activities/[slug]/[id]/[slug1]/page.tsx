@@ -4,13 +4,13 @@ import { Suspense } from "react";
 import { RecordsList } from "@/app/zev-unit-activities/lib/credit-applications/components/RecordsList";
 import { ModelNameMismatches } from "@/app/zev-unit-activities/lib/credit-applications/components/ModelNameMismatches";
 import { getUserInfo } from "@/auth";
-import { getCreditApplication } from "@/app/zev-unit-activities/lib/credit-applications/data";
+import { getCreditApplicationGov } from "@/app/zev-unit-activities/lib/credit-applications/services";
 
 const Page = async (props: {
   params: Promise<{ slug: string; id: string; slug1: string }>;
   searchParams?: Promise<pageStringParams & { readOnly?: "Y" }>;
 }) => {
-  const [args, searchParams, { userIsGov }] = await Promise.all([
+  const [args, searchParams, { userIsGov, userRoles }] = await Promise.all([
     props.params,
     props.searchParams,
     getUserInfo(),
@@ -24,7 +24,7 @@ const Page = async (props: {
   const readOnly = searchParams?.readOnly ? true : false;
   const [creditApplication, { page, pageSize, filters, sorts }] =
     await Promise.all([
-      getCreditApplication(id),
+      getCreditApplicationGov(id, userRoles),
       getPageParams(searchParams, 1, 100),
     ]);
   if (!creditApplication) {

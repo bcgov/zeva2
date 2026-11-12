@@ -9,8 +9,13 @@ import {
   VehicleStatus,
   ZevType,
   ZevClass,
+  Role,
 } from "@/prisma/generated/enums";
-import { CreditApplicationRecordWhereInput } from "@/prisma/generated/models";
+import {
+  CreditApplicationRecordWhereInput,
+  CreditApplicationWhereInput,
+  CreditApplicationWhereUniqueInput,
+} from "@/prisma/generated/models";
 import { GovCaStatRecord, mapOfStatusToSupplierStatus } from "./constants";
 import { Attachment } from "@/app/lib/constants/attachment";
 import { TransactionClient } from "@/types/prisma";
@@ -24,6 +29,93 @@ import {
 } from "@/app/lib/utils/date";
 import { CreditApplicationRecordScalarFieldEnum } from "@/prisma/generated/internal/prismaNamespace";
 import { ChatComment } from "@/app/lib/constants/chatComment";
+
+export const getCreditApplicationGov = async (
+  creditApplicationId: number,
+  userRoles: Role[],
+) => {
+  let whereClause: CreditApplicationWhereUniqueInput = {
+    id: creditApplicationId,
+  };
+  const notClause: CreditApplicationWhereInput[] = [
+    {
+      status: CreditApplicationStatus.DRAFT,
+    },
+  ];
+  if (userRoles.includes(Role.DIRECTOR)) {
+    notClause.push({
+      status: {
+        in: [
+          CreditApplicationStatus.RETURNED_TO_ANALYST,
+          CreditApplicationStatus.SUBMITTED,
+          CreditApplicationStatus.VALIDATED,
+        ],
+      },
+    });
+  }
+  whereClause = { ...whereClause, NOT: notClause };
+  return await prisma.creditApplication.findUnique({
+    where: whereClause,
+    include: {
+      organization: true,
+      CreditApplicationAttachment: {
+        select: {
+          fileName: true,
+        },
+      },
+      CreditApplicationHistory: {
+        where: {
+          userAction: {
+            not: CreditApplicationStatus.DRAFT,
+          },
+        },
+        select: {
+          userAction: true,
+          timestamp: true,
+          user: {
+            select: {
+              firstName: true,
+              lastName: true,
+            },
+          },
+        },
+        orderBy: {
+          timestamp: "asc",
+        },
+      },
+    },
+  });
+};
+
+export const getCreditApplicationSupplier = async (
+  creditApplicationId: number,
+  orgId: number,
+) => {
+  let whereClause: CreditApplicationWhereUniqueInput = {
+    id: creditApplicationId,
+    organizationId: orgId,
+  };
+  return await prisma.creditApplication.findUnique({
+    where: whereClause,
+    include: {
+      organization: true,
+      CreditApplicationAttachment: {
+        select: {
+          fileName: true,
+        },
+      },
+      _count: {
+        select: {
+          CreditApplicationRecord: {
+            where: {
+              validated: false,
+            },
+          },
+        },
+      },
+    },
+  });
+};
 
 export const getOrgInfo = async (orgId: number) => {
   const orgInfo = await prisma.organization.findUnique({
@@ -372,66 +464,6 @@ export const getApplicationFlattenedCreditRecords = async (
     zevUnitRecords.push({ ...record, type: TransactionType.CREDIT });
   }
   return flattenZevUnitRecords(zevUnitRecords);
-};
-
-// returns a list of tuples [vehicleId v, # of validated VINs in CA or all VINs in CA associated with v]
-export const getVehicleCounts = async (
-  creditApplicationId: number,
-  type: "all" | "validated",
-) => {
-  const subResult: Record<number, [number, number]> = {};
-  const application = await prisma.creditApplication.findUnique({
-    where: {
-      id: creditApplicationId,
-    },
-    select: {
-      organizationId: true,
-      CreditApplicationRecord: {
-        where:
-          type === "all"
-            ? undefined
-            : {
-                validated: true,
-              },
-        select: {
-          vin: true,
-          make: true,
-          modelName: true,
-          modelYear: true,
-        },
-      },
-    },
-  });
-  if (!application) {
-    throw new Error("Credit application not found!");
-  }
-  const modelYears: Set<ModelYear> = new Set();
-  for (const record of application.CreditApplicationRecord) {
-    modelYears.add(record.modelYear);
-  }
-  const vehiclesMap = await getEligibleVehiclesMap(
-    application.organizationId,
-    Array.from(modelYears),
-  );
-  const vinsMissingVehicles: string[] = [];
-  for (const record of application.CreditApplicationRecord) {
-    const vehicleId =
-      vehiclesMap[record.make]?.[record.modelName]?.[record.modelYear]?.[0];
-    if (!vehicleId) {
-      vinsMissingVehicles.push(record.vin);
-      continue;
-    }
-    if (!subResult[vehicleId]) {
-      subResult[vehicleId] = [vehicleId, 0];
-    }
-    subResult[vehicleId][1] = subResult[vehicleId][1] + 1;
-  }
-  if (vinsMissingVehicles.length > 0) {
-    throw new Error(
-      `System vehicles not found for the following VINs: ${vinsMissingVehicles.join(", ")}`,
-    );
-  }
-  return Object.values(subResult);
 };
 
 export const getRecordStats = async (

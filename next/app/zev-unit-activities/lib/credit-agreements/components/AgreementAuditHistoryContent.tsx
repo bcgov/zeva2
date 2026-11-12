@@ -14,7 +14,7 @@ export const AgreementAuditHistoryContent = async ({ id }: { id: number }) => {
   if (!agreement) return <div>Credit Agreement not found</div>;
 
   const { entries, summary, statusOptions, roleOptions } =
-    processAuditHistories({
+    processAuditHistories("agreement", {
       histories,
       userIsGov,
       statusMap: getAgreementStatusEnumsToStringsMap(),

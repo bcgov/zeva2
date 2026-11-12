@@ -1,7 +1,11 @@
 import { getUserInfo } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { OrganizationAddressModel } from "@/prisma/generated/models";
-import { getCurrentBalance, sumBalance } from "@/lib/utils/zevUnit";
+import {
+  balanceABUHasDeficit,
+  getCurrentBalance,
+  getSummedBalances,
+} from "@/lib/utils/zevUnit";
 import { getSupplierClassEnumsToStringsMap } from "@/app/lib/utils/enumMaps";
 
 export type OrganizationSparse = {
@@ -45,31 +49,22 @@ export const getSuppliers = async (): Promise<OrganizationSparse[]> => {
     if (org.supplierClass) {
       supplierClass = supplierClassesMap[org.supplierClass] ?? "N/A";
     }
-    let balance: ReturnType<typeof getCurrentBalance> | "deficit" | "error";
-    try {
-      balance = getCurrentBalance(
-        org.zevUnitEndingBalances,
-        org.zevUnitTransactions,
-      );
-    } catch (e) {
-      balance = "error";
-    }
+    let balance: ReturnType<typeof getCurrentBalance>;
+    balance = getCurrentBalance(
+      org.zevUnitEndingBalances,
+      org.zevUnitTransactions,
+    );
+    const summedBalance = getSummedBalances(balance);
     return {
       id: org.id,
       name: org.name,
       supplierClass,
-      zevUnitBalanceA:
-        balance === "deficit"
-          ? "DEFICIT"
-          : balance === "error"
-            ? "ERROR"
-            : sumBalance(balance, "CREDIT", "REPORTABLE", "A").toFixed(2),
-      zevUnitBalanceB:
-        balance === "deficit"
-          ? "DEFICIT"
-          : balance === "error"
-            ? "ERROR"
-            : sumBalance(balance, "CREDIT", "REPORTABLE", "B").toFixed(2),
+      zevUnitBalanceA: balanceABUHasDeficit(summedBalance)
+        ? "DEFICIT"
+        : summedBalance.credits.A,
+      zevUnitBalanceB: balanceABUHasDeficit(summedBalance)
+        ? "DEFICIT"
+        : summedBalance.credits.B,
     };
   });
   return result;

@@ -18,7 +18,7 @@ const AuditHistoryContent = async ({ id }: { id: number }) => {
   const statusMap = getVehicleStatusEnumsToStringsMap();
 
   const { entries, summary, statusOptions, roleOptions } =
-    processAuditHistories({
+    processAuditHistories("zevModel", {
       histories,
       userIsGov,
       statusMap,
