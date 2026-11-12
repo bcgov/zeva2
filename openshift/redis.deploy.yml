@@ -1,0 +1,173 @@
+apiVersion: template.openshift.io/v1
+kind: Template
+parameters:
+  - name: NAME
+    description: Product name
+    value: zeva2
+    required: true
+  - name: COMPONENT
+    description: Component name
+    value: redis
+  - name: ZONE
+    description: Deployment zone, e.g. pr-### or dev
+    required: true
+  - name: REDIS_IMAGE
+    description: Redis image repository
+    value: redis
+  - name: REDIS_VERSION
+    description: Tag for REDIS_IMAGE
+    value: 8.2.2-alpine
+  - name: REDIS_PVC_SIZE
+    description: Volume space available for Redis data
+    value: 50Mi
+  - name: REDIS_PASSWORD
+    description: Password for Redis clients
+    from: "[a-zA-Z0-9]{32}"
+    generate: expression
+  - name: MEMORY_LIMIT
+    description: Memory limit for the Redis container
+    value: 256Mi
+
+objects:
+  - apiVersion: v1
+    kind: Secret
+    metadata:
+      name: ${NAME}-${ZONE}-redis
+      labels:
+        app: ${NAME}-${ZONE}
+    stringData:
+      redis-password: ${REDIS_PASSWORD}
+      redis-host: ${NAME}-${ZONE}-${COMPONENT}
+      redis-port: "6379"
+
+  - apiVersion: apps/v1
+    kind: StatefulSet
+    metadata:
+      labels:
+        app: ${NAME}-${ZONE}
+      name: ${NAME}-${ZONE}-${COMPONENT}
+    spec:
+      serviceName: ${NAME}-${ZONE}-${COMPONENT}
+      replicas: 1
+      selector:
+        matchLabels:
+          deployment: ${NAME}-${ZONE}-${COMPONENT}
+      template:
+        metadata:
+          labels:
+            app: ${NAME}-${ZONE}
+            deployment: ${NAME}-${ZONE}-${COMPONENT}
+        spec:
+          terminationGracePeriodSeconds: 30
+          containers:
+            - name: redis
+              image: ${REDIS_IMAGE}:${REDIS_VERSION}
+              imagePullPolicy: IfNotPresent
+              command:
+                - redis-server
+              args:
+                - --bind
+                - 0.0.0.0
+                - --port
+                - "0"
+                - --tls-port
+                - "6379"
+                - --tls-cert-file
+                - /etc/redis/tls/tls.crt
+                - --tls-key-file
+                - /etc/redis/tls/tls.key
+                - --tls-auth-clients
+                - "no"
+                - --requirepass
+                - $(REDIS_PASSWORD)
+                - --appendonly
+                - "yes"
+                - --dir
+                - /data
+              ports:
+                - name: redis-tls
+                  containerPort: 6379
+              env:
+                - name: REDIS_PASSWORD
+                  valueFrom:
+                    secretKeyRef:
+                      name: ${NAME}-${ZONE}-redis
+                      key: redis-password
+                - name: REDISCLI_AUTH
+                  valueFrom:
+                    secretKeyRef:
+                      name: ${NAME}-${ZONE}-redis
+                      key: redis-password
+              volumeMounts:
+                - name: data
+                  mountPath: /data
+                - name: tls
+                  mountPath: /etc/redis/tls
+                  readOnly: true
+              resources:
+                requests:
+                  cpu: 50m
+                  memory: 64Mi
+                limits:
+                  memory: ${MEMORY_LIMIT}
+              securityContext:
+                allowPrivilegeEscalation: false
+                runAsNonRoot: true
+                capabilities:
+                  drop: ["ALL"]
+                seccompProfile:
+                  type: RuntimeDefault
+              readinessProbe:
+                exec:
+                  command:
+                    - sh
+                    - -c
+                    - redis-cli --tls --insecure ping | grep -q PONG
+                successThreshold: 1
+                failureThreshold: 5
+                initialDelaySeconds: 10
+                periodSeconds: 10
+                timeoutSeconds: 5
+              livenessProbe:
+                exec:
+                  command:
+                    - sh
+                    - -c
+                    - redis-cli --tls --insecure ping | grep -q PONG
+                successThreshold: 1
+                failureThreshold: 5
+                initialDelaySeconds: 30
+                periodSeconds: 15
+                timeoutSeconds: 5
+          volumes:
+            - name: tls
+              secret:
+                secretName: ${NAME}-${ZONE}-${COMPONENT}-tls
+      volumeClaimTemplates:
+        - metadata:
+            labels:
+              app: ${NAME}-${ZONE}
+            name: data
+          spec:
+            accessModes:
+              - ReadWriteOnce
+            storageClassName: netapp-block-standard
+            resources:
+              requests:
+                storage: ${REDIS_PVC_SIZE}
+
+  - apiVersion: v1
+    kind: Service
+    metadata:
+      labels:
+        app: ${NAME}-${ZONE}
+      name: ${NAME}-${ZONE}-${COMPONENT}
+      annotations:
+        service.beta.openshift.io/serving-cert-secret-name: ${NAME}-${ZONE}-${COMPONENT}-tls
+    spec:
+      ports:
+        - name: redis-tls
+          port: 6379
+          targetPort: 6379
+      selector:
+        deployment: ${NAME}-${ZONE}-${COMPONENT}
