@@ -72,6 +72,7 @@ objects:
             vault.hashicorp.com/agent-inject-secret-cthub: "${VAULT_SECRET_PATH}/zeva2-cthub"
             vault.hashicorp.com/agent-inject-secret-database: "${VAULT_SECRET_PATH}/zeva2-database"
             vault.hashicorp.com/agent-inject-secret-s3: "${VAULT_SECRET_PATH}/zeva2-s3"
+            vault.hashicorp.com/agent-inject-secret-redis: "${VAULT_SECRET_PATH}/zeva2-redis-connection"
             vault.hashicorp.com/agent-inject-template-auth: |
               {{- with secret "${VAULT_SECRET_PATH}/zeva2-auth" -}}
                 export AUTH_SECRET="{{ .Data.data.auth_secret }}"
@@ -87,6 +88,8 @@ objects:
               {{- end }}
             vault.hashicorp.com/agent-inject-template-database: |
               {{- with secret "${VAULT_SECRET_PATH}/zeva2-database" -}}
+                export DATABASE_URL="{{ .Data.data.database_url }}"
+                export DATABASE_URL_FOR_MIGRATIONS="{{ .Data.data.database_url_for_migrations }}" 
                 export DATABASE_URL_OLD="{{ .Data.data.database_url_old }}"
               {{- end }}
             vault.hashicorp.com/agent-inject-template-s3: |
@@ -98,6 +101,10 @@ objects:
                 export S3_PREFIX="{{ .Data.data.prefix }}"
                 export S3_REGION="{{ .Data.data.region }}"
               {{- end }}
+            vault.hashicorp.com/agent-inject-template-redis: |
+              {{- with secret "${VAULT_SECRET_PATH}/zeva2-redis-connection" -}}
+                export REDIS_PASSWORD="{{ .Data.data.redis_password }}"
+              {{- end }}                
             vault.hashicorp.com/agent-inject-token: "true"
             vault.hashicorp.com/agent-pre-populate-only: "true"
             vault.hashicorp.com/auth-path: auth/k8s-silver

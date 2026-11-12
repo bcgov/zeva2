@@ -8,9 +8,6 @@ parameters:
   - name: DATABASE_NAME
     description: PostgreSQL database name
     value: zeva
-  - name: COMPONENT
-    description: Component name
-    value: database
   - name: ZONE
     description: Deployment zone, e.g. pr-### or prod
     required: true
@@ -25,7 +22,7 @@ parameters:
     value: 256Mi
   - name: DB_PASSWORD
     description: Password for the PostgreSQL connection user.
-    from: "[a-zA-Z0-9]{8}"
+    from: "[a-zA-Z]{8}"
     generate: expression
   - name: MEMORY_LIMIT
     description: Memory limit for the database container.
@@ -42,7 +39,7 @@ objects:
       database-name: ${DATABASE_NAME}
       database-password: ${DB_PASSWORD}
       database-user: ${NAME}
-      database-host: ${NAME}-${ZONE}-${COMPONENT}
+      database-host: ${NAME}-${ZONE}-database
       database-port: "5432"
 
   - apiVersion: apps/v1
@@ -50,18 +47,18 @@ objects:
     metadata:
       labels:
         app: ${NAME}-${ZONE}
-      name: ${NAME}-${ZONE}-${COMPONENT}
+      name: ${NAME}-${ZONE}-database
     spec:
-      serviceName: ${NAME}-${ZONE}-${COMPONENT}
+      serviceName: ${NAME}-${ZONE}-database
       replicas: 1
       selector:
         matchLabels:
-          deployment: ${NAME}-${ZONE}-${COMPONENT}
+          deployment: ${NAME}-${ZONE}-database
       template:
         metadata:
           labels:
             app: ${NAME}-${ZONE}
-            deployment: ${NAME}-${ZONE}-${COMPONENT}
+            deployment: ${NAME}-${ZONE}-database
         spec:
           terminationGracePeriodSeconds: 60
           containers:
@@ -150,11 +147,11 @@ objects:
     metadata:
       labels:
         app: ${NAME}-${ZONE}
-      name: ${NAME}-${ZONE}-${COMPONENT}
+      name: ${NAME}-${ZONE}-database
     spec:
       ports:
         - name: postgresql
           port: 5432
           targetPort: 5432
       selector:
-        deployment: ${NAME}-${ZONE}-${COMPONENT}
+        deployment: ${NAME}-${ZONE}-database
