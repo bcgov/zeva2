@@ -2,8 +2,7 @@ name: Analysis
 
 on:
   push:
-    branches: [ci/adopt-quickstart]
-    # branches: [main]
+    branches: [main]
   pull_request:
   workflow_dispatch:
 
