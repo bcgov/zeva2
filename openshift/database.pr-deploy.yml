@@ -24,9 +24,6 @@ parameters:
     description: Password for the PostgreSQL connection user.
     from: "[a-zA-Z]{8}"
     generate: expression
-  - name: MEMORY_LIMIT
-    description: Memory limit for the database container.
-    value: 1Gi
 
 objects:
   - apiVersion: v1
@@ -94,9 +91,7 @@ objects:
               resources:
                 requests:
                   cpu: 50m
-                  memory: 256Mi
-                limits:
-                  memory: ${MEMORY_LIMIT}
+                  memory: 100Mi
               securityContext:
                 allowPrivilegeEscalation: false
                 runAsNonRoot: true
