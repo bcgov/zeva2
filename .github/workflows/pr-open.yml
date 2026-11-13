@@ -159,7 +159,6 @@ jobs:
         with:
           triggers: |
             next/
-            next/bullmq
             openshift/
             .github/workflows/pr-open.yml
       - name: Wait for Next.js healthcheck
