@@ -72,7 +72,7 @@ jobs:
           triggers: |
             next/
             openshift/
-            .github/workflows/merge.yml
+            .github/workflows/*.yml
       - uses: bcgov/actions-openshift/deployer@46f2614322f7ba1a5ad88a7e4e1b98569c80dcf7 # v0.6.0
         with:
           file: ${{ matrix.file }}
@@ -91,7 +91,7 @@ jobs:
           triggers: |
             next/
             openshift/
-            .github/workflows/merge.yml
+            .github/workflows/*.yml
 
   results:
     name: Merge Results
