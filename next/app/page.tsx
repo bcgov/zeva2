@@ -12,7 +12,7 @@ export default function Home() {
     >
       <div className="grid grid-cols-1 grid-rows-[auto_1fr] md:grid-rows-1 md:grid-cols-[30%_70%] h-full">
         <div className="bg-white/80 md:h-full order-2 md:order-1">
-          {/* desktop logo quickstart test merge 1 */}
+          {/* desktop logo */}
           <Image
             src="/BCID_H_rgb_pos.png"
             alt="BC Logo"
@@ -58,7 +58,7 @@ export default function Home() {
             id="title"
             className="text-l text-center font-bold  text-shadow  md:text-4xl md:pl-10 md:text-left text-[#f2f2f2]"
           >
-            Zero-Emission Vehicles Reporting System
+            Zero-Emission Vehicles Reporting System quickstart
           </div>
         </div>
       </div>
