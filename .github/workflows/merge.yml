@@ -58,9 +58,11 @@ jobs:
             exit 1
           fi
           namespaceplate="${OC_NAMESPACE%%-*}"
-          echo "vault_secret_path=${namespaceplate}-nonprod/test" >> "$GITHUB_OUTPUT"
-          echo "vault_role=${namespaceplate}-nonprod" >> "$GITHUB_OUTPUT"
-          echo "vault_service_account=${namespaceplate}-vault" >> "$GITHUB_OUTPUT"      
+          {
+            echo "vault_secret_path=${namespaceplate}-nonprod/test"
+            echo "vault_role=${namespaceplate}-nonprod"
+            echo "vault_service_account=${namespaceplate}-vault"
+          } >> "$GITHUB_OUTPUT"
       - uses: bcgov/actions-openshift/deployer@46f2614322f7ba1a5ad88a7e4e1b98569c80dcf7 # v0.6.0
         with:
           file: ${{ matrix.file }}
@@ -75,10 +77,11 @@ jobs:
             -p VAULT_SECRET_PATH="${{ steps.vault_settings.outputs.vault_secret_path }}"
             -p VAULT_ROLE="${{ steps.vault_settings.outputs.vault_role }}"
             -p VAULT_SERVICE_ACCOUNT="${{ steps.vault_settings.outputs.vault_service_account }}"
-          # triggers: |
-          #   next/
-          #   openshift/
-          #   .github/workflows/merge.yml
+          base: ${{ github.event.before || 'HEAD^' }}
+          triggers: |
+            next/
+            openshift/
+            .github/workflows/merge.yml
 
   results:
     name: Merge Results
