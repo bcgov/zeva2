@@ -133,7 +133,7 @@ objects:
                 - name: TZ
                   value: America/Vancouver
                 - name: REDIS_TLS_ENABLED
-                  value: "true"
+                  value: "false"
                 - name: REDIS_HOST
                   value: "zeva2-dandyredis-${ZONE}-redis-ha-haproxy"
                 - name: REDIS_PORT
