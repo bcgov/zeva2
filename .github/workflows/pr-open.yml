@@ -227,7 +227,7 @@ jobs:
           triggers: |
             next/
             openshift/
-            .github/workflows/pr-open.yml
+            .github/workflows/*.yml
       - name: Post Deploy Links
         if: steps.triggers.outputs.triggered == 'true'
         uses: marocchino/sticky-pull-request-comment@5770ad5eb8f42dd2c4f34da00c94c5381e49af88 # v3.0.5
