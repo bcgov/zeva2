@@ -27,8 +27,8 @@ This skill helps transform Helm-based OpenShift deployments into single manifest
     - `VAULT_SECRET_PATH` (Vault secret path, e.g., `namespaceplate-nonprod/dev`, `namespaceplate-nonprod/test`, `namespaceplate-prod`)
     - `VAULT_ROLE` (Vault Kubernetes auth role, e.g. `namespaceplate-nonprod`, `namespaceplate-prod`)
   - Services connection:
-    - refer to database.deploy.yml for database connection details.
-    - refer to redis.deploy.yml for Redis connection details.
+    - refer to database.pr-deploy.yml for database connection details.
+    - refer to redis.pr-deploy.yml for Redis connection details.
   - Declare modern Kubernetes `Deployment` resources:
     - Rolling update strategy: `maxUnavailable: 1`, `maxSurge: 1`.
     - Container image: `${REGISTRY}/${ORG_NAME}/${NAME}/${COMPONENT}:${IMAGE_TAG}`.

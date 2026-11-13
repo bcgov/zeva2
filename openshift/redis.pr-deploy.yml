@@ -21,9 +21,6 @@ parameters:
     description: Password for Redis clients
     from: "[a-zA-Z0-9]{32}"
     generate: expression
-  - name: MEMORY_LIMIT
-    description: Memory limit for the Redis container
-    value: 256Mi
 
 objects:
   - apiVersion: v1
@@ -105,8 +102,6 @@ objects:
                 requests:
                   cpu: 50m
                   memory: 64Mi
-                limits:
-                  memory: ${MEMORY_LIMIT}
               securityContext:
                 allowPrivilegeEscalation: false
                 runAsNonRoot: true
