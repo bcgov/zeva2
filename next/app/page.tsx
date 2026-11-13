@@ -20,7 +20,7 @@ export default function Home() {
             height={100}
             className="mx-auto hidden md:block md:w-[95%] h-auto"
           />
-          {/* mobile logo tbd */}
+          {/* mobile logo */}
           <Image
             src="/BCID_V_rgb_pos.png"
             alt="BC Logo"

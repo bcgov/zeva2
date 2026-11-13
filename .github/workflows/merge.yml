@@ -2,7 +2,7 @@ name: Merge
 
 on:
   push:
-    branches: [ci/tbd-after-quickstart-adoption2]
+    branches: [main]
     paths-ignore:
       - "*.md"
       - ".github/**"
@@ -71,7 +71,7 @@ jobs:
             -p ZONE="test"
             -p NAME="zeva2"
             -p MEMORY_REQUEST="${{ matrix.memory_request }}"
-            -p IMAGE_TAG="${{ needs.init.outputs.pr || github.sha }}"
+            -p IMAGE_TAG="${{ github.sha }}"
             -p VAULT_SECRET_PATH="${{ steps.vault_settings.outputs.vault_secret_path }}"
             -p VAULT_ROLE="${{ steps.vault_settings.outputs.vault_role }}"
             -p VAULT_SERVICE_ACCOUNT="${{ steps.vault_settings.outputs.vault_service_account }}"
