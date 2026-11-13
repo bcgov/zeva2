@@ -59,9 +59,9 @@ jobs:
       matrix:
         include:
           - service: database
-            file: openshift/database.deploy.yml
+            file: openshift/database.pr-deploy.yml
           - service: redis
-            file: openshift/redis.deploy.yml
+            file: openshift/redis.pr-deploy.yml
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Deploy database
