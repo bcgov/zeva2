@@ -1,7 +1,7 @@
 @import "tailwindcss";
 
 @theme {
-  /* Primary colors */
+  /* Primary colors test */
   --color-primaryBlue: #013366;
   --color-primaryBlueHover: #1e5189;
   --color-primaryBluePressed: #01264c;
