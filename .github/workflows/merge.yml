@@ -77,10 +77,11 @@ jobs:
             -p VAULT_SECRET_PATH="${{ steps.vault_settings.outputs.vault_secret_path }}"
             -p VAULT_ROLE="${{ steps.vault_settings.outputs.vault_role }}"
             -p VAULT_SERVICE_ACCOUNT="${{ steps.vault_settings.outputs.vault_service_account }}"
-          # triggers: |
-          #   next/
-          #   openshift/
-          #   .github/workflows/merge.yml
+          base: ${{ github.event.before || 'HEAD^' }}
+          triggers: |
+            next/
+            openshift/
+            .github/workflows/merge.yml
 
   results:
     name: Merge Results
