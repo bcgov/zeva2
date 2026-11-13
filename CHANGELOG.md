@@ -4,6 +4,7 @@ All notable changes to this project are documented in this file.
 
 | Version | Date | Type | Change |
 | --- | --- | --- | --- |
+| [1.77.4](https://github.com/bcgov/zeva2/compare/v1.77.3...v1.77.4) | 2026-11-13 | ⏪ Revert | ci/tbd t3 ([#764](https://github.com/bcgov/zeva2/issues/764)) ([4009979](https://github.com/bcgov/zeva2/commit/4009979ba070dbf165d72f15aa140750ce2d185a)), closes [#763](https://github.com/bcgov/zeva2/issues/763) |
 | [1.77.3](https://github.com/bcgov/zeva2/compare/v1.77.2...v1.77.3) | 2026-11-12 | 🐛 Fix | misc updates ([#756](https://github.com/bcgov/zeva2/issues/756)) ([296e843](https://github.com/bcgov/zeva2/commit/296e8435e0170051493d55fc76cbae1c1edfb40a)) |
 | [1.77.2](https://github.com/bcgov/zeva2/compare/v1.77.1...v1.77.2) | 2026-11-10 | 🐛 Fix | small fix ([#751](https://github.com/bcgov/zeva2/issues/751)) ([9959757](https://github.com/bcgov/zeva2/commit/9959757300cc6113ab2472ddde6108af66d924d6)) |
 | [1.77.1](https://github.com/bcgov/zeva2/compare/v1.77.0...v1.77.1) | 2026-11-09 | 🐛 Fix | misc updates ([#747](https://github.com/bcgov/zeva2/issues/747)) ([4867115](https://github.com/bcgov/zeva2/commit/4867115a1a25ebe5fc576c6c51c7197f1c85d311)) |
