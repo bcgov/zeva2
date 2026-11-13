@@ -4,7 +4,6 @@ import { getUserInfo } from "@/auth";
 import {
   getCreditTransferStatusEnumsToStringsMap,
   getModelYearEnumsToStringsMap,
-  getVehicleClassEnumsToStringsMap,
   getZevClassEnumsToStringsMap,
 } from "@/app/lib/utils/enumMaps";
 import { mapOfStatusToSupplierStatus } from "../constants";
@@ -19,7 +18,6 @@ export const CreditTransferDetails = async (props: { id: number }) => {
   if (!userIsGov) {
     status = mapOfStatusToSupplierStatus[status];
   }
-  const vehicleClassesMap = getVehicleClassEnumsToStringsMap();
   const zevClassesMap = getZevClassEnumsToStringsMap();
   const modelYearsMap = getModelYearEnumsToStringsMap();
   const statusMap = getCreditTransferStatusEnumsToStringsMap();
@@ -27,7 +25,6 @@ export const CreditTransferDetails = async (props: { id: number }) => {
   for (const content of transfer.creditTransferContent) {
     transferContent.push(
       <ul key={content.id}>
-        <li>Vehicle Class: {vehicleClassesMap[content.vehicleClass]}</li>
         <li>ZEV Class: {zevClassesMap[content.zevClass]}</li>
         <li>Model Year: {modelYearsMap[content.modelYear]}</li>
         <li>Number of units: {content.numberOfUnits.toString()}</li>

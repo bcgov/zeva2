@@ -2,7 +2,6 @@ import { CreditApplicationStatus } from "@/prisma/generated/enums";
 import { getApplicationStatisticsSupplier } from "../data";
 import {
   getModelYearEnumsToStringsMap,
-  getVehicleClassEnumsToStringsMap,
   getZevClassEnumsToStringsMap,
 } from "@/app/lib/utils/enumMaps";
 
@@ -16,7 +15,6 @@ export const ApplicationStatisticsSupplier = async (props: {
     return null;
   }
   const status = stats.status;
-  const vehicleClassesMap = getVehicleClassEnumsToStringsMap();
   const zevClassMap = getZevClassEnumsToStringsMap();
   const modelYearsMap = getModelYearEnumsToStringsMap();
 
@@ -50,9 +48,6 @@ export const ApplicationStatisticsSupplier = async (props: {
                   Model Year
                 </th>
                 <th className="h-[60px] px-4 py-3 text-left font-bold border-b border-disabledIcon whitespace-nowrap">
-                  Vehicle Class
-                </th>
-                <th className="h-[60px] px-4 py-3 text-left font-bold border-b border-disabledIcon whitespace-nowrap">
                   ZEV Class
                 </th>
                 <th className="h-[60px] px-4 py-3 text-left font-bold border-b border-disabledIcon whitespace-nowrap">
@@ -83,9 +78,6 @@ export const ApplicationStatisticsSupplier = async (props: {
                   </td>
                   <td className="px-4 py-3 border-b border-disabledIcon whitespace-nowrap">
                     {modelYearsMap[record.modelYear]}
-                  </td>
-                  <td className="px-4 py-3 border-b border-disabledIcon whitespace-nowrap">
-                    {vehicleClassesMap[record.vehicleClass]}
                   </td>
                   <td className="px-4 py-3 border-b border-disabledIcon whitespace-nowrap">
                     {zevClassMap[record.zevClass]}
@@ -132,9 +124,6 @@ export const ApplicationStatisticsSupplier = async (props: {
             <thead>
               <tr>
                 <th className="h-[60px] px-4 py-3 text-left font-bold border-b border-disabledIcon whitespace-nowrap">
-                  Vehicle Class
-                </th>
-                <th className="h-[60px] px-4 py-3 text-left font-bold border-b border-disabledIcon whitespace-nowrap">
                   ZEV Class
                 </th>
                 <th className="h-[60px] px-4 py-3 text-left font-bold border-b border-disabledIcon whitespace-nowrap">
@@ -153,9 +142,6 @@ export const ApplicationStatisticsSupplier = async (props: {
                     key={crypto.randomUUID()}
                     className="odd:bg-lightGrey even:bg-white"
                   >
-                    <td className="px-4 py-3 border-b border-disabledIcon whitespace-nowrap">
-                      {vehicleClassesMap[record.vehicleClass]}
-                    </td>
                     <td className="px-4 py-3 border-b border-disabledIcon whitespace-nowrap">
                       {zevClassMap[record.zevClass]}
                     </td>

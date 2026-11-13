@@ -22,12 +22,6 @@ export const ParsedZevUnitRecords = (props: {
         {record.type}
       </div>,
       <div
-        key={`${index}-vc`}
-        className={`${cellClasses} ${borderClasses} ${backgroundClasses}`}
-      >
-        {record.vehicleClass}
-      </div>,
-      <div
         key={`${index}-zc`}
         className={`${cellClasses} ${borderClasses} ${backgroundClasses}`}
       >
@@ -51,7 +45,7 @@ export const ParsedZevUnitRecords = (props: {
     if (props.hideIfEmpty) {
       return null;
     }
-    for (let i = 0; i < 5; i++) {
+    for (let i = 0; i < 4; i++) {
       entries.push(
         <div key={i} className={`${cellClasses}`}>
           -
@@ -64,9 +58,8 @@ export const ParsedZevUnitRecords = (props: {
       <div className="px-5 py-4 font-bold text-xl bg-disabledBG border-b border-dividerMedium">
         {props.caption}
       </div>
-      <div className="grid grid-cols-5">
+      <div className="grid grid-cols-4">
         <div className={headerClasses}>Type</div>
-        <div className={headerClasses}>Vehicle Class</div>
         <div className={headerClasses}>ZEV Class</div>
         <div className={headerClasses}>Model Year</div>
         <div className={headerClasses}>Number of Units</div>

@@ -8,7 +8,6 @@ import {
   getModelYearEnumsToStringsMap,
   getStringsToBalanceTypeEnumsMap,
   getStringsToModelYearsEnumsMap,
-  getStringsToVehicleClassEnumsMap,
   getStringsToZevClassEnumsMap,
   getVehicleClassEnumsToStringsMap,
   getZevClassEnumsToStringsMap,
@@ -36,12 +35,10 @@ export const Adjustments = (props: {
     };
   }, []);
 
-  const vehicleClassesMaps = useMemo(() => {
-    return {
-      enumsToStrings: getVehicleClassEnumsToStringsMap(),
-      stringsToEnums: getStringsToVehicleClassEnumsMap(),
-    };
-  }, []);
+  const vehicleClass = useMemo(
+    () => getVehicleClassEnumsToStringsMap()[VehicleClass.REPORTABLE],
+    [],
+  );
 
   const zevClassesMaps = useMemo(() => {
     return {
@@ -59,8 +56,6 @@ export const Adjustments = (props: {
 
   const addAdjustment = useCallback(() => {
     const type = balanceTypesMaps.enumsToStrings[TransactionType.CREDIT];
-    const vehicleClass =
-      vehicleClassesMaps.enumsToStrings[VehicleClass.REPORTABLE];
     const zevClass = zevClassesMaps.enumsToStrings[ZevClass.A];
     const modelYear = modelYearsMaps.enumsToStrings[ModelYear.MY_2019];
     if (type && vehicleClass && zevClass && modelYear) {
@@ -77,7 +72,7 @@ export const Adjustments = (props: {
         ];
       });
     }
-  }, [balanceTypesMaps, vehicleClassesMaps, zevClassesMaps, modelYearsMaps]);
+  }, [balanceTypesMaps, vehicleClass, zevClassesMaps, modelYearsMaps]);
 
   const removeAdjustment = useCallback((index: number) => {
     props.setAdjustments((prev) => {
@@ -105,7 +100,6 @@ export const Adjustments = (props: {
         <thead>
           <tr>
             <th className="border border-gray-300">Type</th>
-            <th className="border border-gray-300">Vehicle Class</th>
             <th className="border border-gray-300">ZEV Class</th>
             <th className="border border-gray-300">Model Year</th>
             <th className="border border-gray-300">Number of Units</th>
@@ -126,21 +120,6 @@ export const Adjustments = (props: {
                   onChange={(value) => {
                     handleAdjustmentChange(index, "type", value);
                   }}
-                  disabled={props.disabled}
-                />
-              </td>
-              <td className="border border-gray-300 p-2">
-                <Dropdown
-                  options={Object.keys(vehicleClassesMaps.stringsToEnums).map(
-                    (vc) => ({
-                      value: vc,
-                      label: vc,
-                    }),
-                  )}
-                  value={adjustment.vehicleClass}
-                  onChange={(value) =>
-                    handleAdjustmentChange(index, "vehicleClass", value)
-                  }
                   disabled={props.disabled}
                 />
               </td>

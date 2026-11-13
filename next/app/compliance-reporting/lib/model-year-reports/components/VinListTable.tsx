@@ -73,12 +73,6 @@ export const VinListTable = (props: {
         enableSorting: true,
         enableColumnFilter: true,
       }),
-      columnHelper.accessor((row) => row.vehicleClass, {
-        id: "vehicleClass",
-        header: "Vehicle Class",
-        enableSorting: true,
-        enableColumnFilter: true,
-      }),
       columnHelper.accessor((row) => row.zevClass, {
         id: "zevClass",
         header: "ZEV Class",
