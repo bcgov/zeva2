@@ -6,6 +6,7 @@ import {
   SupplierTemplate,
   ZevModelsMap,
   ZevVinRecord,
+  ZevVinRecordSparse,
 } from "./constants";
 import { getStringsToModelYearsEnumsMap } from "@/app/lib/utils/enumMaps";
 import { validateDate } from "@/app/lib/utils/date";
@@ -127,7 +128,7 @@ export const refineCaRecords = (
 };
 
 export const getCaDataFinal = async (
-  records: Partial<ZevVinRecord>[],
+  records: Partial<ZevVinRecordSparse>[],
   caSubTemplateUrl: string,
 ): Promise<CaDataFinal> => {
   const eligibleRecords: Partial<ZevVinRecord>[] = [];

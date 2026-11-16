@@ -156,6 +156,15 @@ export type ZevVinRecord = {
   errors: string[];
 };
 
+export type ZevVinRecordSparse = {
+  make: string;
+  modelName: string;
+  modelYear: string;
+  vin: string;
+  date: string;
+  errors: string[];
+};
+
 export type ZevModelsMap = Partial<
   Record<
     string,

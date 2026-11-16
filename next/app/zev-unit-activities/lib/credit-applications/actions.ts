@@ -31,6 +31,7 @@ import {
   SupplierSubTemplate,
   SupplierTemplate,
   ZevVinRecord,
+  ZevVinRecordSparse,
 } from "./constants";
 import {
   Directory,
@@ -41,7 +42,6 @@ import {
   DataOrErrorActionResponse,
   ErrorOrSuccessActionResponse,
   DataActionResponse,
-  ValidationError,
   getDataActionResponse,
   getErrorActionResponse,
   getSuccessActionResponse,
@@ -367,7 +367,11 @@ export const supplierSubmit = async (
   creditApplicationId: number,
   comment?: string,
 ): Promise<
-  ErrorOrSuccessActionResponse | DataActionResponse<ValidationError[]>
+  | ErrorOrSuccessActionResponse
+  | DataActionResponse<{
+      subTemplateUrl: string;
+      records: ZevVinRecordSparse[];
+    }>
 > => {
   const { userIsGov, userOrgId, userId, userRoles } = await getUserInfo();
   if (userIsGov || !userRoles.includes(Role.SIGNING_AUTHORITY)) {
@@ -399,68 +403,71 @@ export const supplierSubmit = async (
   ) {
     return getErrorActionResponse("Invalid Action!");
   }
+
+  const serializedRecords: ZevVinRecordSparse[] = [];
   const records = application.CreditApplicationRecord;
-  const vins = records.map((r) => r.vin);
-
-  try {
-    const allErrors: ValidationError[] = [];
-
-    for (const record of records) {
-      if (record.timestamp > new Date()) {
-        allErrors.push({
-          errorType: "Future date",
-          record: record.vin,
-          details: `Date ${getIsoYmdString(record.timestamp)} is in the future`,
-        });
+  const modelYearsMap = getModelYearEnumsToStringsMap();
+  const vins: string[] = [];
+  let hasError: boolean = false;
+  for (const record of records) {
+    const serializedRecord: ZevVinRecordSparse = {
+      make: record.make,
+      modelName: record.modelName,
+      modelYear: modelYearsMap[record.modelYear] ?? record.modelYear,
+      vin: record.vin,
+      date: getIsoYmdString(record.timestamp),
+      errors: [],
+    };
+    if (record.timestamp > new Date()) {
+      serializedRecord.errors.push("Date cannot be in the future");
+      hasError = true;
+    }
+    vins.push(record.vin);
+  }
+  const reservedVins = new Set(await getReservedVins(vins));
+  if (reservedVins.size > 0) {
+    for (const record of serializedRecords) {
+      if (reservedVins.has(record.vin)) {
+        record.errors.push("Reserved VIN");
+        hasError = true;
       }
     }
-
-    const reservedVins = await getReservedVins(vins);
-    for (const vin of reservedVins) {
-      allErrors.push({
-        errorType: "Already reserved VIN",
-        record: vin,
-        details: "This VIN has already been reserved by another application",
-      });
-    }
-
-    if (allErrors.length > 0) {
-      return getDataActionResponse(allErrors);
-    }
-
-    await prisma.$transaction(async (tx) => {
-      await tx.creditApplication.update({
-        where: {
-          id: creditApplicationId,
-        },
-        data: {
-          status: CreditApplicationStatus.SUBMITTED,
-          supplierStatus: CreditApplicationStatus.SUBMITTED,
-          submissionTimestamp: new Date(),
-        },
-      });
-      await tx.reservedVin.createMany({
-        data: vins.reduce((acc: { vin: string }[], cv) => {
-          return [...acc, { vin: cv }];
-        }, []),
-      });
-      const historyId = await createHistory(
-        userId,
-        creditApplicationId,
-        CreditApplicationStatus.SUBMITTED,
-        comment,
-        tx,
-      );
-      await addJobToEmailQueue({
-        historyId,
-        notificationType: Notification.CREDIT_APPLICATION,
-      });
-    });
-  } catch (e) {
-    if (e instanceof Error) {
-      return getErrorActionResponse(e.message);
-    }
   }
+  if (hasError) {
+    return getDataActionResponse({
+      subTemplateUrl: await getSupplierSubTemplateDownloadUrl(),
+      records: serializedRecords,
+    });
+  }
+
+  await prisma.$transaction(async (tx) => {
+    await tx.creditApplication.update({
+      where: {
+        id: creditApplicationId,
+      },
+      data: {
+        status: CreditApplicationStatus.SUBMITTED,
+        supplierStatus: CreditApplicationStatus.SUBMITTED,
+        submissionTimestamp: new Date(),
+      },
+    });
+    await tx.reservedVin.createMany({
+      data: vins.reduce((acc: { vin: string }[], cv) => {
+        return [...acc, { vin: cv }];
+      }, []),
+    });
+    const historyId = await createHistory(
+      userId,
+      creditApplicationId,
+      CreditApplicationStatus.SUBMITTED,
+      comment,
+      tx,
+    );
+    await addJobToEmailQueue({
+      historyId,
+      notificationType: Notification.CREDIT_APPLICATION,
+    });
+  });
   return getSuccessActionResponse();
 };
 

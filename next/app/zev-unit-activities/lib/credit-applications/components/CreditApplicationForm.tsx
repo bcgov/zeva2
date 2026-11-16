@@ -145,7 +145,7 @@ export const CreditApplicationForm = (props: {
         const caData = await getCaDataFinal(records, subTemplateUrl);
         const caDataType = caData.type;
         if (caDataType === "eligibleIneligible") {
-          setError("Ineligible records found; scroll up to see more!");
+          setError("Ineligible records found; please see above!");
           setValidationResults({
             eligibleWorkbook: caData.eligibleWorkbook,
             eligibleCount: caData.eligibleCount,
@@ -173,7 +173,7 @@ export const CreditApplicationForm = (props: {
             throw new Error(response.message);
           }
         } else if (caDataType === "ineligible") {
-          setError("Ineligible records found; scroll up to see more!");
+          setError("Ineligible records found; please see above!");
           setValidationResults({
             eligibleWorkbook: null,
             eligibleCount: 0,
@@ -308,16 +308,6 @@ export const CreditApplicationForm = (props: {
           </div>
         </div>
 
-        {validationResults && (
-          <ValidationResults
-            eligibleWorkbook={validationResults.eligibleWorkbook}
-            eligibleCount={validationResults.eligibleCount}
-            ineligibleWorkbook={validationResults.ineligibleWorkbook}
-            ineligibleCount={validationResults.ineligibleCount}
-            disabled={isPending}
-          />
-        )}
-
         <div className="flex flex-col rounded border border-dividerMedium">
           <div className="bg-disabledSurface px-5 py-4 text-xl font-bold">
             Supporting Documents (optional)
@@ -331,6 +321,16 @@ export const CreditApplicationForm = (props: {
             />
           </div>
         </div>
+
+        {validationResults && (
+          <ValidationResults
+            eligibleWorkbook={validationResults.eligibleWorkbook}
+            eligibleCount={validationResults.eligibleCount}
+            ineligibleWorkbook={validationResults.ineligibleWorkbook}
+            ineligibleCount={validationResults.ineligibleCount}
+            disabled={isPending}
+          />
+        )}
 
         <div className="flex flex-row items-center justify-between p-5 bg-lightGrey">
           <Button variant="secondary" onClick={handleBack} disabled={isPending}>
