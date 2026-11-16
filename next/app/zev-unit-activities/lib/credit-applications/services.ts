@@ -5,10 +5,7 @@ import {
   CreditApplicationStatus,
   ModelYear,
   TransactionType,
-  VehicleClass,
   VehicleStatus,
-  ZevType,
-  ZevClass,
   Role,
 } from "@/prisma/generated/enums";
 import {
@@ -16,10 +13,13 @@ import {
   CreditApplicationWhereInput,
   CreditApplicationWhereUniqueInput,
 } from "@/prisma/generated/models";
-import { GovCaStatRecord, mapOfStatusToSupplierStatus } from "./constants";
+import {
+  GovCaStatRecord,
+  mapOfStatusToSupplierStatus,
+  ZevModelsMap,
+} from "./constants";
 import { Attachment } from "@/app/lib/constants/attachment";
 import { TransactionClient } from "@/types/prisma";
-import { Decimal } from "decimal.js";
 import { flattenZevUnitRecords, ZevUnitRecord } from "@/lib/utils/zevUnit";
 import { getStringsToModelYearsEnumsMap } from "@/app/lib/utils/enumMaps";
 import {
@@ -29,6 +29,7 @@ import {
 } from "@/app/lib/utils/date";
 import { CreditApplicationRecordScalarFieldEnum } from "@/prisma/generated/internal/prismaNamespace";
 import { ChatComment } from "@/app/lib/constants/chatComment";
+import { getZevModelKey } from "@/app/zev-models/lib/utils";
 
 export const getCreditApplicationGov = async (
   creditApplicationId: number,
@@ -182,7 +183,6 @@ export const getReservedVins = async (vins: string[]) => {
 
 export const getEligibleVehicles = async (
   orgId: number,
-  modelYears: "all" | ModelYear[],
   includeAdditionalFields: boolean,
 ) => {
   return await prisma.vehicle.findMany({
@@ -190,12 +190,6 @@ export const getEligibleVehicles = async (
       organizationId: orgId,
       status: VehicleStatus.VALIDATED,
       isActive: true,
-      modelYear:
-        modelYears === "all"
-          ? undefined
-          : {
-              in: modelYears,
-            },
     },
     select: {
       make: true,
@@ -211,54 +205,28 @@ export const getEligibleVehicles = async (
   });
 };
 
-// returns a map {make -> modelName -> modelYear -> [id, vehicleClass, zevClass, numberOfUnits, zevType, range]}
-export const getEligibleVehiclesMap = async (
-  orgId: number,
-  modelYears: ModelYear[],
-) => {
-  const result: Partial<
-    Record<
-      string,
-      Partial<
-        Record<
-          string,
-          Partial<
-            Record<
-              ModelYear,
-              [number, VehicleClass, ZevClass, Decimal, ZevType, number]
-            >
-          >
-        >
-      >
-    >
-  > = {};
-  const vehicles = await getEligibleVehicles(orgId, modelYears, true);
+export const getEligibleVehiclesMap = async (orgId: number) => {
+  const result: ZevModelsMap = {};
+  const vehicles = await getEligibleVehicles(orgId, true);
   for (const vehicle of vehicles) {
     const make = vehicle.make;
     const modelName = vehicle.modelName;
     const modelYear = vehicle.modelYear;
-    if (result[make]?.[modelName]?.[modelYear]) {
+    const zevModelKey = getZevModelKey(make, modelName, modelYear);
+    if (result[zevModelKey]) {
       throw new Error("Duplicate system vehicles found!");
     }
-    if (!result[make]) {
-      result[make] = {};
-    }
-    if (!result[make][modelName]) {
-      result[make][modelName] = {};
-    }
-    result[make][modelName][modelYear] = [
-      vehicle.id,
-      vehicle.vehicleClass,
-      vehicle.zevClass,
-      vehicle.numberOfUnits,
-      vehicle.zevType,
-      vehicle.range,
-    ];
+    result[zevModelKey] = {
+      id: vehicle.id,
+      vehicleClass: vehicle.vehicleClass,
+      zevClass: vehicle.zevClass,
+      numberOfUnits: vehicle.numberOfUnits.toFixed(2),
+      zevType: vehicle.zevType,
+      range: vehicle.range,
+    };
   }
   return result;
 };
-
-export const checkMatchesSystemVehicles = async () => {};
 
 export type IcbcRecordsMap = Partial<
   Record<

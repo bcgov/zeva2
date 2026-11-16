@@ -4,6 +4,7 @@ import { isModelYear, isZevType } from "@/app/lib/utils/typeGuards";
 import { ModelYear } from "@/prisma/generated/enums";
 import { VehicleFormData } from "./components/VehicleForm";
 import { getStringsToVehicleClassCodeEnumsMap } from "@/app/lib/utils/enumMaps";
+import { zevModelKeyDelimiter } from "./constants";
 
 export const getVehiclePayload = (data: VehicleFormData): VehiclePayload => {
   if (
@@ -16,6 +17,12 @@ export const getVehiclePayload = (data: VehicleFormData): VehiclePayload => {
     !data.gvwr
   ) {
     throw new Error("All fields are required!");
+  }
+  if (data.make.includes(zevModelKeyDelimiter)) {
+    throw new Error("Illegal pipe character in Make!");
+  }
+  if (data.modelName.includes(zevModelKeyDelimiter)) {
+    throw new Error("Illegal pipe character in Model Name!");
   }
   if (!isModelYear(data.modelYear) || data.modelYear < ModelYear.MY_2019) {
     throw new Error("Invalid Model Year!");
@@ -34,8 +41,8 @@ export const getVehiclePayload = (data: VehicleFormData): VehiclePayload => {
   const range = new Decimal(data.range).toNumber();
   return {
     modelYear: data.modelYear,
-    make: data.make,
-    modelName: data.modelName,
+    make: data.make.trim(),
+    modelName: data.modelName.trim(),
     us06RangeGte16: data.us06 === "true",
     range,
     vehicleClassCode: classCode,

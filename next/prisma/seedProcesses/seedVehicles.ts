@@ -10,6 +10,7 @@ import {
 import { prismaOld } from "@/lib/prismaOld";
 import { isZevType } from "@/app/lib/utils/typeGuards";
 import { getStringsToVehicleClassCodeEnumsMap } from "@/app/lib/utils/enumMaps";
+import { zevModelKeyDelimiter } from "@/app/zev-models/lib/constants";
 
 export const seedVehicles = async (
   tx: TransactionClient,
@@ -41,17 +42,6 @@ export const seedVehicles = async (
       validation_status: "VALIDATED",
     },
   });
-  const recordsOfSaleGroupsOld = await prismaOld.record_of_sale.groupBy({
-    where: {
-      sales_submission: {
-        validation_status: "VALIDATED",
-      },
-    },
-    by: ["vehicle_id"],
-    _count: {
-      id: true,
-    },
-  });
   for (const vehicleOld of vehiclesOld) {
     const modelYearEnum =
       mapOfModelYearIdsToModelYearEnum[vehicleOld.model_year_id];
@@ -63,6 +53,16 @@ export const seedVehicles = async (
       : undefined;
     const numberOfUnits = vehicleOld.credit_value;
     const oldWeight = vehicleOld.weight_kg;
+    if (vehicleOld.make.includes(zevModelKeyDelimiter)) {
+      throw new Error(
+        "vehicle with id " + vehicleOld.id + " has an illegal make!",
+      );
+    }
+    if (vehicleOld.model_name.includes(zevModelKeyDelimiter)) {
+      throw new Error(
+        "vehicle with id " + vehicleOld.id + " has an illegal model name!",
+      );
+    }
     if (!modelYearEnum) {
       throw new Error(
         "vehicle with id " + vehicleOld.id + " has unknown model year!",
@@ -95,10 +95,10 @@ export const seedVehicles = async (
       data: {
         legacyId: vehicleOld.id,
         range: vehicleOld.range,
-        make: vehicleOld.make,
+        make: vehicleOld.make.trim(),
         modelYear: modelYearEnum,
         status: VehicleStatus.VALIDATED,
-        modelName: vehicleOld.model_name,
+        modelName: vehicleOld.model_name.trim(),
         numberOfUnits,
         zevType: zevEnum,
         vehicleClassCode: classEnum,

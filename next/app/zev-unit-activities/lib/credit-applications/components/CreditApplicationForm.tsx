@@ -1,33 +1,38 @@
 "use client";
 
-import axios, { AxiosResponse } from "axios";
+import axios from "axios";
 import Excel from "exceljs";
 import { Dropzone } from "@/app/lib/components/Dropzone";
 import { Button, StatusBanner } from "@/app/lib/components";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState, useTransition } from "react";
-import { FileWithPath } from "react-dropzone";
 import {
   CreditApplicationStatus,
   CreditApplicationSupplierStatus,
 } from "@/prisma/generated/enums";
 import {
-  getCreditApplicationAttachmentPutData,
-  getCreditApplicationPutData,
   getSupplierEligibleVehicles,
+  getSupplierEligibleVehiclesMap,
+  getSupplierSubTemplateDownloadUrl,
   getSupplierTemplateDownloadUrl,
+  getVinsThatAreReserved,
   supplierSave,
 } from "../actions";
 import { SupplierTemplate } from "../constants";
 import { getModelYearEnumsToStringsMap } from "@/app/lib/utils/enumMaps";
 import { downloadBuffer, getFiles } from "@/app/lib/utils/download";
 import { Routes } from "@/app/lib/constants";
-import { Attachment, AttachmentDownload } from "@/app/lib/constants/attachment";
+import { AttachmentDownload } from "@/app/lib/constants/attachment";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faDownload, faFloppyDisk } from "@fortawesome/free-solid-svg-icons";
 import { PrintDownloadButton } from "@/app/lib/components/PrintDownloadButton";
-import { ValidationError } from "@/app/lib/utils/actionResponse";
-import { ValidationErrorsList } from "@/app/lib/components/ValidationErrorsList";
+import {
+  getCaData,
+  getCaDataFinal,
+  refineCaRecords,
+  uploadFiles,
+} from "../utilsClient";
+import { ValidationResults } from "./ValidationResults";
 
 export const CreditApplicationForm = (props: {
   legalName: string;
@@ -43,12 +48,15 @@ export const CreditApplicationForm = (props: {
 }) => {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
-  const [files, setFiles] = useState<FileWithPath[]>([]);
-  const [attachments, setAttachments] = useState<FileWithPath[]>([]);
+  const [files, setFiles] = useState<File[]>([]);
+  const [attachments, setAttachments] = useState<File[]>([]);
   const [error, setError] = useState<string>("");
-  const [validationErrors, setValidationErrors] = useState<ValidationError[]>(
-    [],
-  );
+  const [validationResults, setValidationResults] = useState<{
+    eligibleWorkbook: Excel.Workbook | null;
+    eligibleCount: number;
+    ineligibleWorkbook: Excel.Workbook | null;
+    ineligibleCount: number;
+  }>();
 
   useEffect(() => {
     const loadPrev = async () => {
@@ -74,7 +82,7 @@ export const CreditApplicationForm = (props: {
   useEffect(() => {
     if (files.length === 0) {
       setError("");
-      setValidationErrors([]);
+      setValidationResults(undefined);
     }
   }, [files]);
 
@@ -116,59 +124,64 @@ export const CreditApplicationForm = (props: {
 
   const handleSave = useCallback(() => {
     setError("");
-    setValidationErrors([]);
+    setValidationResults(undefined);
     startTransition(async () => {
       try {
         if (files.length !== 1) {
           throw new Error("Exactly 1 Credit Application file expected!");
         }
-        const application = files[0];
-        const puts: Promise<AxiosResponse>[] = [];
-        const applicationPutData = await getCreditApplicationPutData();
-        puts.push(
-          axios.put(applicationPutData.url, application, {
-            headers: { "if-none-match": "*" },
-          }),
+        const ca = files[0];
+        const [subTemplateUrl, vehiclesMap] = await Promise.all([
+          getSupplierSubTemplateDownloadUrl(),
+          getSupplierEligibleVehiclesMap(),
+        ]);
+        const { seenVins, duplicateVins, records } = await getCaData(
+          ca,
+          vehiclesMap,
         );
-        const attachmentsPayload: Attachment[] = [];
-        const attachmentsPutData = await getCreditApplicationAttachmentPutData(
-          attachments.length,
-        );
-        for (const [index, attachment] of attachments.entries()) {
-          const putDatum = attachmentsPutData[index];
-          puts.push(
-            axios.put(putDatum.url, attachment, {
-              headers: { "if-none-match": "*" },
-            }),
-          );
-          attachmentsPayload.push({
-            objectName: putDatum.objectName,
-            fileName: attachment.name,
+        const reservedVins = await getVinsThatAreReserved(seenVins);
+        // in place refinement of "records"
+        refineCaRecords(records, duplicateVins, new Set(reservedVins));
+        const caData = await getCaDataFinal(records, subTemplateUrl);
+        const caDataType = caData.type;
+        if (caDataType === "eligibleIneligible") {
+          setError("Ineligible records found; scroll up to see more!");
+          setValidationResults({
+            eligibleWorkbook: caData.eligibleWorkbook,
+            eligibleCount: caData.eligibleCount,
+            ineligibleWorkbook: caData.ineligibleWorkbook,
+            ineligibleCount: caData.ineligibleCount,
           });
-        }
-        await Promise.all(puts);
-        const response = await supplierSave(
-          props.legalName,
-          props.recordsAddress,
-          props.serviceAddress,
-          props.makes,
-          applicationPutData.objectName,
-          application.name,
-          attachmentsPayload,
-          props.creditApplication?.id,
-        );
-        if (response.responseType === "data") {
-          const data = response.data;
-          if (data.creditApplicationId) {
-            router.push(
-              `${Routes.CreditApplications}/${data.creditApplicationId}`,
-            );
-          } else if (data.validationErrors.length > 0) {
-            setValidationErrors(data.validationErrors);
+        } else if (caDataType === "eligible") {
+          const { caObjectName, caFileName, attachmentsPayload } =
+            await uploadFiles(ca, attachments);
+          const response = await supplierSave(
+            props.legalName,
+            props.recordsAddress,
+            props.serviceAddress,
+            props.makes,
+            caData.payload,
+            caObjectName,
+            caFileName,
+            attachmentsPayload,
+            props.creditApplication?.id,
+          );
+          if (response.responseType === "data") {
+            const creditApplicationId = response.data;
+            router.push(`${Routes.CreditApplications}/${creditApplicationId}`);
+          } else if (response.responseType === "error") {
+            throw new Error(response.message);
           }
-        }
-        if (response.responseType === "error") {
-          throw new Error(response.message);
+        } else if (caDataType === "ineligible") {
+          setError("Ineligible records found; scroll up to see more!");
+          setValidationResults({
+            eligibleWorkbook: null,
+            eligibleCount: 0,
+            ineligibleWorkbook: caData.ineligibleWorkbook,
+            ineligibleCount: caData.ineligibleCount,
+          });
+        } else if (caDataType === "none") {
+          setError("No records found!");
         }
       } catch (e) {
         if (e instanceof Error) {
@@ -295,6 +308,16 @@ export const CreditApplicationForm = (props: {
           </div>
         </div>
 
+        {validationResults && (
+          <ValidationResults
+            eligibleWorkbook={validationResults.eligibleWorkbook}
+            eligibleCount={validationResults.eligibleCount}
+            ineligibleWorkbook={validationResults.ineligibleWorkbook}
+            ineligibleCount={validationResults.ineligibleCount}
+            disabled={isPending}
+          />
+        )}
+
         <div className="flex flex-col rounded border border-dividerMedium">
           <div className="bg-disabledSurface px-5 py-4 text-xl font-bold">
             Supporting Documents (optional)
@@ -326,10 +349,6 @@ export const CreditApplicationForm = (props: {
             </Button>
           </div>
         </div>
-        <ValidationErrorsList
-          errors={validationErrors}
-          heading="The following errors must be resolved before saving:"
-        />
       </div>
     </div>
   );
