@@ -2,9 +2,9 @@ import Excel from "exceljs";
 import axios, { AxiosResponse } from "axios";
 import {
   CaDataFinal,
-  SupplierSubTemplate,
-  SupplierTemplate,
   ZevModelsMap,
+  zevsListSheetName,
+  zevsListSheetNumberOfRows,
   ZevVinRecord,
   ZevVinRecordSparse,
 } from "./constants";
@@ -33,14 +33,12 @@ export const getCaData = async (
   const caBuf = await caFile.arrayBuffer();
   const caWorkbook = new Excel.Workbook();
   await caWorkbook.xlsx.load(caBuf);
-  const caZevsSheet = caWorkbook.getWorksheet(
-    SupplierTemplate.ZEVsSuppliedSheetName,
-  );
+  const caZevsSheet = caWorkbook.getWorksheet(zevsListSheetName);
   if (!caZevsSheet) {
     throw new Error("Expected sheet not found!");
   }
   const modelYearsMap = getStringsToModelYearsEnumsMap();
-  for (let i = 2; i <= SupplierTemplate.ZEVsSuppliedSheetNumberOfRows; i++) {
+  for (let i = 2; i <= zevsListSheetNumberOfRows; i++) {
     const row = caZevsSheet.getRow(i);
     const make = row.getCell(1).value?.toString();
     const modelName = row.getCell(2).value?.toString();
@@ -143,12 +141,10 @@ export const getCaDataFinal = async (
     eligibleWorkbook.xlsx.load(caSubTemplate),
     ineligibleWorkbook.xlsx.load(caSubTemplate),
   ]);
-  const eligibleRecordsZevsSheet = eligibleWorkbook.getWorksheet(
-    SupplierSubTemplate.ZEVsSuppliedSheetName,
-  );
-  const ineligibleRecordsZevsSheet = ineligibleWorkbook.getWorksheet(
-    SupplierSubTemplate.ZEVsSuppliedSheetName,
-  );
+  const eligibleRecordsZevsSheet =
+    eligibleWorkbook.getWorksheet(zevsListSheetName);
+  const ineligibleRecordsZevsSheet =
+    ineligibleWorkbook.getWorksheet(zevsListSheetName);
   if (!eligibleRecordsZevsSheet || !ineligibleRecordsZevsSheet) {
     throw new Error("Expected sheet not found!");
   }

@@ -12,17 +12,21 @@ import {
 } from "@/prisma/generated/models";
 import Excel from "exceljs";
 
+export const zevsListSheetName = "ZEVs List";
+
+export const zevsListSheetNumberOfRows = 2001;
+
 export enum SupplierTemplate {
   Name = "credit_application_supplier_template.xlsx",
   ValidVehiclesSheetName = "Valid Vehicles",
-  ZEVsSuppliedSheetName = "ZEVs Supplied",
-  ZEVsSuppliedSheetNumberOfRows = 2001,
+  ZEVsListSheetName = zevsListSheetName,
+  ZEVsListSheetNumberOfRows = zevsListSheetNumberOfRows,
 }
 
 export enum SupplierSubTemplate {
   Name = "credit_application_supplier_sub_template.xlsx",
-  ZEVsSuppliedSheetName = "ZEVs Supplied",
-  ZEVsSuppliedSheetNumberOfRows = 2001,
+  ZEVsListSheetName = zevsListSheetName,
+  ZEVsListSheetNumberOfRows = zevsListSheetNumberOfRows,
 }
 
 export enum ErrorsTemplate {

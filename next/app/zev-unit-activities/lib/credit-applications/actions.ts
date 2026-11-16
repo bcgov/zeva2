@@ -422,14 +422,15 @@ export const supplierSubmit = async (
       serializedRecord.errors.push("Date cannot be in the future");
       hasError = true;
     }
+    serializedRecords.push(serializedRecord);
     vins.push(record.vin);
   }
   const reservedVins = new Set(await getReservedVins(vins));
   if (reservedVins.size > 0) {
+    hasError = true;
     for (const record of serializedRecords) {
       if (reservedVins.has(record.vin)) {
         record.errors.push("Reserved VIN");
-        hasError = true;
       }
     }
   }
