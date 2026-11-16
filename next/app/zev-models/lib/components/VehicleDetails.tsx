@@ -7,12 +7,10 @@ type VehicleProps = {
 import {
   getModelYearEnumsToStringsMap,
   getVehicleClassCodeEnumsToStringsMap,
-  getVehicleClassEnumsToStringsMap,
   getVehicleStatusEnumsToStringsMap,
   getZevClassEnumsToStringsMap,
 } from "@/app/lib/utils/enumMaps";
 export const VehicleDetails = async ({ vehicle }: VehicleProps) => {
-  const vehicleClassesMap = getVehicleClassEnumsToStringsMap();
   const zevClassesMap = getZevClassEnumsToStringsMap();
   const modelYearsMap = getModelYearEnumsToStringsMap();
   const statusMap = getVehicleStatusEnumsToStringsMap();
@@ -43,9 +41,6 @@ export const VehicleDetails = async ({ vehicle }: VehicleProps) => {
         </li>
         <li key="range">Electric EPA Range (km): {vehicle.range}</li>
         <li key="weigt=ht"> Weight (kg): {vehicle.weight}</li>
-        <li key="vehicleClass">
-          Vehicle Class: {vehicleClassesMap[vehicle.vehicleClass]}
-        </li>
         <li key="zevClass">Zev Class: {zevClassesMap[vehicle.zevClass]}</li>
         <li key="credits">
           Credit Entitlement: {vehicle.numberOfUnits.toString()}

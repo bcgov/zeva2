@@ -5,10 +5,7 @@ import { Button } from "@/app/lib/components";
 import { useState } from "react";
 import OrganizationEditForm from "./OrganizationEditForm";
 import { OrganizationAddressSparse } from "../data";
-import {
-  getModelYearEnumsToStringsMap,
-  getVehicleClassEnumsToStringsMap,
-} from "@/app/lib/utils/enumMaps";
+import { getModelYearEnumsToStringsMap } from "@/app/lib/utils/enumMaps";
 
 const formattedAddress = (address: OrganizationAddressSparse | undefined) => {
   if (!address) return <span>N/A</span>;
@@ -27,7 +24,6 @@ type Volume = {
 };
 
 const VolumeTable = (props: { title: string; volumes: Volume[] }) => {
-  const vehicleClassMap = getVehicleClassEnumsToStringsMap();
   const modelYearsMap = getModelYearEnumsToStringsMap();
 
   return (
@@ -43,9 +39,6 @@ const VolumeTable = (props: { title: string; volumes: Volume[] }) => {
                 Model Year
               </th>
               <th className="h-[60px] px-4 py-3 text-left font-bold border-b border-disabledIcon whitespace-nowrap">
-                Vehicle Class
-              </th>
-              <th className="h-[60px] px-4 py-3 text-left font-bold border-b border-disabledIcon whitespace-nowrap">
                 Volume
               </th>
             </tr>
@@ -55,9 +48,6 @@ const VolumeTable = (props: { title: string; volumes: Volume[] }) => {
               <tr key={index} className="odd:bg-lightGrey even:bg-white">
                 <td className="px-4 py-3 border-b border-disabledIcon whitespace-nowrap">
                   {modelYearsMap[volume.modelYear]}
-                </td>
-                <td className="px-4 py-3 border-b border-disabledIcon whitespace-nowrap">
-                  {vehicleClassMap[volume.vehicleClass]}
                 </td>
                 <td className="px-4 py-3 border-b border-disabledIcon whitespace-nowrap">
                   {volume.volume}

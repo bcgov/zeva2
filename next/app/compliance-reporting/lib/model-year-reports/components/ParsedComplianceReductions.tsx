@@ -23,12 +23,6 @@ export const ParsedComplianceReductions = (props: {
     const backgroundClasses = index % 2 === 0 ? "bg-lightGrey" : "";
     entries.push(
       <div
-        key={`${index}-vc`}
-        className={`${cellClasses} ${borderClasses} ${backgroundClasses}`}
-      >
-        {record.vehicleClass}
-      </div>,
-      <div
         key={`${index}-ratio`}
         className={`${cellClasses} ${borderClasses} ${backgroundClasses}`}
       >
@@ -166,7 +160,7 @@ export const ParsedComplianceReductions = (props: {
   };
 
   if (entries.length === 0) {
-    for (let i = 0; i < 6; i++) {
+    for (let i = 0; i < 5; i++) {
       entries.push(
         <div key={i} className={`${cellClasses}`}>
           -
@@ -181,8 +175,7 @@ export const ParsedComplianceReductions = (props: {
         <div className="px-5 py-4 font-bold text-xl bg-disabledBG border-b border-dividerMedium">
           Compliance Ratio Reductions
         </div>
-        <div className="grid grid-cols-6">
-          <div className={headerClasses}>Vehicle Class</div>
+        <div className="grid grid-cols-5">
           <div className={headerClasses}>Compliance Ratio</div>
           <div className={headerClasses}>NV</div>
           <div className={headerClasses}>ZEV Class</div>

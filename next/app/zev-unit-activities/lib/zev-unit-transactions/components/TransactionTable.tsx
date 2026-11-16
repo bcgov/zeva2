@@ -7,7 +7,6 @@ import {
   getModelYearEnumsToStringsMap,
   getReferenceTypeEnumsToStringsMap,
   getTransactionTypeEnumsToStringMap,
-  getVehicleClassEnumsToStringsMap,
   getZevClassEnumsToStringsMap,
 } from "@/app/lib/utils/enumMaps";
 import { ModelYear, ReferenceType } from "@/prisma/generated/enums";
@@ -32,7 +31,6 @@ type TransactionRow = {
   referenceType: string;
   referenceId: string;
   legacyReferenceId: string;
-  vehicleClass: string;
   zevClass: string;
   modelYear: string;
   numberOfUnits: string;
@@ -55,7 +53,6 @@ export const TransactionTable = ({
 
   const transactionTypes = useMemo(getTransactionTypeEnumsToStringMap, []);
   const referenceTypes = useMemo(getReferenceTypeEnumsToStringsMap, []);
-  const vehicleClasses = useMemo(getVehicleClassEnumsToStringsMap, []);
   const zevClasses = useMemo(getZevClassEnumsToStringsMap, []);
   const modelYears = useMemo(getModelYearEnumsToStringsMap, []);
 
@@ -96,15 +93,13 @@ export const TransactionTable = ({
         referenceType: "—",
         referenceId: "—",
         legacyReferenceId: "—",
-        vehicleClass:
-          vehicleClasses[record.vehicleClass] ?? record.vehicleClass,
         zevClass: zevClasses[record.zevClass] ?? record.zevClass,
         modelYear: modelYears[record.modelYear] ?? record.modelYear,
         numberOfUnits: record.numberOfUnits,
         date: "—",
       };
     },
-    [transactionTypes, vehicleClasses, zevClasses, modelYears],
+    [transactionTypes, zevClasses, modelYears],
   );
 
   const getTransactionRow = useCallback(
@@ -117,8 +112,6 @@ export const TransactionTable = ({
           referenceTypes[record.referenceType] ?? record.referenceType,
         referenceId: record.referenceId?.toString() ?? "—",
         legacyReferenceId: record.legacyReferenceId?.toString() ?? "—",
-        vehicleClass:
-          vehicleClasses[record.vehicleClass] ?? record.vehicleClass,
         zevClass: zevClasses[record.zevClass] ?? record.zevClass,
         modelYear: modelYears[record.modelYear] ?? record.modelYear,
         numberOfUnits: record.numberOfUnits,
@@ -131,7 +124,6 @@ export const TransactionTable = ({
     [
       transactionTypes,
       referenceTypes,
-      vehicleClasses,
       zevClasses,
       modelYears,
       getReferenceLink,
@@ -193,7 +185,6 @@ export const TransactionTable = ({
       columnHelper.accessor("legacyReferenceId", {
         header: "Legacy Reference ID",
       }),
-      columnHelper.accessor("vehicleClass", { header: "Vehicle Class" }),
       columnHelper.accessor("zevClass", { header: "ZEV Class" }),
       columnHelper.accessor("modelYear", { header: "Model Year" }),
       columnHelper.accessor("numberOfUnits", { header: "Number of Units" }),

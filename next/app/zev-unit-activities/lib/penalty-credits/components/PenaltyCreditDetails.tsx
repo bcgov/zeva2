@@ -1,6 +1,5 @@
 import {
   getModelYearEnumsToStringsMap,
-  getVehicleClassEnumsToStringsMap,
   getZevClassEnumsToStringsMap,
 } from "@/app/lib/utils/enumMaps";
 import { PenaltyCreditWithOrgName } from "../data";
@@ -24,7 +23,6 @@ export const PenaltyCreditDetails = ({
   penaltyCredit: PenaltyCreditWithOrgName;
 }) => {
   const modelYearsMap = getModelYearEnumsToStringsMap();
-  const vehicleClassMap = getVehicleClassEnumsToStringsMap();
   const zevClassMap = getZevClassEnumsToStringsMap();
 
   return (
@@ -38,10 +36,6 @@ export const PenaltyCreditDetails = ({
           <DetailRow
             label="Compliance Year"
             value={modelYearsMap[penaltyCredit.complianceYear]}
-          />
-          <DetailRow
-            label="Vehicle Class"
-            value={vehicleClassMap[penaltyCredit.vehicleClass]}
           />
         </dl>
         <dl className="md:pl-12">

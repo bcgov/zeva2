@@ -1,3 +1,4 @@
+import Decimal from "decimal.js";
 import { getUserInfo } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import {
@@ -42,8 +43,10 @@ export const getComplianceRatios = (): ComplianceRatio[] => {
   return (Object.entries(ratios) as [ModelYear, string][]).map(
     ([modelYear, ratio]) => ({
       modelYear,
-      complianceRatio: parseFloat(ratio) * 100,
-      zevClassA: parseFloat(zevClassAData[modelYear] ?? "0") * 100,
+      complianceRatio: new Decimal(ratio).times(100).toNumber(),
+      zevClassA: new Decimal(zevClassAData[modelYear] ?? "0")
+        .times(100)
+        .toNumber(),
     }),
   );
 };

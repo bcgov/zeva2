@@ -5,15 +5,10 @@ import { Button } from "@/app/lib/components";
 import { Dropdown } from "@/app/lib/components/inputs";
 import {
   getStringsToModelYearsEnumsMap,
-  getStringsToVehicleClassEnumsMap,
   getStringsToZevClassEnumsMap,
 } from "@/app/lib/utils/enumMaps";
-import { ModelYear } from "@/prisma/generated/enums";
-import {
-  isModelYear,
-  isVehicleClass,
-  isZevClass,
-} from "@/app/lib/utils/typeGuards";
+import { ModelYear, VehicleClass } from "@/prisma/generated/enums";
+import { isModelYear, isZevClass } from "@/app/lib/utils/typeGuards";
 import { AgreementContentRecord } from "../constants";
 
 export const AgreementContent = (props: {
@@ -21,10 +16,6 @@ export const AgreementContent = (props: {
   setContent: Dispatch<SetStateAction<AgreementContentRecord[]>>;
   disabled: boolean;
 }) => {
-  const vehicleClassesMaps = useMemo(() => {
-    return getStringsToVehicleClassEnumsMap();
-  }, []);
-
   const zevClassesMaps = useMemo(() => {
     return getStringsToZevClassEnumsMap();
   }, []);
@@ -38,7 +29,7 @@ export const AgreementContent = (props: {
       return [
         ...prev,
         {
-          vehicleClass: undefined,
+          vehicleClass: VehicleClass.REPORTABLE,
           zevClass: undefined,
           modelYear: undefined,
           numberOfUnits: "0",
@@ -57,7 +48,6 @@ export const AgreementContent = (props: {
     (index: number, key: keyof AgreementContentRecord, value: string) => {
       if (
         key === "numberOfUnits" ||
-        (key === "vehicleClass" && isVehicleClass(value)) ||
         (key === "zevClass" && isZevClass(value)) ||
         (key === "modelYear" && isModelYear(value))
       ) {
@@ -82,25 +72,7 @@ export const AgreementContent = (props: {
       <div className="p-5">
         {props.content.map((record, index) => (
           <div key={index} className="p-4 border-b border-gray-300 space-y-3">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              <div className="flex flex-col space-y-1">
-                <label className="text-sm font-medium text-primaryText">
-                  Vehicle Class
-                </label>
-                <Dropdown
-                  options={Object.entries(vehicleClassesMaps).map(
-                    ([key, value]) => ({
-                      value: value as string,
-                      label: key,
-                    }),
-                  )}
-                  value={record.vehicleClass}
-                  onChange={(value) =>
-                    handleRecordChange(index, "vehicleClass", value)
-                  }
-                  disabled={props.disabled}
-                />
-              </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               <div className="flex flex-col space-y-1">
                 <label className="text-sm font-medium text-primaryText">
                   ZEV Class

@@ -8,7 +8,6 @@ import { getAttachmentDownloadUrls } from "../actions";
 import {
   getModelYearEnumsToStringsMap,
   getVehicleClassCodeEnumsToStringsMap,
-  getVehicleClassEnumsToStringsMap,
   getZevClassEnumsToStringsMap,
 } from "@/app/lib/utils/enumMaps";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
@@ -28,7 +27,6 @@ export const GovDetailsPage = async ({
 
   const histories = await getVehicleHistories(vehicleId);
 
-  const vehicleClassesMap = getVehicleClassEnumsToStringsMap();
   const zevClassesMap = getZevClassEnumsToStringsMap();
   const modelYearsMap = getModelYearEnumsToStringsMap();
   const classCodesMap = getVehicleClassCodeEnumsToStringsMap();
@@ -206,17 +204,6 @@ export const GovDetailsPage = async ({
                   </th>
                   <td className="px-4 py-2 font-medium">
                     {zevClassesMap[vehicle.zevClass]}
-                  </td>
-                </tr>
-                <tr className="border-b border-gray-100">
-                  <th
-                    scope="row"
-                    className="px-4 py-2 text-gray-500 font-normal text-left"
-                  >
-                    Vehicle class:
-                  </th>
-                  <td className="px-4 py-2 font-medium">
-                    {vehicleClassesMap[vehicle.vehicleClass]}
                   </td>
                 </tr>
                 <tr className="border-b border-gray-100">

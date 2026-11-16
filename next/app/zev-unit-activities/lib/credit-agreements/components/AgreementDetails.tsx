@@ -3,7 +3,6 @@ import { ZevUnitRecord } from "@/lib/utils/zevUnit";
 import {
   getAgreementTypeEnumsToStringsMap,
   getModelYearEnumsToStringsMap,
-  getVehicleClassEnumsToStringsMap,
   getZevClassEnumsToStringsMap,
 } from "@/app/lib/utils/enumMaps";
 
@@ -29,7 +28,6 @@ export const AgreementDetails = (props: {
   content: Omit<ZevUnitRecord, "type">[];
 }) => {
   const typesMap = getAgreementTypeEnumsToStringsMap();
-  const vehicleClassMap = getVehicleClassEnumsToStringsMap();
   const zevClassesMap = getZevClassEnumsToStringsMap();
   const modelYearsMap = getModelYearEnumsToStringsMap();
   return (
@@ -55,7 +53,6 @@ export const AgreementDetails = (props: {
           <table className="w-full border-collapse text-left">
             <thead>
               <tr className="h-[60px] border-b border-dividerMedium">
-                <th className="px-4">Vehicle Class</th>
                 <th className="px-4">ZEV Class</th>
                 <th className="px-4">Model Year</th>
                 <th className="px-4">Number of Units</th>
@@ -67,9 +64,6 @@ export const AgreementDetails = (props: {
                   key={index}
                   className="h-[60px] border-b border-dividerMedium last:border-b-0"
                 >
-                  <td className="px-4">
-                    {vehicleClassMap[record.vehicleClass]}
-                  </td>
                   <td className="px-4">{zevClassesMap[record.zevClass]}</td>
                   <td className="px-4">{modelYearsMap[record.modelYear]}</td>
                   <td className="px-4">{record.numberOfUnits.toString()}</td>

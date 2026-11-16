@@ -1,10 +1,7 @@
 "use client";
 
 import { StatusBanner, TextInput } from "@/app/lib/components";
-import {
-  getModelYearEnumsToStringsMap,
-  getVehicleClassEnumsToStringsMap,
-} from "@/app/lib/utils/enumMaps";
+import { getModelYearEnumsToStringsMap } from "@/app/lib/utils/enumMaps";
 import { ModelYear, VehicleClass } from "@/prisma/generated/enums";
 import { useMemo } from "react";
 import { nvMap, ZevAndIceCounts } from "../constants";
@@ -26,10 +23,6 @@ export const NvValuesSubmission = (props: {
     }
     return [];
   }, [props.modelYear]);
-
-  const vehicleClassesMap = useMemo(() => {
-    return getVehicleClassEnumsToStringsMap();
-  }, []);
 
   const salesOrSupplied = useMemo(() => {
     if (props.modelYear < ModelYear.MY_2024) {
@@ -60,7 +53,7 @@ export const NvValuesSubmission = (props: {
           <StatusBanner
             variant="info"
             title="Important:"
-            primaryText="With respect to the Reportable Vehicle Class, do not include any vehicle with a gross vehicle weight over 3,865 kg if they were supplied before Oct 1, 2024."
+            primaryText="Do not include any vehicle with a gross vehicle weight over 3,865 kg if they were supplied before Oct 1, 2024."
           />
         )}
       </div>
@@ -70,7 +63,7 @@ export const NvValuesSubmission = (props: {
             <div key={index} className="flex flex-row gap-5">
               <div className="flex-1">
                 <TextInput
-                  label={`Enter total number of ${salesOrSupplied.zev} of the ${vehicleClassesMap[vc]} vehicle class`}
+                  label={`Enter total number of ${salesOrSupplied.zev}`}
                   placeholder="Enter number"
                   value={props.zevAndIceCounts[vc]?.["zev"]}
                   onChange={(value: string) =>
@@ -81,7 +74,7 @@ export const NvValuesSubmission = (props: {
               </div>
               <div className="flex-1">
                 <TextInput
-                  label={`Enter total number of ${salesOrSupplied.ice} of the ${vehicleClassesMap[vc]} vehicle class`}
+                  label={`Enter total number of ${salesOrSupplied.ice}`}
                   placeholder="Enter number"
                   value={props.zevAndIceCounts[vc]?.["ice"]}
                   onChange={(value: string) =>

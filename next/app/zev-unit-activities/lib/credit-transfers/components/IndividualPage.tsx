@@ -18,7 +18,6 @@ import {
 import {
   getCreditTransferStatusEnumsToStringsMap,
   getModelYearEnumsToStringsMap,
-  getVehicleClassEnumsToStringsMap,
   getZevClassEnumsToStringsMap,
 } from "@/app/lib/utils/enumMaps";
 import { DraftTransferReview } from "./DraftTransferReview";
@@ -196,7 +195,6 @@ export const IndividualPage = async (props: { id: string }) => {
     actionComponent = <AnalystActions id={id} status={status} />;
   }
 
-  const vehicleClassMap = getVehicleClassEnumsToStringsMap();
   const zevClassMap = getZevClassEnumsToStringsMap();
   const modelYearsMap = getModelYearEnumsToStringsMap();
 
@@ -239,7 +237,6 @@ export const IndividualPage = async (props: { id: string }) => {
             <table className="w-full">
               <thead className="font-bold">
                 <tr className="border-b border-dividerMedium">
-                  <th className="px-4 py-3">Vehicle Class</th>
                   <th className="px-4 py-3">ZEV Class</th>
                   <th className="px-4 py-3">Model Year</th>
                   <th className="px-4 py-3">Number of Units</th>
@@ -252,9 +249,6 @@ export const IndividualPage = async (props: { id: string }) => {
                     key={crypto.randomUUID()}
                     className="border-b border-dividerMedium last:border-b-0 odd:bg-lightGrey"
                   >
-                    <td className="px-4 py-3">
-                      {vehicleClassMap[content.vehicleClass]}
-                    </td>
                     <td className="px-4 py-3">
                       {zevClassMap[content.zevClass]}
                     </td>
