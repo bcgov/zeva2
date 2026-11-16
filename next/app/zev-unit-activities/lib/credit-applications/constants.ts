@@ -10,12 +10,23 @@ import {
   CreditApplicationModel,
   CreditApplicationRecordModel,
 } from "@/prisma/generated/models";
+import Excel from "exceljs";
+
+export const zevsListSheetName = "ZEVs List";
+
+export const zevsListSheetNumberOfRows = 2001;
 
 export enum SupplierTemplate {
   Name = "credit_application_supplier_template.xlsx",
   ValidVehiclesSheetName = "Valid Vehicles",
-  ZEVsSuppliedSheetName = "ZEVs Supplied",
-  ZEVsSuppliedSheetNumberOfRows = 2001,
+  ZEVsListSheetName = zevsListSheetName,
+  ZEVsListSheetNumberOfRows = zevsListSheetNumberOfRows,
+}
+
+export enum SupplierSubTemplate {
+  Name = "credit_application_supplier_sub_template.xlsx",
+  ZEVsListSheetName = zevsListSheetName,
+  ZEVsListSheetNumberOfRows = zevsListSheetNumberOfRows,
 }
 
 export enum ErrorsTemplate {
@@ -133,4 +144,70 @@ export type CaHistorySparse = {
   userAction: CreditApplicationStatus;
   timestamp: Date;
   user: { firstName: string; lastName: string };
+};
+
+export type ZevVinRecord = {
+  make: string;
+  modelName: string;
+  modelYear: string;
+  vin: string;
+  date: string;
+  vehicleClass: VehicleClass;
+  zevClass: ZevClass;
+  numberOfUnits: string;
+  zevType: ZevType;
+  range: number;
+  errors: string[];
+};
+
+export type ZevVinRecordSparse = {
+  make: string;
+  modelName: string;
+  modelYear: string;
+  vin: string;
+  date: string;
+  errors: string[];
+};
+
+export type ZevModelsMap = Partial<
+  Record<
+    string,
+    {
+      id: number;
+      vehicleClass: VehicleClass;
+      zevClass: ZevClass;
+      numberOfUnits: string;
+      zevType: ZevType;
+      range: number;
+    }
+  >
+>;
+
+export type CaDataFinal =
+  | CaDataEligibleIneligible
+  | CaDataEligible
+  | CaDataIneligible
+  | CaDataNone;
+
+type CaDataEligibleIneligible = {
+  type: "eligibleIneligible";
+  eligibleWorkbook: Excel.Workbook;
+  eligibleCount: number;
+  ineligibleWorkbook: Excel.Workbook;
+  ineligibleCount: number;
+};
+
+type CaDataEligible = {
+  type: "eligible";
+  payload: Partial<ZevVinRecord>[];
+};
+
+type CaDataIneligible = {
+  type: "ineligible";
+  ineligibleWorkbook: Excel.Workbook;
+  ineligibleCount: number;
+};
+
+type CaDataNone = {
+  type: "none";
 };

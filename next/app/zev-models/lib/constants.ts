@@ -28,3 +28,5 @@ export const zevModelTabs: Record<
   "in-progress": { label: "In Progress", route: Routes.InProgressZevModels },
   inactive: { label: "Inactive", route: Routes.InactiveZevModels },
 } as const;
+
+export const zevModelKeyDelimiter = "|";

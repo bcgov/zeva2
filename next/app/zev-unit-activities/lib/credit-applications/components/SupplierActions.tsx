@@ -21,8 +21,8 @@ import { downloadBuffer } from "@/app/lib/utils/download";
 import { Modal, ModalType } from "@/app/lib/components/Modal";
 import { getNormalizedComment } from "@/app/lib/utils/comment";
 import { CommentBox } from "@/app/lib/components/CommentBox";
-import { ValidationError } from "@/app/lib/utils/actionResponse";
-import { ValidationErrorsList } from "@/app/lib/components/ValidationErrorsList";
+import { ValidationResults } from "./ValidationResults";
+import { getCaDataFinal } from "../utilsClient";
 
 export const SupplierActions = (props: {
   creditApplicationId: number;
@@ -33,9 +33,12 @@ export const SupplierActions = (props: {
   const [isPending, startTransition] = useTransition();
   const router = useRouter();
   const [error, setError] = useState<string>("");
-  const [validationErrors, setValidationErrors] = useState<ValidationError[]>(
-    [],
-  );
+  const [validationResults, setValidationResults] = useState<{
+    eligibleWorkbook: Excel.Workbook | null;
+    eligibleCount: number;
+    ineligibleWorkbook: Excel.Workbook | null;
+    ineligibleCount: number;
+  }>();
   const [comment, setComment] = useState<string>("");
   const [modal, setModal] = useState<JSX.Element | null>(null);
 
@@ -61,13 +64,33 @@ export const SupplierActions = (props: {
 
   const handleSubmit = useCallback(async () => {
     setError("");
-    setValidationErrors([]);
+    setValidationResults(undefined);
     const response = await supplierSubmit(
       props.creditApplicationId,
       getNormalizedComment(comment),
     );
     if (response.responseType === "data") {
-      setValidationErrors(response.data);
+      const { records, subTemplateUrl } = response.data;
+      const caData = await getCaDataFinal(records, subTemplateUrl);
+      const caDataType = caData.type;
+      if (caDataType === "eligibleIneligible" || caDataType === "ineligible") {
+        setError("Ineligible records found; please see above!");
+        if (caDataType === "eligibleIneligible") {
+          setValidationResults({
+            eligibleWorkbook: caData.eligibleWorkbook,
+            eligibleCount: caData.eligibleCount,
+            ineligibleWorkbook: caData.ineligibleWorkbook,
+            ineligibleCount: caData.ineligibleCount,
+          });
+        } else {
+          setValidationResults({
+            eligibleWorkbook: null,
+            eligibleCount: 0,
+            ineligibleWorkbook: caData.ineligibleWorkbook,
+            ineligibleCount: caData.ineligibleCount,
+          });
+        }
+      }
     } else if (response.responseType === "error") {
       setError(response.message);
     } else {
@@ -143,18 +166,19 @@ export const SupplierActions = (props: {
 
   const isSigningAuthority = props.userRoles.includes(Role.SIGNING_AUTHORITY);
 
-  const validationErrorsList = (
-    <div className="mx-5 mb-2">
-      <ValidationErrorsList
-        errors={validationErrors}
-        heading="Please resolve the following errors before submitting:"
-      />
-    </div>
-  );
-
   if (props.status === CreditApplicationSupplierStatus.DRAFT) {
     return (
       <>
+        {validationResults && (
+          <ValidationResults
+            eligibleWorkbook={validationResults.eligibleWorkbook}
+            eligibleCount={validationResults.eligibleCount}
+            ineligibleWorkbook={validationResults.ineligibleWorkbook}
+            ineligibleCount={validationResults.ineligibleCount}
+            disabled={isPending}
+          />
+        )}
+
         {isSigningAuthority && (
           <CommentBox comment={comment} setComment={setComment} />
         )}
@@ -181,7 +205,6 @@ export const SupplierActions = (props: {
           )}
           {modal}
         </div>
-        {validationErrorsList}
       </>
     );
   }

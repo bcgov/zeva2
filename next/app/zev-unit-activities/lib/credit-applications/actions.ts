@@ -11,8 +11,7 @@ import {
   ModelYear,
   ZevClass,
 } from "@/prisma/generated/enums";
-import Excel from "exceljs";
-import { getWarningsMap, parseSupplierSubmission } from "./utilsServer";
+import { getWarningsMap } from "./utilsServer";
 import {
   createHistory,
   deleteAttachments,
@@ -27,18 +26,22 @@ import {
   getDecodedVinsMap,
   getAnalystComments,
 } from "./services";
-import { ErrorsTemplate, SupplierTemplate } from "./constants";
+import {
+  ErrorsTemplate,
+  SupplierSubTemplate,
+  SupplierTemplate,
+  ZevVinRecord,
+  ZevVinRecordSparse,
+} from "./constants";
 import {
   Directory,
   getAttachmentPutData,
-  getObjectAsBuffer,
   getTemplateDownloadUrl,
 } from "@/app/lib/services/s3";
 import {
   DataOrErrorActionResponse,
   ErrorOrSuccessActionResponse,
   DataActionResponse,
-  ValidationError,
   getDataActionResponse,
   getErrorActionResponse,
   getSuccessActionResponse,
@@ -56,8 +59,11 @@ import {
   ZevUnitTransactionCreateManyInput,
 } from "@/prisma/generated/models";
 import { getPresignedGetObjectUrl } from "@/app/lib/services/s3";
-import { getModelYearEnumsToStringsMap } from "@/app/lib/utils/enumMaps";
-import { getIsoYmdString } from "@/app/lib/utils/date";
+import {
+  getModelYearEnumsToStringsMap,
+  getStringsToModelYearsEnumsMap,
+} from "@/app/lib/utils/enumMaps";
+import { getIsoYmdString, validateDate } from "@/app/lib/utils/date";
 import { revalidatePath } from "next/cache";
 import { Routes } from "@/app/lib/constants";
 import { ChatComment } from "@/app/lib/constants/chatComment";
@@ -81,8 +87,7 @@ export const getCreditApplicationAttachmentPutData = async (
 
 export const getSupplierEligibleVehicles = async () => {
   const { userOrgId } = await getUserInfo();
-  const now = new Date();
-  return await getEligibleVehicles(userOrgId, "all", false);
+  return await getEligibleVehicles(userOrgId, false);
 };
 
 export const getCreditApplicationDownloadUrl = async (
@@ -151,21 +156,30 @@ export const getCreditApplicationAttachmentDownloadUrls = async (
   return getDataActionResponse(result);
 };
 
+export const getSupplierSubTemplateDownloadUrl = async () => {
+  return await getTemplateDownloadUrl(SupplierSubTemplate.Name);
+};
+
+export const getSupplierEligibleVehiclesMap = async () => {
+  const { userOrgId } = await getUserInfo();
+  return await getEligibleVehiclesMap(userOrgId);
+};
+
+export const getVinsThatAreReserved = async (vins: Set<string>) => {
+  return await getReservedVins(Array.from(vins));
+};
+
 export const supplierSave = async (
   legalName: string,
   serviceAddress: string,
   recordsAddress: string,
   makes: string,
+  vinRecords: Partial<Omit<ZevVinRecord, "errors">>[],
   applicationObjectName: string,
   applicationFileName: string,
   attachments: Attachment[],
   creditApplicationId?: number,
-): Promise<
-  DataOrErrorActionResponse<{
-    creditApplicationId: number | null;
-    validationErrors: ValidationError[];
-  }>
-> => {
+): Promise<DataOrErrorActionResponse<number>> => {
   const { userIsGov, userOrgId, userId, userRoles } = await getUserInfo();
   if (userIsGov || !userRoles.includes(Role.ZEVA_BCEID_USER)) {
     return getErrorActionResponse("Unauthorized!");
@@ -186,149 +200,125 @@ export const supplierSave = async (
     }
   }
   let applicationId = creditApplicationId ?? Number.NaN;
-  try {
-    const applicationBuf = await getObjectAsBuffer(applicationObjectName);
-    const workbook = new Excel.Workbook();
-    await workbook.xlsx.load(applicationBuf);
-    const dataSheet = workbook.getWorksheet(
-      SupplierTemplate.ZEVsSuppliedSheetName,
-    );
-    if (!dataSheet) {
-      throw new Error("Expected sheet not found!");
-    }
-
-    const {
-      data,
-      errors: parseErrors,
-      seenVins,
-    } = parseSupplierSubmission(dataSheet);
-    const allErrors: ValidationError[] = [...parseErrors];
-
-    const modelYears: Set<ModelYear> = new Set();
-    for (const info of Object.values(data)) {
-      modelYears.add(info.modelYear);
-    }
-
-    const [vehiclesMap, reservedVins] = await Promise.all([
-      getEligibleVehiclesMap(userOrgId, Array.from(modelYears)),
-      getReservedVins(Array.from(seenVins)),
-    ]);
-
-    for (const vin of reservedVins) {
-      allErrors.push({
-        errorType: "Already reserved VIN",
-        record: vin,
-        details: "This VIN has already been reserved by another application",
-      });
-    }
-
-    const recordsToCreatePrelim: Omit<
-      CreditApplicationRecordCreateManyInput,
-      "creditApplicationId"
-    >[] = [];
-    const modelYearsMap = getModelYearEnumsToStringsMap();
-
-    for (const [vin, info] of Object.entries(data)) {
-      const vehicleInfo =
-        vehiclesMap[info.make]?.[info.modelName]?.[info.modelYear];
-      if (!vehicleInfo) {
-        allErrors.push({
-          errorType: "No matching vehicle",
-          record: vin,
-          details: `${info.make} ${info.modelName} ${modelYearsMap[info.modelYear]} is not in your approved vehicle list`,
-        });
+  const modelYears: Set<ModelYear> = new Set();
+  const recordsToCreatePrelim: Omit<
+    CreditApplicationRecordCreateManyInput,
+    "creditApplicationId"
+  >[] = [];
+  const modelYearsMap = getStringsToModelYearsEnumsMap();
+  for (const record of vinRecords) {
+    const make = record.make;
+    const modelName = record.modelName;
+    const modelYear = record.modelYear;
+    const vin = record.vin;
+    const date = record.date;
+    const vehicleClass = record.vehicleClass;
+    const zevClass = record.zevClass;
+    const numberOfUnits = record.numberOfUnits;
+    const zevType = record.zevType;
+    const range = record.range;
+    try {
+      if (
+        !make ||
+        !modelName ||
+        !modelYear ||
+        !vin ||
+        !date ||
+        !vehicleClass ||
+        !zevClass ||
+        !numberOfUnits ||
+        !zevType ||
+        range === undefined
+      ) {
+        throw new Error();
+      }
+      const myEnum = modelYearsMap[modelYear];
+      if (myEnum) {
+        modelYears.add(myEnum);
       } else {
-        recordsToCreatePrelim.push({
-          vin,
-          make: info.make,
-          modelName: info.modelName,
-          modelYear: info.modelYear,
-          timestamp: info.timestamp,
-          vehicleClass: vehicleInfo[1],
-          zevClass: vehicleInfo[2],
-          numberOfUnits: vehicleInfo[3],
-          zevType: vehicleInfo[4],
-          range: vehicleInfo[5],
-          validated: false,
-        });
+        throw new Error();
       }
-    }
-
-    if (allErrors.length > 0) {
-      return getDataActionResponse({
-        creditApplicationId: null,
-        validationErrors: allErrors,
+      const [dateIsValid, validatedDate] = validateDate(date);
+      if (!dateIsValid) {
+        throw new Error();
+      }
+      const numberOfUnitsDec = new Decimal(numberOfUnits);
+      recordsToCreatePrelim.push({
+        make,
+        modelName,
+        modelYear: myEnum,
+        vin,
+        timestamp: validatedDate,
+        vehicleClass,
+        zevClass,
+        numberOfUnits: numberOfUnitsDec,
+        zevType,
+        range,
+        validated: false,
       });
+    } catch (e) {
+      return getErrorActionResponse("Unexpected Error!");
     }
-
-    await prisma.$transaction(async (tx) => {
-      if (creditApplicationId) {
-        await tx.creditApplication.update({
-          where: {
-            id: creditApplicationId,
-          },
-          data: {
-            objectName: applicationObjectName,
-            fileName: applicationFileName,
-            modelYears: Array.from(modelYears),
-            legalName,
-            makes,
-            serviceAddress,
-            recordsAddress,
-          },
-        });
-        await tx.creditApplicationRecord.deleteMany({
-          where: {
-            creditApplicationId,
-          },
-        });
-      } else {
-        const newApplication = await tx.creditApplication.create({
-          data: {
-            organizationId: userOrgId,
-            objectName: applicationObjectName,
-            fileName: applicationFileName,
-            status: CreditApplicationStatus.DRAFT,
-            supplierStatus: CreditApplicationStatus.DRAFT,
-            modelYears: Array.from(modelYears),
-            legalName,
-            makes,
-            serviceAddress,
-            recordsAddress,
-          },
-          select: {
-            id: true,
-          },
-        });
-        applicationId = newApplication.id;
-      }
-      const recordsToCreate: CreditApplicationRecordCreateManyInput[] = [];
-      for (const record of recordsToCreatePrelim) {
-        recordsToCreate.push({ ...record, creditApplicationId: applicationId });
-      }
-      await tx.creditApplicationRecord.createMany({
-        data: recordsToCreate,
-      });
-      await deleteAttachments(applicationId, tx);
-      await createAttachments(applicationId, attachments, tx);
-      await createHistory(
-        userId,
-        applicationId,
-        CreditApplicationStatus.DRAFT,
-        undefined,
-        tx,
-      );
-    });
-  } catch (e) {
-    if (e instanceof Error) {
-      return getErrorActionResponse(e.message);
-    }
-    throw e;
   }
-  return getDataActionResponse({
-    creditApplicationId: applicationId,
-    validationErrors: [],
+  await prisma.$transaction(async (tx) => {
+    if (creditApplicationId) {
+      await tx.creditApplication.update({
+        where: {
+          id: creditApplicationId,
+        },
+        data: {
+          objectName: applicationObjectName,
+          fileName: applicationFileName,
+          modelYears: Array.from(modelYears),
+          legalName,
+          makes,
+          serviceAddress,
+          recordsAddress,
+        },
+      });
+      await tx.creditApplicationRecord.deleteMany({
+        where: {
+          creditApplicationId,
+        },
+      });
+    } else {
+      const newApplication = await tx.creditApplication.create({
+        data: {
+          organizationId: userOrgId,
+          objectName: applicationObjectName,
+          fileName: applicationFileName,
+          status: CreditApplicationStatus.DRAFT,
+          supplierStatus: CreditApplicationStatus.DRAFT,
+          modelYears: Array.from(modelYears),
+          legalName,
+          makes,
+          serviceAddress,
+          recordsAddress,
+        },
+        select: {
+          id: true,
+        },
+      });
+      applicationId = newApplication.id;
+    }
+    const recordsToCreate: CreditApplicationRecordCreateManyInput[] = [];
+    for (const record of recordsToCreatePrelim) {
+      recordsToCreate.push({ ...record, creditApplicationId: applicationId });
+    }
+    await tx.creditApplicationRecord.createMany({
+      data: recordsToCreate,
+    });
+    await deleteAttachments(applicationId, tx);
+    await createAttachments(applicationId, attachments, tx);
+    await createHistory(
+      userId,
+      applicationId,
+      CreditApplicationStatus.DRAFT,
+      undefined,
+      tx,
+    );
   });
+  return getDataActionResponse(applicationId);
 };
 
 export const supplierDelete = async (
@@ -377,7 +367,11 @@ export const supplierSubmit = async (
   creditApplicationId: number,
   comment?: string,
 ): Promise<
-  ErrorOrSuccessActionResponse | DataActionResponse<ValidationError[]>
+  | ErrorOrSuccessActionResponse
+  | DataActionResponse<{
+      subTemplateUrl: string;
+      records: ZevVinRecordSparse[];
+    }>
 > => {
   const { userIsGov, userOrgId, userId, userRoles } = await getUserInfo();
   if (userIsGov || !userRoles.includes(Role.SIGNING_AUTHORITY)) {
@@ -409,68 +403,72 @@ export const supplierSubmit = async (
   ) {
     return getErrorActionResponse("Invalid Action!");
   }
+
+  const serializedRecords: ZevVinRecordSparse[] = [];
   const records = application.CreditApplicationRecord;
-  const vins = records.map((r) => r.vin);
-
-  try {
-    const allErrors: ValidationError[] = [];
-
-    for (const record of records) {
-      if (record.timestamp > new Date()) {
-        allErrors.push({
-          errorType: "Future date",
-          record: record.vin,
-          details: `Date ${getIsoYmdString(record.timestamp)} is in the future`,
-        });
+  const modelYearsMap = getModelYearEnumsToStringsMap();
+  const vins: string[] = [];
+  let hasError: boolean = false;
+  for (const record of records) {
+    const serializedRecord: ZevVinRecordSparse = {
+      make: record.make,
+      modelName: record.modelName,
+      modelYear: modelYearsMap[record.modelYear] ?? record.modelYear,
+      vin: record.vin,
+      date: getIsoYmdString(record.timestamp),
+      errors: [],
+    };
+    if (record.timestamp > new Date()) {
+      serializedRecord.errors.push("Date cannot be in the future");
+      hasError = true;
+    }
+    serializedRecords.push(serializedRecord);
+    vins.push(record.vin);
+  }
+  const reservedVins = new Set(await getReservedVins(vins));
+  if (reservedVins.size > 0) {
+    hasError = true;
+    for (const record of serializedRecords) {
+      if (reservedVins.has(record.vin)) {
+        record.errors.push("Reserved VIN");
       }
     }
-
-    const reservedVins = await getReservedVins(vins);
-    for (const vin of reservedVins) {
-      allErrors.push({
-        errorType: "Already reserved VIN",
-        record: vin,
-        details: "This VIN has already been reserved by another application",
-      });
-    }
-
-    if (allErrors.length > 0) {
-      return getDataActionResponse(allErrors);
-    }
-
-    await prisma.$transaction(async (tx) => {
-      await tx.creditApplication.update({
-        where: {
-          id: creditApplicationId,
-        },
-        data: {
-          status: CreditApplicationStatus.SUBMITTED,
-          supplierStatus: CreditApplicationStatus.SUBMITTED,
-          submissionTimestamp: new Date(),
-        },
-      });
-      await tx.reservedVin.createMany({
-        data: vins.reduce((acc: { vin: string }[], cv) => {
-          return [...acc, { vin: cv }];
-        }, []),
-      });
-      const historyId = await createHistory(
-        userId,
-        creditApplicationId,
-        CreditApplicationStatus.SUBMITTED,
-        comment,
-        tx,
-      );
-      await addJobToEmailQueue({
-        historyId,
-        notificationType: Notification.CREDIT_APPLICATION,
-      });
-    });
-  } catch (e) {
-    if (e instanceof Error) {
-      return getErrorActionResponse(e.message);
-    }
   }
+  if (hasError) {
+    return getDataActionResponse({
+      subTemplateUrl: await getSupplierSubTemplateDownloadUrl(),
+      records: serializedRecords,
+    });
+  }
+
+  await prisma.$transaction(async (tx) => {
+    await tx.creditApplication.update({
+      where: {
+        id: creditApplicationId,
+      },
+      data: {
+        status: CreditApplicationStatus.SUBMITTED,
+        supplierStatus: CreditApplicationStatus.SUBMITTED,
+        submissionTimestamp: new Date(),
+      },
+    });
+    await tx.reservedVin.createMany({
+      data: vins.reduce((acc: { vin: string }[], cv) => {
+        return [...acc, { vin: cv }];
+      }, []),
+    });
+    const historyId = await createHistory(
+      userId,
+      creditApplicationId,
+      CreditApplicationStatus.SUBMITTED,
+      comment,
+      tx,
+    );
+    await addJobToEmailQueue({
+      historyId,
+      notificationType: Notification.CREDIT_APPLICATION,
+    });
+  });
   return getSuccessActionResponse();
 };
 
