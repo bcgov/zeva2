@@ -35,10 +35,9 @@ export const Adjustments = (props: {
     };
   }, []);
 
-  const vehicleClass = useMemo(
-    () => getVehicleClassEnumsToStringsMap()[VehicleClass.REPORTABLE],
-    [],
-  );
+  const vehicleClassMap = useMemo(() => {
+    return getVehicleClassEnumsToStringsMap();
+  }, []);
 
   const zevClassesMaps = useMemo(() => {
     return {
@@ -56,6 +55,7 @@ export const Adjustments = (props: {
 
   const addAdjustment = useCallback(() => {
     const type = balanceTypesMaps.enumsToStrings[TransactionType.CREDIT];
+    const vehicleClass = vehicleClassMap[VehicleClass.REPORTABLE];
     const zevClass = zevClassesMaps.enumsToStrings[ZevClass.A];
     const modelYear = modelYearsMaps.enumsToStrings[ModelYear.MY_2019];
     if (type && vehicleClass && zevClass && modelYear) {
@@ -72,7 +72,7 @@ export const Adjustments = (props: {
         ];
       });
     }
-  }, [balanceTypesMaps, vehicleClass, zevClassesMaps, modelYearsMaps]);
+  }, [balanceTypesMaps, vehicleClassMap, zevClassesMaps, modelYearsMaps]);
 
   const removeAdjustment = useCallback((index: number) => {
     props.setAdjustments((prev) => {
