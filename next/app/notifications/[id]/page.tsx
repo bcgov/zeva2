@@ -4,18 +4,19 @@ import { Routes } from "@/app/lib/constants";
 import { NotificationDetails } from "../lib/components/NotificationDetails";
 import { GovActions } from "../lib/components/GovActions";
 import { getUserInfo } from "@/auth";
+import { canAuthorNotifications } from "../lib/permissions";
 import { NotificationMessageBanner } from "../lib/components/NotificationMessageBanner";
 import { NotificationStatusBanner } from "../lib/components/NotificationStatusBanner";
 
 const Page = async (props: { params: Promise<{ id: string }> }) => {
-  const { userId } = await getUserInfo();
+  const { userIsGov, userRoles } = await getUserInfo();
   const args = await props.params;
   const notificationId = Number.parseInt(args.id, 10);
   const notification = await getNotification(notificationId);
   if (!notification) {
     return null;
   }
-  let recipientCount = await getRecipientCount(
+  const recipientCount = await getRecipientCount(
     notification.allSuppliers ? "all" : "subset",
     notification.allSuppliers ? undefined : notification.audienceIds,
   );
@@ -54,8 +55,7 @@ const Page = async (props: { params: Promise<{ id: string }> }) => {
       <GovActions
         notificationId={notification.id}
         notificationStatus={notification.status}
-        notificationOwnerId={notification.ownerId}
-        userId={userId}
+        canManage={canAuthorNotifications(userIsGov, userRoles)}
         audience={
           notification.allSuppliers
             ? "All Suppliers"
