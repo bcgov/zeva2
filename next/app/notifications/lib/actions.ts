@@ -67,7 +67,7 @@ export const updateNotification = async (
   notificationId: number,
   payload: NotificationPayload,
 ): Promise<ErrorOrSuccessActionResponse> => {
-  const { userIsGov, userId, userRoles } = await getUserInfo();
+  const { userIsGov, userRoles } = await getUserInfo();
   if (!canAuthorNotifications(userIsGov, userRoles)) {
     return getErrorActionResponse("Unauthorized!");
   }
@@ -82,12 +82,11 @@ export const updateNotification = async (
       status: {
         in: [InAppNotificationStatus.CANCELLED, InAppNotificationStatus.DRAFT],
       },
-      userId,
     },
   });
   if (!notification) {
     return getErrorActionResponse(
-      "Error! A reminder that only the notification owner may modify/delete/publish their notification!",
+      "Notification not found or cannot be modified/deleted/published in its current status.",
     );
   }
   const [startDateIsValid, startTimestamp] = validateDate(
@@ -133,7 +132,7 @@ export const updateNotification = async (
 export const deleteNotification = async (
   notificationId: number,
 ): Promise<ErrorOrSuccessActionResponse> => {
-  const { userIsGov, userId, userRoles } = await getUserInfo();
+  const { userIsGov, userRoles } = await getUserInfo();
   if (!canAuthorNotifications(userIsGov, userRoles)) {
     return getErrorActionResponse("Unauthorized!");
   }
@@ -141,12 +140,11 @@ export const deleteNotification = async (
     where: {
       id: notificationId,
       status: InAppNotificationStatus.DRAFT,
-      userId,
     },
   });
   if (!notification) {
     return getErrorActionResponse(
-      "Error! A reminder that only the notification owner may modify/delete/publish their notification!",
+      "Notification not found or cannot be modified/deleted/published in its current status.",
     );
   }
   await prisma.$transaction(async (tx) => {
@@ -167,7 +165,7 @@ export const deleteNotification = async (
 export const publishNotification = async (
   notificationId: number,
 ): Promise<ErrorOrSuccessActionResponse> => {
-  const { userIsGov, userId, userRoles } = await getUserInfo();
+  const { userIsGov, userRoles } = await getUserInfo();
   if (!canAuthorNotifications(userIsGov, userRoles)) {
     return getErrorActionResponse("Unauthorized!");
   }
@@ -177,12 +175,11 @@ export const publishNotification = async (
       status: {
         in: [InAppNotificationStatus.CANCELLED, InAppNotificationStatus.DRAFT],
       },
-      userId,
     },
   });
   if (!notification) {
     return getErrorActionResponse(
-      "Error! A reminder that only the notification owner may modify/delete/publish their notification!",
+      "Notification not found or cannot be modified/deleted/published in its current status.",
     );
   }
   let status: InAppNotificationStatus = InAppNotificationStatus.SCHEDULED;
@@ -208,14 +205,13 @@ export const publishNotification = async (
 export const cancelNotification = async (
   notificationId: number,
 ): Promise<ErrorOrSuccessActionResponse> => {
-  const { userIsGov, userId, userRoles } = await getUserInfo();
+  const { userIsGov, userRoles } = await getUserInfo();
   if (!canAuthorNotifications(userIsGov, userRoles)) {
     return getErrorActionResponse("Unauthorized!");
   }
   const notification = await prisma.inAppNotification.findUnique({
     where: {
       id: notificationId,
-      userId,
       status: {
         in: [InAppNotificationStatus.ACTIVE, InAppNotificationStatus.SCHEDULED],
       },
@@ -223,7 +219,7 @@ export const cancelNotification = async (
   });
   if (!notification) {
     return getErrorActionResponse(
-      "Only the notification owner may cancel an active or scheduled notification.",
+      "Notification not found or is not active or scheduled.",
     );
   }
   await prisma.inAppNotification.update({

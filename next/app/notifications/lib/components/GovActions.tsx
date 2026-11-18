@@ -22,39 +22,34 @@ import {
 export const GovActions = (props: {
   notificationId: number;
   notificationStatus: InAppNotificationStatus;
-  notificationOwnerId: number;
-  userId: number;
+  canManage: boolean;
   audience: string;
   endDate: string;
 }) => {
   const router = useRouter();
   const [error, setError] = useState<string>("");
   const [modal, setModal] = useState<JSX.Element | null>(null);
-  const isOwner = useMemo(() => {
-    return props.notificationOwnerId === props.userId;
-  }, [props.notificationOwnerId, props.userId]);
-
   const canCancel = useMemo(() => {
     if (
-      isOwner &&
+      props.canManage &&
       (props.notificationStatus === InAppNotificationStatus.ACTIVE ||
         props.notificationStatus === InAppNotificationStatus.SCHEDULED)
     ) {
       return true;
     }
     return false;
-  }, [isOwner, props.notificationStatus]);
+  }, [props.canManage, props.notificationStatus]);
 
   const canEditAndPublish = useMemo(() => {
     if (
-      isOwner &&
+      props.canManage &&
       (props.notificationStatus === InAppNotificationStatus.CANCELLED ||
         props.notificationStatus === InAppNotificationStatus.DRAFT)
     ) {
       return true;
     }
     return false;
-  }, [isOwner, props.notificationStatus]);
+  }, [props.canManage, props.notificationStatus]);
 
   const handleGoToEdit = useCallback(() => {
     router.push(`${Routes.Notifications}/${props.notificationId}/edit`);
@@ -158,7 +153,7 @@ export const GovActions = (props: {
       <div className="flex flex-row justify-between p-5 bg-lightGrey">
         <div className="flex flex-row gap-4">
           <BackButton />
-          {isOwner &&
+          {props.canManage &&
             props.notificationStatus === InAppNotificationStatus.DRAFT && (
               <Button
                 variant="danger"

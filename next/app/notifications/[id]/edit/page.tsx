@@ -8,13 +8,12 @@ import { canAuthorNotifications } from "../../lib/permissions";
 import { InAppNotificationStatus } from "@/prisma/generated/enums";
 
 const Page = async (props: { params: Promise<{ id: string }> }) => {
-  const { userId, userIsGov, userRoles } = await getUserInfo();
+  const { userIsGov, userRoles } = await getUserInfo();
   const args = await props.params;
   const notificationId = Number.parseInt(args.id, 10);
   const notification = await getNotification(notificationId);
   if (
     !notification ||
-    notification.ownerId !== userId ||
     !canAuthorNotifications(userIsGov, userRoles) ||
     (notification.status !== InAppNotificationStatus.CANCELLED &&
       notification.status !== InAppNotificationStatus.DRAFT)
