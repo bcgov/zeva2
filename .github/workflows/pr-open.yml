@@ -191,7 +191,7 @@ jobs:
         if: matrix.component == 'next' && steps.triggers.outputs.triggered == 'true'
         run: |
           set -euo pipefail
-          URL="https://zeva2-pr-${{ github.event.number }}-next.apps.silver.devops.gov.bc.ca/api/health"
+          URL="https://zeva2-pr-${{ github.event.number }}.apps.silver.devops.gov.bc.ca/api/health"
           echo "Waiting for Next.js healthcheck at $URL..."
           for i in {1..30}; do
             status=$(curl -k --connect-timeout 3 --max-time 5 -s -o /dev/null -w "%{http_code}" "$URL" || true)
@@ -259,7 +259,8 @@ jobs:
           header: pr-deployment-links
           message: |
             ### 🚀 Deployments Available (PR #${{ github.event.number }})
-            - [Next.js](https://zeva2-pr-${{ github.event.number }}-next.apps.silver.devops.gov.bc.ca)
+            - [Next.js](https://zeva2-pr-${{ github.event.number }}.apps.silver.devops.gov.bc.ca)
+            - Please enroll the url to single sign-on (SSO) if you want to manually test the deployment.
 
   results:
     name: PR Results
