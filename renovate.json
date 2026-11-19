@@ -5,6 +5,6 @@
     "github>bcgov/renovate-config#2026.10.29"
   ],
   "constraints": {
-    "npm": "<12"
+    "npm": "<13"
   }
 }
