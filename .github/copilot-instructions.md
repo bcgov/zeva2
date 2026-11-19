@@ -87,7 +87,7 @@ export const getSomeData = async () => {
 
 - **ORM**: Prisma with PostgreSQL adapter
 - **Performance optimization**: `relationLoadStrategy: "join"` is configured globally in `prisma/schema.prisma` to improve query performance (see [Prisma performance guide](https://www.prisma.io/docs/orm/prisma-client/queries/query-optimization-performance))
-- **Development workflow**: Uses `prisma db push` and `prisma db pull` during early development to avoid excess migrations; will transition to migrations later
+- **Migration workflow**: Production migrations use `prisma migrate deploy` in a one-shot OpenShift Job before the Next.js Deployment rolls out. Do not run migrations from every Next.js app container; use `npm run migrate` for explicit migration deployment and `npm run migrate-dev` for development.
 - **Database logging**: Queries are logged during development — monitor for excessive queries or unnecessary data fetches
 - **Multiple instances**: When running multiple `next` or `bullmq` service instances in production, manually set the Prisma connection pool size via environment variable (see [Prisma connection pooling](https://www.prisma.io/docs/orm/prisma-client/setup-and-configuration/databases-connections#recommended-connection-pool-size))
 - **Old database**: `prismaOld/` contains the zeva1 schema for read-only access during migration; use `prisma generate --config prismaOld/prisma.config.ts` to generate the client

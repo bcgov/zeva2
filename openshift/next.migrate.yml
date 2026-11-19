@@ -1,0 +1,81 @@
+apiVersion: template.openshift.io/v1
+kind: Template
+metadata:
+  name: zeva2-next-migrate
+parameters:
+  - name: NAME
+    description: Application module name
+    value: zeva2
+  - name: ZONE
+    description: Deployment zone, e.g. pr-123, test, or prod
+    required: true
+  - name: IMAGE_TAG
+    description: GHCR image tag or digest
+    required: true
+  - name: REGISTRY
+    description: Container registry
+    value: ghcr.io
+  - name: ORG_NAME
+    description: Organization or owner name
+    value: bcgov
+  - name: RUN_ID
+    description: Unique workflow run identifier for this migration Job
+    required: true
+  - name: VAULT_SECRET_PATH
+    description: Base Vault secret path for the selected environment
+    required: true
+  - name: VAULT_ROLE
+    description: Vault Kubernetes auth role
+    required: true
+  - name: VAULT_SERVICE_ACCOUNT
+    description: Existing service account used for Vault authentication
+    required: true
+objects:
+  - apiVersion: batch/v1
+    kind: Job
+    metadata:
+      name: ${NAME}-${ZONE}-migrate-${RUN_ID}
+      labels:
+        app: ${NAME}-${ZONE}
+        component: database-migration
+    spec:
+      backoffLimit: 0
+      activeDeadlineSeconds: 900
+      ttlSecondsAfterFinished: 3600
+      template:
+        metadata:
+          annotations:
+            vault.hashicorp.com/agent-inject: "true"
+            vault.hashicorp.com/agent-inject-secret-database: "${VAULT_SECRET_PATH}/zeva2-database"
+            vault.hashicorp.com/agent-inject-template-database: |
+              {{- with secret "${VAULT_SECRET_PATH}/zeva2-database" -}}
+                export DATABASE_URL_FOR_MIGRATIONS="{{ .Data.data.database_url_for_migrations }}"
+              {{- end }}
+            vault.hashicorp.com/agent-inject-token: "true"
+            vault.hashicorp.com/agent-pre-populate-only: "true"
+            vault.hashicorp.com/auth-path: auth/k8s-silver
+            vault.hashicorp.com/namespace: platform-services
+            vault.hashicorp.com/role: ${VAULT_ROLE}
+          labels:
+            app: ${NAME}-${ZONE}
+            component: database-migration
+        spec:
+          serviceAccountName: ${VAULT_SERVICE_ACCOUNT}
+          restartPolicy: Never
+          containers:
+            - name: migrate
+              image: ${REGISTRY}/${ORG_NAME}/${NAME}/next:${IMAGE_TAG}
+              imagePullPolicy: Always
+              command:
+                - /bin/sh
+                - -c
+                - |
+                  set -eu
+                  . /vault/secrets/database
+                  npm run migrate
+              resources:
+                requests:
+                  cpu: 100m
+                  memory: 256Mi
+                limits:
+                  memory: 1Gi
