@@ -29,9 +29,11 @@ ENV NODE_ENV=production \
 COPY package.json package-lock.json ./
 
 RUN mkdir -p /tmp/.npm \
-  && npm ci --omit=dev \
+  && npm ci --omit=dev --ignore-scripts \
   && npm cache clean --force
 
+# The migration Job needs the Prisma engine downloaded in the dependency stage.
+COPY --from=dependencies /next/node_modules/@prisma/engines ./node_modules/@prisma/engines
 COPY --from=builder /next/.next ./.next
 COPY --from=builder /next/public ./public
 COPY --from=builder /next/next.config.ts ./next.config.ts

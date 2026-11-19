@@ -8,9 +8,8 @@ RUN npm ci --omit=dev
 
 COPY . .
 
-RUN npm run generate-prisma-client
-
-RUN mkdir -p /tmp/.npm \
+RUN npm run generate-prisma-client \
+  && mkdir -p /tmp/.npm \
   && chgrp -R 0 /tmp/.npm \
   && chmod 770 /tmp/.npm
 

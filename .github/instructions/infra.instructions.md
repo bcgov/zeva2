@@ -16,6 +16,7 @@ applyTo: ["next/Dockerfile*", "next/package*.json", "next/prisma/**", "next/pris
 
 - OpenShift images are built from the `next/` context using `next/Dockerfile-Openshift` and `next/Dockerfile-Bullmq-Openshift`. Keep `next/.dockerignore` aligned with what the images need, and avoid sending local dependencies or generated artifacts in the build context.
 - The Next.js image uses separate dependency, build, and runtime stages. Keep the built Next.js output and `public` assets, both generated Prisma clients, and the main Prisma schema/config/migrations in the runtime image; omit dev dependencies and application source.
+- The Next.js runtime install uses `npm ci --ignore-scripts`; preserve the Prisma engines copied from the dependency stage because the migration Job needs them.
 - The Next.js image generates both Prisma clients and builds the app. Its startup loads Vault-injected files from `/vault/secrets` and starts Next.js; database migrations run once in the dedicated OpenShift Job before app deployment.
 - The BullMQ image installs production dependencies, generates the main Prisma client, sources service-specific Vault files with `/bin/sh`, and runs the TypeScript worker with `tsx`. Keep `tsx`, `prisma`, and worker runtime imports in `dependencies`; fail startup on secret-loading errors and `exec` the worker command.
 - Both image entrypoints use `/bin/sh`, and the Vault templates emit POSIX `export` statements. Keep sourced files POSIX-compatible; do not install Bash unless a runtime command requires it.
