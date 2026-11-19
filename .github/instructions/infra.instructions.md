@@ -17,6 +17,7 @@ applyTo: ["next/Dockerfile*", "next/package*.json", "next/prisma/**", "next/pris
 - OpenShift images are built from the `next/` context using `next/Dockerfile-Openshift` and `next/Dockerfile-Bullmq-Openshift`. Keep `next/.dockerignore` aligned with what the images need, and avoid sending local dependencies or generated artifacts in the build context.
 - The Next.js image generates both Prisma clients and builds the app. Its startup loads Vault-injected files from `/vault/secrets` and starts Next.js; database migrations run once in the dedicated OpenShift Job before app deployment.
 - The BullMQ image generates the main Prisma client, loads its Vault-injected files, and runs the worker. Preserve the service-specific secret-file sets.
+- Run OpenShift workloads as non-root without setting a fixed `runAsUser` or `fsGroup`; namespace SCCs assign IDs from namespace-specific ranges. Make image-writable paths group-owned by GID 0 with group permissions, and avoid mounts that mask those prepared paths unless volume ownership is handled by the namespace SCC.
 - Never add secret values to image layers, Git-tracked manifests, or workflow parameters. Deployed secrets are injected through Vault.
 - Coordinate Prisma migrations so multiple application replicas cannot race to apply schema changes. Preserve connection-pool sizing when changing replica counts.
 

@@ -66,6 +66,8 @@ objects:
             - name: migrate
               image: ${REGISTRY}/${ORG_NAME}/${NAME}/next:${IMAGE_TAG}
               imagePullPolicy: Always
+              securityContext:
+                runAsNonRoot: true
               command:
                 - /bin/sh
                 - -c

@@ -103,6 +103,8 @@ objects:
             - name: next
               image: ${REGISTRY}/${ORG_NAME}/${NAME}/next:${IMAGE_TAG}
               imagePullPolicy: Always
+              securityContext:
+                runAsNonRoot: true
               ports:
                 - name: http
                   containerPort: 3000
@@ -137,9 +139,6 @@ objects:
                 requests:
                   cpu: ${CPU_REQUEST}
                   memory: ${MEMORY_REQUEST}
-              volumeMounts:
-                - name: next-cache
-                  mountPath: /next/.next/cache
               env:
                 - name: CHECKPOINT_DISABLE
                   value: "1"
@@ -197,10 +196,6 @@ objects:
                   value: postgresql://$(DB_USER):$(DB_PASSWORD)@$(DB_HOST):$(DB_PORT)/$(DB_NAME)?schema=public
                 - name: DATABASE_URL_FOR_MIGRATIONS
                   value: postgresql://$(DB_USER):$(DB_PASSWORD)@$(DB_HOST):$(DB_PORT)/$(DB_NAME)?schema=public
-          volumes:
-            - name: next-cache
-              emptyDir: {}
-
   - apiVersion: v1
     kind: Service
     metadata:
