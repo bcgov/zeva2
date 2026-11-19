@@ -193,7 +193,7 @@ objects:
         app: ${NAME}-${ZONE}
         deployment: ${NAME}-${ZONE}-next
     spec:
-      host: ${NAME}-${ZONE}-next.${DOMAIN}
+      host: ${NAME}-${ZONE}.${DOMAIN}
       to:
         kind: Service
         name: ${NAME}-${ZONE}-next
