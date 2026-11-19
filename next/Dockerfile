@@ -3,7 +3,7 @@ FROM node:26.13.1
 WORKDIR /next
 
 COPY package*.json /next/
-RUN npm install
+RUN npm ci
 
 COPY . .
 
