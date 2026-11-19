@@ -12,8 +12,7 @@ RUN npm run generate-prisma-client
 
 RUN mkdir -p /tmp/.npm \
   && chgrp -R 0 /tmp/.npm \
-  && chmod 770 /tmp/.npm \
-  && chmod 1777 /tmp
+  && chmod 770 /tmp/.npm
 
 ENV HOME=/tmp \
     NPM_CONFIG_CACHE=/tmp/.npm

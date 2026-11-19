@@ -44,8 +44,7 @@ ENV ZEVA2_VERSION=$ZEVA2_VERSION
 RUN mkdir -p /next/.next/cache \
   && chgrp -R 0 /next/.next /tmp/.npm \
   && chmod -R g=u /next/.next \
-  && chmod 770 /tmp/.npm \
-  && chmod 1777 /tmp
+  && chmod 770 /tmp/.npm
 
 USER 1001:0
 
