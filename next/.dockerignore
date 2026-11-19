@@ -1,1 +1,10 @@
 node_modules
+.next
+.git
+.env
+.env.*
+coverage
+*.log
+*.tsbuildinfo
+prisma/generated
+prismaOld/generated

@@ -95,9 +95,33 @@ jobs:
             openshift/
             .github/workflows/*.yml
 
+  migrate:
+    name: Run database migrations
+    needs: [builds, deploy-services]
+    runs-on: ubuntu-26.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: bcgov/actions-openshift/oc-runner@a7a039ba45f9635c0bdbcc6b4cdbd2555811e100 # v0.8.0
+        env:
+          MIGRATION_ZONE: pr-${{ github.event.number }}
+          MIGRATION_IMAGE_TAG: ${{ github.event.pull_request.head.sha }}
+          MIGRATION_RUN_ID: ${{ github.run_id }}-${{ github.run_attempt }}
+        with:
+          oc_namespace: ${{ vars.OC_NAMESPACE }}
+          oc_server: ${{ vars.OC_SERVER }}
+          oc_token: ${{ secrets.OC_TOKEN }}
+          commands: bash scripts/run-next-pr-migrations.sh
+          timeout: 18m
+          triggers: |
+            next/
+            openshift/
+            scripts/
+            .github/workflows/*.yml
+
   deploys:
     name: Deploys (${{ matrix.name }})
-    needs: [builds, deploy-services]
+    needs: [builds, deploy-services, migrate]
     runs-on: ubuntu-26.04
     timeout-minutes: 15
     strategy:
@@ -167,7 +191,7 @@ jobs:
         if: matrix.component == 'next' && steps.triggers.outputs.triggered == 'true'
         run: |
           set -euo pipefail
-          URL="https://zeva2-pr-${{ github.event.number }}-next.apps.silver.devops.gov.bc.ca/api/health"
+          URL="https://zeva2-pr-${{ github.event.number }}.apps.silver.devops.gov.bc.ca/api/health"
           echo "Waiting for Next.js healthcheck at $URL..."
           for i in {1..30}; do
             status=$(curl -k --connect-timeout 3 --max-time 5 -s -o /dev/null -w "%{http_code}" "$URL" || true)
@@ -235,11 +259,12 @@ jobs:
           header: pr-deployment-links
           message: |
             ### 🚀 Deployments Available (PR #${{ github.event.number }})
-            - [Next.js](https://zeva2-pr-${{ github.event.number }}-next.apps.silver.devops.gov.bc.ca)
+            - [Next.js](https://zeva2-pr-${{ github.event.number }}.apps.silver.devops.gov.bc.ca)
+            - Please enroll the url to single sign-on (SSO) if you want to manually test the deployment.
 
   results:
     name: PR Results
-    needs: [builds, deploy-services, deploys, tests, comment]
+    needs: [builds, deploy-services, migrate, deploys, tests, comment]
     if: always()
     runs-on: ubuntu-slim
     timeout-minutes: 1

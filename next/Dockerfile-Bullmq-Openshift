@@ -2,17 +2,28 @@ FROM docker.io/library/node:26.13.1
 
 WORKDIR /next
 
+COPY package.json package-lock.json ./
+
+RUN npm ci --omit=dev
+
 COPY . .
 
-RUN npm ci
+RUN npm run generate-prisma-client \
+  && mkdir -p /tmp/.npm \
+  && chgrp -R 0 /tmp/.npm \
+  && chmod 770 /tmp/.npm
 
-RUN npm run generate-prisma-client
+ENV HOME=/tmp \
+    NPM_CONFIG_CACHE=/tmp/.npm
+
+USER 1001:0
 
 CMD ["/bin/sh", "-c", "\
+ set -eu; \
  for cfg in database redis email; do \
  if [ -f /vault/secrets/$cfg ]; then \
  . /vault/secrets/$cfg; \
  fi; \
  done; \
- npm run bullmq\
+ exec npm run bullmq\
 "]

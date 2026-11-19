@@ -69,7 +69,6 @@ objects:
                 export AUTH_KEYCLOAK_ID="{{ .Data.data.auth_keycloak_id }}"
                 export AUTH_KEYCLOAK_ISSUER="{{ .Data.data.auth_keycloak_issuer }}"
                 export AUTH_TRUST_HOST="{{ .Data.data.auth_trust_host }}"
-                export AUTH_URL="{{ .Data.data.auth_url }}"
               {{- end }}
             vault.hashicorp.com/agent-inject-template-cthub: |
               {{- with secret "${VAULT_SECRET_PATH}/zeva2-cthub" -}}
@@ -103,6 +102,8 @@ objects:
             - name: next
               image: ${REGISTRY}/${ORG_NAME}/${NAME}/next:${IMAGE_TAG}
               imagePullPolicy: Always
+              securityContext:
+                runAsNonRoot: true
               ports:
                 - name: http
                   containerPort: 3000
@@ -137,14 +138,13 @@ objects:
                 requests:
                   cpu: ${CPU_REQUEST}
                   memory: ${MEMORY_REQUEST}
-              volumeMounts:
-                - name: next-cache
-                  mountPath: /next/.next/cache
               env:
                 - name: CHECKPOINT_DISABLE
                   value: "1"
                 - name: START_WORKERS
                   value: "false"
+                - name: AUTH_URL
+                  value: "${NAME}-${ZONE}.${DOMAIN}/api/auth"
                 - name: TZ
                   value: America/Vancouver
                 - name: REDIS_TLS_ENABLED
@@ -197,10 +197,6 @@ objects:
                   value: postgresql://$(DB_USER):$(DB_PASSWORD)@$(DB_HOST):$(DB_PORT)/$(DB_NAME)?schema=public
                 - name: DATABASE_URL_FOR_MIGRATIONS
                   value: postgresql://$(DB_USER):$(DB_PASSWORD)@$(DB_HOST):$(DB_PORT)/$(DB_NAME)?schema=public
-          volumes:
-            - name: next-cache
-              emptyDir: {}
-
   - apiVersion: v1
     kind: Service
     metadata:
@@ -226,7 +222,7 @@ objects:
         app: ${NAME}-${ZONE}
         deployment: ${NAME}-${ZONE}-next
     spec:
-      host: ${NAME}-${ZONE}-next.${DOMAIN}
+      host: ${NAME}-${ZONE}.${DOMAIN}
       to:
         kind: Service
         name: ${NAME}-${ZONE}-next

@@ -93,6 +93,8 @@ objects:
             - name: bullmq
               image: ${REGISTRY}/${ORG_NAME}/${NAME}/bullmq:${IMAGE_TAG}
               imagePullPolicy: Always
+              securityContext:
+                runAsNonRoot: true
               ports:
                 - name: http
                   containerPort: 8080
