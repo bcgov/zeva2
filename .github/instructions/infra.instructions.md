@@ -27,7 +27,7 @@ applyTo: ["next/Dockerfile*", "next/package*.json", "next/prisma/**", "next/pris
 ## OpenShift and workflows
 
 - Runtime deployments use parameterized OpenShift `Template` manifests under `openshift/`; deployment automation is in `.github/workflows/`. Update the relevant template, workflow parameters, and trigger paths together.
-- Run Prisma migrations with `openshift/next.migrate.yml` through `scripts/run-next-migrations.sh` before deploying Next.js. Keep this one-shot migration step ordered after database availability and before application rollout in PR, test, and production workflows.
+- PR migrations use `openshift/next.pr-migrate.yml` through `scripts/run-next-pr-migrations.sh` and the PR database Secret created by `openshift/database.pr-deploy.yml`. Merge/release migrations use `openshift/next.migrate.yml` through `scripts/run-next-migrations.sh` and the Vault-backed Crunchy database. Keep each one-shot migration step before its application rollout.
 - PR workflows build the `next` and `bullmq` packages with PR-number and commit-SHA tags, deploy preview resources, and run health/readiness checks. Verify those checks when changing service names, replicas, ports, or health endpoints.
 - Release deployment promotes the PR-built images to the `prod` tag rather than rebuilding them. Keep image package names and tags consistent across build, verification, deploy, and promotion steps.
 - Deploy through the existing GitHub Actions workflows and BC Gov OpenShift actions; do not introduce workstation deployment steps.

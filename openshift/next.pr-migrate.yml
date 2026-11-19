@@ -1,0 +1,87 @@
+apiVersion: template.openshift.io/v1
+kind: Template
+metadata:
+  name: zeva2-next-pr-migrate
+parameters:
+  - name: NAME
+    description: Application module name
+    value: zeva2
+  - name: ZONE
+    description: PR deployment zone, e.g. pr-123
+    required: true
+  - name: IMAGE_TAG
+    description: GHCR image tag or digest
+    required: true
+  - name: REGISTRY
+    description: Container registry
+    value: ghcr.io
+  - name: ORG_NAME
+    description: Organization or owner name
+    value: bcgov
+  - name: RUN_ID
+    description: Unique workflow run identifier for this migration Job
+    required: true
+objects:
+  - apiVersion: batch/v1
+    kind: Job
+    metadata:
+      name: ${NAME}-${ZONE}-migrate-${RUN_ID}
+      labels:
+        app: ${NAME}-${ZONE}
+        component: database-migration
+    spec:
+      backoffLimit: 0
+      activeDeadlineSeconds: 900
+      ttlSecondsAfterFinished: 3600
+      template:
+        metadata:
+          labels:
+            app: ${NAME}-${ZONE}
+            component: database-migration
+        spec:
+          restartPolicy: Never
+          containers:
+            - name: migrate
+              image: ${REGISTRY}/${ORG_NAME}/${NAME}/next:${IMAGE_TAG}
+              imagePullPolicy: Always
+              securityContext:
+                runAsNonRoot: true
+              env:
+                - name: DATABASE_NAME
+                  valueFrom:
+                    secretKeyRef:
+                      name: ${NAME}-${ZONE}-database
+                      key: database-name
+                - name: DATABASE_PASSWORD
+                  valueFrom:
+                    secretKeyRef:
+                      name: ${NAME}-${ZONE}-database
+                      key: database-password
+                - name: DATABASE_USER
+                  valueFrom:
+                    secretKeyRef:
+                      name: ${NAME}-${ZONE}-database
+                      key: database-user
+                - name: DATABASE_HOST
+                  valueFrom:
+                    secretKeyRef:
+                      name: ${NAME}-${ZONE}-database
+                      key: database-host
+                - name: DATABASE_PORT
+                  valueFrom:
+                    secretKeyRef:
+                      name: ${NAME}-${ZONE}-database
+                      key: database-port
+              command:
+                - /bin/sh
+                - -c
+                - |
+                  set -eu
+                  export DATABASE_URL_FOR_MIGRATIONS="postgresql://$DATABASE_USER:$DATABASE_PASSWORD@$DATABASE_HOST:$DATABASE_PORT/$DATABASE_NAME"
+                  exec npm run migrate
+              resources:
+                requests:
+                  cpu: 100m
+                  memory: 256Mi
+                limits:
+                  memory: 1Gi
