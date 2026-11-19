@@ -302,25 +302,26 @@ enum VehicleStatus {
 }
 
 model Vehicle {
-  id                Int                 @id @default(autoincrement())
-  legacyId          Int?
-  organization      Organization        @relation(fields: [organizationId], references: [id])
-  organizationId    Int                 @map("organization_id")
-  status            VehicleStatus
-  make              String
-  modelName         String              @map("model_name")
-  modelYear         ModelYear           @map("model_year")
-  zevType           ZevType             @map("zev_type")
-  range             Int
-  vehicleClass      VehicleClass        @map("vehicle_class")
-  zevClass          ZevClass            @map("zev_class")
-  numberOfUnits     Decimal             @map("numberOfUnits") @db.Decimal(65, 2)
-  vehicleClassCode  VehicleClassCode    @map("vehicle_class_code")
-  weight            Int
-  us06RangeGte16    Boolean             @map("us06_range_gte_16")
-  isActive          Boolean             @map("is_active")
-  VehicleHistory    VehicleHistory[]
-  VehicleAttachment VehicleAttachment[]
+  id                  Int                 @id @default(autoincrement())
+  legacyId            Int?
+  organization        Organization        @relation(fields: [organizationId], references: [id])
+  organizationId      Int                 @map("organization_id")
+  status              VehicleStatus
+  make                String
+  modelName           String              @map("model_name")
+  modelYear           ModelYear           @map("model_year")
+  zevType             ZevType             @map("zev_type")
+  range               Int
+  vehicleClass        VehicleClass        @map("vehicle_class")
+  zevClass            ZevClass            @map("zev_class")
+  legacyNumberOfUnits Decimal             @map("legacy_number_of_units") @db.Decimal(65, 2)
+  numberOfUnits       Decimal             @map("number_of_units") @db.Decimal(65, 2)
+  vehicleClassCode    VehicleClassCode    @map("vehicle_class_code")
+  weight              Int
+  us06RangeGte16      Boolean             @map("us06_range_gte_16")
+  isActive            Boolean             @map("is_active")
+  VehicleHistory      VehicleHistory[]
+  VehicleAttachment   VehicleAttachment[]
 
   @@map("vehicle")
 }
@@ -421,6 +422,7 @@ model CreditApplication {
   aCredits                         Decimal?                          @map("a_credits") @db.Decimal(65, 2)
   bCredits                         Decimal?                          @map("b_credits") @db.Decimal(65, 2)
   complianceYear                   ModelYear?                        @map("compliance_year")
+  isSupplementary                  Boolean                           @default(false) @map("is_supplementary")
   CreditApplicationHistory         CreditApplicationHistory[]
   CreditApplicationRecord          CreditApplicationRecord[]
   CreditApplicationAttachment      CreditApplicationAttachment[]
@@ -451,6 +453,7 @@ model CreditApplicationRecord {
   vehicleClass              VehicleClass      @map("vehicle_class")
   zevClass                  ZevClass          @map("zev_class")
   modelYear                 ModelYear         @map("model_year")
+  legacyNumberOfUnits       Decimal           @map("legacy_number_of_units") @db.Decimal(65, 2)
   numberOfUnits             Decimal           @map("number_of_units") @db.Decimal(65, 2)
   make                      String
   modelName                 String            @map("model_name")

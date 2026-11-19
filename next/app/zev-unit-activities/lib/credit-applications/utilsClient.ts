@@ -94,6 +94,7 @@ export const getCaData = async (
           record.vehicleClass = associatedVehicle.vehicleClass;
           record.zevClass = associatedVehicle.zevClass;
           record.zevType = associatedVehicle.zevType;
+          record.legacyNumberOfUnits = associatedVehicle.legacyNumberOfUnits;
           record.numberOfUnits = associatedVehicle.numberOfUnits;
           record.range = associatedVehicle.range;
         }

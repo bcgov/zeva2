@@ -40,10 +40,18 @@ export const getWhereClause = (filters: {
         contains: value,
         mode: "insensitive",
       };
-    } else if (key === "numberOfUnits" || key === "range") {
-      const decValue = new Decimal(value);
+    } else if (key === "legacyNumberOfUnits" || key === "numberOfUnits") {
+      try {
+        const decValue = new Decimal(value);
+        result[key] = {
+          equals: decValue,
+        };
+      } catch (e) {
+        result.id = -1;
+      }
+    } else if (key === "range") {
       result[key] = {
-        equals: decValue.toNumber(),
+        equals: Number.parseInt(value, 10),
       };
     } else if (key === "zevClass") {
       result[key] = {
@@ -76,6 +84,7 @@ export const getOrderByClause = (sorts: {
         key === "modelName" ||
         key === "make" ||
         key === "status" ||
+        key === "legacyNumberOfUnits" ||
         key === "numberOfUnits" ||
         key === "range" ||
         key === "zevClass" ||
@@ -96,37 +105,35 @@ export const getOrderByClause = (sorts: {
   return result;
 };
 
+export const getLegacyNumberOfUnits = (
+  zevClass: ZevClass,
+  range: number,
+  us06RangeGte16: boolean,
+) => {
+  const rangeDec = new Decimal(range);
+  if (zevClass === ZevClass.A) {
+    const numberOfUnits = Decimal.min(
+      4,
+      rangeDec.times("0.006214").plus("0.5"),
+    );
+    return numberOfUnits.toDecimalPlaces(2);
+  }
+  if (zevClass === ZevClass.B) {
+    let numberOfUnits = rangeDec.times("0.006214").plus("0.3");
+    if (us06RangeGte16) {
+      return Decimal.min(numberOfUnits.plus("0.2"), "1.30");
+    }
+    return Decimal.min(numberOfUnits, "1.10");
+  }
+  return new Decimal(0);
+};
+
 export const getNumberOfUnits = (
   zevClass: ZevClass,
   zevType: ZevType,
   modelYear: ModelYear,
   range: number,
-  us06RangeGte16: boolean,
 ): Decimal => {
-  if (zevClass === ZevClass.UNSPECIFIED) {
-    return new Decimal(0);
-  }
-  const currentTs = new Date();
-  const threshold = new Date(
-    `2026-${process.env.BEGINNING_OF_COMPLIANCE_YEAR}`,
-  );
-  const rangeDec = new Decimal(range);
-  if (currentTs < threshold) {
-    if (zevClass === ZevClass.A) {
-      const numberOfUnits = Decimal.min(
-        4,
-        rangeDec.times("0.006214").plus("0.5"),
-      );
-      return numberOfUnits.toDecimalPlaces(2);
-    }
-    if (zevClass === ZevClass.B) {
-      let numberOfUnits = rangeDec.times("0.006214").plus("0.3");
-      if (us06RangeGte16) {
-        return Decimal.min(numberOfUnits.plus("0.2"), "1.30");
-      }
-      return Decimal.min(numberOfUnits, "1.10");
-    }
-  }
   if (zevClass === ZevClass.A) {
     return new Decimal(1);
   }
@@ -141,6 +148,7 @@ export const getNumberOfUnits = (
       zevType === ZevType.PHEV &&
       (modelYear === ModelYear.MY_2027 || modelYear === ModelYear.MY_2028)
     ) {
+      const rangeDec = new Decimal(range);
       // whether it's 1/2 of a credit or 1 credit depends on the director (regulation - section 14.1(4))
       if (modelYear === ModelYear.MY_2027 && rangeDec.gte(50)) {
         return new Decimal(1);
@@ -154,7 +162,7 @@ export const getNumberOfUnits = (
       return new Decimal(1);
     }
   }
-  throw new Error("Cannot calculate the credit value for this vehicle!");
+  return new Decimal(0);
 };
 
 export const getVehicleClass = (

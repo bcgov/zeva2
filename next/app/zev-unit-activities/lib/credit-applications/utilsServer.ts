@@ -2,8 +2,6 @@ import { CreditApplicationStatus, ModelYear } from "@/prisma/generated/enums";
 import {
   CreditApplicationWhereInput,
   CreditApplicationOrderByWithRelationInput,
-  CreditApplicationRecordWhereInput,
-  CreditApplicationRecordOrderByWithRelationInput,
 } from "@/prisma/generated/models";
 import {
   getMatchingTerms,
@@ -127,117 +125,6 @@ export const getOrderByClause = (
       result.push(orderBy);
     }
   }
-  return result;
-};
-
-export const getRecordsWhereClause = (
-  filters: Record<string, string>,
-): CreditApplicationRecordWhereInput => {
-  const result: CreditApplicationRecordWhereInput = {};
-  const modelYearsMap = getStringsToModelYearsEnumsMap();
-  Object.entries(filters).forEach(([key, rawValue]) => {
-    const value = rawValue.trim();
-    if (key === "validated") {
-      const newValue = value.toLowerCase();
-      if (newValue === "y") {
-        result[key] = true;
-      } else if (newValue === "n") {
-        result[key] = false;
-      }
-    } else if (
-      key === "modelYear" ||
-      key === "icbcModelYear" ||
-      key === "decodedModelYear"
-    ) {
-      result[key] = {
-        in: getMatchingTerms(modelYearsMap, value),
-      };
-    } else if (key === "timestamp" || key === "icbcRegistrationTimestamp") {
-      const [isValidDate, date] = validateDate(value);
-      if (isValidDate) {
-        result[key] = date;
-      } else {
-        result.id = -1;
-      }
-    } else if (
-      key === "vin" ||
-      key === "make" ||
-      key === "modelName" ||
-      key === "icbcMake" ||
-      key === "icbcModelName" ||
-      key === "decodedMake" ||
-      key === "decodedModelName"
-    ) {
-      const newValue = value.toLowerCase();
-      result[key] = {
-        contains: newValue,
-        mode: "insensitive",
-      };
-    } else if (key === "warnings") {
-      let newValue: string | string[] = value.toLowerCase();
-      if (newValue === "any") {
-        result[key] = {
-          isEmpty: false,
-        };
-      } else if (newValue === "none") {
-        result[key] = {
-          isEmpty: true,
-        };
-      } else {
-        newValue = value.replaceAll(" ", "").split(",");
-        result[key] = {
-          hasSome: newValue,
-        };
-      }
-    } else if (key === "reason") {
-      let newValue: string = value.toLowerCase();
-      if (newValue === "any") {
-        result[key] = {
-          not: null,
-        };
-      } else if (newValue === "none") {
-        result[key] = null;
-      } else {
-        result[key] = {
-          contains: newValue,
-          mode: "insensitive",
-        };
-      }
-    }
-  });
-  return result;
-};
-
-export const getRecordsOrderByClause = (
-  sorts: Record<string, string>,
-): CreditApplicationRecordOrderByWithRelationInput[] => {
-  const result: CreditApplicationRecordOrderByWithRelationInput[] = [];
-  Object.entries(sorts).forEach(([key, value]) => {
-    const orderBy: CreditApplicationRecordOrderByWithRelationInput = {};
-    if (
-      (value === "asc" || value === "desc") &&
-      (key === "vin" ||
-        key === "timestamp" ||
-        key === "make" ||
-        key === "modelName" ||
-        key === "modelYear" ||
-        key === "icbcMake" ||
-        key === "icbcModelName" ||
-        key === "icbcModelYear" ||
-        key === "icbcRegistrationTimestamp" ||
-        key === "decodedMake" ||
-        key === "decodedModelName" ||
-        key === "decodedModelYear" ||
-        key === "validated" ||
-        key === "warnings" ||
-        key === "reason")
-    ) {
-      orderBy[key] = value;
-    }
-    if (Object.keys(orderBy).length > 0) {
-      result.push(orderBy);
-    }
-  });
   return result;
 };
 

@@ -10,7 +10,7 @@ import {
   useTransition,
 } from "react";
 import { createPortal } from "react-dom";
-import { Button, Table, Dropdown } from "@/app/lib/components";
+import { Button, Dropdown, ClientSideTable } from "@/app/lib/components";
 import { MapOfValidatedAndReasons, updateValidatedRecords } from "../actions";
 import { useRouter } from "next/navigation";
 import { getModelYearEnumsToStringsMap } from "@/app/lib/utils/enumMaps";
@@ -84,7 +84,6 @@ const WarningCode = ({
 export const RecordsTable = (props: {
   id: number;
   records: CreditApplicationRecordSparseSerialized[];
-  totalNumbeOfRecords: number;
   modelYears: ModelYear[];
   readOnly: boolean;
 }) => {
@@ -161,15 +160,6 @@ export const RecordsTable = (props: {
   const modelYearsMap = useMemo(() => {
     return getModelYearEnumsToStringsMap();
   }, []);
-
-  const modelYearOptions = useMemo(() => {
-    return props.modelYears.map((my) => {
-      return {
-        value: my,
-        label: modelYearsMap[my] ?? "",
-      };
-    });
-  }, [props.modelYears, modelYearsMap]);
 
   const getHighlighted = useCallback(
     (value: string | JSX.Element, warnings: string[]): string | JSX.Element => {
@@ -361,15 +351,11 @@ export const RecordsTable = (props: {
 
   return (
     <div className="flex flex-col gap-4">
-      <Table<CreditApplicationRecordSparseSerialized>
+      <ClientSideTable<CreditApplicationRecordSparseSerialized>
         columns={columns}
         data={props.records}
-        totalNumberOfRecords={props.totalNumbeOfRecords}
-        defaultPageSize={100}
+        initialPageSize={100}
         explicitSizing={true}
-        paramsToPreserve={["readOnly"]}
-        stackHeaderContents={true}
-        noTruncateCols={["reason", "warnings"]}
       />
       {!props.readOnly && (
         <div className="p-4 flex flex-row justify-between bg-gray-100 items-center">

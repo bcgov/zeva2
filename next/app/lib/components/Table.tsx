@@ -26,12 +26,8 @@ interface ITableProps<T> {
   totalNumberOfRecords: number;
   defaultPageSize: number;
   navigationAction?: (id: number) => Promise<void>;
-  explicitSizing?: boolean;
-  paramsToPreserve?: string[];
-  stackHeaderContents?: boolean;
   title?: string;
   headerContent?: React.ReactNode;
-  noTruncateCols?: string[];
 }
 
 interface ZevaObject {
@@ -44,11 +40,7 @@ export const Table = <T extends ZevaObject>({
   totalNumberOfRecords,
   defaultPageSize,
   navigationAction,
-  explicitSizing,
-  paramsToPreserve,
-  stackHeaderContents,
   headerContent,
-  noTruncateCols,
 }: ITableProps<T>) => {
   const { replace } = useRouter();
   const table = useReactTable({
@@ -74,15 +66,9 @@ export const Table = <T extends ZevaObject>({
 
   const handleReset = React.useCallback(() => {
     const newParams = new URLSearchParams();
-    paramsToPreserve?.forEach((param) => {
-      const paramValue = searchParams.get(param);
-      if (paramValue) {
-        newParams.set(param, paramValue);
-      }
-    });
     setFilters({});
     replaceUrl(newParams);
-  }, [paramsToPreserve, searchParams, replaceUrl]);
+  }, [searchParams, replaceUrl]);
 
   const currentPageSize = React.useMemo(() => {
     const pageSize = searchParams.get("pageSize");
@@ -215,11 +201,9 @@ export const Table = <T extends ZevaObject>({
       </div>
       <div className="bg-white rounded-lg border-2 border-gray-300">
         <div className="overflow-x-auto">
-          <table className={`w-full ${explicitSizing ? "table-fixed" : ""}`}>
+          <table className="w-full">
             <TableHeader
               table={table}
-              explicitSizing={explicitSizing}
-              stackHeaderContents={stackHeaderContents}
               enableSorting={true}
               enableFiltering={true}
               onSortChange={handleSortChange}
@@ -243,24 +227,10 @@ export const Table = <T extends ZevaObject>({
                     onClick={() => handleNavigation(row.original.id)}
                   >
                     {row.getVisibleCells().map((cell) => {
-                      let truncate = explicitSizing;
-                      const colId = cell.column.columnDef.id;
-                      if (
-                        noTruncateCols &&
-                        colId &&
-                        noTruncateCols.includes(colId)
-                      ) {
-                        truncate = false;
-                      }
                       return (
                         <td
                           key={cell.id}
-                          className={`px-6 py-4 text-sm text-gray-900 ${truncate ? "truncate" : ""}`}
-                          style={
-                            explicitSizing
-                              ? { width: cell.column.getSize() }
-                              : undefined
-                          }
+                          className="px-6 py-4 text-sm text-gray-900"
                         >
                           {flexRender(
                             cell.column.columnDef.cell,

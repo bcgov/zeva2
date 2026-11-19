@@ -2,19 +2,15 @@ import { getUserInfo } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { CreditApplicationStatus, Role } from "@/prisma/generated/enums";
 import {
-  CreditApplicationModel,
   CreditApplicationHistoryModel,
   OrganizationModel,
   UserModel,
-  CreditApplicationWhereUniqueInput,
   CreditApplicationWhereInput,
   CreditApplicationHistoryWhereInput,
   CreditApplicationAttachmentWhereInput,
 } from "@/prisma/generated/models";
 import {
   getOrderByClause,
-  getRecordsOrderByClause,
-  getRecordsWhereClause,
   getWhereClause,
 } from "./utilsServer";
 import { ZevUnitRecord } from "@/lib/utils/zevUnit";
@@ -27,37 +23,22 @@ import {
 
 export const getValidatedRecords = async (
   creditApplicationId: number,
-  page: number,
-  pageSize: number,
-  filters: Record<string, string>,
-  sorts: Record<string, string>,
-): Promise<[CreditApplicationRecordSparse[], number]> => {
+): Promise<CreditApplicationRecordSparse[]> => {
   const { userIsGov } = await getUserInfo();
   if (!userIsGov) {
     throw new Error("Unauthorized!");
   }
-  const skip = (page - 1) * pageSize;
-  const take = pageSize;
-  const where = getRecordsWhereClause(filters);
-  where.creditApplicationId = creditApplicationId;
-  const orderBy = getRecordsOrderByClause(sorts);
-  orderBy.push({ id: "asc" });
-  return await prisma.$transaction([
-    prisma.creditApplicationRecord.findMany({
-      omit: {
-        vehicleClass: true,
-        zevClass: true,
-        numberOfUnits: true,
-      },
-      orderBy,
-      skip,
-      take,
-      where,
-    }),
-    prisma.creditApplicationRecord.count({
-      where,
-    }),
-  ]);
+  return await prisma.creditApplicationRecord.findMany({
+    where: {
+      creditApplicationId,
+    },
+    omit: {
+      vehicleClass: true,
+      zevClass: true,
+      legacyNumberOfUnits: true,
+      numberOfUnits: true,
+    },
+  });
 };
 
 export const getApplicationModelYears = async (creditApplicationId: number) => {
