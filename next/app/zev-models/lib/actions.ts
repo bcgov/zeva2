@@ -31,7 +31,12 @@ import {
   getAttachmentPutData,
   getPresignedGetObjectUrl,
 } from "@/app/lib/services/s3";
-import { getVehicleClass, getZevClass, getNumberOfUnits } from "./utilsServer";
+import {
+  getVehicleClass,
+  getZevClass,
+  getNumberOfUnits,
+  getLegacyNumberOfUnits,
+} from "./utilsServer";
 import { addJobToEmailQueue } from "@/app/lib/services/queue";
 import { Attachment, AttachmentDownload } from "@/app/lib/constants/attachment";
 
@@ -51,6 +56,7 @@ export type VehiclePayload = Omit<
   | "isActive"
   | "vehicleClass"
   | "zevClass"
+  | "legacyNumberOfUnits"
   | "numberOfUnits"
 >;
 
@@ -96,19 +102,19 @@ export const supplierSave = async (
     if (us06RangeGte16 && attachments.length === 0) {
       throw new Error("At least one file is required!");
     }
-    const numberOfUnits = getNumberOfUnits(
+    const legacyNumberOfUnits = getLegacyNumberOfUnits(
       zevClass,
-      zevType,
-      modelYear,
       range,
       us06RangeGte16,
     );
+    const numberOfUnits = getNumberOfUnits(zevClass, zevType, modelYear, range);
     const dataToSave = {
       ...data,
       organizationId: userOrgId,
       isActive: false,
       vehicleClass,
       zevClass,
+      legacyNumberOfUnits,
       numberOfUnits,
     };
     await prisma.$transaction(async (tx) => {

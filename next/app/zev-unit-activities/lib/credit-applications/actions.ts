@@ -25,9 +25,11 @@ import {
   createAttachments,
   getDecodedVinsMap,
   getAnalystComments,
+  getCaGlobalData,
 } from "./services";
 import {
   ErrorsTemplate,
+  impermissableCaSubmissionMsg,
   SupplierSubTemplate,
   SupplierTemplate,
   ZevVinRecord,
@@ -214,6 +216,7 @@ export const supplierSave = async (
     const date = record.date;
     const vehicleClass = record.vehicleClass;
     const zevClass = record.zevClass;
+    const legacyNumberOfUnits = record.legacyNumberOfUnits;
     const numberOfUnits = record.numberOfUnits;
     const zevType = record.zevType;
     const range = record.range;
@@ -226,6 +229,7 @@ export const supplierSave = async (
         !date ||
         !vehicleClass ||
         !zevClass ||
+        !legacyNumberOfUnits ||
         !numberOfUnits ||
         !zevType ||
         range === undefined
@@ -242,6 +246,7 @@ export const supplierSave = async (
       if (!dateIsValid) {
         throw new Error();
       }
+      const legacyNumberOfUnitsDec = new Decimal(legacyNumberOfUnits);
       const numberOfUnitsDec = new Decimal(numberOfUnits);
       recordsToCreatePrelim.push({
         make,
@@ -251,6 +256,7 @@ export const supplierSave = async (
         timestamp: validatedDate,
         vehicleClass,
         zevClass,
+        legacyNumberOfUnits: legacyNumberOfUnitsDec,
         numberOfUnits: numberOfUnitsDec,
         zevType,
         range,
@@ -403,7 +409,6 @@ export const supplierSubmit = async (
   ) {
     return getErrorActionResponse("Invalid Action!");
   }
-
   const serializedRecords: ZevVinRecordSparse[] = [];
   const records = application.CreditApplicationRecord;
   const modelYearsMap = getModelYearEnumsToStringsMap();
@@ -440,7 +445,19 @@ export const supplierSubmit = async (
       records: serializedRecords,
     });
   }
-
+  let complianceYear;
+  let isSupplementary;
+  try {
+    const data = await getCaGlobalData(
+      creditApplicationId,
+      new Date(),
+      userOrgId,
+    );
+    complianceYear = data.complianceYear;
+    isSupplementary = data.isSupplementary;
+  } catch (e) {
+    return getErrorActionResponse(impermissableCaSubmissionMsg);
+  }
   await prisma.$transaction(async (tx) => {
     await tx.creditApplication.update({
       where: {
@@ -450,6 +467,8 @@ export const supplierSubmit = async (
         status: CreditApplicationStatus.SUBMITTED,
         supplierStatus: CreditApplicationStatus.SUBMITTED,
         submissionTimestamp: new Date(),
+        complianceYear,
+        isSupplementary,
       },
     });
     await tx.reservedVin.createMany({

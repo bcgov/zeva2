@@ -7,6 +7,7 @@ import {
   TransactionType,
   VehicleStatus,
   Role,
+  ModelYearReportStatus,
 } from "@/prisma/generated/enums";
 import {
   CreditApplicationRecordWhereInput,
@@ -15,6 +16,7 @@ import {
 } from "@/prisma/generated/models";
 import {
   GovCaStatRecord,
+  ImpermissableCaSubmission,
   mapOfStatusToSupplierStatus,
   ZevModelsMap,
 } from "./constants";
@@ -30,6 +32,12 @@ import {
 import { CreditApplicationRecordScalarFieldEnum } from "@/prisma/generated/internal/prismaNamespace";
 import { ChatComment } from "@/app/lib/constants/chatComment";
 import { getZevModelKey } from "@/app/zev-models/lib/utils";
+import {
+  getComplianceDate,
+  getComplianceYear,
+  getPreviousComplianceYear,
+  within20DayPeriod,
+} from "@/app/lib/utils/complianceYear";
 
 export const getCreditApplicationGov = async (
   creditApplicationId: number,
@@ -198,6 +206,7 @@ export const getEligibleVehicles = async (
       id: includeAdditionalFields,
       vehicleClass: includeAdditionalFields,
       zevClass: includeAdditionalFields,
+      legacyNumberOfUnits: includeAdditionalFields,
       numberOfUnits: includeAdditionalFields,
       zevType: includeAdditionalFields,
       range: includeAdditionalFields,
@@ -220,6 +229,7 @@ export const getEligibleVehiclesMap = async (orgId: number) => {
       id: vehicle.id,
       vehicleClass: vehicle.vehicleClass,
       zevClass: vehicle.zevClass,
+      legacyNumberOfUnits: vehicle.legacyNumberOfUnits.toFixed(2),
       numberOfUnits: vehicle.numberOfUnits.toFixed(2),
       zevType: vehicle.zevType,
       range: vehicle.range,
@@ -600,4 +610,145 @@ export const getAnalystComments = async (
     });
   }
   return result;
+};
+
+export const getCaGlobalData = async (
+  caId: number,
+  attemptedSubmissionDate: Date,
+  orgId: number,
+): Promise<{ complianceYear: ModelYear; isSupplementary: boolean }> => {
+  if (within20DayPeriod(attemptedSubmissionDate)) {
+    const subDatePrevCy = getPreviousComplianceYear(attemptedSubmissionDate);
+    const subDatePrevCyCd = getComplianceDate(subDatePrevCy);
+    const [recordsDateIndicator, { mysWithRecordsOnOrBeforeCd }, myrStatus] =
+      await Promise.all([
+        getCaRecordsDateIndicator(caId, subDatePrevCyCd),
+        getCaMyCdData(caId),
+        getMyrStatus(subDatePrevCy, orgId),
+      ]);
+    if (
+      !recordsDateIndicator.hasRecordsAfterDate &&
+      mysWithRecordsOnOrBeforeCd.every((my) => subDatePrevCy <= my) &&
+      !myrStatus
+    ) {
+      return {
+        complianceYear: subDatePrevCy,
+        isSupplementary: false,
+      };
+    }
+  } else {
+    const subDateCy = getComplianceYear(attemptedSubmissionDate);
+    const { mysWithRecordsOnOrBeforeCd, mysWithRecordsAfterCd } =
+      await getCaMyCdData(caId);
+    if (
+      mysWithRecordsAfterCd.length === 0 &&
+      mysWithRecordsOnOrBeforeCd.length === 1
+    ) {
+      const potentialCy = mysWithRecordsOnOrBeforeCd[0];
+      if (potentialCy < subDateCy) {
+        const myrStatus = await getMyrStatus(potentialCy, orgId);
+        if (myrStatus === ModelYearReportStatus.ASSESSED) {
+          return {
+            complianceYear: potentialCy,
+            isSupplementary: true,
+          };
+        }
+      }
+    }
+    if (mysWithRecordsOnOrBeforeCd.every((my) => subDateCy <= my)) {
+      const myrStatus = await getMyrStatus(subDateCy, orgId);
+      if (!myrStatus) {
+        return {
+          complianceYear: subDateCy,
+          isSupplementary: false,
+        };
+      }
+    }
+  }
+  throw new ImpermissableCaSubmission();
+};
+
+export const getCaRecordsDateIndicator = async (caId: number, date: Date) => {
+  let hasRecordsOnOrBeforeDate = false;
+  let hasRecordsAfterDate = false;
+  const caRecords = await prisma.creditApplicationRecord.findMany({
+    where: {
+      creditApplicationId: caId,
+    },
+    select: {
+      timestamp: true,
+    },
+  });
+  for (const record of caRecords) {
+    if (record.timestamp <= date) {
+      hasRecordsOnOrBeforeDate = true;
+    } else {
+      hasRecordsAfterDate = true;
+    }
+  }
+  return {
+    hasRecordsOnOrBeforeDate,
+    hasRecordsAfterDate,
+  };
+};
+
+export const getCaMyCdData = async (caId: number) => {
+  const mysWithRecordsOnOrBeforeCd = new Set<ModelYear>();
+  const mysWithRecordsAfterCd = new Set<ModelYear>();
+  const caRecords = await prisma.creditApplicationRecord.findMany({
+    where: {
+      creditApplicationId: caId,
+    },
+    select: {
+      modelYear: true,
+      timestamp: true,
+    },
+  });
+  for (const record of caRecords) {
+    const my = record.modelYear;
+    const complianceDate = getComplianceDate(my);
+    if (record.timestamp <= complianceDate) {
+      mysWithRecordsOnOrBeforeCd.add(my);
+    } else {
+      mysWithRecordsAfterCd.add(my);
+    }
+  }
+  return {
+    mysWithRecordsOnOrBeforeCd: [...mysWithRecordsOnOrBeforeCd],
+    mysWithRecordsAfterCd: [...mysWithRecordsAfterCd],
+  };
+};
+
+export const getMyrStatus = async (my: ModelYear, orgId: number) => {
+  const [myr, legacyMyr] = await Promise.all([
+    prisma.modelYearReport.findUnique({
+      where: {
+        organizationId_modelYear: {
+          organizationId: orgId,
+          modelYear: my,
+        },
+      },
+      select: {
+        status: true,
+      },
+    }),
+    prisma.legacyAssessedModelYearReport.findUnique({
+      where: {
+        organizationId_modelYear: {
+          organizationId: orgId,
+          modelYear: my,
+        },
+      },
+    }),
+  ]);
+  if (myr && legacyMyr) {
+    throw new Error("Unexpected Error!");
+  }
+  if (myr) {
+    return myr.status;
+  }
+  if (legacyMyr) {
+    return ModelYearReportStatus.ASSESSED;
+  }
+  return null;
 };

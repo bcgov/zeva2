@@ -149,7 +149,6 @@ export const UserTable = ({
       columns={columns}
       data={users}
       navigationAction={navigationAction}
-      stackHeaderContents={true}
       enableFiltering={true}
       enableSorting={true}
       enableGlobalSearch={true}

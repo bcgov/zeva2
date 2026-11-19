@@ -86,7 +86,7 @@ export type CreditApplicationSparseSerialized = Omit<
 
 export type CreditApplicationRecordSparse = Omit<
   CreditApplicationRecordModel,
-  "vehicleClass" | "zevClass" | "numberOfUnits"
+  "vehicleClass" | "zevClass" | "legacyNumberOfUnits" | "numberOfUnits"
 >;
 
 export type CreditApplicationRecordSparseSerialized = Omit<
@@ -154,6 +154,7 @@ export type ZevVinRecord = {
   date: string;
   vehicleClass: VehicleClass;
   zevClass: ZevClass;
+  legacyNumberOfUnits: string;
   numberOfUnits: string;
   zevType: ZevType;
   range: number;
@@ -176,6 +177,7 @@ export type ZevModelsMap = Partial<
       id: number;
       vehicleClass: VehicleClass;
       zevClass: ZevClass;
+      legacyNumberOfUnits: string;
       numberOfUnits: string;
       zevType: ZevType;
       range: number;
@@ -211,3 +213,11 @@ type CaDataIneligible = {
 type CaDataNone = {
   type: "none";
 };
+
+export const impermissableCaSubmissionMsg = "IMPERMISSABLE_CA";
+
+export class ImpermissableCaSubmission extends Error {
+  constructor() {
+    super(impermissableCaSubmissionMsg);
+  }
+}
