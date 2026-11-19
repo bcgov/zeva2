@@ -9,7 +9,7 @@ ENV ZEVA2_VERSION=$ZEVA2_VERSION
 
 COPY . .
 
-RUN npm install
+RUN npm ci
 RUN npm run generate-prisma-client && npm run generate-old-prisma-client
 RUN npm run build
 
