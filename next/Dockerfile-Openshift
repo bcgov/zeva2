@@ -36,9 +36,13 @@ RUN mkdir -p /tmp/.npm \
 COPY --from=dependencies /next/node_modules/@prisma/engines ./node_modules/@prisma/engines
 COPY --from=builder /next/.next ./.next
 COPY --from=builder /next/public ./public
+COPY --from=builder /next/app ./app
+COPY --from=builder /next/lib ./lib
 COPY --from=builder /next/next.config.ts ./next.config.ts
 COPY --from=builder /next/prisma ./prisma
 COPY --from=builder /next/prismaOld ./prismaOld
+COPY --from=builder /next/tsconfig.json ./tsconfig.json
+COPY --from=builder /next/types ./types
 
 ARG ZEVA2_VERSION
 ENV ZEVA2_VERSION=$ZEVA2_VERSION
