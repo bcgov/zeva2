@@ -152,6 +152,8 @@ objects:
                   value: "false"
                 - name: AUTH_URL
                   value: "https://${NAME}-${ZONE}.${DOMAIN}/api/auth"
+                - name: DATABASE_SSL_ENABLED
+                  value: "true"
                 - name: TZ
                   value: America/Vancouver
                 - name: REDIS_TLS_ENABLED
