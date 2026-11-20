@@ -34,7 +34,7 @@ Please note:
 
 (3) In `package.json`, there are scripts that utilize Prisma commands; in particular, each time a developer locally starts the `next` container, the contents of their `schema.prisma` file will be pushed to the database, and a tailored database client will be generated (`prisma/generated/*`).
 
-(4) In order to seed the zeva2 database with data from the original zeva (zeva1) database, your `next` container, zeva2 db container, and your zeva1 db container all have to be running. Once that is the case, execute `npm run seedFromOldDB` in your `next` container. The seeding implementation is defined in `prisma/seed.ts`; please build this file out as you develop the zeva2 schema.
+(4) For local development, run `npm run seed` from `next/` when both the Zeva2 and original Zeva databases are available. For an OpenShift PR database, the PR-open workflow seeds it after the first Next deployment becomes ready. To seed manually, source `/vault/secrets/database` in the Next.js pod before running `NODE_ENV=production npm run seed`. The seed script performs creates and is not run automatically on subsequent PR updates.
 
 (5) During development, database queries are logged; please keep an eye on them as you develop to ensure your code is not generating an excessive number of queries, or returning data you don't need.
 
