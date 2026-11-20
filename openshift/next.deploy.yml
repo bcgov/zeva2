@@ -151,7 +151,7 @@ objects:
                 - name: START_WORKERS
                   value: "false"
                 - name: AUTH_URL
-                  value: "${NAME}-${ZONE}.${DOMAIN}/api/auth"
+                  value: "https://${NAME}-${ZONE}.${DOMAIN}/api/auth"
                 - name: TZ
                   value: America/Vancouver
                 - name: REDIS_TLS_ENABLED
