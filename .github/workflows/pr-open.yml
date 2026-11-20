@@ -66,7 +66,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Deploy database
         if: matrix.service == 'database'
-        uses: bcgov/actions-openshift/deployer@a7a039ba45f9635c0bdbcc6b4cdbd2555811e100 # v0.8.0
+        uses: bcgov/actions-openshift/deployer@45d8c7f7d0d5e3b15786cb99a83f410e01547133 # v0.9.0
         with:
           file: ${{ matrix.file }}
           oc_namespace: ${{ vars.OC_NAMESPACE }}
@@ -82,7 +82,7 @@ jobs:
             .github/workflows/*.yml
       - name: Deploy Redis
         if: matrix.service == 'redis'
-        uses: bcgov/actions-openshift/deployer@a7a039ba45f9635c0bdbcc6b4cdbd2555811e100 # v0.8.0
+        uses: bcgov/actions-openshift/deployer@45d8c7f7d0d5e3b15786cb99a83f410e01547133 # v0.9.0
         with:
           file: ${{ matrix.file }}
           oc_namespace: ${{ vars.OC_NAMESPACE }}
@@ -102,7 +102,7 @@ jobs:
     timeout-minutes: 25
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: bcgov/actions-openshift/oc-runner@a7a039ba45f9635c0bdbcc6b4cdbd2555811e100 # v0.8.0
+      - uses: bcgov/actions-openshift/oc-runner@45d8c7f7d0d5e3b15786cb99a83f410e01547133 # v0.9.0
         env:
           MIGRATION_ZONE: pr-${{ github.event.number }}
           MIGRATION_IMAGE_TAG: ${{ github.event.pull_request.head.sha }}
@@ -151,7 +151,7 @@ jobs:
             echo "vault_role=${namespaceplate}-nonprod"
             echo "vault_service_account=${namespaceplate}-vault"
           } >> "$GITHUB_OUTPUT"
-      - uses: bcgov/actions-openshift/deployer@a7a039ba45f9635c0bdbcc6b4cdbd2555811e100 # v0.8.0
+      - uses: bcgov/actions-openshift/deployer@45d8c7f7d0d5e3b15786cb99a83f410e01547133 # v0.9.0
         with:
           file: ${{ matrix.file }}
           oc_namespace: ${{ vars.OC_NAMESPACE }}
