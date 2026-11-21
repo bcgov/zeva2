@@ -8,9 +8,9 @@ import {
   VehicleStatus,
   Role,
   ModelYearReportStatus,
+  ReferenceType,
 } from "@/prisma/generated/enums";
 import {
-  CreditApplicationRecordWhereInput,
   CreditApplicationWhereInput,
   CreditApplicationWhereUniqueInput,
 } from "@/prisma/generated/models";
@@ -18,26 +18,40 @@ import {
   GovCaStatRecord,
   ImpermissableCaSubmission,
   mapOfStatusToSupplierStatus,
+  section14Date,
   ZevModelsMap,
 } from "./constants";
 import { Attachment } from "@/app/lib/constants/attachment";
 import { TransactionClient } from "@/types/prisma";
 import { flattenZevUnitRecords, ZevUnitRecord } from "@/lib/utils/zevUnit";
-import { getStringsToModelYearsEnumsMap } from "@/app/lib/utils/enumMaps";
+import {
+  getModelYearEnumsToStringsMap,
+  getStringsToModelYearsEnumsMap,
+  getVehicleClassEnumsToStringsMap,
+  getZevClassEnumsToStringsMap,
+} from "@/app/lib/utils/enumMaps";
 import {
   getIsoYmdString,
   getTimeWithTz,
   validateDate,
 } from "@/app/lib/utils/date";
-import { CreditApplicationRecordScalarFieldEnum } from "@/prisma/generated/internal/prismaNamespace";
 import { ChatComment } from "@/app/lib/constants/chatComment";
 import { getZevModelKey } from "@/app/zev-models/lib/utils";
 import {
   getComplianceDate,
+  getCompliancePeriod,
   getComplianceYear,
   getPreviousComplianceYear,
   within20DayPeriod,
 } from "@/app/lib/utils/complianceYear";
+import Decimal from "decimal.js";
+import {
+  getStatsKey,
+  getSupplierCreditStatsKey,
+  getSupplierCreditStatRecords,
+  getSupplierVinStatRecords,
+  getGovStatRecords,
+} from "./utils";
 
 export const getCreditApplicationGov = async (
   creditApplicationId: number,
@@ -444,142 +458,6 @@ export const getApplicationFlattenedCreditRecords = async (
   return flattenZevUnitRecords(zevUnitRecords);
 };
 
-export const getRecordStats = async (
-  creditApplicationId: number,
-  type: "all" | "validated",
-) => {
-  const whereClause: CreditApplicationRecordWhereInput = {
-    creditApplicationId,
-  };
-  if (type === "validated") {
-    whereClause.validated = true;
-  }
-  return await prisma.creditApplicationRecord.groupBy({
-    where: whereClause,
-    by: [
-      "make",
-      "modelName",
-      "modelYear",
-      "vehicleClass",
-      "zevClass",
-      "zevType",
-      "range",
-      "numberOfUnits",
-    ],
-    _count: {
-      id: true,
-    },
-  });
-};
-
-export const getCreditStats = async (
-  creditApplicationId: number,
-  type: "all" | "validated",
-) => {
-  const whereClause: CreditApplicationRecordWhereInput = {
-    creditApplicationId,
-  };
-  if (type === "validated") {
-    whereClause.validated = true;
-  }
-  return await prisma.creditApplicationRecord.groupBy({
-    where: whereClause,
-    by: ["vehicleClass", "zevClass", "modelYear"],
-    _sum: {
-      numberOfUnits: true,
-    },
-  });
-};
-
-export const getStats = async (creditApplicationId: number) => {
-  const result: GovCaStatRecord[] = [];
-  const byClause: CreditApplicationRecordScalarFieldEnum[] = [
-    "make",
-    "modelName",
-    "modelYear",
-    "vehicleClass",
-    "zevClass",
-    "zevType",
-    "range",
-    "numberOfUnits",
-  ];
-  const [allRecords, validatedRecords] = await Promise.all([
-    prisma.creditApplicationRecord.groupBy({
-      where: {
-        creditApplicationId,
-      },
-      by: byClause,
-      _count: {
-        id: true,
-      },
-      _sum: {
-        numberOfUnits: true,
-      },
-    }),
-    prisma.creditApplicationRecord.groupBy({
-      where: {
-        creditApplicationId,
-        validated: true,
-      },
-      by: byClause,
-      _count: {
-        id: true,
-      },
-      _sum: {
-        numberOfUnits: true,
-      },
-    }),
-  ]);
-  for (const [index, record] of allRecords.entries()) {
-    const make = record.make;
-    const modelName = record.modelName;
-    const modelYear = record.modelYear;
-    const vehicleClass = record.vehicleClass;
-    const zevClass = record.zevClass;
-    const zevType = record.zevType;
-    const range = record.range;
-    const numberOfUnits = record.numberOfUnits;
-    const resultItem = {
-      id: index,
-      make,
-      modelName,
-      modelYear,
-      vehicleClass,
-      zevClass,
-      zevType,
-      range,
-      numberOfUnits: numberOfUnits.toFixed(2),
-      vinsCount: record._count.id,
-      validVinsCount: 0,
-      creditsSum: record._sum.numberOfUnits
-        ? record._sum.numberOfUnits.toFixed(2)
-        : "0",
-      validCreditsSum: "0",
-    };
-    for (const validatedRecord of validatedRecords) {
-      if (
-        make === validatedRecord.make &&
-        modelName === validatedRecord.modelName &&
-        modelYear === validatedRecord.modelYear &&
-        vehicleClass === validatedRecord.vehicleClass &&
-        zevClass === validatedRecord.zevClass &&
-        zevType === validatedRecord.zevType &&
-        range === validatedRecord.range &&
-        numberOfUnits.eq(validatedRecord.numberOfUnits)
-      ) {
-        resultItem.validVinsCount = validatedRecord._count.id;
-        const validCreditsSum = validatedRecord._sum.numberOfUnits;
-        if (validCreditsSum) {
-          resultItem.validCreditsSum = validCreditsSum.toFixed(2);
-        }
-        break;
-      }
-    }
-    result.push(resultItem);
-  }
-  return result;
-};
-
 export const getAnalystComments = async (
   creditApplicationId: number,
 ): Promise<ChatComment[]> => {
@@ -751,4 +629,241 @@ export const getMyrStatus = async (my: ModelYear, orgId: number) => {
     return ModelYearReportStatus.ASSESSED;
   }
   return null;
+};
+
+export const getApplicationStatisticsSupplier = async (
+  creditApplicationId: number,
+  orgId: number,
+): Promise<{
+  type: "claimed" | "issued";
+  vinsStatRecords: ReturnType<typeof getSupplierVinStatRecords>;
+  creditsStatRecords: ReturnType<typeof getSupplierCreditStatRecords>;
+}> => {
+  const vinsStats: Record<string, number> = {};
+  const creditsStats: Record<string, Decimal> = {};
+  const ca = await prisma.creditApplication.findUnique({
+    where: {
+      id: creditApplicationId,
+      organizationId: orgId,
+    },
+    select: {
+      status: true,
+      CreditApplicationRecord: {
+        select: {
+          vehicleClass: true,
+          zevClass: true,
+          modelYear: true,
+          make: true,
+          modelName: true,
+          zevType: true,
+          range: true,
+          numberOfUnits: true,
+          legacyNumberOfUnits: true,
+          timestamp: true,
+          validated: true,
+        },
+      },
+    },
+  });
+  if (!ca) {
+    return {
+      type: "claimed",
+      vinsStatRecords: [],
+      creditsStatRecords: [],
+    };
+  }
+  const records = ca.CreditApplicationRecord;
+  const isIssued = ca.status === CreditApplicationStatus.ISSUED;
+  let transactions: Omit<ZevUnitRecord, "type">[] = [];
+  if (isIssued) {
+    transactions = await prisma.zevUnitTransaction.findMany({
+      where: {
+        organizationId: orgId,
+        referenceType: ReferenceType.SUPPLY_CREDITS,
+        referenceId: creditApplicationId,
+      },
+      select: {
+        vehicleClass: true,
+        zevClass: true,
+        modelYear: true,
+        numberOfUnits: true,
+      },
+    });
+  }
+  const vehicleClassMap = getVehicleClassEnumsToStringsMap();
+  const zevClassMap = getZevClassEnumsToStringsMap();
+  const modelYearsMap = getModelYearEnumsToStringsMap();
+  for (const record of records) {
+    if ((isIssued && record.validated) || !isIssued) {
+      const key = getStatsKey(
+        vehicleClassMap[record.vehicleClass] ?? "",
+        zevClassMap[record.zevClass] ?? "",
+        modelYearsMap[record.modelYear] ?? "",
+        record.make,
+        record.modelName,
+        record.zevType,
+        record.range.toString(),
+        record.legacyNumberOfUnits.toString(),
+        record.numberOfUnits.toString(),
+      );
+      if (!vinsStats[key]) {
+        vinsStats[key] = 1;
+      } else {
+        vinsStats[key] = vinsStats[key] + 1;
+      }
+    }
+  }
+  if (isIssued) {
+    for (const transaction of transactions) {
+      const numberOfUnits = transaction.numberOfUnits;
+      const key = getSupplierCreditStatsKey(
+        vehicleClassMap[transaction.vehicleClass] ?? "",
+        zevClassMap[transaction.zevClass] ?? "",
+        modelYearsMap[transaction.modelYear] ?? "",
+      );
+      if (!creditsStats[key]) {
+        creditsStats[key] = numberOfUnits;
+      } else {
+        creditsStats[key] = creditsStats[key].plus(numberOfUnits);
+      }
+    }
+  } else {
+    const threshold = new Date("2026-10-01T00:00:00");
+    for (const record of records) {
+      let numberOfUnitsToUse;
+      if (record.timestamp < threshold) {
+        numberOfUnitsToUse = record.legacyNumberOfUnits;
+      } else {
+        numberOfUnitsToUse = record.numberOfUnits;
+      }
+      const key = getSupplierCreditStatsKey(
+        vehicleClassMap[record.vehicleClass] ?? "",
+        zevClassMap[record.zevClass] ?? "",
+        modelYearsMap[record.modelYear] ?? "",
+      );
+      if (!creditsStats[key]) {
+        creditsStats[key] = numberOfUnitsToUse;
+      } else {
+        creditsStats[key] = creditsStats[key].plus(numberOfUnitsToUse);
+      }
+    }
+  }
+  return {
+    type: isIssued ? "issued" : "claimed",
+    vinsStatRecords: getSupplierVinStatRecords(vinsStats),
+    creditsStatRecords: getSupplierCreditStatRecords(creditsStats),
+  };
+};
+
+export const getApplicationStatisticsGov = async (
+  creditApplicationId: number,
+  date: Date,
+): Promise<GovCaStatRecord[]> => {
+  const stats: Record<
+    string,
+    {
+      vinsCount: number;
+      validVinsCount: number;
+      creditsSum: Decimal;
+      validCreditsSum: Decimal;
+    }
+  > = {};
+  const ca = await prisma.creditApplication.findUnique({
+    where: {
+      id: creditApplicationId,
+    },
+    select: {
+      complianceYear: true,
+      CreditApplicationRecord: {
+        select: {
+          make: true,
+          modelName: true,
+          modelYear: true,
+          vehicleClass: true,
+          zevClass: true,
+          zevType: true,
+          range: true,
+          legacyNumberOfUnits: true,
+          numberOfUnits: true,
+          icbcRegistrationTimestamp: true,
+          validated: true,
+        },
+      },
+    },
+  });
+  if (!ca || !ca.complianceYear) {
+    return [];
+  }
+  const complianceYear = ca.complianceYear;
+  const complianceDate = getComplianceDate(complianceYear);
+  const dayAfterComplianceDate =
+    getCompliancePeriod(complianceYear).openUpperBound;
+  const records = ca.CreditApplicationRecord;
+  const vehicleClassMap = getVehicleClassEnumsToStringsMap();
+  const zevClassMap = getZevClassEnumsToStringsMap();
+  const modelYearsMap = getModelYearEnumsToStringsMap();
+  for (const record of records) {
+    const validated = record.validated;
+    const key = getStatsKey(
+      vehicleClassMap[record.vehicleClass] ?? "",
+      zevClassMap[record.zevClass] ?? "",
+      modelYearsMap[record.modelYear] ?? "",
+      record.make,
+      record.modelName,
+      record.zevType,
+      record.range.toString(),
+      record.legacyNumberOfUnits.toString(),
+      record.numberOfUnits.toString(),
+    );
+    if (!stats[key]) {
+      stats[key] = {
+        vinsCount: 0,
+        validVinsCount: 0,
+        creditsSum: new Decimal(0),
+        validCreditsSum: new Decimal(0),
+      };
+    }
+    stats[key].vinsCount = stats[key].vinsCount + 1;
+    if (validated) {
+      stats[key].validVinsCount = stats[key].validVinsCount + 1;
+    }
+    if (complianceYear <= ModelYear.MY_2023) {
+      stats[key].creditsSum = stats[key].creditsSum.plus(
+        record.legacyNumberOfUnits,
+      );
+      if (validated) {
+        stats[key].validCreditsSum = stats[key].validCreditsSum.plus(
+          record.legacyNumberOfUnits,
+        );
+      }
+    } else {
+      const regDate = record.icbcRegistrationTimestamp;
+      let transactionDate;
+      if (!regDate || regDate <= complianceDate) {
+        if (date < complianceDate) {
+          transactionDate = date;
+        } else {
+          transactionDate = complianceDate;
+        }
+      } else {
+        if (date < dayAfterComplianceDate) {
+          transactionDate = dayAfterComplianceDate;
+        } else {
+          transactionDate = date;
+        }
+      }
+      let numberOfUnitsToUse;
+      if (transactionDate < section14Date) {
+        numberOfUnitsToUse = record.legacyNumberOfUnits;
+      } else {
+        numberOfUnitsToUse = record.numberOfUnits;
+      }
+      stats[key].creditsSum = stats[key].creditsSum.plus(numberOfUnitsToUse);
+      if (validated) {
+        stats[key].validCreditsSum =
+          stats[key].validCreditsSum.plus(numberOfUnitsToUse);
+      }
+    }
+  }
+  return getGovStatRecords(stats);
 };

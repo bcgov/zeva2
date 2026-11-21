@@ -179,6 +179,10 @@ export const SupplierDetailsPage = async (props: {
                   value: vehicle.us06RangeGte16 ? "Yes" : "NO or N/A",
                 },
                 {
+                  label: "Legacy Credit Entitlement:",
+                  value: vehicle.legacyNumberOfUnits.toString(),
+                },
+                {
                   label: "Credit Entitlement:",
                   value: vehicle.numberOfUnits.toString(),
                 },

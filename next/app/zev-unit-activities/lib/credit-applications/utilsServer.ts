@@ -43,10 +43,7 @@ export const getWhereClause = (
           in: getMatchingTerms(supplierStatusMap, value),
         };
       }
-    } else if (
-      key === "submissionTimestamp" ||
-      key === "transactionTimestamp"
-    ) {
+    } else if (key === "submissionTimestamp") {
       if ("--".includes(value)) {
         result[key] = null;
       } else {
@@ -102,7 +99,6 @@ export const getOrderByClause = (
       if (
         key === "id" ||
         key === "submissionTimestamp" ||
-        key === "transactionTimestamp" ||
         key === "eligibleVinsCount" ||
         key === "ineligibleVinsCount" ||
         key === "aCredits" ||
@@ -157,9 +153,9 @@ export const getSerializedApplications = (
       submissionTimestamp: record.submissionTimestamp
         ? getIsoYmdString(record.submissionTimestamp)
         : undefined,
-      transactionTimestamp: record.transactionTimestamp
-        ? getIsoYmdString(record.transactionTimestamp)
-        : undefined,
+      transactionTimestamps: record.transactionTimestamps.map((ts) =>
+        getIsoYmdString(ts),
+      ),
       modelYears: record.modelYears,
       eligibleVinsCount: record.eligibleVinsCount,
       ineligibleVinsCount: record.ineligibleVinsCount,
