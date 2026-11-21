@@ -28,7 +28,7 @@
     "@fortawesome/react-fontawesome": "3.5.0",
     "@prisma/adapter-pg": "7.10.1",
     "@prisma/client": "7.10.1",
-    "@tanstack/react-table": "8.21.3",
+    "@tanstack/react-table": "9.3.1",
     "axios": "1.21.1",
     "bullmq": "5.81.5",
     "decimal.js": "10.6.0",
