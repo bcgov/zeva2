@@ -4,10 +4,6 @@ import { ColumnDef, createColumnHelper } from "@tanstack/react-table";
 import { ClientSideTable } from "@/app/lib/components";
 import { GovCaStatRecord } from "../constants";
 import { useEffect, useMemo, useState } from "react";
-import {
-  getModelYearEnumsToStringsMap,
-  getZevClassEnumsToStringsMap,
-} from "@/app/lib/utils/enumMaps";
 import Decimal from "decimal.js";
 
 export const ApplicationStatisticsGov = (props: {
@@ -19,12 +15,6 @@ export const ApplicationStatisticsGov = (props: {
   const [creditsSumTotal, setCreditsSumTotal] = useState<string>();
   const [validCreditsSumTotal, setValidCreditsSumTotal] = useState<string>();
 
-  const modelYearsMap = useMemo(() => {
-    return getModelYearEnumsToStringsMap();
-  }, []);
-  const zevClassMap = useMemo(() => {
-    return getZevClassEnumsToStringsMap();
-  }, []);
   const totalsTableheaderClasses = useMemo(() => {
     return "px-4 py-3 border-b border-dividerMedium font-bold text-sm";
   }, []);
@@ -40,10 +30,8 @@ export const ApplicationStatisticsGov = (props: {
     for (const record of props.stats) {
       vinsCountToSet = vinsCountToSet + record.vinsCount;
       validVinsCountToSet = validVinsCountToSet + record.validVinsCount;
-      creditsSumToSet = creditsSumToSet.plus(new Decimal(record.creditsSum));
-      validCreditsSumToSet = validCreditsSumToSet.plus(
-        new Decimal(record.validCreditsSum),
-      );
+      creditsSumToSet = creditsSumToSet.plus(record.creditsSum);
+      validCreditsSumToSet = validCreditsSumToSet.plus(record.validCreditsSum);
     }
     setVinsCountTotal(vinsCountToSet);
     setValidVinsCountTotal(validVinsCountToSet);
@@ -51,8 +39,10 @@ export const ApplicationStatisticsGov = (props: {
     setValidCreditsSumTotal(validCreditsSumToSet.toFixed(2));
   }, [props.stats]);
 
-  const columnHelper = createColumnHelper<GovCaStatRecord>();
-  const columns = useMemo<ColumnDef<GovCaStatRecord, any>[]>(() => {
+  const columnHelper = createColumnHelper<GovCaStatRecord & { id: number }>();
+  const columns = useMemo<
+    ColumnDef<GovCaStatRecord & { id: number }, any>[]
+  >(() => {
     return [
       columnHelper.accessor((row) => row.make, {
         id: "make",
@@ -66,13 +56,13 @@ export const ApplicationStatisticsGov = (props: {
         enableColumnFilter: true,
         header: () => <span>Model Name</span>,
       }),
-      columnHelper.accessor((row) => modelYearsMap[row.modelYear], {
+      columnHelper.accessor((row) => row.modelYear, {
         id: "modelYear",
         enableSorting: true,
         enableColumnFilter: true,
         header: () => <span>Model Year</span>,
       }),
-      columnHelper.accessor((row) => zevClassMap[row.zevClass], {
+      columnHelper.accessor((row) => row.zevClass, {
         id: "zevClass",
         enableSorting: true,
         enableColumnFilter: true,
@@ -123,7 +113,7 @@ export const ApplicationStatisticsGov = (props: {
           ]
         : []),
     ];
-  }, [props.validated, modelYearsMap, zevClassMap]);
+  }, [props.validated]);
 
   return (
     <div className="flex flex-col border border-dividerMedium rounded">
@@ -131,9 +121,11 @@ export const ApplicationStatisticsGov = (props: {
         ZEVs ({vinsCountTotal})
       </div>
       <div className="flex flex-col gap-4 p-5">
-        <ClientSideTable<GovCaStatRecord>
+        <ClientSideTable<GovCaStatRecord & { id: number }>
           columns={columns}
-          data={props.stats}
+          data={props.stats.map((record, index) => {
+            return { ...record, id: index };
+          })}
           enableFiltering={true}
           enableSorting={true}
           initialPageSize={10}

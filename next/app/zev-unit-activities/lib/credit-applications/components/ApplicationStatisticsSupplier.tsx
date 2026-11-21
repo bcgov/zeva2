@@ -1,38 +1,22 @@
-import { CreditApplicationStatus } from "@/prisma/generated/enums";
-import { getApplicationStatisticsSupplier } from "../data";
-import {
-  getModelYearEnumsToStringsMap,
-  getZevClassEnumsToStringsMap,
-} from "@/app/lib/utils/enumMaps";
+import { getApplicationStatisticsSupplier } from "../services";
+import { caRecordKeyDelimiter } from "../constants";
 
 export const ApplicationStatisticsSupplier = async (props: {
   creditApplicationId: number;
+  orgId: number;
 }) => {
-  const stats = await getApplicationStatisticsSupplier(
-    props.creditApplicationId,
-  );
-  if (!stats) {
-    return null;
-  }
-  const status = stats.status;
-  const zevClassMap = getZevClassEnumsToStringsMap();
-  const modelYearsMap = getModelYearEnumsToStringsMap();
+  const { type, vinsStatRecords, creditsStatRecords } =
+    await getApplicationStatisticsSupplier(
+      props.creditApplicationId,
+      props.orgId,
+    );
 
-  const getRecordsTable = (
-    records: typeof stats.recordStats,
-    type: "all" | "validated",
-  ) => {
-    return (
-      <div
-        key={type === "all" ? "allRecords" : "validatedRecords"}
-        className="flex flex-col border-t border-l border-r border-disabledIcon rounded-t"
-      >
+  return (
+    <div className="flex flex-col gap-6 p-5">
+      <div className="flex flex-col border-t border-l border-r border-disabledIcon rounded-t">
         <div className="flex flex-col px-5 py-4 bg-disabledSurface font-bold">
-          {type === "all"
-            ? "VINs Claimed"
-            : status === CreditApplicationStatus.ISSUED
-              ? "VINs Issued"
-              : "VINs to be Issued"}
+          {type === "claimed" && "VINs Claimed"}
+          {type === "issued" && "VINs Issued"}
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
@@ -57,6 +41,9 @@ export const ApplicationStatisticsSupplier = async (props: {
                   Range
                 </th>
                 <th className="h-[60px] px-4 py-3 text-left font-bold border-b border-disabledIcon whitespace-nowrap">
+                  Legacy Number of Units per Vehicle
+                </th>
+                <th className="h-[60px] px-4 py-3 text-left font-bold border-b border-disabledIcon whitespace-nowrap">
                   Number of Units per Vehicle
                 </th>
                 <th className="h-[60px] px-4 py-3 text-left font-bold border-b border-disabledIcon whitespace-nowrap">
@@ -65,7 +52,7 @@ export const ApplicationStatisticsSupplier = async (props: {
               </tr>
             </thead>
             <tbody>
-              {records.map((record) => (
+              {vinsStatRecords.map((record) => (
                 <tr
                   key={crypto.randomUUID()}
                   className="odd:bg-lightGrey even:bg-white"
@@ -77,10 +64,10 @@ export const ApplicationStatisticsSupplier = async (props: {
                     {record.modelName}
                   </td>
                   <td className="px-4 py-3 border-b border-disabledIcon whitespace-nowrap">
-                    {modelYearsMap[record.modelYear]}
+                    {record.modelYear}
                   </td>
                   <td className="px-4 py-3 border-b border-disabledIcon whitespace-nowrap">
-                    {zevClassMap[record.zevClass]}
+                    {record.zevClass}
                   </td>
                   <td className="px-4 py-3 border-b border-disabledIcon whitespace-nowrap">
                     {record.zevType}
@@ -89,10 +76,13 @@ export const ApplicationStatisticsSupplier = async (props: {
                     {record.range}
                   </td>
                   <td className="px-4 py-3 border-b border-disabledIcon whitespace-nowrap">
-                    {record.numberOfUnits.toFixed(2)}
+                    {record.legacyNumberOfUnits}
                   </td>
                   <td className="px-4 py-3 border-b border-disabledIcon whitespace-nowrap">
-                    {record._count.id}
+                    {record.numberOfUnits}
+                  </td>
+                  <td className="px-4 py-3 border-b border-disabledIcon whitespace-nowrap">
+                    {record.count}
                   </td>
                 </tr>
               ))}
@@ -100,24 +90,10 @@ export const ApplicationStatisticsSupplier = async (props: {
           </table>
         </div>
       </div>
-    );
-  };
-
-  const getCreditsTable = (
-    records: typeof stats.creditStats,
-    type: "all" | "validated",
-  ) => {
-    return (
-      <div
-        key={type === "all" ? "allCredits" : "validatedCredits"}
-        className="flex flex-col border-t border-l border-r border-disabledIcon rounded-t"
-      >
+      <div className="flex flex-col border-t border-l border-r border-disabledIcon rounded-t">
         <div className="flex flex-col px-5 py-4 bg-disabledSurface font-bold">
-          {type === "all"
-            ? "Credits Claimed"
-            : status === CreditApplicationStatus.ISSUED
-              ? "Credits Issued"
-              : "Credits to be Issued"}
+          {type === "claimed" && "Credits Claimed"}
+          {type === "issued" && "Credits Issued"}
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
@@ -135,21 +111,20 @@ export const ApplicationStatisticsSupplier = async (props: {
               </tr>
             </thead>
             <tbody>
-              {records.map((record) => {
-                const numberOfUnits = record._sum.numberOfUnits;
+              {creditsStatRecords.map((record) => {
                 return (
                   <tr
                     key={crypto.randomUUID()}
                     className="odd:bg-lightGrey even:bg-white"
                   >
                     <td className="px-4 py-3 border-b border-disabledIcon whitespace-nowrap">
-                      {zevClassMap[record.zevClass]}
+                      {record.zevClass}
                     </td>
                     <td className="px-4 py-3 border-b border-disabledIcon whitespace-nowrap">
-                      {modelYearsMap[record.modelYear]}
+                      {record.modelYear}
                     </td>
                     <td className="px-4 py-3 border-b border-disabledIcon whitespace-nowrap">
-                      {numberOfUnits ? numberOfUnits.toFixed(2) : "0"}
+                      {record.credits}
                     </td>
                   </tr>
                 );
@@ -158,22 +133,6 @@ export const ApplicationStatisticsSupplier = async (props: {
           </table>
         </div>
       </div>
-    );
-  };
-
-  const recordStatsValidated = stats.recordStatsValidated;
-  const creditStatsValidated = stats.creditStatsValidated;
-
-  return (
-    <div className="flex flex-col gap-6 p-5">
-      {getRecordsTable(stats.recordStats, "all")}
-      {recordStatsValidated && recordStatsValidated.length > 0
-        ? getRecordsTable(recordStatsValidated, "validated")
-        : null}
-      {getCreditsTable(stats.creditStats, "all")}
-      {creditStatsValidated && creditStatsValidated.length > 0
-        ? getCreditsTable(creditStatsValidated, "validated")
-        : null}
     </div>
   );
 };

@@ -154,7 +154,10 @@ export const IndividualPageSupplier = async (props: { id: string }) => {
           includeBottomBorder={true}
         />
         <Suspense fallback={<LoadingSkeleton />}>
-          <ApplicationStatisticsSupplier creditApplicationId={id} />
+          <ApplicationStatisticsSupplier
+            creditApplicationId={id}
+            orgId={userOrgId}
+          />
         </Suspense>
       </div>
 

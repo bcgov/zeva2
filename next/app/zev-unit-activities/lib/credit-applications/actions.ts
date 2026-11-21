@@ -511,7 +511,7 @@ export const validateCreditApplication = async (
       CreditApplicationRecord: true,
     },
   });
-  if (!creditApplication) {
+  if (!creditApplication || !creditApplication.complianceYear) {
     return getErrorActionResponse("Invalid Action!");
   }
   const records = creditApplication.CreditApplicationRecord;
@@ -706,15 +706,11 @@ export const updateValidatedRecords = async (
 
 export const analystRecommend = async (
   creditApplicationId: number,
-  complianceYear: ModelYear,
   comment?: string,
 ): Promise<ErrorOrSuccessActionResponse> => {
   const { userIsGov, userId, userRoles } = await getUserInfo();
   if (!userIsGov || !userRoles.some((role) => role === Role.ZEVA_IDIR_USER)) {
     return getErrorActionResponse("Unauthorized!");
-  }
-  if (!complianceYear || complianceYear > getCurrentComplianceYear()) {
-    return getErrorActionResponse("Invalid Action!");
   }
   const creditApplication = await prisma.creditApplication.findUnique({
     where: {
@@ -737,7 +733,6 @@ export const analystRecommend = async (
       },
       data: {
         status: CreditApplicationStatus.RECOMMENDED,
-        complianceYear,
       },
     });
     const historyId = await createHistory(

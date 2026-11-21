@@ -409,7 +409,7 @@ model CreditApplication {
   objectName                       String                            @unique @map("object_name")
   fileName                         String                            @map("file_name")
   submissionTimestamp              DateTime?                         @map("submission_timestamp") @db.Timestamptz(6)
-  transactionTimestamp             DateTime?                         @map("transaction_timestamp") @db.Timestamptz(6)
+  transactionTimestamps            DateTime[]                        @default([]) @map("transaction_timestamps") @db.Timestamptz(6)
   status                           CreditApplicationStatus           @map("status")
   supplierStatus                   CreditApplicationSupplierStatus   @map("supplier_status")
   modelYears                       ModelYear[]                       @map("model_years")

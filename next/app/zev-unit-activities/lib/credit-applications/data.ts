@@ -9,12 +9,8 @@ import {
   CreditApplicationHistoryWhereInput,
   CreditApplicationAttachmentWhereInput,
 } from "@/prisma/generated/models";
-import {
-  getOrderByClause,
-  getWhereClause,
-} from "./utilsServer";
+import { getOrderByClause, getWhereClause } from "./utilsServer";
 import { ZevUnitRecord } from "@/lib/utils/zevUnit";
-import { getCreditStats, getRecordStats, getStats } from "./services";
 import {
   CreditApplicationRecordSparse,
   CreditApplicationSparse,
@@ -147,7 +143,7 @@ export const getCreditApplications = async (
         id: true,
         status: true,
         submissionTimestamp: true,
-        transactionTimestamp: true,
+        transactionTimestamps: true,
         supplierStatus: true,
         organization: {
           select: {
@@ -250,61 +246,6 @@ export const getModelMismatchesMap = async (
     result[modelName][icbcModelName] = result[modelName][icbcModelName] + 1;
   });
   return result;
-};
-
-export const getApplicationStatisticsSupplier = async (
-  creditApplicationId: number,
-) => {
-  const { userIsGov, userOrgId } = await getUserInfo();
-  if (userIsGov) {
-    return null;
-  }
-  const creditApplication = await prisma.creditApplication.findUnique({
-    where: {
-      id: creditApplicationId,
-      organizationId: userOrgId,
-    },
-    select: {
-      status: true,
-    },
-  });
-  if (!creditApplication) {
-    return null;
-  }
-  const status = creditApplication.status;
-  const getValidatedStats = status === CreditApplicationStatus.ISSUED;
-  return {
-    status,
-    recordStats: await getRecordStats(creditApplicationId, "all"),
-    recordStatsValidated: getValidatedStats
-      ? await getRecordStats(creditApplicationId, "validated")
-      : null,
-    creditStats: await getCreditStats(creditApplicationId, "all"),
-    creditStatsValidated: getValidatedStats
-      ? await getCreditStats(creditApplicationId, "validated")
-      : null,
-  };
-};
-
-export const getApplicationStatisticsGov = async (
-  creditApplicationId: number,
-) => {
-  const { userIsGov } = await getUserInfo();
-  if (!userIsGov) {
-    return null;
-  }
-  const creditApplication = await prisma.creditApplication.findUnique({
-    where: {
-      id: creditApplicationId,
-      status: {
-        not: CreditApplicationStatus.DRAFT,
-      },
-    },
-  });
-  if (!creditApplication) {
-    return null;
-  }
-  return await getStats(creditApplicationId);
 };
 
 export const getAttachmentsCount = async (creditApplicationId: number) => {

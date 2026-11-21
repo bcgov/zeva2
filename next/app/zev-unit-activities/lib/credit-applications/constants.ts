@@ -10,6 +10,7 @@ import {
   CreditApplicationModel,
   CreditApplicationRecordModel,
 } from "@/prisma/generated/models";
+import Decimal from "decimal.js";
 import Excel from "exceljs";
 
 export const zevsListSheetName = "ZEVs List";
@@ -60,7 +61,7 @@ export type CreditApplicationSparse = Pick<
   | "status"
   | "submissionTimestamp"
   | "supplierStatus"
-  | "transactionTimestamp"
+  | "transactionTimestamps"
   | "modelYears"
   | "eligibleVinsCount"
   | "ineligibleVinsCount"
@@ -73,13 +74,13 @@ export type CreditApplicationSparseSerialized = Omit<
   | "submissionTimestamp"
   | "supplierStatus"
   | "organization"
-  | "transactionTimestamp"
+  | "transactionTimestamps"
   | "aCredits"
   | "bCredits"
 > & {
   organization: string;
   submissionTimestamp?: string;
-  transactionTimestamp?: string;
+  transactionTimestamps: string[];
   aCredits?: string;
   bCredits?: string;
 };
@@ -125,19 +126,19 @@ export const isInvalidReason = (s: string): s is InvalidReason => {
 };
 
 export type GovCaStatRecord = {
-  id: number;
+  vehicleClass: string;
+  zevClass: string;
+  modelYear: string;
   make: string;
   modelName: string;
-  modelYear: ModelYear;
-  vehicleClass: VehicleClass;
-  zevClass: ZevClass;
-  zevType: ZevType;
-  range: number;
+  zevType: string;
+  range: string;
+  legacyNumberOfUnits: string;
   numberOfUnits: string;
   vinsCount: number;
   validVinsCount: number;
-  creditsSum: string;
-  validCreditsSum: string;
+  creditsSum: Decimal;
+  validCreditsSum: Decimal;
 };
 
 export type CaHistorySparse = {
@@ -221,3 +222,7 @@ export class ImpermissableCaSubmission extends Error {
     super(impermissableCaSubmissionMsg);
   }
 }
+
+export const caRecordKeyDelimiter = "|";
+
+export const section14Date = new Date("2026-10-01T00:00:00.000");
