@@ -6,5 +6,12 @@
   ],
   "constraints": {
     "npm": "<13"
-  }
+  },
+  "packageRules": [
+      {
+        "description": ["Pin semantic-release to v25 until v26 artifact/EALLOWREMOTE issue is resolved"],
+        "matchPackageNames": ["semantic-release"],
+        "allowedVersions": "<26.0.0"
+      }
+    ]
 }
