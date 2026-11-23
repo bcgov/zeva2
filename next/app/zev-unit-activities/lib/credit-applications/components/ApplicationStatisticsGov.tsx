@@ -2,12 +2,15 @@
 
 import { ColumnDef, createColumnHelper } from "@tanstack/react-table";
 import { ClientSideTable } from "@/app/lib/components";
-import { GovCaStatRecord } from "../constants";
+import {
+  GovCaStatRecordSerialized,
+  GovCaStatRecordSerializedWithId,
+} from "../constants";
 import { useEffect, useMemo, useState } from "react";
 import Decimal from "decimal.js";
 
 export const ApplicationStatisticsGov = (props: {
-  stats: GovCaStatRecord[];
+  stats: GovCaStatRecordSerialized[];
   validated: boolean;
 }) => {
   const [vinsCountTotal, setVinsCountTotal] = useState<number>();
@@ -39,9 +42,9 @@ export const ApplicationStatisticsGov = (props: {
     setValidCreditsSumTotal(validCreditsSumToSet.toFixed(2));
   }, [props.stats]);
 
-  const columnHelper = createColumnHelper<GovCaStatRecord & { id: number }>();
+  const columnHelper = createColumnHelper<GovCaStatRecordSerializedWithId>();
   const columns = useMemo<
-    ColumnDef<GovCaStatRecord & { id: number }, any>[]
+    ColumnDef<GovCaStatRecordSerializedWithId, any>[]
   >(() => {
     return [
       columnHelper.accessor((row) => row.make, {
@@ -121,7 +124,7 @@ export const ApplicationStatisticsGov = (props: {
         ZEVs ({vinsCountTotal})
       </div>
       <div className="flex flex-col gap-4 p-5">
-        <ClientSideTable<GovCaStatRecord & { id: number }>
+        <ClientSideTable<GovCaStatRecordSerializedWithId>
           columns={columns}
           data={props.stats.map((record, index) => {
             return { ...record, id: index };

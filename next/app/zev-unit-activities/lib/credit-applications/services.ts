@@ -37,7 +37,6 @@ import { ChatComment } from "@/app/lib/constants/chatComment";
 import { getZevModelKey } from "@/app/zev-models/lib/utils";
 import {
   getComplianceDate,
-  getCompliancePeriod,
   getComplianceYear,
   getPreviousComplianceYear,
   within20DayPeriod,
@@ -53,8 +52,9 @@ import {
 import {
   getCaRecordData,
   getCaRecordOnOrBeforeCd,
+  getComplianceYearData,
   getTransactionKey,
-  getTransactions,
+  getTransactionsAndTimestamps,
 } from "./utilsServer";
 
 export const getCreditApplicationGov = async (
@@ -778,9 +778,8 @@ export const getApplicationStatisticsGov = async (
     return [];
   }
   const complianceYear = ca.complianceYear;
-  const complianceDate = getComplianceDate(complianceYear);
-  const dayAfterComplianceDate =
-    getCompliancePeriod(complianceYear).openUpperBound;
+  const { complianceDate, dayAfterComplianceDate } =
+    getComplianceYearData(complianceYear);
   const records = ca.CreditApplicationRecord;
   const vehicleClassMap = getVehicleClassEnumsToStringsMap();
   const zevClassMap = getZevClassEnumsToStringsMap();
@@ -852,13 +851,15 @@ export const getCaTransactions = async (
     },
   });
   if (!ca || !ca.complianceYear) {
-    return [];
+    return {
+      transactions: [],
+      timestamps: [],
+    };
   }
   const transactionsMap: Record<string, Decimal> = {};
   const complianceYear = ca.complianceYear;
-  const complianceDate = getComplianceDate(complianceYear);
-  const dayAfterComplianceDate =
-    getCompliancePeriod(complianceYear).openUpperBound;
+  const { complianceDate, dayAfterComplianceDate } =
+    getComplianceYearData(complianceYear);
   for (const record of ca.CreditApplicationRecord) {
     const { transactionDate, numberOfUnitsToUse } = getCaRecordData(
       complianceYear,
@@ -881,5 +882,5 @@ export const getCaTransactions = async (
       transactionsMap[key] = transactionsMap[key].plus(numberOfUnitsToUse);
     }
   }
-  return getTransactions(transactionsMap);
+  return getTransactionsAndTimestamps(transactionsMap);
 };

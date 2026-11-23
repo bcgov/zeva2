@@ -141,7 +141,7 @@ export const SupplierActions = (props: {
       const msg = response.message;
       if (msg === impermissableCaSubmissionMsg) {
         setImpermissableCaMsg(impermissableCaMsgToUse);
-        setError("Impermissable Applciation; please see above!");
+        setError("Impermissable Application; please see above!");
       } else {
         setError(response.message);
       }

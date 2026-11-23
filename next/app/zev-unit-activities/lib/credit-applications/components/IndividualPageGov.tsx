@@ -165,7 +165,13 @@ export const IndividualPageGov = async (props: { id: string }) => {
       {stats && <ApplicationSummaryCards stats={stats} />}
       {stats && (
         <ApplicationStatisticsGov
-          stats={stats}
+          stats={stats.map((stat) => {
+            return {
+              ...stat,
+              creditsSum: stat.creditsSum.toString(),
+              validCreditsSum: stat.validCreditsSum.toString(),
+            };
+          })}
           validated={!!latestValidation}
         />
       )}

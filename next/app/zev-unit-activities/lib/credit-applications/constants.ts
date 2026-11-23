@@ -141,6 +141,18 @@ export type GovCaStatRecord = {
   validCreditsSum: Decimal;
 };
 
+export type GovCaStatRecordSerialized = Omit<
+  GovCaStatRecord,
+  "creditsSum" | "validCreditsSum"
+> & {
+  creditsSum: string;
+  validCreditsSum: string;
+};
+
+export type GovCaStatRecordSerializedWithId = GovCaStatRecordSerialized & {
+  id: number;
+};
+
 export type CaHistorySparse = {
   userAction: CreditApplicationStatus;
   timestamp: Date;

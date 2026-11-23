@@ -28,7 +28,11 @@ import {
   isVehicleClass,
   isZevClass,
 } from "@/app/lib/utils/typeGuards";
-import { getAdjacentYear } from "@/app/lib/utils/complianceYear";
+import {
+  getAdjacentYear,
+  getComplianceDate,
+  getCompliancePeriod,
+} from "@/app/lib/utils/complianceYear";
 
 export const getWhereClause = (
   filters: Record<string, string>,
@@ -162,8 +166,9 @@ export const getSerializedApplications = (
   userIsGov: boolean,
 ) => {
   const result: CreditApplicationSparseSerialized[] = [];
-  records.forEach((record) => {
-    const resultRecord: CreditApplicationSparseSerialized = {
+  for (const record of records) {
+    const status = record.status;
+    result.push({
       id: record.id,
       organization: record.organization.name,
       status: userIsGov ? record.status : record.supplierStatus,
@@ -174,13 +179,28 @@ export const getSerializedApplications = (
         getIsoYmdString(ts),
       ),
       modelYears: record.modelYears,
-      eligibleVinsCount: record.eligibleVinsCount,
-      ineligibleVinsCount: record.ineligibleVinsCount,
-      aCredits: record.aCredits?.toFixed(2),
-      bCredits: record.bCredits?.toFixed(2),
-    };
-    result.push(resultRecord);
-  });
+      eligibleVinsCount: userIsGov
+        ? record.eligibleVinsCount
+        : status === CreditApplicationStatus.ISSUED
+          ? record.eligibleVinsCount
+          : null,
+      ineligibleVinsCount: userIsGov
+        ? record.ineligibleVinsCount
+        : status === CreditApplicationStatus.ISSUED
+          ? record.ineligibleVinsCount
+          : null,
+      aCredits: userIsGov
+        ? record.aCredits?.toFixed(2)
+        : status === CreditApplicationStatus.ISSUED
+          ? record.aCredits?.toFixed(2)
+          : undefined,
+      bCredits: userIsGov
+        ? record.bCredits?.toFixed(2)
+        : status === CreditApplicationStatus.ISSUED
+          ? record.bCredits?.toFixed(2)
+          : undefined,
+    });
+  }
   return result;
 };
 
@@ -274,6 +294,13 @@ export const getMostRecentValidationData = (histories: CaHistorySparse[]) => {
   return latestValidation;
 };
 
+export const getComplianceYearData = (complianceYear: ModelYear) => {
+  return {
+    complianceDate: getComplianceDate(complianceYear),
+    dayAfterComplianceDate: getCompliancePeriod(complianceYear).openUpperBound,
+  };
+};
+
 export const getCaRecordOnOrBeforeCd = (
   record: { modelYear: ModelYear; timestamp: Date },
   modelYearsMap: Partial<Record<ModelYear, string>>,
@@ -347,8 +374,11 @@ export const getTransactionKey = (
 };
 
 // this function is affected by getTransactionKey!
-export const getTransactions = (transactionsMap: Record<string, Decimal>) => {
-  const result = [];
+export const getTransactionsAndTimestamps = (
+  transactionsMap: Record<string, Decimal>,
+) => {
+  const transactions = [];
+  const timestampsMap: Record<string, Date> = {};
   for (const [key, numberOfUnits] of Object.entries(transactionsMap)) {
     const fields = key.split(caRecordKeyDelimiter);
     const vehicleClass = fields[0];
@@ -364,13 +394,17 @@ export const getTransactions = (transactionsMap: Record<string, Decimal>) => {
     ) {
       throw new Error("Unexpected Error!");
     }
-    result.push({
+    transactions.push({
       vehicleClass,
       zevClass,
       modelYear,
       numberOfUnits,
       timestamp: normalizedDate,
     });
+    timestampsMap[date] = normalizedDate;
   }
-  return result;
+  return {
+    transactions,
+    timestamps: Object.values(timestampsMap),
+  };
 };

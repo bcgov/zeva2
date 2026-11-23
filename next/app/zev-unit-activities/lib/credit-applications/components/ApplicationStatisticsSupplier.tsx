@@ -1,5 +1,4 @@
 import { getApplicationStatisticsSupplier } from "../services";
-import { caRecordKeyDelimiter } from "../constants";
 
 export const ApplicationStatisticsSupplier = async (props: {
   creditApplicationId: number;
