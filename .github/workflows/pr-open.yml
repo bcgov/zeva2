@@ -31,6 +31,7 @@ jobs:
               next/
               openshift/
               .github/workflows/*.yml
+              renovate.json
           - package: bullmq
             context: next
             file: next/Dockerfile-Bullmq-Openshift
@@ -38,6 +39,7 @@ jobs:
               next/
               openshift/
               .github/workflows/*.yml
+              renovate.json
     steps:
       - uses: bcgov/actions/builder@d209bb08aabe15e5e69aca53b24d338a7b2843d5 # v0.12.0
         with:
@@ -80,6 +82,7 @@ jobs:
             next/
             openshift/
             .github/workflows/*.yml
+            renovate.json
       - name: Deploy Redis
         if: matrix.service == 'redis'
         uses: bcgov/actions-openshift/deployer@45d8c7f7d0d5e3b15786cb99a83f410e01547133 # v0.9.0
@@ -94,6 +97,7 @@ jobs:
             next/
             openshift/
             .github/workflows/*.yml
+            renovate.json
 
   migrate:
     name: Run database migrations
@@ -118,6 +122,7 @@ jobs:
             openshift/
             scripts/
             .github/workflows/*.yml
+            renovate.json
 
   deploys:
     name: Deploys (${{ matrix.name }})
@@ -168,10 +173,10 @@ jobs:
             next/
             openshift/
             .github/workflows/*.yml
+            renovate.json
 
   seed:
     name: Seed PR database
-    if: github.event.action == 'opened'
     needs: [deploys]
     runs-on: ubuntu-26.04
     timeout-minutes: 20
@@ -205,6 +210,7 @@ jobs:
             next/
             openshift/
             .github/workflows/*.yml
+            renovate.json
       - name: Wait for Next.js healthcheck
         if: matrix.component == 'next' && steps.triggers.outputs.triggered == 'true'
         run: |
@@ -252,7 +258,6 @@ jobs:
           done
           echo "ERROR: BullMQ deployment did not become ready within 5 minutes."
           exit 1
-
 
   comment:
     name: Deployment Links

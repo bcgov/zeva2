@@ -25,6 +25,7 @@ export const VehicleList = async (props: {
     (vehicle) => {
       return {
         ...vehicle,
+        legacyNumberOfUnits: vehicle.legacyNumberOfUnits.toString(),
         numberOfUnits: vehicle.numberOfUnits.toString(),
       };
     },

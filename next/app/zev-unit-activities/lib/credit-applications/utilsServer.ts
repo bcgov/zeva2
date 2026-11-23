@@ -2,8 +2,6 @@ import { CreditApplicationStatus, ModelYear } from "@/prisma/generated/enums";
 import {
   CreditApplicationWhereInput,
   CreditApplicationOrderByWithRelationInput,
-  CreditApplicationRecordWhereInput,
-  CreditApplicationRecordOrderByWithRelationInput,
 } from "@/prisma/generated/models";
 import {
   getMatchingTerms,
@@ -13,14 +11,28 @@ import {
 } from "@/app/lib/utils/enumMaps";
 import {
   CaHistorySparse,
+  caRecordKeyDelimiter,
   CreditApplicationRecordSparse,
   CreditApplicationRecordSparseSerialized,
   CreditApplicationSparse,
   CreditApplicationSparseSerialized,
+  section14Date,
 } from "./constants";
 import { IcbcRecordsMap } from "./services";
 import { CreditApplicationCredit } from "./data";
 import { getIsoYmdString, validateDate } from "@/app/lib/utils/date";
+import Decimal from "decimal.js";
+import { checkCaRecordKey } from "./utils";
+import {
+  isModelYear,
+  isVehicleClass,
+  isZevClass,
+} from "@/app/lib/utils/typeGuards";
+import {
+  getAdjacentYear,
+  getComplianceDate,
+  getCompliancePeriod,
+} from "@/app/lib/utils/complianceYear";
 
 export const getWhereClause = (
   filters: Record<string, string>,
@@ -45,10 +57,7 @@ export const getWhereClause = (
           in: getMatchingTerms(supplierStatusMap, value),
         };
       }
-    } else if (
-      key === "submissionTimestamp" ||
-      key === "transactionTimestamp"
-    ) {
+    } else if (key === "submissionTimestamp") {
       if ("--".includes(value)) {
         result[key] = null;
       } else {
@@ -63,6 +72,13 @@ export const getWhereClause = (
         } else {
           result.id = -1;
         }
+      }
+    } else if (key === "transactionTimestamps") {
+      const [isValidDate, normalizedDate] = validateDate(value);
+      if (isValidDate) {
+        result[key] = {
+          has: normalizedDate,
+        };
       }
     } else if (key === "organization" && userIsGov) {
       result[key] = {
@@ -104,7 +120,6 @@ export const getOrderByClause = (
       if (
         key === "id" ||
         key === "submissionTimestamp" ||
-        key === "transactionTimestamp" ||
         key === "eligibleVinsCount" ||
         key === "ineligibleVinsCount" ||
         key === "aCredits" ||
@@ -130,117 +145,6 @@ export const getOrderByClause = (
   return result;
 };
 
-export const getRecordsWhereClause = (
-  filters: Record<string, string>,
-): CreditApplicationRecordWhereInput => {
-  const result: CreditApplicationRecordWhereInput = {};
-  const modelYearsMap = getStringsToModelYearsEnumsMap();
-  Object.entries(filters).forEach(([key, rawValue]) => {
-    const value = rawValue.trim();
-    if (key === "validated") {
-      const newValue = value.toLowerCase();
-      if (newValue === "y") {
-        result[key] = true;
-      } else if (newValue === "n") {
-        result[key] = false;
-      }
-    } else if (
-      key === "modelYear" ||
-      key === "icbcModelYear" ||
-      key === "decodedModelYear"
-    ) {
-      result[key] = {
-        in: getMatchingTerms(modelYearsMap, value),
-      };
-    } else if (key === "timestamp" || key === "icbcRegistrationTimestamp") {
-      const [isValidDate, date] = validateDate(value);
-      if (isValidDate) {
-        result[key] = date;
-      } else {
-        result.id = -1;
-      }
-    } else if (
-      key === "vin" ||
-      key === "make" ||
-      key === "modelName" ||
-      key === "icbcMake" ||
-      key === "icbcModelName" ||
-      key === "decodedMake" ||
-      key === "decodedModelName"
-    ) {
-      const newValue = value.toLowerCase();
-      result[key] = {
-        contains: newValue,
-        mode: "insensitive",
-      };
-    } else if (key === "warnings") {
-      let newValue: string | string[] = value.toLowerCase();
-      if (newValue === "any") {
-        result[key] = {
-          isEmpty: false,
-        };
-      } else if (newValue === "none") {
-        result[key] = {
-          isEmpty: true,
-        };
-      } else {
-        newValue = value.replaceAll(" ", "").split(",");
-        result[key] = {
-          hasSome: newValue,
-        };
-      }
-    } else if (key === "reason") {
-      let newValue: string = value.toLowerCase();
-      if (newValue === "any") {
-        result[key] = {
-          not: null,
-        };
-      } else if (newValue === "none") {
-        result[key] = null;
-      } else {
-        result[key] = {
-          contains: newValue,
-          mode: "insensitive",
-        };
-      }
-    }
-  });
-  return result;
-};
-
-export const getRecordsOrderByClause = (
-  sorts: Record<string, string>,
-): CreditApplicationRecordOrderByWithRelationInput[] => {
-  const result: CreditApplicationRecordOrderByWithRelationInput[] = [];
-  Object.entries(sorts).forEach(([key, value]) => {
-    const orderBy: CreditApplicationRecordOrderByWithRelationInput = {};
-    if (
-      (value === "asc" || value === "desc") &&
-      (key === "vin" ||
-        key === "timestamp" ||
-        key === "make" ||
-        key === "modelName" ||
-        key === "modelYear" ||
-        key === "icbcMake" ||
-        key === "icbcModelName" ||
-        key === "icbcModelYear" ||
-        key === "icbcRegistrationTimestamp" ||
-        key === "decodedMake" ||
-        key === "decodedModelName" ||
-        key === "decodedModelYear" ||
-        key === "validated" ||
-        key === "warnings" ||
-        key === "reason")
-    ) {
-      orderBy[key] = value;
-    }
-    if (Object.keys(orderBy).length > 0) {
-      result.push(orderBy);
-    }
-  });
-  return result;
-};
-
 export const getSerializedRecords = (
   records: CreditApplicationRecordSparse[],
 ) => {
@@ -262,25 +166,41 @@ export const getSerializedApplications = (
   userIsGov: boolean,
 ) => {
   const result: CreditApplicationSparseSerialized[] = [];
-  records.forEach((record) => {
-    const resultRecord: CreditApplicationSparseSerialized = {
+  for (const record of records) {
+    const status = record.status;
+    result.push({
       id: record.id,
       organization: record.organization.name,
       status: userIsGov ? record.status : record.supplierStatus,
       submissionTimestamp: record.submissionTimestamp
         ? getIsoYmdString(record.submissionTimestamp)
         : undefined,
-      transactionTimestamp: record.transactionTimestamp
-        ? getIsoYmdString(record.transactionTimestamp)
-        : undefined,
+      transactionTimestamps: record.transactionTimestamps.map((ts) =>
+        getIsoYmdString(ts),
+      ),
       modelYears: record.modelYears,
-      eligibleVinsCount: record.eligibleVinsCount,
-      ineligibleVinsCount: record.ineligibleVinsCount,
-      aCredits: record.aCredits?.toFixed(2),
-      bCredits: record.bCredits?.toFixed(2),
-    };
-    result.push(resultRecord);
-  });
+      eligibleVinsCount: userIsGov
+        ? record.eligibleVinsCount
+        : status === CreditApplicationStatus.ISSUED
+          ? record.eligibleVinsCount
+          : null,
+      ineligibleVinsCount: userIsGov
+        ? record.ineligibleVinsCount
+        : status === CreditApplicationStatus.ISSUED
+          ? record.ineligibleVinsCount
+          : null,
+      aCredits: userIsGov
+        ? record.aCredits?.toFixed(2)
+        : status === CreditApplicationStatus.ISSUED
+          ? record.aCredits?.toFixed(2)
+          : undefined,
+      bCredits: userIsGov
+        ? record.bCredits?.toFixed(2)
+        : status === CreditApplicationStatus.ISSUED
+          ? record.bCredits?.toFixed(2)
+          : undefined,
+    });
+  }
   return result;
 };
 
@@ -291,6 +211,7 @@ export const getWarningsMap = (
     modelName: string;
     modelYear: ModelYear;
   }[],
+  complianceYear: ModelYear,
   icbcMap: IcbcRecordsMap,
 ) => {
   const result: Partial<Record<string, string[]>> = {};
@@ -307,6 +228,9 @@ export const getWarningsMap = (
     }
     if (icbcRecord.modelYear !== record.modelYear) {
       warnings.push("3");
+    }
+    if (complianceYear > ModelYear.MY_2023 && !icbcRecord.registrationDate) {
+      warnings.push("4");
     }
     if (warnings.length > 0) {
       result[vin] = warnings;
@@ -368,4 +292,112 @@ export const getMostRecentValidationData = (histories: CaHistorySparse[]) => {
     }
   }
   return latestValidation;
+};
+
+export const getComplianceYearData = (complianceYear: ModelYear) => {
+  return {
+    complianceDate: getComplianceDate(complianceYear),
+    dayAfterComplianceDate: getCompliancePeriod(complianceYear).openUpperBound,
+  };
+};
+
+export const getCaRecordOnOrBeforeCd = (
+  record: { modelYear: ModelYear; timestamp: Date },
+  modelYearsMap: Partial<Record<ModelYear, string>>,
+) => {
+  const { modelYear, timestamp } = record;
+  const year = getAdjacentYear("next", modelYear);
+  const date = new Date(
+    `${modelYearsMap[year]}-${process.env.END_OF_COMPLIANCE_YEAR}`,
+  );
+  if (timestamp <= date) {
+    return true;
+  }
+  return false;
+};
+
+export const getCaRecordData = (
+  complianceYear: ModelYear,
+  complianceDate: Date,
+  dayAfterComplianceDate: Date,
+  registrationDate: Date | null,
+  date: Date,
+  legacyNumberOfUnits: Decimal,
+  numberOfUnits: Decimal,
+) => {
+  if (complianceYear <= ModelYear.MY_2023) {
+    return {
+      transactionDate: getIsoYmdString(
+        date < complianceDate ? date : complianceDate,
+      ),
+      numberOfUnitsToUse: legacyNumberOfUnits,
+    };
+  }
+  let transactionDate;
+  if (!registrationDate || registrationDate <= complianceDate) {
+    if (date < complianceDate) {
+      transactionDate = date;
+    } else {
+      transactionDate = complianceDate;
+    }
+  } else {
+    if (date < dayAfterComplianceDate) {
+      transactionDate = dayAfterComplianceDate;
+    } else {
+      transactionDate = date;
+    }
+  }
+  let numberOfUnitsToUse;
+  if (transactionDate < section14Date) {
+    numberOfUnitsToUse = legacyNumberOfUnits;
+  } else {
+    numberOfUnitsToUse = numberOfUnits;
+  }
+  return {
+    transactionDate: getIsoYmdString(transactionDate),
+    numberOfUnitsToUse,
+  };
+};
+
+// this function affects getTransactions!
+export const getTransactionKey = (
+  vehicleClass: string,
+  zevClass: string,
+  modelYear: string,
+  date: string,
+) => {
+  const key = [vehicleClass, zevClass, modelYear, date].join(
+    caRecordKeyDelimiter,
+  );
+  checkCaRecordKey(key, 3);
+  return key;
+};
+
+// this function is affected by getTransactionKey!
+export const getTransactions = (transactionsMap: Record<string, Decimal>) => {
+  const result = [];
+  for (const [key, numberOfUnits] of Object.entries(transactionsMap)) {
+    const fields = key.split(caRecordKeyDelimiter);
+    const vehicleClass = fields[0];
+    const zevClass = fields[1];
+    const modelYear = fields[2];
+    const date = fields[3];
+    const [dateIsValid, normalizedDate] = validateDate(date);
+    if (
+      !isVehicleClass(vehicleClass) ||
+      !isZevClass(zevClass) ||
+      !isModelYear(modelYear) ||
+      !dateIsValid
+    ) {
+      throw new Error("Unexpected Error!");
+    }
+    result.push({
+      vehicleClass,
+      zevClass,
+      modelYear,
+      numberOfUnits,
+      timestamp: normalizedDate,
+    });
+  }
+  return result.filter((record) => record.numberOfUnits.gt(new Decimal(0)));
 };

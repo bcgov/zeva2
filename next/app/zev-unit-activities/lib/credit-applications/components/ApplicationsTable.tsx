@@ -43,12 +43,18 @@ export const ApplicationsTable = (props: {
         enableColumnFilter: true,
         header: () => <span>Status</span>,
       }),
-      columnHelper.accessor((row) => row.transactionTimestamp ?? "--", {
-        id: "transactionTimestamp",
-        enableSorting: true,
-        enableColumnFilter: true,
-        header: () => <span>Transaction Date</span>,
-      }),
+      columnHelper.accessor(
+        (row) =>
+          row.transactionTimestamps.length > 0
+            ? row.transactionTimestamps.join(", ")
+            : "--",
+        {
+          id: "transactionTimestamps",
+          enableSorting: false,
+          enableColumnFilter: true,
+          header: () => <span>Transaction Date(s)</span>,
+        },
+      ),
       columnHelper.accessor((row) => row.modelYears, {
         id: "modelYears",
         enableSorting: false,

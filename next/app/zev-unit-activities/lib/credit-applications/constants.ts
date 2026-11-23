@@ -1,7 +1,6 @@
 import {
   CreditApplicationStatus,
   CreditApplicationSupplierStatus,
-  ModelYear,
   VehicleClass,
   ZevClass,
   ZevType,
@@ -10,6 +9,7 @@ import {
   CreditApplicationModel,
   CreditApplicationRecordModel,
 } from "@/prisma/generated/models";
+import Decimal from "decimal.js";
 import Excel from "exceljs";
 
 export const zevsListSheetName = "ZEVs List";
@@ -60,7 +60,7 @@ export type CreditApplicationSparse = Pick<
   | "status"
   | "submissionTimestamp"
   | "supplierStatus"
-  | "transactionTimestamp"
+  | "transactionTimestamps"
   | "modelYears"
   | "eligibleVinsCount"
   | "ineligibleVinsCount"
@@ -73,20 +73,20 @@ export type CreditApplicationSparseSerialized = Omit<
   | "submissionTimestamp"
   | "supplierStatus"
   | "organization"
-  | "transactionTimestamp"
+  | "transactionTimestamps"
   | "aCredits"
   | "bCredits"
 > & {
   organization: string;
   submissionTimestamp?: string;
-  transactionTimestamp?: string;
+  transactionTimestamps: string[];
   aCredits?: string;
   bCredits?: string;
 };
 
 export type CreditApplicationRecordSparse = Omit<
   CreditApplicationRecordModel,
-  "vehicleClass" | "zevClass" | "numberOfUnits"
+  "vehicleClass" | "zevClass" | "legacyNumberOfUnits" | "numberOfUnits"
 >;
 
 export type CreditApplicationRecordSparseSerialized = Omit<
@@ -95,21 +95,21 @@ export type CreditApplicationRecordSparseSerialized = Omit<
 > & { timestamp: string; icbcRegistrationTimestamp: string | null };
 
 export enum ValidReason {
-  EvidenceProvided = "Evidence provided",
-  OtherMeans = "Validated by other means as being registered in BC",
-  IcbcError = "Error in ICBC data",
-  Other = "Valid for another reason, explained in comments",
+  EvidenceProvided = "Valid; evidence provided",
+  OtherMeans = "Valid; registered in BC",
+  IcbcError = "Valid; error in ICBC data",
+  Other = "Valid for some reason, explained in comments",
 }
 
 export enum InvalidReason {
-  ModelYear = "Invalid Model Year",
-  Other = "Invalid for another reason, explained in comments",
+  Other = "Invalid for some reason, explained in comments",
 }
 
 export const warningDescriptions: Readonly<Record<string, string>> = {
   "1": "VIN not found in ICBC records",
   "2": "Make does not match ICBC records",
   "3": "Model year does not match ICBC records",
+  "4": "No registration date",
 };
 
 export const isValidReason = (s: string): s is ValidReason => {
@@ -125,19 +125,31 @@ export const isInvalidReason = (s: string): s is InvalidReason => {
 };
 
 export type GovCaStatRecord = {
-  id: number;
+  vehicleClass: string;
+  zevClass: string;
+  modelYear: string;
   make: string;
   modelName: string;
-  modelYear: ModelYear;
-  vehicleClass: VehicleClass;
-  zevClass: ZevClass;
-  zevType: ZevType;
-  range: number;
+  zevType: string;
+  range: string;
+  legacyNumberOfUnits: string;
   numberOfUnits: string;
   vinsCount: number;
   validVinsCount: number;
+  creditsSum: Decimal;
+  validCreditsSum: Decimal;
+};
+
+export type GovCaStatRecordSerialized = Omit<
+  GovCaStatRecord,
+  "creditsSum" | "validCreditsSum"
+> & {
   creditsSum: string;
   validCreditsSum: string;
+};
+
+export type GovCaStatRecordSerializedWithId = GovCaStatRecordSerialized & {
+  id: number;
 };
 
 export type CaHistorySparse = {
@@ -154,6 +166,7 @@ export type ZevVinRecord = {
   date: string;
   vehicleClass: VehicleClass;
   zevClass: ZevClass;
+  legacyNumberOfUnits: string;
   numberOfUnits: string;
   zevType: ZevType;
   range: number;
@@ -176,6 +189,7 @@ export type ZevModelsMap = Partial<
       id: number;
       vehicleClass: VehicleClass;
       zevClass: ZevClass;
+      legacyNumberOfUnits: string;
       numberOfUnits: string;
       zevType: ZevType;
       range: number;
@@ -184,10 +198,7 @@ export type ZevModelsMap = Partial<
 >;
 
 export type CaDataFinal =
-  | CaDataEligibleIneligible
-  | CaDataEligible
-  | CaDataIneligible
-  | CaDataNone;
+  CaDataEligibleIneligible | CaDataEligible | CaDataIneligible | CaDataNone;
 
 type CaDataEligibleIneligible = {
   type: "eligibleIneligible";
@@ -211,3 +222,15 @@ type CaDataIneligible = {
 type CaDataNone = {
   type: "none";
 };
+
+export const impermissableCaSubmissionMsg = "IMPERMISSABLE_CA";
+
+export class ImpermissableCaSubmission extends Error {
+  constructor() {
+    super(impermissableCaSubmissionMsg);
+  }
+}
+
+export const caRecordKeyDelimiter = "|";
+
+export const section14Date = new Date("2026-10-01T00:00:00.000");

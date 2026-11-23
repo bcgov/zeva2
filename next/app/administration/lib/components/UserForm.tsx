@@ -157,8 +157,7 @@ export const UserForm = ({
           form.organizationId === govOrgId,
         );
         let response:
-          | ErrorOrSuccessActionResponse
-          | DataOrErrorActionResponse<number>;
+          ErrorOrSuccessActionResponse | DataOrErrorActionResponse<number>;
         let userId: number | undefined;
         if (user) {
           userId = user.id;

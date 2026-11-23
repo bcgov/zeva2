@@ -18,13 +18,7 @@ export interface IStatusBannerProps extends HTMLAttributes<HTMLDivElement> {
 }
 
 export type StatusBannerVariant =
-  | "info"
-  | "draft"
-  | "warning"
-  | "returned"
-  | "success"
-  | "error"
-  | "validated";
+  "info" | "draft" | "warning" | "returned" | "success" | "error" | "validated";
 
 const statusBannerStyles: Record<
   StatusBannerVariant,

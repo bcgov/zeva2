@@ -60,10 +60,10 @@ export const getCaData = async (
       errors.push("Missing data");
     }
     if (modelYear && !modelYearsMap[modelYear]) {
-      errors.push("Invalid Model Year!");
+      errors.push("Invalid Model Year");
     }
     if (vin && vin.length !== 17) {
-      errors.push("VIN must be exactly 17 characters!");
+      errors.push("VIN must be exactly 17 characters");
     }
     if (vin && vin.length === 17) {
       if (result.seenVins.has(vin)) {
@@ -94,6 +94,7 @@ export const getCaData = async (
           record.vehicleClass = associatedVehicle.vehicleClass;
           record.zevClass = associatedVehicle.zevClass;
           record.zevType = associatedVehicle.zevType;
+          record.legacyNumberOfUnits = associatedVehicle.legacyNumberOfUnits;
           record.numberOfUnits = associatedVehicle.numberOfUnits;
           record.range = associatedVehicle.range;
         }

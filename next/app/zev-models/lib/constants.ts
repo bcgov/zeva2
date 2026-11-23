@@ -8,16 +8,14 @@ export type VehicleSparse = Omit<
 
 export type VehicleSparseSerialized = Omit<
   VehicleSparse,
-  "numberOfUnits" | "isActive"
+  "legacyNumberOfUnits" | "numberOfUnits" | "isActive"
 > & {
-  numberOfUnits: string | undefined;
+  legacyNumberOfUnits: string;
+  numberOfUnits: string;
 };
 
 export type ZevModelTab =
-  | "validated"
-  | "submitted"
-  | "in-progress"
-  | "inactive";
+  "validated" | "submitted" | "in-progress" | "inactive";
 
 export const zevModelTabs: Record<
   ZevModelTab,

@@ -163,7 +163,6 @@ export const AllRecordsTableGov = (props: {
       columns={columns}
       data={records}
       navigationAction={navigationAction}
-      stackHeaderContents={true}
       enableFiltering={false}
       enableSorting={false}
       enableGlobalSearch={true}

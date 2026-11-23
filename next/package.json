@@ -19,8 +19,8 @@
     "test": "jest"
   },
   "dependencies": {
-    "@aws-sdk/client-s3": "3.1168.0",
-    "@aws-sdk/s3-request-presigner": "3.1168.0",
+    "@aws-sdk/client-s3": "3.1170.0",
+    "@aws-sdk/s3-request-presigner": "3.1170.0",
     "@fortawesome/fontawesome-svg-core": "7.3.1",
     "@fortawesome/free-brands-svg-icons": "7.3.1",
     "@fortawesome/free-regular-svg-icons": "7.3.1",
@@ -56,7 +56,7 @@
     "eslint-plugin-prettier": "^5.5.6",
     "jest": "30.5.2",
     "jest-environment-jsdom": "30.5.2",
-    "postcss": "8.5.32",
+    "postcss": "8.5.33",
     "prettier": "3.10.1",
     "tailwindcss": "4.3.5",
     "ts-jest": "29.4.15",

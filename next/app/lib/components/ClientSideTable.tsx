@@ -27,7 +27,6 @@ interface IClientSideTableProps<T> {
   data: T[];
   navigationAction?: (id: number, baseRoute?: string) => void;
   explicitSizing?: boolean;
-  stackHeaderContents?: boolean;
   enableFiltering?: boolean;
   enableSorting?: boolean;
   enableGlobalSearch?: boolean;
@@ -62,7 +61,6 @@ export const ClientSideTable = <T extends ZevaObject>({
   data,
   navigationAction,
   explicitSizing,
-  stackHeaderContents,
   enableFiltering = false,
   enableSorting = false,
   enableGlobalSearch = false,
@@ -164,7 +162,6 @@ export const ClientSideTable = <T extends ZevaObject>({
             <TableHeader
               table={table}
               explicitSizing={explicitSizing}
-              stackHeaderContents={stackHeaderContents}
               enableSorting={enableSorting}
               enableFiltering={enableFiltering}
               onSortChange={(columnId) => {

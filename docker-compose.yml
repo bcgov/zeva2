@@ -14,8 +14,10 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
+    volumes:
+      - zeva2-data:/var/lib/postgresql/data
   redis:
-    image: redis:8.4-bookworm
+    image: redis:8.2.2-bookworm
     command: redis-server /usr/local/etc/redis/redis.conf
     ports:
       - 6379:6379
@@ -100,3 +102,5 @@ services:
     depends_on:
       next:
         condition: service_healthy
+volumes:
+  zeva2-data:

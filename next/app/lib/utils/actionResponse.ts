@@ -21,12 +21,10 @@ export type ValidationError = {
 };
 
 export type ErrorOrSuccessActionResponse =
-  | ErrorActionResponse
-  | SuccessActionResponse;
+  ErrorActionResponse | SuccessActionResponse;
 
 export type DataOrErrorActionResponse<T> =
-  | DataActionResponse<T>
-  | ErrorActionResponse;
+  DataActionResponse<T> | ErrorActionResponse;
 
 export const getDataActionResponse = <T>(data: T): DataActionResponse<T> => {
   return {
