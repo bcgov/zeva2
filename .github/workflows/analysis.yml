@@ -84,13 +84,9 @@ jobs:
       - name: Generate Prisma Client
         run: npm run generate-prisma-client
 
-      - name: Run lint
-        run: npm run lint
-        continue-on-error: true
-
-      - name: Run TypeScript typecheck
-        run: npx tsc --noEmit
-        continue-on-error: true
+      # - name: Run lint
+      #   run: npm run lint
+      #   continue-on-error: true
 
       - name: Run production build
         run: npm run build

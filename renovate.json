@@ -12,6 +12,12 @@
         "description": ["Pin semantic-release to v25 until v26 artifact/EALLOWREMOTE issue is resolved"],
         "matchPackageNames": ["semantic-release"],
         "allowedVersions": "<26.0.0"
-      }
-    ]
+      },
+      {
+        "description": ["Match local docker-compose Redis version to production 8.2.2"],
+        "matchDatasources": ["docker"],
+        "matchPackageNames": ["redis"],
+        "allowedVersions": "8.2.2"
+      }      
+    ]   
 }
