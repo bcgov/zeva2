@@ -95,15 +95,14 @@ export type CreditApplicationRecordSparseSerialized = Omit<
 > & { timestamp: string; icbcRegistrationTimestamp: string | null };
 
 export enum ValidReason {
-  EvidenceProvided = "Evidence provided",
-  OtherMeans = "Validated by other means as being registered in BC",
-  IcbcError = "Error in ICBC data",
-  Other = "Valid for another reason, explained in comments",
+  EvidenceProvided = "Valid; evidence provided",
+  OtherMeans = "Valid; registered in BC",
+  IcbcError = "Valid; error in ICBC data",
+  Other = "Valid for some reason, explained in comments",
 }
 
 export enum InvalidReason {
-  ModelYear = "Invalid Model Year",
-  Other = "Invalid for another reason, explained in comments",
+  Other = "Invalid for some reason, explained in comments",
 }
 
 export const warningDescriptions: Readonly<Record<string, string>> = {

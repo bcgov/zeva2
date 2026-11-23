@@ -52,7 +52,7 @@ export const ApplicationsTable = (props: {
           id: "transactionTimestamps",
           enableSorting: false,
           enableColumnFilter: true,
-          header: () => <span>Transaction Date</span>,
+          header: () => <span>Transaction Date(s)</span>,
         },
       ),
       columnHelper.accessor((row) => row.modelYears, {

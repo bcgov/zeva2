@@ -710,7 +710,6 @@ export const getApplicationStatisticsSupplier = async (
       }
     }
   } else {
-    const modelYearsMap = getModelYearEnumsToStringsMap();
     for (const record of records) {
       let numberOfUnitsToUse;
       const onOrBeforeCd = getCaRecordOnOrBeforeCd(record, modelYearsMap);

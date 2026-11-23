@@ -41,6 +41,8 @@ import {
 import { TransactionClient } from "@/types/prisma";
 import { AdjustmentPayload, NvValues } from "./actions";
 import { getObjectAsBuffer } from "@/app/lib/services/s3";
+import { getModelYearEnumsToStringsMap } from "@/app/lib/utils/enumMaps";
+import { getCaRecordOnOrBeforeCd } from "@/app/zev-unit-activities/lib/credit-applications/utilsServer";
 
 export const getSupplierDetails = async (organizationId: number) => {
   const organization = await prisma.organization.findUniqueOrThrow({
@@ -315,33 +317,42 @@ export const getPendingSupplyCredits = async (
   organizationId: number,
   modelYear: ModelYear,
 ): Promise<ZevUnitRecord[]> => {
-  const result: ZevUnitRecord[] = [];
-  const groupBy = await prisma.creditApplicationRecord.groupBy({
+  const subResult: ZevUnitRecord[] = [];
+  const records = await prisma.creditApplicationRecord.findMany({
     where: {
       creditApplication: {
         organizationId,
         supplierStatus: CreditApplicationStatus.SUBMITTED,
       },
+      modelYear,
     },
-    by: ["vehicleClass", "zevClass", "modelYear"],
-    _sum: {
+    select: {
+      vehicleClass: true,
+      zevClass: true,
+      modelYear: true,
+      legacyNumberOfUnits: true,
       numberOfUnits: true,
+      timestamp: true,
     },
   });
-  for (const record of groupBy) {
-    const recordMy = record.modelYear;
-    const numberOfUnits = record._sum.numberOfUnits;
-    if (recordMy === modelYear && numberOfUnits) {
-      result.push({
-        numberOfUnits,
-        vehicleClass: record.vehicleClass,
-        zevClass: record.zevClass,
-        modelYear,
-        type: TransactionType.CREDIT,
-      });
+  const modelYearsMap = getModelYearEnumsToStringsMap();
+  for (const record of records) {
+    let numberOfUnitsToUse;
+    const onOrBeforeCd = getCaRecordOnOrBeforeCd(record, modelYearsMap);
+    if (onOrBeforeCd && record.modelYear < ModelYear.MY_2026) {
+      numberOfUnitsToUse = record.legacyNumberOfUnits;
+    } else {
+      numberOfUnitsToUse = record.numberOfUnits;
     }
+    subResult.push({
+      type: TransactionType.CREDIT,
+      vehicleClass: record.vehicleClass,
+      zevClass: record.zevClass,
+      modelYear: record.modelYear,
+      numberOfUnits: numberOfUnitsToUse,
+    });
   }
-  return result;
+  return flattenZevUnitRecords(subResult);
 };
 
 export const getZevUnitData = async (
