@@ -222,6 +222,17 @@ export const GovDetailsPage = async ({
                     scope="row"
                     className="px-4 py-2 text-gray-500 font-normal text-left"
                   >
+                    Legacy Credit Entitlement:
+                  </th>
+                  <td className="px-4 py-2 font-medium">
+                    {vehicle.legacyNumberOfUnits.toString()}
+                  </td>
+                </tr>
+                <tr>
+                  <th
+                    scope="row"
+                    className="px-4 py-2 text-gray-500 font-normal text-left"
+                  >
                     Credit Entitlement:
                   </th>
                   <td className="px-4 py-2 font-medium">

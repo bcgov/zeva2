@@ -52,6 +52,12 @@ export const VehicleTable = (props: {
           (props.userIsGov && props.type === "supplierSpecific"),
         header: () => <span>Status</span>,
       }),
+      columnHelper.accessor((row) => row.legacyNumberOfUnits, {
+        id: "legacyNumberOfUnits",
+        enableSorting: true,
+        enableColumnFilter: true,
+        header: () => <span>Legacy Number of Credits</span>,
+      }),
       columnHelper.accessor((row) => row.numberOfUnits, {
         id: "numberOfUnits",
         enableSorting: true,

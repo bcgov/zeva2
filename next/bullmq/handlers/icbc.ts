@@ -27,8 +27,7 @@ export const handleConsumeIcbcFileJob = async (job: Job<number>) => {
   // in a node envrionment, the Body of a GetObjectCommandOutput, if it is defined,
   // will be of type NodeJsRuntimeStreamingBlobPayloadOutputTypes
   const fileStream = object.Body as
-    | NodeJsRuntimeStreamingBlobPayloadOutputTypes
-    | undefined;
+    NodeJsRuntimeStreamingBlobPayloadOutputTypes | undefined;
   if (!fileStream) {
     throw new Error("ICBC file is empty!");
   }

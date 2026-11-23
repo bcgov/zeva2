@@ -10,15 +10,9 @@ export const RecordsList = async (props: {
   sorts: Record<string, string>;
   readOnly: boolean;
 }) => {
-  const [modelYears, [records, totalNumberOfRecords]] = await Promise.all([
+  const [modelYears, records] = await Promise.all([
     getApplicationModelYears(props.id),
-    getValidatedRecords(
-      props.id,
-      props.page,
-      props.pageSize,
-      props.filters,
-      props.sorts,
-    ),
+    getValidatedRecords(props.id),
   ]);
   const serializedRecords = getSerializedRecords(records);
 
@@ -26,7 +20,6 @@ export const RecordsList = async (props: {
     <RecordsTable
       id={props.id}
       records={serializedRecords}
-      totalNumbeOfRecords={totalNumberOfRecords}
       modelYears={modelYears}
       readOnly={props.readOnly}
     />

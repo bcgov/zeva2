@@ -1,10 +1,6 @@
 import { getUserInfo } from "@/auth";
-import {
-  CreditApplicationStatus,
-  ModelYear,
-  Role,
-} from "@/prisma/generated/enums";
-import { getApplicationStatisticsGov, getApplicationHistories } from "../data";
+import { CreditApplicationStatus, Role } from "@/prisma/generated/enums";
+import { getApplicationHistories } from "../data";
 import { StatusBanner } from "@/app/lib/components";
 import {
   analystAddComment,
@@ -17,11 +13,6 @@ import { DirectorActions } from "./DirectorActions";
 import { AnalystActions } from "./AnalystActions";
 import { ApplicationStatisticsGov } from "./ApplicationStatisticsGov";
 import { ApplicationSummaryCards } from "./ApplicationSummaryCards";
-import {
-  getComplianceYear,
-  getCurrentComplianceYear,
-  getDominatedComplianceYears,
-} from "@/app/lib/utils/complianceYear";
 import { CommentChat } from "@/app/lib/components/CommentChat";
 import { PrintDownloadButton } from "@/app/lib/components/PrintDownloadButton";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
@@ -29,8 +20,12 @@ import { faDownload } from "@fortawesome/free-solid-svg-icons";
 import { JSX } from "react";
 import { getIsoYmdString } from "@/app/lib/utils/date";
 import { RecommendationSummary } from "./RecommendationSummary";
-import { getCreditApplicationGov } from "../services";
+import {
+  getApplicationStatisticsGov,
+  getCreditApplicationGov,
+} from "../services";
 import { getMostRecentValidationData } from "../utilsServer";
+import { SupplementaryStatusBanner } from "./SupplementaryStatusBanner";
 
 export const IndividualPageGov = async (props: { id: string }) => {
   const id = Number.parseInt(props.id, 10);
@@ -39,7 +34,7 @@ export const IndividualPageGov = async (props: { id: string }) => {
     return null;
   }
   const creditApplication = await getCreditApplicationGov(id, userRoles);
-  if (!creditApplication) {
+  if (!creditApplication || !creditApplication.complianceYear) {
     return null;
   }
   const applicationStatus = creditApplication.status;
@@ -54,12 +49,17 @@ export const IndividualPageGov = async (props: { id: string }) => {
   };
 
   // assumes "histories" are in ascending order
-  const [stats, histories] = await Promise.all([
-    getApplicationStatisticsGov(id),
-    getApplicationHistories(id),
-  ]);
+  const histories = await getApplicationHistories(id);
+  let dateToUseForStats = new Date();
+  for (const history of histories) {
+    if (history.userAction === CreditApplicationStatus.ISSUED) {
+      dateToUseForStats = history.timestamp;
+    }
+  }
+  const stats = await getApplicationStatisticsGov(id, dateToUseForStats);
 
   let statusBanner: JSX.Element | null = null;
+  let supplementaryStatusBanner: JSX.Element | null = null;
   if (
     applicationStatus === CreditApplicationStatus.VALIDATED &&
     validationTs &&
@@ -150,13 +150,28 @@ export const IndividualPageGov = async (props: { id: string }) => {
       );
     }
   }
+  if (creditApplication.isSupplementary) {
+    supplementaryStatusBanner = (
+      <SupplementaryStatusBanner
+        userIsGov={true}
+        complianceYear={creditApplication.complianceYear}
+      />
+    );
+  }
   const applicationData = (
     <>
       {statusBanner}
+      {supplementaryStatusBanner}
       {stats && <ApplicationSummaryCards stats={stats} />}
       {stats && (
         <ApplicationStatisticsGov
-          stats={stats}
+          stats={stats.map((stat) => {
+            return {
+              ...stat,
+              creditsSum: stat.creditsSum.toString(),
+              validCreditsSum: stat.validCreditsSum.toString(),
+            };
+          })}
           validated={!!latestValidation}
         />
       )}
@@ -175,24 +190,7 @@ export const IndividualPageGov = async (props: { id: string }) => {
 
   let actionComponent;
   if (userRoles.includes(Role.ZEVA_IDIR_USER)) {
-    const caSubmittedDate = creditApplication.submissionTimestamp;
-    if (!caSubmittedDate) {
-      throw new Error();
-    }
-    const currentCy = getCurrentComplianceYear();
-    const submittedCy = getComplianceYear(caSubmittedDate);
-    const dominatedCys = getDominatedComplianceYears(currentCy);
-    const cyOptions = [...dominatedCys, currentCy].filter(
-      (cy) => cy >= ModelYear.MY_2019,
-    );
-    actionComponent = (
-      <AnalystActions
-        id={id}
-        status={applicationStatus}
-        complianceYears={cyOptions}
-        defaultComplianceYear={submittedCy}
-      />
-    );
+    actionComponent = <AnalystActions id={id} status={applicationStatus} />;
   } else if (userRoles.includes(Role.DIRECTOR)) {
     actionComponent = <DirectorActions id={id} status={applicationStatus} />;
   }
