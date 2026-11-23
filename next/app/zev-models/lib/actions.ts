@@ -332,8 +332,7 @@ export const supplierDeactivate = async (
 export const analystUpdate = async (
   vehicleId: number,
   newStatus:
-    | typeof VehicleStatus.RETURNED_TO_SUPPLIER
-    | typeof VehicleStatus.VALIDATED,
+    typeof VehicleStatus.RETURNED_TO_SUPPLIER | typeof VehicleStatus.VALIDATED,
   comment?: string,
 ): Promise<ErrorOrSuccessActionResponse> => {
   const { userIsGov, userId, userRoles } = await getUserInfo();

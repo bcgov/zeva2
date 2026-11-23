@@ -15,10 +15,7 @@ export type VehicleSparseSerialized = Omit<
 };
 
 export type ZevModelTab =
-  | "validated"
-  | "submitted"
-  | "in-progress"
-  | "inactive";
+  "validated" | "submitted" | "in-progress" | "inactive";
 
 export const zevModelTabs: Record<
   ZevModelTab,

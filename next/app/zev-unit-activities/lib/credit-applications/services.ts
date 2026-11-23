@@ -54,7 +54,7 @@ import {
   getCaRecordOnOrBeforeCd,
   getComplianceYearData,
   getTransactionKey,
-  getTransactionsAndTimestamps,
+  getTransactions,
 } from "./utilsServer";
 
 export const getCreditApplicationGov = async (
@@ -851,10 +851,7 @@ export const getCaTransactions = async (
     },
   });
   if (!ca || !ca.complianceYear) {
-    return {
-      transactions: [],
-      timestamps: [],
-    };
+    return [];
   }
   const transactionsMap: Record<string, Decimal> = {};
   const complianceYear = ca.complianceYear;
@@ -882,5 +879,5 @@ export const getCaTransactions = async (
       transactionsMap[key] = transactionsMap[key].plus(numberOfUnitsToUse);
     }
   }
-  return getTransactionsAndTimestamps(transactionsMap);
+  return getTransactions(transactionsMap);
 };

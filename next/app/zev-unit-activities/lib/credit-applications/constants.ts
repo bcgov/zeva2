@@ -199,10 +199,7 @@ export type ZevModelsMap = Partial<
 >;
 
 export type CaDataFinal =
-  | CaDataEligibleIneligible
-  | CaDataEligible
-  | CaDataIneligible
-  | CaDataNone;
+  CaDataEligibleIneligible | CaDataEligible | CaDataIneligible | CaDataNone;
 
 type CaDataEligibleIneligible = {
   type: "eligibleIneligible";

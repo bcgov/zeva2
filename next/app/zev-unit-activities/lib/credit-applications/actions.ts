@@ -918,11 +918,8 @@ export const directorApprove = async (
   ) {
     return getErrorActionResponse("Invalid Action!");
   }
-  const { transactions, timestamps } = await getCaTransactions(
-    creditApplicationId,
-    new Date(),
-  );
-  if (transactions.length === 0 || timestamps.length === 0) {
+  const transactions = await getCaTransactions(creditApplicationId, new Date());
+  if (transactions.length === 0) {
     return getErrorActionResponse("Invalid Action!");
   }
   const invalidVinRecords = await prisma.creditApplicationRecord.findMany({
@@ -938,8 +935,9 @@ export const directorApprove = async (
     return record.vin;
   });
   const transactionsToCreate: ZevUnitTransactionCreateManyInput[] = [];
-
+  const timestampsMap: Record<string, Date> = {};
   for (const record of transactions) {
+    timestampsMap[getIsoYmdString(record.timestamp)] = record.timestamp;
     transactionsToCreate.push({
       organizationId: creditApplication.organizationId,
       timestamp: record.timestamp,
@@ -958,7 +956,7 @@ export const directorApprove = async (
         id: creditApplicationId,
       },
       data: {
-        transactionTimestamps: timestamps,
+        transactionTimestamps: Object.values(timestampsMap),
         status: CreditApplicationStatus.ISSUED,
         supplierStatus: CreditApplicationStatus.ISSUED,
         aCredits: transactions.reduce((acc, cv) => {

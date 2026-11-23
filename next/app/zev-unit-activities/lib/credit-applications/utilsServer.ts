@@ -359,7 +359,7 @@ export const getCaRecordData = (
   };
 };
 
-// this function affects getTransctions!
+// this function affects getTransactions!
 export const getTransactionKey = (
   vehicleClass: string,
   zevClass: string,
@@ -374,11 +374,8 @@ export const getTransactionKey = (
 };
 
 // this function is affected by getTransactionKey!
-export const getTransactionsAndTimestamps = (
-  transactionsMap: Record<string, Decimal>,
-) => {
-  const transactions = [];
-  const timestampsMap: Record<string, Date> = {};
+export const getTransactions = (transactionsMap: Record<string, Decimal>) => {
+  const result = [];
   for (const [key, numberOfUnits] of Object.entries(transactionsMap)) {
     const fields = key.split(caRecordKeyDelimiter);
     const vehicleClass = fields[0];
@@ -394,17 +391,13 @@ export const getTransactionsAndTimestamps = (
     ) {
       throw new Error("Unexpected Error!");
     }
-    transactions.push({
+    result.push({
       vehicleClass,
       zevClass,
       modelYear,
       numberOfUnits,
       timestamp: normalizedDate,
     });
-    timestampsMap[date] = normalizedDate;
   }
-  return {
-    transactions,
-    timestamps: Object.values(timestampsMap),
-  };
+  return result.filter((record) => record.numberOfUnits.gt(new Decimal(0)));
 };
