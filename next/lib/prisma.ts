@@ -1,14 +1,12 @@
 import { PrismaClient } from "@/prisma/generated/client";
 import { PrismaPg } from "@prisma/adapter-pg";
 
-const sslEnabled =
-  process.env.DATABASE_SSL_ENABLED === undefined
-    ? process.env.NODE_ENV === "production"
-    : process.env.DATABASE_SSL_ENABLED === "true";
-
 const adapter = new PrismaPg({
   connectionString: process.env.DATABASE_URL,
-  ssl: sslEnabled ? { rejectUnauthorized: false } : undefined,
+  ssl:
+    process.env.DATABASE_SSL_ENABLED === "true"
+      ? { rejectUnauthorized: false }
+      : undefined,
 });
 
 const getPrisma = () =>
