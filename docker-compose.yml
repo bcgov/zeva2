@@ -15,7 +15,7 @@ services:
       timeout: 5s
       retries: 5
   redis:
-    image: redis:7.4-bookworm
+    image: redis:8.2.2-bookworm
     command: redis-server /usr/local/etc/redis/redis.conf
     ports:
       - 6379:6379
