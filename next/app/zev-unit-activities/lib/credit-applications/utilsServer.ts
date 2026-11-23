@@ -11,14 +11,24 @@ import {
 } from "@/app/lib/utils/enumMaps";
 import {
   CaHistorySparse,
+  caRecordKeyDelimiter,
   CreditApplicationRecordSparse,
   CreditApplicationRecordSparseSerialized,
   CreditApplicationSparse,
   CreditApplicationSparseSerialized,
+  section14Date,
 } from "./constants";
 import { IcbcRecordsMap } from "./services";
 import { CreditApplicationCredit } from "./data";
 import { getIsoYmdString, validateDate } from "@/app/lib/utils/date";
+import Decimal from "decimal.js";
+import { checkCaRecordKey } from "./utils";
+import {
+  isModelYear,
+  isVehicleClass,
+  isZevClass,
+} from "@/app/lib/utils/typeGuards";
+import { getAdjacentYear } from "@/app/lib/utils/complianceYear";
 
 export const getWhereClause = (
   filters: Record<string, string>,
@@ -58,6 +68,13 @@ export const getWhereClause = (
         } else {
           result.id = -1;
         }
+      }
+    } else if (key === "transactionTimestamps") {
+      const [isValidDate, normalizedDate] = validateDate(value);
+      if (isValidDate) {
+        result[key] = {
+          has: normalizedDate,
+        };
       }
     } else if (key === "organization" && userIsGov) {
       result[key] = {
@@ -174,6 +191,7 @@ export const getWarningsMap = (
     modelName: string;
     modelYear: ModelYear;
   }[],
+  complianceYear: ModelYear,
   icbcMap: IcbcRecordsMap,
 ) => {
   const result: Partial<Record<string, string[]>> = {};
@@ -190,6 +208,9 @@ export const getWarningsMap = (
     }
     if (icbcRecord.modelYear !== record.modelYear) {
       warnings.push("3");
+    }
+    if (complianceYear > ModelYear.MY_2023 && !icbcRecord.registrationDate) {
+      warnings.push("4");
     }
     if (warnings.length > 0) {
       result[vin] = warnings;
@@ -251,4 +272,105 @@ export const getMostRecentValidationData = (histories: CaHistorySparse[]) => {
     }
   }
   return latestValidation;
+};
+
+export const getCaRecordOnOrBeforeCd = (
+  record: { modelYear: ModelYear; timestamp: Date },
+  modelYearsMap: Partial<Record<ModelYear, string>>,
+) => {
+  const { modelYear, timestamp } = record;
+  const year = getAdjacentYear("next", modelYear);
+  const date = new Date(
+    `${modelYearsMap[year]}-${process.env.END_OF_COMPLIANCE_YEAR}`,
+  );
+  if (timestamp <= date) {
+    return true;
+  }
+  return false;
+};
+
+export const getCaRecordData = (
+  complianceYear: ModelYear,
+  complianceDate: Date,
+  dayAfterComplianceDate: Date,
+  registrationDate: Date | null,
+  date: Date,
+  legacyNumberOfUnits: Decimal,
+  numberOfUnits: Decimal,
+) => {
+  if (complianceYear <= ModelYear.MY_2023) {
+    return {
+      transactionDate: getIsoYmdString(
+        date < complianceDate ? date : complianceDate,
+      ),
+      numberOfUnitsToUse: legacyNumberOfUnits,
+    };
+  }
+  let transactionDate;
+  if (!registrationDate || registrationDate <= complianceDate) {
+    if (date < complianceDate) {
+      transactionDate = date;
+    } else {
+      transactionDate = complianceDate;
+    }
+  } else {
+    if (date < dayAfterComplianceDate) {
+      transactionDate = dayAfterComplianceDate;
+    } else {
+      transactionDate = date;
+    }
+  }
+  let numberOfUnitsToUse;
+  if (transactionDate < section14Date) {
+    numberOfUnitsToUse = legacyNumberOfUnits;
+  } else {
+    numberOfUnitsToUse = numberOfUnits;
+  }
+  return {
+    transactionDate: getIsoYmdString(transactionDate),
+    numberOfUnitsToUse,
+  };
+};
+
+// this function affects getTransctions!
+export const getTransactionKey = (
+  vehicleClass: string,
+  zevClass: string,
+  modelYear: string,
+  date: string,
+) => {
+  const key = [vehicleClass, zevClass, modelYear, date].join(
+    caRecordKeyDelimiter,
+  );
+  checkCaRecordKey(key, 3);
+  return key;
+};
+
+// this function is affected by getTransactionKey!
+export const getTransactions = (transactionsMap: Record<string, Decimal>) => {
+  const result = [];
+  for (const [key, numberOfUnits] of Object.entries(transactionsMap)) {
+    const fields = key.split(caRecordKeyDelimiter);
+    const vehicleClass = fields[0];
+    const zevClass = fields[1];
+    const modelYear = fields[2];
+    const date = fields[3];
+    const [dateIsValid, normalizedDate] = validateDate(date);
+    if (
+      !isVehicleClass(vehicleClass) ||
+      !isZevClass(zevClass) ||
+      !isModelYear(modelYear) ||
+      !dateIsValid
+    ) {
+      throw new Error("Unexpected Error!");
+    }
+    result.push({
+      vehicleClass,
+      zevClass,
+      modelYear,
+      numberOfUnits,
+      timestamp: normalizedDate,
+    });
+  }
+  return result;
 };

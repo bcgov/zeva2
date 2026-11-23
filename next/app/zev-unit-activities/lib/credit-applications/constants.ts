@@ -1,7 +1,6 @@
 import {
   CreditApplicationStatus,
   CreditApplicationSupplierStatus,
-  ModelYear,
   VehicleClass,
   ZevClass,
   ZevType,
@@ -111,6 +110,7 @@ export const warningDescriptions: Readonly<Record<string, string>> = {
   "1": "VIN not found in ICBC records",
   "2": "Make does not match ICBC records",
   "3": "Model year does not match ICBC records",
+  "4": "No registration date",
 };
 
 export const isValidReason = (s: string): s is ValidReason => {

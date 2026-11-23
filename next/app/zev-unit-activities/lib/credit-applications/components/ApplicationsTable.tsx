@@ -50,7 +50,7 @@ export const ApplicationsTable = (props: {
             : "--",
         {
           id: "transactionTimestamps",
-          enableSorting: true,
+          enableSorting: false,
           enableColumnFilter: true,
           header: () => <span>Transaction Date</span>,
         },

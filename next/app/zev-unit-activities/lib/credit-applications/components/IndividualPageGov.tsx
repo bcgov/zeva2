@@ -25,6 +25,7 @@ import {
   getCreditApplicationGov,
 } from "../services";
 import { getMostRecentValidationData } from "../utilsServer";
+import { SupplementaryStatusBanner } from "./SupplementaryStatusBanner";
 
 export const IndividualPageGov = async (props: { id: string }) => {
   const id = Number.parseInt(props.id, 10);
@@ -58,6 +59,7 @@ export const IndividualPageGov = async (props: { id: string }) => {
   const stats = await getApplicationStatisticsGov(id, dateToUseForStats);
 
   let statusBanner: JSX.Element | null = null;
+  let supplementaryStatusBanner: JSX.Element | null = null;
   if (
     applicationStatus === CreditApplicationStatus.VALIDATED &&
     validationTs &&
@@ -148,9 +150,18 @@ export const IndividualPageGov = async (props: { id: string }) => {
       );
     }
   }
+  if (creditApplication.isSupplementary) {
+    supplementaryStatusBanner = (
+      <SupplementaryStatusBanner
+        userIsGov={true}
+        complianceYear={creditApplication.complianceYear}
+      />
+    );
+  }
   const applicationData = (
     <>
       {statusBanner}
+      {supplementaryStatusBanner}
       {stats && <ApplicationSummaryCards stats={stats} />}
       {stats && (
         <ApplicationStatisticsGov

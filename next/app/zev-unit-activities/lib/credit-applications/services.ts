@@ -4,7 +4,6 @@ import {
   AddressType,
   CreditApplicationStatus,
   ModelYear,
-  TransactionType,
   VehicleStatus,
   Role,
   ModelYearReportStatus,
@@ -18,12 +17,11 @@ import {
   GovCaStatRecord,
   ImpermissableCaSubmission,
   mapOfStatusToSupplierStatus,
-  section14Date,
   ZevModelsMap,
 } from "./constants";
 import { Attachment } from "@/app/lib/constants/attachment";
 import { TransactionClient } from "@/types/prisma";
-import { flattenZevUnitRecords, ZevUnitRecord } from "@/lib/utils/zevUnit";
+import { ZevUnitRecord } from "@/lib/utils/zevUnit";
 import {
   getModelYearEnumsToStringsMap,
   getStringsToModelYearsEnumsMap,
@@ -52,6 +50,12 @@ import {
   getSupplierVinStatRecords,
   getGovStatRecords,
 } from "./utils";
+import {
+  getCaRecordData,
+  getCaRecordOnOrBeforeCd,
+  getTransactionKey,
+  getTransactions,
+} from "./utilsServer";
 
 export const getCreditApplicationGov = async (
   creditApplicationId: number,
@@ -436,28 +440,6 @@ export const deleteAttachments = async (
   });
 };
 
-export const getApplicationFlattenedCreditRecords = async (
-  creditApplicationId: number,
-) => {
-  const applicationRecords = await prisma.creditApplicationRecord.findMany({
-    where: {
-      creditApplicationId,
-      validated: true,
-    },
-    select: {
-      vehicleClass: true,
-      zevClass: true,
-      modelYear: true,
-      numberOfUnits: true,
-    },
-  });
-  const zevUnitRecords: ZevUnitRecord[] = [];
-  for (const record of applicationRecords) {
-    zevUnitRecords.push({ ...record, type: TransactionType.CREDIT });
-  }
-  return flattenZevUnitRecords(zevUnitRecords);
-};
-
 export const getAnalystComments = async (
   creditApplicationId: number,
 ): Promise<ChatComment[]> => {
@@ -728,10 +710,11 @@ export const getApplicationStatisticsSupplier = async (
       }
     }
   } else {
-    const threshold = new Date("2026-10-01T00:00:00");
+    const modelYearsMap = getModelYearEnumsToStringsMap();
     for (const record of records) {
       let numberOfUnitsToUse;
-      if (record.timestamp < threshold) {
+      const onOrBeforeCd = getCaRecordOnOrBeforeCd(record, modelYearsMap);
+      if (onOrBeforeCd && record.modelYear < ModelYear.MY_2026) {
         numberOfUnitsToUse = record.legacyNumberOfUnits;
       } else {
         numberOfUnitsToUse = record.numberOfUnits;
@@ -827,43 +810,76 @@ export const getApplicationStatisticsGov = async (
     if (validated) {
       stats[key].validVinsCount = stats[key].validVinsCount + 1;
     }
-    if (complianceYear <= ModelYear.MY_2023) {
-      stats[key].creditsSum = stats[key].creditsSum.plus(
-        record.legacyNumberOfUnits,
-      );
-      if (validated) {
-        stats[key].validCreditsSum = stats[key].validCreditsSum.plus(
-          record.legacyNumberOfUnits,
-        );
-      }
-    } else {
-      const regDate = record.icbcRegistrationTimestamp;
-      let transactionDate;
-      if (!regDate || regDate <= complianceDate) {
-        if (date < complianceDate) {
-          transactionDate = date;
-        } else {
-          transactionDate = complianceDate;
-        }
-      } else {
-        if (date < dayAfterComplianceDate) {
-          transactionDate = dayAfterComplianceDate;
-        } else {
-          transactionDate = date;
-        }
-      }
-      let numberOfUnitsToUse;
-      if (transactionDate < section14Date) {
-        numberOfUnitsToUse = record.legacyNumberOfUnits;
-      } else {
-        numberOfUnitsToUse = record.numberOfUnits;
-      }
-      stats[key].creditsSum = stats[key].creditsSum.plus(numberOfUnitsToUse);
-      if (validated) {
-        stats[key].validCreditsSum =
-          stats[key].validCreditsSum.plus(numberOfUnitsToUse);
-      }
+    const { numberOfUnitsToUse } = getCaRecordData(
+      complianceYear,
+      complianceDate,
+      dayAfterComplianceDate,
+      record.icbcRegistrationTimestamp,
+      date,
+      record.legacyNumberOfUnits,
+      record.numberOfUnits,
+    );
+    stats[key].creditsSum = stats[key].creditsSum.plus(numberOfUnitsToUse);
+    if (validated) {
+      stats[key].validCreditsSum =
+        stats[key].validCreditsSum.plus(numberOfUnitsToUse);
     }
   }
   return getGovStatRecords(stats);
+};
+
+export const getCaTransactions = async (
+  creditApplicationId: number,
+  date: Date,
+) => {
+  const ca = await prisma.creditApplication.findUnique({
+    where: {
+      id: creditApplicationId,
+    },
+    select: {
+      complianceYear: true,
+      CreditApplicationRecord: {
+        select: {
+          vehicleClass: true,
+          zevClass: true,
+          modelYear: true,
+          legacyNumberOfUnits: true,
+          numberOfUnits: true,
+          icbcRegistrationTimestamp: true,
+          validated: true,
+        },
+      },
+    },
+  });
+  if (!ca || !ca.complianceYear) {
+    return [];
+  }
+  const transactionsMap: Record<string, Decimal> = {};
+  const complianceYear = ca.complianceYear;
+  const complianceDate = getComplianceDate(complianceYear);
+  const dayAfterComplianceDate =
+    getCompliancePeriod(complianceYear).openUpperBound;
+  for (const record of ca.CreditApplicationRecord) {
+    const { transactionDate, numberOfUnitsToUse } = getCaRecordData(
+      complianceYear,
+      complianceDate,
+      dayAfterComplianceDate,
+      record.icbcRegistrationTimestamp,
+      date,
+      record.legacyNumberOfUnits,
+      record.numberOfUnits,
+    );
+    const key = getTransactionKey(
+      record.vehicleClass,
+      record.zevClass,
+      record.modelYear,
+      transactionDate,
+    );
+    if (!transactionsMap[key]) {
+      transactionsMap[key] = numberOfUnitsToUse;
+    } else {
+      transactionsMap[key] = transactionsMap[key].plus(numberOfUnitsToUse);
+    }
+  }
+  return getTransactions(transactionsMap);
 };

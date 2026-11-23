@@ -15,7 +15,6 @@ import { getWarningsMap } from "./utilsServer";
 import {
   createHistory,
   deleteAttachments,
-  getApplicationFlattenedCreditRecords,
   getEligibleVehicles,
   getEligibleVehiclesMap,
   getIcbcRecordsMap,
@@ -26,6 +25,7 @@ import {
   getDecodedVinsMap,
   getAnalystComments,
   getCaGlobalData,
+  getCaTransactions,
 } from "./services";
 import {
   ErrorsTemplate,
@@ -50,10 +50,7 @@ import {
 } from "@/app/lib/utils/actionResponse";
 import { Attachment, AttachmentDownload } from "@/app/lib/constants/attachment";
 import { addJobToEmailQueue } from "@/app/lib/services/queue";
-import {
-  getComplianceDate,
-  getCurrentComplianceYear,
-} from "@/app/lib/utils/complianceYear";
+import { getCurrentComplianceYear } from "@/app/lib/utils/complianceYear";
 import { Decimal } from "decimal.js";
 import {
   CreditApplicationAttachmentWhereInput,
@@ -520,7 +517,11 @@ export const validateCreditApplication = async (
   }, []);
   const icbcMap = await getIcbcRecordsMap(vins);
   const decodedVins = await getDecodedVinsMap(vins);
-  const warningsMap = getWarningsMap(records, icbcMap);
+  const warningsMap = getWarningsMap(
+    records,
+    creditApplication.complianceYear,
+    icbcMap,
+  );
   let eligibleVinsCount = 0;
   let ineligibleVinsCount = 0;
   let aCredits = new Decimal(0);
@@ -893,7 +894,6 @@ export const directorApprove = async (
   ) {
     return getErrorActionResponse("Invalid Action!");
   }
-  const complianceYear = creditApplication.complianceYear;
   const invalidVinRecords = await prisma.creditApplicationRecord.findMany({
     where: {
       creditApplicationId,
@@ -907,18 +907,15 @@ export const directorApprove = async (
     return record.vin;
   });
   const transactionsToCreate: ZevUnitTransactionCreateManyInput[] = [];
-  const creditRecords =
-    await getApplicationFlattenedCreditRecords(creditApplicationId);
-  let transactionTimestamp;
-  if (currentCy === complianceYear) {
-    transactionTimestamp = new Date();
-  } else {
-    transactionTimestamp = getComplianceDate(complianceYear);
-  }
+  const creditRecords = await getCaTransactions(
+    creditApplicationId,
+    new Date(),
+  );
+  const transactionTimestamps = creditRecords.map((record) => record.timestamp);
   for (const record of creditRecords) {
     transactionsToCreate.push({
       organizationId: creditApplication.organizationId,
-      timestamp: transactionTimestamp,
+      timestamp: record.timestamp,
       type: TransactionType.CREDIT,
       referenceType: ReferenceType.SUPPLY_CREDITS,
       referenceId: creditApplicationId,
@@ -934,7 +931,7 @@ export const directorApprove = async (
         id: creditApplicationId,
       },
       data: {
-        transactionTimestamp,
+        transactionTimestamps,
         status: CreditApplicationStatus.ISSUED,
         supplierStatus: CreditApplicationStatus.ISSUED,
       },
