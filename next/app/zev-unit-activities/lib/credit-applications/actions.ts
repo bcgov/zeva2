@@ -11,11 +11,14 @@ import {
   ModelYear,
   ZevClass,
 } from "@/prisma/generated/enums";
-import { getWarningsMap } from "./utilsServer";
+import {
+  getCaRecordData,
+  getComplianceYearData,
+  getWarningsMap,
+} from "./utilsServer";
 import {
   createHistory,
   deleteAttachments,
-  getApplicationFlattenedCreditRecords,
   getEligibleVehicles,
   getEligibleVehiclesMap,
   getIcbcRecordsMap,
@@ -25,9 +28,12 @@ import {
   createAttachments,
   getDecodedVinsMap,
   getAnalystComments,
+  getCaGlobalData,
+  getCaTransactions,
 } from "./services";
 import {
   ErrorsTemplate,
+  impermissableCaSubmissionMsg,
   SupplierSubTemplate,
   SupplierTemplate,
   ZevVinRecord,
@@ -48,10 +54,7 @@ import {
 } from "@/app/lib/utils/actionResponse";
 import { Attachment, AttachmentDownload } from "@/app/lib/constants/attachment";
 import { addJobToEmailQueue } from "@/app/lib/services/queue";
-import {
-  getComplianceDate,
-  getCurrentComplianceYear,
-} from "@/app/lib/utils/complianceYear";
+import { getCurrentComplianceYear } from "@/app/lib/utils/complianceYear";
 import { Decimal } from "decimal.js";
 import {
   CreditApplicationAttachmentWhereInput,
@@ -214,6 +217,7 @@ export const supplierSave = async (
     const date = record.date;
     const vehicleClass = record.vehicleClass;
     const zevClass = record.zevClass;
+    const legacyNumberOfUnits = record.legacyNumberOfUnits;
     const numberOfUnits = record.numberOfUnits;
     const zevType = record.zevType;
     const range = record.range;
@@ -226,6 +230,7 @@ export const supplierSave = async (
         !date ||
         !vehicleClass ||
         !zevClass ||
+        !legacyNumberOfUnits ||
         !numberOfUnits ||
         !zevType ||
         range === undefined
@@ -242,6 +247,7 @@ export const supplierSave = async (
       if (!dateIsValid) {
         throw new Error();
       }
+      const legacyNumberOfUnitsDec = new Decimal(legacyNumberOfUnits);
       const numberOfUnitsDec = new Decimal(numberOfUnits);
       recordsToCreatePrelim.push({
         make,
@@ -251,6 +257,7 @@ export const supplierSave = async (
         timestamp: validatedDate,
         vehicleClass,
         zevClass,
+        legacyNumberOfUnits: legacyNumberOfUnitsDec,
         numberOfUnits: numberOfUnitsDec,
         zevType,
         range,
@@ -403,7 +410,6 @@ export const supplierSubmit = async (
   ) {
     return getErrorActionResponse("Invalid Action!");
   }
-
   const serializedRecords: ZevVinRecordSparse[] = [];
   const records = application.CreditApplicationRecord;
   const modelYearsMap = getModelYearEnumsToStringsMap();
@@ -440,7 +446,19 @@ export const supplierSubmit = async (
       records: serializedRecords,
     });
   }
-
+  let complianceYear;
+  let isSupplementary;
+  try {
+    const data = await getCaGlobalData(
+      creditApplicationId,
+      new Date(),
+      userOrgId,
+    );
+    complianceYear = data.complianceYear;
+    isSupplementary = data.isSupplementary;
+  } catch (e) {
+    return getErrorActionResponse(impermissableCaSubmissionMsg);
+  }
   await prisma.$transaction(async (tx) => {
     await tx.creditApplication.update({
       where: {
@@ -450,6 +468,8 @@ export const supplierSubmit = async (
         status: CreditApplicationStatus.SUBMITTED,
         supplierStatus: CreditApplicationStatus.SUBMITTED,
         submissionTimestamp: new Date(),
+        complianceYear,
+        isSupplementary,
       },
     });
     await tx.reservedVin.createMany({
@@ -492,16 +512,24 @@ export const validateCreditApplication = async (
       CreditApplicationRecord: true,
     },
   });
-  if (!creditApplication) {
+  if (!creditApplication || !creditApplication.complianceYear) {
     return getErrorActionResponse("Invalid Action!");
   }
+  const complianceYear = creditApplication.complianceYear;
+  const { complianceDate, dayAfterComplianceDate } =
+    getComplianceYearData(complianceYear);
+  const now = new Date();
   const records = creditApplication.CreditApplicationRecord;
   const vins = records.reduce((acc: string[], cv) => {
     return [...acc, cv.vin];
   }, []);
   const icbcMap = await getIcbcRecordsMap(vins);
   const decodedVins = await getDecodedVinsMap(vins);
-  const warningsMap = getWarningsMap(records, icbcMap);
+  const warningsMap = getWarningsMap(
+    records,
+    creditApplication.complianceYear,
+    icbcMap,
+  );
   let eligibleVinsCount = 0;
   let ineligibleVinsCount = 0;
   let aCredits = new Decimal(0);
@@ -517,11 +545,19 @@ export const validateCreditApplication = async (
       validated = true;
       eligibleVinsCount = eligibleVinsCount + 1;
       const zevClass = record.zevClass;
-      const numberOfUnits = record.numberOfUnits;
+      const { numberOfUnitsToUse } = getCaRecordData(
+        complianceYear,
+        complianceDate,
+        dayAfterComplianceDate,
+        icbcMap[vin]?.registrationDate ?? null,
+        now,
+        record.legacyNumberOfUnits,
+        record.numberOfUnits,
+      );
       if (zevClass === ZevClass.A) {
-        aCredits = aCredits.plus(numberOfUnits);
+        aCredits = aCredits.plus(numberOfUnitsToUse);
       } else if (zevClass === ZevClass.B) {
-        bCredits = bCredits.plus(numberOfUnits);
+        bCredits = bCredits.plus(numberOfUnitsToUse);
       }
     }
     const icbcRecord = icbcMap[vin];
@@ -573,9 +609,7 @@ export const validateCreditApplication = async (
   return getSuccessActionResponse();
 };
 
-export type MapOfValidatedAndReasons = Partial<
-  Record<number, [boolean, string]>
->;
+export type MapOfValidatedAndReasons = Record<number, [boolean, string]>;
 
 export const updateValidatedRecords = async (
   creditApplicationId: number,
@@ -597,13 +631,14 @@ export const updateValidatedRecords = async (
     },
     select: {
       status: true,
+      complianceYear: true,
       eligibleVinsCount: true,
       ineligibleVinsCount: true,
       aCredits: true,
       bCredits: true,
     },
   });
-  if (!creditApplication) {
+  if (!creditApplication || !creditApplication.complianceYear) {
     return getErrorActionResponse("Invalid Action!");
   }
   let eligibleVinsCount = creditApplication.eligibleVinsCount;
@@ -618,6 +653,10 @@ export const updateValidatedRecords = async (
   ) {
     return getErrorActionResponse("Invalid Action!");
   }
+  const complianceYear = creditApplication.complianceYear;
+  const { complianceDate, dayAfterComplianceDate } =
+    getComplianceYearData(complianceYear);
+  const now = new Date();
   const records = await prisma.creditApplicationRecord.findMany({
     where: {
       id: {
@@ -631,29 +670,34 @@ export const updateValidatedRecords = async (
   for (const record of records) {
     const id = record.id;
     const data = mapOfData[id];
-    if (!data) {
-      throw new Error();
-    }
     recordIds.push(record.id);
     const zevClass = record.zevClass;
-    const numberOfUnits = record.numberOfUnits;
+    const { numberOfUnitsToUse } = getCaRecordData(
+      complianceYear,
+      complianceDate,
+      dayAfterComplianceDate,
+      record.icbcRegistrationTimestamp,
+      now,
+      record.legacyNumberOfUnits,
+      record.numberOfUnits,
+    );
     const oldValidated = record.validated;
     const newValidated = data[0];
     if (oldValidated && !newValidated) {
       eligibleVinsCount = eligibleVinsCount - 1;
       ineligibleVinsCount = ineligibleVinsCount + 1;
       if (zevClass === ZevClass.A) {
-        aCredits = aCredits.minus(numberOfUnits);
+        aCredits = aCredits.minus(numberOfUnitsToUse);
       } else if (zevClass === ZevClass.B) {
-        bCredits = bCredits.minus(numberOfUnits);
+        bCredits = bCredits.minus(numberOfUnitsToUse);
       }
     } else if (!oldValidated && newValidated) {
       eligibleVinsCount = eligibleVinsCount + 1;
       ineligibleVinsCount = ineligibleVinsCount - 1;
       if (zevClass === ZevClass.A) {
-        aCredits = aCredits.plus(numberOfUnits);
+        aCredits = aCredits.plus(numberOfUnitsToUse);
       } else if (zevClass === ZevClass.B) {
-        bCredits = bCredits.plus(numberOfUnits);
+        bCredits = bCredits.plus(numberOfUnitsToUse);
       }
     }
     record.validated = newValidated;
@@ -687,15 +731,11 @@ export const updateValidatedRecords = async (
 
 export const analystRecommend = async (
   creditApplicationId: number,
-  complianceYear: ModelYear,
   comment?: string,
 ): Promise<ErrorOrSuccessActionResponse> => {
   const { userIsGov, userId, userRoles } = await getUserInfo();
   if (!userIsGov || !userRoles.some((role) => role === Role.ZEVA_IDIR_USER)) {
     return getErrorActionResponse("Unauthorized!");
-  }
-  if (!complianceYear || complianceYear > getCurrentComplianceYear()) {
-    return getErrorActionResponse("Invalid Action!");
   }
   const creditApplication = await prisma.creditApplication.findUnique({
     where: {
@@ -718,7 +758,6 @@ export const analystRecommend = async (
       },
       data: {
         status: CreditApplicationStatus.RECOMMENDED,
-        complianceYear,
       },
     });
     const historyId = await createHistory(
@@ -879,7 +918,10 @@ export const directorApprove = async (
   ) {
     return getErrorActionResponse("Invalid Action!");
   }
-  const complianceYear = creditApplication.complianceYear;
+  const transactions = await getCaTransactions(creditApplicationId, new Date());
+  if (transactions.length === 0) {
+    return getErrorActionResponse("Invalid Action!");
+  }
   const invalidVinRecords = await prisma.creditApplicationRecord.findMany({
     where: {
       creditApplicationId,
@@ -893,18 +935,12 @@ export const directorApprove = async (
     return record.vin;
   });
   const transactionsToCreate: ZevUnitTransactionCreateManyInput[] = [];
-  const creditRecords =
-    await getApplicationFlattenedCreditRecords(creditApplicationId);
-  let transactionTimestamp;
-  if (currentCy === complianceYear) {
-    transactionTimestamp = new Date();
-  } else {
-    transactionTimestamp = getComplianceDate(complianceYear);
-  }
-  for (const record of creditRecords) {
+  const timestampsMap: Record<string, Date> = {};
+  for (const record of transactions) {
+    timestampsMap[getIsoYmdString(record.timestamp)] = record.timestamp;
     transactionsToCreate.push({
       organizationId: creditApplication.organizationId,
-      timestamp: transactionTimestamp,
+      timestamp: record.timestamp,
       type: TransactionType.CREDIT,
       referenceType: ReferenceType.SUPPLY_CREDITS,
       referenceId: creditApplicationId,
@@ -920,9 +956,21 @@ export const directorApprove = async (
         id: creditApplicationId,
       },
       data: {
-        transactionTimestamp,
+        transactionTimestamps: Object.values(timestampsMap),
         status: CreditApplicationStatus.ISSUED,
         supplierStatus: CreditApplicationStatus.ISSUED,
+        aCredits: transactions.reduce((acc, cv) => {
+          if (cv.zevClass === ZevClass.A) {
+            return acc.plus(cv.numberOfUnits);
+          }
+          return acc;
+        }, new Decimal(0)),
+        bCredits: transactions.reduce((acc, cv) => {
+          if (cv.zevClass === ZevClass.B) {
+            return acc.plus(cv.numberOfUnits);
+          }
+          return acc;
+        }, new Decimal(0)),
       },
     });
     await unreserveVins(invalidVins, tx);

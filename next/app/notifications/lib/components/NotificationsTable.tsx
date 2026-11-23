@@ -90,7 +90,6 @@ export const NotificationsTable = (props: {
       columns={columns}
       data={props.notifications}
       navigationAction={navigationAction}
-      stackHeaderContents={true}
       enableFiltering={true}
       enableSorting={true}
       enableGlobalSearch={true}

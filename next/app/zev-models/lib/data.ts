@@ -31,6 +31,7 @@ export const getVehicles = async (
     id: true,
     legacyId: true,
     status: true,
+    legacyNumberOfUnits: true,
     numberOfUnits: true,
     zevClass: true,
     modelYear: true,

@@ -8,7 +8,7 @@ import {
   Role,
 } from "@/prisma/generated/enums";
 import { useRouter } from "next/navigation";
-import { JSX, useCallback, useState, useTransition } from "react";
+import { JSX, useCallback, useMemo, useState, useTransition } from "react";
 import {
   getErrorsTemplateDownloadUrl,
   getNotValidatedRecords,
@@ -16,7 +16,7 @@ import {
   supplierSubmit,
 } from "../actions";
 import { Routes } from "@/app/lib/constants";
-import { ErrorsTemplate } from "../constants";
+import { ErrorsTemplate, impermissableCaSubmissionMsg } from "../constants";
 import { downloadBuffer } from "@/app/lib/utils/download";
 import { Modal, ModalType } from "@/app/lib/components/Modal";
 import { getNormalizedComment } from "@/app/lib/utils/comment";
@@ -39,8 +39,53 @@ export const SupplierActions = (props: {
     ineligibleWorkbook: Excel.Workbook | null;
     ineligibleCount: number;
   }>();
+  const [impermissableCaMsg, setImpermissableCaMsg] =
+    useState<JSX.Element | null>(null);
   const [comment, setComment] = useState<string>("");
   const [modal, setModal] = useState<JSX.Element | null>(null);
+
+  const impermissableCaMsgToUse = useMemo(() => {
+    return (
+      <div className="flex flex-col gap-4 p-4 border border-red-300 rounded bg-red-50 text-red-700">
+        <h2 className="font-bold text-lg">
+          You cannot submit this Credit Application. The following information
+          may be helpful:
+        </h2>
+        <ol className="flex flex-col gap-4 list-decimal list-inside">
+          <li>
+            Suppose it is currently year Y, and that the current date is between
+            Oct.1st, Y, and Oct.20th, Y (inclusive). Then all records in the
+            credit application (CA) must have a date that is on or before
+            September 30th, Y. Also, for each record in the CA, if the record
+            has a model year X that is before Y - 1, then it must have a date
+            that is after Sep.30th, X + 1. Also, your organization must not have
+            a Model Year Report associated with model year Y - 1.
+          </li>
+          <li>
+            Suppose it is currently year Y, and that the current date is between
+            Oct.21st, Y, and Sep.30th, Y + 1. Also suppose this CA is meant to
+            be a "regular" CA. Then, for each record in the CA, if the record
+            has a model year X that is before Y, then it must have a date that
+            is after Sep.30th, X + 1. Also, your organization must not have a
+            Model Year Report associated with model year Y.
+          </li>
+          <li>
+            Suppose it is currently year Y, and that the current date is between
+            Oct.21st, Y, and Sep.30th, Y + 1. Also suppose this CA is meant to
+            be a "supplementary" CA. Then every record in the CA must have the
+            same model year X, and this model year must be before Y. Also, for
+            each record in the CA, the record must have a date that is on or
+            before September 30th, X + 1. Also, your organization must have an
+            assessed Model Year Report associated with model year X.
+          </li>
+          <li>
+            If the CA does not fall into one of the 3 "scenarios" above, then
+            you may not submit the CA.
+          </li>
+        </ol>
+      </div>
+    );
+  }, []);
 
   const handleBack = useCallback(() => {
     router.push(Routes.CreditApplications);
@@ -65,6 +110,7 @@ export const SupplierActions = (props: {
   const handleSubmit = useCallback(async () => {
     setError("");
     setValidationResults(undefined);
+    setImpermissableCaMsg(null);
     const response = await supplierSubmit(
       props.creditApplicationId,
       getNormalizedComment(comment),
@@ -92,12 +138,18 @@ export const SupplierActions = (props: {
         }
       }
     } else if (response.responseType === "error") {
-      setError(response.message);
+      const msg = response.message;
+      if (msg === impermissableCaSubmissionMsg) {
+        setImpermissableCaMsg(impermissableCaMsgToUse);
+        setError("Impermissable Application; please see above!");
+      } else {
+        setError(response.message);
+      }
     } else {
       router.refresh();
     }
     setModal(null);
-  }, [props.creditApplicationId, comment, router]);
+  }, [props.creditApplicationId, comment, router, impermissableCaMsgToUse]);
 
   const handleDownloadErrors = useCallback(() => {
     startTransition(async () => {
@@ -178,6 +230,8 @@ export const SupplierActions = (props: {
             disabled={isPending}
           />
         )}
+
+        {impermissableCaMsg}
 
         {isSigningAuthority && (
           <CommentBox comment={comment} setComment={setComment} />

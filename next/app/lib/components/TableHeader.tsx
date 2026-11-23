@@ -13,7 +13,6 @@ import { Fragment } from "react/jsx-runtime";
 interface ITableHeaderProps<T> {
   table: Table<T>;
   explicitSizing?: boolean;
-  stackHeaderContents?: boolean;
   enableSorting?: boolean;
   enableFiltering?: boolean;
   onSortChange?: (columnId: string) => void;
@@ -116,7 +115,6 @@ const HeaderFilterInput = ({
 export const TableHeader = <T extends unknown>({
   table,
   explicitSizing,
-  stackHeaderContents,
   enableSorting = false,
   enableFiltering = false,
   onSortChange,

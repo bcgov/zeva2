@@ -4,32 +4,58 @@ import {
   AddressType,
   CreditApplicationStatus,
   ModelYear,
-  TransactionType,
   VehicleStatus,
   Role,
+  ModelYearReportStatus,
+  ReferenceType,
 } from "@/prisma/generated/enums";
 import {
-  CreditApplicationRecordWhereInput,
   CreditApplicationWhereInput,
   CreditApplicationWhereUniqueInput,
 } from "@/prisma/generated/models";
 import {
   GovCaStatRecord,
+  ImpermissableCaSubmission,
   mapOfStatusToSupplierStatus,
   ZevModelsMap,
 } from "./constants";
 import { Attachment } from "@/app/lib/constants/attachment";
 import { TransactionClient } from "@/types/prisma";
-import { flattenZevUnitRecords, ZevUnitRecord } from "@/lib/utils/zevUnit";
-import { getStringsToModelYearsEnumsMap } from "@/app/lib/utils/enumMaps";
+import { ZevUnitRecord } from "@/lib/utils/zevUnit";
+import {
+  getModelYearEnumsToStringsMap,
+  getStringsToModelYearsEnumsMap,
+  getVehicleClassEnumsToStringsMap,
+  getZevClassEnumsToStringsMap,
+} from "@/app/lib/utils/enumMaps";
 import {
   getIsoYmdString,
   getTimeWithTz,
   validateDate,
 } from "@/app/lib/utils/date";
-import { CreditApplicationRecordScalarFieldEnum } from "@/prisma/generated/internal/prismaNamespace";
 import { ChatComment } from "@/app/lib/constants/chatComment";
 import { getZevModelKey } from "@/app/zev-models/lib/utils";
+import {
+  getComplianceDate,
+  getComplianceYear,
+  getPreviousComplianceYear,
+  within20DayPeriod,
+} from "@/app/lib/utils/complianceYear";
+import Decimal from "decimal.js";
+import {
+  getStatsKey,
+  getSupplierCreditStatsKey,
+  getSupplierCreditStatRecords,
+  getSupplierVinStatRecords,
+  getGovStatRecords,
+} from "./utils";
+import {
+  getCaRecordData,
+  getCaRecordOnOrBeforeCd,
+  getComplianceYearData,
+  getTransactionKey,
+  getTransactions,
+} from "./utilsServer";
 
 export const getCreditApplicationGov = async (
   creditApplicationId: number,
@@ -198,6 +224,7 @@ export const getEligibleVehicles = async (
       id: includeAdditionalFields,
       vehicleClass: includeAdditionalFields,
       zevClass: includeAdditionalFields,
+      legacyNumberOfUnits: includeAdditionalFields,
       numberOfUnits: includeAdditionalFields,
       zevType: includeAdditionalFields,
       range: includeAdditionalFields,
@@ -220,6 +247,7 @@ export const getEligibleVehiclesMap = async (orgId: number) => {
       id: vehicle.id,
       vehicleClass: vehicle.vehicleClass,
       zevClass: vehicle.zevClass,
+      legacyNumberOfUnits: vehicle.legacyNumberOfUnits.toFixed(2),
       numberOfUnits: vehicle.numberOfUnits.toFixed(2),
       zevType: vehicle.zevType,
       range: vehicle.range,
@@ -412,164 +440,6 @@ export const deleteAttachments = async (
   });
 };
 
-export const getApplicationFlattenedCreditRecords = async (
-  creditApplicationId: number,
-) => {
-  const applicationRecords = await prisma.creditApplicationRecord.findMany({
-    where: {
-      creditApplicationId,
-      validated: true,
-    },
-    select: {
-      vehicleClass: true,
-      zevClass: true,
-      modelYear: true,
-      numberOfUnits: true,
-    },
-  });
-  const zevUnitRecords: ZevUnitRecord[] = [];
-  for (const record of applicationRecords) {
-    zevUnitRecords.push({ ...record, type: TransactionType.CREDIT });
-  }
-  return flattenZevUnitRecords(zevUnitRecords);
-};
-
-export const getRecordStats = async (
-  creditApplicationId: number,
-  type: "all" | "validated",
-) => {
-  const whereClause: CreditApplicationRecordWhereInput = {
-    creditApplicationId,
-  };
-  if (type === "validated") {
-    whereClause.validated = true;
-  }
-  return await prisma.creditApplicationRecord.groupBy({
-    where: whereClause,
-    by: [
-      "make",
-      "modelName",
-      "modelYear",
-      "vehicleClass",
-      "zevClass",
-      "zevType",
-      "range",
-      "numberOfUnits",
-    ],
-    _count: {
-      id: true,
-    },
-  });
-};
-
-export const getCreditStats = async (
-  creditApplicationId: number,
-  type: "all" | "validated",
-) => {
-  const whereClause: CreditApplicationRecordWhereInput = {
-    creditApplicationId,
-  };
-  if (type === "validated") {
-    whereClause.validated = true;
-  }
-  return await prisma.creditApplicationRecord.groupBy({
-    where: whereClause,
-    by: ["vehicleClass", "zevClass", "modelYear"],
-    _sum: {
-      numberOfUnits: true,
-    },
-  });
-};
-
-export const getStats = async (creditApplicationId: number) => {
-  const result: GovCaStatRecord[] = [];
-  const byClause: CreditApplicationRecordScalarFieldEnum[] = [
-    "make",
-    "modelName",
-    "modelYear",
-    "vehicleClass",
-    "zevClass",
-    "zevType",
-    "range",
-    "numberOfUnits",
-  ];
-  const [allRecords, validatedRecords] = await Promise.all([
-    prisma.creditApplicationRecord.groupBy({
-      where: {
-        creditApplicationId,
-      },
-      by: byClause,
-      _count: {
-        id: true,
-      },
-      _sum: {
-        numberOfUnits: true,
-      },
-    }),
-    prisma.creditApplicationRecord.groupBy({
-      where: {
-        creditApplicationId,
-        validated: true,
-      },
-      by: byClause,
-      _count: {
-        id: true,
-      },
-      _sum: {
-        numberOfUnits: true,
-      },
-    }),
-  ]);
-  for (const [index, record] of allRecords.entries()) {
-    const make = record.make;
-    const modelName = record.modelName;
-    const modelYear = record.modelYear;
-    const vehicleClass = record.vehicleClass;
-    const zevClass = record.zevClass;
-    const zevType = record.zevType;
-    const range = record.range;
-    const numberOfUnits = record.numberOfUnits;
-    const resultItem = {
-      id: index,
-      make,
-      modelName,
-      modelYear,
-      vehicleClass,
-      zevClass,
-      zevType,
-      range,
-      numberOfUnits: numberOfUnits.toFixed(2),
-      vinsCount: record._count.id,
-      validVinsCount: 0,
-      creditsSum: record._sum.numberOfUnits
-        ? record._sum.numberOfUnits.toFixed(2)
-        : "0",
-      validCreditsSum: "0",
-    };
-    for (const validatedRecord of validatedRecords) {
-      if (
-        make === validatedRecord.make &&
-        modelName === validatedRecord.modelName &&
-        modelYear === validatedRecord.modelYear &&
-        vehicleClass === validatedRecord.vehicleClass &&
-        zevClass === validatedRecord.zevClass &&
-        zevType === validatedRecord.zevType &&
-        range === validatedRecord.range &&
-        numberOfUnits.eq(validatedRecord.numberOfUnits)
-      ) {
-        resultItem.validVinsCount = validatedRecord._count.id;
-        const validCreditsSum = validatedRecord._sum.numberOfUnits;
-        if (validCreditsSum) {
-          resultItem.validCreditsSum = validCreditsSum.toFixed(2);
-        }
-        break;
-      }
-    }
-    result.push(resultItem);
-  }
-  return result;
-};
-
 export const getAnalystComments = async (
   creditApplicationId: number,
 ): Promise<ChatComment[]> => {
@@ -600,4 +470,413 @@ export const getAnalystComments = async (
     });
   }
   return result;
+};
+
+export const getCaGlobalData = async (
+  caId: number,
+  attemptedSubmissionDate: Date,
+  orgId: number,
+): Promise<{ complianceYear: ModelYear; isSupplementary: boolean }> => {
+  if (within20DayPeriod(attemptedSubmissionDate)) {
+    const subDatePrevCy = getPreviousComplianceYear(attemptedSubmissionDate);
+    const subDatePrevCyCd = getComplianceDate(subDatePrevCy);
+    const [recordsDateIndicator, { mysWithRecordsOnOrBeforeCd }, myrStatus] =
+      await Promise.all([
+        getCaRecordsDateIndicator(caId, subDatePrevCyCd),
+        getCaMyCdData(caId),
+        getMyrStatus(subDatePrevCy, orgId),
+      ]);
+    if (
+      !recordsDateIndicator.hasRecordsAfterDate &&
+      mysWithRecordsOnOrBeforeCd.every((my) => subDatePrevCy <= my) &&
+      !myrStatus
+    ) {
+      return {
+        complianceYear: subDatePrevCy,
+        isSupplementary: false,
+      };
+    }
+  } else {
+    const subDateCy = getComplianceYear(attemptedSubmissionDate);
+    const { mysWithRecordsOnOrBeforeCd, mysWithRecordsAfterCd } =
+      await getCaMyCdData(caId);
+    if (
+      mysWithRecordsAfterCd.length === 0 &&
+      mysWithRecordsOnOrBeforeCd.length === 1
+    ) {
+      const potentialCy = mysWithRecordsOnOrBeforeCd[0];
+      if (potentialCy < subDateCy) {
+        const myrStatus = await getMyrStatus(potentialCy, orgId);
+        if (myrStatus === ModelYearReportStatus.ASSESSED) {
+          return {
+            complianceYear: potentialCy,
+            isSupplementary: true,
+          };
+        }
+      }
+    }
+    if (mysWithRecordsOnOrBeforeCd.every((my) => subDateCy <= my)) {
+      const myrStatus = await getMyrStatus(subDateCy, orgId);
+      if (!myrStatus) {
+        return {
+          complianceYear: subDateCy,
+          isSupplementary: false,
+        };
+      }
+    }
+  }
+  throw new ImpermissableCaSubmission();
+};
+
+export const getCaRecordsDateIndicator = async (caId: number, date: Date) => {
+  let hasRecordsOnOrBeforeDate = false;
+  let hasRecordsAfterDate = false;
+  const caRecords = await prisma.creditApplicationRecord.findMany({
+    where: {
+      creditApplicationId: caId,
+    },
+    select: {
+      timestamp: true,
+    },
+  });
+  for (const record of caRecords) {
+    if (record.timestamp <= date) {
+      hasRecordsOnOrBeforeDate = true;
+    } else {
+      hasRecordsAfterDate = true;
+    }
+  }
+  return {
+    hasRecordsOnOrBeforeDate,
+    hasRecordsAfterDate,
+  };
+};
+
+export const getCaMyCdData = async (caId: number) => {
+  const mysWithRecordsOnOrBeforeCd = new Set<ModelYear>();
+  const mysWithRecordsAfterCd = new Set<ModelYear>();
+  const caRecords = await prisma.creditApplicationRecord.findMany({
+    where: {
+      creditApplicationId: caId,
+    },
+    select: {
+      modelYear: true,
+      timestamp: true,
+    },
+  });
+  for (const record of caRecords) {
+    const my = record.modelYear;
+    const complianceDate = getComplianceDate(my);
+    if (record.timestamp <= complianceDate) {
+      mysWithRecordsOnOrBeforeCd.add(my);
+    } else {
+      mysWithRecordsAfterCd.add(my);
+    }
+  }
+  return {
+    mysWithRecordsOnOrBeforeCd: [...mysWithRecordsOnOrBeforeCd],
+    mysWithRecordsAfterCd: [...mysWithRecordsAfterCd],
+  };
+};
+
+export const getMyrStatus = async (my: ModelYear, orgId: number) => {
+  const [myr, legacyMyr] = await Promise.all([
+    prisma.modelYearReport.findUnique({
+      where: {
+        organizationId_modelYear: {
+          organizationId: orgId,
+          modelYear: my,
+        },
+      },
+      select: {
+        status: true,
+      },
+    }),
+    prisma.legacyAssessedModelYearReport.findUnique({
+      where: {
+        organizationId_modelYear: {
+          organizationId: orgId,
+          modelYear: my,
+        },
+      },
+    }),
+  ]);
+  if (myr && legacyMyr) {
+    throw new Error("Unexpected Error!");
+  }
+  if (myr) {
+    return myr.status;
+  }
+  if (legacyMyr) {
+    return ModelYearReportStatus.ASSESSED;
+  }
+  return null;
+};
+
+export const getApplicationStatisticsSupplier = async (
+  creditApplicationId: number,
+  orgId: number,
+): Promise<{
+  type: "claimed" | "issued";
+  vinsStatRecords: ReturnType<typeof getSupplierVinStatRecords>;
+  creditsStatRecords: ReturnType<typeof getSupplierCreditStatRecords>;
+}> => {
+  const vinsStats: Record<string, number> = {};
+  const creditsStats: Record<string, Decimal> = {};
+  const ca = await prisma.creditApplication.findUnique({
+    where: {
+      id: creditApplicationId,
+      organizationId: orgId,
+    },
+    select: {
+      status: true,
+      CreditApplicationRecord: {
+        select: {
+          vehicleClass: true,
+          zevClass: true,
+          modelYear: true,
+          make: true,
+          modelName: true,
+          zevType: true,
+          range: true,
+          numberOfUnits: true,
+          legacyNumberOfUnits: true,
+          timestamp: true,
+          validated: true,
+        },
+      },
+    },
+  });
+  if (!ca) {
+    return {
+      type: "claimed",
+      vinsStatRecords: [],
+      creditsStatRecords: [],
+    };
+  }
+  const records = ca.CreditApplicationRecord;
+  const isIssued = ca.status === CreditApplicationStatus.ISSUED;
+  let transactions: Omit<ZevUnitRecord, "type">[] = [];
+  if (isIssued) {
+    transactions = await prisma.zevUnitTransaction.findMany({
+      where: {
+        organizationId: orgId,
+        referenceType: ReferenceType.SUPPLY_CREDITS,
+        referenceId: creditApplicationId,
+      },
+      select: {
+        vehicleClass: true,
+        zevClass: true,
+        modelYear: true,
+        numberOfUnits: true,
+      },
+    });
+  }
+  const vehicleClassMap = getVehicleClassEnumsToStringsMap();
+  const zevClassMap = getZevClassEnumsToStringsMap();
+  const modelYearsMap = getModelYearEnumsToStringsMap();
+  for (const record of records) {
+    if ((isIssued && record.validated) || !isIssued) {
+      const key = getStatsKey(
+        vehicleClassMap[record.vehicleClass] ?? "",
+        zevClassMap[record.zevClass] ?? "",
+        modelYearsMap[record.modelYear] ?? "",
+        record.make,
+        record.modelName,
+        record.zevType,
+        record.range.toString(),
+        record.legacyNumberOfUnits.toString(),
+        record.numberOfUnits.toString(),
+      );
+      if (!vinsStats[key]) {
+        vinsStats[key] = 1;
+      } else {
+        vinsStats[key] = vinsStats[key] + 1;
+      }
+    }
+  }
+  if (isIssued) {
+    for (const transaction of transactions) {
+      const numberOfUnits = transaction.numberOfUnits;
+      const key = getSupplierCreditStatsKey(
+        vehicleClassMap[transaction.vehicleClass] ?? "",
+        zevClassMap[transaction.zevClass] ?? "",
+        modelYearsMap[transaction.modelYear] ?? "",
+      );
+      if (!creditsStats[key]) {
+        creditsStats[key] = numberOfUnits;
+      } else {
+        creditsStats[key] = creditsStats[key].plus(numberOfUnits);
+      }
+    }
+  } else {
+    for (const record of records) {
+      let numberOfUnitsToUse;
+      const onOrBeforeCd = getCaRecordOnOrBeforeCd(record, modelYearsMap);
+      if (onOrBeforeCd && record.modelYear < ModelYear.MY_2026) {
+        numberOfUnitsToUse = record.legacyNumberOfUnits;
+      } else {
+        numberOfUnitsToUse = record.numberOfUnits;
+      }
+      const key = getSupplierCreditStatsKey(
+        vehicleClassMap[record.vehicleClass] ?? "",
+        zevClassMap[record.zevClass] ?? "",
+        modelYearsMap[record.modelYear] ?? "",
+      );
+      if (!creditsStats[key]) {
+        creditsStats[key] = numberOfUnitsToUse;
+      } else {
+        creditsStats[key] = creditsStats[key].plus(numberOfUnitsToUse);
+      }
+    }
+  }
+  return {
+    type: isIssued ? "issued" : "claimed",
+    vinsStatRecords: getSupplierVinStatRecords(vinsStats),
+    creditsStatRecords: getSupplierCreditStatRecords(creditsStats),
+  };
+};
+
+export const getApplicationStatisticsGov = async (
+  creditApplicationId: number,
+  date: Date,
+): Promise<GovCaStatRecord[]> => {
+  const stats: Record<
+    string,
+    {
+      vinsCount: number;
+      validVinsCount: number;
+      creditsSum: Decimal;
+      validCreditsSum: Decimal;
+    }
+  > = {};
+  const ca = await prisma.creditApplication.findUnique({
+    where: {
+      id: creditApplicationId,
+    },
+    select: {
+      complianceYear: true,
+      CreditApplicationRecord: {
+        select: {
+          make: true,
+          modelName: true,
+          modelYear: true,
+          vehicleClass: true,
+          zevClass: true,
+          zevType: true,
+          range: true,
+          legacyNumberOfUnits: true,
+          numberOfUnits: true,
+          icbcRegistrationTimestamp: true,
+          validated: true,
+        },
+      },
+    },
+  });
+  if (!ca || !ca.complianceYear) {
+    return [];
+  }
+  const complianceYear = ca.complianceYear;
+  const { complianceDate, dayAfterComplianceDate } =
+    getComplianceYearData(complianceYear);
+  const records = ca.CreditApplicationRecord;
+  const vehicleClassMap = getVehicleClassEnumsToStringsMap();
+  const zevClassMap = getZevClassEnumsToStringsMap();
+  const modelYearsMap = getModelYearEnumsToStringsMap();
+  for (const record of records) {
+    const validated = record.validated;
+    const key = getStatsKey(
+      vehicleClassMap[record.vehicleClass] ?? "",
+      zevClassMap[record.zevClass] ?? "",
+      modelYearsMap[record.modelYear] ?? "",
+      record.make,
+      record.modelName,
+      record.zevType,
+      record.range.toString(),
+      record.legacyNumberOfUnits.toString(),
+      record.numberOfUnits.toString(),
+    );
+    if (!stats[key]) {
+      stats[key] = {
+        vinsCount: 0,
+        validVinsCount: 0,
+        creditsSum: new Decimal(0),
+        validCreditsSum: new Decimal(0),
+      };
+    }
+    stats[key].vinsCount = stats[key].vinsCount + 1;
+    if (validated) {
+      stats[key].validVinsCount = stats[key].validVinsCount + 1;
+    }
+    const { numberOfUnitsToUse } = getCaRecordData(
+      complianceYear,
+      complianceDate,
+      dayAfterComplianceDate,
+      record.icbcRegistrationTimestamp,
+      date,
+      record.legacyNumberOfUnits,
+      record.numberOfUnits,
+    );
+    stats[key].creditsSum = stats[key].creditsSum.plus(numberOfUnitsToUse);
+    if (validated) {
+      stats[key].validCreditsSum =
+        stats[key].validCreditsSum.plus(numberOfUnitsToUse);
+    }
+  }
+  return getGovStatRecords(stats);
+};
+
+export const getCaTransactions = async (
+  creditApplicationId: number,
+  date: Date,
+) => {
+  const ca = await prisma.creditApplication.findUnique({
+    where: {
+      id: creditApplicationId,
+    },
+    select: {
+      complianceYear: true,
+      CreditApplicationRecord: {
+        select: {
+          vehicleClass: true,
+          zevClass: true,
+          modelYear: true,
+          legacyNumberOfUnits: true,
+          numberOfUnits: true,
+          icbcRegistrationTimestamp: true,
+          validated: true,
+        },
+      },
+    },
+  });
+  if (!ca || !ca.complianceYear) {
+    return [];
+  }
+  const transactionsMap: Record<string, Decimal> = {};
+  const complianceYear = ca.complianceYear;
+  const { complianceDate, dayAfterComplianceDate } =
+    getComplianceYearData(complianceYear);
+  for (const record of ca.CreditApplicationRecord) {
+    const { transactionDate, numberOfUnitsToUse } = getCaRecordData(
+      complianceYear,
+      complianceDate,
+      dayAfterComplianceDate,
+      record.icbcRegistrationTimestamp,
+      date,
+      record.legacyNumberOfUnits,
+      record.numberOfUnits,
+    );
+    const key = getTransactionKey(
+      record.vehicleClass,
+      record.zevClass,
+      record.modelYear,
+      transactionDate,
+    );
+    if (!transactionsMap[key]) {
+      transactionsMap[key] = numberOfUnitsToUse;
+    } else {
+      transactionsMap[key] = transactionsMap[key].plus(numberOfUnitsToUse);
+    }
+  }
+  return getTransactions(transactionsMap);
 };

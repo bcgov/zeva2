@@ -18,11 +18,8 @@ type SummaryCard = {
   iconBackgroundClassName: string;
 };
 
-const sumCredits = (credits: string[]) =>
-  credits.reduce(
-    (total, units) => total.plus(new Decimal(units)),
-    new Decimal(0),
-  );
+const sumCredits = (credits: Decimal[]) =>
+  credits.reduce((total, units) => total.plus(units), new Decimal(0));
 
 const formatPercentage = (value: Decimal, total: Decimal) =>
   `${(total.eq(new Decimal(0)) ? new Decimal(0) : value.div(total).times(new Decimal(100))).toFixed(2)}% of application`;

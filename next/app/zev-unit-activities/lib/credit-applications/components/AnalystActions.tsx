@@ -1,9 +1,9 @@
 "use client";
 
-import { Button, Dropdown } from "@/app/lib/components";
+import { Button } from "@/app/lib/components";
 import { CreditApplicationStatus, ModelYear } from "@/prisma/generated/enums";
 import { useRouter } from "next/navigation";
-import { JSX, useCallback, useMemo, useState } from "react";
+import { JSX, useCallback, useState } from "react";
 import {
   analystRecommend,
   analystReject,
@@ -11,34 +11,17 @@ import {
 } from "../actions";
 import { Routes } from "@/app/lib/constants";
 import { getNormalizedComment } from "@/app/lib/utils/comment";
-import { getModelYearEnumsToStringsMap } from "@/app/lib/utils/enumMaps";
 import { Modal, ModalType } from "@/app/lib/components/Modal";
-import { isModelYear } from "@/app/lib/utils/typeGuards";
 import { CommentBox } from "@/app/lib/components/CommentBox";
 
 export const AnalystActions = (props: {
   id: number;
   status: CreditApplicationStatus;
-  complianceYears: ModelYear[];
-  defaultComplianceYear: ModelYear;
 }) => {
   const router = useRouter();
-  const [complianceYear, setComplianceYear] = useState<ModelYear>(
-    props.defaultComplianceYear,
-  );
   const [comment, setComment] = useState<string>("");
   const [error, setError] = useState<string>("");
   const [modal, setModal] = useState<JSX.Element | null>(null);
-
-  const modelYearsMap = useMemo(() => {
-    return getModelYearEnumsToStringsMap();
-  }, []);
-
-  const handleSelectCy = useCallback((selectedCy: string) => {
-    if (isModelYear(selectedCy)) {
-      setComplianceYear(selectedCy);
-    }
-  }, []);
 
   const handleValidate = useCallback(async () => {
     const response = await validateCreditApplication(props.id);
@@ -54,7 +37,6 @@ export const AnalystActions = (props: {
     try {
       const response = await analystRecommend(
         props.id,
-        complianceYear,
         getNormalizedComment(comment),
       );
       if (response.responseType === "error") {
@@ -68,7 +50,7 @@ export const AnalystActions = (props: {
       }
     }
     setModal(null);
-  }, [props.id, complianceYear, comment]);
+  }, [props.id, comment]);
 
   const handleReject = useCallback(async () => {
     try {
@@ -141,19 +123,6 @@ export const AnalystActions = (props: {
             <Button variant="primary" onClick={() => showModal("validate")}>
               Validate
             </Button>
-            <Dropdown
-              label="Compliance Year"
-              options={props.complianceYears.map((cy) => {
-                return {
-                  value: cy,
-                  label: modelYearsMap[cy] ?? "",
-                };
-              })}
-              onChange={(value) => {
-                handleSelectCy(value);
-              }}
-              value={complianceYear}
-            />
             <Button
               variant="primary"
               disabled={props.status === CreditApplicationStatus.SUBMITTED}

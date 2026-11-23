@@ -19,6 +19,7 @@ import { ApplicationStatisticsSupplier } from "./ApplicationStatisticsSupplier";
 import { PrintDownloadButton } from "@/app/lib/components/PrintDownloadButton";
 import { getIsoYmdString } from "@/app/lib/utils/date";
 import { getCreditApplicationSupplier } from "../services";
+import { SupplementaryStatusBanner } from "./SupplementaryStatusBanner";
 
 export const IndividualPageSupplier = async (props: { id: string }) => {
   const id = Number.parseInt(props.id, 10);
@@ -43,6 +44,7 @@ export const IndividualPageSupplier = async (props: { id: string }) => {
   // assumes "histories" are in ascending order
   const histories = await getApplicationHistories(id);
   let statusBanner: JSX.Element | null = null;
+  let supplementaryStatusBanner: JSX.Element | null = null;
   if (applicationSupplierStatus === CreditApplicationSupplierStatus.DRAFT) {
     const history = histories.findLast(
       (h) => h.userAction === CreditApplicationStatus.DRAFT,
@@ -106,6 +108,14 @@ export const IndividualPageSupplier = async (props: { id: string }) => {
       );
     }
   }
+  if (creditApplication.isSupplementary && creditApplication.complianceYear) {
+    supplementaryStatusBanner = (
+      <SupplementaryStatusBanner
+        userIsGov={false}
+        complianceYear={creditApplication.complianceYear}
+      />
+    );
+  }
 
   return (
     <div className="flex flex-col gap-4">
@@ -121,6 +131,8 @@ export const IndividualPageSupplier = async (props: { id: string }) => {
       </div>
 
       {statusBanner}
+      {supplementaryStatusBanner}
+
       <hr className="border-dividerMedium"></hr>
       <div className="flex flex-col gap-6 self-start">
         <div className="flex flex-col border border-dividerMedium rounded">
@@ -154,7 +166,10 @@ export const IndividualPageSupplier = async (props: { id: string }) => {
           includeBottomBorder={true}
         />
         <Suspense fallback={<LoadingSkeleton />}>
-          <ApplicationStatisticsSupplier creditApplicationId={id} />
+          <ApplicationStatisticsSupplier
+            creditApplicationId={id}
+            orgId={userOrgId}
+          />
         </Suspense>
       </div>
 
