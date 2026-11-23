@@ -177,7 +177,6 @@ jobs:
 
   seed:
     name: Seed PR database
-    if: github.event.action == 'opened'
     needs: [deploys]
     runs-on: ubuntu-26.04
     timeout-minutes: 20
