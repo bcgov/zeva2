@@ -10,11 +10,7 @@ import {
   transferFromSupplierRescindableStatuses,
   mapOfStatusToSupplierStatus,
 } from "../constants";
-import {
-  getCreditTransfer,
-  getCreditTransferHistories,
-  getProjectedBalanceAfterTransfer,
-} from "../data";
+import { getCreditTransfer, getCreditTransferHistories } from "../data";
 import {
   getCreditTransferStatusEnumsToStringsMap,
   getModelYearEnumsToStringsMap,
@@ -23,6 +19,7 @@ import {
 import { DraftTransferReview } from "./DraftTransferReview";
 import { PrintDownloadPageButton } from "./PrintDownloadPageButton";
 import Decimal from "decimal.js";
+import { CreditTransferBalances } from "./CreditTransferBalances";
 import { getIsoYmdString, getTimeWithTz } from "@/app/lib/utils/date";
 
 export const IndividualPage = async (props: { id: string }) => {
@@ -178,11 +175,6 @@ export const IndividualPage = async (props: { id: string }) => {
     );
   }
 
-  let projectedBalance: { A: string; B: string } | null = null;
-  if (isDraft) {
-    projectedBalance = await getProjectedBalanceAfterTransfer(id);
-  }
-
   const isTransferToAction =
     !userIsGov &&
     userOrgId === transfer.transferToId &&
@@ -267,43 +259,13 @@ export const IndividualPage = async (props: { id: string }) => {
             </table>
           </div>
         </div>
+        <CreditTransferBalances transfer={transfer} />
         <hr className="border-dividerMedium"></hr>
         <div className="flex flex-row gap-2 p-5 text-lg">
           <span>Total CAD:</span>
           <span className="font-bold">${totalCAD.toString()}</span>
         </div>
       </div>
-
-      {projectedBalance && (
-        <div className="flex w-[452px] flex-col items-start gap-5 pb-5 rounded border border-dividerMedium shadow-[0_4px_20px_0_rgba(177,177,177,0.10)]">
-          <div className="flex flex-col items-start gap-3 self-stretch">
-            <div className="flex flex-col items-start gap-2 self-stretch p-5 rounded-t bg-disabledSurface">
-              <div className="self-stretch text-black text-xl font-bold leading-7">
-                Credit Balance After Transfer
-              </div>
-            </div>
-            <div className="flex flex-col items-start gap-3 self-stretch px-5">
-              <div className="flex items-center gap-4 self-stretch">
-                <div className="text-secondaryText font-bold leading-6">
-                  Category A:
-                </div>
-                <div className="self-stretch text-black text-lg font-bold leading-[27px]">
-                  {projectedBalance.A}
-                </div>
-              </div>
-              <div className="self-stretch h-px bg-disabledSurface"></div>
-              <div className="flex items-center gap-4 self-stretch">
-                <div className="text-secondaryText font-bold leading-6">
-                  Category B:
-                </div>
-                <div className="self-stretch text-black text-lg font-bold leading-[27px]">
-                  {projectedBalance.B}
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
 
       {isDraft && (
         <Suspense fallback={<LoadingSkeleton />}>
