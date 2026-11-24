@@ -55,6 +55,8 @@ jobs:
   deploy-services:
     name: Deploy ${{ matrix.service }}
     needs: [builds]
+    permissions:
+      contents: read
     runs-on: ubuntu-26.04
     timeout-minutes: 10
     strategy:
@@ -102,6 +104,8 @@ jobs:
   migrate:
     name: Run database migrations
     needs: [builds, deploy-services]
+    permissions:
+      contents: read
     runs-on: ubuntu-26.04
     timeout-minutes: 25
     steps:
@@ -127,6 +131,8 @@ jobs:
   deploys:
     name: Deploys (${{ matrix.name }})
     needs: [builds, deploy-services, migrate]
+    permissions:
+      contents: read
     runs-on: ubuntu-26.04
     timeout-minutes: 15
     strategy:
@@ -178,6 +184,8 @@ jobs:
   seed:
     name: Seed PR database
     needs: [deploys]
+    permissions:
+      contents: read
     runs-on: ubuntu-26.04
     timeout-minutes: 20
     steps:
@@ -195,6 +203,8 @@ jobs:
   tests:
     name: Health Check (${{ matrix.component }})
     needs: [deploys]
+    permissions:
+      contents: read
     runs-on: ubuntu-26.04
     timeout-minutes: 6
     strategy:
