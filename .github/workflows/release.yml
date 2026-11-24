@@ -53,6 +53,8 @@ jobs:
     name: Production Deploys
     needs: [init]
     environment: prod
+    permissions:
+      contents: read
     runs-on: ubuntu-26.04
     timeout-minutes: 45
     steps:
