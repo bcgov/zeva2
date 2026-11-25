@@ -14,11 +14,11 @@ Documentation: https://nextjs.org/docs
 
 Please note:
 
-(1) We're using Auth.js (https://authjs.dev/) for authentication/authorization; as per the docs: "You should not rely on middleware exclusively for authorization. Always ensure that the session is verified as close to your data fetching as possible." Therefore, a suggested guideline is that functions that read from the database always call `auth()` and use the returned user information to condition access (see `app/usersExample/lib/data.ts`).
+(1) We're using Auth.js (https://authjs.dev/) for authentication/authorization; as per the docs: "You should not rely on middleware exclusively for authorization. Always ensure that the session is verified as close to your data fetching as possible." Therefore, a suggested guideline is that functions that read from the database call `auth()` and use the returned user information to condition access.
 
 (2) Nextjs actions, as defined by the `"use server"` directive, expose endpoints for users to call, and so they must also be protected in the same way outlined above. Please note that arguments that are bound server-side to an action will also be exposed to users if the action is used in a client component.
 
-(3) Suggested project structure: For each view, there may be a directory with a `lib` folder, and inside that `lib` folder there may be a `data.ts` file for functions that read from the database, an `actions.ts` file for mutations, a `components` folder for client/helping components, and a `utils` folder for utility functions (see `app/usersExample/*`). There is also an uppermost `lib` directory for common pieces of code (with the same sub-files and sub-directories mentioned above).
+(3) Suggested project structure: For each view, there may be a directory with a `lib` folder, and inside that `lib` folder there may be `data.ts/services.ts` files for functions that read from the database, an `actions.ts` file for mutations, a `components` folder for client/helping components, and `utils.ts/utilsServer.ts/utilsClient.ts` files for utility functions. There is also an uppermost `lib` directory for common pieces of code (with the same sub-files and sub-directories mentioned above).
 
 ## Prisma
 
@@ -28,17 +28,15 @@ Documentation: https://www.prisma.io/docs/orm
 
 Please note:
 
-(1) In the original ZEVA app, we experienced some scalability issues; please read the following article on query optimization on how to avoid such issues: https://www.prisma.io/docs/orm/prisma-client/queries/query-optimization-performance. Please note that the `relationLoadStrategy: "join"` configuration has been applied globally in `schema.prisma`.
+(1) In the original ZEVA app, we experienced some scalability issues; please read the following article on query optimization on how to avoid such issues: https://www.prisma.io/docs/orm/prisma-client/queries/query-optimization-performance. Please note that the `relationLoadStrategy: "join"` configuration has been applied globally in `next/prisma/schema.prisma`.
 
-(2) During early development, we will use `prisma db push` and `prisma db pull` to avoid an excess of migrations that will have to be squashed later; we will, of course, transition to migrations once the schema is more fully built out.
+(2) In `package.json`, there are scripts that utilize Prisma commands; in particular, each time a developer makes changes to `next/prisma/schema.prisma`, they should run the `format-prisma-schema`, `generate-prisma-client`, and `migrate-dev` scripts. And when pulling in commits that contain new migrations, developers should run the `generate-prisma-client`and `migrate` scripts.
 
-(3) In `package.json`, there are scripts that utilize Prisma commands; in particular, each time a developer locally starts the `next` container, the contents of their `schema.prisma` file will be pushed to the database, and a tailored database client will be generated (`prisma/generated/*`).
+(3) For local development, run `npm run seed` from `next/` when both the Zeva2 and original Zeva databases are available. For an OpenShift PR database, the PR-open workflow runs seeding after deployment on every pull-request event. The seed script performs creates, so repeat runs may fail or duplicate data if the PR database was not reset by that run's migration job. To seed manually, source `/vault/secrets/database` in the Next.js pod before running `NODE_ENV=production npm run seed`.
 
-(4) For local development, run `npm run seed` from `next/` when both the Zeva2 and original Zeva databases are available. For an OpenShift PR database, the PR-open workflow runs seeding after deployment on every pull-request event. The seed script performs creates, so repeat runs may fail or duplicate data if the PR database was not reset by that run's migration job. To seed manually, source `/vault/secrets/database` in the Next.js pod before running `NODE_ENV=production npm run seed`.
+(4) During development, database queries are logged; please keep an eye on them as you develop to ensure your code is not generating an excessive number of queries, or returning data you don't need.
 
-(5) During development, database queries are logged; please keep an eye on them as you develop to ensure your code is not generating an excessive number of queries, or returning data you don't need.
-
-(6) In production, there may be multiple instances of the `next` service and the `bullmq` service; if that's the case, we will have to manually
+(5) In production, there may be multiple instances of the `next` service and the `bullmq` service; if that's the case, we will have to manually
 set the Prisma connection pool size (probably using an environment variable; also, please see: https://www.prisma.io/docs/orm/prisma-client/setup-and-configuration/databases-connections#recommended-connection-pool-size)
 
 ## TypeScript
@@ -112,12 +110,7 @@ Suggested Dockerfile build steps for the `bullmq` service, which assumes a base 
 
 Deployment notes:
 
-(1) Once the database container is running, we will need to execute, in an equivalent environment
-outlined in the build steps above (one with the dependencies installed): `npm run pushSchemaToDB`.
-This command creates/updates database tables; this command will be replaced with a command
-that applies database migrations once the schema is more fully built out.
-
-(2) Environment variables: please see the `environment` section under the `next` and `bullmq` services of the
+(1) Environment variables: please see the `environment` section under the `next` and `bullmq` services of the
 `docker-compose` file. Please note that the `DATABASE_URL` and `DATABASE_URL_OLD` connection strings
 have the format: `postgresql://{db_username}:{db_password}@{db_hostname_or_ip_address}:{db_port}/{db_name}?schema={db_schema_name}`
 In order for the `next` app to connect to the old zeva database, a network policy will probably have to be created;
