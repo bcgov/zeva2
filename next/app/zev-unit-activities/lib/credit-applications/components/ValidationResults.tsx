@@ -67,11 +67,12 @@ export const ValidationResults = (props: {
         <ol className="list-decimal list-inside">
           <li>
             Download both the{" "}
-            <span className="font-bold">Eligible Records</span> file and the{" "}
+            <span className="font-bold">Eligible Records</span> file (if
+            applicable) and the{" "}
             <span className="font-bold">Ineligible Records</span> file.
           </li>
           <li>
-            Save both files to your device. Once you upload a replacement file,
+            Save the file(s) to your device. Once you upload a replacement file,
             these validation result files will no longer be available for
             download.
           </li>
@@ -83,7 +84,11 @@ export const ValidationResults = (props: {
             currently uploaded.
           </li>
           <li>
-            Upload the <span className="font-bold">Eligible Records</span> file.
+            If applicable, upload the{" "}
+            <span className="font-bold">Eligible Records</span> file.
+            Alternatively, review and correct the records within the{" "}
+            <span className="font-bold">Ineligible Records</span> file, and
+            upload that.
           </li>
           <li>Continue with your Credit Application.</li>
         </ol>
@@ -141,16 +146,26 @@ export const ValidationResults = (props: {
           variant="warning"
           title="Important!"
           primaryText={
-            <span>
-              To continue with this Credit Application, upload the{" "}
-              <span className="font-bold">Eligible Records</span> file. Only the{" "}
-              <span className="font-bold">
-                {props.eligibleCount} valid VIN record(s)
-              </span>{" "}
-              can proceed through this Credit Application. Invalid records
-              cannot be included and should be reviewed and corrected for future
-              submissions.
-            </span>
+            props.eligibleCount > 0 ? (
+              <span>
+                To continue with this Credit Application, upload the{" "}
+                <span className="font-bold">Eligible Records</span> file. Only
+                the{" "}
+                <span className="font-bold">
+                  {props.eligibleCount} valid VIN record(s)
+                </span>{" "}
+                can proceed through this Credit Application. Invalid records
+                cannot be included and should be reviewed and corrected for
+                future submissions.
+              </span>
+            ) : (
+              <span>
+                To continue with this Credit Application, please review and
+                correct the records within the{" "}
+                <span className="font-bold">Ineligible Records</span> file, and
+                upload it.
+              </span>
+            )
           }
         />
       </div>

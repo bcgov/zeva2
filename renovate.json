@@ -18,6 +18,12 @@
         "matchDatasources": ["docker"],
         "matchPackageNames": ["redis"],
         "allowedVersions": "8.2.2"
-      }      
+      },
+      {
+        "description": ["Pin postgres docker tag to production 17.7"],
+        "matchDatasources": ["docker"],
+        "matchPackageNames": ["postgres"],
+        "allowedVersions": "17.7"
+      }            
     ]   
 }
