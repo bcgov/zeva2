@@ -8,11 +8,11 @@ const getKey = (
   objectId: number,
   orgId: number,
   make: string,
-  model: string,
+  modelName: string,
   modelYear: ModelYear,
 ) => {
   const delimiter = "|";
-  const key = `${orgId}${delimiter}${make.trim().toLowerCase()}${delimiter}${model.trim().toLowerCase()}${delimiter}${modelYear}`;
+  const key = `${orgId}${delimiter}${make.trim().toLowerCase()}${delimiter}${modelName.trim().toLowerCase()}${delimiter}${modelYear}`;
   let delimiterCount = 0;
   for (const l of key) {
     if (l === delimiter) {
@@ -59,7 +59,6 @@ export const seedLegacyVinRecords = async (
       range: true,
     },
   });
-
   const vehiclesMap: Partial<
     Record<string, { zevClass: ZevClass; zevType: ZevType; range: number }>
   > = {};
@@ -97,7 +96,31 @@ export const seedLegacyVinRecords = async (
     };
   }
 
+  const modelYearsMap = getStringsToModelYearsEnumsMap();
+
+  const mapOfVinsToData: Record<
+    string,
+    {
+      vin: string;
+      organizationId: number;
+      vehicleClass: VehicleClass;
+      zevClass: ZevClass;
+      make: string;
+      modelName: string;
+      modelYear: ModelYear;
+      zevType: ZevType;
+      range: number;
+      timestamp: Date;
+    }
+  > = {};
   const oldVinRecords = await prismaOld.sales_submission_content.findMany({
+    where: {
+      sales_submission: {
+        validation_status: {
+          not: "DRAFT",
+        },
+      },
+    },
     select: {
       id: true,
       xls_vin: true,
@@ -115,29 +138,14 @@ export const seedLegacyVinRecords = async (
       id: "asc",
     },
   });
-
-  const modelYearsMap = getStringsToModelYearsEnumsMap();
-  const mapOfVinsToData: Record<
-    string,
-    {
-      newOrgId: number;
-      zevClass: ZevClass;
-      make: string;
-      model: string;
-      modelYear: ModelYear;
-      zevType: ZevType;
-      range: number;
-      date: Date;
-    }
-  > = {};
   for (const record of oldVinRecords) {
     const vin = record.xls_vin?.trim().toUpperCase();
     const xlsDate = record.xls_sale_date;
     const make = record.xls_make;
-    const model = record.xls_model;
+    const modelName = record.xls_model;
     const xlsModelYear = record.xls_model_year;
     const oldOrgId = record.sales_submission.organization_id;
-    if (!vin || !xlsDate || !make || !model || !xlsModelYear) {
+    if (!vin || !xlsDate || !make || !modelName || !xlsModelYear) {
       continue;
     }
     if (vin.length !== 17) {
@@ -155,7 +163,7 @@ export const seedLegacyVinRecords = async (
         `old vin record with id ${record.id} has an unknown model year!`,
       );
     }
-    const key = getKey(record.id, oldOrgId, make, model, my);
+    const key = getKey(record.id, oldOrgId, make, modelName, my);
     const vehicle = vehiclesMap[key];
     if (!vehicle) {
       continue;
@@ -173,33 +181,22 @@ export const seedLegacyVinRecords = async (
     const msSinceUnixEpoch = (xlsDateAsInt - 25569) * 24 * 60 * 60 * 1000;
     const prelimDate = new Date(msSinceUnixEpoch);
     const tzOffset = prelimDate.getTimezoneOffset() * 60 * 1000;
-    const date = new Date(msSinceUnixEpoch + tzOffset);
+    const timestamp = new Date(msSinceUnixEpoch + tzOffset);
     mapOfVinsToData[vin] = {
-      newOrgId,
+      vin,
+      organizationId: newOrgId,
+      vehicleClass: VehicleClass.REPORTABLE,
       zevClass: vehicle.zevClass,
       make,
-      model,
+      modelName,
       modelYear: my,
       zevType: vehicle.zevType,
       range: vehicle.range,
-      date,
+      timestamp,
     };
   }
 
-  for (const [vin, data] of Object.entries(mapOfVinsToData)) {
-    await tx.legacyVinRecords.create({
-      data: {
-        organizationId: data.newOrgId,
-        vin,
-        timestamp: data.date,
-        vehicleClass: VehicleClass.REPORTABLE,
-        zevClass: data.zevClass,
-        modelYear: data.modelYear,
-        make: data.make,
-        modelName: data.model,
-        zevType: data.zevType,
-        range: data.range,
-      },
-    });
-  }
+  await tx.legacyVinRecords.createMany({
+    data: Object.values(mapOfVinsToData),
+  });
 };

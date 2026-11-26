@@ -19,6 +19,8 @@ export const seedUsers = async (
     "Engineer/Analyst": Role.ZEVA_IDIR_USER,
     "ZEVA User": Role.ZEVA_BCEID_USER,
   };
+  const markSupplierUsersAsInactive =
+    process.env.SEED_SUPPLIER_USERS_AS_INACTIVE === "true";
   for (const userOld of usersOld) {
     if (!userOld.organization_id || !userOld.organization) {
       throw new Error("user " + userOld.id + " with no org id!");
@@ -70,12 +72,11 @@ export const seedUsers = async (
       data: {
         contactEmail: userOld.email,
         idpSub,
-        idp: userOld.organization?.is_government
-          ? Idp.AZURE_IDIR
-          : Idp.BCEID_BUSINESS,
+        idp: userIsGov ? Idp.AZURE_IDIR : Idp.BCEID_BUSINESS,
         idpUsername: userOld.username,
         idpEmail,
-        isActive: userOld.is_active,
+        isActive:
+          !userIsGov && markSupplierUsersAsInactive ? false : userOld.is_active,
         organizationId: orgIdNew,
         firstName: userOld.first_name ?? "",
         lastName: userOld.last_name ?? "",
