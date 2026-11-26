@@ -15,6 +15,7 @@ import {
   getLegacyNumberOfUnits,
   getNumberOfUnits,
 } from "@/app/zev-models/lib/utilsServer";
+import Decimal from "decimal.js";
 
 export const seedVehicles = async (
   tx: TransactionClient,
@@ -41,6 +42,25 @@ export const seedVehicles = async (
       throw new Error(`unknown vehicle zev type with id ${r.id}`);
     }
   }
+
+  const vehiclesToCreate: {
+    legacyId: number;
+    range: number;
+    make: string;
+    modelYear: ModelYear;
+    status: VehicleStatus;
+    modelName: string;
+    legacyNumberOfUnits: Decimal;
+    numberOfUnits: Decimal;
+    zevType: ZevType;
+    vehicleClassCode: VehicleClassCode;
+    weight: number;
+    organizationId: number;
+    zevClass: ZevClass;
+    us06RangeGte16: boolean;
+    isActive: boolean;
+    vehicleClass: VehicleClass;
+  }[] = [];
   const vehiclesOld = await prismaOld.vehicle.findMany({
     where: {
       validation_status: "VALIDATED",
@@ -87,36 +107,36 @@ export const seedVehicles = async (
       );
     }
     const newWeight = oldWeight.toNumber();
-
-    await tx.vehicle.create({
-      select: { id: true },
-      data: {
-        legacyId: vehicleOld.id,
-        range: vehicleOld.range,
-        make: vehicleOld.make.trim(),
-        modelYear: modelYearEnum,
-        status: VehicleStatus.VALIDATED,
-        modelName: vehicleOld.model_name.trim(),
-        legacyNumberOfUnits: getLegacyNumberOfUnits(
-          zevClassEnum,
-          vehicleOld.range,
-          vehicleOld.has_passed_us_06_test,
-        ),
-        numberOfUnits: getNumberOfUnits(
-          zevClassEnum,
-          zevTypeEnum,
-          modelYearEnum,
-          vehicleOld.range,
-        ),
-        zevType: zevTypeEnum,
-        vehicleClassCode: classEnum,
-        weight: newWeight,
-        organizationId: orgNewId,
-        zevClass: zevClassEnum,
-        us06RangeGte16: vehicleOld.has_passed_us_06_test,
-        isActive: vehicleOld.is_active,
-        vehicleClass: VehicleClass.REPORTABLE,
-      },
+    vehiclesToCreate.push({
+      legacyId: vehicleOld.id,
+      range: vehicleOld.range,
+      make: vehicleOld.make.trim(),
+      modelYear: modelYearEnum,
+      status: VehicleStatus.VALIDATED,
+      modelName: vehicleOld.model_name.trim(),
+      legacyNumberOfUnits: getLegacyNumberOfUnits(
+        zevClassEnum,
+        vehicleOld.range,
+        vehicleOld.has_passed_us_06_test,
+      ),
+      numberOfUnits: getNumberOfUnits(
+        zevClassEnum,
+        zevTypeEnum,
+        modelYearEnum,
+        vehicleOld.range,
+      ),
+      zevType: zevTypeEnum,
+      vehicleClassCode: classEnum,
+      weight: newWeight,
+      organizationId: orgNewId,
+      zevClass: zevClassEnum,
+      us06RangeGte16: vehicleOld.has_passed_us_06_test,
+      isActive: vehicleOld.is_active,
+      vehicleClass: VehicleClass.REPORTABLE,
     });
   }
+
+  await tx.vehicle.createMany({
+    data: vehiclesToCreate,
+  });
 };
