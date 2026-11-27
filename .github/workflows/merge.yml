@@ -73,6 +73,7 @@ jobs:
           triggers: |
             next/
             openshift/
+            scripts/
             .github/workflows/*.yml
             renovate.json
       - uses: bcgov/actions-openshift/deployer@510a8105fdffbb718094e8a093e638132e300975 # v0.10.0
@@ -93,6 +94,7 @@ jobs:
           triggers: |
             next/
             openshift/
+            scripts/
             .github/workflows/*.yml
             renovate.json
       - uses: bcgov/actions-openshift/deployer@510a8105fdffbb718094e8a093e638132e300975 # v0.10.0
@@ -113,6 +115,7 @@ jobs:
           triggers: |
             next/
             openshift/
+            scripts/
             .github/workflows/*.yml
             renovate.json
 
