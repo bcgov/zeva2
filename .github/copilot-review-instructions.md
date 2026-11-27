@@ -37,5 +37,4 @@ When reviewing pull requests for this repository, enforce the following standard
 - Remove all dead code and `console.log` statements before merging.
 
 ## OpenShift / DevOps
-- New environment variables must be added to the relevant OpenShift template under `openshift/templates/`.
 - Dockerfile changes must minimise image layers and must not run the application as root.

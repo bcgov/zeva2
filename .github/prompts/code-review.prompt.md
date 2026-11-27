@@ -66,7 +66,6 @@ Review the code changes provided and evaluate each of the following areas. For e
 - Is dead code or commented-out code removed?
 
 ### 10. OpenShift / DevOps
-- Are new environment variables documented and added to the relevant OpenShift template (`openshift/templates/`)?
 - Do Dockerfile changes minimise image layers and avoid running as root?
 
 ---
