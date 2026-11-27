@@ -41,7 +41,7 @@ jobs:
               .github/workflows/*.yml
               renovate.json
     steps:
-      - uses: bcgov/actions/builder@6c8ac0469fcf0d826533bc526c90119b8f149884 # v0.13.0
+      - uses: bcgov/actions/builder@acc058abf85bb183dad21b839a92a40a4ff47af3 # v0.14.0
         with:
           package: ${{ matrix.package }}
           context: ${{ matrix.context }}
@@ -70,7 +70,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Deploy database
         if: matrix.service == 'database'
-        uses: bcgov/actions-openshift/deployer@510a8105fdffbb718094e8a093e638132e300975 # v0.10.0
+        uses: bcgov/actions-openshift/deployer@47805d2fc4e919382757c1fbeb68d39313abe64f # v0.11.0
         with:
           file: ${{ matrix.file }}
           oc_namespace: ${{ vars.OC_NAMESPACE }}
@@ -87,7 +87,7 @@ jobs:
             renovate.json
       - name: Deploy Redis
         if: matrix.service == 'redis'
-        uses: bcgov/actions-openshift/deployer@510a8105fdffbb718094e8a093e638132e300975 # v0.10.0
+        uses: bcgov/actions-openshift/deployer@47805d2fc4e919382757c1fbeb68d39313abe64f # v0.11.0
         with:
           file: ${{ matrix.file }}
           oc_namespace: ${{ vars.OC_NAMESPACE }}
@@ -110,7 +110,7 @@ jobs:
     timeout-minutes: 25
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: bcgov/actions-openshift/oc-runner@510a8105fdffbb718094e8a093e638132e300975 # v0.10.0
+      - uses: bcgov/actions-openshift/oc-runner@47805d2fc4e919382757c1fbeb68d39313abe64f # v0.11.0
         env:
           MIGRATION_ZONE: pr-${{ github.event.number }}
           MIGRATION_IMAGE_TAG: ${{ github.event.pull_request.head.sha }}
@@ -162,7 +162,7 @@ jobs:
             echo "vault_role=${namespaceplate}-nonprod"
             echo "vault_service_account=${namespaceplate}-vault"
           } >> "$GITHUB_OUTPUT"
-      - uses: bcgov/actions-openshift/deployer@510a8105fdffbb718094e8a093e638132e300975 # v0.10.0
+      - uses: bcgov/actions-openshift/deployer@47805d2fc4e919382757c1fbeb68d39313abe64f # v0.11.0
         with:
           file: ${{ matrix.file }}
           oc_namespace: ${{ vars.OC_NAMESPACE }}
@@ -190,7 +190,7 @@ jobs:
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: bcgov/actions-openshift/oc-runner@510a8105fdffbb718094e8a093e638132e300975 # v0.10.0
+      - uses: bcgov/actions-openshift/oc-runner@47805d2fc4e919382757c1fbeb68d39313abe64f # v0.11.0
         env:
           PR_NUMBER: ${{ github.event.number }}
         with:
@@ -213,7 +213,7 @@ jobs:
         component: [next, bullmq]
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: bcgov/actions/diff-triggers@6c8ac0469fcf0d826533bc526c90119b8f149884 # v0.13.0
+      - uses: bcgov/actions/diff-triggers@acc058abf85bb183dad21b839a92a40a4ff47af3 # v0.14.0
         id: triggers
         with:
           triggers: |
@@ -278,7 +278,7 @@ jobs:
       pull-requests: write
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: bcgov/actions/diff-triggers@6c8ac0469fcf0d826533bc526c90119b8f149884 # v0.13.0
+      - uses: bcgov/actions/diff-triggers@acc058abf85bb183dad21b839a92a40a4ff47af3 # v0.14.0
         id: triggers
         with:
           triggers: |
@@ -302,6 +302,6 @@ jobs:
     runs-on: ubuntu-slim
     timeout-minutes: 1
     steps:
-      - uses: bcgov/actions/workflow-results@6c8ac0469fcf0d826533bc526c90119b8f149884 # v0.13.0
+      - uses: bcgov/actions/workflow-results@acc058abf85bb183dad21b839a92a40a4ff47af3 # v0.14.0
         with:
           needs: ${{ toJson(needs) }}
