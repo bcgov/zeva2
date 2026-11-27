@@ -27,26 +27,15 @@ jobs:
           - package: next
             context: next
             file: next/Dockerfile-Openshift
-            triggers: |
-              next/
-              openshift/
-              .github/workflows/*.yml
-              renovate.json
           - package: bullmq
             context: next
             file: next/Dockerfile-Bullmq-Openshift
-            triggers: |
-              next/
-              openshift/
-              .github/workflows/*.yml
-              renovate.json
     steps:
       - uses: bcgov/actions/builder@6c8ac0469fcf0d826533bc526c90119b8f149884 # v0.13.0
         with:
           package: ${{ matrix.package }}
           context: ${{ matrix.context }}
           file: ${{ matrix.file }}
-          triggers: ${{ matrix.triggers }}
           tags: |
             ${{ github.event.number }}
             ${{ github.event.pull_request.head.sha }}
@@ -80,11 +69,6 @@ jobs:
           parameters: >-
             -p ZONE="pr-${{ github.event.number }}"
             -p NAME="zeva2"
-          triggers: |
-            next/
-            openshift/
-            .github/workflows/*.yml
-            renovate.json
       - name: Deploy Redis
         if: matrix.service == 'redis'
         uses: bcgov/actions-openshift/deployer@510a8105fdffbb718094e8a093e638132e300975 # v0.10.0
@@ -95,11 +79,6 @@ jobs:
           oc_token: ${{ secrets.OC_TOKEN }}
           overwrite: "false"
           parameters: -p ZONE="pr-${{ github.event.number }}" -p NAME="zeva2"
-          triggers: |
-            next/
-            openshift/
-            .github/workflows/*.yml
-            renovate.json
 
   migrate:
     name: Run database migrations
@@ -121,12 +100,6 @@ jobs:
           oc_token: ${{ secrets.OC_TOKEN }}
           commands: bash scripts/run-next-pr-migrations.sh
           timeout: 23m
-          triggers: |
-            next/
-            openshift/
-            scripts/
-            .github/workflows/*.yml
-            renovate.json
 
   deploys:
     name: Deploys (${{ matrix.name }})
@@ -175,11 +148,6 @@ jobs:
             -p VAULT_SECRET_PATH="${{ steps.vault_settings.outputs.vault_secret_path }}"
             -p VAULT_ROLE="${{ steps.vault_settings.outputs.vault_role }}"
             -p VAULT_SERVICE_ACCOUNT="${{ steps.vault_settings.outputs.vault_service_account }}"
-          triggers: |
-            next/
-            openshift/
-            .github/workflows/*.yml
-            renovate.json
 
   seed:
     name: Seed PR database
@@ -213,16 +181,8 @@ jobs:
         component: [next, bullmq]
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: bcgov/actions/diff-triggers@6c8ac0469fcf0d826533bc526c90119b8f149884 # v0.13.0
-        id: triggers
-        with:
-          triggers: |
-            next/
-            openshift/
-            .github/workflows/*.yml
-            renovate.json
       - name: Wait for Next.js healthcheck
-        if: matrix.component == 'next' && steps.triggers.outputs.triggered == 'true'
+        if: matrix.component == 'next'
         run: |
           set -euo pipefail
           URL="https://zeva2-pr-${{ github.event.number }}.apps.silver.devops.gov.bc.ca/api/health"
@@ -239,7 +199,7 @@ jobs:
           echo "ERROR: Next.js did not become healthy within 5 minutes."
           exit 1
       - name: Wait for BullMQ deployment readiness
-        if: matrix.component == 'bullmq' && steps.triggers.outputs.triggered == 'true'
+        if: matrix.component == 'bullmq'
         env:
           OC_NAMESPACE: ${{ vars.OC_NAMESPACE }}
           OC_SERVER: ${{ vars.OC_SERVER }}
@@ -278,15 +238,7 @@ jobs:
       pull-requests: write
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: bcgov/actions/diff-triggers@6c8ac0469fcf0d826533bc526c90119b8f149884 # v0.13.0
-        id: triggers
-        with:
-          triggers: |
-            next/
-            openshift/
-            .github/workflows/*.yml
       - name: Post Deploy Links
-        if: steps.triggers.outputs.triggered == 'true'
         uses: marocchino/sticky-pull-request-comment@5770ad5eb8f42dd2c4f34da00c94c5381e49af88 # v3.0.5
         with:
           header: pr-deployment-links
